@@ -6,6 +6,7 @@
 #define HAZELENGINE_APPLICATION_H
 
 #include "Core.h"
+
 namespace Hazel{
     class HAZEL_API Application{
     public:

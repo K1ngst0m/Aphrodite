@@ -1,7 +1,7 @@
 //
 // Created by Npchitman on 2021/1/17.
 //
-#include <Hazel.h>
+#include <Hazel/Hazel.h>
 
 class Sandbox: public Hazel::Application{
 public:

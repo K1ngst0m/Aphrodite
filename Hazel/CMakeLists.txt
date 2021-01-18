@@ -5,9 +5,8 @@ project(Hazel)
 file(GLOB SRC_FILES
         src/*.cpp
         src/Hazel/*.cpp
+        src/Events/*.cpp
         )
-
-message(STATUS "SRC_FILES = ${SRC_FILES}")
 
 add_definitions(-DHZ_BUILD_DLL)
 
