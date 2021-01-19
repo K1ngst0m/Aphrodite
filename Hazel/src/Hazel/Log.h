@@ -4,11 +4,9 @@
 
 #ifndef HAZELENGINE_LOG_H
 #define HAZELENGINE_LOG_H
-#include <memory>
 
+#include "hzpch.h"
 #include "Core.h"
-#include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
 
 namespace Hazel{
     class HAZEL_API Log{

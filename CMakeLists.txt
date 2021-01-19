@@ -12,4 +12,3 @@ include_directories(
         ${CMAKE_SOURCE_DIR}/Hazel/vendor/spdlog/include
         )
 add_subdirectory(Hazel)
-add_subdirectory(SandBox)

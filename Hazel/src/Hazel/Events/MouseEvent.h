@@ -6,7 +6,6 @@
 #define HAZELENGINE_MOUSEEVENT_H
 
 #include "Event.h"
-#include <sstream>
 
 namespace Hazel{
     class HAZEL_API MouseMovedEvent: public Event {
@@ -31,13 +30,19 @@ namespace Hazel{
     class HAZEL_API MouseScrollEvent: public Event{
     public:
         MouseScrollEvent(float xOffset, float yOffset): m_XOffset(xOffset), m_YOffset(yOffset){}
+
         inline float GetXOffset() const { return m_XOffset; }
         inline float GetYOffset() const { return m_YOffset; }
+
         std::string ToString() const override{
             std::stringstream ss;
             ss << "MouseScrolledEvent: " << GetXOffset() << ", " << GetYOffset();
             return ss.str();
         }
+
+        EVENT_CLASS_TYPE(MouseScrolled)
+        EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+
     private:
         float m_XOffset, m_YOffset;
     };
@@ -45,6 +50,7 @@ namespace Hazel{
     class HAZEL_API MouseButtonEvent: public Event{
     public:
         inline int GetMouseButton() const {return m_Button;}
+
         EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 
     protected:

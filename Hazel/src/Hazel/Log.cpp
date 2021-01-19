@@ -1,8 +1,8 @@
 //
 // Created by Npchitman on 2021/1/18.
 //
-
 #include "Log.h"
+
 
 namespace Hazel{
     std::shared_ptr<spdlog::logger> Log::s_CoreLogger;

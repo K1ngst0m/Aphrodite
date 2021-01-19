@@ -12,7 +12,8 @@ namespace Hazel{
     public:
         Application();
         virtual ~Application();
-        void Run();
+
+        [[noreturn]] void Run();
     };
 
     // To be defined in CLIENT

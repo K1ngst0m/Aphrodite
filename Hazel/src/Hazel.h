@@ -6,9 +6,8 @@
 #define HAZELENGINE_HAZEL_H
 
 //For use by Hazel applications
-#include <cstdio>
-#include "Application.h"
-#include "Log.h"
+#include "Hazel/Application.h"
+#include "Hazel/Log.h"
 
 // ---Entry Point--------------------------
 #include "EntryPoint.h"
