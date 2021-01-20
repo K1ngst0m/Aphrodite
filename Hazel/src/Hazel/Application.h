@@ -5,7 +5,10 @@
 #ifndef HAZELENGINE_APPLICATION_H
 #define HAZELENGINE_APPLICATION_H
 
+#include "hzpch.h"
 #include "Core.h"
+#include "Events/Event.h"
+#include "Window.h"
 
 namespace Hazel{
     class HAZEL_API Application{
@@ -13,7 +16,12 @@ namespace Hazel{
         Application();
         virtual ~Application();
 
-        [[noreturn]] void Run();
+        void Run() const;
+
+        void OnEvent(Event &e);
+    private:
+        std::unique_ptr<Window> m_Window;
+        bool m_Running = true;
     };
 
     // To be defined in CLIENT
