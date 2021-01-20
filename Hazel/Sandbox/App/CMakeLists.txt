@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.17)
 project(SandBox)
 file(GLOB SRC_FILES Sandbox.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILES})
