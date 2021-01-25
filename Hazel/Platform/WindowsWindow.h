@@ -9,6 +9,7 @@
 #include "Hazel/Window.h"
 #include "Hazel/Log.h"
 
+
 namespace Hazel{
     class WindowsWindow: public Window{
     public:

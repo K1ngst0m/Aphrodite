@@ -24,7 +24,9 @@
 #include <GLFW/glfw3.h>
 
 #ifdef HZ_PLATFORM_WINDOWS
+
 #include <Windows.h>
+
 #endif
 
 #endif //HAZELENGINE_HZPCH_H

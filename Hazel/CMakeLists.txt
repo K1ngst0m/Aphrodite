@@ -11,8 +11,8 @@ add_definitions(-DHZ_BUILD_DLL)
 
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
 
-target_link_libraries(${PROJECT_NAME} glfw opengl32)
+target_link_libraries(${PROJECT_NAME} glfw opengl32 spdlog)
 target_precompile_headers(${PROJECT_NAME} PUBLIC src/hzpch.h)
 
 add_subdirectory(vendor/glfw)
-add_subdirectory(Sandbox)
+add_subdirectory(vendor/spdlog)
