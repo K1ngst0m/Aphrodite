@@ -8,9 +8,10 @@
 #include "Event.h"
 
 namespace Hazel {
+
     class HAZEL_API WindowResizeEvent : public Event {
     public:
-        WindowResizeEvent(unsigned int width, unsigned int height) : m_Width(width), m_Height(height) {}
+        explicit WindowResizeEvent(unsigned int width, unsigned int height) : m_Width(width), m_Height(height) {}
 
         inline unsigned int GetWidth() const { return m_Width; }
 

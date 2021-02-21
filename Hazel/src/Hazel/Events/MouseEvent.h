@@ -30,9 +30,9 @@ namespace Hazel {
         float m_MouseX, m_MouseY;
     };
 
-    class HAZEL_API MouseScrollEvent : public Event {
+    class HAZEL_API MouseScrolledEvent : public Event {
     public:
-        MouseScrollEvent(float xOffset, float yOffset) : m_XOffset(xOffset), m_YOffset(yOffset) {}
+        MouseScrolledEvent(float xOffset, float yOffset) : m_XOffset(xOffset), m_YOffset(yOffset) {}
 
         inline float GetXOffset() const { return m_XOffset; }
 
@@ -59,14 +59,14 @@ namespace Hazel {
         EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
 
     protected:
-        MouseButtonEvent(int button) : m_Button(button) {}
+        explicit MouseButtonEvent(int button) : m_Button(button) {}
 
         int m_Button;
     };
 
     class HAZEL_API MouseButtonPressedEvent : public MouseButtonEvent {
     public:
-        MouseButtonPressedEvent(int button) : MouseButtonEvent(button) {}
+        explicit MouseButtonPressedEvent(int button) : MouseButtonEvent(button) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -80,7 +80,7 @@ namespace Hazel {
 
     class HAZEL_API MouseButtonReleasedEvent : public MouseButtonEvent {
     public:
-        MouseButtonReleasedEvent(int button) : MouseButtonEvent(button) {}
+        explicit MouseButtonReleasedEvent(int button) : MouseButtonEvent(button) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -88,7 +88,7 @@ namespace Hazel {
             return ss.str();
         }
 
-        EVENT_CLASS_TYPE(MouseButtonPressed)
+        EVENT_CLASS_TYPE(MouseButtonReleased)
 
     };
 }
