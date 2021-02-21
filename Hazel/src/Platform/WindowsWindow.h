@@ -4,13 +4,12 @@
 #ifndef HAZELENGINE_WINDOWSWINDOW_H
 #define HAZELENGINE_WINDOWSWINDOW_H
 
-#include "hzpch.h"
 #include "Hazel/Window.h"
-#include "Hazel/Log.h"
 
+struct GLFWwindow ;
 
 namespace Hazel{
-    class WindowsWindow: public Window{
+   class WindowsWindow: public Window{
     public:
         explicit WindowsWindow(const WindowProps &props);
         ~WindowsWindow() override;
