@@ -5,7 +5,6 @@
 #ifndef HAZELENGINE_LOG_H
 #define HAZELENGINE_LOG_H
 
-#include "hzpch.h"
 #include "Core.h"
 
 namespace Hazel {

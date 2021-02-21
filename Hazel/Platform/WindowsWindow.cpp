@@ -40,7 +40,9 @@ namespace Hazel{
             s_GLFWInitialized = true;
         }
 
-        m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
+        m_Window = glfwCreateWindow((int)props.Width, (int)props.Height,
+                                    m_Data.Title.c_str(), nullptr, nullptr);
+
         glfwMakeContextCurrent(m_Window);
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
@@ -123,6 +125,7 @@ namespace Hazel{
             MouseMovedEvent event((float)xPos, (float)yPos);
             data.EventCallback(event);
         });
+
     }
 
     void WindowsWindow::Shutdown() {

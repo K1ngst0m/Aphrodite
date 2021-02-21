@@ -1,6 +1,5 @@
 //
 // Created by Npchitman on 2021/1/20.
-//
 
 #ifndef HAZELENGINE_WINDOWSWINDOW_H
 #define HAZELENGINE_WINDOWSWINDOW_H
@@ -27,8 +26,11 @@ namespace Hazel{
         bool IsVSync() const override;
 
     private:
-        virtual void Init(const WindowProps& props);
-        virtual void Shutdown();
+        // TODO: virtual
+        // 初始化
+        void Init(const WindowProps& props);
+        // 关闭
+        void Shutdown();
 
     private:
         GLFWwindow* m_Window;
