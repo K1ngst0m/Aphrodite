@@ -9,7 +9,9 @@
 struct GLFWwindow ;
 
 namespace Hazel{
+
    class WindowsWindow: public Window{
+
     public:
         explicit WindowsWindow(const WindowProps &props);
         ~WindowsWindow() override;
@@ -19,13 +21,13 @@ namespace Hazel{
         inline unsigned int GetWidth() const override { return m_Data.Width; }
         inline unsigned int GetHeight() const override { return m_Data.Height; }
 
-        // Window attributes
         inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
         void SetVSync(bool enabled) override;
         bool IsVSync() const override;
 
-    private:
-        // TODO: virtual
+       inline void* GetNativeWindow() const override{ return m_Window; }
+
+   private:
         // 初始化
         void Init(const WindowProps& props);
         // 关闭
@@ -44,6 +46,7 @@ namespace Hazel{
 
         WindowData m_Data;
     };
+
 }
 
 #endif //HAZELENGINE_WINDOWSWINDOW_H

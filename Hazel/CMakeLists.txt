@@ -5,7 +5,7 @@ file(GLOB SRC_FILES
         src/Hazel/*.cpp
         src/Hazel/Events/*.cpp
         src/Hazel/ImGui/*.cpp
-        src/Platform/*.cpp
+        src/Platform/Windows/*.cpp
         src/Platform/OpenGL/*.cpp
         )
 
