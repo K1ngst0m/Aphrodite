@@ -8,6 +8,8 @@ file(GLOB SRC_FILES
         src/Hazel/ImGui/*.cpp
         src/Platform/Windows/*.cpp
         src/Platform/OpenGL/*.cpp
+        vendor/imgui/backends/imgui_impl_glfw.cpp
+        vendor/imgui/backends/imgui_impl_opengl3.cpp
         )
 
 # pre definitions
