@@ -1,5 +1,6 @@
 project(Hazel)
 
+# cpp source file
 file(GLOB SRC_FILES
         src/*.cpp
         src/Hazel/*.cpp
@@ -9,18 +10,17 @@ file(GLOB SRC_FILES
         src/Platform/OpenGL/*.cpp
         )
 
-add_definitions(
-        -DHZ_PLATFORM_WINDOWS
-        -DHZ_BUILD_DLL
-        )
+# pre definitions
+add_definitions(-DHZ_PLATFORM_WINDOWS -DHZ_BUILD_DLL)
 
+# build project
 add_library(${PROJECT_NAME} SHARED ${SRC_FILES})
-
-target_link_libraries(${PROJECT_NAME} glfw opengl32 imgui spdlog pthread glad)
-
+target_link_libraries(${PROJECT_NAME} glfw opengl32 imgui spdlog pthread glad glm)
 target_precompile_headers(${PROJECT_NAME} PUBLIC src/hzpch.h)
 
+# submodule
 add_subdirectory(vendor/glfw)
 add_subdirectory(vendor/spdlog)
 add_subdirectory(vendor/glad)
 add_subdirectory(vendor/imgui)
+add_subdirectory(vendor/glm)
