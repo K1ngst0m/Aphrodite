@@ -13,6 +13,7 @@ Hazel::LayerStack::~LayerStack() {
 
 void Hazel::LayerStack::PushLayer(Hazel::Layer *layer) {
     m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
+    m_LayerInsertIndex++;
     layer->OnAttach();
 }
 
@@ -22,18 +23,18 @@ void Hazel::LayerStack::PushOverlay(Hazel::Layer *overlay) {
 }
 
 void Hazel::LayerStack::PopLayer(Hazel::Layer *layer) {
-    auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
+    auto it = std::find(m_Layers.begin(), m_Layers.begin() + m_LayerInsertIndex, layer);
     if (it != m_Layers.end()) {
+        layer->OnDetach();
         m_Layers.erase(it);
         m_LayerInsertIndex--;
-        layer->OnDetach();
     }
 }
 
 void Hazel::LayerStack::PopOverlay(Hazel::Layer *overlay) {
-    auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
+    auto it = std::find(m_Layers.begin(), m_Layers.begin() + m_LayerInsertIndex, overlay);
     if (it != m_Layers.end()) {
-        m_Layers.erase(it);
         overlay->OnDetach();
+        m_Layers.erase(it);
     }
 }
