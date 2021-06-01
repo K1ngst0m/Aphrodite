@@ -11,7 +11,7 @@ include_directories(3rdparty/glad/include)
 include_directories(3rdparty/imgui)
 include_directories(3rdparty/glm)
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME} STATIC
         # header
         src/Hazel.h src/Hazel/Core.h src/Hazel/EntryPoint.h
 
@@ -35,7 +35,7 @@ add_library(${PROJECT_NAME} SHARED
         src/Hazel/ImGui/ImGuiLayer.cpp src/Hazel/ImGui/ImGuiLayer.h
 
         # imgui
-        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp)
+        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h)
 
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/hzpch.h)

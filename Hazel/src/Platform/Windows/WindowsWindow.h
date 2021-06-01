@@ -6,37 +6,42 @@
 
 #include "Hazel/Window.h"
 
-struct GLFWwindow ;
+struct GLFWwindow;
 
-namespace Hazel{
+namespace Hazel {
 
-   class WindowsWindow: public Window{
+    class WindowsWindow : public Window {
 
     public:
         explicit WindowsWindow(const WindowProps &props);
+
         ~WindowsWindow() override;
 
         void OnUpdate() override;
 
         inline unsigned int GetWidth() const override { return m_Data.Width; }
+
         inline unsigned int GetHeight() const override { return m_Data.Height; }
 
-        inline void SetEventCallback(const EventCallbackFn& callback) override { m_Data.EventCallback = callback; }
+        inline void SetEventCallback(const EventCallbackFn &callback) override { m_Data.EventCallback = callback; }
+
         void SetVSync(bool enabled) override;
+
         bool IsVSync() const override;
 
-       inline void* GetNativeWindow() const override{ return m_Window; }
+        inline void *GetNativeWindow() const override { return m_Window; }
 
-   private:
+    private:
         // 初始化
-        void Init(const WindowProps& props);
+        void Init(const WindowProps &props);
+
         // 关闭
         void Shutdown();
 
     private:
-        GLFWwindow* m_Window;
+        GLFWwindow *m_Window;
 
-        struct WindowData{
+        struct WindowData {
             std::string Title;
             unsigned int Width, Height;
             bool VSync;

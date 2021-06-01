@@ -9,6 +9,8 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 
+#include "Platform/OpenGL/OpenGLContext.h"
+
 namespace Hazel {
     static bool s_GLFWInitialized = false;
 
@@ -47,14 +49,14 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
     m_Window = glfwCreateWindow(static_cast<int>(props.Width), static_cast<int>(props.Height),
                                 m_Data.Title.c_str(),
                                 nullptr, nullptr);
-    glfwMakeContextCurrent(m_Window);
-    int status = gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
-    HZ_CORE_ASSERT(status, "Failed to initialize Glad!")
+    m_Context = new OpenGLContext(m_Window);
+    m_Context->Init();
+
     glfwSetWindowUserPointer(m_Window, &m_Data);
     SetVSync(true);
 
-    glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height){
-        auto data = *(WindowData*) glfwGetWindowUserPointer(window);
+    glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int width, int height) {
+        auto data = *(WindowData *) glfwGetWindowUserPointer(window);
         data.Width = width;
         data.Height = height;
 
@@ -62,32 +64,27 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
         data.EventCallback(event);
     });
 
-    glfwSetWindowCloseCallback(m_Window, [](GLFWwindow* window){
-        auto data = *(WindowData*) glfwGetWindowUserPointer(window);
+    glfwSetWindowCloseCallback(m_Window, [](GLFWwindow *window) {
+        auto data = *(WindowData *) glfwGetWindowUserPointer(window);
         WindowCloseEvent event;
         data.EventCallback(event);
     });
 
-    glfwSetKeyCallback(m_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
-    {
-        WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+    glfwSetKeyCallback(m_Window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
+        WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
-        switch (action)
-        {
-            case GLFW_PRESS:
-            {
+        switch (action) {
+            case GLFW_PRESS: {
                 KeyPressedEvent event(key, 0);
                 data.EventCallback(event);
                 break;
             }
-            case GLFW_RELEASE:
-            {
+            case GLFW_RELEASE: {
                 KeyReleasedEvent event(key);
                 data.EventCallback(event);
                 break;
             }
-            case GLFW_REPEAT:
-            {
+            case GLFW_REPEAT: {
                 KeyPressedEvent event(key, 1);
                 data.EventCallback(event);
                 break;
@@ -95,20 +92,16 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
         }
     });
 
-    glfwSetMouseButtonCallback(m_Window, [](GLFWwindow* window, int button, int action, int mods)
-    {
-        WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+    glfwSetMouseButtonCallback(m_Window, [](GLFWwindow *window, int button, int action, int mods) {
+        WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
-        switch (action)
-        {
-            case GLFW_PRESS:
-            {
+        switch (action) {
+            case GLFW_PRESS: {
                 MouseButtonPressedEvent event(button);
                 data.EventCallback(event);
                 break;
             }
-            case GLFW_RELEASE:
-            {
+            case GLFW_RELEASE: {
                 MouseButtonReleasedEvent event(button);
                 data.EventCallback(event);
                 break;
@@ -116,19 +109,17 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
         }
     });
 
-    glfwSetScrollCallback(m_Window, [](GLFWwindow* window, double xOffset, double yOffset)
-    {
-        WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+    glfwSetScrollCallback(m_Window, [](GLFWwindow *window, double xOffset, double yOffset) {
+        WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
-        MouseScrolledEvent event((float)xOffset, (float)yOffset);
+        MouseScrolledEvent event((float) xOffset, (float) yOffset);
         data.EventCallback(event);
     });
 
-    glfwSetCursorPosCallback(m_Window, [](GLFWwindow* window, double xPos, double yPos)
-    {
-        WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+    glfwSetCursorPosCallback(m_Window, [](GLFWwindow *window, double xPos, double yPos) {
+        WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
-        MouseMovedEvent event((float)xPos, (float)yPos);
+        MouseMovedEvent event((float) xPos, (float) yPos);
         data.EventCallback(event);
     });
 
@@ -140,7 +131,7 @@ void Hazel::LinuxWindow::Shutdown() {
 
 void Hazel::LinuxWindow::OnUpdate() {
     glfwPollEvents();
-    glfwSwapBuffers(m_Window);
+    m_Context->SwapBuffers();
 }
 
 void Hazel::LinuxWindow::SetVSync(bool enabled) {

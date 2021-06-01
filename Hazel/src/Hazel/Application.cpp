@@ -65,10 +65,8 @@ bool Hazel::Application::OnWindowClose(Hazel::WindowCloseEvent &e) {
 
 void Hazel::Application::PushLayer(Hazel::Layer *layer) {
     m_LayerStack.PushLayer(layer);
-    layer->OnAttach();
 }
 
 void Hazel::Application::PushOverlay(Hazel::Layer *layer) {
     m_LayerStack.PushOverlay(layer);
-    layer->OnAttach();
 }
