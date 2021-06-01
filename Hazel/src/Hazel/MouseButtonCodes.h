@@ -1,19 +1,11 @@
 //
-// Created by Npchitman on 2021/2/23.
+// Created by npchitman on 6/1/21.
 //
 
-#ifndef HAZELENGINE_MOUSEBUTTONCODES_H
-#define HAZELENGINE_MOUSEBUTTONCODES_H
+#ifndef HAZEL_ENGINE_MOUSEBUTTONCODES_H
+#define HAZEL_ENGINE_MOUSEBUTTONCODES_H
 
-// from glfw3.h
-
-/*! @defgroup buttons Mouse buttons
- *  @brief Mouse button IDs.
- *
- *  See [mouse button input](@ref input_mouse_button) for how these are used.
- *
- *  @ingroup input
- *  @{ */
+// From glfw3.h
 #define HZ_MOUSE_BUTTON_1         0
 #define HZ_MOUSE_BUTTON_2         1
 #define HZ_MOUSE_BUTTON_3         2
@@ -26,6 +18,5 @@
 #define HZ_MOUSE_BUTTON_LEFT      HZ_MOUSE_BUTTON_1
 #define HZ_MOUSE_BUTTON_RIGHT     HZ_MOUSE_BUTTON_2
 #define HZ_MOUSE_BUTTON_MIDDLE    HZ_MOUSE_BUTTON_3
-/*! @} */
 
-#endif //HAZELENGINE_MOUSEBUTTONCODES_H
+#endif //HAZEL_ENGINE_MOUSEBUTTONCODES_H

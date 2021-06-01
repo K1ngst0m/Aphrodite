@@ -1,16 +1,16 @@
 //
-// Created by Npchitman on 2021/1/18.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_LOG_H
-#define HAZELENGINE_LOG_H
+#ifndef HAZEL_ENGINE_LOG_H
+#define HAZEL_ENGINE_LOG_H
 
 #include "Core.h"
 #include <spdlog/spdlog.h>
 #include <spdlog/fmt/ostr.h>
 
 namespace Hazel {
-    class HAZEL_API Log {
+    class Log {
     public:
         static void Init();
 
@@ -25,17 +25,17 @@ namespace Hazel {
 }
 
 // Core log macros
-#define HZ_CORE_TRACE(...)          ::Hazel::Log::GetCoreLogger()->trace(__VA_ARGS__)
-#define HZ_CORE_INFO(...)           ::Hazel::Log::GetCoreLogger()->info(__VA_ARGS__)
-#define HZ_CORE_WARN(...)           ::Hazel::Log::GetCoreLogger()->warn(__VA_ARGS__)
-#define HZ_CORE_ERROR(...)          ::Hazel::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define HZ_CORE_FATAL(...)          ::Hazel::Log::GetCoreLogger()->fatal(__VA_ARGS__)
+#define HZ_CORE_TRACE(...)    ::Hazel::Log::GetCoreLogger()->trace(__VA_ARGS__)
+#define HZ_CORE_INFO(...)     ::Hazel::Log::GetCoreLogger()->info(__VA_ARGS__)
+#define HZ_CORE_WARN(...)     ::Hazel::Log::GetCoreLogger()->warn(__VA_ARGS__)
+#define HZ_CORE_ERROR(...)    ::Hazel::Log::GetCoreLogger()->error(__VA_ARGS__)
+#define HZ_CORE_FATAL(...)    ::Hazel::Log::GetCoreLogger()->fatal(__VA_ARGS__)
 
 // Client log macros
 #define HZ_TRACE(...)          ::Hazel::Log::GetClientLogger()->trace(__VA_ARGS__)
-#define HZ_INFO(...)           ::Hazel::Log::GetClientLogger()->info(__VA_ARGS__)
-#define HZ_WARN(...)           ::Hazel::Log::GetClientLogger()->warn(__VA_ARGS__)
+#define HZ_INFO(...)          ::Hazel::Log::GetClientLogger()->info(__VA_ARGS__)
+#define HZ_WARN(...)          ::Hazel::Log::GetClientLogger()->warn(__VA_ARGS__)
 #define HZ_ERROR(...)          ::Hazel::Log::GetClientLogger()->error(__VA_ARGS__)
 #define HZ_FATAL(...)          ::Hazel::Log::GetClientLogger()->fatal(__VA_ARGS__)
 
-#endif //HAZELENGINE_LOG_H
+#endif //HAZEL_ENGINE_LOG_H

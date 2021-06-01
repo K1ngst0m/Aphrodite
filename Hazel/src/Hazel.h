@@ -1,11 +1,11 @@
 //
-// Created by Npchitman on 2021/1/17.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_HAZEL_H
-#define HAZELENGINE_HAZEL_H
+#ifndef HAZEL_ENGINE_HAZEL_H
+#define HAZEL_ENGINE_HAZEL_H
 
-//For use by Hazel applications
+
 #include "Hazel/Application.h"
 #include "Hazel/Layer.h"
 #include "Hazel/Log.h"
@@ -16,10 +16,7 @@
 
 #include "Hazel/ImGui/ImGuiLayer.h"
 
+// Entry Point
+#include "Hazel/EntryPoint.h"
 
-// ---Entry Point--------------------------
-#include "EntryPoint.h"
-// ----------------------------------------
-
-
-#endif //HAZELENGINE_HAZEL_H
+#endif //HAZEL_ENGINE_HAZEL_H

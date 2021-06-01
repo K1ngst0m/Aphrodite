@@ -1,42 +1,11 @@
 //
-// Created by Npchitman on 2021/2/23.
+// Created by npchitman on 6/1/21.
 //
 
-#ifndef HAZELENGINE_KEYCODES_H
-#define HAZELENGINE_KEYCODES_H
+#ifndef HAZEL_ENGINE_KEYCODES_H
+#define HAZEL_ENGINE_KEYCODES_H
 
 // From glfw3.h
-
-/*! @} */
-
-/*! @defgroup keys Keyboard keys
- *  @brief Keyboard key IDs.
- *
- *  See [key input](@ref input_key) for how these are used.
- *
- *  These key codes are inspired by the _USB HID Usage Tables v1.12_ (p. 53-60),
- *  but re-arranged to map to 7-bit ASCII for printable keys (function keys are
- *  put in the 256+ range).
- *
- *  The naming of the key codes follow these rules:
- *   - The US keyboard layout is used
- *   - Names of printable alpha-numeric characters are used (e.g. "A", "R",
- *     "3", etc.)
- *   - For non-alphanumeric characters, Unicode:ish names are used (e.g.
- *     "COMMA", "LEFT_SQUARE_BRACKET", etc.). Note that some names do not
- *     correspond to the Unicode standard (usually for brevity)
- *   - Keys that lack a clear US mapping are named "WORLD_x"
- *   - For non-printable keys, custom names are used (e.g. "F4",
- *     "BACKSPACE", etc.)
- *
- *  @ingroup input
- *  @{
- */
-
-/* The unknown key */
-#define HZ_KEY_UNKNOWN            -1
-
-/* Printable keys */
 #define HZ_KEY_SPACE              32
 #define HZ_KEY_APOSTROPHE         39  /* ' */
 #define HZ_KEY_COMMA              44  /* , */
@@ -160,51 +129,4 @@
 #define HZ_KEY_RIGHT_SUPER        347
 #define HZ_KEY_MENU               348
 
-#define HZ_KEY_LAST               HZ_KEY_MENU
-
-/*! @} */
-
-/*! @defgroup mods Modifier key flags
- *  @brief Modifier key flags.
- *
- *  See [key input](@ref input_key) for how these are used.
- *
- *  @ingroup input
- *  @{ */
-
-/*! @brief If this bit is set one or more Shift keys were held down.
- *
- *  If this bit is set one or more Shift keys were held down.
- */
-#define HZ_MOD_SHIFT           0x0001
-/*! @brief If this bit is set one or more Control keys were held down.
- *
- *  If this bit is set one or more Control keys were held down.
- */
-#define HZ_MOD_CONTROL         0x0002
-/*! @brief If this bit is set one or more Alt keys were held down.
- *
- *  If this bit is set one or more Alt keys were held down.
- */
-#define HZ_MOD_ALT             0x0004
-/*! @brief If this bit is set one or more Super keys were held down.
- *
- *  If this bit is set one or more Super keys were held down.
- */
-#define HZ_MOD_SUPER           0x0008
-/*! @brief If this bit is set the Caps Lock key is enabled.
- *
- *  If this bit is set the Caps Lock key is enabled and the @ref
- *  HZ_LOCK_KEY_MODS input mode is set.
- */
-#define HZ_MOD_CAPS_LOCK       0x0010
-/*! @brief If this bit is set the Num Lock key is enabled.
- *
- *  If this bit is set the Num Lock key is enabled and the @ref
- *  HZ_LOCK_KEY_MODS input mode is set.
- */
-#define HZ_MOD_NUM_LOCK        0x0020
-
-/*! @} */
-
-#endif //HAZELENGINE_KEYCODES_H
+#endif //HAZEL_ENGINE_KEYCODES_H

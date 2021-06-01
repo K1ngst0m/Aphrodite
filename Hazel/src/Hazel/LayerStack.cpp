@@ -1,41 +1,35 @@
 //
-// Created by Npchitman on 2021/2/21.
+// Created by npchitman on 5/31/21.
 //
 
-#include "hzpch.h"
 #include "LayerStack.h"
 
-namespace Hazel{
+Hazel::LayerStack::LayerStack() = default;
 
-    LayerStack::LayerStack() {
+Hazel::LayerStack::~LayerStack() {
+    for (auto layer : m_Layers)
+        delete layer;
+}
+
+void Hazel::LayerStack::PushLayer(Hazel::Layer *layer) {
+    m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
+}
+
+void Hazel::LayerStack::PushOverlay(Hazel::Layer *overlay) {
+    m_Layers.emplace_back(overlay);
+}
+
+void Hazel::LayerStack::PopLayer(Hazel::Layer *layer) {
+    auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
+    if (it != m_Layers.end()) {
+        m_Layers.erase(it);
+        m_LayerInsertIndex--;
     }
+}
 
-    LayerStack::~LayerStack() {
-        for(auto *layer : m_Layers)
-            delete layer;
-    }
-
-    void LayerStack::PushLayer(Layer *layer) {
-        m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
-        m_LayerInsertIndex++;
-    }
-
-    void LayerStack::PushOverlay(Layer *overlay) {
-        m_Layers.emplace_back(overlay);
-    }
-
-    void LayerStack::PopLayer(Layer *layer) {
-        auto it = std::find(m_Layers.begin(), m_Layers.end(), layer);
-        if(it != m_Layers.end()){
-            m_Layers.erase(it);
-            m_LayerInsertIndex--;
-        }
-    }
-
-    void LayerStack::PopOverlay(Layer *overlay) {
-        auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
-        if(it != m_Layers.end()){
-            m_Layers.erase(it);
-        }
+void Hazel::LayerStack::PopOverlay(Hazel::Layer *overlay) {
+    auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
+    if (it != m_Layers.end()) {
+        m_Layers.erase(it);
     }
 }

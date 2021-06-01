@@ -1,8 +1,0 @@
-cmake_minimum_required(VERSION 3.17)
-project(glad)
-
-add_library(glad
-        include/glad/glad.h
-        src/glad.cpp)
-
-target_include_directories(glad PUBLIC include/)

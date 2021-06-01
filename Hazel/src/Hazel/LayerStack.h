@@ -1,32 +1,40 @@
 //
-// Created by Npchitman on 2021/2/21.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_LAYERSTACK_H
-#define HAZELENGINE_LAYERSTACK_H
+#ifndef HAZEL_ENGINE_LAYERSTACK_H
+#define HAZEL_ENGINE_LAYERSTACK_H
 
 #include "Hazel/Core.h"
-#include "Hazel/Layer.h"
+#include "Layer.h"
+
 #include <vector>
 
-namespace Hazel{
-    class HAZEL_API LayerStack{
+namespace Hazel {
+    class LayerStack final {
     public:
         LayerStack();
+
         ~LayerStack();
 
-        void PushLayer(Layer* layer);
-        void PushOverlay(Layer* overlay);
-        void PopLayer(Layer* layer);
-        void PopOverlay(Layer* overlay);
+        void PushLayer(Layer *layer);
 
-        std::vector<Layer*>::iterator begin() {return m_Layers.begin();}
-        std::vector<Layer*>::iterator end() {return m_Layers.end();}
+        void PushOverlay(Layer *overlay);
+
+        void PopLayer(Layer *layer);
+
+        void PopOverlay(Layer *overlay);
+
+        std::vector<Layer *>::iterator begin() { return m_Layers.begin(); }
+
+        std::vector<Layer *>::iterator end() { return m_Layers.end(); }
 
     private:
-        std::vector<Layer*> m_Layers;
-        unsigned int m_LayerInsertIndex;
+        std::vector<Layer *> m_Layers;
+        unsigned int m_LayerInsertIndex = 0;
     };
 }
 
-#endif //HAZELENGINE_LAYERSTACK_H
+
+#endif //HAZEL_ENGINE_LAYERSTACK_H
+

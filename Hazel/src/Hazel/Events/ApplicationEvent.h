@@ -1,17 +1,17 @@
 //
-// Created by Npchitman on 2021/1/18.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_APPLICATIONEVENT_H
-#define HAZELENGINE_APPLICATIONEVENT_H
+#ifndef HAZEL_ENGINE_APPLICATIONEVENT_H
+#define HAZEL_ENGINE_APPLICATIONEVENT_H
 
 #include "Event.h"
 
 namespace Hazel {
-
-    class HAZEL_API WindowResizeEvent : public Event {
+    class WindowResizeEvent : public Event {
     public:
-        explicit WindowResizeEvent(unsigned int width, unsigned int height) : m_Width(width), m_Height(height) {}
+        WindowResizeEvent(unsigned int width, unsigned int height)
+                : m_Width(width), m_Height(height) {}
 
         inline unsigned int GetWidth() const { return m_Width; }
 
@@ -31,7 +31,7 @@ namespace Hazel {
         unsigned int m_Width, m_Height;
     };
 
-    class HAZEL_API WindowCloseEvent : public Event {
+    class WindowCloseEvent : public Event {
     public:
         WindowCloseEvent() = default;
 
@@ -40,7 +40,7 @@ namespace Hazel {
         EVENT_CLASS_CATEGORY(EventCategoryApplication)
     };
 
-    class HAZEL_API AppTickEvent : public Event {
+    class AppTickEvent : public Event {
     public:
         AppTickEvent() = default;
 
@@ -49,7 +49,8 @@ namespace Hazel {
         EVENT_CLASS_CATEGORY(EventCategoryApplication)
     };
 
-    class HAZEL_API AppUpdateEvent : public Event {
+    class AppUpdateEvent : public Event {
+    public:
         AppUpdateEvent() = default;
 
         EVENT_CLASS_TYPE(AppUpdate)
@@ -57,7 +58,7 @@ namespace Hazel {
         EVENT_CLASS_CATEGORY(EventCategoryApplication)
     };
 
-    class HAZEL_API AppRenderEvent : public Event {
+    class AppRenderEvent : public Event {
     public:
         AppRenderEvent() = default;
 
@@ -67,5 +68,4 @@ namespace Hazel {
     };
 }
 
-
-#endif //HAZELENGINE_APPLICATIONEVENT_H
+#endif //HAZEL_ENGINE_APPLICATIONEVENT_H

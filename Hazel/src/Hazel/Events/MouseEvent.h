@@ -1,16 +1,17 @@
 //
-// Created by Npchitman on 2021/1/18.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_MOUSEEVENT_H
-#define HAZELENGINE_MOUSEEVENT_H
+#ifndef HAZEL_ENGINE_MOUSEEVENT_H
+#define HAZEL_ENGINE_MOUSEEVENT_H
 
 #include "Event.h"
 
 namespace Hazel {
-    class HAZEL_API MouseMovedEvent : public Event {
+    class MouseMovedEvent : public Event {
     public:
-        MouseMovedEvent(float x, float y) : m_MouseX(x), m_MouseY(y) {}
+        MouseMovedEvent(float x, float y)
+                : m_MouseX(x), m_MouseY(y) {}
 
         inline float GetX() const { return m_MouseX; }
 
@@ -24,15 +25,17 @@ namespace Hazel {
 
         EVENT_CLASS_TYPE(MouseMoved)
 
-        EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+        EVENT_CLASS_CATEGORY(EventCategoryMouse
+                             | EventCategoryInput)
 
     private:
         float m_MouseX, m_MouseY;
     };
 
-    class HAZEL_API MouseScrolledEvent : public Event {
+    class MouseScrolledEvent : public Event {
     public:
-        MouseScrolledEvent(float xOffset, float yOffset) : m_XOffset(xOffset), m_YOffset(yOffset) {}
+        MouseScrolledEvent(float xOffset, float yOffset)
+                : m_XOffset(xOffset), m_YOffset(yOffset) {}
 
         inline float GetXOffset() const { return m_XOffset; }
 
@@ -46,27 +49,31 @@ namespace Hazel {
 
         EVENT_CLASS_TYPE(MouseScrolled)
 
-        EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+        EVENT_CLASS_CATEGORY(EventCategoryMouse
+                             | EventCategoryInput)
 
     private:
         float m_XOffset, m_YOffset;
     };
 
-    class HAZEL_API MouseButtonEvent : public Event {
+    class MouseButtonEvent : public Event {
     public:
         inline int GetMouseButton() const { return m_Button; }
 
-        EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput)
+        EVENT_CLASS_CATEGORY(EventCategoryMouse
+                             | EventCategoryInput)
 
     protected:
-        explicit MouseButtonEvent(int button) : m_Button(button) {}
+        explicit MouseButtonEvent(int button)
+                : m_Button(button) {}
 
         int m_Button;
     };
 
-    class HAZEL_API MouseButtonPressedEvent : public MouseButtonEvent {
+    class MouseButtonPressedEvent : public MouseButtonEvent {
     public:
-        explicit MouseButtonPressedEvent(int button) : MouseButtonEvent(button) {}
+        explicit MouseButtonPressedEvent(int button)
+                : MouseButtonEvent(button) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -75,12 +82,12 @@ namespace Hazel {
         }
 
         EVENT_CLASS_TYPE(MouseButtonPressed)
-
     };
 
-    class HAZEL_API MouseButtonReleasedEvent : public MouseButtonEvent {
+    class MouseButtonReleasedEvent : public MouseButtonEvent {
     public:
-        explicit MouseButtonReleasedEvent(int button) : MouseButtonEvent(button) {}
+        explicit MouseButtonReleasedEvent(int button)
+                : MouseButtonEvent(button) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -89,9 +96,7 @@ namespace Hazel {
         }
 
         EVENT_CLASS_TYPE(MouseButtonReleased)
-
     };
 }
 
-
-#endif //HAZELENGINE_MOUSEEVENT_H
+#endif //HAZEL_ENGINE_MOUSEEVENT_H

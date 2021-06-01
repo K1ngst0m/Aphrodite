@@ -1,29 +1,28 @@
 //
-// Created by Npchitman on 2021/1/18.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_KEYEVENT_H
-#define HAZELENGINE_KEYEVENT_H
+#ifndef HAZEL_ENGINE_KEYEVENT_H
+#define HAZEL_ENGINE_KEYEVENT_H
 
 #include "Event.h"
 
 namespace Hazel {
-    class HAZEL_API KeyEvent : public Event {
+    class KeyEvent : public Event {
     public:
         inline int GetKeyCode() const { return m_KeyCode; }
 
-        EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput)
+        EVENT_CLASS_CATEGORY(EventCategoryKeyboard | EventCategoryInput);
 
     protected:
-        explicit KeyEvent(int keycode) : m_KeyCode(keycode) {}
+        explicit KeyEvent(int keyCode) : m_KeyCode(keyCode) {}
 
         int m_KeyCode;
     };
 
-    class HAZEL_API KeyPressedEvent : public KeyEvent {
+    class KeyPressedEvent : public KeyEvent {
     public:
-        KeyPressedEvent(int keyCode, int repeatCount)
-                : KeyEvent(keyCode), m_RepeatCount(repeatCount) {}
+        KeyPressedEvent(int keycode, int repeatCount) : KeyEvent(keycode), m_RepeatCount(repeatCount) {}
 
         inline int GetRepeatCount() const { return m_RepeatCount; }
 
@@ -33,30 +32,30 @@ namespace Hazel {
             return ss.str();
         }
 
-        EVENT_CLASS_TYPE(KeyPressed)
+        EVENT_CLASS_TYPE(KeyPressed);
 
     private:
         int m_RepeatCount;
     };
 
-
-    class HAZEL_API KeyReleaseEvent : public KeyEvent {
+    class KeyReleasedEvent : public KeyEvent {
     public:
-        explicit KeyReleaseEvent(int keycode) : KeyEvent(keycode) {}
+        explicit KeyReleasedEvent(int keycode)
+                : KeyEvent(keycode) {}
 
         std::string ToString() const override {
             std::stringstream ss;
-            ss << "KeyReleaseEvent: " << m_KeyCode;
+            ss << "KeyReleasedEvent: " << m_KeyCode;
             return ss.str();
         }
 
         EVENT_CLASS_TYPE(KeyReleased)
     };
 
-    class HAZEL_API KeyTypedEvent : public KeyEvent {
+    class KeyTypedEvent : public KeyEvent {
     public:
-        explicit KeyTypedEvent(int keyCode)
-                : KeyEvent(keyCode) {}
+        explicit KeyTypedEvent(int keycode)
+                : KeyEvent(keycode) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -68,5 +67,4 @@ namespace Hazel {
     };
 }
 
-
-#endif //HAZELENGINE_KEYEVENT_H
+#endif //HAZEL_ENGINE_KEYEVENT_H

@@ -1,9 +1,9 @@
 //
-// Created by Npchitman on 2021/2/21.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_IMGUILAYER_H
-#define HAZELENGINE_IMGUILAYER_H
+#ifndef HAZEL_ENGINE_IMGUILAYER_H
+#define HAZEL_ENGINE_IMGUILAYER_H
 
 #include "Hazel/Layer.h"
 
@@ -11,18 +11,22 @@
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Events/MouseEvent.h"
 
-namespace Hazel{
+namespace Hazel {
 
-    class HAZEL_API ImGuiLayer : public Layer{
+    class ImGuiLayer : public Layer {
     public:
         ImGuiLayer();
+
         ~ImGuiLayer() override;
 
         void OnAttach() override;
+
         void OnDetach() override;
+
         void OnImGuiRender() override;
 
         void Begin();
+
         void End();
 
     private:
@@ -30,4 +34,5 @@ namespace Hazel{
     };
 }
 
-#endif //HAZELENGINE_IMGUILAYER_H
+
+#endif //HAZEL_ENGINE_IMGUILAYER_H

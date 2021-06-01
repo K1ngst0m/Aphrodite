@@ -1,9 +1,9 @@
 //
-// Created by Npchitman on 2021/1/19.
+// Created by npchitman on 5/31/21.
 //
 
-#ifndef HAZELENGINE_HZPCH_H
-#define HAZELENGINE_HZPCH_H
+#ifndef HAZEL_ENGINE_HZPCH_H
+#define HAZEL_ENGINE_HZPCH_H
 
 #include <iostream>
 #include <memory>
@@ -19,8 +19,4 @@
 
 #include "Hazel/Log.h"
 
-#ifdef HZ_PLATFORM_WINDOWS
-    #include <Windows.h>
-#endif
-
-#endif //HAZELENGINE_HZPCH_H
+#endif //HAZEL_ENGINE_HZPCH_H
