@@ -12,10 +12,10 @@
 Hazel::VertexBuffer *Hazel::VertexBuffer::Create(float *vertices, uint32_t size) {
     switch (Renderer::GetAPI()) {
 
-        case Hazel::RendererAPI::None:
+        case Hazel::RendererAPI::API::None:
             HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
             return nullptr;
-        case Hazel::RendererAPI::OpenGL:
+        case Hazel::RendererAPI::API::OpenGL:
             return new OpenGLBuffer(vertices, size);
     }
 
@@ -25,10 +25,10 @@ Hazel::VertexBuffer *Hazel::VertexBuffer::Create(float *vertices, uint32_t size)
 
 Hazel::IndexBuffer *Hazel::IndexBuffer::Create(uint32_t *indices, uint32_t size) {
     switch (Renderer::GetAPI()) {
-        case Hazel::RendererAPI::None:
+        case Hazel::RendererAPI::API::None:
             HZ_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
             return nullptr;
-        case Hazel::RendererAPI::OpenGL:
+        case Hazel::RendererAPI::API::OpenGL:
             return new OpenGLIndexBuffer(indices, size);
     }
 }

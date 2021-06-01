@@ -7,7 +7,7 @@
 
 #include "Hazel/Log.h"
 
-#include <glad/glad.h>
+#include "Hazel/Renderer/Renderer.h"
 
 #include <memory>
 
@@ -144,16 +144,17 @@ void Hazel::Application::OnEvent(Hazel::Event &e) {
 void Hazel::Application::Run() {
 
     while (m_Running) {
-        glClearColor(0.1f, 0.1f, 0.1f, 1);
-        glClear(GL_COLOR_BUFFER_BIT);
+        RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
+        RenderCommand::Clear();
 
-        m_BlueShader->Bind();
-        m_SquareVA->Bind();
-        glDrawElements(GL_TRIANGLES, static_cast<int>(m_SquareVA->GetIndexBuffer()->GetCount()), GL_UNSIGNED_INT, nullptr);
+        Renderer::BeginScene();
 
-        m_Shader->Bind();
-        m_VertexArray->Bind();
-        glDrawElements(GL_TRIANGLES, static_cast<int>(m_VertexArray->GetIndexBuffer()->GetCount()), GL_UNSIGNED_INT, nullptr);
+            m_BlueShader->Bind();
+            Renderer::Submit(m_SquareVA);
+            m_Shader->Bind();
+            Renderer::Submit(m_VertexArray);
+
+        Renderer::EndScene();
 
         for (const auto &layer: m_LayerStack)
             layer->OnUpdate();
