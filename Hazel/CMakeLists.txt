@@ -35,7 +35,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Hazel/ImGui/ImGuiLayer.cpp src/Hazel/ImGui/ImGuiLayer.h
 
         # imgui
-        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h)
+        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h src/Hazel/Renderer/Shader.cpp src/Hazel/Renderer/Shader.h)
 
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/hzpch.h)
