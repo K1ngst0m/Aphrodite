@@ -5,7 +5,6 @@
 #ifndef HAZEL_ENGINE_HAZEL_H
 #define HAZEL_ENGINE_HAZEL_H
 
-
 #include "Hazel/Application.h"
 #include "Hazel/Layer.h"
 #include "Hazel/Log.h"
@@ -19,4 +18,4 @@
 // Entry Point
 #include "Hazel/EntryPoint.h"
 
-#endif //HAZEL_ENGINE_HAZEL_H
+#endif // HAZEL_ENGINE_HAZEL_H

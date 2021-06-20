@@ -7,16 +7,16 @@
 
 #include "Hazel/Input.h"
 
-namespace Hazel{
-    class WindowsInput : public Input{
+namespace Hazel {
+class WindowsInput : public Input {
 
-    protected:
-        bool IsKeyPressedImpl(int keycode) override;
-        bool IsMouseButtonPressedImpl(int button) override;
-        float GetMouseXImpl() override;
-        float GetMouseYImpl() override;
-        std::pair<float, float> GetMousePositionImpl() override;
-    };
-}
+protected:
+  bool IsKeyPressedImpl(int keycode) override;
+  bool IsMouseButtonPressedImpl(int button) override;
+  float GetMouseXImpl() override;
+  float GetMouseYImpl() override;
+  std::pair<float, float> GetMousePositionImpl() override;
+};
+} // namespace Hazel
 
-#endif //HAZELENGINE_WINDOWSINPUT_H
+#endif // HAZELENGINE_WINDOWSINPUT_H

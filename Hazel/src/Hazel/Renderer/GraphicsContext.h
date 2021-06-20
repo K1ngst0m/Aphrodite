@@ -6,13 +6,12 @@
 #define HAZEL_ENGINE_GRAPHICSCONTEXT_H
 
 namespace Hazel {
-    class GraphicsContext {
-    public:
-        virtual void Init() = 0;
+class GraphicsContext {
+public:
+  virtual void Init() = 0;
 
-        virtual void SwapBuffers() = 0;
-    };
-}
+  virtual void SwapBuffers() = 0;
+};
+} // namespace Hazel
 
-
-#endif //HAZEL_ENGINE_GRAPHICSCONTEXT_H
+#endif // HAZEL_ENGINE_GRAPHICSCONTEXT_H

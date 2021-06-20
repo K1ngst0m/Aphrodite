@@ -2,22 +2,25 @@
 // Created by npchitman on 6/1/21.
 //
 
-#include "hzpch.h"
 #include "OpenGLRendererAPI.h"
+#include "hzpch.h"
 
 #include <glad/glad.h>
 
-namespace Hazel{
+namespace Hazel {
 
-    void OpenGLRendererAPI::SetClearColor(const glm::vec4 &color) {
-        glClearColor(color.r, color.g, color.b, color.a);
-    }
-
-    void OpenGLRendererAPI::Clear() {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    }
-
-    void OpenGLRendererAPI::DrawIndexed(const std::shared_ptr<VertexArray> &vertexArray) {
-        glDrawElements(GL_TRIANGLES, static_cast<int>(vertexArray->GetIndexBuffer()->GetCount()), GL_UNSIGNED_INT, nullptr);
-    }
+void OpenGLRendererAPI::SetClearColor(const glm::vec4 &color) {
+  glClearColor(color.r, color.g, color.b, color.a);
 }
+
+void OpenGLRendererAPI::Clear() {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void OpenGLRendererAPI::DrawIndexed(
+    const std::shared_ptr<VertexArray> &vertexArray) {
+  glDrawElements(GL_TRIANGLES,
+                 static_cast<int>(vertexArray->GetIndexBuffer()->GetCount()),
+                 GL_UNSIGNED_INT, nullptr);
+}
+} // namespace Hazel

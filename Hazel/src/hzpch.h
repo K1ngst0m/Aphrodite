@@ -5,18 +5,18 @@
 #ifndef HAZEL_ENGINE_HZPCH_H
 #define HAZEL_ENGINE_HZPCH_H
 
+#include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <utility>
-#include <algorithm>
-#include <functional>
 
-#include <string>
 #include <sstream>
-#include <vector>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "Hazel/Log.h"
 
-#endif //HAZEL_ENGINE_HZPCH_H
+#endif // HAZEL_ENGINE_HZPCH_H

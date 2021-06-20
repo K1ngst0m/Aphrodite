@@ -9,28 +9,27 @@
 #include "Hazel/Events/Event.h"
 
 namespace Hazel {
-    class Layer {
-    public:
-        explicit Layer(std::string name = "Layer");
+class Layer {
+public:
+  explicit Layer(std::string name = "Layer");
 
-        virtual ~Layer();
+  virtual ~Layer();
 
-        virtual void OnAttach() {}
+  virtual void OnAttach() {}
 
-        virtual void OnDetach() {}
+  virtual void OnDetach() {}
 
-        virtual void OnUpdate() {}
+  virtual void OnUpdate() {}
 
-        virtual void OnImGuiRender() {}
+  virtual void OnImGuiRender() {}
 
-        virtual void OnEvent(Event &event) {}
+  virtual void OnEvent(Event &event) {}
 
-        inline const std::string &GetName() const { return m_DebugName; }
+  inline const std::string &GetName() const { return m_DebugName; }
 
-    protected:
-        std::string m_DebugName;
-    };
-}
+protected:
+  std::string m_DebugName;
+};
+} // namespace Hazel
 
-
-#endif //HAZEL_ENGINE_LAYER_H
+#endif // HAZEL_ENGINE_LAYER_H

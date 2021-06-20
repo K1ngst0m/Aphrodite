@@ -13,26 +13,25 @@
 
 namespace Hazel {
 
-    class ImGuiLayer : public Layer {
-    public:
-        ImGuiLayer();
+class ImGuiLayer : public Layer {
+public:
+  ImGuiLayer();
 
-        ~ImGuiLayer() override;
+  ~ImGuiLayer() override;
 
-        void OnAttach() override;
+  void OnAttach() override;
 
-        void OnDetach() override;
+  void OnDetach() override;
 
-        void OnImGuiRender() override;
+  void OnImGuiRender() override;
 
-        void Begin();
+  void Begin();
 
-        void End();
+  void End();
 
-    private:
-        float m_Time = 0.0f;
-    };
-}
+private:
+  float m_Time = 0.0f;
+};
+} // namespace Hazel
 
-
-#endif //HAZEL_ENGINE_IMGUILAYER_H
+#endif // HAZEL_ENGINE_IMGUILAYER_H

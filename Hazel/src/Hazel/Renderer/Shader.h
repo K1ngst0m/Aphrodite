@@ -5,24 +5,23 @@
 #ifndef HAZEL_ENGINE_SHADER_H
 #define HAZEL_ENGINE_SHADER_H
 
-#include <string>
 #include <glm/glm.hpp>
+#include <string>
 
+namespace Hazel {
+class Shader final {
+public:
+  Shader(const std::string &vertexSrc, const std::string &fragmentSrc);
+  ~Shader();
 
-namespace Hazel{
-    class Shader final{
-    public:
-        Shader(const std::string& vertexSrc, const std::string& fragmentSrc);
-        ~Shader();
+  void Bind() const;
+  void UnBind() const;
 
-        void Bind() const;
-        void UnBind() const;
+  void UploadUniformMat4(const std::string &name, const glm::mat4 &matrix);
 
-        void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
-    private:
-        uint32_t m_RendererID;
-    };
-}
+private:
+  uint32_t m_RendererID;
+};
+} // namespace Hazel
 
-
-#endif //HAZEL_ENGINE_SHADER_H
+#endif // HAZEL_ENGINE_SHADER_H
