@@ -10,6 +10,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(3rdparty/glad/include)
 include_directories(3rdparty/imgui)
 include_directories(3rdparty/glm)
+include_directories(3rdparty/stb)
 
 add_library(${PROJECT_NAME} STATIC
         # header
@@ -35,8 +36,9 @@ add_library(${PROJECT_NAME} STATIC
         src/Hazel/ImGui/ImGuiLayer.cpp src/Hazel/ImGui/ImGuiLayer.h
 
         # imgui
-        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h src/Hazel/Renderer/Shader.cpp src/Hazel/Renderer/Shader.h src/Hazel/Renderer/Buffer.cpp src/Hazel/Renderer/Buffer.h src/Hazel/Renderer/Renderer.cpp src/Hazel/Renderer/Renderer.h src/Platform/OpenGL/OpenGLBuffer.cpp src/Platform/OpenGL/OpenGLBuffer.h src/Hazel/Renderer/VertexArray.cpp src/Hazel/Renderer/VertexArray.h src/Platform/OpenGL/OpenGLVertexArray.cpp src/Platform/OpenGL/OpenGLVertexArray.h src/Hazel/Renderer/RendererAPI.h src/Hazel/Renderer/RenderCommand.cpp src/Hazel/Renderer/RenderCommand.h src/Hazel/Renderer/RendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.h src/Hazel/Renderer/OrthographicCamera.cpp src/Hazel/Renderer/OrthographicCamera.h src/Platform/OpenGL/OpenGLShader.cpp src/Platform/OpenGL/OpenGLShader.h src/Hazel/Core/TimeStep.h)
+        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h src/Hazel/Renderer/Shader.cpp src/Hazel/Renderer/Shader.h src/Hazel/Renderer/Buffer.cpp src/Hazel/Renderer/Buffer.h src/Hazel/Renderer/Renderer.cpp src/Hazel/Renderer/Renderer.h src/Platform/OpenGL/OpenGLBuffer.cpp src/Platform/OpenGL/OpenGLBuffer.h src/Hazel/Renderer/VertexArray.cpp src/Hazel/Renderer/VertexArray.h src/Platform/OpenGL/OpenGLVertexArray.cpp src/Platform/OpenGL/OpenGLVertexArray.h src/Hazel/Renderer/RendererAPI.h src/Hazel/Renderer/RenderCommand.cpp src/Hazel/Renderer/RenderCommand.h src/Hazel/Renderer/RendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.h src/Hazel/Renderer/OrthographicCamera.cpp src/Hazel/Renderer/OrthographicCamera.h src/Platform/OpenGL/OpenGLShader.cpp src/Platform/OpenGL/OpenGLShader.h src/Hazel/Core/TimeStep.h src/Hazel/Renderer/Texture.cpp src/Hazel/Renderer/Texture.h src/Platform/OpenGL/OpenGLTexture.cpp src/Platform/OpenGL/OpenGLTexture.h)
 
+add_definitions(-DSTB_IMAGE_IMPLEMENTATION)
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/hzpch.h)
 
