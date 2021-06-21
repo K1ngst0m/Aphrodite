@@ -64,13 +64,13 @@ void Hazel::OpenGLVertexArray::AddVertexBuffer(
     const auto &layout = vertexBuffer->GetLayout();
 
     for (const auto &element : layout) {
-        glEnableVertexAttribArray(index);
-        glVertexAttribPointer(index, static_cast<int>(element.GetComponentCount()),
+        glEnableVertexAttribArray(m_VertexBufferIndex);
+        glVertexAttribPointer(m_VertexBufferIndex, static_cast<int>(element.GetComponentCount()),
                               ShaderDataTypeToOpenGLBaseType(element.Type),
                               element.Normalized ? GL_TRUE : GL_FALSE,
                               static_cast<int>(layout.GetStride()),
-                              (const void *) element.Offset);
-        index++;
+                              (const void *)(intptr_t) element.Offset);
+        m_VertexBufferIndex++;
     }
     m_VertexBuffers.push_back(vertexBuffer);
 }
