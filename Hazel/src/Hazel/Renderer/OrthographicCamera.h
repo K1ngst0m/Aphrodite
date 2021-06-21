@@ -21,6 +21,8 @@ namespace Hazel {
 
         float GetRotation() const { return m_Rotation; }
 
+        void SetProjection(float left, float right, float bottom, float top);
+
         void SetRotation(float rotation) {
             m_Rotation = rotation;
             RecalculateViewMatrix();
