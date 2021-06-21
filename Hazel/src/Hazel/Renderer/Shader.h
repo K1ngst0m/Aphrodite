@@ -19,6 +19,7 @@ namespace Hazel {
         uint32_t m_RendererID{};
 
     public:
+        static Shader *Create(const std::string &filepath);
         static Shader *Create(const std::string &vertexSrc,
                               const std::string &fragmentSrc);
     };
