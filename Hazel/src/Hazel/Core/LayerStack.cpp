@@ -7,8 +7,10 @@
 Hazel::LayerStack::LayerStack() = default;
 
 Hazel::LayerStack::~LayerStack() {
-    for (auto layer : m_Layers)
+    for (auto layer : m_Layers){
+        layer->OnDetach();
         delete layer;
+    }
 }
 
 void Hazel::LayerStack::PushLayer(Hazel::Layer *layer) {

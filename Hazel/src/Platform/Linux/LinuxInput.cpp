@@ -10,7 +10,7 @@
 #include "hzpch.h"
 
 namespace Hazel {
-    Input *Input::s_Instance = new LinuxInput();
+    Scope<Input> Input::s_Instance = CreateScope<LinuxInput>();
 }
 
 bool Hazel::LinuxInput::IsKeyPressedImpl(int keycode) {
