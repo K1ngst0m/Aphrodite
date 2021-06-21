@@ -8,18 +8,18 @@
 #include "Hazel/Input.h"
 
 namespace Hazel {
-class LinuxInput : public Input {
-protected:
-  virtual bool IsKeyPressedImpl(int keycode) override;
+    class LinuxInput : public Input {
+    protected:
+        virtual bool IsKeyPressedImpl(int keycode) override;
 
-  virtual bool IsMouseButtonPressedImpl(int button) override;
+        virtual bool IsMouseButtonPressedImpl(int button) override;
 
-  virtual std::pair<float, float> GetMousePositionImpl() override;
+        virtual std::pair<float, float> GetMousePositionImpl() override;
 
-  virtual float GetMouseXImpl() override;
+        virtual float GetMouseXImpl() override;
 
-  virtual float GetMouseYImpl() override;
-};
-} // namespace Hazel
+        virtual float GetMouseYImpl() override;
+    };
+}// namespace Hazel
 
-#endif // HAZEL_ENGINE_LINUXINPUT_H
+#endif// HAZEL_ENGINE_LINUXINPUT_H

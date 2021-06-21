@@ -8,41 +8,41 @@
 #include "Hazel/Renderer/Buffer.h"
 
 namespace Hazel {
-class OpenGLBuffer : public VertexBuffer {
-public:
-  OpenGLBuffer(float *vertices, uint32_t size);
+    class OpenGLVertexBuffer : public VertexBuffer {
+    public:
+        OpenGLVertexBuffer(float *vertices, uint32_t size);
 
-  ~OpenGLBuffer() override;
+        ~OpenGLVertexBuffer() override;
 
-  void Bind() const override;
+        void Bind() const override;
 
-  void UnBind() const override;
+        void UnBind() const override;
 
-  const BufferLayout &GetLayout() const override { return m_Layout; }
+        const BufferLayout &GetLayout() const override { return m_Layout; }
 
-  void SetLayout(const BufferLayout &layout) override { m_Layout = layout; }
+        void SetLayout(const BufferLayout &layout) override { m_Layout = layout; }
 
-private:
-  uint32_t m_RendererID;
-  BufferLayout m_Layout;
-};
+    private:
+        uint32_t m_RendererID;
+        BufferLayout m_Layout;
+    };
 
-class OpenGLIndexBuffer : public IndexBuffer {
-public:
-  OpenGLIndexBuffer(uint32_t *indices, uint32_t count);
+    class OpenGLIndexBuffer : public IndexBuffer {
+    public:
+        OpenGLIndexBuffer(uint32_t *indices, uint32_t count);
 
-  ~OpenGLIndexBuffer() override;
+        ~OpenGLIndexBuffer() override;
 
-  void Bind() const override;
+        void Bind() const override;
 
-  void UnBind() const override;
+        void UnBind() const override;
 
-  uint32_t GetCount() const override { return m_Count; }
+        uint32_t GetCount() const override { return m_Count; }
 
-private:
-  uint32_t m_RendererID;
-  uint32_t m_Count;
-};
-} // namespace Hazel
+    private:
+        uint32_t m_RendererID;
+        uint32_t m_Count;
+    };
+}// namespace Hazel
 
-#endif // HAZEL_ENGINE_OPENGLBUFFER_H
+#endif// HAZEL_ENGINE_OPENGLBUFFER_H

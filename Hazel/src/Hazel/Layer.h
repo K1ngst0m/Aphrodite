@@ -6,30 +6,31 @@
 #define HAZEL_ENGINE_LAYER_H
 
 #include "Hazel/Core.h"
+#include "Hazel/Core/TimeStep.h"
 #include "Hazel/Events/Event.h"
 
 namespace Hazel {
-class Layer {
-public:
-  explicit Layer(std::string name = "Layer");
+    class Layer {
+    public:
+        explicit Layer(std::string name = "Layer");
 
-  virtual ~Layer();
+        virtual ~Layer();
 
-  virtual void OnAttach() {}
+        virtual void OnAttach() {}
 
-  virtual void OnDetach() {}
+        virtual void OnDetach() {}
 
-  virtual void OnUpdate() {}
+        virtual void OnUpdate(Timestep ts) {}
 
-  virtual void OnImGuiRender() {}
+        virtual void OnImGuiRender() {}
 
-  virtual void OnEvent(Event &event) {}
+        virtual void OnEvent(Event &event) {}
 
-  inline const std::string &GetName() const { return m_DebugName; }
+        inline const std::string &GetName() const { return m_DebugName; }
 
-protected:
-  std::string m_DebugName;
-};
-} // namespace Hazel
+    protected:
+        std::string m_DebugName;
+    };
+}// namespace Hazel
 
-#endif // HAZEL_ENGINE_LAYER_H
+#endif// HAZEL_ENGINE_LAYER_H

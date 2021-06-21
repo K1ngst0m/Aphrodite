@@ -5,33 +5,32 @@
 #ifndef HAZEL_ENGINE_IMGUILAYER_H
 #define HAZEL_ENGINE_IMGUILAYER_H
 
-#include "Hazel/Layer.h"
-
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Events/MouseEvent.h"
+#include "Hazel/Layer.h"
 
 namespace Hazel {
 
-class ImGuiLayer : public Layer {
-public:
-  ImGuiLayer();
+    class ImGuiLayer : public Layer {
+    public:
+        ImGuiLayer();
 
-  ~ImGuiLayer() override;
+        ~ImGuiLayer() override;
 
-  void OnAttach() override;
+        void OnAttach() override;
 
-  void OnDetach() override;
+        void OnDetach() override;
 
-  void OnImGuiRender() override;
+        void OnImGuiRender() override;
 
-  void Begin();
+        void Begin();
 
-  void End();
+        void End();
 
-private:
-  float m_Time = 0.0f;
-};
-} // namespace Hazel
+    private:
+        float m_Time = 0.0f;
+    };
+}// namespace Hazel
 
-#endif // HAZEL_ENGINE_IMGUILAYER_H
+#endif// HAZEL_ENGINE_IMGUILAYER_H

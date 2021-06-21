@@ -3,8 +3,10 @@
 //
 
 #include "Layer.h"
+
 #include "hzpch.h"
 
-Hazel::Layer::Layer(std::string name) : m_DebugName(std::move(name)) {}
-
-Hazel::Layer::~Layer() = default;
+namespace Hazel {
+    Layer::Layer(std::string name) : m_DebugName(std::move(name)) {}
+    Layer::~Layer() = default;
+}// namespace Hazel
