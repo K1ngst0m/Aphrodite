@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_INPUT_H
 #define HAZEL_ENGINE_INPUT_H
 
-#include "Hazel/Core.h"
+#include "Core.h"
 
 namespace Hazel {
     class Input {
@@ -45,7 +45,7 @@ namespace Hazel {
         virtual float GetMouseYImpl() = 0;
 
     private:
-        static Input *s_Instance;
+        static Input* s_Instance;
     };
 }// namespace Hazel
 

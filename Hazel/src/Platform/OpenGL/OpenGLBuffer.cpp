@@ -8,7 +8,7 @@
 
 #include "hzpch.h"
 
-namespace Hazel{
+namespace Hazel {
 
     /////////////////////////////////////////////////////////////////////////////
     // VertexBuffer /////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ namespace Hazel{
     /////////////////////////////////////////////////////////////////////////////
 
     OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t *indices, uint32_t count)
-            : m_Count(count) {
+        : m_Count(count) {
         glCreateBuffers(1, &m_RendererID);
         glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
         glBufferData(GL_ARRAY_BUFFER, count * sizeof(uint32_t), indices,
@@ -51,5 +51,4 @@ namespace Hazel{
     void OpenGLIndexBuffer::UnBind() const {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     }
-}
-
+}// namespace Hazel

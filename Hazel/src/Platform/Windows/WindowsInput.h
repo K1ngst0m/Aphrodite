@@ -5,7 +5,7 @@
 #ifndef HAZELENGINE_WINDOWSINPUT_H
 #define HAZELENGINE_WINDOWSINPUT_H
 
-#include "Hazel/Input.h"
+#include "Hazel/Core/Input.h"
 
 namespace Hazel {
     class WindowsInput : public Input {

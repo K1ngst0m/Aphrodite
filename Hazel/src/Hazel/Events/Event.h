@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_EVENT_H
 #define HAZEL_ENGINE_EVENT_H
 
-#include "Hazel/Core.h"
+#include "Hazel/Core/Core.h"
 #include "hzpch.h"
 
 namespace Hazel {
@@ -67,9 +67,9 @@ namespace Hazel {
         explicit EventDispatcher(Event &event) : m_Event(event) {}
 
         template<typename T, typename F>
-        bool Dispatch(const F& func) {
+        bool Dispatch(const F &func) {
             if (m_Event.GetEventType() == T::GetStaticType()) {
-                m_Event.Handled = func(static_cast<T&>(m_Event));
+                m_Event.Handled = func(static_cast<T &>(m_Event));
                 return true;
             }
             return false;

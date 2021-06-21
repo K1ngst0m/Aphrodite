@@ -32,11 +32,11 @@ namespace Hazel {
         auto lastSlash = filepath.find_last_of('/');
         lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
         auto lastDot = filepath.rfind('.');
-        auto count = lastDot == std::string::npos? filepath.size() - lastSlash : lastDot - lastSlash;
+        auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
         m_Name = filepath.substr(lastSlash, count);
     }
 
-    OpenGLShader::OpenGLShader(const std::string &name, const std::string &vertexSrc, const std::string &fragmentSrc) : m_Name(name){
+    OpenGLShader::OpenGLShader(const std::string &name, const std::string &vertexSrc, const std::string &fragmentSrc) : m_Name(name) {
         std::unordered_map<GLenum, std::string> sources;
         sources[GL_VERTEX_SHADER] = vertexSrc;
         sources[GL_FRAGMENT_SHADER] = fragmentSrc;
@@ -131,21 +131,20 @@ namespace Hazel {
         std::array<GLenum, 2> glShaderIDs{};
         int glShaderIDIndex = 0;
 
-        for(auto& kv : shaderSource){
+        for (auto &kv : shaderSource) {
             GLenum type = kv.first;
-            const std::string& source = kv.second;
+            const std::string &source = kv.second;
 
             GLuint shader = glCreateShader(type);
 
-            const GLchar*sourceCStr = source.c_str();
+            const GLchar *sourceCStr = source.c_str();
             glShaderSource(shader, 1, &sourceCStr, nullptr);
 
             glCompileShader(shader);
 
             GLint isCompiled = 0;
             glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-            if (isCompiled == GL_FALSE)
-            {
+            if (isCompiled == GL_FALSE) {
                 GLint maxLength = 0;
                 glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
 
@@ -170,9 +169,8 @@ namespace Hazel {
 
         // Note the different functions here: glGetProgram* instead of glGetShader*.
         GLint isLinked = 0;
-        glGetProgramiv(program, GL_LINK_STATUS, (int*)&isLinked);
-        if (isLinked == GL_FALSE)
-        {
+        glGetProgramiv(program, GL_LINK_STATUS, (int *) &isLinked);
+        if (isLinked == GL_FALSE) {
             GLint maxLength = 0;
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
 

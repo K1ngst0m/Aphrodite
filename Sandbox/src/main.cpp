@@ -2,7 +2,7 @@
 // Created by npchitman on 5/30/21.
 //
 
-#include <Hazel.h>
+#include <Hazel/Renderer/Hazel.h>
 #include <Hazel/Renderer/Texture.h>
 
 #include <glm/gtc/matrix_transform.hpp>

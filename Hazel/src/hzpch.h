@@ -6,17 +6,17 @@
 #define HAZEL_ENGINE_HZPCH_H
 
 #include <algorithm>
+#include <array>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include <array>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-#include "Hazel/Log.h"
+#include "Hazel/Core/Log.h"
 
 #endif// HAZEL_ENGINE_HZPCH_H

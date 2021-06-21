@@ -7,7 +7,7 @@
 
 #include <utility>
 
-#include "Hazel/Core.h"
+#include "Core.h"
 #include "Hazel/Events/Event.h"
 #include "hzpch.h"
 

@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_LINUXINPUT_H
 #define HAZEL_ENGINE_LINUXINPUT_H
 
-#include "Hazel/Input.h"
+#include "Hazel/Core/Input.h"
 
 namespace Hazel {
     class LinuxInput : public Input {

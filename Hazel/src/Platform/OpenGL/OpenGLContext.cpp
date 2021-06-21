@@ -9,10 +9,10 @@
 
 #include "hzpch.h"
 
-namespace Hazel{
+namespace Hazel {
 
     OpenGLContext::OpenGLContext(GLFWwindow *windowHandle)
-            : m_WindowHandle(windowHandle) {
+        : m_WindowHandle(windowHandle) {
         HZ_CORE_ASSERT(windowHandle, "window handle is null!");
     }
 
@@ -29,4 +29,4 @@ namespace Hazel{
     }
 
     void OpenGLContext::SwapBuffers() { glfwSwapBuffers(m_WindowHandle); }
-}
+}// namespace Hazel

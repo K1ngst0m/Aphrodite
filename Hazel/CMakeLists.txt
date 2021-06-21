@@ -14,13 +14,13 @@ include_directories(3rdparty/stb)
 
 add_library(${PROJECT_NAME} STATIC
         # header
-        src/Hazel.h src/Hazel/Core.h src/Hazel/EntryPoint.h
+        src/Hazel/Renderer/Hazel.h src/Hazel/Core/Core.h src/Hazel/Core/EntryPoint.h
 
         # application
-        src/Hazel/Application.cpp src/Hazel/Application.h
+        src/Hazel/Core/Application.cpp src/Hazel/Core/Application.h
 
         # log
-        src/Hazel/Log.cpp src/Hazel/Log.h
+        src/Hazel/Core/Log.cpp src/Hazel/Core/Log.h
 
         # events
         src/Hazel/Events/Event.h src/Hazel/Events/ApplicationEvent.h src/Hazel/Events/KeyEvent.h src/Hazel/Events/MouseEvent.h
@@ -29,14 +29,14 @@ add_library(${PROJECT_NAME} STATIC
         src/hzpch.cpp src/hzpch.h
 
         # window
-        src/Hazel/Window.h src/Platform/Linux/LinuxWindow.cpp src/Platform/Linux/LinuxWindow.h
+        src/Hazel/Core/Window.h src/Platform/Linux/LinuxWindow.cpp src/Platform/Linux/LinuxWindow.h
 
         # layer
-        src/Hazel/Layer.cpp src/Hazel/Layer.h src/Hazel/LayerStack.cpp src/Hazel/LayerStack.h
+        src/Hazel/Core/Layer.cpp src/Hazel/Core/Layer.h src/Hazel/Core/LayerStack.cpp src/Hazel/Core/LayerStack.h
         src/Hazel/ImGui/ImGuiLayer.cpp src/Hazel/ImGui/ImGuiLayer.h
 
         # imgui
-        src/Hazel/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/KeyCodes.h src/Hazel/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h src/Hazel/Renderer/Shader.cpp src/Hazel/Renderer/Shader.h src/Hazel/Renderer/Buffer.cpp src/Hazel/Renderer/Buffer.h src/Hazel/Renderer/Renderer.cpp src/Hazel/Renderer/Renderer.h src/Platform/OpenGL/OpenGLBuffer.cpp src/Platform/OpenGL/OpenGLBuffer.h src/Hazel/Renderer/VertexArray.cpp src/Hazel/Renderer/VertexArray.h src/Platform/OpenGL/OpenGLVertexArray.cpp src/Platform/OpenGL/OpenGLVertexArray.h src/Hazel/Renderer/RendererAPI.h src/Hazel/Renderer/RenderCommand.cpp src/Hazel/Renderer/RenderCommand.h src/Hazel/Renderer/RendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.h src/Hazel/Renderer/OrthographicCamera.cpp src/Hazel/Renderer/OrthographicCamera.h src/Platform/OpenGL/OpenGLShader.cpp src/Platform/OpenGL/OpenGLShader.h src/Hazel/Core/TimeStep.h src/Hazel/Renderer/Texture.cpp src/Hazel/Renderer/Texture.h src/Platform/OpenGL/OpenGLTexture.cpp src/Platform/OpenGL/OpenGLTexture.h src/Hazel/OrthographicCameraController.cpp src/Hazel/OrthographicCameraController.h)
+        src/Hazel/Core/Input.h src/Platform/Linux/LinuxInput.cpp src/Platform/Linux/LinuxInput.h src/Hazel/Core/KeyCodes.h src/Hazel/Core/MouseButtonCodes.h src/Hazel/ImGui/ImGuiBuild.cpp src/Hazel/Renderer/GraphicsContext.h src/Platform/OpenGL/OpenGLContext.cpp src/Platform/OpenGL/OpenGLContext.h src/Hazel/Renderer/Shader.cpp src/Hazel/Renderer/Shader.h src/Hazel/Renderer/Buffer.cpp src/Hazel/Renderer/Buffer.h src/Hazel/Renderer/Renderer.cpp src/Hazel/Renderer/Renderer.h src/Platform/OpenGL/OpenGLBuffer.cpp src/Platform/OpenGL/OpenGLBuffer.h src/Hazel/Renderer/VertexArray.cpp src/Hazel/Renderer/VertexArray.h src/Platform/OpenGL/OpenGLVertexArray.cpp src/Platform/OpenGL/OpenGLVertexArray.h src/Hazel/Renderer/RendererAPI.h src/Hazel/Renderer/RenderCommand.cpp src/Hazel/Renderer/RenderCommand.h src/Hazel/Renderer/RendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.cpp src/Platform/OpenGL/OpenGLRendererAPI.h src/Hazel/Renderer/OrthographicCamera.cpp src/Hazel/Renderer/OrthographicCamera.h src/Platform/OpenGL/OpenGLShader.cpp src/Platform/OpenGL/OpenGLShader.h src/Hazel/Core/TimeStep.h src/Hazel/Renderer/Texture.cpp src/Hazel/Renderer/Texture.h src/Platform/OpenGL/OpenGLTexture.cpp src/Platform/OpenGL/OpenGLTexture.h src/Hazel/Renderer/OrthographicCameraController.cpp src/Hazel/Renderer/OrthographicCameraController.h)
 
 add_definitions(-DSTB_IMAGE_IMPLEMENTATION)
 

@@ -4,7 +4,7 @@
 #ifndef HAZELENGINE_WINDOWSWINDOW_H
 #define HAZELENGINE_WINDOWSWINDOW_H
 
-#include "Hazel/Window.h"
+#include "Hazel/Core/Window.h"
 
 struct GLFWwindow;
 

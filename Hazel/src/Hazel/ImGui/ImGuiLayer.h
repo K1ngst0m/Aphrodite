@@ -5,10 +5,10 @@
 #ifndef HAZEL_ENGINE_IMGUILAYER_H
 #define HAZEL_ENGINE_IMGUILAYER_H
 
+#include "Hazel/Core/Layer.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Events/MouseEvent.h"
-#include "Hazel/Layer.h"
 
 namespace Hazel {
 

@@ -6,7 +6,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "Hazel/Application.h"
+#include "Hazel/Core/Application.h"
 #include "hzpch.h"
 
 namespace Hazel {

@@ -6,9 +6,10 @@
 #define HAZEL_ENGINE_TEXTURE_H
 
 #include <string>
-#include "Hazel/Core.h"
 
-namespace Hazel{
+#include "Hazel/Core/Core.h"
+
+namespace Hazel {
     class Texture {
     public:
         virtual ~Texture() = default;
@@ -18,11 +19,11 @@ namespace Hazel{
         virtual void Bind(uint32_t slot = 0) const = 0;
     };
 
-    class Texture2D: public Texture{
+    class Texture2D : public Texture {
     public:
         static Ref<Texture2D> Create(const std::string& path);
     };
-}
+}// namespace Hazel
 
 
 #endif//HAZEL_ENGINE_TEXTURE_H

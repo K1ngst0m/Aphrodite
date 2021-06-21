@@ -8,8 +8,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "Hazel/Core/Window.h"
 #include "Hazel/Renderer/GraphicsContext.h"
-#include "Hazel/Window.h"
 
 namespace Hazel {
     class LinuxWindow : public Window {

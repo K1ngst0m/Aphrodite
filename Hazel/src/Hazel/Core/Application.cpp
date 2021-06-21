@@ -8,9 +8,9 @@
 
 #include <memory>
 
-#include "Hazel/Log.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Input.h"
+#include "Log.h"
 #include "hzpch.h"
 
 namespace Hazel {
@@ -31,8 +31,8 @@ namespace Hazel {
 
     void Application::OnEvent(Event &e) {
         EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<WindowCloseEvent>( HZ_BIND_EVENT_FN(Application::OnWindowClose));
-        dispatcher.Dispatch<WindowResizeEvent>( HZ_BIND_EVENT_FN(Application::OnWindowResize));
+        dispatcher.Dispatch<WindowCloseEvent>(HZ_BIND_EVENT_FN(Application::OnWindowClose));
+        dispatcher.Dispatch<WindowResizeEvent>(HZ_BIND_EVENT_FN(Application::OnWindowResize));
 
         for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();) {
             (*--it)->OnEvent(e);
@@ -47,7 +47,7 @@ namespace Hazel {
             Timestep timestep = time - m_LastFrameTime;
             m_LastFrameTime = time;
 
-            if(!m_Minimized){
+            if (!m_Minimized) {
                 for (const auto &layer : m_LayerStack)
                     layer->OnUpdate(timestep);
             }
@@ -68,7 +68,7 @@ namespace Hazel {
     }
 
     bool Application::OnWindowResize(WindowResizeEvent &e) {
-        if(e.GetWidth() == 0 || e.GetHeight() == 0){
+        if (e.GetWidth() == 0 || e.GetHeight() == 0) {
             m_Minimized = true;
             return false;
         }

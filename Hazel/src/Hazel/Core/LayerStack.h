@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "Hazel/Core.h"
+#include "Core.h"
 #include "Layer.h"
 
 namespace Hazel {

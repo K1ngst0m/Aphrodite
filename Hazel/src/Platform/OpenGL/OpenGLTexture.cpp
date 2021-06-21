@@ -2,16 +2,17 @@
 // Created by npchitman on 6/21/21.
 //
 
-#include "hzpch.h"
 #include "OpenGLTexture.h"
 
-#include "stb_image.h"
 #include <glad/glad.h>
+
+#include "hzpch.h"
+#include "stb_image.h"
 
 namespace Hazel {
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path)
-    :m_Path(path) {
+        : m_Path(path) {
         int width, height, channels;
 
         stbi_set_flip_vertically_on_load(1);
@@ -21,11 +22,10 @@ namespace Hazel {
         m_Height = height;
 
         GLenum internalFormat = 0, dataFormat = 0;
-        if(channels == 4){
+        if (channels == 4) {
             internalFormat = GL_RGBA8;
             dataFormat = GL_RGBA;
-        }
-        else if(channels == 3){
+        } else if (channels == 3) {
             internalFormat = GL_RGB;
             dataFormat = GL_RGB;
         }
