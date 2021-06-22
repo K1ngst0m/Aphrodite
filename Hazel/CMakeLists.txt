@@ -14,7 +14,7 @@ include_directories(3rdparty/stb)
 
 add_library(${PROJECT_NAME} STATIC
         # header
-        src/Hazel/Renderer/Hazel.h src/Hazel/Core/Core.h src/Hazel/Core/EntryPoint.h
+        src/Hazel.h src/Hazel/Core/Core.h src/Hazel/Core/EntryPoint.h
 
         # application
         src/Hazel/Core/Application.cpp src/Hazel/Core/Application.h

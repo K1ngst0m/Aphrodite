@@ -28,7 +28,4 @@
 
 #include "Hazel/Renderer/OrthographicCamera.h"
 
-// Entry Point
-#include "Hazel/Core/EntryPoint.h"
-
 #endif// HAZEL_ENGINE_HAZEL_H
