@@ -2,11 +2,13 @@
 // Created by npchitman on 5/31/21.
 //
 
-#include "LinuxWindow.h"
+#include "Platform/Linux/LinuxWindow.h"
 
+#include "Hazel/Core/Input.h"
 #include "Hazel/Events/ApplicationEvent.h"
 #include "Hazel/Events/KeyEvent.h"
 #include "Hazel/Events/MouseEvent.h"
+#include "Hazel/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLContext.h"
 #include "hzpch.h"
 
@@ -54,6 +56,11 @@ namespace Hazel {
 
         {
             HZ_PROFILE_SCOPE("glfwCreateWindow");
+
+#if defined(HZ_DEBUG)
+            if (Renderer::GetAPI() == RendererAPI::API::OpenGL)
+                glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
             m_Window = glfwCreateWindow(static_cast<int>(props.Width),
                                         static_cast<int>(props.Height),
                                         m_Data.Title.c_str(), nullptr, nullptr);
@@ -88,17 +95,17 @@ namespace Hazel {
 
             switch (action) {
                 case GLFW_PRESS: {
-                    KeyPressedEvent event(key, 0);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), 0);
                     data.EventCallback(event);
                     break;
                 }
                 case GLFW_RELEASE: {
-                    KeyReleasedEvent event(key);
+                    KeyReleasedEvent event(static_cast<KeyCode>(key));
                     data.EventCallback(event);
                     break;
                 }
                 case GLFW_REPEAT: {
-                    KeyPressedEvent event(key, 1);
+                    KeyPressedEvent event(static_cast<KeyCode>(key), 1);
                     data.EventCallback(event);
                     break;
                 }
@@ -111,12 +118,12 @@ namespace Hazel {
 
                     switch (action) {
                         case GLFW_PRESS: {
-                            MouseButtonPressedEvent event(button);
+                            MouseButtonPressedEvent event(static_cast<MouseCode>(button));
                             data.EventCallback(event);
                             break;
                         }
                         case GLFW_RELEASE: {
-                            MouseButtonReleasedEvent event(button);
+                            MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
                             data.EventCallback(event);
                             break;
                         }

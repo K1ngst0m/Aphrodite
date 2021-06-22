@@ -11,37 +11,37 @@
 
 namespace Hazel {
     Scope<Input> Input::s_Instance = CreateScope<LinuxInput>();
-}
 
-bool Hazel::LinuxInput::IsKeyPressedImpl(int keycode) {
-    auto window = static_cast<GLFWwindow *>(
-            Application::Get().GetWindow().GetNativeWindow());
-    auto state = glfwGetKey(window, keycode);
-    return state == GLFW_PRESS || state == GLFW_REPEAT;
-}
+    bool LinuxInput::IsKeyPressedImpl(KeyCode keycode) {
+        auto window = static_cast<GLFWwindow *>(
+                Application::Get().GetWindow().GetNativeWindow());
+        auto state = glfwGetKey(window, static_cast<int32_t>(keycode));
+        return state == GLFW_PRESS || state == GLFW_REPEAT;
+    }
 
-bool Hazel::LinuxInput::IsMouseButtonPressedImpl(int button) {
-    auto window = static_cast<GLFWwindow *>(
-            Application::Get().GetWindow().GetNativeWindow());
-    auto state = glfwGetMouseButton(window, button);
-    return state == GLFW_PRESS;
-}
+    bool LinuxInput::IsMouseButtonPressedImpl(MouseCode button) {
+        auto window = static_cast<GLFWwindow *>(
+                Application::Get().GetWindow().GetNativeWindow());
+        auto state = glfwGetMouseButton(window, static_cast<int32_t>(button));
+        return state == GLFW_PRESS;
+    }
 
-std::pair<float, float> Hazel::LinuxInput::GetMousePositionImpl() {
-    auto window = static_cast<GLFWwindow *>(
-            Application::Get().GetWindow().GetNativeWindow());
-    double xPos, yPos;
-    glfwGetCursorPos(window, &xPos, &yPos);
+    std::pair<float, float> LinuxInput::GetMousePositionImpl() {
+        auto window = static_cast<GLFWwindow *>(
+                Application::Get().GetWindow().GetNativeWindow());
+        double xPos, yPos;
+        glfwGetCursorPos(window, &xPos, &yPos);
 
-    return {static_cast<float>(xPos), static_cast<float>(yPos)};
-}
+        return {static_cast<float>(xPos), static_cast<float>(yPos)};
+    }
 
-float Hazel::LinuxInput::GetMouseXImpl() {
-    auto [x, y] = GetMousePositionImpl();
-    return x;
-}
+    float LinuxInput::GetMouseXImpl() {
+        auto [x, y] = GetMousePositionImpl();
+        return x;
+    }
 
-float Hazel::LinuxInput::GetMouseYImpl() {
-    auto [x, y] = GetMousePositionImpl();
-    return y;
+    float LinuxInput::GetMouseYImpl() {
+        auto [x, y] = GetMousePositionImpl();
+        return y;
+    }
 }

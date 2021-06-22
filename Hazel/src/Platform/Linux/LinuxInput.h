@@ -10,15 +10,15 @@
 namespace Hazel {
     class LinuxInput : public Input {
     protected:
-        virtual bool IsKeyPressedImpl(int keycode) override;
+        bool IsKeyPressedImpl(KeyCode keycode) override;
 
-        virtual bool IsMouseButtonPressedImpl(int button) override;
+        bool IsMouseButtonPressedImpl(MouseCode button) override;
 
-        virtual std::pair<float, float> GetMousePositionImpl() override;
+        std::pair<float, float> GetMousePositionImpl() override;
 
-        virtual float GetMouseXImpl() override;
+        float GetMouseXImpl() override;
 
-        virtual float GetMouseYImpl() override;
+        float GetMouseYImpl() override;
     };
 }// namespace Hazel
 

@@ -43,8 +43,8 @@ namespace Hazel {
         dispatcher.Dispatch<WindowCloseEvent>(HZ_BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(HZ_BIND_EVENT_FN(Application::OnWindowResize));
 
-        for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();) {
-            (*--it)->OnEvent(e);
+        for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); it++) {
+            (*it)->OnEvent(e);
             if (e.Handled)
                 break;
         }
