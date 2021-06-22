@@ -18,5 +18,6 @@
 #include <vector>
 
 #include "Hazel/Core/Log.h"
+#include "Hazel/Debug/Instrumentor.h"
 
 #endif// HAZEL_ENGINE_HZPCH_H
