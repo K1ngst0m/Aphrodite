@@ -2,14 +2,15 @@
 // Created by npchitman on 5/31/21.
 //
 
-#include "ImGuiLayer.h"
+#include "Hazel/ImGui/ImGuiLayer.h"
+
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_opengl3.h>
+#include <imgui.h>
 
 #include "GLFW/glfw3.h"
 #include "Hazel/Core/Application.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_opengl3.h"
 #include "hzpch.h"
-#include "imgui.h"
 
 Hazel::ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") {}
 

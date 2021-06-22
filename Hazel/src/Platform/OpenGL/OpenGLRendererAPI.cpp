@@ -28,6 +28,7 @@ namespace Hazel {
         glDrawElements(GL_TRIANGLES,
                        static_cast<int>(vertexArray->GetIndexBuffer()->GetCount()),
                        GL_UNSIGNED_INT, nullptr);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
         glViewport(static_cast<int>(x), static_cast<int>(y), static_cast<int>(width), static_cast<int>(height));

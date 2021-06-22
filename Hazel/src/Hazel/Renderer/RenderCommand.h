@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_RENDERCOMMAND_H
 #define HAZEL_ENGINE_RENDERCOMMAND_H
 
-#include "RendererAPI.h"
+#include "Hazel/Renderer/RendererAPI.h"
 
 namespace Hazel {
     class RenderCommand {
@@ -27,7 +27,7 @@ namespace Hazel {
         }
 
         inline static void
-        DrawIndexed(const std::shared_ptr<VertexArray> &vertexArray) {
+        DrawIndexed(const Ref<VertexArray> &vertexArray) {
             s_RendererAPI->DrawIndexed(vertexArray);
         }
 

@@ -2,14 +2,14 @@
 // Created by npchitman on 5/30/21.
 //
 
-#include "Application.h"
+#include "Hazel/Core/Application.h"
 
 #include <GLFW/glfw3.h>
 
 #include <memory>
 
 #include "Hazel/Renderer/Renderer.h"
-#include "Input.h"
+#include "Hazel/Core/Input.h"
 #include "Log.h"
 #include "hzpch.h"
 
@@ -27,6 +27,10 @@ namespace Hazel {
 
         m_ImGuiLayer = new ImGuiLayer();
         PushOverlay(m_ImGuiLayer);
+    }
+
+    Application::~Application() {
+        Renderer::Shutdown();
     }
 
     void Application::OnEvent(Event &e) {

@@ -5,6 +5,8 @@
 #ifndef HAZEL_ENGINE_HAZEL_H
 #define HAZEL_ENGINE_HAZEL_H
 
+#include "Hazel/Core/Core.h"
+
 #include "Hazel/Core/Application.h"
 #include "Hazel/Core/Log.h"
 #include "Hazel/Core/Layer.h"

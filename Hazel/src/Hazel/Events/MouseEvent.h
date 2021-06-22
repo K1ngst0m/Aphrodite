@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_MOUSEEVENT_H
 #define HAZEL_ENGINE_MOUSEEVENT_H
 
-#include "Event.h"
+#include "Hazel/Events/Event.h"
 
 namespace Hazel {
     class MouseMovedEvent : public Event {

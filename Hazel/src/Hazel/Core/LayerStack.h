@@ -7,13 +7,13 @@
 
 #include <vector>
 
-#include "Core.h"
-#include "Layer.h"
+#include "Hazel/Core/Core.h"
+#include "Hazel/Core/Layer.h"
 
 namespace Hazel {
     class LayerStack final {
     public:
-        LayerStack();
+        LayerStack() = default;
 
         ~LayerStack();
 

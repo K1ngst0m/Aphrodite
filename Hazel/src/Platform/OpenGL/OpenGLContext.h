@@ -5,6 +5,8 @@
 #ifndef HAZEL_ENGINE_OPENGLCONTEXT_H
 #define HAZEL_ENGINE_OPENGLCONTEXT_H
 
+#include <Hazel/Renderer/Buffer.h>
+
 #include "Hazel/Renderer/GraphicsContext.h"
 
 struct GLFWwindow;
@@ -17,6 +19,7 @@ namespace Hazel {
         void Init() override;
         void SwapBuffers() override;
 
+        static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t size);
     private:
         GLFWwindow *m_WindowHandle;
     };

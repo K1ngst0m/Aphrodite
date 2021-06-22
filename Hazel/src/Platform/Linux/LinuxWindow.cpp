@@ -18,11 +18,11 @@ namespace Hazel {
         HZ_CORE_ERROR("GLFW Error({0}): {1}", error, description);
     }
 
-    Window *Window::Create(const WindowProps &props) {
-        return new LinuxWindow(props);
+    Scope<Window> Window::Create(const WindowProps &props) {
+        return CreateScope<LinuxWindow>(props);
     }
 
-}// namespace Hazel
+}
 
 Hazel::LinuxWindow::LinuxWindow(const Hazel::WindowProps &props) {
     Init(props);

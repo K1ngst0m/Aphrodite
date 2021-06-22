@@ -5,9 +5,9 @@
 #ifndef HAZEL_ENGINE_RENDERER2D_H
 #define HAZEL_ENGINE_RENDERER2D_H
 
-#include "OrthographicCamera.h"
+#include "Hazel/Renderer/OrthographicCamera.h"
 
-#include "Texture.h"
+#include "Hazel/Renderer/Texture.h"
 
 namespace Hazel{
     class Renderer2D {

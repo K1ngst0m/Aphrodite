@@ -2,9 +2,8 @@
 // Created by npchitman on 5/31/21.
 //
 
-#include "LayerStack.h"
-
-Hazel::LayerStack::LayerStack() = default;
+#include "hzpch.h"
+#include "Hazel/Core/LayerStack.h"
 
 Hazel::LayerStack::~LayerStack() {
     for (auto layer : m_Layers){

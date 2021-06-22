@@ -2,7 +2,7 @@
 // Created by npchitman on 6/21/21.
 //
 
-#include "OrthographicCameraController.h"
+#include "Hazel/Renderer/OrthographicCameraController.h"
 
 #include "Hazel/Core/Input.h"
 #include "Hazel/Core/KeyCodes.h"

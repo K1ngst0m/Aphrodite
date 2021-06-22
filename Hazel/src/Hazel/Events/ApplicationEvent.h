@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_APPLICATIONEVENT_H
 #define HAZEL_ENGINE_APPLICATIONEVENT_H
 
-#include "Event.h"
+#include "Hazel/Events/Event.h"
 
 namespace Hazel {
     class WindowResizeEvent : public Event {

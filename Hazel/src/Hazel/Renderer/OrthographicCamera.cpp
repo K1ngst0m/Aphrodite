@@ -2,7 +2,7 @@
 // Created by npchitman on 6/1/21.
 //
 
-#include "OrthographicCamera.h"
+#include "Hazel/Renderer/OrthographicCamera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 

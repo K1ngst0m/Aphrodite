@@ -1,7 +1,7 @@
 #ifndef HAZEL_ENTRYPOINT_H
 #define HAZEL_ENTRYPOINT_H
 
-#include <iostream>
+#include "Hazel/Core/Core.h"
 
 int main(int argc, char **argv) {
     Hazel::Log::Init();
