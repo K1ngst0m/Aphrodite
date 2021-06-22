@@ -22,8 +22,6 @@ namespace Hazel {
 
         void OnDetach() override;
 
-        void OnImGuiRender() override;
-
         void Begin();
 
         void End();
