@@ -11,7 +11,8 @@
 #include "hzpch.h"
 
 namespace Hazel {
-    static bool s_GLFWInitialized = false;
+
+    static uint8_t s_GLFWWindowCount = 0;
 
     static void GLFWErrorCallback(int error, const char *description) {
         HZ_CORE_ERROR("GLFW Error({0}): {1}", error, description);
@@ -37,16 +38,17 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
     HZ_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width,
                  props.Height);
 
-    if (!s_GLFWInitialized) {
+    if (s_GLFWWindowCount == 0) {
+        HZ_CORE_INFO("Initializing GLFW");
         int success = glfwInit();
         HZ_CORE_ASSERT(success, "Could not initialize GLFW!");
         glfwSetErrorCallback(GLFWErrorCallback);
-        s_GLFWInitialized = true;
     }
 
     m_Window = glfwCreateWindow(static_cast<int>(props.Width),
                                 static_cast<int>(props.Height),
                                 m_Data.Title.c_str(), nullptr, nullptr);
+    ++s_GLFWWindowCount;
     m_Context = CreateScope<OpenGLContext>(m_Window);
     m_Context->Init();
 
@@ -127,7 +129,15 @@ void Hazel::LinuxWindow::Init(const Hazel::WindowProps &props) {
             });
 }
 
-void Hazel::LinuxWindow::Shutdown() { glfwDestroyWindow(m_Window); }
+void Hazel::LinuxWindow::Shutdown() {
+    glfwDestroyWindow(m_Window);
+
+    if(--s_GLFWWindowCount == 0){
+        HZ_CORE_INFO("Terminating GLFW");
+        glfwTerminate();
+    }
+
+}
 
 void Hazel::LinuxWindow::OnUpdate() {
     glfwPollEvents();
