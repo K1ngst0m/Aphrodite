@@ -17,6 +17,8 @@ namespace Hazel {
     }
 
     void OpenGLContext::Init() {
+        HZ_PROFILE_FUNCTION();
+
         glfwMakeContextCurrent(m_WindowHandle);
 
         int status = gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
@@ -38,5 +40,9 @@ namespace Hazel {
 #endif
     }
 
-    void OpenGLContext::SwapBuffers() { glfwSwapBuffers(m_WindowHandle); }
+    void OpenGLContext::SwapBuffers() {
+        HZ_PROFILE_FUNCTION();
+
+        glfwSwapBuffers(m_WindowHandle);
+    }
 }// namespace Hazel

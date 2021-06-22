@@ -15,12 +15,10 @@ Hazel::LayerStack::~LayerStack() {
 void Hazel::LayerStack::PushLayer(Hazel::Layer *layer) {
     m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
     m_LayerInsertIndex++;
-    layer->OnAttach();
 }
 
 void Hazel::LayerStack::PushOverlay(Hazel::Layer *overlay) {
     m_Layers.emplace_back(overlay);
-    overlay->OnAttach();
 }
 
 void Hazel::LayerStack::PopLayer(Hazel::Layer *layer) {
