@@ -57,7 +57,7 @@ namespace Hazel {
 
         virtual std::string ToString() const { return GetName(); }
 
-        inline bool IsInCateGory(EventCategory category) {
+        bool IsInCateGory(EventCategory category) {
             return GetCategoryFlags() & category;
         }
     };

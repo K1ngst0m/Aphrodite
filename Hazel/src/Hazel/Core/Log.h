@@ -15,11 +15,11 @@ namespace Hazel {
     public:
         static void Init();
 
-        inline static Ref<spdlog::logger> &GetCoreLogger() {
+        static Ref<spdlog::logger> &GetCoreLogger() {
             return s_CoreLogger;
         }
 
-        inline static Ref<spdlog::logger> &GetClientLogger() {
+        static Ref<spdlog::logger> &GetClientLogger() {
             return s_ClientLogger;
         }
 
