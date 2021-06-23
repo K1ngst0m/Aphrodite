@@ -62,12 +62,12 @@ namespace Hazel {
     }
 
     void OpenGLRendererAPI::DrawIndexed(
-            const std::shared_ptr<VertexArray>& vertexArray) {
-        glDrawElements(GL_TRIANGLES,
-                       static_cast<int>(vertexArray->GetIndexBuffer()->GetCount()),
-                       GL_UNSIGNED_INT, nullptr);
+            const std::shared_ptr<VertexArray>& vertexArray, uint32_t indexCount) {
+        uint32_t count = indexCount ? vertexArray->GetIndexBuffer()->GetCount() : indexCount;
+        glDrawElements(GL_TRIANGLES, static_cast<int>(count), GL_UNSIGNED_INT, nullptr);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
+
     void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
         glViewport(static_cast<int>(x), static_cast<int>(y), static_cast<int>(width), static_cast<int>(height));
     }

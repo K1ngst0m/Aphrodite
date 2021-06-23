@@ -35,6 +35,7 @@ namespace Hazel {
 
         inline static float GetMouseY() { return s_Instance->GetMouseYImpl(); }
 
+        static Scope<Input> Create();
     protected:
         virtual bool IsKeyPressedImpl(KeyCode key) = 0;
 

@@ -32,10 +32,6 @@ namespace Hazel {
         Shutdown();
     }
 
-    Scope<Window> Window::Create(const WindowProps &props) {
-        return CreateScope<LinuxWindow>(props);
-    }
-
     void LinuxWindow::Init(const WindowProps &props) {
         HZ_PROFILE_FUNCTION();
 

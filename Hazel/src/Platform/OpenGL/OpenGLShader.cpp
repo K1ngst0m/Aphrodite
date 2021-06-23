@@ -2,7 +2,7 @@
 // Created by npchitman on 6/20/21.
 //
 
-#include "OpenGLShader.h"
+#include "Platform/OpenGL/OpenGLShader.h"
 
 #include <glad/glad.h>
 
@@ -110,6 +110,12 @@ namespace Hazel {
         HZ_PROFILE_FUNCTION();
 
         UploadUniformInt(name, value);
+    }
+
+    void OpenGLShader::SetFloat(const std::string &name, float value) {
+        HZ_PROFILE_FUNCTION();
+
+        UploadUniformFloat(name, value);
     }
 
     void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value)
