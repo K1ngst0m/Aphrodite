@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_INPUT_H
 #define HAZEL_ENGINE_INPUT_H
 
-#include "Hazel/Core/Core.h"
+#include "Hazel/Core/Base.h"
 #include "Hazel/Core/KeyCodes.h"
 #include "Hazel/Core/MouseCodes.h"
 

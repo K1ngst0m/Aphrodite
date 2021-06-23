@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_EVENT_H
 #define HAZEL_ENGINE_EVENT_H
 
-#include "Hazel/Core/Core.h"
+#include "Hazel/Core/Base.h"
 #include "hzpch.h"
 
 namespace Hazel {

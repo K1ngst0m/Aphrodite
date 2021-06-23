@@ -5,7 +5,7 @@
 #ifndef HAZEL_ENGINE_LAYER_H
 #define HAZEL_ENGINE_LAYER_H
 
-#include "Core.h"
+#include "Base.h"
 #include "Hazel/Core/TimeStep.h"
 #include "Hazel/Events/Event.h"
 

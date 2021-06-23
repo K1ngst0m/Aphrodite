@@ -6,7 +6,7 @@
 #define HAZEL_ENGINE_HAZEL_H
 
 #include "Hazel/Core/Application.h"
-#include "Hazel/Core/Core.h"
+#include "Hazel/Core/Base.h"
 #include "Hazel/Core/Input.h"
 #include "Hazel/Core/KeyCodes.h"
 #include "Hazel/Core/Layer.h"

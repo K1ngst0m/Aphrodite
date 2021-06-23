@@ -18,6 +18,7 @@ namespace Hazel {
 
         uint32_t GetWidth() const override { return m_Width; }
         uint32_t GetHeight() const override { return m_Height; }
+        uint32_t GetRendererID() const override { return m_Renderer; }
 
         void SetData(void* data, uint32_t size) override;
         void Bind(uint32_t slot = 0) const override;
@@ -29,7 +30,7 @@ namespace Hazel {
     private:
         std::string m_Path;
         uint32_t m_Width, m_Height;
-        uint32_t m_RendererID{};
+        uint32_t m_Renderer, m_RendererID{};
         GLenum m_InternalFormat, m_DataFormat;
     };
 }// namespace Hazel

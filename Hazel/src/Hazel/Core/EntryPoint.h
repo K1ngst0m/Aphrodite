@@ -3,7 +3,7 @@
 
 #ifdef HZ_PLATFORM_LINUX
 
-#include "Hazel/Core/Core.h"
+#include "Hazel/Core/Base.h"
 
 int main(int argc, char **argv) {
     Hazel::Log::Init();
