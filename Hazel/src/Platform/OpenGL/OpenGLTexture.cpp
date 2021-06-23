@@ -48,7 +48,7 @@ namespace Hazel {
             internalFormat = GL_RGBA8;
             dataFormat = GL_RGBA;
         } else if (channels == 3) {
-            internalFormat = GL_RGB;
+            internalFormat = GL_RGB8;
             dataFormat = GL_RGB;
         }
 

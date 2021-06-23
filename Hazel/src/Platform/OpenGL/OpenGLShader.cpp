@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
+#include <utility>
 
 #include "hzpch.h"
 
@@ -38,7 +39,7 @@ namespace Hazel {
         m_Name = filepath.substr(lastSlash, count);
     }
 
-    OpenGLShader::OpenGLShader(const std::string &name, const std::string &vertexSrc, const std::string &fragmentSrc) : m_Name(name) {
+    OpenGLShader::OpenGLShader(std::string name, const std::string &vertexSrc, const std::string &fragmentSrc) : m_Name(std::move(name)) {
         HZ_PROFILE_FUNCTION();
 
         std::unordered_map<GLenum, std::string> sources;

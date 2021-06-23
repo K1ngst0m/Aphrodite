@@ -15,7 +15,7 @@ namespace Hazel {
     class OpenGLShader : public Shader {
     public:
         explicit OpenGLShader(const std::string &filepath);
-        OpenGLShader(const std::string &name, const std::string &vertexSrc, const std::string &fragmentSrc);
+        OpenGLShader(std::string name, const std::string &vertexSrc, const std::string &fragmentSrc);
         ~OpenGLShader() override;
 
         void Bind() const override;

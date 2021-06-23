@@ -29,7 +29,7 @@ namespace Hazel {
     private:
         std::string m_Path;
         uint32_t m_Width, m_Height;
-        uint32_t m_RendererID;
+        uint32_t m_RendererID{};
         GLenum m_InternalFormat, m_DataFormat;
     };
 }// namespace Hazel
