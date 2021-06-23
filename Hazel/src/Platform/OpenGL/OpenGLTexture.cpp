@@ -2,7 +2,7 @@
 // Created by npchitman on 6/21/21.
 //
 
-#include "OpenGLTexture.h"
+#include "Platform/OpenGL/OpenGLTexture.h"
 
 #include "hzpch.h"
 #include "stb_image.h"

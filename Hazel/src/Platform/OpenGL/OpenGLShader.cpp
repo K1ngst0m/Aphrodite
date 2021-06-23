@@ -70,6 +70,12 @@ namespace Hazel {
         glUniform1i(location, value);
     }
 
+    void OpenGLShader::UploadUniformIntArray(const std::string &name, int *values, uint32_t count) {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform1iv(location, count, values);
+    }
+
+
     void OpenGLShader::UploadUniformFloat(const std::string &name, float value) const {
         GLint location = glGetUniformLocation(m_RendererID, name.c_str());
         glUniform1f(location, value);
@@ -105,11 +111,14 @@ namespace Hazel {
         glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
     }
 
-    void OpenGLShader::SetInt(const std::string& name, int value)
-    {
+    void OpenGLShader::SetInt(const std::string &name, int value) {
         HZ_PROFILE_FUNCTION();
 
         UploadUniformInt(name, value);
+    }
+
+    void OpenGLShader::SetIntArray(const std::string &name, int *values, uint32_t count) {
+        UploadUniformIntArray(name, values, count);
     }
 
     void OpenGLShader::SetFloat(const std::string &name, float value) {
@@ -118,22 +127,19 @@ namespace Hazel {
         UploadUniformFloat(name, value);
     }
 
-    void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value)
-    {
+    void OpenGLShader::SetFloat3(const std::string &name, const glm::vec3 &value) {
         HZ_PROFILE_FUNCTION();
 
         UploadUniformFloat3(name, value);
     }
 
-    void OpenGLShader::SetFloat4(const std::string& name, const glm::vec4& value)
-    {
+    void OpenGLShader::SetFloat4(const std::string &name, const glm::vec4 &value) {
         HZ_PROFILE_FUNCTION();
 
         UploadUniformFloat4(name, value);
     }
 
-    void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
-    {
+    void OpenGLShader::SetMat4(const std::string &name, const glm::mat4 &value) {
         HZ_PROFILE_FUNCTION();
 
         UploadUniformMat4(name, value);
@@ -148,13 +154,12 @@ namespace Hazel {
         if (in) {
             in.seekg(0, std::ios::end);
             size_t size = in.tellg();
-            if(size != -1){
+            if (size != -1) {
                 result.resize(in.tellg());
                 in.seekg(0, std::ios::beg);
                 in.read(&result[0], static_cast<int>(result.size()));
                 in.close();
-            }
-            else{
+            } else {
                 HZ_CORE_ERROR("Could not read from file '{0}'", filepath);
             }
 
@@ -247,7 +252,7 @@ namespace Hazel {
             // We don't need the program anymore.
             glDeleteProgram(program);
 
-            for (auto id : glShaderIDs){
+            for (auto id : glShaderIDs) {
                 glDeleteShader(id);
             }
 
@@ -256,7 +261,7 @@ namespace Hazel {
             return;
         }
 
-        for (auto id : glShaderIDs){
+        for (auto id : glShaderIDs) {
             glDetachShader(program, id);
             glDeleteShader(id);
         }
