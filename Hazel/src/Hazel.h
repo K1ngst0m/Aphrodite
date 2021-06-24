@@ -23,5 +23,6 @@
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/VertexArray.h"
+#include "Hazel/Renderer/Framebuffer.h"
 
 #endif// HAZEL_ENGINE_HAZEL_H
