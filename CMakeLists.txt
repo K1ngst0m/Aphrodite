@@ -8,5 +8,6 @@ link_directories(${CMAKE_BINARY_DIR}/Libs)
 
 project(Hazel_Engine)
 
+add_subdirectory(Hazelnut)
 add_subdirectory(Sandbox)
 add_subdirectory(Hazel)
