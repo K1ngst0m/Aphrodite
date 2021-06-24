@@ -15,12 +15,12 @@
 #include "Hazel/Events/MouseEvent.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
 
-int main(int argc, char** argv);
+int main(int argc, char **argv);
 
 namespace Hazel {
     class Application {
     public:
-        Application(const std::string& name = "Hazel App");
+        explicit Application(const std::string &name = "Hazel App");
 
         virtual ~Application();
 
@@ -34,6 +34,7 @@ namespace Hazel {
 
         void Close();
 
+        ImGuiLayer *GetImGuiLayer() { return m_ImGuiLayer; }
         static Application &Get() { return *s_Instance; }
 
     private:
@@ -52,7 +53,7 @@ namespace Hazel {
 
     private:
         static Application *s_Instance;
-        friend int ::main(int argc, char ** argv);
+        friend int ::main(int argc, char **argv);
     };
 
     // to be defined in client
