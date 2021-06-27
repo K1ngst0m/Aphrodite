@@ -26,6 +26,14 @@ namespace Hazel {
         SpriteRendererComponent(const SpriteRendererComponent&) = default;
         explicit SpriteRendererComponent(const glm::vec4& color) : Color(color) {}
     };
+
+    struct TagComponent {
+        std::string Tag;
+
+        TagComponent() = default;
+        TagComponent(const TagComponent&) = default;
+        explicit TagComponent(std::string tag) : Tag(std::move(tag)) {}
+    };
 }// namespace Hazel
 
 

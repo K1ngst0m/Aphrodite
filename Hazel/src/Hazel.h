@@ -25,6 +25,7 @@
 #include "Hazel/Renderer/VertexArray.h"
 #include "Hazel/Renderer/Framebuffer.h"
 #include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Components.h"
 
 #endif// HAZEL_ENGINE_HAZEL_H
