@@ -7,10 +7,9 @@
 #include <glm/glm.hpp>
 
 #include "Components.h"
+#include "Entity.h"
 #include "Hazel/Renderer/Renderer2D.h"
 #include "hzpch.h"
-
-#include "Entity.h"
 
 namespace Hazel {
 
@@ -18,10 +17,9 @@ namespace Hazel {
     }
 
     static void OnTransformConstruct(entt::registry& registry, entt::entity entity) {
-
     }
 
-    Scene::Scene() { // NOLINT(modernize-use-equals-default)
+    Scene::Scene() {// NOLINT(modernize-use-equals-default)
 #if ENTT_EXAMPLE_CODE
         auto entity = m_Registry.create();
         m_Registry.emplace<TransformComponent>(entity, glm::mat4(1.0f));
@@ -54,10 +52,31 @@ namespace Hazel {
     }
 
     void Scene::OnUpdate(Timestep ts) {
-        auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-        for (auto entity : group) {
-            const auto &[transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-            Renderer2D::DrawQuad(static_cast<const glm::mat4>(transform), sprite.Color);
+        Camera* mainCamera = nullptr;
+        glm::mat4* cameraTransform = nullptr;
+        {
+            auto group = m_Registry.view<TransformComponent, CameraComponent>();
+            for (auto entity : group) {
+                const auto& [transform, camera] = group.get<TransformComponent, CameraComponent>(entity);
+
+                if (camera.Primary) {
+                    mainCamera = &camera.Camera;
+                    cameraTransform = &transform.Transform;
+                    break;
+                }
+            }
+        }
+
+        if (mainCamera) {
+            Renderer2D::BeginScene(static_cast<const Camera>(mainCamera->GetProjection()), *cameraTransform);
+
+            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+            for (auto entity : group) {
+                const auto& [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+
+                Renderer2D::DrawQuad(static_cast<const glm::mat4>(transform), sprite.Color);
+            }
+            Renderer2D::EndScene();
         }
     }
 }// namespace Hazel

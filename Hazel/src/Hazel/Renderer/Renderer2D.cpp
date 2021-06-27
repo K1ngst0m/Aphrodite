@@ -57,7 +57,7 @@ namespace Hazel {
 
         s_Data.QuadVertexBufferBase = new QuadVertex[Hazel::Renderer2DData::MaxVertices];
 
-        uint32_t* quadIndices = new uint32_t[Hazel::Renderer2DData::MaxIndices];
+        auto* quadIndices = new uint32_t[Hazel::Renderer2DData::MaxIndices];
 
         uint32_t offset = 0;
         for (uint32_t i = 0; i < Hazel::Renderer2DData::MaxIndices; i += 6) {
@@ -82,7 +82,7 @@ namespace Hazel {
 
         int32_t samplers[Hazel::Renderer2DData::MaxTextureSlots];
         for (uint32_t i = 0; i < Hazel::Renderer2DData::MaxTextureSlots; i++)
-            samplers[i] = i;
+            samplers[i] = static_cast<int>(i);
 
         s_Data.TextureShader = Shader::Create("assets/shaders/Texture.glsl");
         s_Data.TextureShader->Bind();
@@ -114,6 +114,21 @@ namespace Hazel {
 
         s_Data.TextureSlotIndex = 1;
     }
+
+    void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform) {
+        HZ_PROFILE_FUNCTION();
+
+        glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
+
+        s_Data.TextureShader->Bind();
+        s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
+
+        s_Data.QuadIndexCount = 0;
+        s_Data.QuadVertexBufferPtr = s_Data.QuadVertexBufferBase;
+
+        s_Data.TextureSlotIndex = 1;
+    }
+
 
     void Renderer2D::EndScene() {
         HZ_PROFILE_FUNCTION();
@@ -262,6 +277,5 @@ namespace Hazel {
     Renderer2D::Statistics Renderer2D::GetStats() {
         return s_Data.Stats;
     }
-
 
 }// namespace Hazel

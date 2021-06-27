@@ -7,6 +7,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Hazel/Renderer/Camera.h"
+
 namespace Hazel {
     struct TransformComponent {
         glm::mat4 Transform{1.0f};
@@ -33,6 +35,15 @@ namespace Hazel {
         TagComponent() = default;
         TagComponent(const TagComponent&) = default;
         explicit TagComponent(std::string tag) : Tag(std::move(tag)) {}
+    };
+
+    struct CameraComponent {
+        Hazel::Camera Camera;
+        bool Primary = true;
+
+        CameraComponent() = default;
+        CameraComponent(const CameraComponent&) = default;
+        explicit CameraComponent(const glm::mat4& projection) : Camera(projection) {}
     };
 }// namespace Hazel
 
