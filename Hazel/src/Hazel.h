@@ -15,6 +15,7 @@
 #include "Hazel/Core/TimeStep.h"
 #include "Hazel/ImGui/ImGuiLayer.h"
 #include "Hazel/Renderer/Buffer.h"
+#include "Hazel/Renderer/Framebuffer.h"
 #include "Hazel/Renderer/OrthographicCamera.h"
 #include "Hazel/Renderer/OrthographicCameraController.h"
 #include "Hazel/Renderer/RenderCommand.h"
@@ -23,9 +24,9 @@
 #include "Hazel/Renderer/Shader.h"
 #include "Hazel/Renderer/Texture.h"
 #include "Hazel/Renderer/VertexArray.h"
-#include "Hazel/Renderer/Framebuffer.h"
-#include "Hazel/Scene/Scene.h"
-#include "Hazel/Scene/Entity.h"
 #include "Hazel/Scene/Components.h"
+#include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/Scene.h"
+#include "Hazel/Scene/ScriptableEntity.h"
 
 #endif// HAZEL_ENGINE_HAZEL_H

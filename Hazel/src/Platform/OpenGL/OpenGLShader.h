@@ -42,8 +42,8 @@ namespace Hazel {
         void UploadUniformMat4(const std::string &name, const glm::mat4 &matrix) const;
 
     private:
-        std::string ReadFile(const std::string &filepath);
-        std::unordered_map<GLenum, std::string> PreProcess(const std::string &source);
+        static std::string ReadFile(const std::string &filepath);
+        static std::unordered_map<GLenum, std::string> PreProcess(const std::string &source);
         void Compile(const std::unordered_map<GLenum, std::string> &shaderSource);
 
     private:

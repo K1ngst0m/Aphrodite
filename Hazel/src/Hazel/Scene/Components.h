@@ -7,7 +7,8 @@
 
 #include <glm/glm.hpp>
 
-#include "Hazel/Renderer/Camera.h"
+#include "Hazel/Scene/SceneCamera.h"
+#include "Hazel/Scene/ScriptableEntity.h"
 
 namespace Hazel {
     struct TransformComponent {
@@ -38,13 +39,37 @@ namespace Hazel {
     };
 
     struct CameraComponent {
-        Hazel::Camera Camera;
+        SceneCamera Camera;
         bool Primary = true;
+        bool FixedAspectRatio = false;
 
         CameraComponent() = default;
         CameraComponent(const CameraComponent&) = default;
-        explicit CameraComponent(const glm::mat4& projection) : Camera(projection) {}
     };
+
+    struct NativeScriptComponent
+    {
+        ScriptableEntity* Instance = nullptr;
+
+        std::function<void()> InstantiateFunction;
+        std::function<void()> DestroyInstanceFunction;
+
+        std::function<void(ScriptableEntity*)> OnCreateFunction;
+        std::function<void(ScriptableEntity*)> OnDestroyFunction;
+        std::function<void(ScriptableEntity*, Timestep)> OnUpdateFunction;
+
+        template<typename T>
+        void Bind()
+        {
+            InstantiateFunction = [&]() { Instance = new T(); };
+            DestroyInstanceFunction = [&]() { delete (T*)Instance; Instance = nullptr; };
+
+            OnCreateFunction = [](ScriptableEntity* instance) { ((T*)instance)->OnCreate(); };
+            OnDestroyFunction = [](ScriptableEntity* instance) { ((T*)instance)->OnDestroy(); };
+            OnUpdateFunction = [](ScriptableEntity* instance, Timestep ts) { ((T*)instance)->OnUpdate(ts); };
+        }
+    };
+
 }// namespace Hazel
 
 

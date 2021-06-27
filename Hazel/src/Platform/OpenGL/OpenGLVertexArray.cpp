@@ -90,10 +90,10 @@ void Hazel::OpenGLVertexArray::AddVertexBuffer(
             case ShaderDataType::Bool: {
                 glEnableVertexAttribArray(m_VertexBufferIndex);
                 glVertexAttribPointer(m_VertexBufferIndex,
-                                      element.GetComponentCount(),
+                                      static_cast<GLint>(element.GetComponentCount()),
                                       ShaderDataTypeToOpenGLBaseType(element.Type),
                                       element.Normalized ? GL_TRUE : GL_FALSE,
-                                      layout.GetStride(),
+                                      static_cast<GLsizei>(layout.GetStride()),
                                       (const void *) element.Offset);
                 m_VertexBufferIndex++;
                 break;
@@ -107,8 +107,8 @@ void Hazel::OpenGLVertexArray::AddVertexBuffer(
                                           count,
                                           ShaderDataTypeToOpenGLBaseType(element.Type),
                                           element.Normalized ? GL_TRUE : GL_FALSE,
-                                          layout.GetStride(),
-                                          (const void *) (sizeof(float) * count * i));
+                                          static_cast<GLsizei>(layout.GetStride()),
+                                          (const void *) (element.Offset + sizeof(float) * count * i));
                     glVertexAttribDivisor(m_VertexBufferIndex, 1);
                     m_VertexBufferIndex++;
                 }

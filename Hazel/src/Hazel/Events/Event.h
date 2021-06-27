@@ -4,8 +4,10 @@
 #ifndef HAZEL_ENGINE_EVENT_H
 #define HAZEL_ENGINE_EVENT_H
 
+#include <functional>
+
 #include "Hazel/Core/Base.h"
-#include "hzpch.h"
+#include "Hazel/Debug/Instrumentor.h"
 
 namespace Hazel {
     enum class EventType {

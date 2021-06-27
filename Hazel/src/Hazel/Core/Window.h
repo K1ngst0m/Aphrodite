@@ -14,7 +14,7 @@
 
 #include "Base.h"
 #include "Hazel/Events/Event.h"
-#include "hzpch.h"
+#include <sstream>
 
 namespace Hazel {
     struct WindowProps {

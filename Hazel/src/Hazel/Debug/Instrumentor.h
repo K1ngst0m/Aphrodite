@@ -11,6 +11,9 @@
 #include <iomanip>
 #include <string>
 #include <thread>
+#include <mutex>
+
+#include "Hazel/Core/Log.h"
 
 namespace Hazel {
     using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;
