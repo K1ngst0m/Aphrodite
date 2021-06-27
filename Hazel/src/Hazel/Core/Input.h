@@ -1,6 +1,7 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// Input.h
+
+// Check Keyboard, Mouse Input
+
 
 #ifndef HAZEL_ENGINE_INPUT_H
 #define HAZEL_ENGINE_INPUT_H
@@ -13,13 +14,12 @@ namespace Hazel {
     class Input {
     public:
         static bool IsKeyPressed(KeyCode key);
-
-    private:
-        static Scope<Input> s_Instance;
         static bool IsMouseButtonPressed(MouseCode button);
         static std::pair<float, float> GetMousePosition();
         static float GetMouseX();
         static float GetMouseY();
+    private:
+        static Scope<Input> s_Instance;
     };
 }// namespace Hazel
 

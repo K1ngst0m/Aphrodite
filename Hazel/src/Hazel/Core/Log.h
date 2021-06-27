@@ -1,6 +1,9 @@
 //
 // Created by npchitman on 5/31/21.
 //
+// Logging system
+
+
 
 #ifndef HAZEL_ENGINE_LOG_H
 #define HAZEL_ENGINE_LOG_H

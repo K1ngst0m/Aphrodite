@@ -1,6 +1,13 @@
-//
-// Created by npchitman on 5/30/21.
-//
+// Application.h
+
+// application class:
+// - control how game create and delete
+// - handle events
+// - manage layer
+// - control game loop
+// - lifecycle function
+// - Window event callback
+
 
 #ifndef HAZEL_APPLICATION_H
 #define HAZEL_APPLICATION_H

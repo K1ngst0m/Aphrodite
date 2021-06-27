@@ -1,6 +1,8 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// Layer.h
+
+// Layer Class:
+// - control how the layer create and delete
+// - lifecycle function(attach/detach layers, game loop update...)
 
 #ifndef HAZEL_ENGINE_LAYER_H
 #define HAZEL_ENGINE_LAYER_H

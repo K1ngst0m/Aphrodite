@@ -1,6 +1,6 @@
-//
-// Created by npchitman on 6/23/21.
-//
+// MouseCode.h
+
+// MouseCode List
 
 #ifndef HAZEL_ENGINE_MOUSECODES_H
 #define HAZEL_ENGINE_MOUSECODES_H

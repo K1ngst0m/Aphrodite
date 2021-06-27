@@ -1,6 +1,8 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// LayerStack.h
+
+// LayerStack class
+// - control how the layer push
+// - provide layer iterator to traverse layers
 
 #ifndef HAZEL_ENGINE_LAYERSTACK_H
 #define HAZEL_ENGINE_LAYERSTACK_H

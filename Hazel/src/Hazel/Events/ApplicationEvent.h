@@ -1,6 +1,8 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// ApplicationEvent.h
+
+// Application Event:
+// - Window Resize, Close
+// - Application Tick, Update, Render
 
 #ifndef HAZEL_ENGINE_APPLICATIONEVENT_H
 #define HAZEL_ENGINE_APPLICATIONEVENT_H
@@ -14,9 +16,9 @@ namespace Hazel {
             : m_Width(width),
               m_Height(height) {}
 
-        unsigned int GetWidth() const { return m_Width; }
+        uint32_t GetWidth() const { return m_Width; }
 
-        unsigned int GetHeight() const { return m_Height; }
+        uint32_t GetHeight() const { return m_Height; }
 
         std::string ToString() const override {
             std::stringstream ss;

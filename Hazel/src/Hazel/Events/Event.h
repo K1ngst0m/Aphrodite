@@ -1,6 +1,5 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// Event.h
+
 
 #ifndef HAZEL_ENGINE_EVENT_H
 #define HAZEL_ENGINE_EVENT_H
@@ -59,7 +58,7 @@ namespace Hazel {
 
         virtual std::string ToString() const { return GetName(); }
 
-        bool IsInCateGory(EventCategory category) {
+        bool IsInCateGory(EventCategory category) const {
             return GetCategoryFlags() & category;
         }
     };

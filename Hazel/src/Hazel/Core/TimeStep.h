@@ -1,6 +1,6 @@
-//
-// Created by npchitman on 6/20/21.
-//
+// TimeStep.h
+
+// TimeStep class, provide for game loop, framerate calculate, etc.
 
 #ifndef HAZEL_ENGINE_TIMESTEP_H
 #define HAZEL_ENGINE_TIMESTEP_H

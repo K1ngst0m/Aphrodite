@@ -13,13 +13,13 @@ namespace Hazel {
     {
     public:
         EditorLayer();
-        virtual ~EditorLayer() = default;
+        ~EditorLayer() override = default;
 
-        virtual void OnAttach() override;
-        virtual void OnDetach() override;
+        void OnAttach() override;
+        void OnDetach() override;
 
         void OnUpdate(Timestep ts) override;
-        virtual void OnImGuiRender() override;
+        void OnImGuiRender() override;
         void OnEvent(Event& e) override;
     private:
         Hazel::OrthographicCameraController m_CameraController;
@@ -28,6 +28,9 @@ namespace Hazel {
         Ref<VertexArray> m_SquareVA;
         Ref<Shader> m_FlatColorShader;
         Ref<Framebuffer> m_Framebuffer;
+
+        Ref<Scene> m_ActiveScene;
+        entt::entity m_SquareEntity;
 
         Ref<Texture2D> m_CheckerboardTexture;
 

@@ -1,6 +1,11 @@
-//
-// Created by npchitman on 5/31/21.
-//
+// Window.h
+
+// WindowProps:
+
+// Window class: abstract class
+// - create and delete window
+// - get and set some window property (height, width, vsync, etc.)
+// - window event callback
 
 #ifndef HAZEL_ENGINE_WINDOW_H
 #define HAZEL_ENGINE_WINDOW_H

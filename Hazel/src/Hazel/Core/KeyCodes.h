@@ -1,6 +1,6 @@
-//
-// Created by npchitman on 6/1/21.
-//
+// KeyCodes.h
+
+// KeyCode List
 
 #ifndef HAZEL_ENGINE_KEYCODES_H
 #define HAZEL_ENGINE_KEYCODES_H

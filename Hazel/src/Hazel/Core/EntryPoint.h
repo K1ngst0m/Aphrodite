@@ -1,3 +1,11 @@
+// EntryPoint.h
+
+// engine's entry point:
+// - init logging system
+// - create application
+// - run the game circle
+
+
 #ifndef HAZEL_ENTRYPOINT_H
 #define HAZEL_ENTRYPOINT_H
 
