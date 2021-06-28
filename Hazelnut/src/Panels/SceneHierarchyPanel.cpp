@@ -4,6 +4,8 @@
 
 #include "SceneHierarchyPanel.h"
 
+#include <glm/gtc/type_ptr.hpp>
+
 #include "../../../Hazel/3rdparty/imgui/imgui.h"
 #include "Hazel/Scene/Components.h"
 
@@ -23,6 +25,12 @@ namespace Hazel {
             Entity entity{entityID, m_Context.get()};
             DrawEntityNode(entity);
         });
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+            m_SelectionContext = {};
+        ImGui::End();
+        ImGui::Begin("Properties");
+        if (m_SelectionContext)
+            DrawComponents(m_SelectionContext);
         ImGui::End();
     }
 
@@ -41,6 +49,28 @@ namespace Hazel {
             if (opened)
                 ImGui::TreePop();
             ImGui::TreePop();
+        }
+    }
+
+    void SceneHierarchyPanel::DrawComponents(Entity entity) {
+        if (entity.HasComponent<TagComponent>()) {
+            auto& tag = entity.GetComponent<TagComponent>().Tag;
+
+            std::array<char, 256> buffer{};
+            std::memset(buffer.data(), 0, sizeof(buffer));
+            std::strcpy(buffer.data(), tag.c_str());
+            if (ImGui::InputText("Tag", buffer.data(), sizeof(buffer))) {
+                tag = std::string(buffer.data());
+            }
+
+            if (entity.HasComponent<TransformComponent>()) {
+                if (ImGui::TreeNodeEx((void*) typeid(TransformComponent).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Transform")) {
+                    auto& transform = entity.GetComponent<TransformComponent>().Transform;
+                    ImGui::DragFloat3("Position", glm::value_ptr(transform[3]), 0.1f);
+
+                    ImGui::TreePop();
+                }
+            }
         }
     }
 }// namespace Hazel
