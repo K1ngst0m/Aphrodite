@@ -6,10 +6,10 @@
 #define HAZEL_ENGINE_SCENEHIERARCHYPANEL_H
 
 #include "Hazel/Core/Base.h"
-#include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
+#include "Hazel/Scene/Scene.h"
 
-namespace Hazel{
+namespace Hazel {
     class SceneHierarchyPanel {
     public:
         SceneHierarchyPanel() = default;
@@ -19,15 +19,17 @@ namespace Hazel{
 
         void OnImGuiRender();
 
+        Entity GetSelectedEntity() const { return m_SelectionContext; }
+
     private:
         void DrawEntityNode(Entity entity);
-        static void DrawComponents(Entity entity);
+        void DrawComponents(Entity entity);
 
     private:
         Ref<Scene> m_Context;
         Entity m_SelectionContext;
     };
-}
+}// namespace Hazel
 
 
 #endif//HAZEL_ENGINE_SCENEHIERARCHYPANEL_H

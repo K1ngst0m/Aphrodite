@@ -12,7 +12,7 @@
 
 #include <utility>
 
-#include "Base.h"
+#include "Hazel/Core/Base.h"
 #include "Hazel/Events/Event.h"
 #include <sstream>
 
@@ -23,7 +23,7 @@ namespace Hazel {
         uint32_t Height;
 
         explicit WindowProps(std::string title = "Hazel Engine",
-                             uint32_t width = 1280, uint32_t height = 720)
+                             uint32_t width = 1600, uint32_t height = 900)
             : Title(std::move(title)),
               Width(width),
               Height(height) {}

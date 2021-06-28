@@ -4,10 +4,15 @@
 
 #include "EditorLayer.h"
 
+#include <imgui.h>
+#include <ImGuizmo.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../../Hazel/3rdparty/imgui/imgui.h"
+#include "Hazel/Math/Math.h"
+#include "Hazel/Scene/SceneSerializer.h"
+#include "Hazel/Utils/PlatformUtils.h"
 
 namespace Hazel {
 
@@ -29,6 +34,8 @@ namespace Hazel {
 
         m_ActiveScene = CreateRef<Scene>();
 
+#if false
+        // Entity
         auto square = m_ActiveScene->CreateEntity("Green Square");
         square.AddComponent<SpriteRendererComponent>(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
 
@@ -72,6 +79,7 @@ namespace Hazel {
 
         m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
         m_SecondCamera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+#endif
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
@@ -148,18 +156,33 @@ namespace Hazel {
 
         // DockSpace
         ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
+        float minWinSizeX = style.WindowMinSize.x;
+        style.WindowMinSize.x = 370.0f;
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
             ImGuiID dockSpace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockSpace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
+        style.WindowMinSize.x = minWinSizeX;
+
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 // Disabling fullscreen would allow the window to be moved to the front of other windows,
                 // which we can't undo at the moment without finer window depth/z control.
-                //ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);
+                //ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
 
-                if (ImGui::MenuItem("Exit")) Application::Get().Close();
+                if (ImGui::MenuItem("New", "Ctrl+N"))
+                    NewScene();
+
+                if (ImGui::MenuItem("Open...", "Ctrl+O"))
+                    OpenScene();
+
+                if (ImGui::MenuItem("Save As...", "Ctrl+Alt+S"))
+                    SaveSceneAs();
+
+                if (ImGui::MenuItem("Exit"))
+                    Application::Get().Close();
                 ImGui::EndMenu();
             }
 
@@ -184,13 +207,58 @@ namespace Hazel {
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused || !m_ViewportHovered);
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
         ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
+
+        // Gizmos
+        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (selectedEntity && m_GizmoType != -1) {
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::SetDrawlist();
+
+            auto windowWidth = (float) ImGui::GetWindowWidth();
+            auto windowHeight = (float) ImGui::GetWindowHeight();
+            ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, windowWidth, windowHeight);
+
+            // Camera
+            auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+            const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+            const glm::mat4& cameraProjection = camera.GetProjection();
+            glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+
+            // Entity transform
+            auto& tc = selectedEntity.GetComponent<TransformComponent>();
+            glm::mat4 transform = tc.GetTransform();
+
+            // Snapping
+            bool snap = Input::IsKeyPressed(Key::LeftControl);
+            float snapValue = 0.5f;// Snap to 0.5m for translation/scale
+            // Snap to 45 degrees for rotation
+            if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
+                snapValue = 45.0f;
+
+            float snapValues[3] = {snapValue, snapValue, snapValue};
+
+            ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+                                 (ImGuizmo::OPERATION) m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+                                 nullptr, snap ? snapValues : nullptr);
+
+            if (ImGuizmo::IsUsing()) {
+                glm::vec3 translation, rotation, scale;
+                Math::DecomposeTransform(transform, translation, rotation, scale);
+
+                glm::vec3 deltaRotation = rotation - tc.Rotation;
+                tc.Translation = translation;
+                tc.Rotation += deltaRotation;
+                tc.Scale = scale;
+            }
+        }
+
         ImGui::End();
         ImGui::PopStyleVar();
 
@@ -199,6 +267,78 @@ namespace Hazel {
 
     void EditorLayer::OnEvent(Event& e) {
         m_CameraController.OnEvent(e);
+
+        EventDispatcher dispatcher(e);
+        dispatcher.Dispatch<KeyPressedEvent>(HZ_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
     }
 
+    bool EditorLayer::OnKeyPressed(KeyPressedEvent& e) {
+        // Shortcuts
+        if (e.GetRepeatCount() > 0)
+            return false;
+
+        bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
+        bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+        switch (e.GetKeyCode()) {
+            case Key::N: {
+                if (control)
+                    NewScene();
+
+                break;
+            }
+            case Key::O: {
+                if (control)
+                    OpenScene();
+
+                break;
+            }
+            case Key::S: {
+                if (control && shift)
+                    SaveSceneAs();
+
+                break;
+            }
+
+            // Gizmos
+            case Key::Q:
+                m_GizmoType = -1;
+                break;
+            case Key::W:
+                m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+                break;
+            case Key::E:
+                m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+                break;
+            case Key::R:
+                m_GizmoType = ImGuizmo::OPERATION::SCALE;
+                break;
+        }
+        return true;
+    }
+
+    void EditorLayer::NewScene() {
+        m_ActiveScene = CreateRef<Scene>();
+        m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+    }
+
+    void EditorLayer::OpenScene() {
+        auto filepath = FileDialogs::OpenFile("Hazel Scene (*.hazel)\0*.hazel\0");
+        if (filepath) {
+            m_ActiveScene = CreateRef<Scene>();
+            m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
+            m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+            SceneSerializer serializer(m_ActiveScene);
+            serializer.Deserialize(*filepath);
+        }
+    }
+
+    void EditorLayer::SaveSceneAs() {
+        auto filepath = FileDialogs::SaveFile("Hazel Scene (*.hazel)\0*.hazel\0");
+        if (filepath) {
+            SceneSerializer serializer(m_ActiveScene);
+            serializer.Serialize(*filepath);
+        }
+    }
 }// namespace Hazel
