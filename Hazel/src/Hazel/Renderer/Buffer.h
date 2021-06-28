@@ -55,10 +55,10 @@ namespace Hazel {
 
     struct BufferElement {
         std::string Name;
-        ShaderDataType Type;
-        uint32_t Size;
-        size_t Offset;
-        bool Normalized;
+        ShaderDataType Type{};
+        uint32_t Size{};
+        size_t Offset{};
+        bool Normalized{};
 
         BufferElement() = default;
 
@@ -105,7 +105,7 @@ namespace Hazel {
     public:
         BufferLayout() = default;
 
-        BufferLayout(const std::initializer_list<BufferElement> &elements)
+        BufferLayout(std::initializer_list<BufferElement> elements)
             : m_Elements(elements) {
             CalculateOffsetsAndStride();
         }
