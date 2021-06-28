@@ -67,7 +67,7 @@ namespace Hazel {
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(m_RendererID, 0, 0, 0, static_cast<GLsizei>(m_Width), static_cast<GLsizei>(m_Height), dataFormat, GL_UNSIGNED_BYTE, data);
 
         stbi_image_free(data);
     }
@@ -83,7 +83,7 @@ namespace Hazel {
 
         uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
         HZ_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
-        glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, m_DataFormat, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(m_RendererID, 0, 0, 0, static_cast<GLsizei>(m_Width), static_cast<GLsizei>(m_Height), m_DataFormat, GL_UNSIGNED_BYTE, data);
     }
 
     void OpenGLTexture2D::Bind(uint32_t slot) const {

@@ -18,6 +18,7 @@
 #include "Hazel/Renderer/Framebuffer.h"
 #include "Hazel/Renderer/OrthographicCamera.h"
 #include "Hazel/Renderer/OrthographicCameraController.h"
+#include "Hazel/Core/Assert.h"
 #include "Hazel/Renderer/RenderCommand.h"
 #include "Hazel/Renderer/Renderer.h"
 #include "Hazel/Renderer/Renderer2D.h"

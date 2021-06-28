@@ -6,7 +6,6 @@
 #define HAZEL_ENGINE_SCENEHIERARCHYPANEL_H
 
 #include "Hazel/Core/Base.h"
-#include "Hazel/Core/Log.h"
 #include "Hazel/Scene/Scene.h"
 #include "Hazel/Scene/Entity.h"
 
@@ -22,7 +21,7 @@ namespace Hazel{
 
     private:
         void DrawEntityNode(Entity entity);
-        void DrawComponents(Entity entity);
+        static void DrawComponents(Entity entity);
 
     private:
         Ref<Scene> m_Context;

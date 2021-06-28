@@ -198,7 +198,7 @@ namespace Hazel {
         HZ_PROFILE_FUNCTION();
 
         GLuint program = glCreateProgram();
-        HZ_CORE_ASSERT(shaderSources.size() <= 2, "We only support 2 shaders for now.");
+        HZ_CORE_ASSERT(shaderSource.size() <= 2, "We only support 2 shaders for now.");
         std::array<GLenum, 2> glShaderIDs{};
         int glShaderIDIndex = 0;
 
