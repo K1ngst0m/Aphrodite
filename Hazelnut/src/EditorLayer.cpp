@@ -45,7 +45,7 @@ namespace Hazel {
         public:
             void OnCreate() override{
                 auto& transform = GetComponent<TransformComponent>().Transform;
-                transform[3][0] = rand() % 10 - 5.0f;
+                transform[3][0] = std::rand() % 10 - 5.0f;
             }
 
             void OnDestroy() override{
@@ -69,6 +69,8 @@ namespace Hazel {
 
         m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
         m_SecondCamera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
 
     void EditorLayer::OnDetach() {
@@ -160,6 +162,8 @@ namespace Hazel {
 
             ImGui::EndMenuBar();
         }
+
+        m_SceneHierarchyPanel.OnImGuiRender();
 
         ImGui::Begin("Settings");
 
