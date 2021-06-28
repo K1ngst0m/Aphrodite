@@ -51,7 +51,7 @@ add_library(${PROJECT_NAME} STATIC
         src/Hazel/Utils/PlatformUtils.h src/Platform/Linux/LinuxPlatformUtils.cpp
 
         # math
-        src/Hazel/Math/Math.cpp src/Hazel/Math/Math.h)
+        src/Hazel/Math/Math.cpp src/Hazel/Math/Math.h src/Hazel/Renderer/EditorCamera.cpp src/Hazel/Renderer/EditorCamera.h)
 
 
 add_definitions(-DSTB_IMAGE_IMPLEMENTATION -DHZ_ENABLE_ASSERTS -DHZ_DEBUG)

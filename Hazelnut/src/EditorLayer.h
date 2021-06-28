@@ -6,12 +6,12 @@
 #define HAZEL_ENGINE_EDITORLAYER_H
 
 #include "Hazel.h"
+#include "Hazel/Renderer/EditorCamera.h"
 #include "Panels/SceneHierarchyPanel.h"
 
 namespace Hazel {
 
-    class EditorLayer : public Layer
-    {
+    class EditorLayer : public Layer {
     public:
         EditorLayer();
         ~EditorLayer() override = default;
@@ -24,7 +24,6 @@ namespace Hazel {
         void OnEvent(Event& e) override;
 
     private:
-
         bool OnKeyPressed(KeyPressedEvent& e);
         void NewScene();
         void OpenScene();
@@ -45,18 +44,20 @@ namespace Hazel {
 
         bool m_PrimaryCamera = true;
 
+        EditorCamera m_EditorCamera;
+
         Ref<Texture2D> m_CheckerboardTexture;
 
         bool m_ViewportFocused = false, m_ViewportHovered = false;
-        glm::vec2 m_ViewportSize = { 0.0f, 0.0f };
+        glm::vec2 m_ViewportSize = {0.0f, 0.0f};
 
-        glm::vec4 m_SquareColor = { 0.2f, 0.3f, 0.8f, 1.0f };
+        glm::vec4 m_SquareColor = {0.2f, 0.3f, 0.8f, 1.0f};
 
         int m_GizmoType = -1;
 
         SceneHierarchyPanel m_SceneHierarchyPanel;
     };
 
-}
+}// namespace Hazel
 
 #endif//HAZEL_ENGINE_EDITORLAYER_H
