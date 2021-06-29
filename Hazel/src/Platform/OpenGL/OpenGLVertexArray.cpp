@@ -82,12 +82,7 @@ void Hazel::OpenGLVertexArray::AddVertexBuffer(
             case ShaderDataType::Float:
             case ShaderDataType::Float2:
             case ShaderDataType::Float3:
-            case ShaderDataType::Float4:
-            case ShaderDataType::Int:
-            case ShaderDataType::Int2:
-            case ShaderDataType::Int3:
-            case ShaderDataType::Int4:
-            case ShaderDataType::Bool: {
+            case ShaderDataType::Float4: {
                 glEnableVertexAttribArray(m_VertexBufferIndex);
                 glVertexAttribPointer(m_VertexBufferIndex,
                                       static_cast<GLint>(element.GetComponentCount()),
@@ -96,6 +91,21 @@ void Hazel::OpenGLVertexArray::AddVertexBuffer(
                                       static_cast<GLsizei>(layout.GetStride()),
                                       (const void *) element.Offset);
                 m_VertexBufferIndex++;
+                break;
+            }
+            case ShaderDataType::Int:
+            case ShaderDataType::Int2:
+            case ShaderDataType::Int3:
+            case ShaderDataType::Int4:
+            case ShaderDataType::Bool: {
+                glEnableVertexAttribArray(m_VertexBufferIndex);
+                glVertexAttribIPointer(m_VertexBufferIndex,
+                                       static_cast<GLint>(element.GetComponentCount()),
+                                       ShaderDataTypeToOpenGLBaseType(element.Type),
+                                       static_cast<GLsizei>(layout.GetStride()),
+                                       (const void *) element.Offset);
+                m_VertexBufferIndex++
+                        ;
                 break;
             }
             case ShaderDataType::Mat3:

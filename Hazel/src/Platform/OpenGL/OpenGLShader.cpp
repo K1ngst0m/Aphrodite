@@ -266,4 +266,10 @@ namespace Hazel {
             glDeleteShader(id);
         }
     }
+
+    void OpenGLShader::SetFloat2(const std::string &name, const glm::vec2 &value) {
+        HZ_PROFILE_FUNCTION();
+
+        UploadUniformFloat2(name, value);
+    }
 }// namespace Hazel
