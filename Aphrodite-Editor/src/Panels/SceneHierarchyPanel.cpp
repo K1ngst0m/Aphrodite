@@ -7,8 +7,8 @@
 #include <cstring>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../../../Aphrodite-Runtime//3rdparty/imgui/imgui.h"
-#include "../../../Aphrodite-Runtime//3rdparty/imgui/imgui_internal.h"
+#include <imgui.h>
+#include <imgui_internal.h>
 #include "Aphrodite/Scene/Components.h"
 
 namespace Aph {

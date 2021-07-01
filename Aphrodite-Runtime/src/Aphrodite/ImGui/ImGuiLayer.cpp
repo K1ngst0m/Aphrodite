@@ -33,17 +33,19 @@ namespace Aph {
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
-        float fontSize = 18.0f;
+        float fontSize = 24.0f;
 
         // merge in icons from Font Awesome
-        static const ImWchar icons_ranges_fontawesome[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-        ImFontConfig icons_config_fontawesome;
-        icons_config_fontawesome.MergeMode = true;
-        icons_config_fontawesome.PixelSnapH = true;
+//        static const ImWchar icons_ranges_fontawesome[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+//        ImFontConfig icons_config_fontawesome;
+//        icons_config_fontawesome.MergeMode = true;
+//        icons_config_fontawesome.PixelSnapH = true;
+//        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+//        io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
+//        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
         io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
         // Setup Dear ImGui style
         ImGui::StyleColorsDark();

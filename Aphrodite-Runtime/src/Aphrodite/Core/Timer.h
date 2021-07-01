@@ -7,7 +7,7 @@
 
 #include <chrono>
 
-namespace Aph::Timer{
+namespace Aph{
     class Timer {
     public:
         Timer() {

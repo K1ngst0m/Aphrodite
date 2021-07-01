@@ -19,7 +19,7 @@ Until now this engine has been developed for the GNU/Linux OS only.
 ## Features
 
 * **Project**
-  * use shell && python scripts for project generating
+  * Use shell && Python scripts for project generation
   * Cmake Setup
     
 * **Core**

@@ -8,12 +8,9 @@
 
 #include <fstream>
 #include <glm/gtc/type_ptr.hpp>
-
 #include <shaderc/shaderc.hpp>
-
 #include <spirv_cross/spirv_cross.hpp>
 #include <spirv_cross/spirv_glsl.hpp>
-
 #include <utility>
 
 #include "Aphrodite/Core/Timer.h"
@@ -65,6 +62,7 @@ namespace Aph {
             if (!std::filesystem::exists(cacheDirectory))
                 std::filesystem::create_directories(cacheDirectory);
         }
+
         static const char *GLShaderStageCachedOpenGLFileExtension(uint32_t stage) {
             switch (stage) {
                 case GL_VERTEX_SHADER:
@@ -90,7 +88,7 @@ namespace Aph {
         }
     }// namespace Utils
 
-    OpenGLShader::OpenGLShader(const std::string &filepath) {
+    OpenGLShader::OpenGLShader(const std::string &filepath) : m_FilePath(filepath) {
         APH_PROFILE_FUNCTION();
 
         Utils::CreateCacheDirectoryIfNeeded();
@@ -98,7 +96,7 @@ namespace Aph {
         std::string source = ReadFile(filepath);
         auto shaderSources = PreProcess(source);
         {
-            Timer::Timer timer;
+            Timer timer;
             CompileOrGetVulkanBinaries(shaderSources);
             CompileOrGetOpenGLBinaries();
             CreateProgram();
@@ -113,7 +111,8 @@ namespace Aph {
         m_Name = filepath.substr(lastSlash, count);
     }
 
-    OpenGLShader::OpenGLShader(std::string name, const std::string &vertexSrc, const std::string &fragmentSrc) : m_Name(std::move(name)) {
+    OpenGLShader::OpenGLShader(std::string name, const std::string &vertexSrc, const std::string &fragmentSrc)
+        : m_Name(std::move(name)) {
         APH_PROFILE_FUNCTION();
 
         std::unordered_map<GLenum, std::string> sources;
@@ -233,13 +232,12 @@ namespace Aph {
             in.seekg(0, std::ios::end);
             size_t size = in.tellg();
             if (size != -1) {
-                result.resize(in.tellg());
+                result.resize(size);
                 in.seekg(0, std::ios::beg);
-                in.read(&result[0], static_cast<int>(result.size()));
+                in.read(&result[0], size);
             } else {
                 APH_CORE_ERROR("Could not read from file '{0}'", filepath);
             }
-
         } else {
             APH_CORE_ERROR("Could not open file '{0}'", filepath);
         }
@@ -250,21 +248,23 @@ namespace Aph {
     std::unordered_map<GLenum, std::string> OpenGLShader::PreProcess(const std::string &source) {
         APH_PROFILE_FUNCTION();
 
+
         std::unordered_map<GLenum, std::string> shaderSources;
 
         const char *typeToken = "#type";
         size_t typeTokenLength = strlen(typeToken);
-        size_t pos = source.find(typeToken, 0);
+        size_t pos = source.find(typeToken, 0);//Start of shader type declaration line
         while (pos != std::string::npos) {
-            size_t eol = source.find_first_of("\r\n", pos);
+            size_t eol = source.find_first_of("\r\n", pos);//End of shader type declaration line
             APH_CORE_ASSERT(eol != std::string::npos, "Syntax error");
-            size_t begin = pos + typeTokenLength + 1;
+            size_t begin = pos + typeTokenLength + 1;//Start of shader type name (after "#type " keyword)
             std::string type = source.substr(begin, eol - begin);
             APH_CORE_ASSERT(Utils::ShaderTypeFromString(type), "Invalid shader type specified");
 
-            size_t nextLinePos = source.find_first_not_of("\r\n", eol);
+            size_t nextLinePos = source.find_first_not_of("\r\n", eol);//Start of shader code after shader type declaration line
             APH_CORE_ASSERT(nextLinePos != std::string::npos, "Syntax error");
-            pos = source.find(typeToken, nextLinePos);
+            pos = source.find(typeToken, nextLinePos);//Start of next shader type declaration line
+
             shaderSources[Utils::ShaderTypeFromString(type)] = (pos == std::string::npos) ? source.substr(nextLinePos) : source.substr(nextLinePos, pos - nextLinePos);
         }
 
@@ -286,6 +286,7 @@ namespace Aph {
         const bool optimize = true;
         if (optimize)
             options.SetOptimizationLevel(shaderc_optimization_level_performance);
+
         std::filesystem::path cacheDirectory = Utils::GetCacheDirectory();
 
         auto &shaderData = m_VulkanSPIRV;
@@ -304,9 +305,7 @@ namespace Aph {
                 data.resize(size / sizeof(uint32_t));
                 in.read((char *) data.data(), size);
             } else {
-                shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source,
-                                                                                 Utils::GLShaderStageToShaderC(stage),
-                                                                                 m_FilePath.c_str(), options);
+                shaderc::SpvCompilationResult module = compiler.CompileGlslToSpv(source, Utils::GLShaderStageToShaderC(stage), m_FilePath.c_str(), options);
                 if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
                     APH_CORE_ERROR(module.GetErrorMessage());
                     APH_CORE_ASSERT(false);
@@ -317,7 +316,7 @@ namespace Aph {
                 std::ofstream out(cachedPath, std::ios::out | std::ios::binary);
                 if (out.is_open()) {
                     auto &data = shaderData[stage];
-                    out.write(reinterpret_cast<char *>(data.data()), data.size() * sizeof(uint32_t));
+                    out.write((char *) data.data(), data.size() * sizeof(uint32_t));
                     out.flush();
                     out.close();
                 }
@@ -419,24 +418,24 @@ namespace Aph {
 
     void OpenGLShader::Reflect(GLenum stage, const std::vector<uint32_t> &shaderData) {
 
-        spirv_cross::Compiler compiler(shaderData);
-        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-
-        APH_CORE_TRACE("OpenGLShader::Reflect - {0} {1}", Utils::GLShaderStageToString(stage), m_FilePath);
-        APH_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
-        APH_CORE_TRACE("    {0} resources", resources.sampled_images.size());
-
-        APH_CORE_TRACE("Uniform buffers:");
-        for (const auto &resource : resources.uniform_buffers) {
-            const auto &bufferType = compiler.get_type(resource.base_type_id);
-            uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
-            uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
-            int memberCount = bufferType.member_types.size();
-
-            APH_CORE_TRACE("  {0}", resource.name);
-            APH_CORE_TRACE("    Size = {0}", bufferSize);
-            APH_CORE_TRACE("    Binding = {0}", binding);
-            APH_CORE_TRACE("    Members = {0}", memberCount);
-        }
+//        spirv_cross::Compiler compiler(shaderData);
+//        spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+//
+//        APH_CORE_TRACE("OpenGLShader::Reflect - {0} {1}", Utils::GLShaderStageToString(stage), m_FilePath);
+//        APH_CORE_TRACE("    {0} uniform buffers", resources.uniform_buffers.size());
+//        APH_CORE_TRACE("    {0} resources", resources.sampled_images.size());
+//
+//        APH_CORE_TRACE("Uniform buffers:");
+//        for (const auto &resource : resources.uniform_buffers) {
+//            const auto &bufferType = compiler.get_type(resource.base_type_id);
+//            uint32_t bufferSize = compiler.get_declared_struct_size(bufferType);
+//            uint32_t binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+//            int memberCount = bufferType.member_types.size();
+//
+//            APH_CORE_TRACE("  {0}", resource.name);
+//            APH_CORE_TRACE("    Size = {0}", bufferSize);
+//            APH_CORE_TRACE("    Binding = {0}", binding);
+//            APH_CORE_TRACE("    Members = {0}", memberCount);
+//        }
     }
-}// namespace Aph-Runtime
+}// namespace Aph

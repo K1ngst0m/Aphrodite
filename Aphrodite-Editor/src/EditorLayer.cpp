@@ -25,7 +25,7 @@ namespace Aph {
     void EditorLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
-//        m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+        m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
 
         FramebufferSpecification fbSpec;
         fbSpec.Width = 1280;
@@ -37,11 +37,11 @@ namespace Aph {
 
         m_ActiveScene = CreateRef<Scene>();
         auto commandLineArgs = Application::Get().GetCommandLineArgs();
-        if(commandLineArgs.Count){
-            auto sceneFilePath = commandLineArgs[1];
-            SceneSerializer serializer(m_ActiveScene);
-            serializer.Deserialize(sceneFilePath);
-        }
+//        if(commandLineArgs.Count){
+//            auto sceneFilePath = commandLineArgs[1];
+//            SceneSerializer serializer(m_ActiveScene);
+//            serializer.Deserialize(sceneFilePath);
+//        }
 
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
 
@@ -220,7 +220,7 @@ namespace Aph {
         }
 
         m_SceneHierarchyPanel.OnImGuiRender();
-        m_ContentBrowserPanel.OnImGuiRender();
+//        m_ContentBrowserPanel.OnImGuiRender();
 
 //        ImGui::Begin("Renderer Info");
 //        ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
@@ -228,7 +228,7 @@ namespace Aph {
 //        ImGui::Text("OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
 //        ImGui::End();
 
-        ImGui::Begin("Renderer Statistics");
+        ImGui::Begin("Stats");
 
         std::string name = "None";
         if (m_HoveredEntity)
@@ -389,21 +389,21 @@ namespace Aph {
 
     void EditorLayer::OpenScene() {
         auto filepath = FileDialogs::OpenFile("Aph Scene (*.Aph)\0*.Aph\0");
-        if (filepath) {
+        if (!filepath.empty()) {
             m_ActiveScene = CreateRef<Scene>();
             m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
             SceneSerializer serializer(m_ActiveScene);
-            serializer.Deserialize(*filepath);
+            serializer.Deserialize(filepath);
         }
     }
 
     void EditorLayer::SaveSceneAs() {
         auto filepath = FileDialogs::SaveFile("Aph Scene (*.Aph)\0*.Aph\0");
-        if (filepath) {
+        if (!filepath.empty()) {
             SceneSerializer serializer(m_ActiveScene);
-            serializer.Serialize(*filepath);
+            serializer.Serialize(filepath);
         }
     }
 

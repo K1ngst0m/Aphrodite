@@ -16,7 +16,7 @@
 namespace Aph {
     Application *Application::s_Instance = nullptr;
 
-    Application::Application(const std::string &name) {
+    Application::Application(const std::string &name, ApplicationCommandLineArgs args) : m_CommandLineArgs(args) {
         APH_PROFILE_FUNCTION();
         APH_CORE_ASSERT(!s_Instance, "Application already exists!");
 
@@ -114,10 +114,6 @@ namespace Aph {
 
     void Application::Close() {
         m_Running = false;
-    }
-
-    Application::Application(const std::string &name, ApplicationCommandLineArgs args) : m_CommandLineArgs(args) {
-        APH_PROFILE_FUNCTION();
     }
 
 }// namespace Aph-Runtime

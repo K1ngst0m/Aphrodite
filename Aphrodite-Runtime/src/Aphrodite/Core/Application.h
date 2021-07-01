@@ -37,7 +37,6 @@ namespace Aph {
 
     class Application {
     public:
-        explicit Application(const std::string &name = "Aph-Runtime App");
         explicit Application(const std::string &name = "Aph-Runtime App", ApplicationCommandLineArgs args = ApplicationCommandLineArgs());
 
         virtual ~Application();

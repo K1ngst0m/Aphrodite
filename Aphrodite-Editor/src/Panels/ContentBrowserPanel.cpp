@@ -37,7 +37,7 @@ namespace Aph {
                 }
             }
 
-            ImGui::End();
         }
+        ImGui::End();
     }
 }// namespace Aph

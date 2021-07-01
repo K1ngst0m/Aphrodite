@@ -16,5 +16,5 @@ add_executable(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME} Aphrodite-Runtime)
 
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/assets
+file(COPY assets
         DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

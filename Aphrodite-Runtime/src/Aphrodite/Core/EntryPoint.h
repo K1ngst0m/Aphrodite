@@ -9,9 +9,10 @@
 #ifndef Aphrodite_ENTRYPOINT_H
 #define Aphrodite_ENTRYPOINT_H
 
-#ifdef APH_PLATFORM_LINUX
-
 #include "Aphrodite/Core/Base.h"
+#include "Aphrodite/Core/Application.h"
+
+#ifdef APH_PLATFORM_LINUX
 
 int main(int argc, char **argv) {
     Aph::Log::Init();
