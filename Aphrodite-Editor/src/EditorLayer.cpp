@@ -36,7 +36,7 @@ namespace Aph {
         m_Framebuffer = Framebuffer::Create(fbSpec);
 
         m_ActiveScene = CreateRef<Scene>();
-        auto commandLineArgs = Application::Get().GetCommandLineArgs();
+//        auto commandLineArgs = Application::Get().GetCommandLineArgs();
 //        if(commandLineArgs.Count){
 //            auto sceneFilePath = commandLineArgs[1];
 //            SceneSerializer serializer(m_ActiveScene);
@@ -121,7 +121,7 @@ namespace Aph {
         // Render
         Renderer2D::ResetStats();
         m_Framebuffer->Bind();
-        RenderCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1});
+        RenderCommand::SetClearColor({0.049f, 0.085f, 0.104f, 1.0f});
         RenderCommand::Clear();
 
         m_Framebuffer->ClearAttachment(1, -1);
@@ -220,7 +220,7 @@ namespace Aph {
         }
 
         m_SceneHierarchyPanel.OnImGuiRender();
-//        m_ContentBrowserPanel.OnImGuiRender();
+        m_ContentBrowserPanel.OnImGuiRender();
 
 //        ImGui::Begin("Renderer Info");
 //        ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
@@ -276,10 +276,10 @@ namespace Aph {
 
             // Camera
             // Runtime camera from entity
-            // auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-            // const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-            // const glm::mat4& cameraProjection = camera.GetProjection();
-            // glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+//             auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+//             const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+//             const glm::mat4& cameraProjection = camera.GetProjection();
+//             glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 
             // Editor camera
             const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();

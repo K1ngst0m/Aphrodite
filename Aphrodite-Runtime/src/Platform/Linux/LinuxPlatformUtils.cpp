@@ -14,22 +14,24 @@
 
 namespace Aph {
 
-    static std::string ExecCommand(const std::string_view& cmd) {
-        std::array<char, 128> buffer{};
-        std::string result;
-        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose);
-        if (!pipe) {
-            //            throw std::runtime_error("popen() failed!");
+    namespace Utils {
+        static std::string ExecCommand(const std::string_view& cmd) {
+            std::array<char, 128> buffer{};
+            std::string result;
+            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose);
+            if (!pipe) {
+                //            throw std::runtime_error("popen() failed!");
+            }
+            while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+                result += buffer.data();
+            }
+            return result;
         }
-        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-            result += buffer.data();
-        }
-        return result;
-    }
 
-    static std::string OpenFileDialogGetPath() {
-        return std::move(ExecCommand("zenity --file-selection"));
-    }
+        static std::string OpenFileDialogGetPath() {
+            return std::move(ExecCommand("zenity --file-selection"));
+        }
+    }// namespace Utils
 
     std::string FileDialogs::OpenFile(const char* filter) {
 #if false
@@ -49,7 +51,7 @@ namespace Aph {
         }
         return std::string();
 #endif
-        auto fileName = OpenFileDialogGetPath();
+        auto fileName = Utils::OpenFileDialogGetPath();
 
         return fileName;
     }
@@ -72,7 +74,7 @@ namespace Aph {
         }
         return std::string();
 #endif
-        auto fileName = OpenFileDialogGetPath();
+        auto fileName = Utils::OpenFileDialogGetPath();
 
         return fileName;
     }

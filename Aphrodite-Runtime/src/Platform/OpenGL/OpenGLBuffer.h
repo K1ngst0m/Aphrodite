@@ -25,7 +25,7 @@ namespace Aph {
 
 
     private:
-        uint32_t m_RendererID;
+        uint32_t m_RendererID{};
         BufferLayout m_Layout;
     };
 
@@ -42,7 +42,7 @@ namespace Aph {
         uint32_t GetCount() const override { return m_Count; }
 
     private:
-        uint32_t m_RendererID;
+        uint32_t m_RendererID{};
         uint32_t m_Count;
     };
 }// namespace Aph-Runtime

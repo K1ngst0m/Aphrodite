@@ -1,7 +1,5 @@
 project(Aphrodite-Runtime)
 
-include_directories(${PROJECT_SOURCE_DIR}/src)
-
 link_directories(${CMAKE_BINARY_DIR}/Libs)
 
 add_library(${PROJECT_NAME} STATIC

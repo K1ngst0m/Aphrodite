@@ -7,6 +7,9 @@ set(3rdparty_dir ${CMAKE_SOURCE_DIR}/3rdparty)
 set(runtime_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Runtime)
 set(editor_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Editor)
 
+# runtime
+include_directories(${runtime_src_dir}/src)
+
 # 3rd party
 add_subdirectory(${3rdparty_dir}/glad)
 add_subdirectory(${3rdparty_dir}/entt)
