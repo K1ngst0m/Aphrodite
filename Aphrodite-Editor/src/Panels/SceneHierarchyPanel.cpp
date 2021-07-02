@@ -4,14 +4,88 @@
 
 #include "SceneHierarchyPanel.h"
 
+#include <imgui.h>
+#include <imgui_internal.h>
+
 #include <cstring>
 #include <glm/gtc/type_ptr.hpp>
 
-#include <imgui.h>
-#include <imgui_internal.h>
 #include "Aphrodite/Scene/Components.h"
 
 namespace Aph {
+    SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context) {
+        SetContext(context);
+    }
+
+    void SceneHierarchyPanel::SetContext(const Ref<Scene>& context) {
+        m_Context = context;
+        m_SelectionContext = {};
+    }
+
+    void SceneHierarchyPanel::OnImGuiRender() {
+        ImGui::Begin("Scene Hierarchy");
+
+        m_Context->m_Registry.each([&](auto entityID) {
+            Entity entity{entityID, m_Context.get()};
+            DrawEntityNode(entity);
+        });
+
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+            m_SelectionContext = {};
+
+        // Right click
+        if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
+            if (ImGui::MenuItem("Create Empty Entity"))
+                m_Context->CreateEntity("Empty Entity");
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
+
+        ImGui::Begin("Properties");
+        if (m_SelectionContext) {
+            DrawComponents(m_SelectionContext);
+        }
+        ImGui::End();
+    }
+
+    void SceneHierarchyPanel::SetSelectedEntity(Entity entity) {
+        m_SelectionContext = entity;
+    }
+
+    void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
+        auto& tag = entity.GetComponent<TagComponent>().Tag;
+
+        ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+        flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+        bool opened = ImGui::TreeNodeEx((void*) (uint64_t) (uint32_t) entity, flags, "%s", tag.c_str());
+        if (ImGui::IsItemClicked()) {
+            m_SelectionContext = entity;
+        }
+
+        bool entityDeleted = false;
+        if (ImGui::BeginPopupContextItem()) {
+            if (ImGui::MenuItem("Delete Entity"))
+                entityDeleted = true;
+
+            ImGui::EndPopup();
+        }
+
+        if (opened) {
+            flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
+            opened = ImGui::TreeNodeEx((void*) 9817239, flags, "%s", tag.c_str());
+            if (opened)
+                ImGui::TreePop();
+            ImGui::TreePop();
+        }
+
+        if (entityDeleted) {
+            m_Context->DestroyEntity(entity);
+            if (m_SelectionContext == entity)
+                m_SelectionContext = {};
+        }
+    }
+
     static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f) {
         ImGuiIO& io = ImGui::GetIO();
         auto boldFont = io.Fonts->Fonts[0];
@@ -112,71 +186,6 @@ namespace Aph {
         }
     }
 
-    SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene>& context) {
-        SetContext(context);
-    }
-
-    void SceneHierarchyPanel::SetContext(const Ref<Scene>& context) {
-        m_Context = context;
-        m_SelectionContext = {};
-    }
-
-    void SceneHierarchyPanel::OnImGuiRender() {
-        ImGui::Begin("Scene Hierarchy");
-        m_Context->m_Registry.each([&](auto entityID) {
-            Entity entity{entityID, m_Context.get()};
-            DrawEntityNode(entity);
-        });
-        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
-            m_SelectionContext = {};
-
-        // Right click
-        if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
-            if (ImGui::MenuItem("Create Empty Entity"))
-                m_Context->CreateEntity("Empty Entity");
-            ImGui::EndPopup();
-        }
-
-        ImGui::End();
-        ImGui::Begin("Properties");
-        if (m_SelectionContext) {
-            DrawComponents(m_SelectionContext);
-        }
-        ImGui::End();
-    }
-
-    void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
-        auto& tag = entity.GetComponent<TagComponent>().Tag;
-
-        ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
-        flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-        bool opened = ImGui::TreeNodeEx((void*) (uint64_t) (uint32_t) entity, flags, "%s", tag.c_str());
-        if (ImGui::IsItemClicked()) {
-            m_SelectionContext = entity;
-        }
-
-        bool entityDeleted = false;
-        if (ImGui::BeginPopupContextItem()) {
-            if (ImGui::MenuItem("Delete Entity"))
-                entityDeleted = true;
-
-            ImGui::EndPopup();
-        }
-
-        if (opened) {
-            flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-            opened = ImGui::TreeNodeEx((void*) 9817239, flags, "%s", tag.c_str());
-            if (opened)
-                ImGui::TreePop();
-            ImGui::TreePop();
-        }
-
-        if (entityDeleted) {
-            m_Context->DestroyEntity(entity);
-            if (m_SelectionContext == entity)
-                m_SelectionContext = {};
-        }
-    }
 
     void SceneHierarchyPanel::DrawComponents(Entity entity) {
         if (entity.HasComponent<TagComponent>()) {
@@ -197,6 +206,14 @@ namespace Aph {
             ImGui::OpenPopup("AddComponent");
 
         if (ImGui::BeginPopup("AddComponent")) {
+            if (ImGui::MenuItem("Transform")) {
+                if(!m_SelectionContext.HasComponent<TransformComponent>())
+                    m_SelectionContext.AddComponent<TransformComponent>();
+                else
+                    APH_CORE_WARN("This entity already has the Transform Component!");
+                ImGui::CloseCurrentPopup();
+            }
+
             if (ImGui::MenuItem("Camera")) {
                 if (!m_SelectionContext.HasComponent<CameraComponent>())
                     m_SelectionContext.AddComponent<CameraComponent>();
@@ -226,6 +243,18 @@ namespace Aph {
             DrawVec3Control("Scale", component.Scale, 1.0f);
         });
 
+        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
+            ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
+            if (ImGui::TreeNodeEx((void*) typeid(Texture2D).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Texture")) {
+                if (component.Texture) {
+                    ImGui::ImageButton(reinterpret_cast<void*>(component.Texture->GetRendererID()), ImVec2{60, 60}, ImVec2{0, 1}, ImVec2{1, 0});
+                } else {
+                    ImGui::Button("Null", ImVec2{60, 60});
+                }
+                ImGui::TreePop();
+            }
+        });
+
         DrawComponent<CameraComponent>("Camera", entity, [](auto& component) {
             auto& camera = component.Camera;
 
@@ -233,58 +262,59 @@ namespace Aph {
 
             const char* projectionTypeStrings[] = {"Perspective", "Orthographic"};
             const char* currentProjectionTypeString = projectionTypeStrings[(int) camera.GetProjectionType()];
+
             if (ImGui::BeginCombo("Projection", currentProjectionTypeString)) {
                 for (int i = 0; i < 2; i++) {
                     bool isSelected = currentProjectionTypeString == projectionTypeStrings[i];
+
                     if (ImGui::Selectable(projectionTypeStrings[i], isSelected)) {
                         currentProjectionTypeString = projectionTypeStrings[i];
                         camera.SetProjectionType((SceneCamera::ProjectionType) i);
                     }
 
-                    if (isSelected)
+                    if (isSelected) {
                         ImGui::SetItemDefaultFocus();
+                    }
                 }
 
                 ImGui::EndCombo();
             }
 
             if (camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective) {
-                float perspectiveVerticalFov = glm::degrees(camera.GetPerspectiveVerticalFOV());
-                if (ImGui::DragFloat("Vertical FOV", &perspectiveVerticalFov))
-                    camera.SetPerspectiveVerticalFOV(glm::radians(perspectiveVerticalFov));
+                float perspectiveVerticalFOV = glm::degrees(camera.GetPerspectiveVerticalFOV());
+                if (ImGui::DragFloat("FOV", &perspectiveVerticalFOV)) {
+                    camera.SetPerspectiveVerticalFOV(glm::radians(perspectiveVerticalFOV));
+                }
 
                 float perspectiveNear = camera.GetPerspectiveNearClip();
-                if (ImGui::DragFloat("Near", &perspectiveNear))
+                if (ImGui::DragFloat("Near", &perspectiveNear)) {
                     camera.SetPerspectiveNearClip(perspectiveNear);
+                }
 
                 float perspectiveFar = camera.GetPerspectiveFarClip();
-                if (ImGui::DragFloat("Far", &perspectiveFar))
+                if (ImGui::DragFloat("Far", &perspectiveFar)) {
                     camera.SetPerspectiveFarClip(perspectiveFar);
+                }
             }
 
             if (camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic) {
                 float orthoSize = camera.GetOrthographicSize();
-                if (ImGui::DragFloat("Size", &orthoSize))
+                if (ImGui::DragFloat("Size", &orthoSize)) {
                     camera.SetOrthographicSize(orthoSize);
+                }
 
                 float orthoNear = camera.GetOrthographicNearClip();
-                if (ImGui::DragFloat("Near", &orthoNear))
+                if (ImGui::DragFloat("Near", &orthoNear)) {
                     camera.SetOrthographicNearClip(orthoNear);
+                }
 
                 float orthoFar = camera.GetOrthographicFarClip();
-                if (ImGui::DragFloat("Far", &orthoFar))
+                if (ImGui::DragFloat("Far", &orthoFar)) {
                     camera.SetOrthographicFarClip(orthoFar);
+                }
 
                 ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio);
             }
         });
-
-        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
-            ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
-        });
-    }
-
-    void SceneHierarchyPanel::SetSelectedEntity(Entity entity) {
-        m_SelectionContext = entity;
     }
 }// namespace Aph

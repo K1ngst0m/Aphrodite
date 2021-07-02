@@ -39,10 +39,8 @@ namespace Aph {
         m_Data.Width = props.Width;
         m_Data.Height = props.Height;
 
-        APH_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width,
-                     props.Height);
+        APH_CORE_INFO("Creating window {0} ({1}, {2})", props.Title, props.Width, props.Height);
 
-        APH_CORE_INFO("Initializing GLFW");
         if (s_GLFWWindowCount == 0) {
             APH_PROFILE_SCOPE("glfwInit");
             int success = glfwInit();
@@ -52,11 +50,6 @@ namespace Aph {
 
         {
             APH_PROFILE_SCOPE("glfwCreateWindow");
-
-#if defined(APH_DEBUG)
-            if (Renderer::GetAPI() == RendererAPI::API::OpenGL)
-                glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-#endif
             m_Window = glfwCreateWindow(static_cast<int>(props.Width),
                                         static_cast<int>(props.Height),
                                         m_Data.Title.c_str(), nullptr, nullptr);
@@ -80,14 +73,15 @@ namespace Aph {
                 });
 
         glfwSetWindowCloseCallback(m_Window, [](GLFWwindow *window) {
-            auto data = *(WindowData *) glfwGetWindowUserPointer(window);
+            auto &data = *(WindowData *) glfwGetWindowUserPointer(window);
+
             WindowCloseEvent event;
             data.EventCallback(event);
         });
 
         glfwSetKeyCallback(m_Window, [](GLFWwindow *window, int key, int scancode,
                                         int action, int mods) {
-            WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
+            auto &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
             switch (action) {
                 case GLFW_PRESS: {
@@ -107,7 +101,6 @@ namespace Aph {
                 }
             }
         });
-
 
         glfwSetCharCallback(m_Window, [](GLFWwindow *window, unsigned int keycode) {
             WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
@@ -178,4 +171,4 @@ namespace Aph {
 
     bool LinuxWindow::IsVSync() const { return m_Data.VSync; }
 
-}// namespace Aph-Runtime
+}// namespace Aph

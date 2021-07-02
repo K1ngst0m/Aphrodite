@@ -12,6 +12,7 @@
 
 #include "Aphrodite/Scene/SceneCamera.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
+#include "Aphrodite/Renderer/Texture.h"
 
 namespace Aph {
     struct TransformComponent {
@@ -30,12 +31,29 @@ namespace Aph {
         }
     };
 
+
+    struct SpriteTextureComponent {
+        glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
+        Ref<Texture2D> Texture;
+
+        SpriteTextureComponent() = default;
+        SpriteTextureComponent(const SpriteTextureComponent&) = default;
+        SpriteTextureComponent(const glm::vec4& color, const Ref<Texture2D>& texture)
+                :Color(color), Texture(texture) {}
+    };
+
     struct SpriteRendererComponent {
         glm::vec4 Color{1.0f, 1.0f, 1.0f, 1.0f};
+        Ref<Texture2D> Texture;
 
         SpriteRendererComponent() = default;
         SpriteRendererComponent(const SpriteRendererComponent&) = default;
-        explicit SpriteRendererComponent(const glm::vec4& color) : Color(color) {}
+        explicit SpriteRendererComponent(const glm::vec4& color)
+            : Color(color) {
+            Texture = nullptr;
+        }
+        SpriteRendererComponent(const glm::vec4& color, const Ref<Texture2D>& texture)
+            : Color(color), Texture(texture) {}
     };
 
     struct TagComponent {

@@ -16,19 +16,17 @@
 
 namespace Aph {
     ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") {}
-
     ImGuiLayer::~ImGuiLayer() = default;
 
     void ImGuiLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
-        // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO &io = ImGui::GetIO();
         (void) io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad
+//        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;// Enable Multi-Viewport /
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
@@ -38,19 +36,22 @@ namespace Aph {
 
         io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
 
-        // merge in icons from Font Awesome
         static const ImWchar icons_ranges_fontawesome[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
         ImFontConfig icons_config_fontawesome;
         icons_config_fontawesome.MergeMode = true;
         icons_config_fontawesome.PixelSnapH = true;
+
         io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
         io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
         io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
         // Setup Dear ImGui style
+#if 1
         ImGui::StyleColorsDark();
+#else
         //ImGui::StyleColorsClassic();
+#endif
 
         ImGuiStyle &style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -63,7 +64,6 @@ namespace Aph {
         Application &app = Application::Get();
         auto *window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
 
-
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 460");
     }
@@ -74,6 +74,14 @@ namespace Aph {
         ImGui_ImplOpenGL3_Shutdown();
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
+    }
+
+    void ImGuiLayer::OnEvent(Event &e) {
+        if (m_BlockEvents) {
+            ImGuiIO &io = ImGui::GetIO();
+            e.Handled |= e.IsInCateGory(EventCategoryMouse) & io.WantCaptureMouse;
+            e.Handled |= e.IsInCateGory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
+        }
     }
 
     void ImGuiLayer::Begin() {
@@ -95,18 +103,12 @@ namespace Aph {
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            auto backup_current_context = glfwGetCurrentContext();
+            auto* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
-        }
-    }
-    void ImGuiLayer::OnEvent(Event &e) {
-        if (m_BlockEvents) {
-            ImGuiIO &io = ImGui::GetIO();
-            e.Handled |= e.IsInCateGory(EventCategoryMouse) & io.WantCaptureMouse;
-            e.Handled |= e.IsInCateGory(EventCategoryKeyboard) & io.WantCaptureKeyboard;
         }
     }
 

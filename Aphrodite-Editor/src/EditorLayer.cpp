@@ -18,14 +18,18 @@ namespace Aph {
 
     EditorLayer::EditorLayer()
         : Layer("EditorLayer"),
-          m_CameraController(1280.0f / 720.0f),
-          m_SquareColor({0.2f, 0.3f, 0.8f, 1.0f}) {
+          m_CameraController(1280.0f / 720.0f) {
     }
 
     void EditorLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
-        m_CheckerboardTexture = Texture2D::Create("assets/textures/Checkerboard.png");
+        ImGuiConsole::Log("This is a log statement");
+        ImGuiConsole::Log("This is a long statement with parameters: %d, %f, %s", 69, 420.0f, "Hello");
+        ImGuiConsole::LogWarning("This is a warning statement");
+        ImGuiConsole::LogWarning("This is a warning statement with parameters: %d, %f, %s", 911, 3.14f, "World");
+        ImGuiConsole::LogError("This is an error statement");
+        ImGuiConsole::LogError("This is an error statement with parameters: %f, %s, %i", 69.420f, "Folks", 5);
 
         FramebufferSpecification fbSpec;
         fbSpec.Width = 1280;
@@ -36,63 +40,17 @@ namespace Aph {
         m_Framebuffer = Framebuffer::Create(fbSpec);
 
         m_ActiveScene = CreateRef<Scene>();
-//        auto commandLineArgs = Application::Get().GetCommandLineArgs();
-//        if(commandLineArgs.Count){
-//            auto sceneFilePath = commandLineArgs[1];
-//            SceneSerializer serializer(m_ActiveScene);
-//            serializer.Deserialize(sceneFilePath);
-//        }
+        auto commandLineArgs = Application::Get().GetCommandLineArgs();
+        if(commandLineArgs.Count > 1){
+            auto sceneFilePath = commandLineArgs[1];
+            SceneSerializer serializer(m_ActiveScene);
+            serializer.Deserialize(sceneFilePath);
+        }
 
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
 
-#if false
-        // Entity
-        auto square = m_ActiveScene->CreateEntity("Green Square");
-        square.AddComponent<SpriteRendererComponent>(glm::vec4{0.0f, 1.0f, 0.0f, 1.0f});
-
-        auto redSquare = m_ActiveScene->CreateEntity("Red Square");
-        redSquare.AddComponent<SpriteRendererComponent>(glm::vec4{1.0f, 0.0f, 0.0f, 1.0f});
-
-        m_SquareEntity = square;
-
-        m_CameraEntity = m_ActiveScene->CreateEntity("Camera A");
-        m_CameraEntity.AddComponent<CameraComponent>();
-
-        m_SecondCamera = m_ActiveScene->CreateEntity("Camera B");
-        auto& cc = m_SecondCamera.AddComponent<CameraComponent>();
-        cc.Primary = false;
-
-
-        class CameraController : public ScriptableEntity {
-        public:
-            void OnCreate() override {
-                auto& translation = GetComponent<TransformComponent>().Translation;
-                translation.x = std::rand() % 10 - 5.0f;
-            }
-
-            void OnDestroy() override {
-            }
-
-            void OnUpdate(Timestep ts) override {
-                auto& translation = GetComponent<TransformComponent>().Translation;
-                float speed = 5.0f;
-
-                if (Input::IsKeyPressed(Key::A))
-                    translation.x -= speed * ts;
-                if (Input::IsKeyPressed(Key::D))
-                    translation.x += speed * ts;
-                if (Input::IsKeyPressed(Key::W))
-                    translation.y += speed * ts;
-                if (Input::IsKeyPressed(Key::S))
-                    translation.y -= speed * ts;
-            }
-        };
-
-        m_CameraEntity.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-        m_SecondCamera.AddComponent<NativeScriptComponent>().Bind<CameraController>();
-#endif
-
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+        ImGuiAssetBrowser::Init();
     }
 
     void EditorLayer::OnDetach() {
@@ -112,7 +70,6 @@ namespace Aph {
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
         }
 
-        // Update
         if (m_ViewportFocused)
             m_CameraController.OnUpdate(ts);
 
@@ -123,6 +80,7 @@ namespace Aph {
         m_Framebuffer->Bind();
         RenderCommand::SetClearColor({0.049f, 0.085f, 0.104f, 1.0f});
         RenderCommand::Clear();
+        m_Framebuffer->Bind();
 
         m_Framebuffer->ClearAttachment(1, -1);
 
@@ -134,8 +92,9 @@ namespace Aph {
         my -= m_ViewportBounds[0].y;
         glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
         my = viewportSize.y - my;
-        int mouseX = (int) mx;
-        int mouseY = (int) my;
+
+        int mouseX = static_cast<int>(mx);
+        int mouseY = static_cast<int>(my);
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < (int) viewportSize.x && mouseY < (int) viewportSize.y) {
             int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
@@ -148,14 +107,11 @@ namespace Aph {
     void EditorLayer::OnImGuiRender() {
         APH_PROFILE_FUNCTION();
 
-        // Note: Switch this to true to enable dockspace
         static bool dockspaceOpen = true;
         static bool opt_fullscreen_persistant = true;
         bool opt_fullscreen = opt_fullscreen_persistant;
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
-        // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-        // because it would be confusing to have two docking targets within each others.
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
         if (opt_fullscreen) {
             ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -168,17 +124,11 @@ namespace Aph {
             window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
         }
 
-        // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
         if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
             window_flags |= ImGuiWindowFlags_NoBackground;
 
-        // Important: note that we proceed even if Begin() returns false (aka window is collapsed).
-        // This is because we want to keep our DockSpace() active. If a DockSpace() is inactive,
-        // all active windows docked into it will lose their parent and become undocked.
-        // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
-        // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("DockSpace Demo", &dockspaceOpen, window_flags);
+        ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
         ImGui::PopStyleVar();
 
         if (opt_fullscreen)
@@ -194,7 +144,7 @@ namespace Aph {
             ImGui::DockSpace(dockSpace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
-        style.WindowMinSize.x = minWinSizeX;
+                style.WindowMinSize.x = minWinSizeX;
 
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
@@ -219,34 +169,10 @@ namespace Aph {
             ImGui::EndMenuBar();
         }
 
-        m_SceneHierarchyPanel.OnImGuiRender();
-        m_ContentBrowserPanel.OnImGuiRender();
-
-//        ImGui::Begin("Renderer Info");
-//        ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
-//        ImGui::Text("Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
-//        ImGui::Text("OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
-//        ImGui::End();
-
-        ImGui::Begin("Stats");
-
-        std::string name = "None";
-        if (m_HoveredEntity)
-            name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
-        ImGui::Text("Hovered Entity: %s", name.c_str());
-
-        auto stats = Renderer2D::GetStats();
-        ImGui::Text("Renderer2D Stats:");
-        ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-        ImGui::Text("Quads: %d", stats.QuadCount);
-        ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
-        ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
-
-        ImGui::End();
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-        ImGui::Begin("Viewport");
 
+        ImGui::Begin("Viewport");
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
@@ -276,10 +202,10 @@ namespace Aph {
 
             // Camera
             // Runtime camera from entity
-//             auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-//             const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-//             const glm::mat4& cameraProjection = camera.GetProjection();
-//             glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+            //             auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+            //             const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+            //             const glm::mat4& cameraProjection = camera.GetProjection();
+            //             glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 
             // Editor camera
             const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
@@ -315,6 +241,36 @@ namespace Aph {
 
         ImGui::End();
         ImGui::PopStyleVar();
+
+        // Scene Hierarchy && Content Browser
+        m_SceneHierarchyPanel.OnImGuiRender();
+        m_ContentBrowserPanel.OnImGuiRender();
+
+        ImGui::Begin("Renderer Info");
+        ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
+        ImGui::Text("Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
+        ImGui::Text("OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
+        ImGui::End();
+
+        // Mouse Hover
+        std::string name = "None";
+        if (m_HoveredEntity)
+            name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
+        ImGui::Text("Hovered Entity: %s", name.c_str());
+
+        // Statistics
+        ImGui::Begin("Renderer2D Statistics");
+        auto stats = Renderer2D::GetStats();
+        ImGui::Text("Draw Calls: %d", stats.DrawCalls);
+        ImGui::Text("Quads: %d", stats.QuadCount);
+        ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
+        ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+        ImGui::End();
+
+
+        ImGui::Begin("Console");
+        ImGuiConsole::Draw();
+        ImGui::End();
 
         ImGui::End();
     }

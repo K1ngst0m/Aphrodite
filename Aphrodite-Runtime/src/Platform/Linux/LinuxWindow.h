@@ -15,29 +15,23 @@ namespace Aph {
     class LinuxWindow : public Window {
     public:
         explicit LinuxWindow(const WindowProps &props);
-
         ~LinuxWindow() override;
 
         void OnUpdate() override;
 
         unsigned int GetWidth() const override { return m_Data.Width; }
-
         unsigned int GetHeight() const override { return m_Data.Height; }
 
-        void SetEventCallback(const EventCallbackFn &callback) override {
-            m_Data.EventCallback = callback;
-        }
-
+        void SetEventCallback(const EventCallbackFn &callback) override { m_Data.EventCallback = callback; }
         void SetVSync(bool enabled) override;
-
         bool IsVSync() const override;
 
         void *GetNativeWindow() const override { return m_Window; }
+        ContextInfo GetGraphicsContextInfo() const override { return m_Context->GetContextInfo(); }
 
     private:
-        virtual void Init(const WindowProps &props);
-
-        virtual void Shutdown();
+        void Init(const WindowProps &props);
+        void Shutdown();
 
     private:
         GLFWwindow *m_Window{};
