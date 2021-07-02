@@ -32,3 +32,4 @@ project(Aphrodite)
 
 add_subdirectory(Aphrodite-Editor)
 add_subdirectory(Aphrodite-Runtime)
+add_subdirectory(Aphrodite-Example)

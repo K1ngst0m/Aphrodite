@@ -40,7 +40,7 @@ add_library(${PROJECT_NAME} STATIC
 
         # math
         src/Aphrodite/Math/Math.cpp src/Aphrodite/Math/Math.h src/Aphrodite/Renderer/EditorCamera.cpp src/Aphrodite/Renderer/EditorCamera.h src/Aphrodite/Core/Timer.h src/Aphrodite/Renderer/UniformBuffer.cpp src/Aphrodite/Renderer/UniformBuffer.h src/Platform/OpenGL/OpenGLUniformBuffer.cpp src/Platform/OpenGL/OpenGLUniformBuffer.h src/Aphrodite/Fonts/IconsFontAwesome5Pro.h
-        src/Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.cpp src/Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.h src/Aphrodite/ImGui/Utilities/ImGuiConsole.cpp src/Aphrodite/ImGui/Utilities/ImGuiConsole.h)
+        src/Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.cpp src/Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.h src/Aphrodite/ImGui/Utilities/ImGuiConsole.cpp src/Aphrodite/ImGui/Utilities/ImGuiConsole.h ../Aphrodite-Example/src/ExampleLayer.cpp ../Aphrodite-Example/src/ExampleLayer.h)
 
 add_definitions(-DSTB_IMAGE_IMPLEMENTATION -DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
 
