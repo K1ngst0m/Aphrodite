@@ -8,6 +8,8 @@
 #include "Aphrodite/Core/Base.h"
 
 namespace Aph {
+    static const char * logSign = "\uF292   ";
+
     class Message {
     public:
         enum class Level : int8_t {
@@ -62,11 +64,11 @@ namespace Aph {
 
     template<typename... Args>
     inline std::string ImGuiConsole::Format(const std::string& fmt, Args&&... args) {
-        size_t size = snprintf(nullptr, 0, fmt.c_str(), args...);
+        size_t size = snprintf(nullptr, 0, (logSign + fmt).c_str(), args...);
         std::string buffer;
         buffer.reserve(size + 1);
         buffer.resize(size);
-        snprintf(buffer.data(), size + 1, fmt.c_str(), args...);
+        snprintf(buffer.data(), size + 1, (logSign + fmt).c_str(), args...);
         return buffer;
     }
 

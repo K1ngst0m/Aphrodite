@@ -14,7 +14,7 @@ namespace Aph {
 
         void Serialize(const std::string& filepath);
 
-        void SerializeRuntime(const std::string& filepath);
+        static void SerializeRuntime(const std::string& filepath);
 
         bool Deserialize(const std::string& filepath);
 

@@ -25,21 +25,19 @@ namespace Aph {
         APH_PROFILE_FUNCTION();
 
         ImGuiConsole::Log("This is a log statement");
-        ImGuiConsole::Log("This is a long statement with parameters: %d, %f, %s", 69, 420.0f, "Hello");
         ImGuiConsole::LogWarning("This is a warning statement");
-        ImGuiConsole::LogWarning("This is a warning statement with parameters: %d, %f, %s", 911, 3.14f, "World");
         ImGuiConsole::LogError("This is an error statement");
-        ImGuiConsole::LogError("This is an error statement with parameters: %f, %s, %i", 69.420f, "Folks", 5);
+        ImGuiConsole::Log("This is a log statement with parameter: %s, %d, %f", "abc", 34, 6.0f);
 
         FramebufferSpecification fbSpec;
+        fbSpec.Attachments = {FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth};
         fbSpec.Width = 1280;
         fbSpec.Height = 720;
-        fbSpec.Attachments = {FramebufferTextureFormat::RGBA8,
-                              FramebufferTextureFormat::RED_INTEGER,
-                              FramebufferTextureFormat::Depth};
+
         m_Framebuffer = Framebuffer::Create(fbSpec);
 
         m_ActiveScene = CreateRef<Scene>();
+
         auto commandLineArgs = Application::Get().GetCommandLineArgs();
         if(commandLineArgs.Count > 1){
             auto sceneFilePath = commandLineArgs[1];
@@ -50,6 +48,7 @@ namespace Aph {
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
         ImGuiAssetBrowser::Init();
     }
 
@@ -62,9 +61,9 @@ namespace Aph {
 
         // Resize
         if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
-            m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&// zero sized framebuffer is invalid
+            m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
-            m_Framebuffer->Resize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
+            m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
@@ -78,7 +77,7 @@ namespace Aph {
         // Render
         Renderer2D::ResetStats();
         m_Framebuffer->Bind();
-        RenderCommand::SetClearColor({0.049f, 0.085f, 0.104f, 1.0f});
+        RenderCommand::SetClearColor(Aph::Style::Color::ClearColor);
         RenderCommand::Clear();
         m_Framebuffer->Bind();
 
@@ -91,12 +90,13 @@ namespace Aph {
         mx -= m_ViewportBounds[0].x;
         my -= m_ViewportBounds[0].y;
         glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+
         my = viewportSize.y - my;
 
         int mouseX = static_cast<int>(mx);
         int mouseY = static_cast<int>(my);
 
-        if (mouseX >= 0 && mouseY >= 0 && mouseX < (int) viewportSize.x && mouseY < (int) viewportSize.y) {
+        if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
             int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
             m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity) pixelData, m_ActiveScene.get());
         }
@@ -139,19 +139,16 @@ namespace Aph {
         ImGuiStyle& style = ImGui::GetStyle();
         float minWinSizeX = style.WindowMinSize.x;
         style.WindowMinSize.x = 370.0f;
+
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
             ImGuiID dockSpace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockSpace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
-                style.WindowMinSize.x = minWinSizeX;
+        style.WindowMinSize.x = minWinSizeX;
 
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                // Disabling fullscreen would allow the window to be moved to the front of other windows,
-                // which we can't undo at the moment without finer window depth/z control.
-                //ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen_persistant);1
-
                 if (ImGui::MenuItem("New", "Ctrl+N"))
                     NewScene();
 
@@ -172,7 +169,8 @@ namespace Aph {
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
-        ImGui::Begin("Viewport");
+        // Viewport
+        ImGui::Begin(Style::Title::Viewport.data());
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
@@ -187,7 +185,9 @@ namespace Aph {
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
         uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-        ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
+        ImGui::Image(reinterpret_cast<void*>(textureID),
+                     ImVec2{m_ViewportSize.x, m_ViewportSize.y},
+                     ImVec2{0, 1}, ImVec2{1, 0});
 
         // Gizmos
         Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
@@ -202,10 +202,10 @@ namespace Aph {
 
             // Camera
             // Runtime camera from entity
-            //             auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-            //             const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-            //             const glm::mat4& cameraProjection = camera.GetProjection();
-            //             glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
+//            auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+//            const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
+//            const glm::mat4& cameraProjection = camera.GetProjection();
+//            glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 
             // Editor camera
             const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
@@ -244,9 +244,9 @@ namespace Aph {
 
         // Scene Hierarchy && Content Browser
         m_SceneHierarchyPanel.OnImGuiRender();
-        m_ContentBrowserPanel.OnImGuiRender();
+//        m_ContentBrowserPanel.OnImGuiRender();
 
-        ImGui::Begin("Renderer Info");
+        ImGui::Begin(Style::Title::RenderInfo.data());
         ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
         ImGui::Text("Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
         ImGui::Text("OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
@@ -254,12 +254,11 @@ namespace Aph {
 
         // Mouse Hover
         std::string name = "None";
-        if (m_HoveredEntity)
-            name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
+        if (m_HoveredEntity) name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
         ImGui::Text("Hovered Entity: %s", name.c_str());
 
         // Statistics
-        ImGui::Begin("Renderer2D Statistics");
+        ImGui::Begin(Style::Title::Renderer2DStatistics.data());
         auto stats = Renderer2D::GetStats();
         ImGui::Text("Draw Calls: %d", stats.DrawCalls);
         ImGui::Text("Quads: %d", stats.QuadCount);
@@ -268,8 +267,14 @@ namespace Aph {
         ImGui::End();
 
 
-        ImGui::Begin("Console");
+        // Console
+        ImGui::Begin(Style::Title::Console.data());
         ImGuiConsole::Draw();
+        ImGui::End();
+
+        // Asset Browser
+        ImGui::Begin(Style::Title::Project.data());
+        ImGuiAssetBrowser::Draw();
         ImGui::End();
 
         ImGui::End();
@@ -344,7 +349,7 @@ namespace Aph {
     }
 
     void EditorLayer::OpenScene() {
-        auto filepath = FileDialogs::OpenFile("Aph Scene (*.Aph)\0*.Aph\0");
+        auto filepath = FileDialogs::OpenFile("Aphrodite Scene (*.sce)\0*.sce\0");
         if (!filepath.empty()) {
             m_ActiveScene = CreateRef<Scene>();
             m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
@@ -356,7 +361,7 @@ namespace Aph {
     }
 
     void EditorLayer::SaveSceneAs() {
-        auto filepath = FileDialogs::SaveFile("Aph Scene (*.Aph)\0*.Aph\0");
+        auto filepath = FileDialogs::SaveFile("Aph Scene (*.sce)\0*.sce\0");
         if (!filepath.empty()) {
             SceneSerializer serializer(m_ActiveScene);
             serializer.Serialize(filepath);

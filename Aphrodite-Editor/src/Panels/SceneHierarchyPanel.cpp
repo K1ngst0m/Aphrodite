@@ -23,7 +23,7 @@ namespace Aph {
     }
 
     void SceneHierarchyPanel::OnImGuiRender() {
-        ImGui::Begin("Scene Hierarchy");
+        ImGui::Begin(Style::Title::SceneHierarchy.data());
 
         m_Context->m_Registry.each([&](auto entityID) {
             Entity entity{entityID, m_Context.get()};
@@ -229,6 +229,14 @@ namespace Aph {
                     APH_CORE_WARN("This entity already has the Sprite Renderer Component!");
                 ImGui::CloseCurrentPopup();
             }
+
+//            if (ImGui::MenuItem("Sprite Texture")) {
+//                if (!m_SelectionContext.HasComponent<SpriteTextureComponent>())
+//                    m_SelectionContext.AddComponent<SpriteTextureComponent>();
+//                else
+//                    APH_CORE_WARN("This entity already has the Sprite Texture Component!");
+//                ImGui::CloseCurrentPopup();
+//            }
 
             ImGui::EndPopup();
         }
