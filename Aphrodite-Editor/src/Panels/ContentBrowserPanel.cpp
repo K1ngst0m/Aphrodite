@@ -18,7 +18,7 @@ namespace Aph {
     void ContentBrowserPanel::OnImGuiRender() {
         ImGui::Begin("Connect Browser");
         if (m_CurrentDirectory != std::filesystem::path(s_AssetPath)) {
-            if (ImGui::Button("<-")) {
+            if (ImGui::Button(" <- ")) {
                 m_CurrentDirectory = m_CurrentDirectory.parent_path();
             }
         }
@@ -31,9 +31,11 @@ namespace Aph {
             if (directoryEntity.is_directory()) {
                 if (ImGui::Button(filenameString.c_str())) {
                     m_CurrentDirectory /= path.filename();
-                } else {
-                    if (ImGui::Button(filenameString.c_str())) {
-                    }
+                }
+            }
+            else{
+                if(ImGui::Button(filenameString.c_str())){
+
                 }
             }
 
