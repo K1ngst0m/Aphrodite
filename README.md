@@ -66,7 +66,8 @@ $ cmake ../ && make
 <ins>*Supported IDEs:*</ins>
 * Clion 2021
 * Visual Studio 2019
-* neovim with my personal [profile](https://github.com/npchitman/vimq)
+* Development Workflow: [dotfiles](https://github.com/npchitman/dotfiles)
+* Neovim with my personal [profile](https://github.com/npchitman/vimq)
 
 <ins>*Languages:*</ins>
 * C++17 (Core)
