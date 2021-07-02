@@ -8,7 +8,7 @@
 
 # Aphrodite Game Engine
 
-A game engine written in C++17, work in progress, developing on gentoo.
+A game engine written in C++17, work in progress, developing on Gentoo.
 
 The Aphrodite Game Engine is licensed under the MIT license.
 
@@ -45,7 +45,11 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * ImGui Scene Hierarchy Panel
   * ImGui Properties Panel
   * Scene Serialization and Deserialization using YAML
-    
+
+Editor UI in [Bspwm](https://github.com/baskerville/bspwm): 
+
+![editorUI](Resources/screenshot.png)
+
 ***
 
 ## Build

@@ -42,7 +42,7 @@ namespace Aph {
 
         ImGui::End();
 
-        ImGui::Begin("Properties");
+        ImGui::Begin(Style::Title::Properties.data());
         if (m_SelectionContext) {
             DrawComponents(m_SelectionContext);
         }
@@ -103,9 +103,9 @@ namespace Aph {
         float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
         ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.9f, 0.2f, 0.2f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.3f, 0.1f, 0.15f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.4f, 0.2f, 0.2f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.3f, 0.1f, 0.15f, 1.0f});
         ImGui::PushFont(boldFont);
         if (ImGui::Button("X", buttonSize))
             values.x = resetValue;
@@ -117,9 +117,9 @@ namespace Aph {
         ImGui::PopItemWidth();
         ImGui::SameLine();
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.8f, 0.3f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.7f, 0.2f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.3f, 0.2f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.4f, 0.3f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.3f, 0.2f, 1.0f});
         ImGui::PushFont(boldFont);
         if (ImGui::Button("Y", buttonSize))
             values.y = resetValue;
@@ -131,9 +131,9 @@ namespace Aph {
         ImGui::PopItemWidth();
         ImGui::SameLine();
 
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.35f, 0.9f, 1.0f});
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.25f, 0.4f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.35f, 0.5f, 1.0f});
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.4f, 1.0f});
         ImGui::PushFont(boldFont);
         if (ImGui::Button("Z", buttonSize))
             values.z = resetValue;
@@ -161,7 +161,7 @@ namespace Aph {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{4, 4});
             float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
             ImGui::Separator();
-            bool open = ImGui::TreeNodeEx((void*) typeid(T).hash_code(), treeNodeFlags, name.c_str());
+            bool open = ImGui::TreeNodeEx((void*) typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
             ImGui::PopStyleVar();
             ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
             if (ImGui::Button("+", ImVec2{lineHeight, lineHeight})) {
