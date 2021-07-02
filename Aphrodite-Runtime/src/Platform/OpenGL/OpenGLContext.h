@@ -19,9 +19,11 @@ namespace Aph {
         void Init() override;
         void SwapBuffers() override;
 
-        static Ref<IndexBuffer> Create(uint32_t* indices, uint32_t size);
+        ContextInfo GetContextInfo() override { return m_ContextInfo; }
+
     private:
         GLFWwindow *m_WindowHandle;
+        ContextInfo m_ContextInfo{};
     };
 }// namespace Aph
 

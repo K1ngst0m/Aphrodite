@@ -5,6 +5,7 @@
 #ifndef Aphrodite_ENGINE_IMGUILAYER_H
 #define Aphrodite_ENGINE_IMGUILAYER_H
 
+#include "Aphrodite/Core/Base.h"
 #include "Aphrodite/Core/Layer.h"
 #include "Aphrodite/Events/ApplicationEvent.h"
 #include "Aphrodite/Events/KeyEvent.h"
@@ -19,21 +20,21 @@ namespace Aph {
         ~ImGuiLayer() override;
 
         void OnAttach() override;
-
         void OnDetach() override;
         void OnEvent(Event& e) override;
 
 
         static void Begin();
-
         static void End();
 
         void BlockEvents(bool block) { m_BlockEvents = block; }
 
         static void SetDarkThemeColors();
+
     private:
         bool m_BlockEvents = true;
+        float m_Time = 0.0f;
     };
-}// namespace Aph-Runtime
+}// namespace Aph
 
 #endif// Aphrodite_ENGINE_IMGUILAYER_H

@@ -37,4 +37,5 @@ namespace Aph {
 
         glfwSwapBuffers(m_WindowHandle);
     }
+
 }// namespace Aph-Runtime
