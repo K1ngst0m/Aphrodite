@@ -46,7 +46,7 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * ImGui Properties Panel
   * Scene Serialization and Deserialization using YAML
 
-Editor UI in [Bspwm](https://github.com/baskerville/bspwm): 
+Editor UI in [Bspwm](https://wiki.gentoo.org/wiki/Bspwm): 
 
 ![editorUI](Resources/screenshot.png)
 
