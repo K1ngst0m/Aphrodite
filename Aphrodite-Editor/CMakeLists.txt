@@ -1,13 +1,11 @@
 project(Aphrodite-Editor)
 
+file(GLOB src_files
+        src/*.cpp
+        src/Panels/*.cpp
+        )
 
-add_executable(${PROJECT_NAME}
-        src/EditorLayer.cpp
-        src/EditorLayer.h
-        src/Editor.cpp
-        src/Panels/SceneHierarchyPanel.cpp
-        src/Panels/SceneHierarchyPanel.h
-        src/Panels/ContentBrowserPanel.cpp src/Panels/ContentBrowserPanel.h)
+add_executable(${PROJECT_NAME} ${src_files})
 
 target_link_libraries(${PROJECT_NAME} Aphrodite-Runtime)
 

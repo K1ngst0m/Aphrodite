@@ -10,14 +10,13 @@ set(editor_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Editor)
 # runtime
 include_directories(${runtime_src_dir}/src)
 
-# 3rd party
+# 3rdparty
 add_subdirectory(${3rdparty_dir}/glad)
 add_subdirectory(${3rdparty_dir}/entt)
 add_subdirectory(${3rdparty_dir}/spdlog-1.8.5)
 add_subdirectory(${3rdparty_dir}/glfw)
 add_subdirectory(${3rdparty_dir}/imgui)
 add_subdirectory(${3rdparty_dir}/ImGuizmo)
-
 include_directories(${3rdparty_dir}/glad/include)
 include_directories(${3rdparty_dir}/entt/include)
 include_directories(${3rdparty_dir}/imgui)
@@ -26,6 +25,11 @@ include_directories(${3rdparty_dir}/stb)
 include_directories(${3rdparty_dir}/yaml-cpp)
 include_directories(${3rdparty_dir}/ImGuizmo)
 
+# lib
+set(opengl_lib glad glfw GL)
+set(vulkan shaderc_shared spirv-cross-core spirv-cross-glsl SPIRV-Tools)
+set(ui_lib imgui imGuizmo)
+set(other_lib spdlog::spdlog yaml-cpp entt)
 link_directories(${CMAKE_BINARY_DIR}/Libs)
 
 project(Aphrodite)

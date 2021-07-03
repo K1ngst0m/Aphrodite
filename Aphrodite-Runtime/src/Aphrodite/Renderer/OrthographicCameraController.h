@@ -2,8 +2,8 @@
 // Created by npchitman on 6/21/21.
 //
 
-#ifndef Aphrodite_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H
-#define Aphrodite_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H
+#ifndef APHRODITE_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H
+#define APHRODITE_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H
 
 #include "Aphrodite/Core/TimeStep.h"
 #include "Aphrodite/Events/ApplicationEvent.h"
@@ -43,4 +43,4 @@ namespace Aph {
 }// namespace Aph
 
 
-#endif//Aphrodite_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H
+#endif//APHRODITE_ENGINE_ORTHOGRAPHICCAMERACONTROLLER_H

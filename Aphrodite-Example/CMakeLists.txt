@@ -1,7 +1,8 @@
 project(Aphrodite-Example)
 
+file(GLOB src_files src/*.cpp)
 
-add_executable(${PROJECT_NAME} src/ExampleLayer.cpp src/ExampleLayer.h src/Sandbox2D.cpp src/Sandbox2D.h src/SandboxApp.cpp)
+add_executable(${PROJECT_NAME} ${src_files})
 
 target_link_libraries(${PROJECT_NAME} Aphrodite-Runtime)
 

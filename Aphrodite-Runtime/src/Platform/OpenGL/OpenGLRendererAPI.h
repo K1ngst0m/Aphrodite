@@ -2,8 +2,8 @@
 // Created by npchitman on 6/1/21.
 //
 
-#ifndef Aphrodite_ENGINE_OPENGLRENDERERAPI_H
-#define Aphrodite_ENGINE_OPENGLRENDERERAPI_H
+#ifndef APHRODITE_ENGINE_OPENGLRENDERERAPI_H
+#define APHRODITE_ENGINE_OPENGLRENDERERAPI_H
 
 #include "Aphrodite/Renderer/RendererAPI.h"
 
@@ -19,4 +19,4 @@ namespace Aph {
     };
 }// namespace Aph-Runtime
 
-#endif// Aphrodite_ENGINE_OPENGLRENDERERAPI_H
+#endif// APHRODITE_ENGINE_OPENGLRENDERERAPI_H
