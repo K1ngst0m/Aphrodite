@@ -27,7 +27,7 @@ namespace Aph {
         ImGuiConsole::Log("This is a log statement");
         ImGuiConsole::LogWarning("This is a warning statement");
         ImGuiConsole::LogError("This is an error statement");
-        ImGuiConsole::Log("This is a log statement with parameter: %s, %d, %f", "abc", 34, 6.0f);
+        ImGuiConsole::Log("This is a log statement with parameter: {}, {}, {}", "abc", 34, 6.0f);
 
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = {FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth};

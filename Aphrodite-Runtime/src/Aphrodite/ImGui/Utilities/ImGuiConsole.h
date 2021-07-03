@@ -5,6 +5,7 @@
 #ifndef APHRODITE_IMGUICONSOLE_H
 #define APHRODITE_IMGUICONSOLE_H
 
+#include <fmt/core.h>
 #include "Aphrodite/Core/Base.h"
 
 namespace Aph {
@@ -64,12 +65,7 @@ namespace Aph {
 
     template<typename... Args>
     inline std::string ImGuiConsole::Format(const std::string& fmt, Args&&... args) {
-        size_t size = snprintf(nullptr, 0, (logSign + fmt).c_str(), args...);
-        std::string buffer;
-        buffer.reserve(size + 1);
-        buffer.resize(size);
-        snprintf(buffer.data(), size + 1, (logSign + fmt).c_str(), args...);
-        return buffer;
+        return fmt::format((logSign + fmt), args...);
     }
 
 
