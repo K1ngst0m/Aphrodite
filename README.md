@@ -110,4 +110,4 @@ Tested on Gentoo Base System, BSPWM
 
 ## Documentation
 
-We will see you soon!
+[Aphrodite Wiki](https://github.com/npchitman/Aphrodite/wiki) will comming soon!
