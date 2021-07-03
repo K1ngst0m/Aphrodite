@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include <fmt/core.h>
 
 #include "Aphrodite/Debug/Log.h"
 #include "Aphrodite/Debug/Instrumentor.h"

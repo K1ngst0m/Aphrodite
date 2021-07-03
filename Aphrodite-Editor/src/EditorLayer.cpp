@@ -24,6 +24,7 @@ namespace Aph {
     void EditorLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
+        // Log Example
         ImGuiConsole::Log("This is a log statement");
         ImGuiConsole::LogWarning("This is a warning statement");
         ImGuiConsole::LogError("This is an error statement");

@@ -8,7 +8,7 @@
 namespace Aph {
     enum class AssetFileType {
         PNG = 0,
-        GLSL = 1,
+        SHADER = 1,
         TTF = 2,
         SCENE = 3,
         NONE = -1
@@ -40,7 +40,9 @@ namespace Aph {
         inline static std::unordered_map<std::string, AssetFileType> m_FileExtensionMap =
                 {
                         {".png", AssetFileType::PNG},
-                        {".glsl", AssetFileType::GLSL},
+                        {".glsl", AssetFileType::SHADER},
+                        {".vert", AssetFileType::SHADER},
+                        {".frag", AssetFileType::SHADER},
                         {".ttf", AssetFileType::TTF},
                         {".sce", AssetFileType::SCENE}};
     };

@@ -36,7 +36,16 @@ namespace Aph {
         // Right click
         if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
             if (ImGui::MenuItem("Create Empty Entity"))
-                m_Context->CreateEntity("Empty Entity");
+                m_SelectionContext = m_Context->CreateEntity("Empty Entity");
+            else if (ImGui::MenuItem("Create Camera")) {
+                m_SelectionContext = m_Context->CreateEntity("Camera");
+                m_SelectionContext.AddComponent<CameraComponent>();
+                ImGui::CloseCurrentPopup();
+            } else if (ImGui::MenuItem("Create Sprite")) {
+                m_SelectionContext = m_Context->CreateEntity("Sprite");
+                m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         }
 
@@ -207,7 +216,7 @@ namespace Aph {
 
         if (ImGui::BeginPopup("AddComponent")) {
             if (ImGui::MenuItem("Transform")) {
-                if(!m_SelectionContext.HasComponent<TransformComponent>())
+                if (!m_SelectionContext.HasComponent<TransformComponent>())
                     m_SelectionContext.AddComponent<TransformComponent>();
                 else
                     APH_CORE_WARN("This entity already has the Transform Component!");
@@ -230,13 +239,13 @@ namespace Aph {
                 ImGui::CloseCurrentPopup();
             }
 
-//            if (ImGui::MenuItem("Sprite Texture")) {
-//                if (!m_SelectionContext.HasComponent<SpriteTextureComponent>())
-//                    m_SelectionContext.AddComponent<SpriteTextureComponent>();
-//                else
-//                    APH_CORE_WARN("This entity already has the Sprite Texture Component!");
-//                ImGui::CloseCurrentPopup();
-//            }
+            //            if (ImGui::MenuItem("Sprite Texture")) {
+            //                if (!m_SelectionContext.HasComponent<SpriteTextureComponent>())
+            //                    m_SelectionContext.AddComponent<SpriteTextureComponent>();
+            //                else
+            //                    APH_CORE_WARN("This entity already has the Sprite Texture Component!");
+            //                ImGui::CloseCurrentPopup();
+            //            }
 
             ImGui::EndPopup();
         }

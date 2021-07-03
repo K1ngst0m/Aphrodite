@@ -87,7 +87,7 @@ namespace Aph {
                     treeName = ICON_FA_FOLDER_MINUS + std::string(" ") + name;
                 }
 
-                if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str())) {
+                if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str())) {
                     if (ImGui::IsItemClicked()) {
                         m_CurrentRightPanelDirectoryPath = entry.path();
                     }
@@ -98,32 +98,34 @@ namespace Aph {
                 switch (fileType) {
                     case AssetFileType::PNG: {
                         treeName = std::string(ICON_FA_PHOTO_VIDEO) + std::string(" ") + name;
-                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str())) {
+                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str())) {
                             ImGui::TreePop();
                         }
                         break;
                     }
-                    case AssetFileType::GLSL: {
+                    case AssetFileType::SHADER: {
                         treeName = std::string(ICON_FA_CIRCLE) + std::string(" ") + name;
-                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str())) {
+                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str())) {
                             ImGui::TreePop();
                         }
                         break;
                     }
                     case AssetFileType::TTF: {
                         treeName = std::string(ICON_FA_FONT) + std::string(" ") + name;
-                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str())) {
+                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str())) {
                             ImGui::TreePop();
                         }
                         break;
                     }
                     case AssetFileType::SCENE: {
                         treeName = std::string(ICON_FA_ARCHIVE) + std::string(" ") + name;
-                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str())) {
+                        if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str())) {
                             ImGui::TreePop();
                         }
                         break;
                     }
+                    case AssetFileType::NONE:
+                        break;
                 }
             }
         }
@@ -144,7 +146,7 @@ namespace Aph {
                 treeName = ICON_FA_FOLDER + std::string(" ") + name;
 
                 if (!HasSubDirectory(entry.path())) {
-                    bool opened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str());
+                    bool opened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str());
 
                     if (ImGui::IsItemClicked()) {
                         m_CurrentRightPanelDirectoryPath = entry.path();
@@ -153,7 +155,7 @@ namespace Aph {
                     DrawRecursive(entry.path());
                     ImGui::TreePop();
                 } else {
-                    bool opened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_OpenOnArrow, treeName.c_str());
+                    bool opened = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_OpenOnArrow, "%s", treeName.c_str());
 
                     if (ImGui::IsItemClicked()) {
                         m_CurrentRightPanelDirectoryPath = entry.path();
@@ -166,7 +168,7 @@ namespace Aph {
                 }
             } else {
                 treeName = ICON_FA_FOLDER_MINUS + std::string(" ") + name;
-                ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, treeName.c_str());
+                ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Leaf, "%s", treeName.c_str());
                 if (ImGui::IsItemClicked()) {
                     m_CurrentRightPanelDirectoryPath = entry.path();
                 }
