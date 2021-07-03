@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#include "Aphrodite/Core/Log.h"
+#include "Aphrodite/Debug/Log.h"
 #include "Aphrodite/Debug/Instrumentor.h"
 
 #endif// Aphrodite_ENGINE_HZPCH_H

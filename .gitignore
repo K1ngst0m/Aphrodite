@@ -130,3 +130,4 @@ CTestTestfile.cmake
 /Aphrodite-Runtime/3rdparty/VulkanSDK/
 /venv/
 /scripts/vulkansdk-linux-x86_64-1.2.170.0.tar.gz
+/scripts/3rdParty/VulkanSDK/1.2.170.0/

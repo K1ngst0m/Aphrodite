@@ -10,7 +10,7 @@
 
 #include "Aphrodite/Core/Input.h"
 #include "Aphrodite/Renderer/Renderer.h"
-#include "Log.h"
+#include "Aphrodite/Debug/Log.h"
 #include "pch.h"
 
 namespace Aph {

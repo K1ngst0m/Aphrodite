@@ -8,7 +8,7 @@
 #include <filesystem>
 
 #include "Aphrodite/Core/Base.h"
-#include "Aphrodite/Core/Log.h"
+#include "Aphrodite/Debug/Log.h"
 
 #ifdef APH_ENABLE_ASSERTS
 

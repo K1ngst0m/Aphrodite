@@ -32,7 +32,8 @@ namespace Aph {
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
         // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
-        float fontSize = 24.0f;
+        float fontSize = 25.0f;
+        float iconSize = 17.0f;
 
         io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
 
@@ -41,10 +42,10 @@ namespace Aph {
         icons_config_fontawesome.MergeMode = true;
         icons_config_fontawesome.PixelSnapH = true;
 
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
         io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, fontSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
         // Setup Dear ImGui style
 #if 1

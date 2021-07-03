@@ -6,9 +6,9 @@
 #define APHRODITE_ENGINE_APHRODITE_H
 
 // Base
-#include "Aphrodite/Core/Assert.h"
+#include "Aphrodite/Debug/Assert.h"
 #include "Aphrodite/Core/Base.h"
-#include "Aphrodite/Core/Log.h"
+#include "Aphrodite/Debug/Log.h"
 
 // Application
 #include "Aphrodite/Core/Application.h"

@@ -42,7 +42,7 @@ namespace Aph {
                         {".png", AssetFileType::PNG},
                         {".glsl", AssetFileType::GLSL},
                         {".ttf", AssetFileType::TTF},
-                        {".ghost", AssetFileType::SCENE}};
+                        {".sce", AssetFileType::SCENE}};
     };
 
 }// namespace Aph

@@ -13,7 +13,7 @@
 #include <thread>
 #include <mutex>
 
-#include "Aphrodite/Core/Log.h"
+#include "Aphrodite/Debug/Log.h"
 
 namespace Aph {
     using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;

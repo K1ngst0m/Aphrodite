@@ -70,5 +70,5 @@ namespace Aph {
 }
 #endif// Aphrodite_CORE_H
 
-#include "Aphrodite/Core/Log.h"
-#include "Aphrodite/Core/Assert.h"
+#include "Aphrodite/Debug/Log.h"
+#include "Aphrodite/Debug/Assert.h"

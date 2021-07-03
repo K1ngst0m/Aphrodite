@@ -391,7 +391,7 @@
 #define ICON_FA_GAVEL u8"\uf0e3"
 #define ICON_FA_GEM u8"\uf3a5"
 #define ICON_FA_GENDERLESS u8"\uf22d"
-#define ICON_FA_GHOST u8"\uf6e2"
+#define ICON_FA_APH u8"\uf6e2"
 #define ICON_FA_GIFT u8"\uf06b"
 #define ICON_FA_GIFTS u8"\uf79c"
 #define ICON_FA_GLASS_CHEERS u8"\uf79f"
