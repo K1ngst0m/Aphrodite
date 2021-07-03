@@ -99,11 +99,11 @@ Tested on Gentoo Base System, BSPWM
 - Build with CMake
   - Runtime Lib only
   ```shell
-  $ cmake ../ && cmake --build . --target Aphrodite-Runtime #-jx
+  $ cmake -G Ninja ../ && cmake --build . --target Aphrodite-Runtime # -- -jx
   ```
   - Runtime Lib && Editor
   ```shell
-  $ cmake ../ && cmake --build . -- target Aphrodite-Editor #-jx
+  $ cmake -G Ninja ../ && cmake --build . -- target Aphrodite-Editor # -- -jx
   ```
 
 ***

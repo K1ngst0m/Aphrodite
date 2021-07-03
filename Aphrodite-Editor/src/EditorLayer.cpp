@@ -247,23 +247,23 @@ namespace Aph {
 //        m_ContentBrowserPanel.OnImGuiRender();
 
         ImGui::Begin(Style::Title::RenderInfo.data());
-        ImGui::Text("Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
-        ImGui::Text("Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
-        ImGui::Text("OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
+        ImGui::Text("# Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
+        ImGui::Text("# Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
+        ImGui::Text("# OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
         ImGui::End();
 
         // Mouse Hover
         std::string name = "None";
         if (m_HoveredEntity) name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
-        ImGui::Text("Hovered Entity: %s", name.c_str());
+        ImGui::Text("# Hovered Entity: %s", name.c_str());
 
         // Statistics
         ImGui::Begin(Style::Title::Renderer2DStatistics.data());
         auto stats = Renderer2D::GetStats();
-        ImGui::Text("Draw Calls: %d", stats.DrawCalls);
-        ImGui::Text("Quads: %d", stats.QuadCount);
-        ImGui::Text("Vertices: %d", stats.GetTotalVertexCount());
-        ImGui::Text("Indices: %d", stats.GetTotalIndexCount());
+        ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
+        ImGui::Text("# Quads: %d", stats.QuadCount);
+        ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());
+        ImGui::Text("# Indices: %d", stats.GetTotalIndexCount());
         ImGui::End();
 
 
