@@ -19,6 +19,7 @@ Until now this engine has been developed for the GNU/Linux OS only.
 ## Features
 
 * **Project**
+  * Written in modern C++
   * Use shell && Python scripts for project generation
   * Cmake Setup
     
@@ -52,16 +53,16 @@ Editor UI in [Bspwm](https://wiki.gentoo.org/wiki/Bspwm):
 
 ***
 
-## Build
+## Installation
 
-```shell
-$ git clone https://github.com/npchitman/Aphrodite
-$ cd Aphrodite
-$ mkdir build && cd build
-$ cmake ../ && make
-```
+Tested on Gentoo Base System, BSPWM
 
-## Technical Information
+<ins>*Tools required:*</ins>
+- CMake 3.17+
+- C++17 capable compiler:
+  - Clang 5
+  - GCC 7
+    
 
 <ins>*Supported IDEs:*</ins>
 * Clion 2021
@@ -74,7 +75,7 @@ $ cmake ../ && make
 * GLSL (Shader Language)
 * Python (Project Setup)
 
-<ins>*External Libraries Used:*</ins>
+<ins>*Library dependencies:*</ins>
 * [GLFW](https://www.glfw.org/)
 * [Glad](https://glad.dav1d.de/)
 * [Vulkan](https://www.lunarg.com/vulkan-sdk/)
@@ -86,5 +87,27 @@ $ cmake ../ && make
 * [yaml-cpp](https://github.com/jbeder/yaml-cpp)
 * [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders)
 * [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
+  
+<ins>*Set up:*</ins>
+
+- Ensure that all dependencies above are set up correctly
+- Clone repository and create build directory
+  ```shell
+  $ cd Aphrodite
+  $ mkdir build && cd build
+  ```
+- Build with CMake
+  - Runtime Lib only
+  ```shell
+  $ cmake ../ && cmake --build . --target Aphrodite-Runtime #-jx
+  ```
+  - Runtime Lib && Editor
+  ```shell
+  $ cmake ../ && cmake --build . -- target Aphrodite-Editor #-jx
+  ```
 
 ***
+
+## Documentation
+
+We will see you soon!
