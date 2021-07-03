@@ -1,5 +1,6 @@
 import sys
 import os
+import tarfile
 
 import requests
 import time
@@ -9,7 +10,6 @@ from zipfile import ZipFile
 
 
 def DownloadFile(url, filepath):
-    path = filepath
     filepath = os.path.abspath(filepath)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
@@ -65,7 +65,21 @@ def DownloadFile(url, filepath):
     sys.stdout.write('\n')
 
 
-def UnzipFile(filepath, deleteZipFile=True):
+def UnPackingTarball(filepath, target_path, deleteTarBall=True):
+    try:
+        tar = tarfile.open(filepath, "r:*")
+        file_names = tar.getnames()
+        for file_name in file_names:
+            tar.extract(file_name, target_path)
+        tar.close()
+    except Exception:
+        raise Exception
+
+    if deleteTarBall:
+        os.remove(filepath)
+
+
+def UnPackingZip(filepath, deleteZipFile=True):
     zipFilePath = os.path.abspath(filepath)  # get full path of files
     zipFileLocation = os.path.dirname(zipFilePath)
 
@@ -104,6 +118,3 @@ def UnzipFile(filepath, deleteZipFile=True):
                 '\r[{}{}] {:.2f}% ({})     '.format('█' * done, '.' * (50 - done), percentage, avgSpeedString))
             sys.stdout.flush()
     sys.stdout.write('\n')
-
-    if deleteZipFile:
-        os.remove(zipFilePath)  # delete zip file

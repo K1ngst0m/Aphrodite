@@ -1,5 +1,6 @@
 import os
 
+import tarfile
 import subprocess
 import Utils
 
@@ -43,15 +44,13 @@ class VulkanConfiguration:
             permissionGranted = (reply == 'y')
 
         vulkanInstallURL = f"https://sdk.lunarg.com/sdk/download/{cls.requiredVulkanVersion}/linux/vulkansdk-linux-x86_64-1.2.170.0.tar.gz"
-        vulkanPath = f"{cls.vulkanDirectory}/VulkanSDK-{cls.requiredVulkanVersion}.tar.gz"
+        vulkanPath = f"{cls.vulkanDirectory}/vulkansdk-linux-x86_64-{cls.requiredVulkanVersion}.tar.gz"
         print("Downloading {0:s} to {1:s}".format(vulkanInstallURL, vulkanPath))
-        # Utils.DownloadFile(vulkanInstallURL, vulkanPath)
-        print("Running Vulkan SDK installer...")
+        Utils.DownloadFile(vulkanInstallURL, vulkanPath)
+        print("Extracting Vulkan SDK tarball...")
 
-        process = subprocess.Popen(['tar', 'xvf', os.path.abspath(vulkanPath), '-C', cls.vulkanDirectory],
-                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        # TODO: linux installation
+        Utils.UnPackingTarball(os.path.abspath(vulkanPath), cls.vulkanDirectory)
+        subprocess.call(['source' f'{cls.vulkanDirectory}/1.2.170.0/setup-env.sh'])
 
         print("Re-run this script after installation!")
         quit()
