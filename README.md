@@ -38,13 +38,14 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * Simplified API for drawing colored and textured quads
     
 * **Editor**
-  * ImGui, Docking, Frambuffers and ImGui Viewport
+  * ImGui, Docking, Frambuffers and Viewport
   * Editor Gizmos
   * Editor Camera
   * Native C++ scripting
-  * ImGui Console Logging
-  * ImGui Scene Hierarchy Panel
-  * ImGui Properties Panel
+  * Console Logging
+  * Scene Hierarchy Panel
+  * Properties Panel
+  * AssetBrowser
   * Scene Serialization and Deserialization using YAML
 
 Editor UI in [Bspwm](https://wiki.gentoo.org/wiki/Bspwm): 
