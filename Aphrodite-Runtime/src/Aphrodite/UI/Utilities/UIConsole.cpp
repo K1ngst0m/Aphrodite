@@ -39,18 +39,17 @@ namespace Aph {
         }
 
         ImGui::Separator();
-        ImGui::Separator();
 
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
         ImGui::BeginChild("Scrolling Region", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 
         for (uint32_t i = 0; i < UIConsole::s_LogMessageCount; i++) {
             if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Info)
-                ImGui::TextColored({0.8f, 0.8f, 0.8f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
+                ImGui::TextColored({0.7f, 0.7f, 0.7f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
             if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Warn)
-                ImGui::TextColored({0.8f, 0.8f, 0.2f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
+                ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
             if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Error)
-                ImGui::TextColored({0.8f, 0.2f, 0.2f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
+                ImGui::TextColored({0.8f, 0.4f, 0.4f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
             ImGui::Separator();
         }
         ImGui::EndChild();

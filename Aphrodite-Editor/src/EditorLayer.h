@@ -25,6 +25,15 @@ namespace Aph {
         void OnEvent(Event& e) override;
 
     private:
+        void DrawSceneHierarchy();
+        void DrawViewport();
+        void DrawStatusData();
+        void DrawConsole();
+        void DrawAssetBrowser();
+        void DrawMenuBar();
+        void DrawToolBar();
+
+    private:
         bool OnKeyPressed(KeyPressedEvent& e);
         bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 

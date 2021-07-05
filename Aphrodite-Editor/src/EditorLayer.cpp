@@ -176,191 +176,14 @@ namespace Aph {
 
         style.WindowMinSize.x = minWinSizeX;
 
-        if (ImGui::BeginMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("New", "Ctrl+N"))
-                    NewScene();
-
-                if (ImGui::MenuItem("Open...", "Ctrl+O"))
-                    OpenScene();
-
-                if (ImGui::MenuItem("Save As...", "Ctrl+Alt+S"))
-                    SaveSceneAs();
-
-                if (ImGui::MenuItem("Exit"))
-                    Application::Get().Close();
-                ImGui::EndMenu();
-            }
-
-            ImGui::EndMenuBar();
-        }
-
-
-        // Viewport
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-        ImGui::Begin(Style::Title::Viewport.data());
-
-        auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-        auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-        auto viewportOffset = ImGui::GetWindowPos();
-
-        m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-        m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
-
-        m_ViewportFocused = ImGui::IsWindowFocused();
-        m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
-
-        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-        m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
-
-        uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
-        ImGui::Image(reinterpret_cast<void*>(textureID),
-                     ImVec2{m_ViewportSize.x, m_ViewportSize.y},
-                     ImVec2{0, 1}, ImVec2{1, 0});
-
-        // Gizmos
-        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-        if (selectedEntity && m_GizmoType != -1) {
-            ImGuizmo::SetOrthographic(false);
-            ImGuizmo::SetDrawlist();
-
-            ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
-                              m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-                              m_ViewportBounds[1].y - m_ViewportBounds[0].y);
-
-            // Editor camera
-            const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
-            glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
-
-            // Entity transform
-            auto& tc = selectedEntity.GetComponent<TransformComponent>();
-            glm::mat4 transform = tc.GetTransform();
-
-            // Snapping
-            bool snap = Input::IsKeyPressed(Key::LeftControl);
-            float snapValue = 0.5f;// Snap to 0.5m for translation/scale
-            if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
-                snapValue = 45.0f;
-
-            float snapValues[3] = {snapValue, snapValue, snapValue};
-
-            ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
-                                 (ImGuizmo::OPERATION) m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
-                                 nullptr, snap ? snapValues : nullptr);
-
-            if (ImGuizmo::IsUsing()) {
-                glm::vec3 translation, rotation, scale;
-                Math::DecomposeTransform(transform, translation, rotation, scale);
-
-                glm::vec3 deltaRotation = rotation - tc.Rotation;
-                tc.Translation = translation;
-                tc.Rotation += deltaRotation;
-                tc.Scale = scale;
-            }
-        }
-
-        ImGui::End();
-        ImGui::PopStyleVar();
-
-        // Scene Hierarchy && Content Browser
-        m_SceneHierarchyPanel.OnImGuiRender();
-
-        // Renderer Info
-        ImGui::Begin(Style::Title::RenderInfo.data());
-        ImGui::Text("# Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
-        ImGui::Text("# Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
-        ImGui::Text("# OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
-        ImGui::End();
-
-        // Mouse Hover
-        std::string name = "None";
-        if (m_HoveredEntity) name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
-        ImGui::Text("# Hovered Entity: %s", name.c_str());
-
-        // Statistics
-        ImGui::Begin(Style::Title::Renderer2DStatistics.data());
-        auto stats = Renderer2D::GetStats();
-        ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
-        ImGui::Text("# Quads: %d", stats.QuadCount);
-        ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());
-        ImGui::Text("# Indices: %d", stats.GetTotalIndexCount());
-        // FPS
-        static float frameTimeRefreshTimer = 0.0f;
-        static float ft = 0.0f;
-        static float frameRate = 0.0f;
-        frameTimeRefreshTimer += frameTime;
-        if (frameTimeRefreshTimer >= 0.25f) {
-            ft = frameTime;
-            frameRate = 1.0f / frameTime;
-        }
-        ImGui::Text("# FrameTime: %.3f ms", ft);
-        ImGui::Text("# FPS: %d", static_cast<int>(frameRate));
-        ImGui::End();
-
-        // Toolbar
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::Begin("Toolbar", nullptr);
-        const ImVec2 toolbarButtonSize = {28, 28};
-        if (m_SceneState == SceneState::Edit)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-            if (ImGui::Button("\uf04b", toolbarButtonSize))
-            {
-                OnScenePlay();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("\uf04c", toolbarButtonSize))
-            {
-                OnScenePause();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("\uf04d", toolbarButtonSize))
-            {
-                OnSceneStop();
-            }
-            ImGui::PopStyleColor(2);
-        }
-        else if (m_SceneState == SceneState::Play)
-        {
-            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-            if (ImGui::ArrowButton("Play", ImGuiDir_Right))
-            {
-                OnSceneStop();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("\uf04c", toolbarButtonSize))
-            {
-                OnScenePause();
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("\uf04d", toolbarButtonSize))
-            {
-                OnSceneStop();
-            }
-            ImGui::PopStyleColor(2);
-        }
-        else if (m_SceneState == SceneState::Pause){
-            // TODO: scene pause
-        }
-        ImGui::End();
-        ImGui::PopStyleColor(2);
-        ImGui::PopStyleVar(2);
-
-        // Console
-        ImGui::Begin(Style::Title::Console.data());
-        UIConsole::Draw();
-        ImGui::End();
-
-        // Asset Browser
-        ImGui::Begin(Style::Title::Project.data());
-        UIAssetBrowser::Draw();
-        ImGui::End();
+        // Draw Panel
+        DrawMenuBar();
+        DrawViewport();
+        DrawSceneHierarchy();
+        DrawStatusData();
+        DrawToolBar();
+        DrawConsole();
+        DrawAssetBrowser();
 
         ImGui::End();
     }
@@ -453,6 +276,8 @@ namespace Aph {
 
     void EditorLayer::OnScenePause() {
         // TODO: on scene pause
+        m_SceneState = SceneState::Pause;
+        UIConsole::Log("Scene Pause");
     }
 
     void EditorLayer::NewScene() {
@@ -487,5 +312,308 @@ namespace Aph {
                 m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
         }
         return false;
+    }
+
+    ////////////////
+    // UI Element //
+    ////////////////
+
+    void EditorLayer::DrawSceneHierarchy() {
+        m_SceneHierarchyPanel.OnImGuiRender();
+    }
+
+    void EditorLayer::DrawViewport() {
+        // Viewport
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
+        ImGui::Begin(Style::Title::Viewport.data());
+
+        auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+        auto viewportOffset = ImGui::GetWindowPos();
+
+        m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
+        m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
+
+        m_ViewportFocused = ImGui::IsWindowFocused();
+        m_ViewportHovered = ImGui::IsWindowHovered();
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+
+        ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
+        m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
+
+        uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
+        ImGui::Image(reinterpret_cast<void*>(textureID),
+                     ImVec2{m_ViewportSize.x, m_ViewportSize.y},
+                     ImVec2{0, 1}, ImVec2{1, 0});
+
+        // Gizmos
+        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (selectedEntity && m_GizmoType != -1) {
+            ImGuizmo::SetOrthographic(false);
+            ImGuizmo::SetDrawlist();
+
+            ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
+                              m_ViewportBounds[1].x - m_ViewportBounds[0].x,
+                              m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+
+            // Editor camera
+            const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
+            glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
+
+            // Entity transform
+            auto& tc = selectedEntity.GetComponent<TransformComponent>();
+            glm::mat4 transform = tc.GetTransform();
+
+            // Snapping
+            bool snap = Input::IsKeyPressed(Key::LeftControl);
+            float snapValue = 0.5f;// Snap to 0.5m for translation/scale
+            if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
+                snapValue = 45.0f;
+
+            float snapValues[3] = {snapValue, snapValue, snapValue};
+
+            ImGuizmo::Manipulate(glm::value_ptr(cameraView), glm::value_ptr(cameraProjection),
+                                 (ImGuizmo::OPERATION) m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(transform),
+                                 nullptr, snap ? snapValues : nullptr);
+
+            if (ImGuizmo::IsUsing()) {
+                glm::vec3 translation, rotation, scale;
+                Math::DecomposeTransform(transform, translation, rotation, scale);
+
+                glm::vec3 deltaRotation = rotation - tc.Rotation;
+                tc.Translation = translation;
+                tc.Rotation += deltaRotation;
+                tc.Scale = scale;
+            }
+        }
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
+
+    void EditorLayer::DrawStatusData() {
+        // Status Bar
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::ForegroundColor_white);
+        ImGui::Begin("Status Bar", nullptr);
+        ImGui::Columns(4, "Status Bar", true);
+        ImGui::SetColumnWidth(0, 1200);
+        ImGui::SetColumnWidth(1, 350);
+        ImGui::SetColumnWidth(2, 200);
+        ImGui::SetColumnWidth(3, 200);
+        ImGui::Text("%s", UIConsole::GetLastMessage().data());
+        ImGui::NextColumn();
+        // Mouse Hover
+        std::string name = "None";
+        if (m_HoveredEntity) name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
+        ImGui::Text(" \uf1b2 Hovered Entity: %s", name.c_str());
+        ImGui::NextColumn();
+        // Frame Per Second
+        static float frameTimeRefreshTimer = 0.0f;
+        static float ft = 0.0f;
+        static float frameRate = 0.0f;
+        frameTimeRefreshTimer += frameTime;
+        if (frameTimeRefreshTimer >= 0.25f) {
+            ft = frameTime;
+            frameRate = 1.0f / frameTime;
+        }
+        ImGui::Text(" FrameTime: %.3f ms", ft);
+        ImGui::NextColumn();
+        ImGui::Text(" FPS: %d", static_cast<int>(frameRate));
+        ImGui::End();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+
+        // Render Stats
+        ImGui::Begin(Style::Title::Renderer2DStatistics.data());
+        auto stats = Renderer2D::GetStats();
+        ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
+        ImGui::Text("# Quads: %d", stats.QuadCount);
+        ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());
+        ImGui::Text("# Indices: %d", stats.GetTotalIndexCount());
+        ImGui::End();
+
+        // Renderer Info
+        ImGui::Begin(Style::Title::RenderInfo.data());
+        ImGui::Text("# Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
+        ImGui::Text("# Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
+        ImGui::Text("# OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
+        ImGui::End();
+    }
+
+    void EditorLayer::DrawConsole() {
+        ImGui::Begin(Style::Title::Console.data());
+        UIConsole::Draw();
+        ImGui::End();
+    }
+
+    void EditorLayer::DrawAssetBrowser() {
+        ImGui::Begin(Style::Title::Project.data());
+        UIAssetBrowser::Draw();
+        ImGui::End();
+    }
+
+    void EditorLayer::DrawMenuBar() {
+        if (ImGui::BeginMenuBar()) {
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("New", "Ctrl+N"))
+                    NewScene();
+
+                if (ImGui::MenuItem("Open...", "Ctrl+O"))
+                    OpenScene();
+
+                if (ImGui::MenuItem("Save As...", "Ctrl+Alt+S"))
+                    SaveSceneAs();
+
+                if (ImGui::MenuItem("Exit"))
+                    Application::Get().Close();
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Edit")) {
+                if (ImGui::MenuItem("Copy", "Ctrl+C")){
+                    // TODO
+                }
+
+                if (ImGui::MenuItem("Cut", "Ctrl+X")){
+                    // TODO
+                }
+
+                if (ImGui::MenuItem("Paste", "Ctrl+P")){
+                    // TODO
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::MenuItem("")){
+                    // TODO
+                }
+                if (ImGui::MenuItem("")){
+                    // TODO
+                }
+                if (ImGui::MenuItem("")){
+                    // TODO
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Settings")) {
+                if (ImGui::MenuItem("Project Setting"))
+                    NewScene();
+
+                if (ImGui::MenuItem("Editor Setting"))
+                    OpenScene();
+
+                ImGui::EndMenu();
+            }
+
+            ImGui::EndMenuBar();
+        }
+
+    }
+
+    void EditorLayer::DrawToolBar() {
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::ForegroundColor_second);
+        ImGui::Begin("Toolbar", nullptr);
+        const ImVec2 toolbarButtonSize = {28, 28};
+
+        ImGui::Columns(3, "Toolbar", false);
+        // Transform
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        if (ImGui::Button("\uf05b", toolbarButtonSize))
+        {
+            if (!ImGuizmo::IsUsing())
+                m_GizmoType = -1;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("\uF0B2", toolbarButtonSize))
+        {
+            if (!ImGuizmo::IsUsing())
+                m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("\uF021", toolbarButtonSize))
+        {
+            if (!ImGuizmo::IsUsing())
+                m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("\uF065", toolbarButtonSize)) {
+            if (!ImGuizmo::IsUsing())
+                m_GizmoType = ImGuizmo::OPERATION::SCALE;
+        }
+        ImGui::SetColumnWidth(0, 850);
+        ImGui::NextColumn();
+        ImGui::PopStyleColor();
+
+        // Play, Pause, Stop
+        if (m_SceneState == SceneState::Edit)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+            if (ImGui::Button("\uf04b", toolbarButtonSize))
+            {
+                OnScenePlay();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04c", toolbarButtonSize))
+            {
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04d", toolbarButtonSize))
+            {
+            }
+            ImGui::PopStyleColor();
+        }
+        else if (m_SceneState == SceneState::Play)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            if (ImGui::Button("\uf04b", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+            ImGui::PopStyleColor(2);
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04c", toolbarButtonSize))
+            {
+                OnScenePause();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04d", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+        }
+        else if (m_SceneState == SceneState::Pause){
+            // TODO: scene pause
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            if (ImGui::Button("\uf04b", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04c", toolbarButtonSize))
+            {
+            }
+            ImGui::PopStyleColor(2);
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04d", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+        }
+
+        ImGui::End();
+        ImGui::PopStyleColor(3);
+        ImGui::PopStyleVar(2);
+
     }
 }// namespace Aph

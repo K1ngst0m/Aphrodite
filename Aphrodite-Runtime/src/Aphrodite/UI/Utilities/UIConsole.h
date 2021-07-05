@@ -36,6 +36,8 @@ namespace Aph {
 
         static void Draw();
 
+        static std::string_view GetLastMessage() { return s_MessageBuffer.back().m_MessageData; }
+
         template<typename... Args>
         static void Log(const std::string& data, Args&&... args);
 

@@ -34,24 +34,25 @@
 
 #define APH_BIND_EVENT_FN(fn) [this](auto&&... args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
+#include <imgui.h>
 namespace Aph {
     namespace Style{
-//        static decltype() GetFont(const string& path, uint32_t fontSize){
-//            return io.Fonts
-//        }
 
         namespace Title{
             const static std::string_view SceneHierarchy = "\uF5FD Scene Hierarchy";
             const static std::string_view Properties = "\uF1B2 Properties";
             const static std::string_view Viewport = "\uF06E Viewport";
             const static std::string_view Project = "\uF07B Project";
-            const static std::string_view Console = "\uF069 Console";
+            const static std::string_view Console = "\uF120 Console";
             const static std::string_view RenderInfo = "\uF05A Render Info";
             const static std::string_view Renderer2DStatistics = "\uF05A Renderer2D Stats";
         }
 
         namespace Color{
             const static glm::vec4 ClearColor = {0.049f, 0.085f, 0.104f, 1.0f};
+            const static ImVec4 ForegroundColor_white = {0.8f, 0.8f, 0.8f, 1.0f};
+            const static ImVec4 ForegroundColor_primary = {0.406f, 0.738f, 0.687f, 1.0f};
+            const static ImVec4 ForegroundColor_second = {0.406f, 0.738f, 0.687f, 1.0f};
         }
     }
 
