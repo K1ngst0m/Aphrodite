@@ -8,6 +8,7 @@ set(runtime_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Runtime)
 set(editor_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Editor)
 
 # runtime
+include_directories(${runtime_src_dir}/include)
 include_directories(${runtime_src_dir}/src)
 
 # 3rdparty

@@ -7,8 +7,9 @@
 #define Aphrodite_ENGINE_INPUT_H
 
 #include <glm/glm.hpp>
-#include "Aphrodite/Core/KeyCodes.h"
-#include "Aphrodite/Core/MouseCodes.h"
+
+#include "KeyCodes.h"
+#include "MouseCodes.h"
 
 namespace Aph {
     class Input {

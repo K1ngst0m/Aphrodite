@@ -2,8 +2,9 @@
 // Created by npchitman on 6/24/21.
 //
 
-#include <Aphrodite.h>
 #include <Aphrodite/Core/EntryPoint.h>
+
+#include <Aphrodite.hpp>
 
 #include "EditorLayer.h"
 

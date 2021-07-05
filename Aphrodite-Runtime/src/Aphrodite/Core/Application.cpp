@@ -2,15 +2,15 @@
 // Created by npchitman on 5/30/21.
 //
 
-#include "Aphrodite/Core/Application.h"
+#include "Application.h"
 
 #include <GLFW/glfw3.h>
 
 #include <memory>
 
-#include "Aphrodite/Core/Input.h"
-#include "Aphrodite/Renderer/Renderer.h"
 #include "Aphrodite/Debug/Log.h"
+#include "Aphrodite/Input/Input.h"
+#include "Aphrodite/Renderer/Renderer.h"
 #include "pch.h"
 
 namespace Aph {
@@ -26,7 +26,7 @@ namespace Aph {
 
         Renderer::Init();
 
-        m_ImGuiLayer = new ImGuiLayer();
+        m_ImGuiLayer = new UILayer();
         PushOverlay(m_ImGuiLayer);
     }
 
@@ -66,13 +66,13 @@ namespace Aph {
                         layer->OnUpdate(timestep);
                 }
 
-                Aph::ImGuiLayer::Begin();
+                Aph::UILayer::Begin();
                 {
                     APH_PROFILE_SCOPE("LayerStack OnUpdate");
                     for (const auto &layer : m_LayerStack)
                         layer->OnImGuiRender();
                 }
-                Aph::ImGuiLayer::End();
+                Aph::UILayer::End();
             }
 
             m_Window->OnUpdate();

@@ -2,14 +2,14 @@
 // Created by npchitman on 7/2/21.
 //
 
-#ifndef APHRODITE_IMGUICONSOLE_H
-#define APHRODITE_IMGUICONSOLE_H
+#ifndef APHRODITE_UICONSOLE_H
+#define APHRODITE_UICONSOLE_H
 
-#include "pch.h"
 #include "Aphrodite/Core/Base.h"
+#include "pch.h"
 
 namespace Aph {
-    static const char * logSign = "\uF292   ";
+    static const char* logSign = "\uF292   ";
 
     class Message {
     public:
@@ -30,9 +30,9 @@ namespace Aph {
         Level m_MessageLevel{};
     };
 
-    class ImGuiConsole {
+    class UIConsole {
     public:
-        ImGuiConsole() = default;
+        UIConsole() = default;
 
         static void Draw();
 
@@ -58,28 +58,28 @@ namespace Aph {
 
     // Logging Implementations
     template<typename... Args>
-    inline void ImGuiConsole::Log(const std::string& data, Args&&... args) {
-        s_MessageBuffer.push_back({ImGuiConsole::Format(data, args...)});
+    inline void UIConsole::Log(const std::string& data, Args&&... args) {
+        s_MessageBuffer.push_back({UIConsole::Format(data, args...)});
         s_LogMessageCount++;
     }
 
     template<typename... Args>
-    inline std::string ImGuiConsole::Format(const std::string& fmt, Args&&... args) {
+    inline std::string UIConsole::Format(const std::string& fmt, Args&&... args) {
         return fmt::format((logSign + fmt), args...);
     }
 
 
     template<typename... Args>
-    inline void ImGuiConsole::LogWarning(const std::string& data, Args&&... args) {
-        s_MessageBuffer.push_back({ImGuiConsole::Format(data, args...), Message::Level::Warn});
+    inline void UIConsole::LogWarning(const std::string& data, Args&&... args) {
+        s_MessageBuffer.push_back({UIConsole::Format(data, args...), Message::Level::Warn});
         s_LogMessageCount++;
     }
 
     template<typename... Args>
-    void ImGuiConsole::LogError(const std::string& data, Args&&... args) {
-        s_MessageBuffer.push_back({ImGuiConsole::Format(data, args...), Message::Level::Error});
+    void UIConsole::LogError(const std::string& data, Args&&... args) {
+        s_MessageBuffer.push_back({UIConsole::Format(data, args...), Message::Level::Error});
         s_LogMessageCount++;
     }
 }// namespace Aph
 
-#endif//APHRODITE_IMGUICONSOLE_H
+#endif//APHRODITE_UICONSOLE_H

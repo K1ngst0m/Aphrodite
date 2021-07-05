@@ -18,7 +18,9 @@ namespace Aph {
 
 
         glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
-        glTextureStorage2D(m_RendererID, 1, m_InternalFormat, m_Width, m_Height);
+        glTextureStorage2D(m_RendererID, 1, m_InternalFormat,
+                           static_cast<int>(m_Width),
+                           static_cast<int>(m_Height));
 
         glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -32,9 +34,8 @@ namespace Aph {
         APH_PROFILE_FUNCTION();
 
         int width, height, channels;
-
         stbi_set_flip_vertically_on_load(1);
-        stbi_uc* data = nullptr;
+        stbi_uc* data;
         {
             APH_PROFILE_SCOPE("stbi_load - OpenGLTexture2D::OpenGLTexture2D(const std:string&)");
             data = stbi_load(path.c_str(), &width, &height, &channels, 0);
@@ -67,7 +68,9 @@ namespace Aph {
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-        glTextureSubImage2D(m_RendererID, 0, 0, 0, static_cast<GLsizei>(m_Width), static_cast<GLsizei>(m_Height), dataFormat, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(m_RendererID, 0, 0, 0,
+                            static_cast<GLsizei>(m_Width), static_cast<GLsizei>(m_Height),
+                            dataFormat, GL_UNSIGNED_BYTE, data);
 
         stbi_image_free(data);
     }
@@ -83,7 +86,10 @@ namespace Aph {
 
         uint32_t bpp = m_DataFormat == GL_RGBA ? 4 : 3;
         APH_CORE_ASSERT(size == m_Width * m_Height * bpp, "Data must be entire texture!");
-        glTextureSubImage2D(m_RendererID, 0, 0, 0, static_cast<GLsizei>(m_Width), static_cast<GLsizei>(m_Height), m_DataFormat, GL_UNSIGNED_BYTE, data);
+        glTextureSubImage2D(m_RendererID, 0, 0, 0,
+                            static_cast<GLsizei>(m_Width),
+                            static_cast<GLsizei>(m_Height),
+                            m_DataFormat, GL_UNSIGNED_BYTE, data);
     }
 
     void OpenGLTexture2D::Bind(uint32_t slot) const {

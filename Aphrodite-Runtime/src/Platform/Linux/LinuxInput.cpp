@@ -2,7 +2,7 @@
 // Created by npchitman on 6/1/21.
 //
 
-#include <Aphrodite/Core/Input.h>
+#include <Aphrodite/Input/Input.h>
 #include <GLFW/glfw3.h>
 
 #include "Aphrodite/Core/Application.h"

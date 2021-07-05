@@ -5,8 +5,8 @@
 #ifndef Aphrodite_ENGINE_MOUSEEVENT_H
 #define Aphrodite_ENGINE_MOUSEEVENT_H
 
-#include "Aphrodite/Core/MouseCodes.h"
 #include "Aphrodite/Events/Event.h"
+#include "Aphrodite/Input/MouseCodes.h"
 
 namespace Aph {
     class MouseMovedEvent : public Event {

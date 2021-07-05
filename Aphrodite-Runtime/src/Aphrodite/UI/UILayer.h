@@ -13,11 +13,11 @@
 
 namespace Aph {
 
-    class ImGuiLayer : public Layer {
+    class UILayer : public Layer {
     public:
-        ImGuiLayer();
+        UILayer();
 
-        ~ImGuiLayer() override;
+        ~UILayer() override;
 
         void OnAttach() override;
         void OnDetach() override;

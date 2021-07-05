@@ -6,13 +6,12 @@
 #define Aphrodite_ENGINE_EDITORCAMERA_H
 
 
+#include <glm/glm.hpp>
 
-#include "Camera.h"
 #include "Aphrodite/Core/TimeStep.h"
 #include "Aphrodite/Events/Event.h"
 #include "Aphrodite/Events/MouseEvent.h"
-
-#include <glm/glm.hpp>
+#include "Camera.h"
 
 namespace Aph {
 

@@ -5,7 +5,7 @@
 #ifndef APHRODITE_EXAMPLELAYER_H
 #define APHRODITE_EXAMPLELAYER_H
 
-#include "Aphrodite.h"
+#include <Aphrodite.hpp>
 
 class ExampleLayer : public Aph::Layer {
 public:

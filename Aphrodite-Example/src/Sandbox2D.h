@@ -5,7 +5,7 @@
 #ifndef APHRODITE_SANDBOX2D_H
 #define APHRODITE_SANDBOX2D_H
 
-#include "Aphrodite.h"
+#include <Aphrodite.hpp>
 
 class Sandbox2D : public Aph::Layer {
 public:

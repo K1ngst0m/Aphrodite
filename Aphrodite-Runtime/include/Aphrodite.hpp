@@ -6,27 +6,23 @@
 #define APHRODITE_ENGINE_APHRODITE_H
 
 // Base
-#include "Aphrodite/Debug/Assert.h"
+#include "Aphrodite/Core/Application.h"
 #include "Aphrodite/Core/Base.h"
+#include "Aphrodite/Core/Layer.h"
+#include "Aphrodite/Core/TimeStep.h"
+#include "Aphrodite/Debug/Assert.h"
 #include "Aphrodite/Debug/Log.h"
 
-// Application
-#include "Aphrodite/Core/Application.h"
-#include "Aphrodite/Core/Layer.h"
-
-// TimeStep
-#include "Aphrodite/Core/TimeStep.h"
-
 // Input
-#include "Aphrodite/Core/Input.h"
-#include "Aphrodite/Core/KeyCodes.h"
-#include "Aphrodite/Core/MouseCodes.h"
+#include "Aphrodite/Input/Input.h"
+#include "Aphrodite/Input/KeyCodes.h"
+#include "Aphrodite/Input/MouseCodes.h"
 #include "Aphrodite/Renderer/OrthographicCameraController.h"
 
-// ImGui
-#include "Aphrodite/ImGui/ImGuiLayer.h"
-#include "Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.h"
-#include "Aphrodite/ImGui/Utilities/ImGuiConsole.h"
+// UI
+#include "Aphrodite/UI/UILayer.h"
+#include "Aphrodite/UI/Utilities/UIAssetBrowser.h"
+#include "Aphrodite/UI/Utilities/UIConsole.h"
 
 // Renderer
 #include "Aphrodite/Renderer/Buffer.h"

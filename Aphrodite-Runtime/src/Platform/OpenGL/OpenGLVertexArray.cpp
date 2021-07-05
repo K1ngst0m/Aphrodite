@@ -33,12 +33,12 @@ namespace Aph {
                 return GL_INT;
             case Aph::ShaderDataType::Bool:
                 return GL_BOOL;
+            default:
+                APH_CORE_ASSERT(false, "Unknown ShaderDataType!");
+                return 0;
         }
-
-        APH_CORE_ASSERT(false, "Unknown ShaderDataType!");
-        return 0;
     }
-}// namespace Aph-Runtime
+}// namespace Aph
 
 Aph::OpenGLVertexArray::OpenGLVertexArray() {
     APH_PROFILE_FUNCTION();
@@ -65,18 +65,16 @@ void Aph::OpenGLVertexArray::UnBind() const {
 }
 
 void Aph::OpenGLVertexArray::AddVertexBuffer(
-        const std::shared_ptr<VertexBuffer> &vertexBuffer) {
+        const Ref<VertexBuffer> &vertexBuffer) {
     APH_PROFILE_FUNCTION();
 
     APH_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(),
-                   "Vertex Buffer has no layout!");
+                    "Vertex Buffer has no layout!");
+
     glBindVertexArray(m_RendererID);
     vertexBuffer->Bind();
 
-    uint32_t index = 0;
-
     const auto &layout = vertexBuffer->GetLayout();
-
     for (const auto &element : layout) {
         switch (element.Type) {
             case ShaderDataType::Float:
@@ -104,8 +102,7 @@ void Aph::OpenGLVertexArray::AddVertexBuffer(
                                        ShaderDataTypeToOpenGLBaseType(element.Type),
                                        static_cast<GLsizei>(layout.GetStride()),
                                        (const void *) element.Offset);
-                m_VertexBufferIndex++
-                        ;
+                m_VertexBufferIndex++;
                 break;
             }
             case ShaderDataType::Mat3:
@@ -132,7 +129,7 @@ void Aph::OpenGLVertexArray::AddVertexBuffer(
 }
 
 void Aph::OpenGLVertexArray::SetIndexBuffer(
-        const std::shared_ptr<IndexBuffer> &indexBuffer) {
+        const Ref<IndexBuffer> &indexBuffer) {
     APH_PROFILE_FUNCTION();
 
     glBindVertexArray(m_RendererID);

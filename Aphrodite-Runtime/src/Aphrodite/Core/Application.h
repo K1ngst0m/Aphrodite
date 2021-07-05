@@ -12,15 +12,15 @@
 #ifndef Aphrodite_APPLICATION_H
 #define Aphrodite_APPLICATION_H
 
-#include "Aphrodite/Core/Base.h"
-#include "Aphrodite/Core/LayerStack.h"
-#include "Aphrodite/Core/TimeStep.h"
-#include "Aphrodite/Core/Window.h"
 #include "Aphrodite/Events/ApplicationEvent.h"
 #include "Aphrodite/Events/Event.h"
 #include "Aphrodite/Events/KeyEvent.h"
 #include "Aphrodite/Events/MouseEvent.h"
-#include "Aphrodite/ImGui/ImGuiLayer.h"
+#include "Aphrodite/UI/UILayer.h"
+#include "Base.h"
+#include "LayerStack.h"
+#include "TimeStep.h"
+#include "Window.h"
 
 int main(int argc, char **argv);
 
@@ -51,7 +51,7 @@ namespace Aph {
 
         void Close();
 
-        ImGuiLayer *GetImGuiLayer() { return m_ImGuiLayer; }
+        UILayer *GetImGuiLayer() { return m_ImGuiLayer; }
         static Application &Get() { return *s_Instance; }
 
         ApplicationCommandLineArgs GetCommandLineArgs() const { return m_CommandLineArgs; }
@@ -64,7 +64,7 @@ namespace Aph {
     private:
         ApplicationCommandLineArgs m_CommandLineArgs;
         Scope<Window> m_Window;
-        ImGuiLayer *m_ImGuiLayer{};
+        UILayer *m_ImGuiLayer{};
         bool m_Running = true;
         bool m_Minimized = false;
         LayerStack m_LayerStack;

@@ -2,7 +2,7 @@
 // Created by npchitman on 5/31/21.
 //
 
-#include "Aphrodite/ImGui/ImGuiLayer.h"
+#include "Aphrodite/UI/UILayer.h"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -15,10 +15,10 @@
 #include "pch.h"
 
 namespace Aph {
-    ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer") {}
-    ImGuiLayer::~ImGuiLayer() = default;
+    UILayer::UILayer() : Layer("UILayer") {}
+    UILayer::~UILayer() = default;
 
-    void ImGuiLayer::OnAttach() {
+    void UILayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
         IMGUI_CHECKVERSION();
@@ -26,32 +26,28 @@ namespace Aph {
         ImGuiIO &io = ImGui::GetIO();
         (void) io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
-//        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad
+        // TODO: Enable Gamepad
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;// Enable Multi-Viewport /
-        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
-        // io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
 
-        float fontSize = 25.0f;
+        float fontSize = 22.0f;
         float iconSize = 17.0f;
-
-        io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Bold.ttf", fontSize);
 
         static const ImWchar icons_ranges_fontawesome[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
         ImFontConfig icons_config_fontawesome;
         icons_config_fontawesome.MergeMode = true;
         icons_config_fontawesome.PixelSnapH = true;
 
+        io.Fonts->AddFontFromFileTTF(FONT_UI, fontSize);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.FontDefault = io.Fonts->AddFontFromFileTTF(FONT_UI, fontSize);
         io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
 
-        io.FontDefault = io.Fonts->AddFontFromFileTTF("assets/fonts/opensans/OpenSans-Regular.ttf", fontSize);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
-
-        // Setup Dear ImGui style
 #if 1
         ImGui::StyleColorsDark();
 #else
-        //ImGui::StyleColorsClassic();
+        //UI::StyleColorsClassic();
 #endif
 
         ImGuiStyle &style = ImGui::GetStyle();
@@ -66,10 +62,10 @@ namespace Aph {
         auto *window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
 
         ImGui_ImplGlfw_InitForOpenGL(window, true);
-        ImGui_ImplOpenGL3_Init("#version 460");
+        ImGui_ImplOpenGL3_Init("#version 410");
     }
 
-    void ImGuiLayer::OnDetach() {
+    void UILayer::OnDetach() {
         APH_PROFILE_FUNCTION();
 
         ImGui_ImplOpenGL3_Shutdown();
@@ -77,7 +73,7 @@ namespace Aph {
         ImGui::DestroyContext();
     }
 
-    void ImGuiLayer::OnEvent(Event &e) {
+    void UILayer::OnEvent(Event &e) {
         if (m_BlockEvents) {
             ImGuiIO &io = ImGui::GetIO();
             e.Handled |= e.IsInCateGory(EventCategoryMouse) & io.WantCaptureMouse;
@@ -85,7 +81,7 @@ namespace Aph {
         }
     }
 
-    void ImGuiLayer::Begin() {
+    void UILayer::Begin() {
         APH_PROFILE_FUNCTION();
 
         ImGui_ImplOpenGL3_NewFrame();
@@ -94,7 +90,7 @@ namespace Aph {
         ImGuizmo::BeginFrame();
     }
 
-    void ImGuiLayer::End() {
+    void UILayer::End() {
         APH_PROFILE_FUNCTION();
 
         auto &io = ImGui::GetIO();
@@ -106,14 +102,14 @@ namespace Aph {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            auto* backup_current_context = glfwGetCurrentContext();
+            auto *backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
         }
     }
 
-    void ImGuiLayer::SetDarkThemeColors() {
+    void UILayer::SetDarkThemeColors() {
 
         // color style
         const auto foreground_1 = ImVec4{0.8f, 0.6f, 0.53f, 1.0f};

@@ -4,9 +4,9 @@
 
 #include "EditorCamera.h"
 
-#include "Aphrodite/Core/Input.h"
-#include "Aphrodite/Core/KeyCodes.h"
-#include "Aphrodite/Core/MouseCodes.h"
+#include "Aphrodite/Input/Input.h"
+#include "Aphrodite/Input/KeyCodes.h"
+#include "Aphrodite/Input/MouseCodes.h"
 #include "pch.h"
 
 #define GLM_ENABLE_EXPERIMENTAL

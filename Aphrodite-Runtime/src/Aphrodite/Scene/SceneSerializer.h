@@ -13,11 +13,9 @@ namespace Aph {
         explicit SceneSerializer(const Ref<Scene>& scene);
 
         void Serialize(const std::string& filepath);
-
         static void SerializeRuntime(const std::string& filepath);
 
         bool Deserialize(const std::string& filepath);
-
         static bool DeserializeRuntime(const std::string& filepath);
 
     private:

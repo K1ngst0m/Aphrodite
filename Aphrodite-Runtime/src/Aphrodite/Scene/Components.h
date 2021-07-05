@@ -7,14 +7,34 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
 
+#include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Scene/SceneCamera.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
-#include "Aphrodite/Renderer/Texture.h"
 
 namespace Aph {
+    struct IDComponent {
+        uint32_t ID = 0;
+
+        IDComponent() = default;
+        IDComponent(const IDComponent&) = default;
+        IDComponent(const uint32_t id)
+            : ID(id) {}
+        operator uint32_t() { return ID; }
+    };
+
+    struct TagComponent {
+        std::string Tag;
+        bool renaming = false;
+
+        TagComponent() = default;
+        TagComponent(const TagComponent&) = default;
+        explicit TagComponent(std::string tag) : Tag(std::move(tag)) {}
+    };
+
     struct TransformComponent {
         glm::vec3 Translation = {0.0f, 0.0f, 0.0f};
         glm::vec3 Rotation = {0.0f, 0.0f, 0.0f};
@@ -25,44 +45,31 @@ namespace Aph {
         explicit TransformComponent(const glm::vec3& translation) : Translation(translation) {}
 
         glm::mat4 GetTransform() const {
+            glm::mat4 translation = glm::translate(glm::mat4(1.0f), Translation);
             glm::mat4 rotation = glm::toMat4(glm::quat(Rotation));
+            glm::mat4 scale = glm::scale(glm::mat4(1.0f), Scale);
 
-            return glm::translate(glm::mat4(1.0f), Translation) * rotation * glm::scale(glm::mat4(1.0f), Scale);
+            return translation * rotation * scale;
         }
-    };
-
-
-    struct SpriteTextureComponent {
-        glm::vec4 Color{ 1.0f, 1.0f, 1.0f, 1.0f };
-        Ref<Texture2D> Texture;
-
-        SpriteTextureComponent() = default;
-        SpriteTextureComponent(const SpriteTextureComponent&) = default;
-        SpriteTextureComponent(const glm::vec4& color, const Ref<Texture2D>& texture)
-                :Color(color), Texture(texture) {}
     };
 
     struct SpriteRendererComponent {
         glm::vec4 Color{1.0f, 1.0f, 1.0f, 1.0f};
-        Ref<Texture2D> Texture;
+        Ref<Texture2D> Texture = nullptr;
+        float TilingFactor = 1.0f;
+        std::string TextureFilepath;
 
         SpriteRendererComponent() = default;
         SpriteRendererComponent(const SpriteRendererComponent&) = default;
         explicit SpriteRendererComponent(const glm::vec4& color)
-            : Color(color) {
-            Texture = nullptr;
+            : Color(color) {}
+        void SetTexture(std::string& filepath) {
+            Texture = Texture2D::Create(filepath);
+            TextureFilepath = filepath;
         }
-        SpriteRendererComponent(const glm::vec4& color, const Ref<Texture2D>& texture)
-            : Color(color), Texture(texture) {}
+        void RemoveTexture() { Texture = nullptr; }
     };
 
-    struct TagComponent {
-        std::string Tag;
-
-        TagComponent() = default;
-        TagComponent(const TagComponent&) = default;
-        explicit TagComponent(std::string tag) : Tag(std::move(tag)) {}
-    };
 
     struct CameraComponent {
         SceneCamera Camera;

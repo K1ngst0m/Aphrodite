@@ -6,7 +6,7 @@
 #define Aphrodite_ENGINE_KEYEVENT_H
 
 #include "Aphrodite/Events/Event.h"
-#include "Aphrodite/Core/KeyCodes.h"
+#include "Aphrodite/Input/KeyCodes.h"
 
 namespace Aph {
     class KeyEvent : public Event {

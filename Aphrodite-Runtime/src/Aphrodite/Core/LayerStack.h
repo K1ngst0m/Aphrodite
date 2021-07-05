@@ -9,8 +9,8 @@
 
 #include <vector>
 
-#include "Aphrodite/Core/Base.h"
-#include "Aphrodite/Core/Layer.h"
+#include "Base.h"
+#include "Layer.h"
 
 namespace Aph {
     class LayerStack final {

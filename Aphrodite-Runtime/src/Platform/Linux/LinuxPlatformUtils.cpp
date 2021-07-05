@@ -12,14 +12,15 @@
 
 #include "Aphrodite/Core/Application.h"
 
-namespace Aph {
+#ifdef APH_PLATFORM_LINUX
 
-    namespace Utils {
+namespace Aph {
+    namespace Utils{
+
         static std::string ExecCommand(const std::string_view& cmd) {
             std::array<char, 128> buffer{};
             std::string result;
-            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose);
-            if (!pipe) {
+            std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.data(), "r"), pclose); if (!pipe) {
                 //            throw std::runtime_error("popen() failed!");
             }
             while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
@@ -31,52 +32,24 @@ namespace Aph {
         static std::string OpenFileDialogGetPath() {
             return std::move(ExecCommand("zenity --file-selection"));
         }
-    }// namespace Utils
+    }
 
     std::string FileDialogs::OpenFile(const char* filter) {
-#if false
-        OPENFILENAMEA ofn;
-        CHAR szFile[260] = { 0 };
-        ZeroMemory(&ofn, sizeof(OPENFILENAME));
-        ofn.lStructSize = sizeof(OPENFILENAME);
-        ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
-        ofn.lpstrFile = szFile;
-        ofn.nMaxFile = sizeof(szFile);
-        ofn.lpstrFilter = filter;
-        ofn.nFilterIndex = 1;
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-        if (GetOpenFileNameA(&ofn) == TRUE)
-        {
-            return ofn.lpstrFile;
-        }
-        return std::string();
-#endif
         auto fileName = Utils::OpenFileDialogGetPath();
-
+        if(!fileName.empty())
+            fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
         return fileName;
     }
 
     std::string FileDialogs::SaveFile(const char* filter) {
-#if false
-        OPENFILENAMEA ofn;
-        CHAR szFile[260] = { 0 };
-        ZeroMemory(&ofn, sizeof(OPENFILENAME));
-        ofn.lStructSize = sizeof(OPENFILENAME);
-        ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)Application::Get().GetWindow().GetNativeWindow());
-        ofn.lpstrFile = szFile;
-        ofn.nMaxFile = sizeof(szFile);
-        ofn.lpstrFilter = filter;
-        ofn.nFilterIndex = 1;
-        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
-        if (GetSaveFileNameA(&ofn) == TRUE)
-        {
-            return ofn.lpstrFile;
-        }
-        return std::string();
-#endif
         auto fileName = Utils::OpenFileDialogGetPath();
-
+        if(!fileName.empty())
+            fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
         return fileName;
     }
 
 }// namespace Aph
+
+#else
+#error platform is not support!
+#endif

@@ -2,11 +2,11 @@
 // Created by npchitman on 7/3/21.
 //
 
-#include <Aphrodite.h>
 #include <Aphrodite/Core/EntryPoint.h>
 
-#include "Sandbox2D.h"
+#include <Aphrodite.hpp>
 #include "ExampleLayer.h"
+#include "Sandbox2D.h"
 
 class Sandbox : public Aph::Application
 {

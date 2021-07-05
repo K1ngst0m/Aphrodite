@@ -2,7 +2,7 @@
 // Created by npchitman on 7/2/21.
 //
 
-#include "Aphrodite/ImGui/Utilities/ImGuiAssetBrowser.h"
+#include "Aphrodite/UI/Utilities/UIAssetBrowser.h"
 
 #include <imgui.h>
 
@@ -11,10 +11,10 @@
 
 namespace Aph {
 
-    std::filesystem::path ImGuiAssetBrowser::m_AssetDirectoryPath("assets");
-    std::filesystem::path ImGuiAssetBrowser::m_CurrentRightPanelDirectoryPath(ImGuiAssetBrowser::m_AssetDirectoryPath);
+    std::filesystem::path UIAssetBrowser::m_AssetDirectoryPath("assets");
+    std::filesystem::path UIAssetBrowser::m_CurrentRightPanelDirectoryPath(UIAssetBrowser::m_AssetDirectoryPath);
 
-    void ImGuiAssetBrowser::Init() {
+    void UIAssetBrowser::Init() {
         ImGuiIO& io = ImGui::GetIO();
         io.Fonts->AddFontDefault();
 
@@ -23,10 +23,10 @@ namespace Aph {
         ImFontConfig icons_config;
         icons_config.MergeMode = true;
         icons_config.PixelSnapH = true;
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 16.0f, &icons_config, icons_ranges);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 18.0f, &icons_config, icons_ranges);
     }
 
-    void ImGuiAssetBrowser::Draw() {
+    void UIAssetBrowser::Draw() {
         ImGui::Columns(2, "Project", true);
 
         DrawLeftProjectPanel();
@@ -36,15 +36,15 @@ namespace Aph {
         DrawRightProjectPanel();
     }
 
-    bool ImGuiAssetBrowser::IsDirectory(const std::filesystem::path& path) {
+    bool UIAssetBrowser::IsDirectory(const std::filesystem::path& path) {
         return std::filesystem::is_directory(path);
     }
 
-    bool ImGuiAssetBrowser::IsDirectoryEmpty(const std::filesystem::path& path) {
+    bool UIAssetBrowser::IsDirectoryEmpty(const std::filesystem::path& path) {
         return IsDirectory(path) && std::filesystem::is_empty(path);
     }
 
-    bool ImGuiAssetBrowser::HasSubDirectory(const std::filesystem::path& path) {
+    bool UIAssetBrowser::HasSubDirectory(const std::filesystem::path& path) {
         bool value = false;
         for (const auto& entry : std::filesystem::directory_iterator(path)) {
             if (IsDirectory(entry.path())) {
@@ -56,7 +56,7 @@ namespace Aph {
         return value;
     }
 
-    void ImGuiAssetBrowser::DrawLeftProjectPanel() {
+    void UIAssetBrowser::DrawLeftProjectPanel() {
         bool opened = ImGui::TreeNodeEx("leftProjectPanelAssets", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow, ICON_FA_FOLDER " assets");
 
         if (ImGui::IsItemClicked()) {
@@ -69,7 +69,7 @@ namespace Aph {
         }
     }
 
-    void ImGuiAssetBrowser::DrawRightProjectPanel() {
+    void UIAssetBrowser::DrawRightProjectPanel() {
         DrawRightFilePathHeader(m_CurrentRightPanelDirectoryPath);
 
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
@@ -133,7 +133,7 @@ namespace Aph {
         ImGui::EndChild();
     }
 
-    void ImGuiAssetBrowser::DrawRecursive(const std::filesystem::path& path) {
+    void UIAssetBrowser::DrawRecursive(const std::filesystem::path& path) {
         for (const auto& entry : std::filesystem::directory_iterator(path)) {
             if (!IsDirectory(entry.path())) {
                 continue;
@@ -177,7 +177,7 @@ namespace Aph {
         }
     }
 
-    void ImGuiAssetBrowser::DrawRightFilePathHeader(const std::filesystem::path& path) {
+    void UIAssetBrowser::DrawRightFilePathHeader(const std::filesystem::path& path) {
         std::stringstream stream(path.string());
         std::string pathSegment;
         std::vector<std::string> pathSegmentList;
@@ -204,7 +204,7 @@ namespace Aph {
         ImGui::NewLine();
     }
 
-    AssetFileType ImGuiAssetBrowser::GetFileType(const std::filesystem::path& path) {
+    AssetFileType UIAssetBrowser::GetFileType(const std::filesystem::path& path) {
         const auto& it = m_FileExtensionMap.find(path.filename().extension().string());
         if (it == m_FileExtensionMap.end()) {
             return AssetFileType::NONE;

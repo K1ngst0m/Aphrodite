@@ -4,8 +4,8 @@
 
 #include "Aphrodite/Renderer/OrthographicCameraController.h"
 
-#include "Aphrodite/Core/Input.h"
-#include "Aphrodite/Core/KeyCodes.h"
+#include "Aphrodite/Input/Input.h"
+#include "Aphrodite/Input/KeyCodes.h"
 #include "pch.h"
 
 namespace Aph {

@@ -9,8 +9,8 @@
 #ifndef Aphrodite_ENTRYPOINT_H
 #define Aphrodite_ENTRYPOINT_H
 
-#include "Aphrodite/Core/Base.h"
-#include "Aphrodite/Core/Application.h"
+#include "Application.h"
+#include "Base.h"
 
 #ifdef APH_PLATFORM_LINUX
 

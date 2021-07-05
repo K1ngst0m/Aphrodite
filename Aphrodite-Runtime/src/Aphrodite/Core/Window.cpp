@@ -2,7 +2,7 @@
 // Created by npchitman on 6/23/21.
 //
 
-#include "Aphrodite/Core/Window.h"
+#include "Window.h"
 
 #include "pch.h"
 

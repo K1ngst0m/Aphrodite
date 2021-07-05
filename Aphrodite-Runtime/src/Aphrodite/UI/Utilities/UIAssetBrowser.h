@@ -2,8 +2,8 @@
 // Created by npchitman on 7/2/21.
 //
 
-#ifndef APHRODITE_IMGUIASSETBROWSER_H
-#define APHRODITE_IMGUIASSETBROWSER_H
+#ifndef APHRODITE_UIASSETBROWSER_H
+#define APHRODITE_UIASSETBROWSER_H
 
 namespace Aph {
     enum class AssetFileType {
@@ -14,7 +14,7 @@ namespace Aph {
         NONE = -1
     };
 
-    class ImGuiAssetBrowser {
+    class UIAssetBrowser {
     public:
         static void Init();
         static void Draw();
@@ -50,4 +50,4 @@ namespace Aph {
 }// namespace Aph
 
 
-#endif//APHRODITE_IMGUIASSETBROWSER_H
+#endif//APHRODITE_UIASSETBROWSER_H

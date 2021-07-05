@@ -62,7 +62,7 @@ namespace Aph {
     }
 
     void OpenGLRendererAPI::DrawIndexed(
-            const std::shared_ptr<VertexArray>& vertexArray, uint32_t indexCount) {
+            const Ref<VertexArray>& vertexArray, uint32_t indexCount) {
         uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
         glDrawElements(GL_TRIANGLES, static_cast<int>(count), GL_UNSIGNED_INT, nullptr);
         glBindTexture(GL_TEXTURE_2D, 0);

@@ -5,9 +5,10 @@ add_definitions(-DSTB_IMAGE_IMPLEMENTATION -DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
 file(GLOB src_root src/pch.cpp)
 file(GLOB src_core src/Aphrodite/Core/*.cpp)
 file(GLOB src_debug src/Aphrodite/Debug/*.cpp)
+file(GLOB src_input src/Aphrodite/Input/*.cpp)
 file(GLOB src_events src/Aphrodite/Events/*.cpp)
 file(GLOB src_fonts src/Aphrodite/Fonts/*.cpp)
-file(GLOB src_imgui src/Aphrodite/ImGui/*.cpp src/Aphrodite/ImGui/Utilities/*.cpp)
+file(GLOB src_imgui src/Aphrodite/UI/*.cpp src/Aphrodite/UI/Utilities/*.cpp)
 file(GLOB src_math src/Aphrodite/Math/*.cpp)
 file(GLOB src_renderer src/Aphrodite/Renderer/*.cpp)
 file(GLOB src_scene src/Aphrodite/Scene/*.cpp)
@@ -27,8 +28,7 @@ add_library(${PROJECT_NAME} STATIC
         ${src_scene}
         ${src_utils}
         ${src_platform_linux}
-        ${src_platform_opengl}
-        )
+        ${src_platform_opengl})
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.h)
 

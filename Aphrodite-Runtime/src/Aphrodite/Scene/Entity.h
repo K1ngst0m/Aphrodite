@@ -17,7 +17,6 @@ namespace Aph {
         Entity(const Entity& other) = default;
 
         template<typename T, typename... Args>
-
         T& AddComponent(Args&&... args) {
             APH_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
 

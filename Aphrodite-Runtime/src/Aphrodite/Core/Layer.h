@@ -7,9 +7,9 @@
 #ifndef Aphrodite_ENGINE_LAYER_H
 #define Aphrodite_ENGINE_LAYER_H
 
-#include "Base.h"
-#include "Aphrodite/Core/TimeStep.h"
 #include "Aphrodite/Events/Event.h"
+#include "Base.h"
+#include "TimeStep.h"
 
 namespace Aph {
     class Layer {

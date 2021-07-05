@@ -4,6 +4,7 @@
 
 #include "SceneHierarchyPanel.h"
 
+#include <Aphrodite/Utils/PlatformUtils.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -35,8 +36,8 @@ namespace Aph {
 
         // Right click
         if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
-            if (ImGui::MenuItem("Create Empty Entity"))
-                m_SelectionContext = m_Context->CreateEntity("Empty Entity");
+            if (ImGui::MenuItem("Create Empty"))
+                m_SelectionContext = m_Context->CreateEntity("Empty");
             else if (ImGui::MenuItem("Create Camera")) {
                 m_SelectionContext = m_Context->CreateEntity("Camera");
                 m_SelectionContext.AddComponent<CameraComponent>();
@@ -63,7 +64,8 @@ namespace Aph {
     }
 
     void SceneHierarchyPanel::DrawEntityNode(Entity entity) {
-        auto& tag = entity.GetComponent<TagComponent>().Tag;
+        auto& tagComponent = entity.GetComponent<TagComponent>();
+        auto& tag = tagComponent.Tag;
 
         ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
         flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
@@ -74,10 +76,25 @@ namespace Aph {
 
         bool entityDeleted = false;
         if (ImGui::BeginPopupContextItem()) {
+            if (ImGui::MenuItem("Rename"))
+                tagComponent.renaming = true;
             if (ImGui::MenuItem("Delete Entity"))
                 entityDeleted = true;
 
             ImGui::EndPopup();
+        }
+
+        if (tagComponent.renaming) {
+            char buffer[256];
+            memset(buffer, 0, sizeof(buffer));
+            std::strncpy(buffer, tag.c_str(), sizeof(buffer));
+            if (ImGui::InputText("##Tag", buffer, sizeof(buffer))) {
+                tag = std::string(buffer);
+            }
+
+            if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+                tagComponent.renaming = false;
+            }
         }
 
         if (opened) {
@@ -94,6 +111,49 @@ namespace Aph {
                 m_SelectionContext = {};
         }
     }
+
+    static void SetLabel(const char* label)
+    {
+        ImGuiWindow* window = ImGui::GetCurrentWindow();
+        const ImVec2 lineStart = ImGui::GetCursorScreenPos();
+        const ImGuiStyle& style = ImGui::GetStyle();
+        float fullWidth = ImGui::GetContentRegionAvail().x;
+        float itemWidth = fullWidth * 0.6f;
+        ImVec2 textSize = ImGui::CalcTextSize(label);
+        ImRect textRect;
+        textRect.Min = ImGui::GetCursorScreenPos();
+        textRect.Max = textRect.Min;
+        textRect.Max.x += fullWidth - itemWidth;
+        textRect.Max.y += textSize.y;
+
+        ImGui::SetCursorScreenPos(textRect.Min);
+
+        ImGui::AlignTextToFramePadding();
+        textRect.Min.y += window->DC.CurrLineTextBaseOffset;
+        textRect.Max.y += window->DC.CurrLineTextBaseOffset;
+
+        ImGui::ItemSize(textRect);
+        if (ImGui::ItemAdd(textRect, window->GetID(label)))
+        {
+            ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), textRect.Min, textRect.Max, textRect.Max.x,
+                                      textRect.Max.x, label, nullptr, &textSize);
+
+            if (textRect.GetWidth() < textSize.x && ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", label);
+        }
+        ImVec2 v(0, textSize.y + window->DC.CurrLineTextBaseOffset);
+        ImGui::SetCursorScreenPos(ImVec2(textRect.Max.x - v.x, textRect.Max.y - v.y));
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+    }
+
+    static void DrawFloatControl(const std::string& label, float* value, float columnWidth = 100.0f) {
+        ImGui::PushID(label.c_str());
+        SetLabel(label.c_str());
+        ImGui::DragFloat("##value", value, 0.1f);
+        ImGui::PopID();
+    }
+
 
     static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f) {
         ImGuiIO& io = ImGui::GetIO();
@@ -239,20 +299,12 @@ namespace Aph {
                 ImGui::CloseCurrentPopup();
             }
 
-            //            if (ImGui::MenuItem("Sprite Texture")) {
-            //                if (!m_SelectionContext.HasComponent<SpriteTextureComponent>())
-            //                    m_SelectionContext.AddComponent<SpriteTextureComponent>();
-            //                else
-            //                    APH_CORE_WARN("This entity already has the Sprite Texture Component!");
-            //                ImGui::CloseCurrentPopup();
-            //            }
-
             ImGui::EndPopup();
         }
 
         ImGui::PopItemWidth();
 
-        DrawComponent<TransformComponent>("Transform", entity, [](auto& component) {
+        DrawComponent<TransformComponent>("Transform", entity, [](TransformComponent& component) {
             DrawVec3Control("Translation", component.Translation);
             glm::vec3 rotation = glm::degrees(component.Rotation);
             DrawVec3Control("Rotation", rotation);
@@ -260,19 +312,7 @@ namespace Aph {
             DrawVec3Control("Scale", component.Scale, 1.0f);
         });
 
-        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](auto& component) {
-            ImGui::ColorEdit4("Color", glm::value_ptr(component.Color));
-            if (ImGui::TreeNodeEx((void*) typeid(Texture2D).hash_code(), ImGuiTreeNodeFlags_DefaultOpen, "Texture")) {
-                if (component.Texture) {
-                    ImGui::ImageButton(reinterpret_cast<void*>(component.Texture->GetRendererID()), ImVec2{60, 60}, ImVec2{0, 1}, ImVec2{1, 0});
-                } else {
-                    ImGui::Button("Null", ImVec2{60, 60});
-                }
-                ImGui::TreePop();
-            }
-        });
-
-        DrawComponent<CameraComponent>("Camera", entity, [](auto& component) {
+        DrawComponent<CameraComponent>("Camera", entity, [](CameraComponent& component) {
             auto& camera = component.Camera;
 
             ImGui::Checkbox("Primary", &component.Primary);
@@ -333,5 +373,41 @@ namespace Aph {
                 ImGui::Checkbox("Fixed Aspect Ratio", &component.FixedAspectRatio);
             }
         });
+
+        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](SpriteRendererComponent& component) {
+            SetLabel("Color");
+            ImGui::SameLine();
+            ImGui::ColorEdit4("##Color", glm::value_ptr(component.Color));
+
+          const uint32_t id = component.Texture == nullptr ? 0 : component.Texture->GetRendererID();
+
+          SetLabel("Texture");
+          const ImVec2 buttonSize = { 80, 80 };
+          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f });
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
+          if(ImGui::ImageButton(reinterpret_cast<ImTextureID>(id), buttonSize, { 1, 1 }, { 0, 0}, 0))
+          {
+              std::string filepath = FileDialogs::OpenFile("Texture (*.png)\0*.png\0");
+              if (!filepath.empty())
+                  component.SetTexture(filepath);
+          }
+          ImGui::PopStyleColor(3);
+
+          ImGui::SameLine();
+          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
+          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.3f, 0.3f, 1.0f });
+          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
+
+          if(ImGui::Button("-", { buttonSize.x / 4, buttonSize.y } ))
+              component.RemoveTexture();
+
+          ImGui::PopStyleColor(3);
+          ImGui::PopStyleVar();
+
+          ImGui::Spacing();
+
+          DrawFloatControl("Tiling Factor", &component.TilingFactor, 200); });
     }
 }// namespace Aph

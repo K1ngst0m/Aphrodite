@@ -5,10 +5,10 @@
 #ifndef Aphrodite_ENGINE_EDITORLAYER_H
 #define Aphrodite_ENGINE_EDITORLAYER_H
 
-#include "Aphrodite.h"
+#include <Aphrodite.hpp>
 #include "Aphrodite/Renderer/EditorCamera.h"
-#include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
+#include "Panels/SceneHierarchyPanel.h"
 
 namespace Aph {
 
@@ -32,33 +32,40 @@ namespace Aph {
         void OpenScene();
         void SaveSceneAs();
 
+        void OnScenePlay();
+        void OnSceneStop();
+        void OnScenePause();
+
+    private:
+        enum class SceneState{
+            Edit = 0, Play = 1, Pause = 2
+        };
+        SceneState m_SceneState = SceneState::Edit;
+
     private:
         Aph::OrthographicCameraController m_CameraController;
 
-        // Temp
-        Ref<VertexArray> m_SquareVA;
-        Ref<Shader> m_FlatColorShader;
         Ref<Framebuffer> m_Framebuffer;
+        Ref<Framebuffer> m_IDFrameBuffer;
 
         Ref<Scene> m_ActiveScene{};
+        Ref<Scene> m_EditorScene{};
+        Ref<Scene> m_RuntimeScene{};
 
-        Entity m_SquareEntity{};
-        Entity m_CameraEntity{};
         Entity m_HoveredEntity{};
 
-        bool m_ViewportFocused = false, m_ViewportHovered = false;
-
-        bool m_PrimaryCamera = true;
-
         EditorCamera m_EditorCamera;
+
+        bool m_ViewportFocused = false, m_ViewportHovered = false;
 
         glm::vec2 m_ViewportSize = {0.0f, 0.0f};
         glm::vec2 m_ViewportBounds[2]{};
 
+        float frameTime = 0.0f;
+
         int m_GizmoType = -1;
 
         SceneHierarchyPanel m_SceneHierarchyPanel;
-        ContentBrowserPanel m_ContentBrowserPanel;
     };
 
 }// namespace Aph

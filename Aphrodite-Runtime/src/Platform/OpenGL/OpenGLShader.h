@@ -29,7 +29,7 @@ namespace Aph {
         void SetFloat4(const std::string& name, const glm::vec4& value) override;
         void SetMat4(const std::string& name, const glm::mat4& value) override;
 
-        virtual const std::string &GetName() const override { return m_Name; }
+        const std::string &GetName() const override { return m_Name; }
 
         void UploadUniformInt(const std::string &name, int value) const;
         void UploadUniformIntArray(const std::string& name, int* values, uint32_t count) const;
@@ -45,11 +45,14 @@ namespace Aph {
     private:
         static std::string ReadFile(const std::string &filepath);
         static std::unordered_map<GLenum, std::string> PreProcess(const std::string &source);
+        void Compile(const std::unordered_map<GLenum, std::string>& shaderSources);
 
+#if vulkan_not_yet
         void CompileOrGetVulkanBinaries(const std::unordered_map<GLenum, std::string>& shaderSources);
         void CompileOrGetOpenGLBinaries();
         void CreateProgram();
         void Reflect(GLenum stage, const std::vector<uint32_t>& shaderData);
+#endif
 
     private:
         uint32_t m_RendererID{};

@@ -4,10 +4,10 @@
 
 #include "Platform/Linux/LinuxWindow.h"
 
-#include "Aphrodite/Core/Input.h"
 #include "Aphrodite/Events/ApplicationEvent.h"
 #include "Aphrodite/Events/KeyEvent.h"
 #include "Aphrodite/Events/MouseEvent.h"
+#include "Aphrodite/Input/Input.h"
 #include "Aphrodite/Renderer/Renderer.h"
 #include "Platform/OpenGL/OpenGLContext.h"
 #include "pch.h"

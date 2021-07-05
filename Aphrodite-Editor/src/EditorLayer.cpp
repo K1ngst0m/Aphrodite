@@ -25,32 +25,35 @@ namespace Aph {
         APH_PROFILE_FUNCTION();
 
         // Log Example
-        ImGuiConsole::Log("This is a log statement");
-        ImGuiConsole::LogWarning("This is a warning statement");
-        ImGuiConsole::LogError("This is an error statement");
-        ImGuiConsole::Log("This is a log statement with parameter: {}, {}, {}", "abc", 34, 6.0f);
+        UIConsole::Log("A log example");
+        UIConsole::LogWarning("A warning example");
+        UIConsole::LogError("An error example");
+        UIConsole::Log("A log example with parameter: {}, {}, {}", "abc", 34, 6.0f);
 
+        // frame buffer
         FramebufferSpecification fbSpec;
         fbSpec.Attachments = {FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth};
         fbSpec.Width = 1280;
         fbSpec.Height = 720;
-
         m_Framebuffer = Framebuffer::Create(fbSpec);
+        m_IDFrameBuffer = Framebuffer::Create(fbSpec);
 
-        m_ActiveScene = CreateRef<Scene>();
+        // scene
+        m_EditorScene = CreateRef<Scene>();
+        m_ActiveScene = m_EditorScene;
+        m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
+        UIAssetBrowser::Init();
+
+        // command line args
         auto commandLineArgs = Application::Get().GetCommandLineArgs();
-        if(commandLineArgs.Count > 1){
+        if (commandLineArgs.Count > 1) {
             auto sceneFilePath = commandLineArgs[1];
             SceneSerializer serializer(m_ActiveScene);
             serializer.Deserialize(sceneFilePath);
         }
 
-        m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
-
-        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
-
-        ImGuiAssetBrowser::Init();
     }
 
     void EditorLayer::OnDetach() {
@@ -60,11 +63,14 @@ namespace Aph {
     void EditorLayer::OnUpdate(Timestep ts) {
         APH_PROFILE_FUNCTION();
 
+        frameTime = ts;
+
         // Resize
         if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
             m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
             m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+            m_IDFrameBuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
@@ -73,11 +79,9 @@ namespace Aph {
         if (m_ViewportFocused)
             m_CameraController.OnUpdate(ts);
 
-        m_EditorCamera.OnUpdate(ts);
-
         // Render
-        Renderer2D::ResetStats();
         m_Framebuffer->Bind();
+        Renderer2D::ResetStats();
         RenderCommand::SetClearColor(Aph::Style::Color::ClearColor);
         RenderCommand::Clear();
         m_Framebuffer->Bind();
@@ -87,6 +91,30 @@ namespace Aph {
         // Update scene
         m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 
+        // Update scene
+        switch (m_SceneState)
+        {
+            case SceneState::Play:
+            {
+                m_EditorCamera.OnUpdate(ts);
+                m_ActiveScene->OnUpdateRuntime(ts);
+                break;
+            }
+            case SceneState::Pause:
+            {
+                m_EditorCamera.OnUpdate(ts);
+                m_ActiveScene->OnUpdateRuntime(ts);
+                break;
+            }
+            case SceneState::Edit:
+            {
+                m_EditorCamera.OnUpdate(ts);
+                m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+                break;
+            }
+        }
+
+        // Mouse Picking
         auto [mx, my] = ImGui::GetMousePos();
         mx -= m_ViewportBounds[0].x;
         my -= m_ViewportBounds[0].y;
@@ -94,8 +122,8 @@ namespace Aph {
 
         my = viewportSize.y - my;
 
-        int mouseX = static_cast<int>(mx);
-        int mouseY = static_cast<int>(my);
+        const int mouseX = static_cast<int>(mx);
+        const int mouseY = static_cast<int>(my);
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
             int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
@@ -168,13 +196,14 @@ namespace Aph {
         }
 
 
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
-
         // Viewport
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         ImGui::Begin(Style::Title::Viewport.data());
+
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
+
         m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
         m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
 
@@ -200,14 +229,6 @@ namespace Aph {
                               m_ViewportBounds[1].x - m_ViewportBounds[0].x,
                               m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
-
-            // Camera
-            // Runtime camera from entity
-//            auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-//            const auto& camera = cameraEntity.GetComponent<CameraComponent>().Camera;
-//            const glm::mat4& cameraProjection = camera.GetProjection();
-//            glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-
             // Editor camera
             const glm::mat4& cameraProjection = m_EditorCamera.GetProjection();
             glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
@@ -219,7 +240,6 @@ namespace Aph {
             // Snapping
             bool snap = Input::IsKeyPressed(Key::LeftControl);
             float snapValue = 0.5f;// Snap to 0.5m for translation/scale
-            // Snap to 45 degrees for rotation
             if (m_GizmoType == ImGuizmo::OPERATION::ROTATE)
                 snapValue = 45.0f;
 
@@ -245,8 +265,8 @@ namespace Aph {
 
         // Scene Hierarchy && Content Browser
         m_SceneHierarchyPanel.OnImGuiRender();
-//        m_ContentBrowserPanel.OnImGuiRender();
 
+        // Renderer Info
         ImGui::Begin(Style::Title::RenderInfo.data());
         ImGui::Text("# Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
         ImGui::Text("# Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
@@ -265,17 +285,81 @@ namespace Aph {
         ImGui::Text("# Quads: %d", stats.QuadCount);
         ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());
         ImGui::Text("# Indices: %d", stats.GetTotalIndexCount());
+        // FPS
+        static float frameTimeRefreshTimer = 0.0f;
+        static float ft = 0.0f;
+        static float frameRate = 0.0f;
+        frameTimeRefreshTimer += frameTime;
+        if (frameTimeRefreshTimer >= 0.25f) {
+            ft = frameTime;
+            frameRate = 1.0f / frameTime;
+        }
+        ImGui::Text("# FrameTime: %.3f ms", ft);
+        ImGui::Text("# FPS: %d", static_cast<int>(frameRate));
         ImGui::End();
 
+        // Toolbar
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+        ImGui::Begin("Toolbar", nullptr);
+        const ImVec2 toolbarButtonSize = {28, 28};
+        if (m_SceneState == SceneState::Edit)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+            if (ImGui::Button("\uf04b", toolbarButtonSize))
+            {
+                OnScenePlay();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04c", toolbarButtonSize))
+            {
+                OnScenePause();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04d", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else if (m_SceneState == SceneState::Play)
+        {
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+            if (ImGui::ArrowButton("Play", ImGuiDir_Right))
+            {
+                OnSceneStop();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04c", toolbarButtonSize))
+            {
+                OnScenePause();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("\uf04d", toolbarButtonSize))
+            {
+                OnSceneStop();
+            }
+            ImGui::PopStyleColor(2);
+        }
+        else if (m_SceneState == SceneState::Pause){
+            // TODO: scene pause
+        }
+        ImGui::End();
+        ImGui::PopStyleColor(2);
+        ImGui::PopStyleVar(2);
 
         // Console
         ImGui::Begin(Style::Title::Console.data());
-        ImGuiConsole::Draw();
+        UIConsole::Draw();
         ImGui::End();
 
         // Asset Browser
         ImGui::Begin(Style::Title::Project.data());
-        ImGuiAssetBrowser::Draw();
+        UIAssetBrowser::Draw();
         ImGui::End();
 
         ImGui::End();
@@ -341,6 +425,34 @@ namespace Aph {
             }
         }
         return true;
+    }
+
+    void EditorLayer::OnScenePlay() {
+        m_SceneState = SceneState::Play;
+
+        m_RuntimeScene = CreateRef<Scene>();
+        m_EditorScene->CopyTo(m_RuntimeScene);
+        m_ActiveScene = m_RuntimeScene;
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+        m_ActiveScene->OnRuntimeStart();
+        UIConsole::Log("Scene Play");
+    }
+
+    void EditorLayer::OnSceneStop() {
+        m_SceneState = SceneState::Edit;
+        m_ActiveScene = m_EditorScene;
+
+        m_SceneHierarchyPanel.SetContext(m_ActiveScene);
+
+        m_ActiveScene->OnRuntimeEnd();
+        m_RuntimeScene = nullptr;
+        UIConsole::Log("Scene Stop");
+    }
+
+    void EditorLayer::OnScenePause() {
+        // TODO: on scene pause
     }
 
     void EditorLayer::NewScene() {

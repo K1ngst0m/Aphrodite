@@ -15,8 +15,8 @@
 #include <sstream>
 #include <utility>
 
-#include "Aphrodite/Core/Base.h"
 #include "Aphrodite/Events/Event.h"
+#include "Base.h"
 
 namespace Aph {
     struct WindowProps {
@@ -24,11 +24,12 @@ namespace Aph {
         uint32_t Width;
         uint32_t Height;
 
-        explicit WindowProps(std::string title = "Aph-Runtime Engine",
+        explicit WindowProps(std::string title = "Aphrodite",
                              uint32_t width = 1600, uint32_t height = 900)
             : Title(std::move(title)),
               Width(width),
-              Height(height) {}
+              Height(height)
+        {}
     };
 
     class Window {
@@ -38,7 +39,6 @@ namespace Aph {
         virtual ~Window() = default;
 
         virtual void OnUpdate() = 0;
-
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
 
