@@ -7,9 +7,15 @@
 
 namespace Aph {
     struct ContextInfo{
-        unsigned char* Vendor;
-        unsigned char* Renderer;
-        unsigned char* Version;
+        const unsigned char* Vendor;
+        const unsigned char* Renderer;
+        const unsigned char* Version;
+
+        ContextInfo() = default;
+        ContextInfo(const unsigned char* vendor,
+                    const unsigned char* renderer,
+                    const unsigned char* version):
+        Vendor(vendor), Renderer(renderer), Version(version){}
     };
 
     class GraphicsContext {

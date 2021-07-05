@@ -12,7 +12,7 @@
 namespace Aph {
 
     OpenGLContext::OpenGLContext(GLFWwindow *windowHandle)
-        : m_WindowHandle(windowHandle) {
+        : m_WindowHandle(windowHandle){
         APH_CORE_ASSERT(windowHandle, "window handle is null!");
     }
 
@@ -24,10 +24,11 @@ namespace Aph {
         int status = gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
         APH_CORE_ASSERT(status, "Failed to initialize Glad!");
 
+        m_ContextInfo = ContextInfo(glGetString(GL_VENDOR), glGetString(GL_RENDERER), glGetString(GL_VERSION));
         APH_CORE_INFO("OpenGL Info:");
-        APH_CORE_INFO("Vendor: {0}", glGetString(GL_VENDOR));
-        APH_CORE_INFO("Renderer: {0}", glGetString(GL_RENDERER));
-        APH_CORE_INFO("Version: {0}", glGetString(GL_VERSION));
+        APH_CORE_INFO("Vendor: {0}", m_ContextInfo.Vendor);
+        APH_CORE_INFO("Renderer: {0}", m_ContextInfo.Renderer);
+        APH_CORE_INFO("Version: {0}", m_ContextInfo.Version);
 
         APH_CORE_ASSERT(GLVersion.major > 4 || (GLVersion.major == 4 && GLVersion.minor >= 5), "Aph-Runtime requires at least OpenGL version 4.5!");
     }
