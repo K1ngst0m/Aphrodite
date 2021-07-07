@@ -9,6 +9,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <Aphrodite/Physics/BoxCollider2D.h>
+#include <Aphrodite/Physics/Rigidbody2D.h>
+
 #include <glm/gtx/quaternion.hpp>
 
 #include "Aphrodite/Renderer/Texture.h"
@@ -50,6 +53,43 @@ namespace Aph {
             glm::mat4 scale = glm::scale(glm::mat4(1.0f), Scale);
 
             return translation * rotation * scale;
+        }
+    };
+
+    struct Rigidbody2DComponent {
+        Rigidbody2D::Rigidbody2DSpecification Specification;
+        Ref<Rigidbody2D> Body2D;
+
+        Rigidbody2DComponent() = default;
+        Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
+
+        void StartSimulation(const glm::vec2& translation, const float rotation) {
+            Body2D = CreateRef<Rigidbody2D>(translation, rotation, Specification);
+        }
+
+        void ValidateSpecification() {
+            if (Body2D)
+                Body2D->SetSpecification(Specification);
+        }
+    };
+
+    struct BoxCollider2DComponent {
+        glm::vec2 Size{1.0f, 1.0f};
+        glm::vec2 Offset{0.0f, 0.0f};
+        bool IsTrigger = false;
+
+        Ref<BoxCollider2D> Collider2D;
+
+        BoxCollider2DComponent() = default;
+        BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
+
+        void StartSimulation(Ref<Rigidbody2D>& rigidbody2D) {
+            Collider2D = CreateRef<BoxCollider2D>(rigidbody2D, Size, Offset, IsTrigger);
+        }
+
+        void ValidateSpecification() {
+            if (Collider2D)
+                Collider2D->SetSpecification(Size, Offset, IsTrigger);
         }
     };
 

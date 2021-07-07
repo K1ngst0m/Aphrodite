@@ -5,6 +5,7 @@ add_definitions(-DSTB_IMAGE_IMPLEMENTATION -DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
 file(GLOB src_root src/pch.cpp)
 file(GLOB src_core src/Aphrodite/Core/*.cpp)
 file(GLOB src_debug src/Aphrodite/Debug/*.cpp)
+file(GLOB src_physics src/Aphrodite/Physics/*.cpp)
 file(GLOB src_input src/Aphrodite/Input/*.cpp)
 file(GLOB src_events src/Aphrodite/Events/*.cpp)
 file(GLOB src_fonts src/Aphrodite/Fonts/*.cpp)
@@ -18,6 +19,8 @@ file(GLOB src_platform_opengl src/Platform/OpenGL/*.cpp)
 
 add_library(${PROJECT_NAME} STATIC
         ${src_root}
+        ${src_physics}
+        ${src_input}
         ${src_core}
         ${src_debug}
         ${src_events}

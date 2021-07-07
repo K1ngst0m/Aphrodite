@@ -28,8 +28,8 @@ namespace Aph {
         void DrawSceneHierarchy();
         void DrawViewport();
         void DrawStatusData();
-        void DrawConsole();
-        void DrawAssetBrowser();
+        static void DrawConsole();
+        static void DrawAssetBrowser();
         void DrawMenuBar();
         void DrawToolBar();
 
@@ -75,6 +75,7 @@ namespace Aph {
         int m_GizmoType = -1;
 
         SceneHierarchyPanel m_SceneHierarchyPanel;
+        void DrawSettings();
     };
 
 }// namespace Aph

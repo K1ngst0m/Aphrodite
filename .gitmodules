@@ -7,3 +7,6 @@
 [submodule "3rdparty/glfw"]
 	path = 3rdparty/glfw
 	url = https://github.com/npchitman/glfw
+[submodule "3rdparty/box2d"]
+	path = 3rdparty/box2d
+	url = https://github.com/npchitman/box2d

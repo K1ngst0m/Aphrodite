@@ -4,13 +4,14 @@
 
 #include "EditorLayer.h"
 
-#include <imgui.h>
 #include <ImGuizmo.h>
+#include <imgui.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Aphrodite/Math/Math.h"
+#include "Aphrodite/Physics/Physics2D.h"
 #include "Aphrodite/Scene/SceneSerializer.h"
 #include "Aphrodite/Utils/PlatformUtils.h"
 
@@ -53,7 +54,6 @@ namespace Aph {
             SceneSerializer serializer(m_ActiveScene);
             serializer.Deserialize(sceneFilePath);
         }
-
     }
 
     void EditorLayer::OnDetach() {
@@ -82,7 +82,7 @@ namespace Aph {
         // Render
         m_Framebuffer->Bind();
         Renderer2D::ResetStats();
-        RenderCommand::SetClearColor(Aph::Style::Color::ClearColor);
+        RenderCommand::SetClearColor(Aph::Style::Color::Clear);
         RenderCommand::Clear();
         m_Framebuffer->Bind();
 
@@ -92,22 +92,18 @@ namespace Aph {
         m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
 
         // Update scene
-        switch (m_SceneState)
-        {
-            case SceneState::Play:
-            {
+        switch (m_SceneState) {
+            case SceneState::Play: {
                 m_EditorCamera.OnUpdate(ts);
                 m_ActiveScene->OnUpdateRuntime(ts);
                 break;
             }
-            case SceneState::Pause:
-            {
+            case SceneState::Pause: {
                 m_EditorCamera.OnUpdate(ts);
                 m_ActiveScene->OnUpdateRuntime(ts);
                 break;
             }
-            case SceneState::Edit:
-            {
+            case SceneState::Edit: {
                 m_EditorCamera.OnUpdate(ts);
                 m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
                 break;
@@ -184,6 +180,7 @@ namespace Aph {
         DrawToolBar();
         DrawConsole();
         DrawAssetBrowser();
+        DrawSettings();
 
         ImGui::End();
     }
@@ -397,7 +394,7 @@ namespace Aph {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::ForegroundColor_white);
+        ImGui::PushStyleColor(ImGuiCol_Text, {1,1,1,1});
         ImGui::Begin("Status Bar", nullptr);
         ImGui::Columns(4, "Status Bar", true);
         ImGui::SetColumnWidth(0, 1200);
@@ -456,6 +453,28 @@ namespace Aph {
         ImGui::End();
     }
 
+    void EditorLayer::DrawSettings() {
+
+        ImGui::Begin("Settings");
+
+        ImGui::Text("2D Gravity");
+        ImGui::SameLine();
+        ImGui::DragFloat2("##Gravity2D", glm::value_ptr(Physics2D::Gravity), 0.1f);
+
+        ImGui::Text("2D Physics Timestep");
+        ImGui::SameLine();
+        ImGui::DragFloat("##2DPhysicsTimestep", &Physics2D::Timestep, 0.001f, 0.0001f, 0, "%.4f");
+
+        ImGui::Text("Velocity Iterations");
+        ImGui::SameLine();
+        ImGui::DragInt("##VelocityIterations", &Physics2D::VelocityIterations, 1, 0);
+
+        ImGui::Text("Position Iterations");
+        ImGui::SameLine();
+        ImGui::DragInt("##PositionIterations", &Physics2D::PositionIterations, 1, 0);
+        ImGui::End();
+    }
+
     void EditorLayer::DrawMenuBar() {
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
@@ -474,27 +493,27 @@ namespace Aph {
             }
 
             if (ImGui::BeginMenu("Edit")) {
-                if (ImGui::MenuItem("Copy", "Ctrl+C")){
+                if (ImGui::MenuItem("Copy", "Ctrl+C")) {
                     // TODO
                 }
 
-                if (ImGui::MenuItem("Cut", "Ctrl+X")){
+                if (ImGui::MenuItem("Cut", "Ctrl+X")) {
                     // TODO
                 }
 
-                if (ImGui::MenuItem("Paste", "Ctrl+P")){
+                if (ImGui::MenuItem("Paste", "Ctrl+P")) {
                     // TODO
                 }
 
                 ImGui::Separator();
 
-                if (ImGui::MenuItem("")){
+                if (ImGui::MenuItem("")) {
                     // TODO
                 }
-                if (ImGui::MenuItem("")){
+                if (ImGui::MenuItem("")) {
                     // TODO
                 }
-                if (ImGui::MenuItem("")){
+                if (ImGui::MenuItem("")) {
                     // TODO
                 }
                 ImGui::EndMenu();
@@ -512,7 +531,6 @@ namespace Aph {
 
             ImGui::EndMenuBar();
         }
-
     }
 
     void EditorLayer::DrawToolBar() {
@@ -520,27 +538,24 @@ namespace Aph {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::ForegroundColor_second);
+        ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::Foreground.at("Second"));
         ImGui::Begin("Toolbar", nullptr);
         const ImVec2 toolbarButtonSize = {28, 28};
 
         ImGui::Columns(3, "Toolbar", false);
         // Transform
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        if (ImGui::Button("\uf05b", toolbarButtonSize))
-        {
+        if (ImGui::Button("\uf05b", toolbarButtonSize)) {
             if (!ImGuizmo::IsUsing())
                 m_GizmoType = -1;
         }
         ImGui::SameLine();
-        if (ImGui::Button("\uF0B2", toolbarButtonSize))
-        {
+        if (ImGui::Button("\uF0B2", toolbarButtonSize)) {
             if (!ImGuizmo::IsUsing())
                 m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
         }
         ImGui::SameLine();
-        if (ImGui::Button("\uF021", toolbarButtonSize))
-        {
+        if (ImGui::Button("\uF021", toolbarButtonSize)) {
             if (!ImGuizmo::IsUsing())
                 m_GizmoType = ImGuizmo::OPERATION::ROTATE;
         }
@@ -549,64 +564,51 @@ namespace Aph {
             if (!ImGuizmo::IsUsing())
                 m_GizmoType = ImGuizmo::OPERATION::SCALE;
         }
-        ImGui::SetColumnWidth(0, 850);
+        ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 2.1);
         ImGui::NextColumn();
         ImGui::PopStyleColor();
 
         // Play, Pause, Stop
-        if (m_SceneState == SceneState::Edit)
-        {
+        if (m_SceneState == SceneState::Edit) {
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-            if (ImGui::Button("\uf04b", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04b", toolbarButtonSize)) {
                 OnScenePlay();
             }
             ImGui::SameLine();
-            if (ImGui::Button("\uf04c", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04c", toolbarButtonSize)) {
             }
             ImGui::SameLine();
-            if (ImGui::Button("\uf04d", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04d", toolbarButtonSize)) {
             }
             ImGui::PopStyleColor();
-        }
-        else if (m_SceneState == SceneState::Play)
-        {
+        } else if (m_SceneState == SceneState::Play) {
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-            if (ImGui::Button("\uf04b", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04b", toolbarButtonSize)) {
                 OnSceneStop();
             }
             ImGui::PopStyleColor(2);
             ImGui::SameLine();
-            if (ImGui::Button("\uf04c", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04c", toolbarButtonSize)) {
                 OnScenePause();
             }
             ImGui::SameLine();
-            if (ImGui::Button("\uf04d", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04d", toolbarButtonSize)) {
                 OnSceneStop();
             }
-        }
-        else if (m_SceneState == SceneState::Pause){
+        } else {
             // TODO: scene pause
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
             ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-            if (ImGui::Button("\uf04b", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04b", toolbarButtonSize)) {
                 OnSceneStop();
             }
             ImGui::SameLine();
-            if (ImGui::Button("\uf04c", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04c", toolbarButtonSize)) {
             }
             ImGui::PopStyleColor(2);
             ImGui::SameLine();
-            if (ImGui::Button("\uf04d", toolbarButtonSize))
-            {
+            if (ImGui::Button("\uf04d", toolbarButtonSize)) {
                 OnSceneStop();
             }
         }
@@ -614,6 +616,5 @@ namespace Aph {
         ImGui::End();
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
-
     }
 }// namespace Aph

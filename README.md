@@ -94,7 +94,6 @@ Tested on Gentoo Base System, BSPWM
 - Ensure that all dependencies above are set up correctly
 - Clone repository and create build directory
   ```shell
-  $ git clone --recursive https://github.com/npchitman/Aphrodite
   $ cd Aphrodite
   $ mkdir build && cd build
   ```
