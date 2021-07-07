@@ -479,7 +479,7 @@ namespace Aph {
             {
                 const char* items[] = {"Static", "Kinematic", "Dynamic"};
                 const char* current_item = items[(int) component.Specification.Type];
-                ImGui::Text("Body Type");
+                SetLabel("Body Type");
                 ImGui::SameLine();
                 if (ImGui::BeginCombo("##BodyType", current_item)) {
                     for (int n = 0; n < 3; n++) {
@@ -505,7 +505,7 @@ namespace Aph {
                 {
                     const char* items[] = {"Discrete", "Continuous"};
                     const char* current_item = items[(int) component.Specification.CollisionDetection];
-                    ImGui::Text("Collision Detection");
+                    SetLabel("Collision Detection");
                     ImGui::SameLine();
                     if (ImGui::BeginCombo("##CollisionDetection", current_item)) {
                         for (int n = 0; n < 2; n++) {
@@ -525,7 +525,7 @@ namespace Aph {
                 {
                     const char* items[] = {"NeverSleep", "StartAwake", "StartAsleep"};
                     const char* current_item = items[(int) component.Specification.SleepingMode];
-                    ImGui::Text("Sleeping Mode");
+                    SetLabel("Sleeping Mode");
                     ImGui::SameLine();
                     if (ImGui::BeginCombo("##SleepingMode", current_item)) {
                         for (int n = 0; n < 3; n++) {
@@ -542,7 +542,7 @@ namespace Aph {
                     }
                 }
 
-                ImGui::Text("Freeze Rotation");
+                SetLabel("Freeze Rotation");
                 ImGui::SameLine();
                 ImGui::Checkbox("##FreezeRotationZ", &component.Specification.FreezeRotationZ);
                 ImGui::SameLine();
@@ -553,19 +553,23 @@ namespace Aph {
         });
 
         DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](BoxCollider2DComponent& component) {
-            ImGui::Text("Is Trigger");
+            SetLabel("Is Trigger");
             ImGui::SameLine();
             ImGui::Checkbox("##IsTrigger", &component.IsTrigger);
 
+            SetLabel("Size");
+            ImGui::SameLine();
             glm::vec2 size = component.Size;
-            DrawVec2Control("Size", size, 1.0f, "%.4f");
+            ImGui::DragFloat2("##Size", glm::value_ptr(size), 0.1f, 0, 0, "%.4f");
             if (size.x <= 0.1f)
                 size.x = 0.1f;
             if (size.y <= 0.1f)
                 size.y = 0.1f;
             component.Size = size;
 
-            DrawVec2Control("Offset", component.Offset, 0.0f, "%.4f");
+            SetLabel("Offset");
+            ImGui::SameLine();
+            ImGui::DragFloat2("##Offset", glm::value_ptr(component.Offset), 0.1f, 0, 0, "%.4f");
 
             component.ValidateSpecification();
         });

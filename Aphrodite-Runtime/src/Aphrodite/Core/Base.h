@@ -43,7 +43,7 @@ namespace Aph {
         namespace Title {
             const static std::string_view SceneHierarchy = "\uF5FD Scene Hierarchy";
             const static std::string_view Properties = "\uF1B2 Properties";
-            const static std::string_view Viewport = "\uF06E Viewport";
+            const static std::string_view Viewport = "\uF06E Scene";
             const static std::string_view Project = "\uF07B Project";
             const static std::string_view Console = "\uF120 Console";
             const static std::string_view RenderInfo = "\uF05A Render Info";

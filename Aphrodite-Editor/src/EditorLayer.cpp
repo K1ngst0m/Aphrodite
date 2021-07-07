@@ -278,7 +278,8 @@ namespace Aph {
     }
 
     void EditorLayer::NewScene() {
-        m_ActiveScene = CreateRef<Scene>();
+        m_EditorScene = CreateRef<Scene>();
+        m_ActiveScene = m_EditorScene;
         m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
     }
@@ -286,7 +287,8 @@ namespace Aph {
     void EditorLayer::OpenScene() {
         auto filepath = FileDialogs::OpenFile("Aphrodite Scene (*.sce)\0*.sce\0");
         if (!filepath.empty()) {
-            m_ActiveScene = CreateRef<Scene>();
+            m_EditorScene = CreateRef<Scene>();
+            m_ActiveScene = m_EditorScene;
             m_ActiveScene->OnViewportResize((uint32_t) m_ViewportSize.x, (uint32_t) m_ViewportSize.y);
             m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
@@ -394,7 +396,7 @@ namespace Aph {
         ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_Text, {1,1,1,1});
+        ImGui::PushStyleColor(ImGuiCol_Text, {1, 1, 1, 1});
         ImGui::Begin("Status Bar", nullptr);
         ImGui::Columns(4, "Status Bar", true);
         ImGui::SetColumnWidth(0, 1200);
