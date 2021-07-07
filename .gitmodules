@@ -1,0 +1,9 @@
+[submodule "3rdparty/spdlog"]
+	path = 3rdparty/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "3rdparty/yaml-cpp"]
+	path = 3rdparty/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp
+[submodule "3rdparty/glfw"]
+	path = 3rdparty/glfw
+	url = https://github.com/npchitman/glfw
