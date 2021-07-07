@@ -14,7 +14,7 @@ include_directories(${runtime_src_dir}/src)
 # 3rdparty
 add_subdirectory(${3rdparty_dir}/glad)
 add_subdirectory(${3rdparty_dir}/entt)
-add_subdirectory(${3rdparty_dir}/spdlog-1.8.5)
+add_subdirectory(${3rdparty_dir}/spdlog)
 add_subdirectory(${3rdparty_dir}/glfw)
 add_subdirectory(${3rdparty_dir}/imgui)
 add_subdirectory(${3rdparty_dir}/ImGuizmo)
