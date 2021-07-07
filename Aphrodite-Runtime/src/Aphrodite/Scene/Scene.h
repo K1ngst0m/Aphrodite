@@ -33,7 +33,7 @@ namespace Aph {
         void OnViewportResize(uint32_t width, uint32_t height);
 
         Entity GetPrimaryCameraEntity();
-        static int GetPixelDataAtPoint(const int x, const int y);
+        static int GetPixelDataAtPoint(int x, int y);
 
         entt::registry m_Registry;
 

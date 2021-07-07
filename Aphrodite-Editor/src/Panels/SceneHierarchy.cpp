@@ -12,6 +12,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Aphrodite/Scene/Components.h"
+#include "EditorConsole.h"
 
 namespace Aph::Editor {
     SceneHierarchy::SceneHierarchy(const Ref<Scene>& context) {
@@ -285,15 +286,16 @@ namespace Aph::Editor {
                 ImGui::OpenPopup("ComponentSettings");
             }
 
-            bool removeComponent = false;
+            enum class ComponentStateEnum{None, Remove, Reset};
+            auto componentState = ComponentStateEnum::None;
+
             if (ImGui::BeginPopup("ComponentSettings")) {
                 if (ImGui::MenuItem("Reset component")){
-                    // TODO reset
+                    componentState = ComponentStateEnum::Reset;
                 }
-
-                if (ImGui::MenuItem("Remove component"))
-                    removeComponent = true;
-
+                if (ImGui::MenuItem("Remove component")){
+                    componentState = ComponentStateEnum::Remove;
+                }
                 ImGui::EndPopup();
             }
 
@@ -302,8 +304,19 @@ namespace Aph::Editor {
                 ImGui::TreePop();
             }
 
-            if (removeComponent)
-                entity.RemoveComponent<T>();
+            switch (componentState) {
+                case ComponentStateEnum::Reset:
+                    entity.RemoveComponent<T>();
+                    entity.AddComponent<T>();
+                    EditorConsole::Log("{}: Reset Component", entity.template GetComponent<TagComponent>().Tag);
+                    break;
+                case ComponentStateEnum::Remove:
+                    entity.RemoveComponent<T>();
+                    EditorConsole::Log("{}: Remove Component", entity.template GetComponent<TagComponent>().Tag);
+                    break;
+                case ComponentStateEnum::None:
+                    break;
+            }
         }
     }
 

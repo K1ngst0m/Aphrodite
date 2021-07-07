@@ -19,6 +19,7 @@ add_subdirectory(${3rdparty_dir}/glfw)
 add_subdirectory(${3rdparty_dir}/imgui)
 add_subdirectory(${3rdparty_dir}/ImGuizmo)
 add_subdirectory(${3rdparty_dir}/box2d)
+add_subdirectory(${3rdparty_dir}/assimp)
 
 include_directories(${3rdparty_dir}/glad/include)
 include_directories(${3rdparty_dir}/entt/include)

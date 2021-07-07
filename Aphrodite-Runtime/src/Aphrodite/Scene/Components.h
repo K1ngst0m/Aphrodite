@@ -24,9 +24,9 @@ namespace Aph {
 
         IDComponent() = default;
         IDComponent(const IDComponent&) = default;
-        IDComponent(const uint32_t id)
+        explicit IDComponent(const uint32_t id)
             : ID(id) {}
-        operator uint32_t() { return ID; }
+        explicit operator uint32_t() const { return ID; }
     };
 
     struct TagComponent {
@@ -113,7 +113,6 @@ namespace Aph {
             TextureFilepath = "";
         }
     };
-
 
     struct CameraComponent {
         SceneCamera Camera;
