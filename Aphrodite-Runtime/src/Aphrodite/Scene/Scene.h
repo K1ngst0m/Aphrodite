@@ -35,17 +35,18 @@ namespace Aph {
         Entity GetPrimaryCameraEntity();
         static int GetPixelDataAtPoint(const int x, const int y);
 
+        entt::registry m_Registry;
+
     private:
         template<typename T>
         void OnComponentAdded(Entity entity, T& component);
 
     private:
-        entt::registry m_Registry;
         uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
         friend class Entity;
         friend class SceneSerializer;
-        friend class SceneHierarchyPanel;
+        friend class SceneHierarchy;
 
     private:
         std::unordered_map<uint32_t, entt::entity> m_EntityMap;

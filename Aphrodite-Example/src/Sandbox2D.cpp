@@ -69,7 +69,7 @@ void Sandbox2D::OnImGuiRender() {
     ImGui::Begin("Settings");
 
     auto stats = Aph::Renderer2D::GetStats();
-    ImGui::Text("# Renderer2D Stats:");
+    ImGui::Text("# Renderer2D StatusData:");
     ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
     ImGui::Text("# Quads: %d", stats.QuadCount);
     ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());

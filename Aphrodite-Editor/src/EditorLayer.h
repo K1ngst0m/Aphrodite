@@ -6,11 +6,15 @@
 #define Aphrodite_ENGINE_EDITORLAYER_H
 
 #include <Aphrodite.hpp>
-#include "Aphrodite/Renderer/EditorCamera.h"
-#include "Panels/ContentBrowserPanel.h"
-#include "Panels/SceneHierarchyPanel.h"
 
-namespace Aph {
+#include "Aphrodite/Renderer/EditorCamera.h"
+#include "Panels/AssetBrowser.h"
+#include "Panels/ContentBrowser.h"
+#include "Panels/EditorConsole.h"
+#include "Panels/SceneHierarchy.h"
+#include "Panels/Settings.h"
+
+namespace Aph::Editor {
 
     class EditorLayer : public Layer {
     public:
@@ -28,10 +32,11 @@ namespace Aph {
         void DrawSceneHierarchy();
         void DrawViewport();
         void DrawStatusData();
-        static void DrawConsole();
-        static void DrawAssetBrowser();
         void DrawMenuBar();
         void DrawToolBar();
+        void DrawSettings();
+        static void DrawConsole();
+        static void DrawAssetBrowser();
 
     private:
         bool OnKeyPressed(KeyPressedEvent& e);
@@ -45,15 +50,17 @@ namespace Aph {
         void OnSceneStop();
         void OnScenePause();
 
+        void DrawRectAroundWindow(const glm::vec4& color);
+
     private:
-        enum class SceneState{
-            Edit = 0, Play = 1, Pause = 2
+        enum class SceneState {
+            Edit = 0,
+            Play = 1,
+            Pause = 2
         };
         SceneState m_SceneState = SceneState::Edit;
 
     private:
-        Aph::OrthographicCameraController m_CameraController;
-
         Ref<Framebuffer> m_Framebuffer;
         Ref<Framebuffer> m_IDFrameBuffer;
 
@@ -74,8 +81,8 @@ namespace Aph {
 
         int m_GizmoType = -1;
 
-        SceneHierarchyPanel m_SceneHierarchyPanel;
-        void DrawSettings();
+        SceneHierarchy m_SceneHierarchyPanel;
+        Settings m_SettingsPanel;
     };
 
 }// namespace Aph

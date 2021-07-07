@@ -10,6 +10,8 @@
 
 namespace Aph {
 
+    using namespace Editor;
+
     class AphroditeEditor : public Application {
     public:
         explicit AphroditeEditor(ApplicationCommandLineArgs args)

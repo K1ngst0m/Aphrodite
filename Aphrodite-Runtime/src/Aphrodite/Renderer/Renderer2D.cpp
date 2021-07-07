@@ -12,13 +12,13 @@ namespace Aph {
 
     struct QuadVertex {
         glm::vec3 Position;
-        glm::vec4 Color;
-        glm::vec2 TexCoord;
-        float TexIndex;
-        float TilingFactor;
+        glm::vec4 Color{};
+        glm::vec2 TexCoord{};
+        float TexIndex{};
+        float TilingFactor{};
 
         // Editor only
-        int EntityID;
+        int EntityID{};
     };
 
     struct Renderer2DData {
@@ -116,15 +116,6 @@ namespace Aph {
         delete[] s_Data.QuadVertexBufferBase;
     }
 
-    void Renderer2D::BeginScene(const OrthographicCamera& camera) {
-        APH_PROFILE_FUNCTION();
-
-        s_Data.TextureShader->Bind();
-        s_Data.TextureShader->SetMat4("u_ViewProjection", camera.GetViewProjectionMatrix());
-
-        StartBatch();
-    }
-
     void Renderer2D::BeginScene(const EditorCamera& camera) {
         APH_PROFILE_FUNCTION();
 
@@ -170,6 +161,7 @@ namespace Aph {
         for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
             s_Data.TextureSlots[i]->Bind(i);
 
+        s_Data.QuadVertexArray->Bind();
         RenderCommand::DrawIndexed(s_Data.QuadVertexArray, s_Data.QuadIndexCount);
         s_Data.Stats.DrawCalls++;
     }

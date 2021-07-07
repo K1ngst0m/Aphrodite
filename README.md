@@ -31,6 +31,7 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * Timesteps, Vsync, Delta Time
   * Shaders and Textures
   * Entity Component System
+  * Physics Simulation
     
 * **Rendering**
   * Modern OpenGL setup, using Glad

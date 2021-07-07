@@ -48,9 +48,9 @@ namespace Aph {
 #endif
 
 
+        glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_DEPTH_TEST);
     }
 
     void OpenGLRendererAPI::SetClearColor(const glm::vec4& color) {
@@ -70,5 +70,24 @@ namespace Aph {
 
     void OpenGLRendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height) {
         glViewport(static_cast<int>(x), static_cast<int>(y), static_cast<int>(width), static_cast<int>(height));
+    }
+
+
+    void OpenGLRendererAPI::DrawArray(uint32_t first, uint32_t count)
+    {
+        glDrawArrays(GL_TRIANGLES, first, count);
+    }
+
+    void OpenGLRendererAPI::SetDepthMask(bool flag)
+    {
+        glDepthMask(flag);
+    }
+
+    void OpenGLRendererAPI::SetDepthTest(bool flag)
+    {
+        if (flag)
+            glEnable(GL_DEPTH_TEST);
+        else
+            glDisable(GL_DEPTH_TEST);
     }
 }// namespace Aph

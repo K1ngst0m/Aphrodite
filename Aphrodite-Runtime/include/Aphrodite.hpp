@@ -17,12 +17,9 @@
 #include "Aphrodite/Input/Input.h"
 #include "Aphrodite/Input/KeyCodes.h"
 #include "Aphrodite/Input/MouseCodes.h"
-#include "Aphrodite/Renderer/OrthographicCameraController.h"
 
 // UI
 #include "Aphrodite/UI/UILayer.h"
-#include "Aphrodite/UI/Utilities/UIAssetBrowser.h"
-#include "Aphrodite/UI/Utilities/UIConsole.h"
 
 // Renderer
 #include "Aphrodite/Renderer/Buffer.h"
@@ -34,11 +31,11 @@
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Renderer/VertexArray.h"
 
-// ECS
-#include "Aphrodite/Renderer/OrthographicCamera.h"
+// Scene
 #include "Aphrodite/Scene/Components.h"
 #include "Aphrodite/Scene/Entity.h"
 #include "Aphrodite/Scene/Scene.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
+#include "Aphrodite/Scene/SceneCamera.h"
 
 #endif// APHRODITE_ENGINE_APHRODITE_H

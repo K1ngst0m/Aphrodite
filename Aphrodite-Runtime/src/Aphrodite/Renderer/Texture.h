@@ -29,6 +29,14 @@ namespace Aph {
         static Ref<Texture2D> Create(uint32_t width, uint32_t height);
         static Ref<Texture2D> Create(const std::string& path);
     };
+
+    class TextureCube : public Texture
+    {
+    public:
+        static Ref<TextureCube> Create(const std::string& path);
+
+        virtual uint32_t GetHDRRendererID() = 0;
+    };
 }// namespace Aph-Runtime
 
 

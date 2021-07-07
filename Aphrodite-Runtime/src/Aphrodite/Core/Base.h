@@ -47,7 +47,7 @@ namespace Aph {
             const static std::string_view Project = "\uF07B Project";
             const static std::string_view Console = "\uF120 Console";
             const static std::string_view RenderInfo = "\uF05A Render Info";
-            const static std::string_view Renderer2DStatistics = "\uF05A Renderer2D Stats";
+            const static std::string_view Renderer2DStatistics = "\uF05A Renderer2D StatusData";
         }// namespace Title
 
         namespace Color {
@@ -58,6 +58,7 @@ namespace Aph {
                 ImVec4 Y;
                 ImVec4 Z;
             };
+
             const std::unordered_map<const char*, ImVec4> Foreground = {
                     {"White", {0.8f, 0.8f, 0.8f, 1.0f}},
                     {"Primary", {0.406f, 0.738f, 0.687f, 1.0f}},

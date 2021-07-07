@@ -107,7 +107,11 @@ namespace Aph {
             Texture = Texture2D::Create(filepath);
             TextureFilepath = filepath;
         }
-        void RemoveTexture() { Texture = nullptr; }
+
+        void RemoveTexture() {
+            Texture = nullptr;
+            TextureFilepath = "";
+        }
     };
 
 
@@ -133,6 +137,21 @@ namespace Aph {
         }
     };
 
+    struct SkylightComponent {
+        Ref<TextureCube> Texture = nullptr;
+        std::string TextureFilepath;
+
+        SkylightComponent() = default;
+        SkylightComponent(const SkylightComponent&) = default;
+        void SetTexture(std::string& filepath) {
+            Texture = TextureCube::Create(filepath);
+            TextureFilepath = filepath;
+        }
+        void RemoveTexture() {
+            Texture = nullptr;
+            TextureFilepath = "";
+        }
+    };
 }// namespace Aph
 
 

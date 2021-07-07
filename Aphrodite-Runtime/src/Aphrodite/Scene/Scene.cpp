@@ -9,6 +9,8 @@
 
 #include <glm/glm.hpp>
 
+#include "Aphrodite/Renderer/RenderCommand.h"
+#include "Aphrodite/Renderer/Renderer.h"
 #include "Aphrodite/Renderer/Renderer2D.h"
 #include "Components.h"
 #include "Entity.h"
@@ -45,6 +47,7 @@ namespace Aph {
         CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<NativeScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<Rigidbody2DComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<SkylightComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<BoxCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
     }
 
@@ -96,6 +99,7 @@ namespace Aph {
     }
 
     void Scene::OnUpdateRuntime(Timestep ts) {
+
         {
             m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc) {
                 if (!nsc.Instance) {
@@ -126,11 +130,32 @@ namespace Aph {
         }
 
         if (mainCamera) {
+
+            // 3D==============================================================
+            Renderer::BeginScene(*mainCamera);
+
+            Ref<TextureCube> textureCube;
+            {
+                auto view = m_Registry.view<SkylightComponent>();
+                for (auto entity : view)
+                {
+                    auto skylight = view.get<SkylightComponent>(entity);
+                    if (skylight.Texture)
+                        textureCube = skylight.Texture;
+                }
+            }
+            if(textureCube)
+                Renderer::DrawSkybox(textureCube, *mainCamera);
+
+            Renderer::EndScene();
+            // ================================================================
+
+
+            // 2D==============================================================
             Renderer2D::BeginScene(*mainCamera, cameraTransform);
             {
                 auto view = m_Registry.view<TransformComponent, Rigidbody2DComponent>();
-                for (auto entity : view)
-                {
+                for (auto entity : view) {
                     auto [transform, rigidbody2d] = view.get<TransformComponent, Rigidbody2DComponent>(entity);
 
                     rigidbody2d.Body2D->SetRuntimeTransform(transform.Translation, transform.Rotation.z);
@@ -138,8 +163,7 @@ namespace Aph {
 
                 Physics2D::OnUpdate();
 
-                for (auto entity : view)
-                {
+                for (auto entity : view) {
                     auto [transform, rigidbody2d] = view.get<TransformComponent, Rigidbody2DComponent>(entity);
 
                     glm::vec2 position = rigidbody2d.Body2D->GetRuntimePosition();
@@ -160,20 +184,40 @@ namespace Aph {
                 }
 
                 Renderer2D::EndScene();
+                // ================================================================
             }
         }
     }
 
     void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera) {
-        Renderer2D::BeginScene(camera);
+        // 3D==============================================================
+        Renderer::BeginScene(camera);
+        Ref<TextureCube> textureCube;
+        {
+            auto view = m_Registry.view<SkylightComponent>();
+            for (auto entity : view)
+            {
+                auto skylight = view.get<SkylightComponent>(entity);
+                if (skylight.Texture)
+                    textureCube = skylight.Texture;
+            }
+        }
+        if(textureCube)
+            Renderer::DrawSkybox(textureCube, camera);
+        Renderer::EndScene();
+        // ================================================================
 
+
+        // 2D==============================================================
+        Renderer2D::BeginScene(camera);
         auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
         for (auto entity : view) {
             auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
             Renderer2D::DrawQuad(static_cast<int>(entity), transform.GetTransform(), sprite.Texture, sprite.Color, sprite.TilingFactor);
         }
-
         Renderer2D::EndScene();
+        // ================================================================
+
     }
 
     int Scene::GetPixelDataAtPoint(const int x, const int y) {
@@ -205,8 +249,7 @@ namespace Aph {
 
         {
             auto view = m_Registry.view<Rigidbody2DComponent, BoxCollider2DComponent>();
-            for (auto entity : view)
-            {
+            for (auto entity : view) {
                 auto [rigidbody2d, boxCollider2d] = view.get<Rigidbody2DComponent, BoxCollider2DComponent>(entity);
                 boxCollider2d.StartSimulation(rigidbody2d.Body2D);
             }
@@ -249,5 +292,10 @@ namespace Aph {
 
     template<>
     void Scene::OnComponentAdded<NativeScriptComponent>(Entity entity, NativeScriptComponent& component) {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<SkylightComponent>(Entity entity, SkylightComponent& component)
+    {
     }
 }// namespace Aph

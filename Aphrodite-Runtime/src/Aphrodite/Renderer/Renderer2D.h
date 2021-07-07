@@ -5,7 +5,6 @@
 #ifndef Aphrodite_ENGINE_RENDERER2D_H
 #define Aphrodite_ENGINE_RENDERER2D_H
 
-#include "Aphrodite/Renderer/OrthographicCamera.h"
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Renderer/Camera.h"
 #include "Aphrodite/Renderer/EditorCamera.h"
@@ -17,7 +16,6 @@ namespace Aph {
         static void Init();
         static void Shutdown();
 
-        static void BeginScene(const OrthographicCamera& camera);
         static void BeginScene(const EditorCamera& camera);
         static void BeginScene(const Camera& camera, const glm::mat4& transform);
         static void EndScene();

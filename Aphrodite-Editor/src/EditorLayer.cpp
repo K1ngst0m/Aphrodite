@@ -15,21 +15,19 @@
 #include "Aphrodite/Scene/SceneSerializer.h"
 #include "Aphrodite/Utils/PlatformUtils.h"
 
-namespace Aph {
+namespace Aph::Editor {
 
     EditorLayer::EditorLayer()
-        : Layer("EditorLayer"),
-          m_CameraController(1280.0f / 720.0f) {
-    }
+        : Layer("EditorLayer") {}
 
     void EditorLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
 
         // Log Example
-        UIConsole::Log("A log example");
-        UIConsole::LogWarning("A warning example");
-        UIConsole::LogError("An error example");
-        UIConsole::Log("A log example with parameter: {}, {}, {}", "abc", 34, 6.0f);
+        EditorConsole::Log("A log example");
+        EditorConsole::LogWarning("A warning example");
+        EditorConsole::LogError("An error example");
+        EditorConsole::Log("A log example with parameter: {}, {}, {}", "abc", 34, 6.0f);
 
         // frame buffer
         FramebufferSpecification fbSpec;
@@ -45,7 +43,7 @@ namespace Aph {
         m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
-        UIAssetBrowser::Init();
+        AssetBrowser::Init();
 
         // command line args
         auto commandLineArgs = Application::Get().GetCommandLineArgs();
@@ -71,13 +69,9 @@ namespace Aph {
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
             m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_IDFrameBuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-            m_CameraController.OnResize(m_ViewportSize.x, m_ViewportSize.y);
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
         }
-
-        if (m_ViewportFocused)
-            m_CameraController.OnUpdate(ts);
 
         // Render
         m_Framebuffer->Bind();
@@ -186,7 +180,6 @@ namespace Aph {
     }
 
     void EditorLayer::OnEvent(Event& e) {
-        m_CameraController.OnEvent(e);
         m_EditorCamera.OnEvent(e);
 
         EventDispatcher dispatcher(e);
@@ -257,7 +250,7 @@ namespace Aph {
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
         m_ActiveScene->OnRuntimeStart();
-        UIConsole::Log("Scene Play");
+        EditorConsole::Log("Scene Play");
     }
 
     void EditorLayer::OnSceneStop() {
@@ -268,13 +261,13 @@ namespace Aph {
 
         m_ActiveScene->OnRuntimeEnd();
         m_RuntimeScene = nullptr;
-        UIConsole::Log("Scene Stop");
+        EditorConsole::Log("Scene Stop");
     }
 
     void EditorLayer::OnScenePause() {
         // TODO: on scene pause
         m_SceneState = SceneState::Pause;
-        UIConsole::Log("Scene Pause");
+        EditorConsole::Log("Scene Pause");
     }
 
     void EditorLayer::NewScene() {
@@ -317,6 +310,13 @@ namespace Aph {
     // UI Element //
     ////////////////
 
+    void EditorLayer::DrawRectAroundWindow(const glm::vec4& color) {
+        ImVec2 windowMin = ImGui::GetWindowPos();
+        ImVec2 windowSize = ImGui::GetWindowSize();
+        ImVec2 windowMax = {windowMin.x + windowSize.x, windowMin.y + windowSize.y};
+        ImGui::GetForegroundDrawList()->AddRect(windowMin, windowMax, ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w)));
+    }
+
     void EditorLayer::DrawSceneHierarchy() {
         m_SceneHierarchyPanel.OnImGuiRender();
     }
@@ -325,6 +325,9 @@ namespace Aph {
         // Viewport
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         ImGui::Begin(Style::Title::Viewport.data());
+
+        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Pause)
+            DrawRectAroundWindow((const glm::vec4&) Style::Color::Foreground.at("Second"));
 
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -403,7 +406,7 @@ namespace Aph {
         ImGui::SetColumnWidth(1, 350);
         ImGui::SetColumnWidth(2, 200);
         ImGui::SetColumnWidth(3, 200);
-        ImGui::Text("%s", UIConsole::GetLastMessage().data());
+        ImGui::Text("%s", EditorConsole::GetLastMessage().data());
         ImGui::NextColumn();
         // Mouse Hover
         std::string name = "None";
@@ -426,7 +429,7 @@ namespace Aph {
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
 
-        // Render Stats
+        // Render StatusData
         ImGui::Begin(Style::Title::Renderer2DStatistics.data());
         auto stats = Renderer2D::GetStats();
         ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
@@ -445,36 +448,18 @@ namespace Aph {
 
     void EditorLayer::DrawConsole() {
         ImGui::Begin(Style::Title::Console.data());
-        UIConsole::Draw();
+        EditorConsole::Draw();
         ImGui::End();
     }
 
     void EditorLayer::DrawAssetBrowser() {
         ImGui::Begin(Style::Title::Project.data());
-        UIAssetBrowser::Draw();
+        AssetBrowser::Draw();
         ImGui::End();
     }
 
     void EditorLayer::DrawSettings() {
-
-        ImGui::Begin("Settings");
-
-        ImGui::Text("2D Gravity");
-        ImGui::SameLine();
-        ImGui::DragFloat2("##Gravity2D", glm::value_ptr(Physics2D::Gravity), 0.1f);
-
-        ImGui::Text("2D Physics Timestep");
-        ImGui::SameLine();
-        ImGui::DragFloat("##2DPhysicsTimestep", &Physics2D::Timestep, 0.001f, 0.0001f, 0, "%.4f");
-
-        ImGui::Text("Velocity Iterations");
-        ImGui::SameLine();
-        ImGui::DragInt("##VelocityIterations", &Physics2D::VelocityIterations, 1, 0);
-
-        ImGui::Text("Position Iterations");
-        ImGui::SameLine();
-        ImGui::DragInt("##PositionIterations", &Physics2D::PositionIterations, 1, 0);
-        ImGui::End();
+        m_SettingsPanel.OnImGuiRender();
     }
 
     void EditorLayer::DrawMenuBar() {
@@ -542,6 +527,7 @@ namespace Aph {
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_Text, Style::Color::Foreground.at("Second"));
         ImGui::Begin("Toolbar", nullptr);
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2);
         const ImVec2 toolbarButtonSize = {28, 28};
 
         ImGui::Columns(3, "Toolbar", false);
