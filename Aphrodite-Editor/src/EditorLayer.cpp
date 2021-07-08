@@ -40,7 +40,7 @@ namespace Aph::Editor {
         // scene
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
-        m_EditorCamera = EditorCamera(30.0f, 1.778f, 0.1f, 1000.0f);
+        m_EditorCamera = EditorCamera(60.0f, 1.778f, 0.1f, 1000.0f);
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
         AssetBrowser::Init();
@@ -117,7 +117,7 @@ namespace Aph::Editor {
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
             int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
-            m_HoveredEntity = pixelData == -1 ? Entity() : Entity((entt::entity) pixelData, m_ActiveScene.get());
+            s_HoveredEntity = pixelData == -1 || !m_ActiveScene->HasEntity(pixelData) ? Entity() : Entity((entt::entity) pixelData, m_ActiveScene.get());
         }
 
         m_Framebuffer->UnBind();
@@ -185,6 +185,7 @@ namespace Aph::Editor {
         EventDispatcher dispatcher(e);
         dispatcher.Dispatch<KeyPressedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
         dispatcher.Dispatch<MouseButtonPressedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnMouseButtonReleased));
     }
 
     bool EditorLayer::OnKeyPressed(KeyPressedEvent& e) {
@@ -298,10 +299,24 @@ namespace Aph::Editor {
         }
     }
 
+    bool EditorLayer::OnMouseButtonReleased(MouseButtonReleasedEvent& e) {
+        if (e.GetMouseButton() == Mouse::ButtonRight) {
+            Application::Get().GetWindow().EnableCursor();
+            m_HasViewportEvent = false;
+        }
+
+        return false;
+    }
+
     bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e) {
         if (e.GetMouseButton() == Mouse::ButtonLeft) {
             if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
-                m_SceneHierarchyPanel.SetSelectedEntity(m_HoveredEntity);
+                m_SceneHierarchyPanel.SetSelectedEntity(s_HoveredEntity);
+        }
+        if(e.GetMouseButton() == Mouse::ButtonRight)
+        {
+            m_HasViewportEvent = true;
+            Application::Get().GetWindow().DisableCursor();
         }
         return false;
     }
@@ -338,7 +353,7 @@ namespace Aph::Editor {
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered);
+        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered && !m_HasViewportEvent);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
@@ -394,56 +409,7 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::DrawStatusData() {
-        // Status Bar
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_Text, {1, 1, 1, 1});
-        ImGui::Begin("Status Bar", nullptr);
-        ImGui::Columns(4, "Status Bar", true);
-        ImGui::SetColumnWidth(0, 1200);
-        ImGui::SetColumnWidth(1, 350);
-        ImGui::SetColumnWidth(2, 200);
-        ImGui::SetColumnWidth(3, 200);
-        ImGui::Text("%s", EditorConsole::GetLastMessage().data());
-        ImGui::NextColumn();
-        // Mouse Hover
-        std::string name = "None";
-        if (m_HoveredEntity) name = m_HoveredEntity.GetComponent<TagComponent>().Tag;
-        ImGui::Text(" \uf1b2 Hovered Entity: %s", name.c_str());
-        ImGui::NextColumn();
-        // Frame Per Second
-        static float frameTimeRefreshTimer = 0.0f;
-        static float ft = 0.0f;
-        static float frameRate = 0.0f;
-        frameTimeRefreshTimer += frameTime;
-        if (frameTimeRefreshTimer >= 0.25f) {
-            ft = frameTime;
-            frameRate = 1.0f / frameTime;
-        }
-        ImGui::Text(" FrameTime: %.3f ms", ft);
-        ImGui::NextColumn();
-        ImGui::Text(" FPS: %d", static_cast<int>(frameRate));
-        ImGui::End();
-        ImGui::PopStyleColor(3);
-        ImGui::PopStyleVar(2);
-
-        // Render StatusData
-        ImGui::Begin(Style::Title::Renderer2DStatistics.data());
-        auto stats = Renderer2D::GetStats();
-        ImGui::Text("# Draw Calls: %d", stats.DrawCalls);
-        ImGui::Text("# Quads: %d", stats.QuadCount);
-        ImGui::Text("# Vertices: %d", stats.GetTotalVertexCount());
-        ImGui::Text("# Indices: %d", stats.GetTotalIndexCount());
-        ImGui::End();
-
-        // Renderer Info
-        ImGui::Begin(Style::Title::RenderInfo.data());
-        ImGui::Text("# Vendor         : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Vendor);
-        ImGui::Text("# Hardware       : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Renderer);
-        ImGui::Text("# OpenGL Version : %s", Application::Get().GetWindow().GetGraphicsContextInfo().Version);
-        ImGui::End();
+        m_StatusPanel.OnImGuiRender();
     }
 
     void EditorLayer::DrawConsole() {
@@ -605,4 +571,11 @@ namespace Aph::Editor {
         ImGui::PopStyleColor(3);
         ImGui::PopStyleVar(2);
     }
-}// namespace Aph
+
+    Entity EditorLayer::s_HoveredEntity = {};
+    std::string EditorLayer::GetHoveredComponentName() {
+        if (s_HoveredEntity) return s_HoveredEntity.GetComponent<TagComponent>().Tag;
+        else return "None";
+    }
+
+}// namespace Aph::Editor

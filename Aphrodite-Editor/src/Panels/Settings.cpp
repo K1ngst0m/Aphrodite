@@ -8,29 +8,30 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../Utils/UIDrawer.h"
+
 namespace Aph::Editor {
 
     void Settings::OnImGuiRender() {
 
-
         ImGui::Begin("Settings");
 
-        ImGui::Text("2D Gravity");
-        ImGui::SameLine();
-        ImGui::DragFloat2("##Gravity2D", glm::value_ptr(Physics2D::Gravity), 0.1f);
+        UIDrawer::DrawGrid("Gravity2D", [] {
+            UIDrawer::Property("Gravity 2D", Physics2D::Gravity);
+        });
 
-        ImGui::Text("2D Physics Timestep");
-        ImGui::SameLine();
-        ImGui::DragFloat("##2DPhysicsTimestep", &Physics2D::Timestep, 0.001f, 0.0001f, 0, "%.4f");
+        UIDrawer::DrawGrid("2DPhysicsTimestep", [] {
+          UIDrawer::Property("2D Physics Timestep", Physics2D::Timestep, 0.1f, 0.001f, "%.4f");
+        });
 
-        ImGui::Text("Velocity Iterations");
-        ImGui::SameLine();
-        ImGui::DragInt("##VelocityIterations", &Physics2D::VelocityIterations, 1, 0);
+        UIDrawer::DrawGrid("VelocityIterations", [] {
+            UIDrawer::Property("Velocity Iterations", Physics2D::VelocityIterations, 1, 50);
+        });
 
-        ImGui::Text("Position Iterations");
-        ImGui::SameLine();
-        ImGui::DragInt("##PositionIterations", &Physics2D::PositionIterations, 1, 0);
+        UIDrawer::DrawGrid("PositionIterations", [] {
+            UIDrawer::Property("Position Iterations", Physics2D::PositionIterations, 1, 50);
+        });
+
         ImGui::End();
-
     }
 }// namespace Aph::Editor

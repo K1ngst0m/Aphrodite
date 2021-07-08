@@ -13,6 +13,7 @@
 #include "Panels/EditorConsole.h"
 #include "Panels/SceneHierarchy.h"
 #include "Panels/Settings.h"
+#include "Panels/Status.h"
 
 namespace Aph::Editor {
 
@@ -28,6 +29,7 @@ namespace Aph::Editor {
         void OnImGuiRender() override;
         void OnEvent(Event& e) override;
 
+        static std::string GetHoveredComponentName();
     private:
         void DrawSceneHierarchy();
         void DrawViewport();
@@ -41,6 +43,7 @@ namespace Aph::Editor {
     private:
         bool OnKeyPressed(KeyPressedEvent& e);
         bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+        bool OnMouseButtonReleased(MouseButtonReleasedEvent& e);
 
         void NewScene();
         void OpenScene();
@@ -68,11 +71,11 @@ namespace Aph::Editor {
         Ref<Scene> m_EditorScene{};
         Ref<Scene> m_RuntimeScene{};
 
-        Entity m_HoveredEntity{};
+        static Entity s_HoveredEntity;
 
         EditorCamera m_EditorCamera;
 
-        bool m_ViewportFocused = false, m_ViewportHovered = false;
+        bool m_ViewportFocused = false, m_ViewportHovered = false, m_HasViewportEvent = false;
 
         glm::vec2 m_ViewportSize = {0.0f, 0.0f};
         glm::vec2 m_ViewportBounds[2]{};
@@ -83,6 +86,7 @@ namespace Aph::Editor {
 
         SceneHierarchy m_SceneHierarchyPanel;
         Settings m_SettingsPanel;
+        Status m_StatusPanel;
     };
 
 }// namespace Aph

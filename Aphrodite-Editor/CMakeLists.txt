@@ -4,6 +4,7 @@ file(GLOB src_files
         src/*.cpp
         src/Panels/*.cpp
         src/Others/*.cpp
+        src/Utils/*.cpp
         )
 
 add_executable(${PROJECT_NAME} ${src_files})
