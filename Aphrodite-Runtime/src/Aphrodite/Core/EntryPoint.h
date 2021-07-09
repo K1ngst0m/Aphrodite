@@ -17,15 +17,15 @@
 int main(int argc, char **argv) {
     Aph::Log::Init();
 
-    APH_PROFILE_BEGIN_SESSION("Startup", "AphroditeProfile-Startup.json");
+    APH_PROFILE_BEGIN_SESSION("Startup", "APH-Profile-Startup.json");
     auto app = Aph::CreateApplication({argc, argv});
     APH_PROFILE_END_SESSION();
 
-    APH_PROFILE_BEGIN_SESSION("Runtime", "AphroditeProfile-Runtime.json");
+    APH_PROFILE_BEGIN_SESSION("Runtime", "APH-Profile-Runtime.json");
     app->Run();
     APH_PROFILE_END_SESSION();
 
-    APH_PROFILE_BEGIN_SESSION("Shutdown", "AphroditeProfile-Shutdown.json");
+    APH_PROFILE_BEGIN_SESSION("Shutdown", "APH-Profile-Shutdown.json");
     delete app;
     APH_PROFILE_END_SESSION();
 }

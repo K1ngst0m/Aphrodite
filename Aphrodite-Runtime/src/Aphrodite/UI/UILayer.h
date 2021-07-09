@@ -27,7 +27,7 @@ namespace Aph {
         static void Begin();
         static void End();
 
-        void BlockEvents(bool block) { m_BlockEvents = block; }
+        void SetBlockEvents(bool block) { m_BlockEvents = block; }
 
         static void SetDarkThemeColors();
 

@@ -91,8 +91,13 @@ namespace Aph {
         RenderCommand::SetViewport(0, 0, width, height);
     }
 
-    void Renderer::BeginScene(Camera& camera) {
+    void Renderer::BeginScene(EditorCamera& camera) {
         s_SceneData->ViewProjectionMatrix = camera.GetViewProjection();
+    }
+
+    void Renderer::BeginScene(Camera& camera, glm::mat4 transform) {
+        s_SceneData->ViewProjectionMatrix = camera.GetProjection()
+                                            * glm::inverse(transform);
     }
 
     void Renderer::EndScene() {}
@@ -127,11 +132,11 @@ namespace Aph {
         RenderCommand::SetDepthMask(true);
     }
 
-    void Renderer::DrawSkybox(Ref<TextureCube>& textureCube, Camera& camera) {
+    void Renderer::DrawSkybox(Ref<TextureCube>& textureCube, Camera& camera, glm::mat4& transform) {
         RenderCommand::SetDepthMask(false);
         s_SceneData->SkyboxShader->Bind();
         s_SceneData->SkyboxShader->SetMat4("u_Projection", camera.GetProjection());
-        s_SceneData->SkyboxShader->SetMat4("u_View", camera.GetView());
+        s_SceneData->SkyboxShader->SetMat4("u_View", glm::inverse(transform));
         textureCube->Bind();
         s_SceneData->CubeVertexArray->Bind();
         RenderCommand::DrawArray(0, 36);

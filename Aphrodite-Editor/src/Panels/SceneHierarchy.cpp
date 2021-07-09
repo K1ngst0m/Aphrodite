@@ -4,14 +4,15 @@
 
 #include "SceneHierarchy.h"
 
-#include <Aphrodite/Utils/PlatformUtils.h>
 #include <imgui.h>
 #include <imgui_internal.h>
 
 #include <cstring>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Aphrodite/Renderer/Material.h"
 #include "Aphrodite/Scene/Components.h"
+#include "Aphrodite/Utils/PlatformUtils.h"
 #include "EditorConsole.h"
 
 namespace Aph::Editor {
@@ -39,20 +40,104 @@ namespace Aph::Editor {
         if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
             if (ImGui::MenuItem("Create Empty"))
                 m_SelectionContext = m_Context->CreateEntity("Empty");
-            else if (ImGui::MenuItem("Create Camera")) {
+
+            if (ImGui::MenuItem("Create Camera")) {
                 m_SelectionContext = m_Context->CreateEntity("Camera");
                 m_SelectionContext.AddComponent<CameraComponent>();
                 ImGui::CloseCurrentPopup();
-            } else if (ImGui::MenuItem("Create Sprite")) {
-                m_SelectionContext = m_Context->CreateEntity("Sprite");
-                m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                ImGui::CloseCurrentPopup();
             }
-            else if(ImGui::MenuItem("Create Sprite(Physics)")){
-                m_SelectionContext = m_Context->CreateEntity("Sprite");
-                m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                m_SelectionContext.AddComponent<Rigidbody2DComponent>();
-                m_SelectionContext.AddComponent<BoxCollider2DComponent>();
+
+            if (ImGui::BeginMenu("Create Sprite")) {
+                if (ImGui::MenuItem("Default")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Physics(Box)")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
+                    m_SelectionContext.AddComponent<BoxCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Physics(Circle)")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
+                    m_SelectionContext.AddComponent<CircleCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("3D Object")) {
+                if (ImGui::MenuItem("Empty Mesh")) {
+                    m_SelectionContext = m_Context->CreateEntity("Mesh");
+                    m_SelectionContext.AddComponent<MeshComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cube")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cube");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cube);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Sphere")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sphere");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Sphere);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Plane")) {
+                    m_SelectionContext = m_Context->CreateEntity("Plane");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Plane);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Quad")) {
+                    m_SelectionContext = m_Context->CreateEntity("Quad");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Quad);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cone")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cone");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cone);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cylinder")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cylinder");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cylinder);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Light")) {
+                if (ImGui::MenuItem("Directional")) {
+                    m_SelectionContext = m_Context->CreateEntity("Directional Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Directional);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Point")) {
+                    m_SelectionContext = m_Context->CreateEntity("Point Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Point);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Spot")) {
+                    m_SelectionContext = m_Context->CreateEntity("Spot Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Spot);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Area")) {
+                    m_SelectionContext = m_Context->CreateEntity("Area Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Area);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("Create Skylight")) {
+                m_SelectionContext = m_Context->CreateEntity("Skylight");
+                m_SelectionContext.AddComponent<SkylightComponent>();
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
@@ -122,7 +207,6 @@ namespace Aph::Editor {
 
     static void SetLabel(const char* label) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        const ImVec2 lineStart = ImGui::GetCursorScreenPos();
         const ImGuiStyle& style = ImGui::GetStyle();
         float fullWidth = ImGui::GetContentRegionAvail().x;
         float itemWidth = fullWidth * 0.6f;
@@ -153,11 +237,32 @@ namespace Aph::Editor {
         ImGui::SetNextItemWidth(itemWidth);
     }
 
-    static void DrawCheckbox(const std::string &label, bool * flag){
+    static void DrawCheckbox(const std::string& label, bool* flag) {
         ImGui::PushID(label.c_str());
         SetLabel(label.c_str());
         ImGui::Checkbox("##flag", flag);
         ImGui::PopID();
+    }
+
+    static void DrawVisibilityCheckbox(bool *flag){
+        ImGui::PushStyleColor(ImGuiCol_Button, Style::Color::background_1);
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, Style::Color::background_1);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Style::Color::background_1);
+
+        const char* checkboxIcon_visible = "\uf06e";
+        const char* checkboxIcon_hidden = "\uf070";
+
+        if(*flag){
+            if(ImGui::Button(checkboxIcon_visible)){
+                *flag = !*flag;
+            }
+        }
+        else{
+            if(ImGui::Button(checkboxIcon_hidden)){
+                *flag = !*flag;
+            }
+        }
+        ImGui::PopStyleColor(3);
     }
 
     static void DrawFloatControl(const std::string& label, float* value, float min = 0, float max = 0, float columnWidth = 100.0f) {
@@ -218,7 +323,7 @@ namespace Aph::Editor {
         ImGui::PopID();
     }
 
-    static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f) {
+    static void DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 150.0f) {
         ImGuiIO& io = ImGui::GetIO();
         auto boldFont = io.Fonts->Fonts[0];
 
@@ -284,8 +389,13 @@ namespace Aph::Editor {
     }
 
     template<typename T, typename UIFunction>
-    static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction) {
-        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+    static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction, const bool removable = true) {
+        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen
+                                                 | ImGuiTreeNodeFlags_Framed
+                                                 | ImGuiTreeNodeFlags_SpanAvailWidth
+                                                 | ImGuiTreeNodeFlags_AllowItemOverlap
+                                                 | ImGuiTreeNodeFlags_FramePadding ;
+
         if (entity.HasComponent<T>()) {
             auto& component = entity.GetComponent<T>();
             ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
@@ -300,21 +410,23 @@ namespace Aph::Editor {
                 ImGui::OpenPopup("ComponentSettings");
             }
 
-            enum class ComponentStateEnum{None, Remove, Reset};
+            enum class ComponentStateEnum { None,
+                                            Remove,
+                                            Reset };
             auto componentState = ComponentStateEnum::None;
 
             if (ImGui::BeginPopup("ComponentSettings")) {
-                if (ImGui::MenuItem("Reset component")){
+                if (ImGui::MenuItem("Reset component")) {
                     componentState = ComponentStateEnum::Reset;
                 }
-                if (ImGui::MenuItem("Remove component")){
+                if (ImGui::MenuItem("Remove component")) {
                     componentState = ComponentStateEnum::Remove;
                 }
                 ImGui::EndPopup();
             }
 
             if (open) {
-                uiFunction(component);
+                uiFunction(entity, component);
                 ImGui::TreePop();
             }
 
@@ -325,8 +437,12 @@ namespace Aph::Editor {
                     EditorConsole::Log("{}: Reset Component", entity.template GetComponent<TagComponent>().Tag);
                     break;
                 case ComponentStateEnum::Remove:
-                    entity.RemoveComponent<T>();
-                    EditorConsole::Log("{}: Remove Component", entity.template GetComponent<TagComponent>().Tag);
+                    if (removable) {
+                        entity.RemoveComponent<T>();
+                        EditorConsole::Log("{}: Remove Component", entity.template GetComponent<TagComponent>().Tag);
+                    } else {
+                        EditorConsole::LogWarning("{}: Can't remove this component", entity.template GetComponent<TagComponent>().Tag);
+                    }
                     break;
                 case ComponentStateEnum::None:
                     break;
@@ -334,6 +450,128 @@ namespace Aph::Editor {
         }
     }
 
+    static void DrawPBRProperties(Ref<PbrMaterial>& materialInstance) {
+        const char* filesFlag = "\"Material (*.png/*.jpg/*.bmp)|*.[Pp][Nn][Gg] *.[Jj][Pp][Gg] *.[Bb][Mm][Pp]\"";
+        const float itemWidth = static_cast<double>(ImGui::GetContentRegionAvailWidth()) / 1.8;
+        int id = 0;
+
+        ImVec2 textureImageButtonSize {22, 22};
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, Style::Color::Foreground.at("Second"));
+        ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, Style::Color::Foreground.at("Second"));
+
+        //==============================================
+        // Albedo
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseAlbedoMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->AlbedoMap->GetRendererID(),
+                               textureImageButtonSize,
+                               ImVec2(0, 1), ImVec2(1, 0), -1,
+                               ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->AlbedoMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::ColorEdit4("Albedo", (float*) &materialInstance->Color);
+        //==============================================
+
+        //==============================================
+        // Normals
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseNormalMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->NormalMap->GetRendererID(),
+                               textureImageButtonSize, ImVec2(0, 1), ImVec2(1, 0), -1,
+                               ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->NormalMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::Text("Normals");
+        //==============================================
+
+        //==============================================
+        // Metallic
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseMetallicMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->MetallicMap->GetRendererID(),
+                               textureImageButtonSize, ImVec2(0, 1), ImVec2(1, 0), -1,
+                               ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->MetallicMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::SliderFloat("Metallic", &materialInstance->Metallic, 0.0f, 1.0f);
+        //==============================================
+
+        //==============================================
+        // Roughness
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseRoughnessMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->RoughnessMap->GetRendererID(), textureImageButtonSize, ImVec2(0, 1), ImVec2(1, 0), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->RoughnessMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::SliderFloat("Roughness", &materialInstance->Roughness, 0.01f, 1.0f);
+        //==============================================
+
+        //==============================================
+        // Occlusion
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseOcclusionMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->AmbientOcclusionMap->GetRendererID(), textureImageButtonSize, ImVec2(0, 1), ImVec2(1, 0), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->AmbientOcclusionMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::SliderFloat("Occlusion", &materialInstance->AO, 0.0f, 1.0f);
+        //==============================================
+
+
+        //==============================================
+        // Emmission
+        ImGui::PushID(id);
+        DrawVisibilityCheckbox(&materialInstance->UseEmissiveMap);
+        ImGui::SameLine();
+        id++;
+        ImGui::PopID();
+        if (ImGui::ImageButton((ImTextureID) materialInstance->EmissiveMap->GetRendererID(), textureImageButtonSize, ImVec2(0, 1), ImVec2(1, 0), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9, 0.9f, 0.9f, 1.0f))) {
+            std::string path = FileDialogs::OpenFile(filesFlag);
+            if (!path.empty())
+                materialInstance->EmissiveMap = Texture2D::Create(path);
+        }
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::ColorEdit3("Color", (float*) &materialInstance->EmissiveColor);
+        ImGui::SetNextItemWidth(itemWidth);
+        ImGui::SliderFloat("Intensity", &materialInstance->EmissiveIntensity, 0.0f, 10.0f);
+        //==============================================
+
+        ImGui::PopStyleColor(2);
+    }
 
     void SceneHierarchy::DrawComponents(Entity entity) {
         if (entity.HasComponent<TagComponent>()) {
@@ -350,6 +588,7 @@ namespace Aph::Editor {
         ImGui::SameLine();
         ImGui::PushItemWidth(-1);
 
+        // Draw Components Popup Menu
         if (ImGui::Button("Add Component"))
             ImGui::OpenPopup("AddComponent");
 
@@ -378,6 +617,21 @@ namespace Aph::Editor {
                 ImGui::CloseCurrentPopup();
             }
 
+            if (ImGui::MenuItem("Light")) {
+                if (!entity.HasComponent<LightComponent>())
+                    entity.AddComponent<LightComponent>();
+                else
+                    APH_CORE_WARN("This entity already has the Light Component!");
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::MenuItem("Mesh")) {
+                if (!entity.HasComponent<MeshComponent>())
+                    entity.AddComponent<MeshComponent>();
+                else
+                    APH_CORE_WARN("This entity already has the Mesh Component!");
+                ImGui::CloseCurrentPopup();
+            }
 
             if (ImGui::MenuItem("Rigidbody 2D")) {
                 if (!entity.HasComponent<Rigidbody2DComponent>())
@@ -403,8 +657,7 @@ namespace Aph::Editor {
                 ImGui::CloseCurrentPopup();
             }
 
-            if (ImGui::MenuItem("Skylight"))
-            {
+            if (ImGui::MenuItem("Skylight")) {
                 if (!entity.HasComponent<SkylightComponent>())
                     entity.AddComponent<SkylightComponent>();
                 else
@@ -414,18 +667,22 @@ namespace Aph::Editor {
 
             ImGui::EndPopup();
         }
-
         ImGui::PopItemWidth();
 
-        DrawComponent<TransformComponent>("Transform", entity, [](TransformComponent& component) {
-            DrawVec3Control("Translation", component.Translation);
-            glm::vec3 rotation = glm::degrees(component.Rotation);
-            DrawVec3Control("Rotation", rotation);
-            component.Rotation = glm::radians(rotation);
-            DrawVec3Control("Scale", component.Scale, 1.0f);
-        });
+        // Draw Components
+        DrawComponent<TransformComponent>(
+                "Transform", entity, [](Entity& e, TransformComponent& component) {
+                    DrawVec3Control("Translation", component.Translation);
 
-        DrawComponent<CameraComponent>("Camera", entity, [](CameraComponent& component) {
+                    glm::vec3 rotation = glm::degrees(component.Rotation);
+                    DrawVec3Control("Rotation", rotation);
+
+                    component.Rotation = glm::radians(rotation);
+                    DrawVec3Control("Scale", component.Scale, 1.0f);
+                },
+                false);
+
+        DrawComponent<CameraComponent>("Camera", entity, [](Entity& e, CameraComponent& component) {
             auto& camera = component.Camera;
 
             DrawCheckbox("Primary", &component.Primary);
@@ -487,43 +744,43 @@ namespace Aph::Editor {
             }
         });
 
-        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](SpriteRendererComponent& component) {
+        DrawComponent<SpriteRendererComponent>("Sprite Renderer", entity, [](Entity& e, SpriteRendererComponent& component) {
             SetLabel("Color");
             ImGui::ColorEdit4("##Color", glm::value_ptr(component.Color));
 
-          const uint32_t id = component.Texture == nullptr ? 0 : component.Texture->GetRendererID();
+            const uint32_t id = component.Texture == nullptr ? 0 : component.Texture->GetRendererID();
 
-          SetLabel("Texture");
-          const ImVec2 buttonSize = { 80, 80 };
-          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
-          if(ImGui::ImageButton(reinterpret_cast<ImTextureID>(id), buttonSize, { 0, 1 }, { 1, 0}, 0))
-          {
-              std::string filepath = FileDialogs::OpenFile("Texture (*.png)\0*.png\0");
-              if (!filepath.empty())
-                  component.SetTexture(filepath);
-          }
-          ImGui::PopStyleColor(3);
+            SetLabel("Texture");
+            const ImVec2 buttonSize = {80, 80};
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
+            if (ImGui::ImageButton(reinterpret_cast<ImTextureID>(id), buttonSize, {0, 1}, {1, 0}, 0)) {
+                std::string filepath = FileDialogs::OpenFile("\"Texture (*.png) | *.[Pp][nN][gG]\"");
+                if (!filepath.empty())
+                    component.SetTexture(filepath);
+            }
+            ImGui::PopStyleColor(3);
 
-          ImGui::SameLine();
-          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.3f, 0.3f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
 
-          if(ImGui::Button("-", { buttonSize.x / 4, buttonSize.y } ))
-              component.RemoveTexture();
+            if (ImGui::Button("-", {buttonSize.x / 4, buttonSize.y}))
+                component.RemoveTexture();
 
-          ImGui::PopStyleColor(3);
-          ImGui::PopStyleVar();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
 
-          ImGui::Spacing();
+            ImGui::Spacing();
 
-          DrawFloatControl("Tiling Factor", &component.TilingFactor, 0, 0);
+            DrawFloatControl("Tiling Factor", &component.TilingFactor, 0, 0);
         });
 
-        DrawComponent<Rigidbody2DComponent>("Rigidbody 2D", entity, [](Rigidbody2DComponent& component) {
+        DrawComponent<Rigidbody2DComponent>("Rigidbody 2D", entity, [](Entity& e, Rigidbody2DComponent& component) {
+            //
             {
                 const char* items[] = {"Static", "Kinematic", "Dynamic"};
                 const char* current_item = items[(int) component.Specification.Type];
@@ -592,38 +849,37 @@ namespace Aph::Editor {
                 ImGui::Text("Z");
             }
 
-          // Debug
-          if (component.Body2D)
-          {
-              const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth;
-              if (ImGui::TreeNodeEx((void*)typeid(component.Body2D).hash_code(), treeNodeFlags, "Info"))
-              {
-                  SetLabel("Mass");
-                  ImGui::Text("%.4f", component.Body2D->GetMass());
-                  SetLabel("Position");
-                  ImGui::Text("%f, %f", component.Body2D->GetPosition().x, component.Body2D->GetPosition().y);
-                  SetLabel("Rotation");
-                  ImGui::Text("%f", component.Body2D->GetRotation());
-                  SetLabel("Velocity");
-                  ImGui::Text("%f, %f", component.Body2D->GetVelocity().x, component.Body2D->GetVelocity().y);
-                  SetLabel("Angular Velocity");
-                  ImGui::Text("%f", component.Body2D->GetAngularVelocity());
-                  SetLabel("Intertia");
-                  ImGui::Text("%f", component.Body2D->GetInertia());
-                  SetLabel("Local Center of Mass");
-                  ImGui::Text("%f, %f", component.Body2D->GetLocalCenterOfMass().x, component.Body2D->GetLocalCenterOfMass().y);
-                  SetLabel("World Center of Mass");
-                  ImGui::Text("%f, %f", component.Body2D->GetWorldCenterOfMass().x, component.Body2D->GetWorldCenterOfMass().y);
-                  SetLabel("Sleep State");
-                  ImGui::Text("%s", component.Body2D->IsAwake() ? "Awake" : "Asleep");
-                  ImGui::TreePop();
-              }
-          }
+            // Debug
+            if (component.Body2D) {
+                const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth;
+                if (ImGui::TreeNodeEx((void*) typeid(component.Body2D).hash_code(), treeNodeFlags, "Info")) {
+                    SetLabel("Mass");
+                    ImGui::Text("%.4f", component.Body2D->GetMass());
+                    SetLabel("Position");
+                    ImGui::Text("%f, %f", component.Body2D->GetPosition().x, component.Body2D->GetPosition().y);
+                    SetLabel("Rotation");
+                    ImGui::Text("%f", component.Body2D->GetRotation());
+                    SetLabel("Velocity");
+                    ImGui::Text("%f, %f", component.Body2D->GetVelocity().x, component.Body2D->GetVelocity().y);
+                    SetLabel("Angular Velocity");
+                    ImGui::Text("%f", component.Body2D->GetAngularVelocity());
+                    SetLabel("Intertia");
+                    ImGui::Text("%f", component.Body2D->GetInertia());
+                    SetLabel("Local Center of Mass");
+                    ImGui::Text("%f, %f", component.Body2D->GetLocalCenterOfMass().x, component.Body2D->GetLocalCenterOfMass().y);
+                    SetLabel("World Center of Mass");
+                    ImGui::Text("%f, %f", component.Body2D->GetWorldCenterOfMass().x, component.Body2D->GetWorldCenterOfMass().y);
+                    SetLabel("Sleep State");
+                    ImGui::Text("%s", component.Body2D->IsAwake() ? "Awake" : "Asleep");
+                    ImGui::TreePop();
+                }
+            }
 
             component.ValidateSpecification();
         });
 
-        DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](BoxCollider2DComponent& component) {
+        DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](Entity& e, BoxCollider2DComponent& component) {
+            //
             DrawCheckbox("IsTrigger", &component.IsTrigger);
 
             SetLabel("Size");
@@ -638,9 +894,9 @@ namespace Aph::Editor {
             SetLabel("Offset");
             ImGui::DragFloat2("##Offset", glm::value_ptr(component.Offset), 0.01f, 0, 0, "%.4f");
 
-            if(component.Collider2D){
+            if (component.Collider2D) {
                 const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth;
-                if(ImGui::TreeNodeEx((void*)typeid(component.Collider2D).hash_code(), treeNodeFlags, "Info")){
+                if (ImGui::TreeNodeEx((void*) typeid(component.Collider2D).hash_code(), treeNodeFlags, "Info")) {
                     SetLabel("Density");
                     ImGui::Text("%.4f", component.Collider2D->GetDensity());
                     ImGui::TreePop();
@@ -650,45 +906,114 @@ namespace Aph::Editor {
             component.ValidateSpecification();
         });
 
-        DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](CircleCollider2DComponent& component)
-        {
-          DrawCheckbox("IsTrigger", &component.IsTrigger);
+        DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](Entity& e, CircleCollider2DComponent& component) {
+            //
+            DrawCheckbox("IsTrigger", &component.IsTrigger);
 
-          SetLabel("Radius");
-          ImGui::DragFloat("##Radius", &component.Radius, 0.01f, 0.1, 0, "%.4f");
+            SetLabel("Radius");
+            ImGui::DragFloat("##Radius", &component.Radius, 0.01f, 0.1, 0, "%.4f");
 
-          SetLabel("Offset");
-          ImGui::DragFloat2("##Offset", glm::value_ptr(component.Offset), 0.01f, 0, 0, "%.4f");
+            SetLabel("Offset");
+            ImGui::DragFloat2("##Offset", glm::value_ptr(component.Offset), 0.01f, 0, 0, "%.4f");
 
-          component.ValidateSpecification();
+            component.ValidateSpecification();
         });
 
-        DrawComponent<SkylightComponent>("Skylight Component", entity, [](SkylightComponent& component)
-        {
-          const intptr_t id = component.Texture != nullptr ? component.Texture->GetHDRRendererID() : 0;
+        DrawComponent<LightComponent>("Light Component", entity, [](Entity& e, LightComponent& component) {
+            //
+            {
+                const char* items[] = {"Directional", "Point", "Spot", "Area"};
+                const char* current_item = items[(int) component.Type];
+                SetLabel("Type");
+                if (ImGui::BeginCombo("##Type", current_item)) {
+                    for (int n = 0; n < 4; n++) {
+                        bool is_selected = (current_item == items[n]);
+                        if (ImGui::Selectable(items[n], is_selected)) {
+                            current_item = items[n];
+                            component.Type = (LightComponent::LightType) n;
+                        }
 
-          SetLabel("Texture");
-          const ImVec2 buttonSize = { 80, 80 };
-          ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
-          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.35f, 0.35f, 0.35f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.25f, 0.25f, 0.25f, 1.0f });
-          if (ImGui::ImageButton((ImTextureID)id, buttonSize, { 0, 1 }, { 1, 0 }, 0))
-          {
-              std::string filepath = FileDialogs::OpenFile("Texture (*.hdr)\0*.hdr\0");
-              if (!filepath.empty())
-                  component.SetTexture(filepath);
-          }
-          ImGui::PopStyleColor(3);
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
 
-          ImGui::SameLine();
-          ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.3f, 0.3f, 1.0f });
-          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.2f, 0.2f, 1.0f });
-          if (ImGui::Button("x", { buttonSize.x / 4, buttonSize.y }))
-              component.RemoveTexture();
-          ImGui::PopStyleColor(3);
-          ImGui::PopStyleVar();
+            SetLabel("Light Color");
+            ImGui::ColorEdit3("##LightColor", glm::value_ptr(component.Color));
+
+            SetLabel("Intensity");
+            ImGui::DragFloat("##Intensity", &component.Intensity);
+        });
+
+        DrawComponent<MeshComponent>("Mesh Component", entity, [](Entity& e, MeshComponent& component) {
+            ImGui::Text("Mesh Path");
+
+            std::string meshPath;
+            if (component.mesh) {
+                meshPath = component.mesh->GetFilePath();
+                ImGui::SameLine(0, ImGui::GetContentRegionAvail().x - 75);
+            } else {
+                meshPath = "Empty";
+            }
+
+          ImGui::Text("%s", meshPath.c_str());
+
+            if (ImGui::Button("...", {55, 35})) {
+                std::string filepath = FileDialogs::OpenFile("\"3D Model (*.obj/*.fbx)|*.[Oo][Bb][Jj] *.[Ff][Bb][Xx]\"");
+                if (!filepath.empty())
+                    component.Set(e.GetComponent<IDComponent>().ID, filepath);
+            }
+
+            if (component.mesh) {
+                Ref<Mesh> mesh = component.mesh;
+                ImGui::Text("%s", mesh->GetName().c_str());
+                ImGui::Separator();
+                if (ImGui::TreeNode("Material List")) {
+                    for (int i = 0; i < mesh->GetMaterialsCount(); i++) {
+                        ImGui::PushID(i);
+                        auto& material = mesh->GetMaterialInstance(i);
+
+                        if (ImGui::TreeNode(material->Name.c_str())) {
+                            Ref<PbrMaterial> pbr = std::dynamic_pointer_cast<PbrMaterial>(material);
+                            DrawPBRProperties(pbr);
+                            ImGui::TreePop();
+                        }
+                        ImGui::Separator();
+
+                        ImGui::PopID();
+                    }
+                    ImGui::TreePop();
+                }
+            }
+        });
+
+        DrawComponent<SkylightComponent>("Skylight Component", entity, [](Entity& e, SkylightComponent& component) {
+            //
+            const intptr_t id = component.Texture != nullptr ? component.Texture->GetHDRRendererID() : 0;
+
+            SetLabel("Texture");
+            const ImVec2 buttonSize = {80, 80};
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.35f, 0.35f, 0.35f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.25f, 0.25f, 0.25f, 1.0f});
+            if (ImGui::ImageButton((ImTextureID) id, buttonSize, {0, 1}, {1, 0}, 0)) {
+                std::string filepath = FileDialogs::OpenFile("\"Cubemap (*.hdr) | *.[Hh][Dd][Rr]\"");
+                if (!filepath.empty())
+                    component.SetTexture(filepath);
+            }
+            ImGui::PopStyleColor(3);
+
+            ImGui::SameLine();
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.3f, 0.3f, 0.3f, 1.0f});
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.2f, 0.2f, 0.2f, 1.0f});
+            if (ImGui::Button("x", {buttonSize.x / 4, buttonSize.y}))
+                component.RemoveTexture();
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar();
         });
     }
-}// namespace Aph
+}// namespace Aph::Editor

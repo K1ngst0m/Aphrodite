@@ -22,27 +22,35 @@ namespace Aph::Editor {
 
     void EditorLayer::OnAttach() {
         APH_PROFILE_FUNCTION();
+        EditorConsole::Log("Aphrodite Engine is Running");
 
+#if APH_DEBUG
         // Log Example
         EditorConsole::Log("A log example");
         EditorConsole::LogWarning("A warning example");
         EditorConsole::LogError("An error example");
         EditorConsole::Log("A log example with parameter: {}, {}, {}", "abc", 34, 6.0f);
+#endif
 
         // frame buffer
         FramebufferSpecification fbSpec;
-        fbSpec.Attachments = {FramebufferTextureFormat::RGBA8, FramebufferTextureFormat::RED_INTEGER, FramebufferTextureFormat::Depth};
+        fbSpec.Attachments = {FramebufferTextureFormat::RGBA8,
+                              FramebufferTextureFormat::RED_INTEGER,
+                              FramebufferTextureFormat::Depth};
         fbSpec.Width = 1280;
         fbSpec.Height = 720;
         m_Framebuffer = Framebuffer::Create(fbSpec);
-        m_IDFrameBuffer = Framebuffer::Create(fbSpec);
+        //        m_IDFrameBuffer = Framebuffer::Create(fbSpec);
 
         // scene
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
+
         m_EditorCamera = EditorCamera(60.0f, 1.778f, 0.1f, 1000.0f);
+
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
+        // Asset Browser Init
         AssetBrowser::Init();
 
         // command line args
@@ -61,14 +69,12 @@ namespace Aph::Editor {
     void EditorLayer::OnUpdate(Timestep ts) {
         APH_PROFILE_FUNCTION();
 
-        frameTime = ts;
-
         // Resize
         if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
             m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
             m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-            m_IDFrameBuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+            //            m_IDFrameBuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
         }
@@ -78,12 +84,9 @@ namespace Aph::Editor {
         Renderer2D::ResetStats();
         RenderCommand::SetClearColor(Aph::Style::Color::Clear);
         RenderCommand::Clear();
-        m_Framebuffer->Bind();
+        //        m_Framebuffer->Bind();
 
-        m_Framebuffer->ClearAttachment(1, -1);
-
-        // Update scene
-        m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+        //        m_Framebuffer->ClearAttachment(1, -1);
 
         // Update scene
         switch (m_SceneState) {
@@ -242,6 +245,7 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::OnScenePlay() {
+        EditorConsole::Log("Scene Play");
         m_SceneState = SceneState::Play;
 
         m_RuntimeScene = CreateRef<Scene>();
@@ -251,10 +255,10 @@ namespace Aph::Editor {
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
         m_ActiveScene->OnRuntimeStart();
-        EditorConsole::Log("Scene Play");
     }
 
     void EditorLayer::OnSceneStop() {
+        EditorConsole::Log("Scene Stop");
         m_SceneState = SceneState::Edit;
         m_ActiveScene = m_EditorScene;
 
@@ -262,7 +266,6 @@ namespace Aph::Editor {
 
         m_ActiveScene->OnRuntimeEnd();
         m_RuntimeScene = nullptr;
-        EditorConsole::Log("Scene Stop");
     }
 
     void EditorLayer::OnScenePause() {
@@ -313,8 +316,7 @@ namespace Aph::Editor {
             if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
                 m_SceneHierarchyPanel.SetSelectedEntity(s_HoveredEntity);
         }
-        if(e.GetMouseButton() == Mouse::ButtonRight)
-        {
+        if (e.GetMouseButton() == Mouse::ButtonRight) {
             m_HasViewportEvent = true;
             Application::Get().GetWindow().DisableCursor();
         }
@@ -325,13 +327,6 @@ namespace Aph::Editor {
     // UI Element //
     ////////////////
 
-    void EditorLayer::DrawRectAroundWindow(const glm::vec4& color) {
-        ImVec2 windowMin = ImGui::GetWindowPos();
-        ImVec2 windowSize = ImGui::GetWindowSize();
-        ImVec2 windowMax = {windowMin.x + windowSize.x, windowMin.y + windowSize.y};
-        ImGui::GetForegroundDrawList()->AddRect(windowMin, windowMax, ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w)));
-    }
-
     void EditorLayer::DrawSceneHierarchy() {
         m_SceneHierarchyPanel.OnImGuiRender();
     }
@@ -341,8 +336,13 @@ namespace Aph::Editor {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         ImGui::Begin(Style::Title::Viewport.data());
 
-        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Pause)
-            DrawRectAroundWindow((const glm::vec4&) Style::Color::Foreground.at("Second"));
+        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Pause) {
+            auto color = (const glm::vec4&) Style::Color::Foreground.at("Second");
+            ImVec2 windowMin = ImGui::GetWindowPos();
+            ImVec2 windowSize = ImGui::GetWindowSize();
+            ImVec2 windowMax = {windowMin.x + windowSize.x, windowMin.y + windowSize.y};
+            ImGui::GetForegroundDrawList()->AddRect(windowMin, windowMax, ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w)));
+        }
 
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
@@ -353,7 +353,8 @@ namespace Aph::Editor {
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
-        Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportFocused && !m_ViewportHovered && !m_HasViewportEvent);
+
+        Application::Get().GetImGuiLayer()->SetBlockEvents(!m_ViewportFocused && !m_ViewportHovered && !m_HasViewportEvent);
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
@@ -364,8 +365,10 @@ namespace Aph::Editor {
                      ImVec2{0, 1}, ImVec2{1, 0});
 
         // Gizmos
-        Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-        if (selectedEntity && m_GizmoType != -1) {
+        auto selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+        if (selectedEntity && m_GizmoType != -1 &&
+            !Input::IsKeyPressed(Key::LeftAlt) &&
+            m_SceneState == SceneState::Edit) {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
 
@@ -413,15 +416,11 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::DrawConsole() {
-        ImGui::Begin(Style::Title::Console.data());
         EditorConsole::Draw();
-        ImGui::End();
     }
 
     void EditorLayer::DrawAssetBrowser() {
-        ImGui::Begin(Style::Title::Project.data());
         AssetBrowser::Draw();
-        ImGui::End();
     }
 
     void EditorLayer::DrawSettings() {
@@ -574,8 +573,8 @@ namespace Aph::Editor {
 
     Entity EditorLayer::s_HoveredEntity = {};
     std::string EditorLayer::GetHoveredComponentName() {
-        if (s_HoveredEntity) return s_HoveredEntity.GetComponent<TagComponent>().Tag;
-        else return "None";
+        return s_HoveredEntity ? s_HoveredEntity.GetComponent<TagComponent>().Tag
+                               : "None";
     }
 
 }// namespace Aph::Editor

@@ -15,7 +15,8 @@ namespace Aph {
         virtual ~Texture() = default;
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
-        virtual uint32_t GetRendererID() const = 0;
+        virtual intptr_t GetRendererID() const = 0;
+        virtual std::string GetName() const = 0;
 
         virtual void SetData(void* data, uint32_t size) = 0;
 
@@ -36,6 +37,7 @@ namespace Aph {
         static Ref<TextureCube> Create(const std::string& path);
 
         virtual uint32_t GetHDRRendererID() = 0;
+        virtual uint32_t GetIrradianceRendererID() = 0;
     };
 }// namespace Aph-Runtime
 

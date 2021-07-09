@@ -24,9 +24,12 @@
 // Renderer
 #include "Aphrodite/Renderer/Buffer.h"
 #include "Aphrodite/Renderer/Framebuffer.h"
+#include "Aphrodite/Renderer/Material.h"
+#include "Aphrodite/Renderer/Mesh.h"
 #include "Aphrodite/Renderer/RenderCommand.h"
 #include "Aphrodite/Renderer/Renderer.h"
 #include "Aphrodite/Renderer/Renderer2D.h"
+#include "Aphrodite/Renderer/SceneRenderer.h"
 #include "Aphrodite/Renderer/Shader.h"
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Renderer/VertexArray.h"
@@ -35,7 +38,7 @@
 #include "Aphrodite/Scene/Components.h"
 #include "Aphrodite/Scene/Entity.h"
 #include "Aphrodite/Scene/Scene.h"
-#include "Aphrodite/Scene/ScriptableEntity.h"
 #include "Aphrodite/Scene/SceneCamera.h"
+#include "Aphrodite/Scene/ScriptableEntity.h"
 
 #endif// APHRODITE_ENGINE_APHRODITE_H

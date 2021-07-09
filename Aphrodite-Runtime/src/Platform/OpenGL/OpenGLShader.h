@@ -21,6 +21,7 @@ namespace Aph {
         void Bind() const override;
         void UnBind() const override;
 
+        void SetBool(const std::string& name, bool value) override;
         void SetInt(const std::string& name, int value) override;
         void SetIntArray(const std::string& name, int* value, uint32_t count) override;
         void SetFloat(const std::string& name, float value) override;
@@ -28,6 +29,8 @@ namespace Aph {
         void SetFloat3(const std::string& name, const glm::vec3& value) override;
         void SetFloat4(const std::string& name, const glm::vec4& value) override;
         void SetMat4(const std::string& name, const glm::mat4& value) override;
+
+        void SetUniformBlock(const std::string& name, uint32_t blockIndex) override;
 
         const std::string &GetName() const override { return m_Name; }
 

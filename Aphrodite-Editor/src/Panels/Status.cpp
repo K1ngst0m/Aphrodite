@@ -65,7 +65,7 @@ namespace Aph::Editor {
                          ImGui::NextColumn();
 
                          // Frame Per Second
-                         ImGui::Text("FPS: %f", avg);
+                         ImGui::Text("FPS: %.2f", avg);
                          ImGui::SameLine(0, 70);
 //                         const float fps = (1.0f / avg) * 1000.0f;
 //                         ImGui::Text("Frame time (ms): %f", fps);

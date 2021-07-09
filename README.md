@@ -35,8 +35,8 @@ Until now this engine has been developed for the GNU/Linux OS only.
     
 * **Rendering**
   * Modern OpenGL setup, using Glad
-  * 2D Rendering pipeline
-  * Simplified API for drawing colored and textured quads
+  * 2D Rendering pipeline: Simplified API for drawing colored and textured quads, Draw call Batching
+  * 3D Rendering pipeline: Model Import, Lighting, IBL, IBR, PBR support
     
 * **Editor**
   * ImGui, Docking, Frambuffers and Viewport
@@ -90,7 +90,7 @@ Tested on Gentoo Base System, BSPWM
 * [IconFontCppHeaders](https://github.com/juliettef/IconFontCppHeaders)
 * [ImGuizmo](https://github.com/CedricGuillemet/ImGuizmo)
   
-<ins>*Set up:*</ins>
+<ins>*SetBlockEvents up:*</ins>
 
 - Ensure that all dependencies above are set up correctly
 - Clone repository and create build directory

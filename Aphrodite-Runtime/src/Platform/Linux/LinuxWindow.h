@@ -2,8 +2,8 @@
 // Created by npchitman on 5/31/21.
 //
 
-#ifndef Aphrodite_ENGINE_LINUXWINDOW_H
-#define Aphrodite_ENGINE_LINUXWINDOW_H
+#ifndef APHRODITE_ENGINE_LINUXWINDOW_H
+#define APHRODITE_ENGINE_LINUXWINDOW_H
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -25,6 +25,8 @@ namespace Aph {
         void SetEventCallback(const EventCallbackFn &callback) override { m_Data.EventCallback = callback; }
         void SetVSync(bool enabled) override;
         bool IsVSync() const override;
+        void EnableCursor() override;
+        void DisableCursor() override;
 
         void *GetNativeWindow() const override { return m_Window; }
         ContextInfo GetGraphicsContextInfo() const override { return m_Context->GetContextInfo(); }
@@ -49,4 +51,4 @@ namespace Aph {
     };
 }// namespace Aph
 
-#endif// Aphrodite_ENGINE_LINUXWINDOW_H
+#endif// APHRODITE_ENGINE_LINUXWINDOW_H

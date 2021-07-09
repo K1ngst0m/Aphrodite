@@ -111,39 +111,31 @@ namespace Aph {
 
     void UILayer::SetDarkThemeColors() {
 
-        // color style
-        const auto foreground_1 = ImVec4{0.8f, 0.6f, 0.53f, 1.0f};
-        const auto foreground_2 = ImVec4{0.406f, 0.738f, 0.687f, 1.0f};
-        const auto background_1 = ImVec4{0.079f, 0.115f, 0.134f, 1.0f};
-        const auto background_2 = ImVec4{0.406f, 0.738f, 0.687f, 1.0f};
-        const auto background_hovered = ImVec4{0.3f, 0.305f, 0.31f, 1.0f};
-        const auto background_active = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
-
         auto &colors = ImGui::GetStyle().Colors;
 
         // Text
-        colors[ImGuiCol_Text] = foreground_1;
+        colors[ImGuiCol_Text] = Style::Color::foreground_1;
 
         // Window
-        colors[ImGuiCol_WindowBg] = background_1;
+        colors[ImGuiCol_WindowBg] = Style::Color::background_1;
 
         // MenuBar
-        colors[ImGuiCol_MenuBarBg] = background_1;
+        colors[ImGuiCol_MenuBarBg] = Style::Color::background_1;
 
         // Headers
         colors[ImGuiCol_Header] = ImVec4{0.2f, 0.205f, 0.21f, 1.0f};
-        colors[ImGuiCol_HeaderHovered] = background_hovered;
-        colors[ImGuiCol_HeaderActive] = background_active;
+        colors[ImGuiCol_HeaderHovered] = Style::Color::background_hovered;
+        colors[ImGuiCol_HeaderActive] = Style::Color::background_active;
 
         // Buttons
         colors[ImGuiCol_Button] = ImVec4{0.2f, 0.205f, 0.21f, 1.0f};
-        colors[ImGuiCol_ButtonHovered] = background_hovered;
-        colors[ImGuiCol_ButtonActive] = background_active;
+        colors[ImGuiCol_ButtonHovered] = Style::Color::background_hovered;
+        colors[ImGuiCol_ButtonActive] = Style::Color::background_active;
 
         // Frame BG
         colors[ImGuiCol_FrameBg] = ImVec4{0.2f, 0.205f, 0.21f, 1.0f};
-        colors[ImGuiCol_FrameBgHovered] = background_hovered;
-        colors[ImGuiCol_FrameBgActive] = background_active;
+        colors[ImGuiCol_FrameBgHovered] = Style::Color::background_hovered;
+        colors[ImGuiCol_FrameBgActive] = Style::Color::background_active;
 
         // Tabs
         colors[ImGuiCol_Tab] = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
@@ -153,7 +145,7 @@ namespace Aph {
         colors[ImGuiCol_TabUnfocusedActive] = ImVec4{0.2f, 0.205f, 0.21f, 1.0f};
 
         // Title
-        colors[ImGuiCol_TitleBg] = background_1;
+        colors[ImGuiCol_TitleBg] = Style::Color::background_1;
         colors[ImGuiCol_TitleBgActive] = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
         colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
     }

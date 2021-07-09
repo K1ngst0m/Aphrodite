@@ -9,23 +9,26 @@
 
 #include <glm/glm.hpp>
 
-#include "Aphrodite/Renderer/RenderCommand.h"
 #include "Aphrodite/Renderer/Renderer.h"
 #include "Aphrodite/Renderer/Renderer2D.h"
+#include "Aphrodite/Renderer/SceneRenderer.h"
 #include "Components.h"
 #include "Entity.h"
 #include "pch.h"
 
 namespace Aph {
 
-    Scene::Scene() = default;
+    Scene::Scene() {
+        SceneRenderer::Init();
+    }
+
     Scene::~Scene() = default;
 
     template<typename T>
     static void CopyComponent(entt::registry& destRegistry, entt::registry& srcRegistry, const std::unordered_map<uint32_t, entt::entity>& entityMap) {
         auto components = srcRegistry.view<T>();
         for (auto srcEntity : components) {
-            entt::entity destEntity = entityMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
+            auto destEntity = entityMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
 
             auto& srcComponent = srcRegistry.get<T>(srcEntity);
             auto& destComponent = destRegistry.emplace<T>(destEntity, srcComponent);
@@ -37,7 +40,7 @@ namespace Aph {
         auto idComponents = m_Registry.view<IDComponent>();
         for (auto entity : idComponents) {
             auto uuid = m_Registry.get<IDComponent>(entity).ID;
-            Entity e = target->CreateEntityWithID(uuid);
+            auto e = target->CreateEntityWithID(uuid);
             enttMap[uuid] = static_cast<entt::entity>(e);
         }
 
@@ -45,14 +48,17 @@ namespace Aph {
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<LightComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<NativeScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<Rigidbody2DComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SkylightComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<BoxCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CircleCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
     }
 
     Entity Scene::CreateEntity(const std::string& name) {
-        Entity entity = {m_Registry.create(), this};
+        Entity entity {m_Registry.create(), this};
 
         // default id component
         auto id = static_cast<uint32_t>(entity);
@@ -64,6 +70,8 @@ namespace Aph {
         // default tag component
         auto& tag = entity.AddComponent<TagComponent>();
         tag.Tag = name.empty() ? "Entity" : name;
+
+        m_EntityMap[idComponent.ID] = static_cast<entt::entity>(entity);
 
         return entity;
     }
@@ -81,6 +89,14 @@ namespace Aph {
         m_Registry.destroy(static_cast<entt::entity>(entity));
     }
 
+    bool Scene::HasEntity(Entity entity) {
+        return HasEntity(static_cast<uint32_t>(entity));
+    }
+
+    bool Scene::HasEntity(uint32_t entityID) {
+        return m_EntityMap.find(entityID) != m_EntityMap.end();
+    }
+
     void Scene::OnViewportResize(uint32_t width, uint32_t height) {
         m_ViewportHeight = height;
         m_ViewportWidth = width;
@@ -93,13 +109,9 @@ namespace Aph {
         }
     }
 
-    template<typename T>
-    void Scene::OnComponentAdded(Entity entity, T& component) {
-        APH_ASSERT(false);
-    }
 
     void Scene::OnUpdateRuntime(Timestep ts) {
-
+        // Update Scripts
         {
             m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc) {
                 if (!nsc.Instance) {
@@ -116,6 +128,7 @@ namespace Aph {
         // Renderer
         Camera* mainCamera = nullptr;
         glm::mat4 cameraTransform;
+        glm::vec3 cameraPosition;
         {
             auto view = m_Registry.view<TransformComponent, CameraComponent>();
             for (auto entity : view) {
@@ -124,6 +137,7 @@ namespace Aph {
                 if (camera.Primary) {
                     mainCamera = &camera.Camera;
                     cameraTransform = transform.GetTransform();
+                    cameraPosition = transform.Translation;
                     break;
                 }
             }
@@ -132,24 +146,46 @@ namespace Aph {
         if (mainCamera) {
 
             // 3D==============================================================
-            Renderer::BeginScene(*mainCamera);
+            Renderer::BeginScene(*mainCamera, cameraTransform);
 
             Ref<TextureCube> textureCube;
             {
                 auto view = m_Registry.view<SkylightComponent>();
-                for (auto entity : view)
-                {
+                for (auto entity : view) {
                     auto skylight = view.get<SkylightComponent>(entity);
                     if (skylight.Texture)
                         textureCube = skylight.Texture;
                 }
             }
-            if(textureCube)
-                Renderer::DrawSkybox(textureCube, *mainCamera);
+            if (textureCube)
+                Renderer::DrawSkybox(textureCube, *mainCamera, cameraTransform);
 
             Renderer::EndScene();
             // ================================================================
 
+            std::vector<Entity> lights;
+            auto view = m_Registry.view<IDComponent, TransformComponent, LightComponent>();
+            for (auto entity : view) {
+                auto idComponent = view.get<IDComponent>(entity);
+                lights.emplace_back(m_EntityMap.at(idComponent.ID), this);
+            }
+
+            SceneRenderer::BeginScene(*mainCamera, cameraTransform, cameraPosition, lights);
+
+            // Bind irradiance map before mesh drawing.
+            if (textureCube)
+                textureCube->Bind(1);
+            {
+                auto view = m_Registry.view<TransformComponent, MeshComponent>();
+                for (auto entity : view) {
+                    auto [transform, mesh] = view.get<TransformComponent, MeshComponent>(entity);
+                    if (mesh.mesh) {
+                        SceneRenderer::SubmitMesh(mesh.mesh, transform.GetTransform());
+                    }
+                }
+            }
+            SceneRenderer::EndScene();
+            // ================================================================
 
             // 2D==============================================================
             Renderer2D::BeginScene(*mainCamera, cameraTransform);
@@ -158,7 +194,7 @@ namespace Aph {
                 for (auto entity : view) {
                     auto [transform, rigidbody2d] = view.get<TransformComponent, Rigidbody2DComponent>(entity);
 
-                    rigidbody2d.Body2D->SetRuntimeTransform(transform.Translation, transform.Rotation.z);
+                    rigidbody2d.Body2D->SetTransform(transform.Translation, transform.Rotation.z);
                 }
 
                 Physics2D::OnUpdate();
@@ -166,10 +202,10 @@ namespace Aph {
                 for (auto entity : view) {
                     auto [transform, rigidbody2d] = view.get<TransformComponent, Rigidbody2DComponent>(entity);
 
-                    glm::vec2 position = rigidbody2d.Body2D->GetRuntimePosition();
+                    glm::vec2 position = rigidbody2d.Body2D->GetPosition();
                     transform.Translation = glm::vec3(position.x, position.y, transform.Translation.z);
 
-                    transform.Rotation = glm::vec3(transform.Rotation.x, transform.Rotation.y, rigidbody2d.Body2D->GetRuntimeRotation());
+                    transform.Rotation = glm::vec3(transform.Rotation.x, transform.Rotation.y, rigidbody2d.Body2D->GetRotation());
                 }
             }
 
@@ -191,33 +227,71 @@ namespace Aph {
 
     void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera) {
         // 3D==============================================================
+
+        // Render SkyBox
         Renderer::BeginScene(camera);
         Ref<TextureCube> textureCube;
         {
             auto view = m_Registry.view<SkylightComponent>();
-            for (auto entity : view)
-            {
+            for (auto entity : view) {
                 auto skylight = view.get<SkylightComponent>(entity);
                 if (skylight.Texture)
                     textureCube = skylight.Texture;
             }
         }
-        if(textureCube)
+        if (textureCube)
             Renderer::DrawSkybox(textureCube, camera);
         Renderer::EndScene();
+
+        std::vector<Entity> lights;
+        auto view = m_Registry.view<IDComponent, TransformComponent, LightComponent>();
+        for (auto entity : view) {
+            auto idComponent = view.get<IDComponent>(entity);
+            lights.emplace_back(m_EntityMap.at(idComponent.ID), this);
+        }
+
+        SceneRenderer::BeginScene(camera, lights);
+        // Bind irradiance map before mesh drawing.
+        if (textureCube)
+            textureCube->Bind(1);
+        {
+            auto view = m_Registry.view<TransformComponent, MeshComponent>();
+            for (auto entity : view) {
+                auto [transform, mesh] = view.get<TransformComponent, MeshComponent>(entity);
+                if (mesh.mesh) {
+                    SceneRenderer::SubmitMesh(mesh.mesh, transform.GetTransform());
+                }
+            }
+        }
+        SceneRenderer::EndScene();
         // ================================================================
 
 
         // 2D==============================================================
         Renderer2D::BeginScene(camera);
-        auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
-        for (auto entity : view) {
-            auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
-            Renderer2D::DrawQuad(static_cast<int>(entity), transform.GetTransform(), sprite.Texture, sprite.Color, sprite.TilingFactor);
+        {
+            auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
+            for (auto entity : view) {
+                auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
+                Renderer2D::DrawQuad(static_cast<int>(entity), transform.GetTransform(), sprite.Texture, sprite.Color, sprite.TilingFactor);
+            }
+            Renderer2D::EndScene();
         }
+
+
+        // Debug Draw
+        {
+            const glm::vec4 debugColor(0.5686f, 0.9568f, 0.5450981f, 0.25f);
+            auto view = m_Registry.view<TransformComponent, BoxCollider2DComponent>();
+            for (auto entity : view) {
+                auto [transform, boxCollider2D] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
+                glm::mat4 trans = transform.GetTransform() * glm::translate(glm::mat4(1.0f), glm::vec3(boxCollider2D.Offset.x, boxCollider2D.Offset.y, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(boxCollider2D.Size.x, boxCollider2D.Size.y, 1.0f));
+                Renderer2D::DrawQuad((uint32_t) entity, trans, debugColor);
+            }
+        }
+
         Renderer2D::EndScene();
         // ================================================================
-
     }
 
     int Scene::GetPixelDataAtPoint(const int x, const int y) {
@@ -239,11 +313,20 @@ namespace Aph {
 
     void Scene::OnRuntimeStart() {
         Physics2D::Init();
+
         {
             auto view = m_Registry.view<TransformComponent, Rigidbody2DComponent>();
             for (auto entity : view) {
                 auto [transform, rigidbody2d] = view.get<TransformComponent, Rigidbody2DComponent>(entity);
                 rigidbody2d.StartSimulation(transform.Translation, transform.Rotation.z);
+            }
+        }
+
+        {
+            auto view = m_Registry.view<TransformComponent, BoxCollider2DComponent>();
+            for (auto entity : view) {
+                auto [transform, boxCollider2D] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
+                boxCollider2D.Scale = transform.Scale;
             }
         }
 
@@ -254,10 +337,28 @@ namespace Aph {
                 boxCollider2d.StartSimulation(rigidbody2d.Body2D);
             }
         }
+
+        {
+            auto view = m_Registry.view<Rigidbody2DComponent, CircleCollider2DComponent>();
+            for (auto entity : view) {
+                auto [rigidbody2d, circleCollider2d] = view.get<Rigidbody2DComponent, CircleCollider2DComponent>(entity);
+                circleCollider2d.StartSimulation(rigidbody2d.Body2D);
+            }
+        }
     }
 
     void Scene::OnRuntimeEnd() {
         // TODO: runtime destroy
+    }
+
+
+    ////////////////////////////////////////////////
+    // OnComponentAdd specialization /////////////////////
+    ////////////////////////////////////////////////
+
+    template<typename T>
+    void Scene::OnComponentAdded(Entity entity, T& component) {
+        APH_ASSERT(false);
     }
 
     template<>
@@ -295,7 +396,18 @@ namespace Aph {
     }
 
     template<>
-    void Scene::OnComponentAdded<SkylightComponent>(Entity entity, SkylightComponent& component)
-    {
+    void Scene::OnComponentAdded<SkylightComponent>(Entity entity, SkylightComponent& component) {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<LightComponent>(Entity entity, LightComponent& component) {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<MeshComponent>(Entity entity, MeshComponent& component) {
+    }
+
+    template<>
+    void Scene::OnComponentAdded<CircleCollider2DComponent>(Entity entity, CircleCollider2DComponent& component) {
     }
 }// namespace Aph

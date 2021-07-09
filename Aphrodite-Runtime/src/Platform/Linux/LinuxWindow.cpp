@@ -171,4 +171,11 @@ namespace Aph {
 
     bool LinuxWindow::IsVSync() const { return m_Data.VSync; }
 
+    void LinuxWindow::EnableCursor() {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+    void LinuxWindow::DisableCursor() {
+        glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
+
 }// namespace Aph

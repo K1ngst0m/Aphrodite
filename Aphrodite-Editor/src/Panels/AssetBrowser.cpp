@@ -27,6 +27,7 @@ namespace Aph::Editor {
     }
 
     void AssetBrowser::Draw() {
+        ImGui::Begin(Style::Title::Project.data());
         ImGui::Columns(2, "Project", true);
 
         DrawLeftProjectPanel();

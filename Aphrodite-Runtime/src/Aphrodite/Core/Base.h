@@ -47,16 +47,33 @@ namespace Aph {
             const static std::string_view Project = "\uF07B Project";
             const static std::string_view Console = "\uF120 Console";
             const static std::string_view RenderInfo = "\uF05A Render Info";
-            const static std::string_view Renderer2DStatistics = "\uF05A Renderer2D StatusData";
+            const static std::string_view Renderer2DStatistics = "\uF05A 2D Render Stats";
+            const static std::string_view Settings = "\uF0AD Settings";
         }// namespace Title
 
         namespace Color {
+
+            // color style
+            const auto foreground_1 = ImVec4{0.8f, 0.6f, 0.53f, 1.0f};
+            const auto foreground_2 = ImVec4{0.406f, 0.738f, 0.687f, 1.0f};
+
+            const auto background_1 = ImVec4{0.079f, 0.115f, 0.134f, 1.0f};
+            const auto background_2 = ImVec4{0.406f, 0.738f, 0.687f, 1.0f};
+
+            const auto background_hovered = ImVec4{0.3f, 0.305f, 0.31f, 1.0f};
+            const auto background_active = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
+
             const glm::vec4 Clear = {0.049f, 0.085f, 0.104f, 1.0f};
 
             struct Vec3Color{
                 ImVec4 X;
                 ImVec4 Y;
                 ImVec4 Z;
+            };
+
+            const std::unordered_map<const char*, ImVec4> Background = {
+                    {"Primary", {0.406f, 0.738f, 0.687f, 1.0f}},
+                    {"Viewport", {0.406f, 0.738f, 0.687f, 1.0f}}
             };
 
             const std::unordered_map<const char*, ImVec4> Foreground = {

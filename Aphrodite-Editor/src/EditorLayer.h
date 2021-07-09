@@ -53,8 +53,6 @@ namespace Aph::Editor {
         void OnSceneStop();
         void OnScenePause();
 
-        void DrawRectAroundWindow(const glm::vec4& color);
-
     private:
         enum class SceneState {
             Edit = 0,

@@ -10,10 +10,12 @@
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <Aphrodite/Physics/BoxCollider2D.h>
+#include <Aphrodite/Physics/CircleCollider2D.h>
 #include <Aphrodite/Physics/Rigidbody2D.h>
 
 #include <glm/gtx/quaternion.hpp>
 
+#include "Aphrodite/Renderer/Mesh.h"
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Scene/SceneCamera.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
@@ -56,9 +58,54 @@ namespace Aph {
         }
     };
 
+    struct MeshComponent {
+        Ref<Mesh> mesh;
+        explicit operator Ref<Mesh>&() { return mesh; }
+
+        enum class Geometry {
+            Cube = 0,
+            Sphere,
+            Plane,
+            Quad,
+            Cone,
+            Cylinder
+        };
+
+        MeshComponent() = default;
+        MeshComponent(int entityID, const std::string& meshPath) {
+            mesh = CreateRef<Mesh>(entityID, meshPath);
+        }
+        MeshComponent(int entityID, Geometry geometry) {
+            switch (geometry) {
+                case Geometry::Cube:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cube.fbx");
+                    break;
+                case Geometry::Sphere:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/sphere.fbx");
+                    break;
+                case Geometry::Plane:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/plane.fbx");
+                    break;
+                case Geometry::Quad:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/quad.fbx");
+                    break;
+                case Geometry::Cone:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cone.fbx");
+                    break;
+                case Geometry::Cylinder:
+                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cylinder.fbx");
+                    break;
+            }
+        }
+
+        void Set(int entityID, const std::string& filepath) {
+            mesh = CreateRef<Mesh>(entityID, filepath);
+        }
+    };
+
     struct Rigidbody2DComponent {
         Rigidbody2D::Rigidbody2DSpecification Specification;
-        Ref<Rigidbody2D> Body2D;
+        Ref<Rigidbody2D> Body2D{};
 
         Rigidbody2DComponent() = default;
         Rigidbody2DComponent(const Rigidbody2DComponent&) = default;
@@ -68,12 +115,30 @@ namespace Aph {
         }
 
         void ValidateSpecification() {
-            if (Body2D)
-                Body2D->SetSpecification(Specification);
+            if (!Body2D)
+                return;
+
+            const auto spec = Body2D->GetSpecification();
+
+            if (spec->Type != Specification.Type)
+                Body2D->SetType(Specification.Type);
+            if (spec->LinearDamping != Specification.LinearDamping)
+                Body2D->SetLinearDamping(Specification.LinearDamping);
+            if (spec->AngularDamping != Specification.AngularDamping)
+                Body2D->SetAngularDamping(Specification.AngularDamping);
+            if (spec->GravityScale != Specification.GravityScale)
+                Body2D->SetGravityScale(Specification.GravityScale);
+            if (spec->CollisionDetection != Specification.CollisionDetection)
+                Body2D->SetCollisionDetection(Specification.CollisionDetection);
+            if (spec->SleepingMode != Specification.SleepingMode)
+                Body2D->SetSleepingMode(Specification.SleepingMode);
+            if (spec->FreezeRotationZ != Specification.FreezeRotationZ)
+                Body2D->SetFreezeRotation(Specification.FreezeRotationZ);
         }
     };
 
     struct BoxCollider2DComponent {
+        glm::vec2 Scale{1.0f, 1.0f};
         glm::vec2 Size{1.0f, 1.0f};
         glm::vec2 Offset{0.0f, 0.0f};
         bool IsTrigger = false;
@@ -84,12 +149,40 @@ namespace Aph {
         BoxCollider2DComponent(const BoxCollider2DComponent&) = default;
 
         void StartSimulation(Ref<Rigidbody2D>& rigidbody2D) {
-            Collider2D = CreateRef<BoxCollider2D>(rigidbody2D, Size, Offset, IsTrigger);
+            Collider2D = CreateRef<BoxCollider2D>(rigidbody2D, Size * Scale, Offset, IsTrigger);
         }
 
         void ValidateSpecification() {
-            if (Collider2D)
+            if (!Collider2D)
+                return;
+
+            if (Size * Scale != Collider2D->GetSize() || Offset != Collider2D->GetOffset() || IsTrigger != Collider2D->IsTrigger())
                 Collider2D->SetSpecification(Size, Offset, IsTrigger);
+
+
+        }
+    };
+
+    struct CircleCollider2DComponent {
+        float Radius = 0.5f;
+        glm::vec2 Offset{0.0f, 0.0f};
+        bool IsTrigger = false;
+
+        Ref<CircleCollider2D> Collider2D;
+
+        CircleCollider2DComponent() = default;
+        CircleCollider2DComponent(const CircleCollider2DComponent&) = default;
+
+        void StartSimulation(Ref<Rigidbody2D>& rigidbody2D) {
+            Collider2D = CreateRef<CircleCollider2D>(rigidbody2D, Radius, Offset, IsTrigger);
+        }
+
+        void ValidateSpecification() {
+            if (!Collider2D)
+                return;
+
+            if (Radius != Collider2D->GetRadius() || Offset != Collider2D->GetOffset() || IsTrigger != Collider2D->IsTrigger())
+                Collider2D->SetSpecification(Radius, Offset, IsTrigger);
         }
     };
 
@@ -111,6 +204,30 @@ namespace Aph {
         void RemoveTexture() {
             Texture = nullptr;
             TextureFilepath = "";
+        }
+    };
+
+    struct LightComponent {
+        enum class LightType {
+            Directional = 0,
+            Point,
+
+            // Not Implemented in shader yet!
+            Spot,
+            Area
+        };
+
+        LightType Type = LightType::Directional;
+        glm::vec3 Color = glm::vec3(1.0f);
+        float Intensity = 1.0f;
+
+        float Constant = 1.0f;
+        float Linear = 0.09f;
+        float Quadratic = 0.032f;
+
+        LightComponent() = default;
+        explicit LightComponent(LightType type)
+            : Type(type) {
         }
     };
 

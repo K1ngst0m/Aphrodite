@@ -4,14 +4,13 @@
 
 #include "Aphrodite/Renderer/RenderCommand.h"
 #include "Aphrodite/Renderer/Shader.h"
-#include "Aphrodite/Renderer/UniformBuffer.h"
 #include "Aphrodite/Renderer/VertexArray.h"
 #include "pch.h"
 
 namespace Aph {
 
     struct QuadVertex {
-        glm::vec3 Position;
+        glm::vec3 Position{};
         glm::vec4 Color{};
         glm::vec2 TexCoord{};
         float TexIndex{};
@@ -99,15 +98,13 @@ namespace Aph {
         s_Data.TextureShader->Bind();
         s_Data.TextureShader->SetIntArray("u_Textures", samplers, Aph::Renderer2DData::MaxTextureSlots);
 
-        // Set all texture slots to 0
+        // SetBlockEvents all texture slots to 0
         s_Data.TextureSlots[0] = s_Data.WhiteTexture;
 
         s_Data.QuadVertexPositions[0] = {-0.5f, -0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[2] = {0.5f, 0.5f, 0.0f, 1.0f};
         s_Data.QuadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
-
-        s_Data.CameraUniformBuffer = UniformBuffer::Create(sizeof(Renderer2DData::CameraData), 0);
     }
 
     void Renderer2D::Shutdown() {
@@ -129,8 +126,10 @@ namespace Aph {
     void Renderer2D::BeginScene(const Camera& camera, const glm::mat4& transform) {
         APH_PROFILE_FUNCTION();
 
-        s_Data.CameraBuffer.ViewProjection = camera.GetProjection() * glm::inverse(transform);
-        s_Data.CameraUniformBuffer->SetData(&s_Data.CameraBuffer, sizeof(Renderer2DData::CameraData), 0);
+        auto viewProj = camera.GetProjection() * glm::inverse(transform);
+
+        s_Data.TextureShader->Bind();
+        s_Data.TextureShader->SetMat4("u_ViewProjection", viewProj);
 
         StartBatch();
     }

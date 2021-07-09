@@ -41,6 +41,22 @@ namespace Aph {
         uint32_t m_RendererID{};
         uint32_t m_Count;
     };
+
+    class OpenGLUniformBuffer : public UniformBuffer {
+    public:
+        OpenGLUniformBuffer();
+        ~OpenGLUniformBuffer() override;
+
+        void Bind() const override;
+        void Unbind() const override;
+
+        void SetData(void* data, uint32_t offset, uint32_t size) override;
+        void SetLayout(const BufferLayout& layout, uint32_t blockIndex, uint32_t count) override;
+
+    private:
+        uint32_t m_RendererID{};
+        BufferLayout m_Layout;
+    };
 }// namespace Aph
 
 #endif// Aphrodite_ENGINE_OPENGLBUFFER_H

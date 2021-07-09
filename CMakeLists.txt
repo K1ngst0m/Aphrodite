@@ -27,13 +27,14 @@ include_directories(${3rdparty_dir}/imgui)
 include_directories(${3rdparty_dir}/glm)
 include_directories(${3rdparty_dir}/stb)
 include_directories(${3rdparty_dir}/yaml-cpp)
+include_directories(${3rdparty_dir}/assimp/include)
 include_directories(${3rdparty_dir}/ImGuizmo)
 
 # lib
 set(opengl_lib glad glfw GL)
 set(vulkan shaderc_shared spirv-cross-core spirv-cross-glsl SPIRV-Tools)
 set(ui_lib imgui imGuizmo)
-set(other_lib box2d spdlog::spdlog yaml-cpp entt)
+set(other_lib box2d spdlog::spdlog yaml-cpp entt assimp)
 link_directories(${CMAKE_BINARY_DIR}/Libs)
 
 project(Aphrodite)

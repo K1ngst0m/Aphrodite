@@ -14,14 +14,18 @@ namespace Aph::Editor {
 
     void Settings::OnImGuiRender() {
 
-        ImGui::Begin("Settings");
+        ImGui::Begin(Style::Title::Settings.data());
+
+        ImGui::Text("Physics Property");
+
+        ImGui::Separator();
 
         UIDrawer::DrawGrid("Gravity2D", [] {
             UIDrawer::Property("Gravity 2D", Physics2D::Gravity);
         });
 
         UIDrawer::DrawGrid("2DPhysicsTimestep", [] {
-          UIDrawer::Property("2D Physics Timestep", Physics2D::Timestep, 0.1f, 0.001f, "%.4f");
+            UIDrawer::Property("2D Physics Timestep", Physics2D::Timestep, 0.1f, 0.001f, "%.4f");
         });
 
         UIDrawer::DrawGrid("VelocityIterations", [] {
@@ -31,6 +35,9 @@ namespace Aph::Editor {
         UIDrawer::DrawGrid("PositionIterations", [] {
             UIDrawer::Property("Position Iterations", Physics2D::PositionIterations, 1, 50);
         });
+
+        ImGui::Text("Other");
+        ImGui::Separator();
 
         ImGui::End();
     }

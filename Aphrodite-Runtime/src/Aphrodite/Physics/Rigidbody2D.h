@@ -7,7 +7,6 @@
 
 #include <box2d/b2_body.h>
 #include <box2d/b2_fixture.h>
-#include <box2d/b2_world.h>
 
 #include <glm/glm.hpp>
 
@@ -45,86 +44,59 @@ namespace Aph {
         Rigidbody2D(const glm::vec2& position, float rotation, const Rigidbody2DSpecification& specification);
         ~Rigidbody2D() = default;
 
-        inline glm::vec2& GetRuntimePosition() const {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
-            return (glm::vec2&) m_Body2D->GetPosition();
-        }
-        inline float GetRuntimeRotation() const {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
-            return m_Body2D->GetAngle();
-        }
-        void SetRuntimeTransform(const glm::vec2& position, float rotation);
-
 
         inline Ref<Rigidbody2DSpecification> GetSpecification() const { return m_Specification; }
         void SetSpecification(const Rigidbody2DSpecification& specification);
 
-        // Set properties
-        inline void SetType(Rigidbody2DType type) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
-            m_Body2D->SetType((b2BodyType) type);
-        }
-        inline void SetLinearDamping(float value) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
+    public:
+        inline glm::vec2& GetPosition() const { return (glm::vec2&) m_Body2D->GetPosition(); }
+        inline float GetRotation() const { return m_Body2D->GetAngle(); }
+        inline float GetMass() const { return m_Body2D->GetMass(); }
+        inline glm::vec2& GetVelocity() const { return (glm::vec2&) m_Body2D->GetLinearVelocity(); }
+        inline float GetAngularVelocity() const { return m_Body2D->GetAngularVelocity(); }
+        inline float GetInertia() const { return m_Body2D->GetInertia(); }
+        inline glm::vec2& GetLocalCenterOfMass() const { return (glm::vec2&) m_Body2D->GetLocalCenter(); }
+        inline glm::vec2& GetWorldCenterOfMass() const { return (glm::vec2&) m_Body2D->GetWorldCenter(); }
+        inline bool IsAwake() const { return m_Body2D->IsAwake(); }
+
+        void SetTransform(const glm::vec2& position, const float rotation) const { m_Body2D->SetTransform((b2Vec2&) position, rotation); }
+
+        void SetType(Rigidbody2DType type) const;
+        void SetMass(float value) const;
+
+        inline void SetLinearDamping(const float value) const {
+            m_Specification->LinearDamping = value;
             m_Body2D->SetLinearDamping(value);
         }
-        inline void SetAngularDamping(float value) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
+        inline void SetAngularDamping(const float value) const {
+            m_Specification->AngularDamping = value;
             m_Body2D->SetAngularDamping(value);
         }
-        inline void SetGravityScale(float value) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
+        inline void SetGravityScale(const float value) const {
+            m_Specification->GravityScale = value;
             m_Body2D->SetGravityScale(value);
         }
-        inline void SetCollisionDetection(CollisionDetectionType type) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
-
-            switch (type) {
-                case CollisionDetectionType::Discrete: {
-                    m_Body2D->SetBullet(false);
-                    break;
-                }
-                case CollisionDetectionType::Continuous: {
-                    m_Body2D->SetBullet(true);
-                    break;
-                }
-            }
+        void SetCollisionDetection(const CollisionDetectionType type) const {
+            m_Specification->CollisionDetection = type;
+            m_Body2D->SetBullet(type == CollisionDetectionType::Continuous ? true : false);
         }
-        inline void SetSleepingMode(SleepType type) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
 
-            switch (type) {
-                case SleepType::NeverSleep: {
-                    m_Body2D->SetSleepingAllowed(false);
-                    m_Body2D->SetAwake(true);
-                    break;
-                }
-                case SleepType::StartAsleep: {
-                    m_Body2D->SetSleepingAllowed(true);
-                    m_Body2D->SetAwake(false);
-                    break;
-                }
-                case SleepType::StartAwake: {
-                    m_Body2D->SetSleepingAllowed(true);
-                    m_Body2D->SetAwake(true);
-                    break;
-                }
-            }
-        }
-        inline void SetFreezeRotation(bool flag) {
-            APH_CORE_ASSERT(m_Body2D, "Body2D is not set!");
+        void SetSleepingMode(SleepType type) const;
+
+        inline void SetFreezeRotation(const bool flag) const {
+            m_Specification->FreezeRotationZ = flag;
             m_Body2D->SetFixedRotation(flag);
         }
 
-    private:
-        b2Vec2 m_Position;
-        float m_Rotation;
+        inline void ResetMassData() const { m_Body2D->ResetMassData(); }
 
+    private:
         Ref<Rigidbody2DSpecification> m_Specification;
 
         b2Body* m_Body2D{};
 
         friend class BoxCollider2D;
+        friend class CircleCollider2D;
     };
 }// namespace Aph
 

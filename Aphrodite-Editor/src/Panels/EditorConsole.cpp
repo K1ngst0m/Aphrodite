@@ -17,6 +17,7 @@ namespace Aph::Editor {
     static bool s_ShowErrorMessages = true;
 
     void EditorConsole::Draw() {
+        ImGui::Begin(Style::Title::Console.data());
         const ImVec2 consoleButtonSize = {60.0f, 35.0f};
 
         if (ImGui::Button("Clear", consoleButtonSize)) {
@@ -53,6 +54,8 @@ namespace Aph::Editor {
             ImGui::Separator();
         }
         ImGui::EndChild();
+        ImGui::End();
+        ImGui::End();
     }
 
     void EditorConsole::Clear() {
