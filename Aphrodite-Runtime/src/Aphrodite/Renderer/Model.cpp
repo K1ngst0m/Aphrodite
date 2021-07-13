@@ -2,7 +2,7 @@
 // Created by npchitman on 7/7/21.
 //
 
-#include "Mesh.h"
+#include "Model.h"
 
 #include <assimp/postprocess.h>
 
@@ -16,14 +16,14 @@ namespace Aph {
 
     std::vector<Ref<Texture2D>> s_TextureCache;
 
-    Mesh::Mesh(int entityID, const std::string& filepath) {
+    Model::Model(int entityID, const std::string& filepath) {
         LoadModel(entityID, filepath);
     }
 
-    void Mesh::LoadModel(int entityID, const std::string& path) {
+    void Model::LoadModel(int entityID, const std::string& path) {
         Assimp::Importer importer;
 
-        const uint32_t meshImportFlags = aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals | aiProcess_OptimizeMeshes | aiProcess_ValidateDataStructure;
+        const auto meshImportFlags = aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals | aiProcess_OptimizeMeshes | aiProcess_ValidateDataStructure;
 
         const aiScene* scene = importer.ReadFile(path, meshImportFlags);
 
@@ -37,17 +37,41 @@ namespace Aph {
         ProcessNode(entityID, scene->mRootNode, scene);
     }
 
-    void Mesh::ProcessNode(int entityID, aiNode* node, const aiScene* scene) {
+    void Model::ProcessNode(int entityID, aiNode* node, const aiScene* scene) {
         for (uint32_t i = 0; i < node->mNumMeshes; i++) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-            m_Submeshes.push_back(LoadSubmesh(entityID, mesh, scene));
+            m_Meshes.push_back(LoadMesh(entityID, mesh, scene));
         }
 
-        for (uint32_t i = 0; i < node->mNumChildren; i++)
+        for (uint32_t i = 0; i < node->mNumChildren; i++) {
             ProcessNode(entityID, node->mChildren[i], scene);
+        }
     }
 
-    Submesh Mesh::LoadSubmesh(int entityID, aiMesh* mesh, const aiScene* scene) {
+    Mesh::Mesh(const std::vector<Vertex>& vertices, std::vector<uint32_t> indices, std::vector<Ref<Texture2D>> textures)
+        : Vertices(vertices),
+          Indices(std::move(indices)),
+          Textures(std::move(textures)) {
+        meshVertexArray = VertexArray::Create();
+        meshVertexArray->Bind();
+
+        Ref<VertexBuffer> buffer = VertexBuffer::Create((float*) Vertices.data(), vertices.size() * sizeof(Vertex));
+        buffer->Bind();
+
+        buffer->SetLayout({
+                {ShaderDataType::Float3, "a_Position"},
+                {ShaderDataType::Float2, "a_TexCoord"},
+                {ShaderDataType::Float3, "a_Normal"},
+                {ShaderDataType::Int, "a_EntityID"},
+        });
+
+        Ref<IndexBuffer> indexBuffer = IndexBuffer::Create(Indices.data(), Indices.size());
+
+        meshVertexArray->AddVertexBuffer(buffer);
+        meshVertexArray->SetIndexBuffer(indexBuffer);
+    }
+
+    Mesh Model::LoadMesh(int entityID, aiMesh* mesh, const aiScene* scene) {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
         std::vector<Ref<Texture2D>> textures;
@@ -56,7 +80,7 @@ namespace Aph {
         aabb.Max = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
 
         for (size_t i = 0; i < mesh->mNumVertices; ++i) {
-            Vertex vertex;
+            Vertex vertex{};
 
             glm::vec3 tempVector;
             tempVector.x = mesh->mVertices[i].x;
@@ -97,7 +121,7 @@ namespace Aph {
         }
 
         // TODO default to pbr as the standard material
-        Ref<MaterialInstance> material = MaterialInstance::Create(MaterialInstance::Type::PBR);
+        auto material = MaterialInstance::Create(MaterialInstance::Type::PBR);
         material->Name = mesh->mName.C_Str();
         if (mesh->mMaterialIndex >= 0) {
             aiMaterial* meshMaterial = scene->mMaterials[mesh->mMaterialIndex];
@@ -107,75 +131,72 @@ namespace Aph {
             auto mat = std::dynamic_pointer_cast<PbrMaterial>(material);
 
             {// Diffuse
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_DIFFUSE);
-                if (textures.size() > 0) {
-                    mat->AlbedoMap = textures.at(0);
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_DIFFUSE);
+                if (!texture_list.empty()) {
+                    mat->AlbedoMap = texture_list.at(0);
                     mat->UseAlbedoMap = true;
                 }
             }
 
             {// Emmissive
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_EMISSIVE);
-                if (textures.size() > 0) {
-                    mat->EmissiveMap = textures.at(0);
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_EMISSIVE);
+                if (!texture_list.empty()) {
+                    mat->EmissiveMap = texture_list.at(0);
                     mat->UseEmissiveMap = true;
                 }
             }
 
             {// Lightmap (Ambient Occlusion)
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_LIGHTMAP);
-                if (textures.size() > 0) {
-                    mat->AmbientOcclusionMap = textures.at(0);
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_LIGHTMAP);
+                if (!texture_list.empty()) {
+                    mat->AmbientOcclusionMap = texture_list.at(0);
                     mat->UseOcclusionMap = true;
                 }
             }
 
             {// Normal
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_NORMALS);
-                if (textures.size() > 0) {
-                    mat->NormalMap = textures.at(0);
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_NORMALS);
+                if (!texture_list.empty()) {
+                    mat->NormalMap = texture_list.at(0);
                     mat->UseNormalMap = true;
                 }
             }
 
             {// Reflection
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_REFLECTION);
-                if (textures.size() > 0) {
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_REFLECTION);
+                if (!texture_list.empty()) {
                 }
             }
 
             {// Specular
-                std::vector<Ref<Texture2D>> textures =
-                        LoadMaterialTextures(meshMaterial, aiTextureType_SPECULAR);
+                auto texture_list = LoadMaterialTextures(meshMaterial, aiTextureType_SPECULAR);
+                if (!texture_list.empty()) {
+                }
             }
-        } else {
+        }
+        else {
             APH_CORE_WARN("No Textures associated with {0}", m_Name);
         }
 
         m_Materials.emplace_back(material);
-        Submesh submesh(vertices, indices, textures);
+        Mesh submesh(vertices, indices, textures);
         submesh.BoundingBox = aabb;
 
         return submesh;
     }
 
-    std::vector<Ref<Texture2D>> Mesh::LoadMaterialTextures(aiMaterial* mat, aiTextureType type) {
+    std::vector<Ref<Texture2D>> Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type) {
         std::vector<Ref<Texture2D>> textures;
 
         Ref<Texture2D> texture;
         for (size_t i = 0; i < mat->GetTextureCount(type); ++i) {
             aiString str;
             mat->GetTexture(type, i, &str);
-            std::string path(m_Directory + "\\" + str.C_Str());
+            std::string path(m_Directory + '/' + str.C_Str());
 
             bool inCache = false;
-            for (auto tex : s_TextureCache) {
-                if (path.compare(tex->GetName()) == 0) {
+            for (const auto& tex : s_TextureCache) {
+                if (path == tex->GetName()) {
                     inCache = true;
                     texture = tex;
                     break;

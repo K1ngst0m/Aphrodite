@@ -17,7 +17,7 @@ namespace Aph {
     class Entity;
     class EditorCamera;
     class MaterialInstance;
-    class Mesh;
+    class Model;
     class Scene;
 
     class SceneRenderer {
@@ -30,7 +30,7 @@ namespace Aph {
         static void BeginScene(const Camera& camera, const glm::mat4& cameraTransform, glm::vec3& cameraPosition, std::vector<Entity>& lights);
         static void EndScene();
 
-        static void SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial = nullptr);
+        static void SubmitMesh(const Ref<Model>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial = nullptr);
 
     private:
         static void SetupLights(std::vector<Entity>& lights);

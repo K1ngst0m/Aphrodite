@@ -16,7 +16,7 @@ public:
     void OnDetach() override;
 
     void OnUpdate(Aph::Timestep ts) override;
-    void OnImGuiRender() override;
+    void OnUIRender() override;
     void OnEvent(Aph::Event& e) override;
 
 private:

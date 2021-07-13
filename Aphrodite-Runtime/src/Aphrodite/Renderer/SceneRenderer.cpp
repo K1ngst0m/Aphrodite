@@ -4,12 +4,12 @@
 
 #include "SceneRenderer.h"
 
-#include "Aphrodite/Scene/Components.h"
-#include "Aphrodite/Scene/Entity.h"
-#include "Aphrodite/Renderer/RenderCommand.h"
 #include "Aphrodite/Renderer/EditorCamera.h"
 #include "Aphrodite/Renderer/Material.h"
-#include "Aphrodite/Renderer/Mesh.h"
+#include "Aphrodite/Renderer/Model.h"
+#include "Aphrodite/Renderer/RenderCommand.h"
+#include "Aphrodite/Scene/Components.h"
+#include "Aphrodite/Scene/Entity.h"
 #include "glm/gtc/type_ptr.hpp"
 #include "pch.h"
 
@@ -73,14 +73,13 @@ namespace Aph {
         SetupLights(lights);
     }
 
-    void SceneRenderer::EndScene() {
-    }
+    void SceneRenderer::EndScene() { }
 
-    void SceneRenderer::SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform,
-                                   Ref<MaterialInstance> overrideMaterial) {
-        std::vector<Submesh> submeshes = mesh->GetSubmeshes();
+    void SceneRenderer::SubmitMesh(const Ref<Model>& mesh, const glm::mat4& transform,
+                                   const Ref<MaterialInstance>& overrideMaterial) {
+        std::vector<Mesh> submeshes = mesh->GetMeshes();
         for (uint32_t i = 0; i < submeshes.size(); i++) {
-            Submesh submesh = submeshes.at(i);
+            Mesh submesh = submeshes.at(i);
 
             if (overrideMaterial) {
                 overrideMaterial->GetShader()->Bind();
@@ -93,8 +92,8 @@ namespace Aph {
                 mat->Bind();
             }
 
-            submesh.SubmeshVertexArray->Bind();
-            RenderCommand::DrawIndexed(submesh.SubmeshVertexArray);
+            submesh.meshVertexArray->Bind();
+            RenderCommand::DrawIndexed(submesh.meshVertexArray);
         }
     }
 

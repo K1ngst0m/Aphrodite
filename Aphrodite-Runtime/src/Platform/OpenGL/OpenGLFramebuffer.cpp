@@ -19,7 +19,7 @@ namespace Aph {
         }
 
         static void CreateTextures(bool multiSampled, uint32_t* outID, uint32_t count) {
-            glCreateTextures(TextureTarget(multiSampled), count, outID);
+            glCreateTextures(TextureTarget(multiSampled), static_cast<GLsizei>(count), outID);
         }
 
         static void BindTexture(bool multiSampled, uint32_t id) {
@@ -66,11 +66,10 @@ namespace Aph {
                 case FramebufferTextureFormat::DEPTH24STENCIL8:
                     return true;
                 case FramebufferTextureFormat::None:
-                    break;
                 case FramebufferTextureFormat::RGBA8:
+                case FramebufferTextureFormat::RED_INTEGER:
                     break;
             }
-
             return false;
         }
 
@@ -81,11 +80,9 @@ namespace Aph {
                 case FramebufferTextureFormat::RED_INTEGER:
                     return GL_RED_INTEGER;
                 case FramebufferTextureFormat::None:
-                    break;
                 case FramebufferTextureFormat::DEPTH24STENCIL8:
                     break;
             }
-
             APH_CORE_ASSERT(false);
             return 0;
         }
@@ -93,11 +90,11 @@ namespace Aph {
 
     OpenGLFramebuffer::OpenGLFramebuffer(FramebufferSpecification spec)
         : m_Specification(std::move(spec)) {
-        for (auto spec : m_Specification.Attachments.Attachments) {
-            if (!Utils::IsDepthFormat(spec.TextureFormat))
-                m_ColorAttachmentSpecifications.emplace_back(spec);
+        for (auto spec_item : m_Specification.Attachments.Attachments) {
+            if (!Utils::IsDepthFormat(spec_item.TextureFormat))
+                m_ColorAttachmentSpecifications.emplace_back(spec_item);
             else
-                m_DepthAttachmentSpecification = spec;
+                m_DepthAttachmentSpecification = spec_item;
         }
         Invalidate();
     }
@@ -132,7 +129,6 @@ namespace Aph {
                         Utils::AttachColorTexture(m_ColorAttachments[i], static_cast<int>(m_Specification.Samples), GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, static_cast<int>(i));
                         break;
                     case FramebufferTextureFormat::None:
-                        break;
                     case FramebufferTextureFormat::DEPTH24STENCIL8:
                         break;
                     case FramebufferTextureFormat::RED_INTEGER:
@@ -209,4 +205,4 @@ namespace Aph {
     }
 
 
-}// namespace Aph-Runtime
+}// namespace Aph

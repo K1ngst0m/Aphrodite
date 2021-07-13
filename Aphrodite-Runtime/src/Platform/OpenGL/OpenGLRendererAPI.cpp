@@ -61,8 +61,7 @@ namespace Aph {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void OpenGLRendererAPI::DrawIndexed(
-            const Ref<VertexArray>& vertexArray, uint32_t indexCount) {
+    void OpenGLRendererAPI::DrawIndexed(const Ref<VertexArray>& vertexArray, uint32_t indexCount) {
         uint32_t count = indexCount ? indexCount : vertexArray->GetIndexBuffer()->GetCount();
         glDrawElements(GL_TRIANGLES, static_cast<int>(count), GL_UNSIGNED_INT, nullptr);
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -72,19 +71,15 @@ namespace Aph {
         glViewport(static_cast<int>(x), static_cast<int>(y), static_cast<int>(width), static_cast<int>(height));
     }
 
-
-    void OpenGLRendererAPI::DrawArray(uint32_t first, uint32_t count)
-    {
+    void OpenGLRendererAPI::DrawArray(uint32_t first, uint32_t count) {
         glDrawArrays(GL_TRIANGLES, first, count);
     }
 
-    void OpenGLRendererAPI::SetDepthMask(bool flag)
-    {
+    void OpenGLRendererAPI::SetDepthMask(bool flag) {
         glDepthMask(flag);
     }
 
-    void OpenGLRendererAPI::SetDepthTest(bool flag)
-    {
+    void OpenGLRendererAPI::SetDepthTest(bool flag) {
         if (flag)
             glEnable(GL_DEPTH_TEST);
         else

@@ -14,7 +14,7 @@
 
 namespace Aph::Editor {
 
-    void Status::OnImGuiRender() {
+    void Status::OnUIRender() {
         DrawStatusBar();
         DrawStatusPanel();
     }

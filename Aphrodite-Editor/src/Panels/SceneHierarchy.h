@@ -17,7 +17,7 @@ namespace Aph::Editor {
 
         void SetContext(const Ref<Scene>& context);
 
-        void OnImGuiRender();
+        void OnUIRender();
 
         Entity GetSelectedEntity() const { return m_SelectionContext; }
         void SetSelectedEntity(Entity entity);

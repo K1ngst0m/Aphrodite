@@ -12,7 +12,7 @@
 
 namespace Aph::Editor {
 
-    void Settings::OnImGuiRender() {
+    void Settings::OnUIRender() {
 
         ImGui::Begin(Style::Title::Settings.data());
 

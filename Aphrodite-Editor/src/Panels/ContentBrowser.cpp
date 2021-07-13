@@ -14,7 +14,7 @@ namespace Aph::Editor {
 
     ContentBrowser::ContentBrowser() : m_CurrentDirectory(s_AssetPath) {}
 
-    void ContentBrowser::OnImGuiRender() {
+    void ContentBrowser::OnUIRender() {
         ImGui::Begin("Connect Browser");
         if (m_CurrentDirectory != std::filesystem::path(s_AssetPath)) {
             if (ImGui::Button(" <- ")) {

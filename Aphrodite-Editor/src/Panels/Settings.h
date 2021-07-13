@@ -10,7 +10,7 @@
 namespace Aph::Editor {
     class Settings {
     public:
-        void OnImGuiRender();
+        void OnUIRender();
 
     private:
         float m_Time = 0.0f;

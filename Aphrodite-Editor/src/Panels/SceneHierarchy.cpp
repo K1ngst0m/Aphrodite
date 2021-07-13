@@ -25,7 +25,7 @@ namespace Aph::Editor {
         m_SelectionContext = {};
     }
 
-    void SceneHierarchy::OnImGuiRender() {
+    void SceneHierarchy::OnUIRender() {
         ImGui::Begin(Style::Title::SceneHierarchy.data());
 
         m_Context->m_Registry.each([&](auto entityID) {
@@ -69,8 +69,8 @@ namespace Aph::Editor {
             }
 
             if (ImGui::BeginMenu("3D Object")) {
-                if (ImGui::MenuItem("Empty Mesh")) {
-                    m_SelectionContext = m_Context->CreateEntity("Mesh");
+                if (ImGui::MenuItem("Empty Model")) {
+                    m_SelectionContext = m_Context->CreateEntity("Model");
                     m_SelectionContext.AddComponent<MeshComponent>();
                     ImGui::CloseCurrentPopup();
                 }
@@ -580,18 +580,18 @@ namespace Aph::Editor {
             char buffer[256];
             memset(buffer, 0, sizeof(buffer));
             std::strncpy(buffer, tag.c_str(), sizeof(buffer));
+            ImGui::SetNextItemWidth(230);
             if (ImGui::InputText("##Tag", buffer, sizeof(buffer))) {
                 tag = std::string(buffer);
             }
         }
 
-        ImGui::SameLine();
+        ImGui::SameLine(0, ImGui::GetContentRegionAvailWidth() - 380);
         ImGui::PushItemWidth(-1);
 
         // Draw Components Popup Menu
         if (ImGui::Button("Add Component"))
             ImGui::OpenPopup("AddComponent");
-
         if (ImGui::BeginPopup("AddComponent")) {
             if (ImGui::MenuItem("Transform")) {
                 if (!m_SelectionContext.HasComponent<TransformComponent>())
@@ -625,11 +625,11 @@ namespace Aph::Editor {
                 ImGui::CloseCurrentPopup();
             }
 
-            if (ImGui::MenuItem("Mesh")) {
+            if (ImGui::MenuItem("Model")) {
                 if (!entity.HasComponent<MeshComponent>())
                     entity.AddComponent<MeshComponent>();
                 else
-                    APH_CORE_WARN("This entity already has the Mesh Component!");
+                    APH_CORE_WARN("This entity already has the Model Component!");
                 ImGui::CloseCurrentPopup();
             }
 
@@ -947,8 +947,8 @@ namespace Aph::Editor {
             ImGui::DragFloat("##Intensity", &component.Intensity);
         });
 
-        DrawComponent<MeshComponent>("Mesh Component", entity, [](Entity& e, MeshComponent& component) {
-            ImGui::Text("Mesh Path");
+        DrawComponent<MeshComponent>("Model Component", entity, [](Entity& e, MeshComponent& component) {
+            ImGui::Text("Model Path");
 
             std::string meshPath;
             if (component.mesh) {
@@ -967,7 +967,7 @@ namespace Aph::Editor {
             }
 
             if (component.mesh) {
-                Ref<Mesh> mesh = component.mesh;
+                Ref<Model> mesh = component.mesh;
                 ImGui::Text("%s", mesh->GetName().c_str());
                 ImGui::Separator();
                 if (ImGui::TreeNode("Material List")) {

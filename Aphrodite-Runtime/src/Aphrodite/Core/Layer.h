@@ -24,7 +24,7 @@ namespace Aph {
 
         virtual void OnUpdate(Timestep ts) {}
 
-        virtual void OnImGuiRender() {}
+        virtual void OnUIRender() {}
 
         virtual void OnEvent(Event &event) {}
 

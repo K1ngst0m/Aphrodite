@@ -24,7 +24,7 @@ namespace Aph::Editor {
         APH_PROFILE_FUNCTION();
         EditorConsole::Log("Aphrodite Engine is Running");
 
-#if APH_DEBUG
+#ifdef APH_DEBUG
         // Log Example
         EditorConsole::Log("A log example");
         EditorConsole::LogWarning("A warning example");
@@ -40,7 +40,6 @@ namespace Aph::Editor {
         fbSpec.Width = 1280;
         fbSpec.Height = 720;
         m_Framebuffer = Framebuffer::Create(fbSpec);
-        //        m_IDFrameBuffer = Framebuffer::Create(fbSpec);
 
         // scene
         m_EditorScene = CreateRef<Scene>();
@@ -73,10 +72,11 @@ namespace Aph::Editor {
         if (FramebufferSpecification spec = m_Framebuffer->GetSpecification();
             m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
+
             m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-            //            m_IDFrameBuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
             m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
             m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+
         }
 
         // Render
@@ -84,9 +84,6 @@ namespace Aph::Editor {
         Renderer2D::ResetStats();
         RenderCommand::SetClearColor(Aph::Style::Color::Clear);
         RenderCommand::Clear();
-        //        m_Framebuffer->Bind();
-
-        //        m_Framebuffer->ClearAttachment(1, -1);
 
         // Update scene
         switch (m_SceneState) {
@@ -126,7 +123,7 @@ namespace Aph::Editor {
         m_Framebuffer->UnBind();
     }
 
-    void EditorLayer::OnImGuiRender() {
+    void EditorLayer::OnUIRender() {
         APH_PROFILE_FUNCTION();
 
         static bool dockspaceOpen = true;
@@ -328,7 +325,7 @@ namespace Aph::Editor {
     ////////////////
 
     void EditorLayer::DrawSceneHierarchy() {
-        m_SceneHierarchyPanel.OnImGuiRender();
+        m_SceneHierarchyPanel.OnUIRender();
     }
 
     void EditorLayer::DrawViewport() {
@@ -412,7 +409,7 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::DrawStatusData() {
-        m_StatusPanel.OnImGuiRender();
+        m_StatusPanel.OnUIRender();
     }
 
     void EditorLayer::DrawConsole() {
@@ -424,7 +421,7 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::DrawSettings() {
-        m_SettingsPanel.OnImGuiRender();
+        m_SettingsPanel.OnUIRender();
     }
 
     void EditorLayer::DrawMenuBar() {

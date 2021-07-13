@@ -12,7 +12,7 @@ namespace Aph::Editor{
     public:
         ContentBrowser();
 
-        void OnImGuiRender();
+        void OnUIRender();
 
     private:
         std::filesystem::path m_CurrentDirectory;

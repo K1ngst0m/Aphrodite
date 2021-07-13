@@ -159,7 +159,7 @@ void ExampleLayer::OnUpdate(Aph::Timestep ts) {
     Aph::Renderer::EndScene();
 }
 
-void ExampleLayer::OnImGuiRender() {
+void ExampleLayer::OnUIRender() {
     ImGui::Begin("Settings");
     ImGui::ColorEdit3("Square Color", glm::value_ptr(m_SquareColor));
     ImGui::End();

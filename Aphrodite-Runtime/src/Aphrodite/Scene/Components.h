@@ -15,7 +15,7 @@
 
 #include <glm/gtx/quaternion.hpp>
 
-#include "Aphrodite/Renderer/Mesh.h"
+#include "Aphrodite/Renderer/Model.h"
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Scene/SceneCamera.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
@@ -59,8 +59,8 @@ namespace Aph {
     };
 
     struct MeshComponent {
-        Ref<Mesh> mesh;
-        explicit operator Ref<Mesh>&() { return mesh; }
+        Ref<Model> mesh;
+        explicit operator Ref<Model>&() { return mesh; }
 
         enum class Geometry {
             Cube = 0,
@@ -73,33 +73,33 @@ namespace Aph {
 
         MeshComponent() = default;
         MeshComponent(int entityID, const std::string& meshPath) {
-            mesh = CreateRef<Mesh>(entityID, meshPath);
+            mesh = CreateRef<Model>(entityID, meshPath);
         }
         MeshComponent(int entityID, Geometry geometry) {
             switch (geometry) {
                 case Geometry::Cube:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cube.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/cube.fbx");
                     break;
                 case Geometry::Sphere:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/sphere.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/sphere.fbx");
                     break;
                 case Geometry::Plane:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/plane.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/plane.fbx");
                     break;
                 case Geometry::Quad:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/quad.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/quad.fbx");
                     break;
                 case Geometry::Cone:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cone.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/cone.fbx");
                     break;
                 case Geometry::Cylinder:
-                    mesh = CreateRef<Mesh>(entityID, "assets/models/basics/cylinder.fbx");
+                    mesh = CreateRef<Model>(entityID, "assets/models/basics/cylinder.fbx");
                     break;
             }
         }
 
         void Set(int entityID, const std::string& filepath) {
-            mesh = CreateRef<Mesh>(entityID, filepath);
+            mesh = CreateRef<Model>(entityID, filepath);
         }
     };
 

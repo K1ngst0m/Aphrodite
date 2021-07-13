@@ -70,7 +70,7 @@ namespace Aph {
                 {
                     APH_PROFILE_SCOPE("LayerStack OnUpdate");
                     for (const auto &layer : m_LayerStack)
-                        layer->OnImGuiRender();
+                        layer->OnUIRender();
                 }
                 Aph::UILayer::End();
             }

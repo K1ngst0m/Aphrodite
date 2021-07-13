@@ -26,7 +26,7 @@ namespace Aph::Editor {
         void OnDetach() override;
 
         void OnUpdate(Timestep ts) override;
-        void OnImGuiRender() override;
+        void OnUIRender() override;
         void OnEvent(Event& e) override;
 
         static std::string GetHoveredComponentName();

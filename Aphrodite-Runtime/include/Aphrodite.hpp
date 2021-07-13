@@ -25,7 +25,7 @@
 #include "Aphrodite/Renderer/Buffer.h"
 #include "Aphrodite/Renderer/Framebuffer.h"
 #include "Aphrodite/Renderer/Material.h"
-#include "Aphrodite/Renderer/Mesh.h"
+#include "Aphrodite/Renderer/Model.h"
 #include "Aphrodite/Renderer/RenderCommand.h"
 #include "Aphrodite/Renderer/Renderer.h"
 #include "Aphrodite/Renderer/Renderer2D.h"

@@ -9,7 +9,7 @@
 namespace Aph::Editor {
     class Status {
     public:
-        void OnImGuiRender();
+        void OnUIRender();
 
     private:
         void DrawStatusBar();

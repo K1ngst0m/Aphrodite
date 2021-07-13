@@ -48,7 +48,6 @@ namespace Aph {
             }
         }
 
-
         // Look Around and Pan
         static bool constrainPitch = true;
         static bool firstMouse = true;
@@ -71,7 +70,8 @@ namespace Aph {
             yOffset *= 0.01f;
 
             m_Position += -(m_Right * xOffset) + m_Up * yOffset;
-        } else if (Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
+        }
+        else if (Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
             xOffset *= m_MouseSensitivity;
             yOffset *= m_MouseSensitivity;
 
@@ -86,8 +86,8 @@ namespace Aph {
                     m_Pitch = -89.0f;
             }
 
-            UpdateCameraVectors();
-            UpdateView();
+//            UpdateCameraVectors();
+//            UpdateView();
         }
 
 
@@ -135,9 +135,9 @@ namespace Aph {
 
     void EditorCamera::UpdateCameraVectors() {
         glm::vec3 offset;
-        offset.x = cos(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
-        offset.y = sin(glm::radians(m_Pitch));
-        offset.z = sin(glm::radians(m_Yaw)) * cos(glm::radians(m_Pitch));
+        offset.x = std::cos(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
+        offset.y = std::sin(glm::radians(m_Pitch));
+        offset.z = std::sin(glm::radians(m_Yaw)) * std::cos(glm::radians(m_Pitch));
 
         m_Forward = glm::normalize(offset);
         m_Right = glm::normalize(glm::cross(m_Forward, m_WorldUp));

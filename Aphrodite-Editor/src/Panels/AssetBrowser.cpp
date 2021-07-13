@@ -58,7 +58,8 @@ namespace Aph::Editor {
     }
 
     void AssetBrowser::DrawLeftProjectPanel() {
-        bool opened = ImGui::TreeNodeEx("leftProjectPanelAssets", ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_OpenOnArrow, ICON_FA_FOLDER " assets");
+        bool opened = ImGui::TreeNodeEx("leftProjectPanelAssets", ImGuiTreeNodeFlags_DefaultOpen
+                                                                          | ImGuiTreeNodeFlags_OpenOnArrow, ICON_FA_FOLDER " assets");
 
         if (ImGui::IsItemClicked()) {
             m_CurrentRightPanelDirectoryPath = m_AssetDirectoryPath;

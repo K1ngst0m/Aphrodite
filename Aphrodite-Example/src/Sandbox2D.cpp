@@ -63,7 +63,7 @@ void Sandbox2D::OnUpdate(Aph::Timestep ts) {
     }
 }
 
-void Sandbox2D::OnImGuiRender() {
+void Sandbox2D::OnUIRender() {
     APH_PROFILE_FUNCTION();
 
     ImGui::Begin("Settings");

@@ -5,12 +5,12 @@
 #ifndef Aphrodite_ENGINE_SHADER_H
 #define Aphrodite_ENGINE_SHADER_H
 
+#include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
 
-#include <glm/glm.hpp>
-
 namespace Aph {
+
     class Shader {
     public:
         virtual ~Shader() = default;
@@ -32,7 +32,8 @@ namespace Aph {
         virtual const std::string& GetName() const = 0;
 
         static Ref<Shader> Create(const std::string& filepath);
-        static Ref<Shader> Create(const std::string& name, const std::string& vertexSrc,
+        static Ref<Shader> Create(const std::string& name,
+                                  const std::string& vertexSrc,
                                   const std::string& fragmentSrc);
 
     private:
@@ -54,6 +55,6 @@ namespace Aph {
     private:
         std::unordered_map<std::string, Ref<Shader>> m_Shaders;
     };
-}// namespace Aph-Runtime
+}// namespace Aph
 
 #endif// Aphrodite_ENGINE_SHADER_H

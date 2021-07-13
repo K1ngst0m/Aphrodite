@@ -228,7 +228,7 @@ namespace Aph {
     void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera) {
         // 3D==============================================================
 
-        // Render SkyBox
+        // Render Skylight
         Renderer::BeginScene(camera);
         Ref<TextureCube> textureCube;
         {
@@ -254,6 +254,7 @@ namespace Aph {
         // Bind irradiance map before mesh drawing.
         if (textureCube)
             textureCube->Bind(1);
+
         {
             auto view = m_Registry.view<TransformComponent, MeshComponent>();
             for (auto entity : view) {
