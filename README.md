@@ -29,7 +29,6 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * LayerStack and Layers
   * Internal Key, Mouse Codes and Input polling
   * Timesteps, Vsync, Delta Time
-  * Shaders and Textures
   * Entity Component System
   * Physics Simulation
     
@@ -37,6 +36,8 @@ Until now this engine has been developed for the GNU/Linux OS only.
   * Modern OpenGL setup, using Glad
   * 2D Rendering pipeline: Simplified API for drawing colored and textured quads, Draw call Batching
   * 3D Rendering pipeline: Model Import, Lighting, IBL, IBR, PBR support
+  * Shaders and Textures
+
     
 * **Editor**
   * ImGui, Docking, Frambuffers and Viewport
