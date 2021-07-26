@@ -8,6 +8,7 @@
 #define Aphrodite_ENGINE_BUFFER_H
 
 namespace Aph {
+
     enum class ShaderDataType {
         None = 0,
         Float,
@@ -93,7 +94,6 @@ namespace Aph {
                     return 4;
                 case ShaderDataType::Bool:
                     return 1;
-
                 default:
                     APH_CORE_ASSERT(false, "Unknown ShaderDataType!");
                     return 0;
@@ -104,7 +104,6 @@ namespace Aph {
     class BufferLayout {
     public:
         BufferLayout() = default;
-
         BufferLayout(std::initializer_list<BufferElement> elements)
             : m_Elements(elements) {
             CalculateOffsetsAndStride();
@@ -117,16 +116,9 @@ namespace Aph {
         }
 
         std::vector<BufferElement>::iterator begin() { return m_Elements.begin(); }
-
         std::vector<BufferElement>::iterator end() { return m_Elements.end(); }
-
-        std::vector<BufferElement>::const_iterator begin() const {
-            return m_Elements.cbegin();
-        }
-
-        std::vector<BufferElement>::const_iterator end() const {
-            return m_Elements.cend();
-        }
+        std::vector<BufferElement>::const_iterator begin() const { return m_Elements.cbegin(); }
+        std::vector<BufferElement>::const_iterator end() const { return m_Elements.cend(); }
 
     private:
         void CalculateOffsetsAndStride() {
@@ -180,11 +172,12 @@ namespace Aph {
 
         virtual void Bind() const = 0;
         virtual void Unbind() const = 0;
-        virtual void SetData(void* data, uint32_t offset, uint32_t size) = 0;
-        virtual void SetLayout(const BufferLayout& layout, uint32_t blockIndex, uint32_t count = 1) = 0;
+        virtual void SetData(void *data, uint32_t offset, uint32_t size) = 0;
+        virtual void SetLayout(const BufferLayout &layout, uint32_t blockIndex, uint32_t count = 1) = 0;
 
         static Ref<UniformBuffer> Create();
     };
+
 }// namespace Aph
 
 #endif// Aphrodite_ENGINE_BUFFER_H

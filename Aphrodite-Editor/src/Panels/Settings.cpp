@@ -4,8 +4,6 @@
 
 #include "Settings.h"
 
-#include <Aphrodite/Physics/Physics2D.h>
-
 #include <glm/gtc/type_ptr.hpp>
 
 #include "../Utils/UIDrawer.h"

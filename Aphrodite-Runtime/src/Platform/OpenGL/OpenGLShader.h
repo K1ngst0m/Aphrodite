@@ -12,6 +12,7 @@
 typedef unsigned int GLenum;
 
 namespace Aph {
+    using APH_SHADER = std::unordered_map<GLenum, std::string>;
     class OpenGLShader : public Shader {
     public:
         explicit OpenGLShader(const std::string &filepath);
@@ -46,9 +47,8 @@ namespace Aph {
         void UploadUniformMat4(const std::string &name, const glm::mat4 &matrix) const;
 
     private:
-        static std::string ReadFile(const std::string &filepath);
-        static std::unordered_map<GLenum, std::string> PreProcess(const std::string &source);
-        void Compile(const std::unordered_map<GLenum, std::string>& shaderSources);
+        static APH_SHADER PreProcess(const std::string &source);
+        void Compile(const APH_SHADER& shaderSources);
 
 #if vulkan_not_yet
         void CompileOrGetVulkanBinaries(const std::unordered_map<GLenum, std::string>& shaderSources);
@@ -65,7 +65,7 @@ namespace Aph {
         std::unordered_map<GLenum, std::vector<uint32_t>> m_VulkanSPIRV;
         std::unordered_map<GLenum, std::vector<uint32_t>> m_OpenGLSPIRV;
 
-        std::unordered_map<GLenum, std::string> m_OpenGLSourceCode;
+        APH_SHADER m_OpenGLSourceCode;
     };
 }// namespace Aph-Runtime
 

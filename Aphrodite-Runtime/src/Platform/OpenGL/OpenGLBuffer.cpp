@@ -111,7 +111,9 @@ namespace Aph {
         glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data);
     }
 
-    void OpenGLUniformBuffer::SetLayout(const BufferLayout& layout, uint32_t blockIndex, uint32_t count) {
+    void OpenGLUniformBuffer::SetLayout(const BufferLayout& layout,
+                                        uint32_t blockIndex,
+                                        uint32_t count) {
         m_Layout = layout;
 
         uint32_t size = 0;

@@ -21,6 +21,7 @@
 #include "Aphrodite/Scene/ScriptableEntity.h"
 
 namespace Aph {
+
     struct IDComponent {
         uint32_t ID = 0;
 
@@ -158,8 +159,6 @@ namespace Aph {
 
             if (Size * Scale != Collider2D->GetSize() || Offset != Collider2D->GetOffset() || IsTrigger != Collider2D->IsTrigger())
                 Collider2D->SetSpecification(Size, Offset, IsTrigger);
-
-
         }
     };
 
@@ -194,8 +193,10 @@ namespace Aph {
 
         SpriteRendererComponent() = default;
         SpriteRendererComponent(const SpriteRendererComponent&) = default;
+
         explicit SpriteRendererComponent(const glm::vec4& color)
             : Color(color) {}
+
         void SetTexture(std::string& filepath) {
             Texture = Texture2D::Create(filepath);
             TextureFilepath = filepath;
@@ -205,6 +206,7 @@ namespace Aph {
             Texture = nullptr;
             TextureFilepath = "";
         }
+
     };
 
     struct LightComponent {
@@ -268,6 +270,7 @@ namespace Aph {
             TextureFilepath = "";
         }
     };
+
 }// namespace Aph
 
 

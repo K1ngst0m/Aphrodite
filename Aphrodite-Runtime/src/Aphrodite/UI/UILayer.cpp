@@ -4,10 +4,10 @@
 
 #include "Aphrodite/UI/UILayer.h"
 
+#include <ImGuizmo.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <imgui.h>
-#include <ImGuizmo.h>
 
 #include "Aphrodite/Core/Application.h"
 #include "Aphrodite/Fonts/IconsFontAwesome5Pro.h"
@@ -31,18 +31,16 @@ namespace Aph {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;// Enable Multi-Viewport /
 
-        float fontSize = 22.0f;
-        float iconSize = 17.0f;
 
         static const ImWchar icons_ranges_fontawesome[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
         ImFontConfig icons_config_fontawesome;
         icons_config_fontawesome.MergeMode = true;
         icons_config_fontawesome.PixelSnapH = true;
 
-        io.Fonts->AddFontFromFileTTF(FONT_UI, fontSize);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
-        io.FontDefault = io.Fonts->AddFontFromFileTTF(FONT_UI, fontSize);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, iconSize, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.Fonts->AddFontFromFileTTF(FONT_UI, Style::FontSize::text);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, Style::FontSize::icon, &icons_config_fontawesome, icons_ranges_fontawesome);
+        io.FontDefault = io.Fonts->AddFontFromFileTTF(FONT_UI, Style::FontSize::text);
+        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, Style::FontSize::icon, &icons_config_fontawesome, icons_ranges_fontawesome);
 
 #if 1
         ImGui::StyleColorsDark();

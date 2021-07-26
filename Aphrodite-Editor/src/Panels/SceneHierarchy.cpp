@@ -7,12 +7,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <cstring>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Aphrodite/Renderer/Material.h"
-#include "Aphrodite/Scene/Components.h"
-#include "Aphrodite/Utils/PlatformUtils.h"
 #include "EditorConsole.h"
 
 namespace Aph::Editor {

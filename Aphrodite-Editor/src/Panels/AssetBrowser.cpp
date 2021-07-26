@@ -6,7 +6,6 @@
 
 #include <imgui.h>
 
-#include "Aphrodite/Fonts/IconsFontAwesome5Pro.h"
 #include "pch.h"
 
 namespace Aph::Editor {

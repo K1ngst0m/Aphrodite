@@ -348,7 +348,7 @@ namespace Aph {
 
             std::ifstream in(cachedPath, std::ios::in | std::ios::binary);
             if (in.is_open()) {
-                in.seekg(0, std::ios::end);
+                in.seekg(0, std::ios::cend);
                 auto size = in.tellg();
                 in.seekg(0, std::ios::beg);
 
@@ -441,7 +441,42 @@ namespace Aph {
     }
 }// namespace Aph
 #else
+
 namespace Aph {
+    namespace Utils{
+        // Get file content from path
+        std::string ReadFile(const std::string& filepath){
+            APH_PROFILE_FUNCTION();
+
+            std::string result;
+            std::ifstream in(filepath, std::ios::in | std::ios::binary);// ifstream closes itself due to RAII
+            if (in) {
+                in.seekg(0, std::ios::end);
+                const size_t size = in.tellg();
+                if (size != -1) {
+                    result.resize(size);
+                    in.seekg(0, std::ios::beg);
+                    in.read(&result[0], static_cast<std::streamsize>(size));
+                } else {
+                    APH_CORE_ERROR("Could not read from file '{0}'", filepath);
+                }
+            } else {
+                APH_CORE_ERROR("Could not open file '{0}'", filepath);
+            }
+
+            return result;
+        }
+
+        // Extract name from filepath
+        std::string GetFileNameFromPath(const std::string &filepath){
+            auto lastSlash = filepath.find_last_of('/');
+            lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
+            auto lastDot = filepath.rfind('.');
+            auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
+            return filepath.substr(lastSlash, count);
+        }
+    }
+
     static GLenum ShaderTypeFromString(const std::string& type) {
         if (type == "vertex")
             return GL_VERTEX_SHADER;
@@ -455,23 +490,17 @@ namespace Aph {
     OpenGLShader::OpenGLShader(const std::string& filepath) {
         APH_PROFILE_FUNCTION();
 
-        std::string source = ReadFile(filepath);
+        std::string source = Utils::ReadFile(filepath);
         auto shaderSources = PreProcess(source);
         Compile(shaderSources);
-
-        // Extract name from filepath
-        auto lastSlash = filepath.find_last_of('/');
-        lastSlash = lastSlash == std::string::npos ? 0 : lastSlash + 1;
-        auto lastDot = filepath.rfind('.');
-        auto count = lastDot == std::string::npos ? filepath.size() - lastSlash : lastDot - lastSlash;
-        m_Name = filepath.substr(lastSlash, count);
+        m_Name = Utils::GetFileNameFromPath(filepath);
     }
 
     OpenGLShader::OpenGLShader(std::string name, const std::string& vertexSrc, const std::string& fragmentSrc)
         : m_Name(std::move(name)) {
         APH_PROFILE_FUNCTION();
 
-        std::unordered_map<GLenum, std::string> sources;
+        APH_SHADER sources;
         sources[GL_VERTEX_SHADER] = vertexSrc;
         sources[GL_FRAGMENT_SHADER] = fragmentSrc;
         Compile(sources);
@@ -495,114 +524,10 @@ namespace Aph {
         glUseProgram(0);
     }
 
-    void OpenGLShader::SetInt(const std::string& name, int value) {
+    APH_SHADER OpenGLShader::PreProcess(const std::string& source) {
         APH_PROFILE_FUNCTION();
 
-        UploadUniformInt(name, value);
-    }
-
-    void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t count) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformIntArray(name, values, count);
-    }
-
-    void OpenGLShader::SetFloat(const std::string& name, float value) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformFloat(name, value);
-    }
-
-    void OpenGLShader::SetFloat2(const std::string& name, const glm::vec2& value) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformFloat2(name, value);
-    }
-
-    void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformFloat3(name, value);
-    }
-
-    void OpenGLShader::SetFloat4(const std::string& name, const glm::vec4& value) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformFloat4(name, value);
-    }
-
-    void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value) {
-        APH_PROFILE_FUNCTION();
-
-        UploadUniformMat4(name, value);
-    }
-
-    void OpenGLShader::UploadUniformInt(const std::string& name, int value) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform1i(location, value);
-    }
-
-    void OpenGLShader::UploadUniformIntArray(const std::string& name, int* values, uint32_t count) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform1iv(location, count, values);
-    }
-
-    void OpenGLShader::UploadUniformFloat(const std::string& name, float value) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform1f(location, value);
-    }
-
-    void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& values) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform2f(location, values.x, values.y);
-    }
-
-    void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& values) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform3f(location, values.x, values.y, values.z);
-    }
-
-    void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& values) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniform4f(location, values.x, values.y, values.z, values.w);
-    }
-
-    void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
-    }
-
-    void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix) const {
-        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
-        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
-    }
-
-    std::string OpenGLShader::ReadFile(const std::string& filepath) {
-        APH_PROFILE_FUNCTION();
-
-        std::string result;
-        std::ifstream in(filepath, std::ios::in | std::ios::binary);// ifstream closes itself due to RAII
-        if (in) {
-            in.seekg(0, std::ios::end);
-            const size_t size = in.tellg();
-            if (size != -1) {
-                result.resize(size);
-                in.seekg(0, std::ios::beg);
-                in.read(&result[0], size);
-            } else {
-                APH_CORE_ERROR("Could not read from file '{0}'", filepath);
-            }
-        } else {
-            APH_CORE_ERROR("Could not open file '{0}'", filepath);
-        }
-
-        return result;
-    }
-
-    std::unordered_map<GLenum, std::string> OpenGLShader::PreProcess(const std::string& source) {
-        APH_PROFILE_FUNCTION();
-
-        std::unordered_map<GLenum, std::string> shaderSources;
+        APH_SHADER shaderSources;
 
         const char* typeToken = "#type";
         size_t typeTokenLength = strlen(typeToken);
@@ -622,7 +547,7 @@ namespace Aph {
         return shaderSources;
     }
 
-    void OpenGLShader::Compile(const std::unordered_map<GLenum, std::string>& shaderSources) {
+    void OpenGLShader::Compile(const APH_SHADER& shaderSources) {
         APH_PROFILE_FUNCTION();
 
         GLuint program = glCreateProgram();
@@ -636,7 +561,7 @@ namespace Aph {
             GLuint shader = glCreateShader(type);
 
             const GLchar* sourceCStr = source.c_str();
-            glShaderSource(shader, 1, &sourceCStr, 0);
+            glShaderSource(shader, 1, &sourceCStr, nullptr);
 
             // Compile the vertex shader
             glCompileShader(shader);
@@ -687,6 +612,48 @@ namespace Aph {
         m_RendererID = program;
     }
 
+    void OpenGLShader::SetInt(const std::string& name, int value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformInt(name, value);
+    }
+
+    void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t count) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformIntArray(name, values, count);
+    }
+
+    void OpenGLShader::SetFloat(const std::string& name, float value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformFloat(name, value);
+    }
+
+    void OpenGLShader::SetFloat2(const std::string& name, const glm::vec2& value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformFloat2(name, value);
+    }
+
+    void OpenGLShader::SetFloat3(const std::string& name, const glm::vec3& value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformFloat3(name, value);
+    }
+
+    void OpenGLShader::SetFloat4(const std::string& name, const glm::vec4& value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformFloat4(name, value);
+    }
+
+    void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value) {
+        APH_PROFILE_FUNCTION();
+
+        UploadUniformMat4(name, value);
+    }
+
     void OpenGLShader::SetBool(const std::string& name, bool value) {
         APH_PROFILE_FUNCTION();
 
@@ -696,6 +663,48 @@ namespace Aph {
     void OpenGLShader::SetUniformBlock(const std::string& name, uint32_t blockIndex) {
         glUniformBlockBinding(m_RendererID, glGetUniformBlockIndex(m_RendererID, name.c_str()), blockIndex);
     }
+
+
+    void OpenGLShader::UploadUniformInt(const std::string& name, int value) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform1i(location, value);
+    }
+
+    void OpenGLShader::UploadUniformIntArray(const std::string& name, int* values, uint32_t count) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform1iv(location, static_cast<GLsizei>(count), values);
+    }
+
+    void OpenGLShader::UploadUniformFloat(const std::string& name, float value) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform1f(location, value);
+    }
+
+    void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& values) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform2f(location, values.x, values.y);
+    }
+
+    void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& values) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform3f(location, values.x, values.y, values.z);
+    }
+
+    void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& values) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniform4f(location, values.x, values.y, values.z, values.w);
+    }
+
+    void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+    }
+
+    void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix) const {
+        GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
+    }
+
 
 }// namespace Aph
 #endif

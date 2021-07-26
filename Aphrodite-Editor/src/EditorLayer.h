@@ -5,9 +5,7 @@
 #ifndef Aphrodite_ENGINE_EDITORLAYER_H
 #define Aphrodite_ENGINE_EDITORLAYER_H
 
-#include <Aphrodite.hpp>
 
-#include "Aphrodite/Renderer/EditorCamera.h"
 #include "Panels/AssetBrowser.h"
 #include "Panels/ContentBrowser.h"
 #include "Panels/EditorConsole.h"

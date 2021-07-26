@@ -31,9 +31,9 @@ namespace Aph {
             case GL_DEBUG_SEVERITY_NOTIFICATION:
                 APH_CORE_TRACE(message);
                 return;
+            default:
+                APH_CORE_ASSERT(false, "Unknown severity level!");
         }
-
-        APH_CORE_ASSERT(false, "Unknown severity level!");
     }
 
     void OpenGLRendererAPI::Init() {
@@ -43,10 +43,8 @@ namespace Aph {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(OpenGLMessageCallback, nullptr);
-
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 #endif
-
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
@@ -72,7 +70,7 @@ namespace Aph {
     }
 
     void OpenGLRendererAPI::DrawArray(uint32_t first, uint32_t count) {
-        glDrawArrays(GL_TRIANGLES, first, count);
+        glDrawArrays(GL_TRIANGLES, static_cast<GLsizei>(first), static_cast<GLsizei>(count));
     }
 
     void OpenGLRendererAPI::SetDepthMask(bool flag) {

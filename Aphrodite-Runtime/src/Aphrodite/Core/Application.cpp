@@ -22,7 +22,7 @@ namespace Aph {
 
         s_Instance = this;
         m_Window = Window::Create(WindowProps(name));
-        m_Window->SetEventCallback(APH_BIND_EVENT_FN(Application::OnEvent));
+        m_Window->SetEventCallback(APH_BIND_EVENT_FN(OnEvent));
 
         Renderer::Init();
 
@@ -40,8 +40,8 @@ namespace Aph {
         APH_PROFILE_FUNCTION();
 
         EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<WindowCloseEvent>(APH_BIND_EVENT_FN(Application::OnWindowClose));
-        dispatcher.Dispatch<WindowResizeEvent>(APH_BIND_EVENT_FN(Application::OnWindowResize));
+        dispatcher.Dispatch<WindowCloseEvent>(APH_BIND_EVENT_FN(OnWindowClose));
+        dispatcher.Dispatch<WindowResizeEvent>(APH_BIND_EVENT_FN(OnWindowResize));
 
         for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); it++) {
             if (e.Handled) break;

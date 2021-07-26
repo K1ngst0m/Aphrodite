@@ -8,8 +8,9 @@
 #ifndef Aphrodite_ENGINE_LOG_H
 #define Aphrodite_ENGINE_LOG_H
 
-#include <spdlog/fmt/ostr.h>
+#define SPDLOG_FMT_EXTERNAL
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include "Aphrodite/Core/Base.h"
 

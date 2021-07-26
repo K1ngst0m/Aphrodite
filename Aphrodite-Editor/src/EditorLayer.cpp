@@ -3,17 +3,14 @@
 //
 
 #include "EditorLayer.h"
+#include <Aphrodite.hpp>
+
 
 #include <ImGuizmo.h>
 #include <imgui.h>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include "Aphrodite/Math/Math.h"
-#include "Aphrodite/Physics/Physics2D.h"
-#include "Aphrodite/Scene/SceneSerializer.h"
-#include "Aphrodite/Utils/PlatformUtils.h"
 
 namespace Aph::Editor {
 
@@ -93,8 +90,9 @@ namespace Aph::Editor {
                 break;
             }
             case SceneState::Pause: {
-                m_EditorCamera.OnUpdate(ts);
-                m_ActiveScene->OnUpdateRuntime(ts);
+                // TODO
+//                m_EditorCamera.OnUpdate(ts);
+//                m_ActiveScene->OnUpdateRuntime(ts);
                 break;
             }
             case SceneState::Edit: {
@@ -117,7 +115,12 @@ namespace Aph::Editor {
 
         if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
             int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
-            s_HoveredEntity = pixelData == -1 || !m_ActiveScene->HasEntity(pixelData) ? Entity() : Entity((entt::entity) pixelData, m_ActiveScene.get());
+
+            if (pixelData == -1 || !m_ActiveScene->HasEntity(pixelData)) {
+                s_HoveredEntity = Entity();
+            } else {
+                s_HoveredEntity = Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
+            }
         }
 
         m_Framebuffer->UnBind();
@@ -183,9 +186,9 @@ namespace Aph::Editor {
         m_EditorCamera.OnEvent(e);
 
         EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<KeyPressedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnKeyPressed));
-        dispatcher.Dispatch<MouseButtonPressedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
-        dispatcher.Dispatch<MouseButtonReleasedEvent>(APH_BIND_EVENT_FN(EditorLayer::OnMouseButtonReleased));
+        dispatcher.Dispatch<KeyPressedEvent>(APH_BIND_EVENT_FN(OnKeyPressed));
+        dispatcher.Dispatch<MouseButtonPressedEvent>(APH_BIND_EVENT_FN(OnMouseButtonPressed));
+        dispatcher.Dispatch<MouseButtonReleasedEvent>(APH_BIND_EVENT_FN(OnMouseButtonReleased));
     }
 
     bool EditorLayer::OnKeyPressed(KeyPressedEvent& e) {
@@ -356,7 +359,7 @@ namespace Aph::Editor {
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
-        uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID(0);
+        uint64_t textureID = m_Framebuffer->GetColorAttachmentRendererID();
         ImGui::Image(reinterpret_cast<void*>(textureID),
                      ImVec2{m_ViewportSize.x, m_ViewportSize.y},
                      ImVec2{0, 1}, ImVec2{1, 0});
@@ -368,7 +371,6 @@ namespace Aph::Editor {
             m_SceneState == SceneState::Edit) {
             ImGuizmo::SetOrthographic(false);
             ImGuizmo::SetDrawlist();
-
             ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
                               m_ViewportBounds[1].x - m_ViewportBounds[0].x,
                               m_ViewportBounds[1].y - m_ViewportBounds[0].y);
@@ -394,10 +396,11 @@ namespace Aph::Editor {
                                  nullptr, snap ? snapValues : nullptr);
 
             if (ImGuizmo::IsUsing()) {
-                glm::vec3 translation, rotation, scale;
-                Math::DecomposeTransform(transform, translation, rotation, scale);
+                auto [translation, rotation, scale] =
+                        Math::DecomposeTransform(transform);
 
                 glm::vec3 deltaRotation = rotation - tc.Rotation;
+
                 tc.Translation = translation;
                 tc.Rotation += deltaRotation;
                 tc.Scale = scale;

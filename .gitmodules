@@ -13,3 +13,9 @@
 [submodule "3rdparty/assimp"]
 	path = 3rdparty/assimp
 	url = https://github.com/npchitman/assimp
+[submodule "3rdparty/fmt"]
+	path = 3rdparty/fmt
+	url = https://github.com/npchitman/fmt
+[submodule "3rdparty/stb"]
+	path = 3rdparty/stb
+	url = https://github.com/npchitman/stb

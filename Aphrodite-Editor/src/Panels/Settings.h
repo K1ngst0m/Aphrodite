@@ -5,7 +5,7 @@
 #ifndef APHRODITE_SETTINGS_H
 #define APHRODITE_SETTINGS_H
 
-#include "Aphrodite/Core/Base.h"
+#include <Aphrodite.hpp>
 
 namespace Aph::Editor {
     class Settings {

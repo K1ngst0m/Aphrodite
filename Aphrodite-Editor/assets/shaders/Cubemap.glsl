@@ -14,8 +14,8 @@ void main()
     gl_Position = u_Projection * mat4(mat3(u_View)) * vec4(a_Position, 1.0f);
 }
 
-    #type fragment
-    #version 450 core
+#type fragment
+#version 450 core
 
 layout (location = 0) in vec3 v_TexCoords;
 

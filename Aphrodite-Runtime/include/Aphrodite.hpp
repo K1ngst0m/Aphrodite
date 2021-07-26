@@ -34,11 +34,27 @@
 #include "Aphrodite/Renderer/Texture.h"
 #include "Aphrodite/Renderer/VertexArray.h"
 
+// Physics
+#include "Aphrodite/Physics/Physics2D.h"
+#include "Aphrodite/Physics/BoxCollider2D.h"
+#include "Aphrodite/Physics/CircleCollider2D.h"
+
+// Math
+#include "Aphrodite/Math/Math.h"
+
 // Scene
 #include "Aphrodite/Scene/Components.h"
 #include "Aphrodite/Scene/Entity.h"
 #include "Aphrodite/Scene/Scene.h"
 #include "Aphrodite/Scene/SceneCamera.h"
+#include "Aphrodite/Scene/SceneSerializer.h"
 #include "Aphrodite/Scene/ScriptableEntity.h"
+
+// Fonts
+#include "Aphrodite/Fonts/IconsFontAwesome5Pro.h"
+
+// Utils
+#include "Aphrodite/Utils/PlatformUtils.h"
+#include "Aphrodite/Utils/PlatformDetection.h"
 
 #endif// APHRODITE_ENGINE_APHRODITE_H

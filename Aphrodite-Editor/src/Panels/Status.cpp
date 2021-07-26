@@ -4,9 +4,9 @@
 
 #include "Status.h"
 
-#include <Aphrodite/Core/Application.h>
-#include <Aphrodite/Renderer/Renderer2D.h>
 #include <imgui.h>
+
+#include <Aphrodite.hpp>
 
 #include "../EditorLayer.h"
 #include "../Utils/UIDrawer.h"
@@ -41,35 +41,34 @@ namespace Aph::Editor {
                          ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
                          ImGui::PushStyleColor(ImGuiCol_Text, {1, 1, 1, 1});
 
-                         ImGui::Begin("Status Bar", nullptr, ImGuiWindowFlags_NoScrollbar);
+                         ImGui::Begin("Status Bar", nullptr, ImGuiWindowFlags_NoScrollbar); },
+                       [&]() {
+                           ImGui::End();
+                           ImGui::PopStyleColor(3);
+                           ImGui::PopStyleVar(2);
                        },
                        [&]() {
-                         ImGui::End();
-                         ImGui::PopStyleColor(3);
-                         ImGui::PopStyleVar(2);
-                       },
-                       [&]() {
-                         // Dock Property
-                         ImGui::Columns(3, "Status Bar", true);
+                           // Dock Property
+                           ImGui::Columns(3, "Status Bar", true);
 
-                         ImGui::SetColumnWidth(0, 1000);// Console
-                         ImGui::SetColumnWidth(1, 350); // Hovered Entity
-                         ImGui::SetColumnWidth(2, 600); // FPS
+                           ImGui::SetColumnWidth(0, 1000);// Console
+                           ImGui::SetColumnWidth(1, 350); // Hovered Entity
+                           ImGui::SetColumnWidth(2, 600); // FPS
 
-                         // Console
-                         ImGui::Text("%s", EditorConsole::GetLastMessage().data());
-                         ImGui::NextColumn();
+                           // Console
+                           ImGui::Text("%s", EditorConsole::GetLastMessage().data());
+                           ImGui::NextColumn();
 
-                         // Mouse Hover Entity
-                         ImGui::Text(" \uf1b2 Hovered Entity: %s", EditorLayer::GetHoveredComponentName().c_str());
-                         ImGui::NextColumn();
+                           // Mouse Hover Entity
+                           ImGui::Text(" \uf1b2 Hovered Entity: %s", EditorLayer::GetHoveredComponentName().c_str());
+                           ImGui::NextColumn();
 
-                         // Frame Per Second
-                         ImGui::Text("FPS: %.2f", avg);
-                         ImGui::SameLine(0, 70);
-//                         const float fps = (1.0f / avg) * 1000.0f;
-//                         ImGui::Text("Frame time (ms): %f", fps);
-                         ImGui::PlotLines("", m_FpsValues, size);
+                           // Frame Per Second
+                           ImGui::Text("FPS: %.2f", avg);
+                           ImGui::SameLine(0, 70);
+                           //                         const float fps = (1.0f / avg) * 1000.0f;
+                           //                         ImGui::Text("Frame time (ms): %f", fps);
+                           ImGui::PlotLines("", m_FpsValues, size);
                        });
     }
 

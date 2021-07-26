@@ -4,6 +4,7 @@
 
 #include "Platform/OpenGL/OpenGLTexture.h"
 
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 #include <glm/glm.hpp>
@@ -228,13 +229,12 @@ namespace Aph {
         // SetBlockEvents up projection and view matrices for capturing data onto the 6 cubemap face directions
         glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
         glm::mat4 captureViews[] =
-                {
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
-                        glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))};
+                {glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+                 glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+                 glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+                 glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+                 glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+                 glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))};
 
 
         // Convert HDR equirectangular environment map to cubemap equivalent
@@ -245,7 +245,8 @@ namespace Aph {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, hdrRenderID);
 
-        glViewport(0, 0, cubemapSize, cubemapSize);
+        glViewport(0, 0, static_cast<GLsizei>(cubemapSize),
+                         static_cast<GLsizei>(cubemapSize));
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
         for (unsigned int i = 0; i < 6; ++i) {
             shader->SetMat4("u_View", captureViews[i]);
@@ -261,7 +262,9 @@ namespace Aph {
         glGenTextures(1, &m_IrradianceRendererID);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_IrradianceRendererID);
         for (unsigned int i = 0; i < 6; ++i) {
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, irradianceMapSize, irradianceMapSize, 0, GL_RGB, GL_FLOAT, nullptr);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
+                         static_cast<GLsizei>(irradianceMapSize), static_cast<GLsizei>(irradianceMapSize),
+                         0, GL_RGB, GL_FLOAT, nullptr);
         }
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -271,7 +274,7 @@ namespace Aph {
 
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
         glBindRenderbuffer(GL_RENDERBUFFER, captureRBO);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, irradianceMapSize, irradianceMapSize);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, static_cast<GLsizei>(irradianceMapSize), static_cast<GLsizei>(irradianceMapSize));
 
         // solve diffuse integral by convolution to create an irradiance (cube)map.
         Ref<Shader> irradianceShader = Shader::Create("assets/shaders/Irradiance.glsl");
@@ -281,7 +284,7 @@ namespace Aph {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
 
-        glViewport(0, 0, irradianceMapSize, irradianceMapSize);// don't forget to configure the viewport to the capture dimensions.
+        glViewport(0, 0, static_cast<GLsizei>(irradianceMapSize), static_cast<GLsizei>(irradianceMapSize));// don't forget to configure the viewport to the capture dimensions.
         glBindFramebuffer(GL_FRAMEBUFFER, captureFBO);
         for (unsigned int i = 0; i < 6; ++i) {
             irradianceShader->SetMat4("u_View", captureViews[i]);

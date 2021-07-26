@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Libs)
@@ -21,13 +22,13 @@ add_subdirectory(${3rdparty_dir}/ImGuizmo)
 add_subdirectory(${3rdparty_dir}/box2d)
 add_subdirectory(${3rdparty_dir}/assimp)
 
+include_directories(${3rdparty_dir}/stb)
 include_directories(${3rdparty_dir}/glad/include)
 include_directories(${3rdparty_dir}/entt/include)
+include_directories(${3rdparty_dir}/assimp/include)
 include_directories(${3rdparty_dir}/imgui)
 include_directories(${3rdparty_dir}/glm)
-include_directories(${3rdparty_dir}/stb)
 include_directories(${3rdparty_dir}/yaml-cpp)
-include_directories(${3rdparty_dir}/assimp/include)
 include_directories(${3rdparty_dir}/ImGuizmo)
 
 # lib
@@ -42,3 +43,5 @@ project(Aphrodite)
 add_subdirectory(Aphrodite-Editor)
 add_subdirectory(Aphrodite-Runtime)
 add_subdirectory(Aphrodite-Example)
+
+add_compile_options(-Wall -Wextra -Werror)

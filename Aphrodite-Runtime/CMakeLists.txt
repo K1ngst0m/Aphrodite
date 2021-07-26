@@ -1,6 +1,6 @@
 project(Aphrodite-Runtime)
 
-add_definitions(-DSTB_IMAGE_IMPLEMENTATION -DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
+add_definitions(-DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
 
 file(GLOB src_root src/pch.cpp)
 file(GLOB src_core src/Aphrodite/Core/*.cpp)

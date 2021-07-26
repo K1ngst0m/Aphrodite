@@ -39,6 +39,10 @@
 #include <unordered_map>
 namespace Aph {
     namespace Style {
+        namespace FontSize{
+            const static float text = 22.0f;
+            const static float icon = 17.0f;
+        }
 
         namespace Title {
             const static std::string_view SceneHierarchy = "\uF5FD Scene Hierarchy";
@@ -50,9 +54,7 @@ namespace Aph {
             const static std::string_view Renderer2DStatistics = "\uF05A 2D Render Stats";
             const static std::string_view Settings = "\uF0AD Settings";
         }// namespace Title
-
         namespace Color {
-
             // color style
             const auto foreground_1 = ImVec4{0.8f, 0.6f, 0.53f, 1.0f};
             const auto foreground_2 = ImVec4{0.406f, 0.738f, 0.687f, 1.0f};
@@ -88,8 +90,7 @@ namespace Aph {
 
 
         }// namespace Color
-    }    // namespace Style
-
+    }
     template<typename T>
     using Scope = std::unique_ptr<T>;
     template<typename T, typename... Args>

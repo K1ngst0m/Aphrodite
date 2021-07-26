@@ -4,8 +4,6 @@
 
 #include <Aphrodite/Core/EntryPoint.h>
 
-#include <Aphrodite.hpp>
-
 #include "EditorLayer.h"
 
 namespace Aph {

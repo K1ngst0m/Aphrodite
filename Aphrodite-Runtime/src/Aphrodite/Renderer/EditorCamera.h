@@ -64,8 +64,6 @@ namespace Aph {
         float m_MovementSpeed = m_NormalSpeed;
         float m_MouseSensitivity = 0.1f;
 
-        glm::vec2 m_InitialMousePosition = {0.0f, 0.0f};
-
         float m_Pitch = 0.0f, m_Yaw = -90.0f;
 
         glm::vec3 m_Right = glm::vec3(1, 0, 0);

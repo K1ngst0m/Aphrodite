@@ -185,7 +185,8 @@ namespace Aph {
         return submesh;
     }
 
-    std::vector<Ref<Texture2D>> Model::LoadMaterialTextures(aiMaterial* mat, aiTextureType type) {
+    std::vector<Ref<Texture2D>> Model::LoadMaterialTextures(aiMaterial* mat,
+                                                            aiTextureType type) {
         std::vector<Ref<Texture2D>> textures;
 
         Ref<Texture2D> texture;

@@ -62,6 +62,7 @@ namespace Aph {
         Ref<Texture2D> OpacityMap;
         Ref<Texture2D> EmissiveMap;
     };
+
 }// namespace Aph
 
 

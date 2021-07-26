@@ -99,6 +99,8 @@ namespace Aph {
                     data.EventCallback(event);
                     break;
                 }
+                default:
+                    break;
             }
         });
 
@@ -124,6 +126,8 @@ namespace Aph {
                             data.EventCallback(event);
                             break;
                         }
+                        default:
+                            break;
                     }
                 });
 

@@ -21,6 +21,7 @@
             APH_DEBUGBREAK();                           \
         }                                              \
     }
+
 #define APH_INTERNAL_ASSERT_WITH_MSG(type, check, ...) APH_INTERNAL_ASSERT_IMPL(type, check, "Assertion failed: {0}", __VA_ARGS__)
 #define APH_INTERNAL_ASSERT_NO_MSG(type, check) APH_INTERNAL_ASSERT_IMPL(type, check, "Assertion '{0}' failed at {1}:{2}", APH_STRINGIFY_MACRO(check), std::filesystem::path(__FILE__).filename().string(), __LINE__)
 

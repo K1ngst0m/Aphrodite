@@ -3,7 +3,6 @@
 //
 
 #include "Aphrodite/Renderer/Renderer.h"
-
 #include "Aphrodite/Renderer/Renderer2D.h"
 #include "Aphrodite/Renderer/Shader.h"
 #include "pch.h"
@@ -16,7 +15,6 @@ namespace Aph {
 
         RenderCommand::Init();
         Renderer2D::Init();
-
 
         // Cube Data =========================================================================
 
@@ -66,7 +64,7 @@ namespace Aph {
         s_SceneData->CubeVertexArray = VertexArray::Create();
         Ref<VertexBuffer> buffer = VertexBuffer::Create(vertices, sizeof(vertices));
 
-        const BufferLayout layout = {{ShaderDataType::Float3, "a_Position"}};
+        const BufferLayout layout {{ShaderDataType::Float3, "a_Position"}};
 
         buffer->SetLayout(layout);
 
