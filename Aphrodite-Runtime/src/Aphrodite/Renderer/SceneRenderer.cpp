@@ -73,9 +73,10 @@ namespace Aph {
         SetupLights(lights);
     }
 
-    void SceneRenderer::EndScene() { }
+    void SceneRenderer::EndScene() {}
 
-    void SceneRenderer::SubmitMesh(const Ref<Model>& mesh, const glm::mat4& transform,
+    void SceneRenderer::SubmitMesh(const Ref<Model>& mesh,
+                                   const glm::mat4& transform,
                                    const Ref<MaterialInstance>& overrideMaterial) {
         std::vector<Mesh> submeshes = mesh->GetMeshes();
         for (uint32_t i = 0; i < submeshes.size(); i++) {

@@ -20,18 +20,17 @@ namespace Aph::Editor {
     }
 
     void Status::DrawStatusBar() {
-        float avg = 0.0f;
+        static float sum = 0.0f;
 
-        const uint32_t size = m_FrameTimes.size();
-        if (size >= 50)
+        const auto size = m_FrameTimes.size();
+        if (size >= 50){
+            sum -= m_FrameTimes.front();
             m_FrameTimes.erase(m_FrameTimes.begin());
+        }
 
         m_FrameTimes.push_back(ImGui::GetIO().Framerate);
-        for (uint32_t i = 0; i < size; i++) {
-            m_FpsValues[i] = m_FrameTimes[i];
-            avg += m_FrameTimes[i];
-        }
-        avg /= static_cast<float>(size);
+        sum += m_FrameTimes.back();
+        float avg = sum / static_cast<float>(size);
 
         UIDrawer::Draw([&]() {
                          ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 4));
@@ -68,7 +67,7 @@ namespace Aph::Editor {
                            ImGui::SameLine(0, 70);
                            //                         const float fps = (1.0f / avg) * 1000.0f;
                            //                         ImGui::Text("Frame time (ms): %f", fps);
-                           ImGui::PlotLines("", m_FpsValues, size);
+                           ImGui::PlotLines("", m_FrameTimes.data(), size);
                        });
     }
 

@@ -64,8 +64,7 @@ void Aph::OpenGLVertexArray::UnBind() const {
     glBindVertexArray(0);
 }
 
-void Aph::OpenGLVertexArray::AddVertexBuffer(
-        const Ref<VertexBuffer> &vertexBuffer) {
+void Aph::OpenGLVertexArray::AddVertexBuffer(const Ref<VertexBuffer> &vertexBuffer) {
     APH_PROFILE_FUNCTION();
 
     APH_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(),
@@ -75,6 +74,7 @@ void Aph::OpenGLVertexArray::AddVertexBuffer(
     vertexBuffer->Bind();
 
     const auto &layout = vertexBuffer->GetLayout();
+
     for (const auto &element : layout) {
         switch (element.Type) {
             case ShaderDataType::Float:
@@ -125,6 +125,7 @@ void Aph::OpenGLVertexArray::AddVertexBuffer(
                 APH_CORE_ASSERT(false, "Unknown ShaderDataType!");
         }
     }
+
     m_VertexBuffers.push_back(vertexBuffer);
 }
 

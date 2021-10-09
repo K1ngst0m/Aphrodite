@@ -16,9 +16,10 @@ namespace Aph::Editor {
     static bool s_ShowWarnMessages = true;
     static bool s_ShowErrorMessages = true;
 
+
     void EditorConsole::Draw() {
         ImGui::Begin(Style::Title::Console.data());
-        const ImVec2 consoleButtonSize = {60.0f, 35.0f};
+        const ImVec2 consoleButtonSize = {65.0f, 35.0f};
 
         if (ImGui::Button("Clear", consoleButtonSize)) {
             Clear();
@@ -44,22 +45,22 @@ namespace Aph::Editor {
         const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
         ImGui::BeginChild("Scrolling Region", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar);
 
-        for (uint32_t i = 0; i < EditorConsole::s_LogMessageCount; i++) {
-            if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Info)
-                ImGui::TextColored({0.7f, 0.7f, 0.7f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
-            if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Warn)
-                ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
-            if (s_MessageBuffer.at(i).m_MessageLevel == Message::Level::Error)
-                ImGui::TextColored({0.8f, 0.4f, 0.4f, 1.0f}, "%s", s_MessageBuffer.at(i).m_MessageData.c_str());
+        for (const auto & message : s_MessageBuffer) {
+            if (message.m_MessageLevel == Message::Level::Info && s_ShowInfoMessages)
+                ImGui::TextColored({0.7f, 0.7f, 0.7f, 1.0f}, "%s", message.m_MessageData.c_str());
+            if (message.m_MessageLevel == Message::Level::Warn && s_ShowWarnMessages)
+                ImGui::TextColored({0.8f, 0.7f, 0.2f, 1.0f}, "%s", message.m_MessageData.c_str());
+            if (message.m_MessageLevel == Message::Level::Error && s_ShowErrorMessages)
+                ImGui::TextColored({0.8f, 0.4f, 0.4f, 1.0f}, "%s", message.m_MessageData.c_str());
             ImGui::Separator();
         }
+
         ImGui::EndChild();
         ImGui::End();
         ImGui::End();
     }
 
     void EditorConsole::Clear() {
-        s_LogMessageCount = 0;
         s_MessageBuffer.clear();
     }
 

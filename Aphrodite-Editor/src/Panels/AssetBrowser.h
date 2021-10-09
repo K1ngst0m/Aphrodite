@@ -17,6 +17,8 @@ namespace Aph::Editor {
     };
 
     class AssetBrowser {
+    private:
+        static bool isInit;
     public:
         static void Init();
         static void Draw();

@@ -59,7 +59,8 @@ namespace Aph {
         void LoadModel(int entityID, const std::string& path);
         void ProcessNode(int entityID, aiNode* node, const aiScene* scene);
         Mesh LoadMesh(int entityID, aiMesh* mesh, const aiScene* scene);
-        std::vector<Ref<Texture2D>> LoadMaterialTextures(aiMaterial* material, aiTextureType type);
+        std::vector<Ref<Texture2D>> LoadMaterialTextures(aiMaterial* material,
+                                                         aiTextureType type);
 
     private:
         std::vector<Mesh> m_Meshes;
@@ -67,7 +68,6 @@ namespace Aph {
         std::string m_Name;
         std::string m_Directory;
         std::vector<Ref<MaterialInstance>> m_Materials;
-
     };
 }// namespace Aph
 

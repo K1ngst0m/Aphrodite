@@ -25,7 +25,12 @@ namespace Aph::Editor {
         io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, 18.0f, &icons_config, icons_ranges);
     }
 
+    bool AssetBrowser::isInit = false;
     void AssetBrowser::Draw() {
+        //        if(!isInit) {
+        //            Init();
+        //            isInit = true;
+        //        }
         ImGui::Begin(Style::Title::Project.data());
         ImGui::Columns(2, "Project", true);
 
@@ -57,8 +62,10 @@ namespace Aph::Editor {
     }
 
     void AssetBrowser::DrawLeftProjectPanel() {
-        bool opened = ImGui::TreeNodeEx("leftProjectPanelAssets", ImGuiTreeNodeFlags_DefaultOpen
-                                                                          | ImGuiTreeNodeFlags_OpenOnArrow, ICON_FA_FOLDER " assets");
+        bool opened = ImGui::TreeNodeEx("leftProjectPanelAssets",
+                                        ImGuiTreeNodeFlags_DefaultOpen |
+                                                ImGuiTreeNodeFlags_OpenOnArrow,
+                                        ICON_FA_FOLDER " assets");
 
         if (ImGui::IsItemClicked()) {
             m_CurrentRightPanelDirectoryPath = m_AssetDirectoryPath;
@@ -213,4 +220,4 @@ namespace Aph::Editor {
             return it->second;
         }
     }
-}// namespace Aph
+}// namespace Aph::Editor

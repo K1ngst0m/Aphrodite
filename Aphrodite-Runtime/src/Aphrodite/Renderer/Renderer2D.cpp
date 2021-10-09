@@ -148,12 +148,12 @@ namespace Aph {
         s_Data.TextureSlotIndex = 1;
     }
 
-
     void Renderer2D::Flush() {
         if (s_Data.QuadIndexCount == 0)
             return;
 
-        auto dataSize = (uint32_t) ((uint8_t*) s_Data.QuadVertexBufferPtr - (uint8_t*) s_Data.QuadVertexBufferBase);
+        auto dataSize = (uint32_t) ((uint8_t*) s_Data.QuadVertexBufferPtr -
+                                    (uint8_t*) s_Data.QuadVertexBufferBase);
         s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
 
         // Bind textures
@@ -161,7 +161,8 @@ namespace Aph {
             s_Data.TextureSlots[i]->Bind(i);
 
         s_Data.QuadVertexArray->Bind();
-        RenderCommand::DrawIndexed(s_Data.QuadVertexArray, s_Data.QuadIndexCount);
+        RenderCommand::DrawIndexed(s_Data.QuadVertexArray,
+                                   s_Data.QuadIndexCount);
         s_Data.Stats.DrawCalls++;
     }
 
@@ -204,7 +205,7 @@ namespace Aph {
         APH_PROFILE_FUNCTION();
 
         constexpr size_t quadVertexCount = 4;
-        const float textureIndex = 0.0f; // White Texture
+        const float textureIndex = 0.0f;// White Texture
         constexpr glm::vec2 textureCoords[] = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
         const float tilingFactor = 1.0f;
 

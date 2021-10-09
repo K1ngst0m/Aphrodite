@@ -62,8 +62,7 @@ namespace Aph {
         glfwSetWindowUserPointer(m_Window, &m_Data);
         SetVSync(true);
 
-        glfwSetWindowSizeCallback(
-                m_Window, [](GLFWwindow *window, int width, int height) {
+        glfwSetWindowSizeCallback( m_Window, [](GLFWwindow *window, int width, int height) {
                     auto data = *(WindowData *) glfwGetWindowUserPointer(window);
                     data.Width = width;
                     data.Height = height;
@@ -113,7 +112,7 @@ namespace Aph {
 
         glfwSetMouseButtonCallback(
                 m_Window, [](GLFWwindow *window, int button, int action, int mods) {
-                    WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
+                    auto &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
                     switch (action) {
                         case GLFW_PRESS: {
@@ -133,7 +132,7 @@ namespace Aph {
 
         glfwSetScrollCallback(
                 m_Window, [](GLFWwindow *window, double xOffset, double yOffset) {
-                    WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
+                    auto &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
                     MouseScrolledEvent event((float) xOffset, (float) yOffset);
                     data.EventCallback(event);
@@ -141,7 +140,7 @@ namespace Aph {
 
         glfwSetCursorPosCallback(
                 m_Window, [](GLFWwindow *window, double xPos, double yPos) {
-                    WindowData &data = *(WindowData *) glfwGetWindowUserPointer(window);
+                    auto &data = *(WindowData *) glfwGetWindowUserPointer(window);
 
                     MouseMovedEvent event((float) xPos, (float) yPos);
                     data.EventCallback(event);
@@ -178,6 +177,7 @@ namespace Aph {
     void LinuxWindow::EnableCursor() {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+
     void LinuxWindow::DisableCursor() {
         glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }

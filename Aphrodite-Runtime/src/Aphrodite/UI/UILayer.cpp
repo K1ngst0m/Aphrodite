@@ -23,24 +23,21 @@ namespace Aph {
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO &io = ImGui::GetIO();
-        (void) io;
+        ImGuiIO &io = ImGui::GetIO(); (void) io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;// Enable Keyboard Controls
         // TODO: Enable Gamepad
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+//        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;  // Enable Docking
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;// Enable Multi-Viewport /
-
+//        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;// Enable Multi-Viewport
 
         static const ImWchar icons_ranges_fontawesome[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
         ImFontConfig icons_config_fontawesome;
         icons_config_fontawesome.MergeMode = true;
         icons_config_fontawesome.PixelSnapH = true;
 
-        io.Fonts->AddFontFromFileTTF(FONT_UI, Style::FontSize::text);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, Style::FontSize::icon, &icons_config_fontawesome, icons_ranges_fontawesome);
         io.FontDefault = io.Fonts->AddFontFromFileTTF(FONT_UI, Style::FontSize::text);
-        io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, Style::FontSize::icon, &icons_config_fontawesome, icons_ranges_fontawesome);
+        APH_ASSERT(io.Fonts->AddFontFromFileTTF(FONT_ICON_FILE_NAME_FAS, Style::FontSize::icon,
+                                     &icons_config_fontawesome, icons_ranges_fontawesome), "Can't find icon fonts");
 
 #if 1
         ImGui::StyleColorsDark();
@@ -48,19 +45,20 @@ namespace Aph {
         //UI::StyleColorsClassic();
 #endif
 
-        ImGuiStyle &style = ImGui::GetStyle();
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            style.WindowRounding = 0.0f;
-            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-        }
+//        ImGuiStyle &style = ImGui::GetStyle();
+//        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+//            style.WindowRounding = 0.0f;
+//            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+//        }
 
         SetDarkThemeColors();
 
-        Application &app = Application::Get();
+        auto &app = Application::Get();
         auto *window = static_cast<GLFWwindow *>(app.GetWindow().GetNativeWindow());
 
         ImGui_ImplGlfw_InitForOpenGL(window, true);
-        ImGui_ImplOpenGL3_Init("#version 410");
+
+        ImGui_ImplOpenGL3_Init("#version 460");
     }
 
     void UILayer::OnDetach() {
@@ -91,7 +89,7 @@ namespace Aph {
     void UILayer::End() {
         APH_PROFILE_FUNCTION();
 
-        auto &io = ImGui::GetIO();
+        ImGuiIO &io = ImGui::GetIO();
         auto &app = Application::Get();
         io.DisplaySize = ImVec2(static_cast<float>(app.GetWindow().GetWidth()),
                                 static_cast<float>(app.GetWindow().GetHeight()));
@@ -99,12 +97,12 @@ namespace Aph {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            auto *backup_current_context = glfwGetCurrentContext();
-            ImGui::UpdatePlatformWindows();
-            ImGui::RenderPlatformWindowsDefault();
-            glfwMakeContextCurrent(backup_current_context);
-        }
+//        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+//            auto *backup_current_context = glfwGetCurrentContext();
+//            ImGui::UpdatePlatformWindows();
+//            ImGui::RenderPlatformWindowsDefault();
+//            glfwMakeContextCurrent(backup_current_context);
+//        }
     }
 
     void UILayer::SetDarkThemeColors() {

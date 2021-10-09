@@ -37,14 +37,14 @@ namespace Aph {
 
     class Application {
     public:
-        explicit Application(const std::string &name = "Aph-Runtime App", ApplicationCommandLineArgs args = ApplicationCommandLineArgs());
+        explicit Application(const std::string &name = "Aphrodite",
+                             ApplicationCommandLineArgs args = ApplicationCommandLineArgs());
 
         virtual ~Application();
 
         void OnEvent(Event &e);
 
         void PushLayer(Layer *layer);
-
         void PushOverlay(Layer *layer);
 
         Window &GetWindow() { return *m_Window; }
@@ -78,6 +78,6 @@ namespace Aph {
 
     // to be defined in client
     Application *CreateApplication(ApplicationCommandLineArgs args);
-}// namespace Aph-Runtime
+}// namespace Aph
 
 #endif// Aphrodite_APPLICATION_H

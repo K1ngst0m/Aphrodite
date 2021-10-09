@@ -9,19 +9,19 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
+#include <mutex>
 #include <string>
 #include <thread>
-#include <mutex>
 
 #include "Aphrodite/Debug/Log.h"
 
 namespace Aph {
-    using FloatingPointMicroseconds = std::chrono::duration<double, std::micro>;
+    using FloatingPointMilliseconds = std::chrono::duration<double, std::milli>;
 
     struct ProfileResult {
         std::string Name;
-        FloatingPointMicroseconds Start;
-        std::chrono::microseconds ElapsedTime;
+        FloatingPointMilliseconds Start;
+        std::chrono::milliseconds ElapsedTime;
         std::thread::id ThreadID;
     };
 
@@ -34,14 +34,18 @@ namespace Aph {
         Instrumentor(const Instrumentor&) = delete;
         Instrumentor(Instrumentor&&) = delete;
 
-        void BeginSession(const std::string& name, const std::string& filepath = "results.json") {
+        void BeginSession(const std::string& name,
+                          const std::string& filepath = "results.json") {
             std::lock_guard lock(m_Mutex);
+
             if (m_CurrentSession) {
                 if (Log::GetCoreLogger()) {
-                    APH_CORE_ERROR("Instrumentor::BeginSession('{0}') when session '{1}' already open.", name, m_CurrentSession->Name);
+                    APH_CORE_ERROR("Instrumentor::BeginSession('{0}') when session '{1}' already open.",
+                                   name, m_CurrentSession->Name);
                 }
                 InternalEndSession();
             }
+
             m_OutputStream.open(filepath);
             if (m_OutputStream.is_open()) {
                 m_CurrentSession = new InstrumentationSession{name};
@@ -62,14 +66,14 @@ namespace Aph {
             std::stringstream json;
 
             json << "{";
-            json << R"("cat":"function",)";
-            json << R"("dur":)" << (result.ElapsedTime.count()) << ',';
+            //            json << R"("cat":"function",)";
             json << R"("name":")" << result.Name << "\",";
-            json << R"("ph":"X",)";
             json << R"("pid":0,)";
             json << R"("tid":)" << result.ThreadID << ",";
-            json << R"("ts":)" << result.Start.count();
-            json << "}";
+            //            json << R"("ph":"X",)";
+            json << R"("dur[ms]":)" << result.ElapsedTime.count() << ",";
+            json << R"("ts[ms]":)" << result.Start.count();
+            json << "},";
 
             std::lock_guard lock(m_Mutex);
             if (m_CurrentSession) {
@@ -85,7 +89,7 @@ namespace Aph {
 
     private:
         void WriteHeader() {
-            m_OutputStream << R"({"otherData": {}, "traceEvents":[{})";
+            m_OutputStream << R"({"traceEvents":[)";
             m_OutputStream.flush();
         }
 
@@ -102,6 +106,7 @@ namespace Aph {
                 m_CurrentSession = nullptr;
             }
         }
+
     private:
         std::mutex m_Mutex;
         InstrumentationSession* m_CurrentSession;
@@ -110,7 +115,6 @@ namespace Aph {
     private:
         Instrumentor() : m_CurrentSession(nullptr) {}
         ~Instrumentor() { EndSession(); }
-
     };
 
     class InstrumentationTimer {
@@ -127,8 +131,8 @@ namespace Aph {
 
         void Stop() {
             auto endTimepoint = std::chrono::high_resolution_clock::now();
-            auto highResStart = FloatingPointMicroseconds{m_StartTimepoint.time_since_epoch()};
-            auto elapsedTime = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch() - std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch();
+            auto highResStart = FloatingPointMilliseconds{m_StartTimepoint.time_since_epoch()};
+            auto elapsedTime = std::chrono::time_point_cast<std::chrono::milliseconds>(endTimepoint).time_since_epoch() - std::chrono::time_point_cast<std::chrono::milliseconds>(m_StartTimepoint).time_since_epoch();
 
             Instrumentor::Get().WriteProfile({m_Name, highResStart, elapsedTime, std::this_thread::get_id()});
 
@@ -193,7 +197,7 @@ namespace Aph {
 #endif
 #define APH_PROFILE_BEGIN_SESSION(name, filepath) ::Aph::Instrumentor::Get().BeginSession(name, filepath)
 #define APH_PROFILE_END_SESSION() ::Aph::Instrumentor::Get().EndSession()
-#define APH_PROFILE_SCOPE_LINE2(name, line)                                                              \
+#define APH_PROFILE_SCOPE_LINE2(name, line)                                                           \
     constexpr auto fixedName##line = ::Aph::InstrumentorUtils::CleanupOutputString(name, "__cdecl "); \
     ::Aph::InstrumentationTimer timer##line(fixedName##line.Data)
 #define APH_PROFILE_SCOPE_LINE(name, line) APH_PROFILE_SCOPE_LINE2(name, line)

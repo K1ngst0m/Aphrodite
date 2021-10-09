@@ -32,114 +32,7 @@ namespace Aph::Editor {
         if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
             m_SelectionContext = {};
 
-        // Right click
-        if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
-            if (ImGui::MenuItem("Create Empty"))
-                m_SelectionContext = m_Context->CreateEntity("Empty");
-
-            if (ImGui::MenuItem("Create Camera")) {
-                m_SelectionContext = m_Context->CreateEntity("Camera");
-                m_SelectionContext.AddComponent<CameraComponent>();
-                ImGui::CloseCurrentPopup();
-            }
-
-            if (ImGui::BeginMenu("Create Sprite")) {
-                if (ImGui::MenuItem("Default")) {
-                    m_SelectionContext = m_Context->CreateEntity("Sprite");
-                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                    ImGui::CloseCurrentPopup();
-                } else if (ImGui::MenuItem("Physics(Box)")) {
-                    m_SelectionContext = m_Context->CreateEntity("Sprite");
-                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
-                    m_SelectionContext.AddComponent<BoxCollider2DComponent>();
-                    ImGui::CloseCurrentPopup();
-                } else if (ImGui::MenuItem("Physics(Circle)")) {
-                    m_SelectionContext = m_Context->CreateEntity("Sprite");
-                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
-                    m_SelectionContext.AddComponent<CircleCollider2DComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("3D Object")) {
-                if (ImGui::MenuItem("Empty Model")) {
-                    m_SelectionContext = m_Context->CreateEntity("Model");
-                    m_SelectionContext.AddComponent<MeshComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Cube")) {
-                    m_SelectionContext = m_Context->CreateEntity("Cube");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cube);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Sphere")) {
-                    m_SelectionContext = m_Context->CreateEntity("Sphere");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Sphere);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Plane")) {
-                    m_SelectionContext = m_Context->CreateEntity("Plane");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Plane);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Quad")) {
-                    m_SelectionContext = m_Context->CreateEntity("Quad");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Quad);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Cone")) {
-                    m_SelectionContext = m_Context->CreateEntity("Cone");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cone);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                if (ImGui::MenuItem("Cylinder")) {
-                    m_SelectionContext = m_Context->CreateEntity("Cylinder");
-                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cylinder);
-                    ImGui::CloseCurrentPopup();
-                }
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::BeginMenu("Light")) {
-                if (ImGui::MenuItem("Directional")) {
-                    m_SelectionContext = m_Context->CreateEntity("Directional Light");
-                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Directional);
-                    ImGui::CloseCurrentPopup();
-                } else if (ImGui::MenuItem("Point")) {
-                    m_SelectionContext = m_Context->CreateEntity("Point Light");
-                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Point);
-                    ImGui::CloseCurrentPopup();
-                } else if (ImGui::MenuItem("Spot")) {
-                    m_SelectionContext = m_Context->CreateEntity("Spot Light");
-                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Spot);
-                    ImGui::CloseCurrentPopup();
-                } else if (ImGui::MenuItem("Area")) {
-                    m_SelectionContext = m_Context->CreateEntity("Area Light");
-                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Area);
-                    ImGui::CloseCurrentPopup();
-                }
-
-                ImGui::EndMenu();
-            }
-
-            if (ImGui::MenuItem("Create Skylight")) {
-                m_SelectionContext = m_Context->CreateEntity("Skylight");
-                m_SelectionContext.AddComponent<SkylightComponent>();
-                ImGui::CloseCurrentPopup();
-            }
-            ImGui::EndPopup();
-        }
-
-        ImGui::End();
+        RightClickMenuGlobal();
 
         ImGui::Begin(Style::Title::Properties.data());
         if (m_SelectionContext) {
@@ -154,15 +47,18 @@ namespace Aph::Editor {
 
     void SceneHierarchy::DrawEntityNode(Entity entity) {
         auto& tagComponent = entity.GetComponent<TagComponent>();
-        auto& tag = tagComponent.Tag;
+        std::string& tag = tagComponent.Tag;
 
-        ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
-        flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
-        bool opened = ImGui::TreeNodeEx((void*) (uint64_t) (uint32_t) entity, flags, "%s", tag.c_str());
+        ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) |
+                                   ImGuiTreeNodeFlags_OpenOnArrow |
+                                   ImGuiTreeNodeFlags_SpanAvailWidth;
+        bool opened = ImGui::TreeNodeEx((void*) static_cast<uint64_t>(entity),
+                                        flags, "%s", tag.c_str());
         if (ImGui::IsItemClicked()) {
             m_SelectionContext = entity;
         }
 
+        // Right Click Menu
         bool entityDeleted = false;
         if (ImGui::BeginPopupContextItem()) {
             if (ImGui::MenuItem("Rename"))
@@ -181,14 +77,16 @@ namespace Aph::Editor {
                 tag = std::string(buffer);
             }
 
-            if (ImGui::IsMouseClicked(0) && ImGui::IsWindowHovered()) {
+            if (ImGui::IsMouseClicked(0) &&
+                ImGui::IsWindowHovered()) {
                 tagComponent.renaming = false;
             }
         }
 
         if (opened) {
-            flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-            opened = ImGui::TreeNodeEx((void*) 9817239, flags, "%s", tag.c_str());
+            flags = ImGuiTreeNodeFlags_OpenOnArrow |
+                    ImGuiTreeNodeFlags_SpanAvailWidth;
+            opened = ImGui::TreeNodeEx((void*) "", flags, "%s", tag.c_str());
             if (opened)
                 ImGui::TreePop();
             ImGui::TreePop();
@@ -240,7 +138,7 @@ namespace Aph::Editor {
         ImGui::PopID();
     }
 
-    static void DrawVisibilityCheckbox(bool *flag){
+    static void DrawVisibilityCheckbox(bool* flag) {
         ImGui::PushStyleColor(ImGuiCol_Button, Style::Color::background_1);
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, Style::Color::background_1);
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Style::Color::background_1);
@@ -248,13 +146,12 @@ namespace Aph::Editor {
         const char* checkboxIcon_visible = "\uf06e";
         const char* checkboxIcon_hidden = "\uf070";
 
-        if(*flag){
-            if(ImGui::Button(checkboxIcon_visible)){
+        if (*flag) {
+            if (ImGui::Button(checkboxIcon_visible)) {
                 *flag = !*flag;
             }
-        }
-        else{
-            if(ImGui::Button(checkboxIcon_hidden)){
+        } else {
+            if (ImGui::Button(checkboxIcon_hidden)) {
                 *flag = !*flag;
             }
         }
@@ -386,11 +283,7 @@ namespace Aph::Editor {
 
     template<typename T, typename UIFunction>
     static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction, const bool removable = true) {
-        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen
-                                                 | ImGuiTreeNodeFlags_Framed
-                                                 | ImGuiTreeNodeFlags_SpanAvailWidth
-                                                 | ImGuiTreeNodeFlags_AllowItemOverlap
-                                                 | ImGuiTreeNodeFlags_FramePadding ;
+        const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
 
         if (entity.HasComponent<T>()) {
             auto& component = entity.GetComponent<T>();
@@ -447,11 +340,11 @@ namespace Aph::Editor {
     }
 
     static void DrawPBRProperties(Ref<PbrMaterial>& materialInstance) {
-        const char* filesFlag = "\"Material (*.png/*.jpg/*.bmp)|*.[Pp][Nn][Gg] *.[Jj][Pp][Gg] *.[Bb][Mm][Pp]\"";
-        const float itemWidth = static_cast<double>(ImGui::GetContentRegionAvailWidth()) / 1.8;
+        const char* filesFlag = "\"Material (*.png/*.jpg/*.bmp/*.tga)|*.[Pp][Nn][Gg] *.[Jj][Pp][Gg] *.[Tt][Gg][Aa] *.[Bb][Mm][Pp]\"";
+        const float itemWidth = ImGui::GetContentRegionAvailWidth() / 1.8f;
         int id = 0;
 
-        ImVec2 textureImageButtonSize {22, 22};
+        ImVec2 textureImageButtonSize{22, 22};
         ImGui::PushStyleColor(ImGuiCol_SliderGrab, Style::Color::Foreground.at("Second"));
         ImGui::PushStyleColor(ImGuiCol_SliderGrabActive, Style::Color::Foreground.at("Second"));
 
@@ -954,7 +847,7 @@ namespace Aph::Editor {
                 meshPath = "Empty";
             }
 
-          ImGui::Text("%s", meshPath.c_str());
+            ImGui::Text("%s", meshPath.c_str());
 
             if (ImGui::Button("...", {55, 35})) {
                 std::string filepath = FileDialogs::OpenFile("\"3D Model (*.obj/*.fbx)|*.[Oo][Bb][Jj] *.[Ff][Bb][Xx]\"");
@@ -1011,5 +904,116 @@ namespace Aph::Editor {
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar();
         });
+    }
+
+    void SceneHierarchy::RightClickMenuGlobal() {
+        // Right click
+        if (ImGui::BeginPopupContextWindow(nullptr, 1, false)) {
+            if (ImGui::MenuItem("Create Empty"))
+                m_SelectionContext = m_Context->CreateEntity("Empty");
+
+            if (ImGui::MenuItem("Create Camera")) {
+                m_SelectionContext = m_Context->CreateEntity("Camera");
+                m_SelectionContext.AddComponent<CameraComponent>();
+                ImGui::CloseCurrentPopup();
+            }
+
+            if (ImGui::BeginMenu("Create Sprite")) {
+                if (ImGui::MenuItem("Default")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Physics(Box)")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
+                    m_SelectionContext.AddComponent<BoxCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Physics(Circle)")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sprite");
+                    m_SelectionContext.AddComponent<SpriteRendererComponent>();
+                    m_SelectionContext.AddComponent<Rigidbody2DComponent>();
+                    m_SelectionContext.AddComponent<CircleCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("3D Object")) {
+                if (ImGui::MenuItem("Empty Model")) {
+                    m_SelectionContext = m_Context->CreateEntity("Model");
+                    m_SelectionContext.AddComponent<MeshComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cube")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cube");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cube);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Sphere")) {
+                    m_SelectionContext = m_Context->CreateEntity("Sphere");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Sphere);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Plane")) {
+                    m_SelectionContext = m_Context->CreateEntity("Plane");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Plane);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Quad")) {
+                    m_SelectionContext = m_Context->CreateEntity("Quad");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Quad);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cone")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cone");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cone);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                if (ImGui::MenuItem("Cylinder")) {
+                    m_SelectionContext = m_Context->CreateEntity("Cylinder");
+                    m_SelectionContext.AddComponent<MeshComponent>(m_SelectionContext.GetComponent<IDComponent>().ID, MeshComponent::Geometry::Cylinder);
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Light")) {
+                if (ImGui::MenuItem("Directional")) {
+                    m_SelectionContext = m_Context->CreateEntity("Directional Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Directional);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Point")) {
+                    m_SelectionContext = m_Context->CreateEntity("Point Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Point);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Spot")) {
+                    m_SelectionContext = m_Context->CreateEntity("Spot Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Spot);
+                    ImGui::CloseCurrentPopup();
+                } else if (ImGui::MenuItem("Area")) {
+                    m_SelectionContext = m_Context->CreateEntity("Area Light");
+                    m_SelectionContext.AddComponent<LightComponent>(LightComponent::LightType::Area);
+                    ImGui::CloseCurrentPopup();
+                }
+
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::MenuItem("Create Skylight")) {
+                m_SelectionContext = m_Context->CreateEntity("Skylight");
+                m_SelectionContext.AddComponent<SkylightComponent>();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::End();
     }
 }// namespace Aph::Editor

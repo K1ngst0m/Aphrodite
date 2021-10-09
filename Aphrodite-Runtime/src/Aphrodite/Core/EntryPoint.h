@@ -15,6 +15,7 @@
 #ifdef APH_PLATFORM_LINUX
 
 int main(int argc, char **argv) {
+    // init core utils
     Aph::Log::Init();
 
     APH_PROFILE_BEGIN_SESSION("Startup", "APH-Profile-Startup.json");

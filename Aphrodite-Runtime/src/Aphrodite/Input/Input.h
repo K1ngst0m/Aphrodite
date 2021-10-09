@@ -16,11 +16,10 @@ namespace Aph {
     public:
         static bool IsKeyPressed(KeyCode key);
         static bool IsMouseButtonPressed(MouseCode button);
+
         static glm::vec2 GetMousePosition();
         static float GetMouseX();
         static float GetMouseY();
-    private:
-        static Scope<Input> s_Instance;
     };
 }// namespace Aph-Runtime
 

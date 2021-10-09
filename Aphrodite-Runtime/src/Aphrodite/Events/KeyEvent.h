@@ -44,7 +44,8 @@ namespace Aph {
 
     class KeyReleasedEvent : public KeyEvent {
     public:
-        explicit KeyReleasedEvent(const KeyCode keycode) : KeyEvent(keycode) {}
+        explicit KeyReleasedEvent(const KeyCode keycode)
+            : KeyEvent(keycode) {}
 
         std::string ToString() const override {
             std::stringstream ss;
@@ -67,6 +68,6 @@ namespace Aph {
 
         EVENT_CLASS_TYPE(KeyTyped)
     };
-}// namespace Aph-Runtime
+}// namespace Aph
 
 #endif// Aphrodite_ENGINE_KEYEVENT_H

@@ -20,7 +20,6 @@ namespace Aph {
         virtual ~SceneCamera() = default;
 
         void SetOrthographic(float size, float nearClip, float farClip);
-
         void SetViewportSize(uint32_t width, uint32_t height);
 
         float GetPerspectiveVerticalFOV() const { return m_PerspectiveFOV; }
@@ -28,11 +27,13 @@ namespace Aph {
             m_PerspectiveFOV = verticalFov;
             RecalculateProjection();
         }
+
         float GetPerspectiveNearClip() const { return m_PerspectiveNear; }
         void SetPerspectiveNearClip(float nearClip) {
             m_PerspectiveNear = nearClip;
             RecalculateProjection();
         }
+
         float GetPerspectiveFarClip() const { return m_PerspectiveFar; }
         void SetPerspectiveFarClip(float farClip) {
             m_PerspectiveFar = farClip;

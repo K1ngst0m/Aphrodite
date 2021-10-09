@@ -27,8 +27,7 @@ namespace Aph {
 
         IDComponent() = default;
         IDComponent(const IDComponent&) = default;
-        explicit IDComponent(const uint32_t id)
-            : ID(id) {}
+        explicit IDComponent(const uint32_t id) : ID(id) {}
         explicit operator uint32_t() const { return ID; }
     };
 
@@ -206,7 +205,6 @@ namespace Aph {
             Texture = nullptr;
             TextureFilepath = "";
         }
-
     };
 
     struct LightComponent {

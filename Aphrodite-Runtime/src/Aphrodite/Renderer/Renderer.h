@@ -41,7 +41,7 @@ namespace Aph {
 
             Ref<VertexArray> CubeVertexArray;
 
-            Ref<Texture2D> whiteTexture;
+//            Ref<Texture2D> whiteTexture;
             Ref<Shader> SkyboxShader;
         };
 

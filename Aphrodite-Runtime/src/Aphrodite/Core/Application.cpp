@@ -16,7 +16,9 @@
 namespace Aph {
     Application *Application::s_Instance = nullptr;
 
-    Application::Application(const std::string &name, ApplicationCommandLineArgs args) : m_CommandLineArgs(args) {
+    Application::Application(const std::string &name,
+                             ApplicationCommandLineArgs args)
+        : m_CommandLineArgs(args) {
         APH_PROFILE_FUNCTION();
         APH_CORE_ASSERT(!s_Instance, "Application already exists!");
 
@@ -56,7 +58,7 @@ namespace Aph {
             APH_PROFILE_SCOPE("RunLoop");
 
             auto time = static_cast<float>(glfwGetTime());
-            Timestep timestep = time - m_LastFrameTime;
+            auto timestep = static_cast<Timestep>(time - m_LastFrameTime);
             m_LastFrameTime = time;
 
             if (!m_Minimized) {
@@ -66,13 +68,13 @@ namespace Aph {
                         layer->OnUpdate(timestep);
                 }
 
-                Aph::UILayer::Begin();
                 {
+                    Aph::UILayer::Begin();
                     APH_PROFILE_SCOPE("LayerStack OnUpdate");
                     for (const auto &layer : m_LayerStack)
                         layer->OnUIRender();
+                    Aph::UILayer::End();
                 }
-                Aph::UILayer::End();
             }
 
             m_Window->OnUpdate();
@@ -116,4 +118,4 @@ namespace Aph {
         m_Running = false;
     }
 
-}// namespace Aph-Runtime
+}// namespace Aph

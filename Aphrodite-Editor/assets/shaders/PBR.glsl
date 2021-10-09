@@ -39,8 +39,8 @@ void main()
 }
 
 
-    #type fragment
-    #version 450 core
+#type fragment
+#version 450 core
 
 const float PI = 3.141592653589793;
 
@@ -200,11 +200,11 @@ void main()
         vec3 radiance = u_Lights[i].u_Color.rgb * u_Lights[i].u_Intensity * attenuation;
 
         // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);
+        float D = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
         vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
 
-        vec3 numerator = NDF * G * F;
+        vec3 numerator = D * G * F;
         float denom = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
         vec3 specular = numerator / denom;
 
@@ -227,6 +227,7 @@ void main()
 
     // HDR tonemapping
     color = color / (color + vec3(1.0));
+
     // apply gamma correction
     color = pow(color, vec3(1.0/2.2));
 

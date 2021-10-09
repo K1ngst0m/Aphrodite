@@ -34,8 +34,8 @@ namespace Aph::Editor {
             UIDrawer::Property("Position Iterations", Physics2D::PositionIterations, 1, 50);
         });
 
-        ImGui::Text("Other");
         ImGui::Separator();
+        ImGui::Text("Other");
 
         ImGui::End();
     }

@@ -29,12 +29,15 @@ namespace Aph::Editor {
 
         static std::string GetHoveredComponentName();
     private:
+        void DrawEditor(const std::function<void()>& drawlist);
+
         void DrawSceneHierarchy();
-        void DrawViewport();
+        void DrawScene();
         void DrawStatusData();
         void DrawMenuBar();
         void DrawToolBar();
         void DrawSettings();
+        void MousePicking();
         static void DrawConsole();
         static void DrawAssetBrowser();
 
@@ -71,12 +74,12 @@ namespace Aph::Editor {
 
         EditorCamera m_EditorCamera;
 
-        bool m_ViewportFocused = false, m_ViewportHovered = false, m_HasViewportEvent = false;
+        bool m_ViewportFocused = false,
+             m_ViewportHovered = false,
+             m_HasViewportEvent = false;
 
         glm::vec2 m_ViewportSize = {0.0f, 0.0f};
         glm::vec2 m_ViewportBounds[2]{};
-
-        float frameTime = 0.0f;
 
         int m_GizmoType = -1;
 

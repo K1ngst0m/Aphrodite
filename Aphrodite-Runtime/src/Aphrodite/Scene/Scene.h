@@ -10,7 +10,7 @@
 #include "Aphrodite/Core/TimeStep.h"
 #include "Aphrodite/Renderer/EditorCamera.h"
 
-namespace Aph::Editor{
+namespace Aph::Editor {
     class SceneHierarchy;
 }
 
@@ -22,7 +22,6 @@ namespace Aph {
         Scene();
         ~Scene();
 
-
         Entity CreateEntity(const std::string& name = std::string());
         Entity CreateEntityWithID(uint32_t id);
         void DestroyEntity(Entity entity);
@@ -31,17 +30,17 @@ namespace Aph {
 
         void CopyTo(Ref<Scene>& target);
 
-        // runtime
         void OnRuntimeStart();
+        void OnRuntimeUpdate(Timestep ts);
+        void OnRuntimePause(Timestep ts);
         void OnRuntimeEnd();
-        void OnUpdateRuntime(Timestep ts);
 
-        void OnUpdateEditor(Timestep ts, EditorCamera& camera);
+        void OnEditorUpdate(Timestep ts, EditorCamera& camera);
+
         void OnViewportResize(uint32_t width, uint32_t height);
 
         Entity GetPrimaryCameraEntity();
         static int GetPixelDataAtPoint(int x, int y);
-
 
     private:
         template<typename T>
@@ -49,7 +48,8 @@ namespace Aph {
 
     private:
         entt::registry m_Registry;
-        uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
+        uint32_t m_ViewportWidth = 0,
+                 m_ViewportHeight = 0;
 
         friend class Entity;
         friend class SceneSerializer;

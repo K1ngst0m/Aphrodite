@@ -12,7 +12,6 @@ namespace Aph::Editor {
     public:
         SceneHierarchy() = default;
         explicit SceneHierarchy(const Ref<Scene>& context);
-
         void SetContext(const Ref<Scene>& context);
 
         void OnUIRender();
@@ -23,6 +22,9 @@ namespace Aph::Editor {
     private:
         void DrawEntityNode(Entity entity);
         void DrawComponents(Entity entity);
+
+    private:
+        void RightClickMenuGlobal();
 
     private:
         Ref<Scene> m_Context;

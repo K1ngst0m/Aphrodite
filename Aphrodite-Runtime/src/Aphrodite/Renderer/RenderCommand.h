@@ -26,30 +26,26 @@ namespace Aph {
             s_RendererAPI->Clear();
         }
 
-        static void
-        DrawIndexed(const Ref<VertexArray> &vertexArray, uint32_t count = 0) {
+        static void DrawIndexed(const Ref<VertexArray> &vertexArray, uint32_t count = 0) {
             s_RendererAPI->DrawIndexed(vertexArray, count);
         }
 
 
-        inline static void DrawArray(uint32_t first, uint32_t count)
-        {
+        inline static void DrawArray(uint32_t first, uint32_t count) {
             s_RendererAPI->DrawArray(first, count);
         }
 
-        inline static void SetDepthMask(bool flag)
-        {
+        inline static void SetDepthMask(bool flag) {
             s_RendererAPI->SetDepthMask(flag);
         }
 
-        inline static void SetDepthTest(bool flag)
-        {
+        inline static void SetDepthTest(bool flag) {
             s_RendererAPI->SetDepthTest(flag);
         }
 
     private:
         static Scope<RendererAPI> s_RendererAPI;
     };
-}// namespace Aph-Runtime
+}// namespace Aph
 
 #endif// Aphrodite_ENGINE_RENDERCOMMAND_H

@@ -23,7 +23,11 @@ namespace Aph {
     void Model::LoadModel(int entityID, const std::string& path) {
         Assimp::Importer importer;
 
-        const auto meshImportFlags = aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_GenNormals | aiProcess_OptimizeMeshes | aiProcess_ValidateDataStructure;
+        const auto meshImportFlags = aiProcess_Triangulate
+                                     | aiProcess_GenUVCoords
+                                     | aiProcess_GenNormals
+                                     | aiProcess_OptimizeMeshes
+                                     | aiProcess_ValidateDataStructure;
 
         const aiScene* scene = importer.ReadFile(path, meshImportFlags);
 
@@ -173,8 +177,7 @@ namespace Aph {
                 if (!texture_list.empty()) {
                 }
             }
-        }
-        else {
+        } else {
             APH_CORE_WARN("No Textures associated with {0}", m_Name);
         }
 

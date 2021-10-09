@@ -137,13 +137,21 @@ namespace Aph {
                 Utils::BindTexture(multisample, m_ColorAttachments[i]);
                 switch (m_ColorAttachmentSpecifications[i].TextureFormat) {
                     case FramebufferTextureFormat::RGBA8:
-                        Utils::AttachColorTexture(m_ColorAttachments[i], static_cast<int>(m_Specification.Samples), GL_RGBA8, GL_RGBA, m_Specification.Width, m_Specification.Height, static_cast<int>(i));
+                        Utils::AttachColorTexture(m_ColorAttachments[i],
+                                                  static_cast<int>(m_Specification.Samples),
+                                                  GL_RGBA8, GL_RGBA,
+                                                  m_Specification.Width, m_Specification.Height,
+                                                  static_cast<int>(i));
                         break;
                     case FramebufferTextureFormat::None:
                     case FramebufferTextureFormat::DEPTH24STENCIL8:
                         break;
                     case FramebufferTextureFormat::RED_INTEGER:
-                        Utils::AttachColorTexture(m_ColorAttachments[i], static_cast<int>(m_Specification.Samples), GL_R32I, GL_RED_INTEGER, m_Specification.Width, m_Specification.Height, i);
+                        Utils::AttachColorTexture(m_ColorAttachments[i],
+                                                  static_cast<int>(m_Specification.Samples),
+                                                  GL_R32I, GL_RED_INTEGER,
+                                                  m_Specification.Width, m_Specification.Height,
+                                                  static_cast<int>(i));
                         break;
                 }
             }

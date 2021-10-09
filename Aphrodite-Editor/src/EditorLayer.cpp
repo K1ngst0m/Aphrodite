@@ -3,12 +3,12 @@
 //
 
 #include "EditorLayer.h"
-#include <Aphrodite.hpp>
-
 
 #include <ImGuizmo.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
+#include <Aphrodite.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -21,13 +21,13 @@ namespace Aph::Editor {
         APH_PROFILE_FUNCTION();
         EditorConsole::Log("Aphrodite Engine is Running");
 
-#ifdef APH_DEBUG
+        //#ifdef APH_DEBUG
         // Log Example
         EditorConsole::Log("A log example");
         EditorConsole::LogWarning("A warning example");
         EditorConsole::LogError("An error example");
         EditorConsole::Log("A log example with parameter: {}, {}, {}", "abc", 34, 6.0f);
-#endif
+        //#endif
 
         // frame buffer
         FramebufferSpecification fbSpec;
@@ -42,12 +42,14 @@ namespace Aph::Editor {
         m_EditorScene = CreateRef<Scene>();
         m_ActiveScene = m_EditorScene;
 
-        m_EditorCamera = EditorCamera(60.0f, 1.778f, 0.1f, 1000.0f);
+        m_EditorCamera = EditorCamera(60.0f,
+                                      fbSpec.Width / fbSpec.Height,
+                                      0.1f, 1000.0f);
 
         m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 
         // Asset Browser Init
-        AssetBrowser::Init();
+//        AssetBrowser::Init();
 
         // command line args
         auto commandLineArgs = Application::Get().GetCommandLineArgs();
@@ -70,10 +72,12 @@ namespace Aph::Editor {
             m_ViewportSize.x > 0.0f && m_ViewportSize.y > 0.0f &&
             (static_cast<float>(spec.Width) != m_ViewportSize.x || static_cast<float>(spec.Height) != m_ViewportSize.y)) {
 
-            m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
-            m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-            m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y));
+            m_Framebuffer->Resize(static_cast<uint32_t>(m_ViewportSize.x),
+                                  static_cast<uint32_t>(m_ViewportSize.y));
 
+            m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+            m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
+                                            static_cast<uint32_t>(m_ViewportSize.y));
         }
 
         // Render
@@ -83,103 +87,42 @@ namespace Aph::Editor {
         RenderCommand::Clear();
 
         // Update scene
+        m_EditorCamera.OnUpdate(ts);
         switch (m_SceneState) {
             case SceneState::Play: {
-                m_EditorCamera.OnUpdate(ts);
-                m_ActiveScene->OnUpdateRuntime(ts);
+                m_ActiveScene->OnRuntimeUpdate(ts);
+                m_ActiveScene->OnEditorUpdate(ts, m_EditorCamera);
                 break;
             }
             case SceneState::Pause: {
                 // TODO
-//                m_EditorCamera.OnUpdate(ts);
-//                m_ActiveScene->OnUpdateRuntime(ts);
+                m_ActiveScene->OnRuntimePause(ts);
                 break;
             }
             case SceneState::Edit: {
-                m_EditorCamera.OnUpdate(ts);
-                m_ActiveScene->OnUpdateEditor(ts, m_EditorCamera);
+                m_ActiveScene->OnEditorUpdate(ts, m_EditorCamera);
                 break;
             }
         }
 
-        // Mouse Picking
-        auto [mx, my] = ImGui::GetMousePos();
-        mx -= m_ViewportBounds[0].x;
-        my -= m_ViewportBounds[0].y;
-        glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-
-        my = viewportSize.y - my;
-
-        const int mouseX = static_cast<int>(mx);
-        const int mouseY = static_cast<int>(my);
-
-        if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
-            int pixelData = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
-
-            if (pixelData == -1 || !m_ActiveScene->HasEntity(pixelData)) {
-                s_HoveredEntity = Entity();
-            } else {
-                s_HoveredEntity = Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
-            }
-        }
+        MousePicking();
 
         m_Framebuffer->UnBind();
     }
 
+    // Draw UI
     void EditorLayer::OnUIRender() {
         APH_PROFILE_FUNCTION();
-
-        static bool dockspaceOpen = true;
-        static bool opt_fullscreen_persistant = true;
-        bool opt_fullscreen = opt_fullscreen_persistant;
-        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        if (opt_fullscreen) {
-            ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-        }
-
-        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
-            window_flags |= ImGuiWindowFlags_NoBackground;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
-        ImGui::PopStyleVar();
-
-        if (opt_fullscreen)
-            ImGui::PopStyleVar(2);
-
-        // DockSpace
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuiStyle& style = ImGui::GetStyle();
-        float minWinSizeX = style.WindowMinSize.x;
-        style.WindowMinSize.x = 370.0f;
-
-        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-            ImGuiID dockSpace_id = ImGui::GetID("MyDockSpace");
-            ImGui::DockSpace(dockSpace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-        }
-
-        style.WindowMinSize.x = minWinSizeX;
-
-        // Draw Panel
-        DrawMenuBar();
-        DrawViewport();
-        DrawSceneHierarchy();
-        DrawStatusData();
-        DrawToolBar();
-        DrawConsole();
-        DrawAssetBrowser();
-        DrawSettings();
-
-        ImGui::End();
+        DrawEditor([&]() {
+            DrawMenuBar();
+            DrawToolBar();
+            DrawScene();
+            DrawSceneHierarchy();
+            DrawStatusData();
+            DrawConsole();
+            DrawAssetBrowser();
+            DrawSettings();
+        });
     }
 
     void EditorLayer::OnEvent(Event& e) {
@@ -196,8 +139,11 @@ namespace Aph::Editor {
         if (e.GetRepeatCount() > 0)
             return false;
 
-        bool control = Input::IsKeyPressed(Key::LeftControl) || Input::IsKeyPressed(Key::RightControl);
-        bool shift = Input::IsKeyPressed(Key::LeftShift) || Input::IsKeyPressed(Key::RightShift);
+        bool control = Input::IsKeyPressed(Key::LeftControl) ||
+                       Input::IsKeyPressed(Key::RightControl);
+
+        bool shift = Input::IsKeyPressed(Key::LeftShift) ||
+                     Input::IsKeyPressed(Key::RightShift);
 
         switch (e.GetKeyCode()) {
             case Key::N: {
@@ -282,7 +228,7 @@ namespace Aph::Editor {
     }
 
     void EditorLayer::OpenScene() {
-        auto filepath = FileDialogs::OpenFile("Aphrodite Scene (*.sce)\0*.sce\0");
+        auto filepath = FileDialogs::OpenFile("Aphrodite Scene (*.sce) *.sce ");
         if (!filepath.empty()) {
             m_EditorScene = CreateRef<Scene>();
             m_ActiveScene = m_EditorScene;
@@ -313,7 +259,9 @@ namespace Aph::Editor {
 
     bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e) {
         if (e.GetMouseButton() == Mouse::ButtonLeft) {
-            if (m_ViewportHovered && !ImGuizmo::IsOver() && !Input::IsKeyPressed(Key::LeftAlt))
+            if (m_ViewportHovered &&
+                !ImGuizmo::IsOver() &&
+                !Input::IsKeyPressed(Key::LeftAlt))
                 m_SceneHierarchyPanel.SetSelectedEntity(s_HoveredEntity);
         }
         if (e.GetMouseButton() == Mouse::ButtonRight) {
@@ -331,25 +279,30 @@ namespace Aph::Editor {
         m_SceneHierarchyPanel.OnUIRender();
     }
 
-    void EditorLayer::DrawViewport() {
+    void EditorLayer::DrawScene() {
         // Viewport
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
         ImGui::Begin(Style::Title::Viewport.data());
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{0, 0});
 
-        if (m_SceneState == SceneState::Play || m_SceneState == SceneState::Pause) {
+        if (m_SceneState == SceneState::Play ||
+            m_SceneState == SceneState::Pause) {
             auto color = (const glm::vec4&) Style::Color::Foreground.at("Second");
             ImVec2 windowMin = ImGui::GetWindowPos();
             ImVec2 windowSize = ImGui::GetWindowSize();
-            ImVec2 windowMax = {windowMin.x + windowSize.x, windowMin.y + windowSize.y};
-            ImGui::GetForegroundDrawList()->AddRect(windowMin, windowMax, ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w)));
+            ImVec2 windowMax = {windowMin.x + windowSize.x,
+                                windowMin.y + windowSize.y};
+            ImGui::GetForegroundDrawList()->AddRect(windowMin, windowMax,
+                                                    ImGui::ColorConvertFloat4ToU32(ImVec4(color.x, color.y, color.z, color.w)));
         }
 
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
 
-        m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-        m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
+        m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x,
+                               viewportMinRegion.y + viewportOffset.y};
+        m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x,
+                               viewportMaxRegion.y + viewportOffset.y};
 
         m_ViewportFocused = ImGui::IsWindowFocused();
         m_ViewportHovered = ImGui::IsWindowHovered();
@@ -407,8 +360,8 @@ namespace Aph::Editor {
             }
         }
 
-        ImGui::End();
         ImGui::PopStyleVar();
+        ImGui::End();
     }
 
     void EditorLayer::DrawStatusData() {
@@ -425,6 +378,62 @@ namespace Aph::Editor {
 
     void EditorLayer::DrawSettings() {
         m_SettingsPanel.OnUIRender();
+    }
+
+    void EditorLayer::DrawEditor(const std::function<void()>& drawlist) {
+        static bool dockspaceOpen = false;
+        static bool opt_fullscreen_persistant = true;
+        bool opt_fullscreen = opt_fullscreen_persistant;
+        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | // NOLINT(bugprone-suspicious-enum-usage)
+                                                    ImGuiDockNodeFlags_NoWindowMenuButton |
+                                                    ImGuiDockNodeFlags_NoCloseButton;
+
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar |
+                                        ImGuiWindowFlags_NoDocking;
+
+        if (opt_fullscreen) {
+            ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            window_flags |= ImGuiWindowFlags_NoTitleBar |
+                            ImGuiWindowFlags_NoCollapse |
+                            ImGuiWindowFlags_NoResize |
+                            ImGuiWindowFlags_NoMove |
+                            ImGuiWindowFlags_NoBringToFrontOnFocus |
+                            ImGuiWindowFlags_NoNavFocus;
+        }
+
+        if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+            window_flags |= ImGuiWindowFlags_NoBackground;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+        ImGui::Begin("DockSpace", &dockspaceOpen, window_flags);
+        ImGui::PopStyleVar();
+
+        if (opt_fullscreen)
+            ImGui::PopStyleVar(2);
+
+        // DockSpace
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuiStyle& style = ImGui::GetStyle();
+        float minWinSizeX = style.WindowMinSize.x;
+        style.WindowMinSize.x = 370.0f;
+
+        if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
+            ImGuiID dockSpace_id = ImGui::GetID("MyDockSpace");
+            ImGui::DockSpace(dockSpace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+        }
+
+        style.WindowMinSize.x = minWinSizeX;
+
+        // draw
+        drawlist();
+
+        // end
+        ImGui::End();
     }
 
     void EditorLayer::DrawMenuBar() {
@@ -459,13 +468,13 @@ namespace Aph::Editor {
 
                 ImGui::Separator();
 
-                if (ImGui::MenuItem("")) {
+                if (ImGui::MenuItem("TODO 1")) {
                     // TODO
                 }
-                if (ImGui::MenuItem("")) {
+                if (ImGui::MenuItem("TODO 2")) {
                     // TODO
                 }
-                if (ImGui::MenuItem("")) {
+                if (ImGui::MenuItem("TODO 3")) {
                     // TODO
                 }
                 ImGui::EndMenu();
@@ -575,6 +584,33 @@ namespace Aph::Editor {
     std::string EditorLayer::GetHoveredComponentName() {
         return s_HoveredEntity ? s_HoveredEntity.GetComponent<TagComponent>().Tag
                                : "None";
+    }
+
+    void EditorLayer::MousePicking() {
+        // Mouse Picking
+        auto [mx, my] = ImGui::GetMousePos();
+        mx -= m_ViewportBounds[0].x;
+        my -= m_ViewportBounds[0].y;
+        glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+
+        my = viewportSize.y - my;
+
+        const int mouseX = static_cast<int>(mx);
+        const int mouseY = static_cast<int>(my);
+
+        if (mouseX >= 0 &&
+            mouseY >= 0 &&
+            mouseX < static_cast<int>(viewportSize.x) &&
+            mouseY < static_cast<int>(viewportSize.y))
+        {
+            int entityId = m_Framebuffer->ReadPixel(1, mouseX, mouseY);
+
+            if (entityId == -1 || !m_ActiveScene->HasEntity(entityId)) {
+                s_HoveredEntity = Entity();
+            } else {
+                s_HoveredEntity = Entity(static_cast<entt::entity>(entityId), m_ActiveScene.get());
+            }
+        }
     }
 
 }// namespace Aph::Editor

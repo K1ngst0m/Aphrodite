@@ -58,10 +58,11 @@ namespace Aph {
     }
 
     Entity Scene::CreateEntity(const std::string& name) {
-        Entity entity {m_Registry.create(), this};
+        Entity entity{m_Registry.create(), this};
 
         // default id component
         auto id = static_cast<uint32_t>(entity);
+        //        APH_CORE_INFO("Add component, id: {}", id);
         auto& idComponent = entity.AddComponent<IDComponent>(id);
 
         // default transform component
@@ -110,14 +111,13 @@ namespace Aph {
     }
 
 
-    void Scene::OnUpdateRuntime(Timestep ts) {
+    void Scene::OnRuntimeUpdate(Timestep ts) {
         // Update Scripts
         {
             m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto& nsc) {
                 if (!nsc.Instance) {
                     nsc.Instance = nsc.InstantiateScript();
                     nsc.Instance->m_Entity = Entity{entity, this};
-
                     nsc.Instance->OnCreate();
                 }
 
@@ -145,10 +145,10 @@ namespace Aph {
 
         if (mainCamera) {
 
-            // 3D==============================================================
+            // 3D ==============================================================
             Renderer::BeginScene(*mainCamera, cameraTransform);
-
             Ref<TextureCube> textureCube;
+
             {
                 auto view = m_Registry.view<SkylightComponent>();
                 for (auto entity : view) {
@@ -157,6 +157,7 @@ namespace Aph {
                         textureCube = skylight.Texture;
                 }
             }
+
             if (textureCube)
                 Renderer::DrawSkybox(textureCube, *mainCamera, cameraTransform);
 
@@ -167,14 +168,18 @@ namespace Aph {
             auto view = m_Registry.view<IDComponent, TransformComponent, LightComponent>();
             for (auto entity : view) {
                 auto idComponent = view.get<IDComponent>(entity);
-                lights.emplace_back(m_EntityMap.at(idComponent.ID), this);
+                lights.emplace_back(m_EntityMap[idComponent.ID], this);
             }
 
-            SceneRenderer::BeginScene(*mainCamera, cameraTransform, cameraPosition, lights);
+            SceneRenderer::BeginScene(*mainCamera,
+                                      cameraTransform,
+                                      cameraPosition,
+                                      lights);
 
             // Bind irradiance map before mesh drawing.
             if (textureCube)
                 textureCube->Bind(1);
+
             {
                 auto view = m_Registry.view<TransformComponent, MeshComponent>();
                 for (auto entity : view) {
@@ -184,6 +189,7 @@ namespace Aph {
                     }
                 }
             }
+
             SceneRenderer::EndScene();
             // ================================================================
 
@@ -209,7 +215,6 @@ namespace Aph {
                 }
             }
 
-
             {
                 auto view = m_Registry.view<TransformComponent, SpriteRendererComponent>();
                 for (auto entity : view) {
@@ -225,11 +230,11 @@ namespace Aph {
         }
     }
 
-    void Scene::OnUpdateEditor(Timestep ts, EditorCamera& camera) {
+    void Scene::OnEditorUpdate(Timestep ts, EditorCamera& camera) {
         // 3D==============================================================
-
         // Render Skylight
         Renderer::BeginScene(camera);
+
         Ref<TextureCube> textureCube;
         {
             auto view = m_Registry.view<SkylightComponent>();
@@ -239,22 +244,24 @@ namespace Aph {
                     textureCube = skylight.Texture;
             }
         }
+
         if (textureCube)
             Renderer::DrawSkybox(textureCube, camera);
+
         Renderer::EndScene();
 
         std::vector<Entity> lights;
         auto view = m_Registry.view<IDComponent, TransformComponent, LightComponent>();
         for (auto entity : view) {
             auto idComponent = view.get<IDComponent>(entity);
-            lights.emplace_back(m_EntityMap.at(idComponent.ID), this);
+            lights.emplace_back(m_EntityMap[idComponent.ID], this);
         }
 
         SceneRenderer::BeginScene(camera, lights);
+
         // Bind irradiance map before mesh drawing.
         if (textureCube)
             textureCube->Bind(1);
-
         {
             auto view = m_Registry.view<TransformComponent, MeshComponent>();
             for (auto entity : view) {
@@ -264,6 +271,7 @@ namespace Aph {
                 }
             }
         }
+
         SceneRenderer::EndScene();
         // ================================================================
 
@@ -276,23 +284,12 @@ namespace Aph {
                 auto [transform, sprite] = view.get<TransformComponent, SpriteRendererComponent>(entity);
                 Renderer2D::DrawQuad(static_cast<int>(entity), transform.GetTransform(), sprite.Texture, sprite.Color, sprite.TilingFactor);
             }
-            Renderer2D::EndScene();
         }
-
-
-        // Debug Draw
-        {
-            const glm::vec4 debugColor(0.5686f, 0.9568f, 0.5450981f, 0.25f);
-            auto view = m_Registry.view<TransformComponent, BoxCollider2DComponent>();
-            for (auto entity : view) {
-                auto [transform, boxCollider2D] = view.get<TransformComponent, BoxCollider2DComponent>(entity);
-                glm::mat4 trans = transform.GetTransform() * glm::translate(glm::mat4(1.0f), glm::vec3(boxCollider2D.Offset.x, boxCollider2D.Offset.y, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(boxCollider2D.Size.x, boxCollider2D.Size.y, 1.0f));
-                Renderer2D::DrawQuad((uint32_t) entity, trans, debugColor);
-            }
-        }
-
         Renderer2D::EndScene();
         // ================================================================
+    }
+
+    void Scene::OnRuntimePause(Timestep ts) {
     }
 
     int Scene::GetPixelDataAtPoint(const int x, const int y) {
@@ -354,7 +351,7 @@ namespace Aph {
 
 
     ////////////////////////////////////////////////
-    // OnComponentAdd specialization /////////////////////
+    // OnComponentAdd specialization ///////////////
     ////////////////////////////////////////////////
 
     template<typename T>
@@ -379,7 +376,7 @@ namespace Aph {
 
     template<>
     void Scene::OnComponentAdded<CameraComponent>(Entity entity, CameraComponent& component) {
-        component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+//        component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
         if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
             component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
     }

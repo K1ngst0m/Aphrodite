@@ -45,7 +45,6 @@ namespace Aph {
         glDebugMessageCallback(OpenGLMessageCallback, nullptr);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
 #endif
-
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -70,7 +69,9 @@ namespace Aph {
     }
 
     void OpenGLRendererAPI::DrawArray(uint32_t first, uint32_t count) {
-        glDrawArrays(GL_TRIANGLES, static_cast<GLsizei>(first), static_cast<GLsizei>(count));
+        glDrawArrays(GL_TRIANGLES,
+                     static_cast<GLsizei>(first),
+                     static_cast<GLsizei>(count));
     }
 
     void OpenGLRendererAPI::SetDepthMask(bool flag) {

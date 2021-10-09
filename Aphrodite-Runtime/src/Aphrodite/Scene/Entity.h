@@ -20,7 +20,8 @@ namespace Aph {
         T& AddComponent(Args&&... args) {
             APH_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
 
-            T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+            T& component = m_Scene->m_Registry.emplace<T>(m_EntityHandle,
+                                                          std::forward<Args>(args)...);
             m_Scene->OnComponentAdded<T>(*this, component);
             return component;
         }
@@ -48,9 +49,11 @@ namespace Aph {
         explicit operator bool() const { return m_EntityHandle != entt::null; }
 
         explicit operator uint32_t() const { return static_cast<uint32_t>(m_EntityHandle); }
+        explicit operator uint64_t() const { return static_cast<uint64_t>(m_EntityHandle); }
 
         bool operator==(const Entity& other) const {
-            return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene;
+            return m_EntityHandle == other.m_EntityHandle &&
+                   m_Scene == other.m_Scene;
         }
 
         bool operator!=(const Entity& other) const {

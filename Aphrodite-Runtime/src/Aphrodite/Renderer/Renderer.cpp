@@ -3,6 +3,7 @@
 //
 
 #include "Aphrodite/Renderer/Renderer.h"
+
 #include "Aphrodite/Renderer/Renderer2D.h"
 #include "Aphrodite/Renderer/Shader.h"
 #include "pch.h"
@@ -16,69 +17,62 @@ namespace Aph {
         RenderCommand::Init();
         Renderer2D::Init();
 
-        // Cube Data =========================================================================
+        // Skybox =========================================================================
+        // Cube Data
+        {
+            float vertices[] = {
+                    -0.5f, -0.5f, -0.5f,
+                    0.5f, -0.5f, -0.5f,
+                    0.5f, 0.5f, -0.5f,
+                    0.5f, 0.5f, -0.5f,
+                    -0.5f, 0.5f, -0.5f,
+                    -0.5f, -0.5f, -0.5f,
 
-        float vertices[] = {
-                -0.5f, -0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f,
-                0.5f, 0.5f, -0.5f,
-                0.5f, 0.5f, -0.5f,
-                -0.5f, 0.5f, -0.5f,
-                -0.5f, -0.5f, -0.5f,
+                    -0.5f, -0.5f, 0.5f,
+                    0.5f, -0.5f, 0.5f,
+                    0.5f, 0.5f, 0.5f,
+                    0.5f, 0.5f, 0.5f,
+                    -0.5f, 0.5f, 0.5f,
+                    -0.5f, -0.5f, 0.5f,
 
-                -0.5f, -0.5f, 0.5f,
-                0.5f, -0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                -0.5f, 0.5f, 0.5f,
-                -0.5f, -0.5f, 0.5f,
+                    -0.5f, 0.5f, 0.5f,
+                    -0.5f, 0.5f, -0.5f,
+                    -0.5f, -0.5f, -0.5f,
+                    -0.5f, -0.5f, -0.5f,
+                    -0.5f, -0.5f, 0.5f,
+                    -0.5f, 0.5f, 0.5f,
 
-                -0.5f, 0.5f, 0.5f,
-                -0.5f, 0.5f, -0.5f,
-                -0.5f, -0.5f, -0.5f,
-                -0.5f, -0.5f, -0.5f,
-                -0.5f, -0.5f, 0.5f,
-                -0.5f, 0.5f, 0.5f,
+                    0.5f, 0.5f, 0.5f,
+                    0.5f, 0.5f, -0.5f,
+                    0.5f, -0.5f, -0.5f,
+                    0.5f, -0.5f, -0.5f,
+                    0.5f, -0.5f, 0.5f,
+                    0.5f, 0.5f, 0.5f,
 
-                0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f,
-                0.5f, -0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
+                    -0.5f, -0.5f, -0.5f,
+                    0.5f, -0.5f, -0.5f,
+                    0.5f, -0.5f, 0.5f,
+                    0.5f, -0.5f, 0.5f,
+                    -0.5f, -0.5f, 0.5f,
+                    -0.5f, -0.5f, -0.5f,
 
-                -0.5f, -0.5f, -0.5f,
-                0.5f, -0.5f, -0.5f,
-                0.5f, -0.5f, 0.5f,
-                0.5f, -0.5f, 0.5f,
-                -0.5f, -0.5f, 0.5f,
-                -0.5f, -0.5f, -0.5f,
+                    -0.5f, 0.5f, -0.5f,
+                    0.5f, 0.5f, -0.5f,
+                    0.5f, 0.5f, 0.5f,
+                    0.5f, 0.5f, 0.5f,
+                    -0.5f, 0.5f, 0.5f,
+                    -0.5f, 0.5f, -0.5f};
 
-                -0.5f, 0.5f, -0.5f,
-                0.5f, 0.5f, -0.5f,
-                0.5f, 0.5f, 0.5f,
-                0.5f, 0.5f, 0.5f,
-                -0.5f, 0.5f, 0.5f,
-                -0.5f, 0.5f, -0.5f};
+            s_SceneData->CubeVertexArray = VertexArray::Create();
 
-        s_SceneData->CubeVertexArray = VertexArray::Create();
-        Ref<VertexBuffer> buffer = VertexBuffer::Create(vertices, sizeof(vertices));
-
-        const BufferLayout layout {{ShaderDataType::Float3, "a_Position"}};
-
-        buffer->SetLayout(layout);
-
-        s_SceneData->CubeVertexArray->AddVertexBuffer(buffer);
-
-        // ===================================================================================
-
-        s_SceneData->whiteTexture = Texture2D::Create(1, 1);
-        uint32_t whiteTextureData = 0xffffffff;
-        s_SceneData->whiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
-
-        s_SceneData->SkyboxShader = Shader::Create("assets/shaders/Cubemap.glsl");
-        s_SceneData->SkyboxShader->Bind();
-        s_SceneData->SkyboxShader->SetInt("u_EnvironmentMap", 0);
+            Ref<VertexBuffer> buffer = VertexBuffer::Create(vertices, sizeof(vertices));
+            const BufferLayout layout{{ShaderDataType::Float3, "a_Position"}};
+            buffer->SetLayout(layout);
+            s_SceneData->CubeVertexArray->AddVertexBuffer(buffer);
+            s_SceneData->SkyboxShader = Shader::Create("assets/shaders/Cubemap.glsl");
+            s_SceneData->SkyboxShader->Bind();
+            s_SceneData->SkyboxShader->SetInt("u_EnvironmentMap", 0);
+        }
     }
 
     void Renderer::Shutdown() {
@@ -94,13 +88,15 @@ namespace Aph {
     }
 
     void Renderer::BeginScene(Camera& camera, glm::mat4 transform) {
-        s_SceneData->ViewProjectionMatrix = camera.GetProjection()
-                                            * glm::inverse(transform);
+        s_SceneData->ViewProjectionMatrix = camera.GetProjection() *
+                                            glm::inverse(transform);
     }
 
     void Renderer::EndScene() {}
 
-    void Renderer::Submit(const Ref<Shader>& shader, const Ref<VertexArray>& vertexArray, const glm::mat4& transform) {
+    void Renderer::Submit(const Ref<Shader>& shader,
+                          const Ref<VertexArray>& vertexArray,
+                          const glm::mat4& transform) {
         shader->Bind();
         shader->SetMat4("u_ViewProjection", s_SceneData->ViewProjectionMatrix);
         shader->SetMat4("u_Transform", transform);
@@ -139,4 +135,5 @@ namespace Aph {
         RenderCommand::DrawArray(0, 36);
         RenderCommand::SetDepthMask(true);
     }
+
 }// namespace Aph

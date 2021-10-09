@@ -57,6 +57,7 @@ namespace Aph {
         uint32_t m_RendererID{};
         BufferLayout m_Layout;
     };
+
 }// namespace Aph
 
 #endif// Aphrodite_ENGINE_OPENGLBUFFER_H

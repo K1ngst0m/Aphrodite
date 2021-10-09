@@ -48,12 +48,15 @@ namespace Aph {
     private:
         void UpdateProjection();
         void UpdateView();
-        void ProcessKeyboard(CameraMovement direction, float ts);
-        bool OnMouseScrolled(MouseScrolledEvent& e);
+        void ProcessMovement(CameraMovement direction, Timestep ts);
+        bool OnMouseControl(MouseScrolledEvent& e);
         void UpdateCameraVectors();
 
     private:
-        float m_FOV = 60.0f, m_AspectRatio = 1.778f, m_NearClip = 0.1f, m_FarClip = 1000.0f;
+        float m_FOV = 60.0f,
+              m_AspectRatio = 1.778f,
+              m_NearClip = 0.1f,
+              m_FarClip = 1000.0f;
 
         ProjectionType m_ProjectionType = ProjectionType::Perspective;
 

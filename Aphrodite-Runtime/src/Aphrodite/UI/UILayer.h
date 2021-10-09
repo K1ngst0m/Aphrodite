@@ -23,7 +23,6 @@ namespace Aph {
         void OnDetach() override;
         void OnEvent(Event& e) override;
 
-
         static void Begin();
         static void End();
 

@@ -132,3 +132,4 @@ CTestTestfile.cmake
 /scripts/vulkansdk-linux-x86_64-1.2.170.0.tar.gz
 /scripts/3rdParty/VulkanSDK/1.2.170.0/
 .idea/
+.cache/

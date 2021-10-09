@@ -24,14 +24,16 @@ namespace Aph {
 
     struct FramebufferTextureSpecification {
         FramebufferTextureSpecification() = default;
-        FramebufferTextureSpecification(FramebufferTextureFormat format) : TextureFormat(format) {} // NOLINT(google-explicit-constructor)
+        FramebufferTextureSpecification(FramebufferTextureFormat format) // NOLINT(google-explicit-constructor)
+            : TextureFormat(format) {}
 
         FramebufferTextureFormat TextureFormat = FramebufferTextureFormat::None;
     };
 
     struct FramebufferAttachmentSpecification {
         FramebufferAttachmentSpecification() = default;
-        FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments) : Attachments(attachments) {}
+        FramebufferAttachmentSpecification(std::initializer_list<FramebufferTextureSpecification> attachments)
+            : Attachments(attachments) {}
 
         std::vector<FramebufferTextureSpecification> Attachments;
     };
@@ -60,7 +62,7 @@ namespace Aph {
         virtual const FramebufferSpecification& GetSpecification() const = 0;
         static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
     };
-}// namespace Aph-Runtime
+}// namespace Aph
 
 
 #endif//Aphrodite_ENGINE_FRAMEBUFFER_H

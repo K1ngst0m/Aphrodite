@@ -20,8 +20,9 @@ namespace Aph::Editor {
 
     public:
         Message() = default;
-        Message(std::string message, Level level = Level::Info) : m_MessageData(std::move(message)),// NOLINT(google-explicit-constructor)
-                                                                  m_MessageLevel(level) {
+        Message(std::string message, Level level = Level::Info)
+            : m_MessageData(std::move(message)),// NOLINT(google-explicit-constructor)
+              m_MessageLevel(level) {
         }
 
     public:
@@ -57,30 +58,26 @@ namespace Aph::Editor {
         static uint32_t s_LogMessageCount;
     };
 
-    // Logging Implementations
-    template<typename... Args>
-    inline void EditorConsole::Log(const std::string& data, Args&&... args) {
-        s_MessageBuffer.push_back({EditorConsole::Format(data, args...)});
-        s_LogMessageCount++;
-    }
-
     template<typename... Args>
     inline std::string EditorConsole::Format(const std::string& fmt, Args&&... args) {
         return fmt::format((logSign + fmt), args...);
     }
 
+    // Logging Implementations
+    template<typename... Args>
+    inline void EditorConsole::Log(const std::string& data, Args&&... args) {
+        s_MessageBuffer.push_back({EditorConsole::Format(data, args...)});
+    }
 
     template<typename... Args>
     inline void EditorConsole::LogWarning(const std::string& data, Args&&... args) {
         s_MessageBuffer.push_back({EditorConsole::Format(data, args...), Message::Level::Warn});
-        s_LogMessageCount++;
     }
 
     template<typename... Args>
-    void EditorConsole::LogError(const std::string& data, Args&&... args) {
+    inline void EditorConsole::LogError(const std::string& data, Args&&... args) {
         s_MessageBuffer.push_back({EditorConsole::Format(data, args...), Message::Level::Error});
-        s_LogMessageCount++;
     }
-}// namespace Aph
+}// namespace Aph::Editor
 
 #endif//APHRODITE_EDITORCONSOLE_H

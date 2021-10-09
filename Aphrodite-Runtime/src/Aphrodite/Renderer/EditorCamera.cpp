@@ -33,18 +33,20 @@ namespace Aph {
     }
 
     void EditorCamera::OnUpdate(Timestep ts) {
-        m_MovementSpeed = (Input::IsKeyPressed(Key::LeftShift)) ? (m_NormalSpeed * 2.0f) : m_NormalSpeed;
+        m_MovementSpeed = (Input::IsKeyPressed(Key::LeftShift))
+                                  ? (m_NormalSpeed * 2.0f)
+                                  : m_NormalSpeed;
 
         if (Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
             if (m_ProjectionType == ProjectionType::Perspective) {
                 if (Input::IsKeyPressed(Key::W))
-                    ProcessKeyboard(CameraMovement::FORWARD, ts);
+                    ProcessMovement(CameraMovement::FORWARD, ts);
                 if (Input::IsKeyPressed(Key::A))
-                    ProcessKeyboard(CameraMovement::LEFT, ts);
+                    ProcessMovement(CameraMovement::LEFT, ts);
                 if (Input::IsKeyPressed(Key::S))
-                    ProcessKeyboard(CameraMovement::BACKWARD, ts);
+                    ProcessMovement(CameraMovement::BACKWARD, ts);
                 if (Input::IsKeyPressed(Key::D))
-                    ProcessKeyboard(CameraMovement::RIGHT, ts);
+                    ProcessMovement(CameraMovement::RIGHT, ts);
             }
         }
 
@@ -65,12 +67,14 @@ namespace Aph {
         lastX = Input::GetMouseX();
         lastY = Input::GetMouseY();
 
-        if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle) || m_ProjectionType == ProjectionType::Orthographic && Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
+        if (Input::IsMouseButtonPressed(Mouse::ButtonMiddle) ||
+            m_ProjectionType == ProjectionType::Orthographic && Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
             xOffset *= 0.01f;
             yOffset *= 0.01f;
 
             m_Position += -(m_Right * xOffset) + m_Up * yOffset;
         }
+
         else if (Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
             xOffset *= m_MouseSensitivity;
             yOffset *= m_MouseSensitivity;
@@ -85,9 +89,6 @@ namespace Aph {
                 if (m_Pitch < -89.0f)
                     m_Pitch = -89.0f;
             }
-
-//            UpdateCameraVectors();
-//            UpdateView();
         }
 
 
@@ -97,26 +98,28 @@ namespace Aph {
 
     void EditorCamera::OnEvent(Event& e) {
         EventDispatcher dispatcher(e);
-        dispatcher.Dispatch<MouseScrolledEvent>(APH_BIND_EVENT_FN(EditorCamera::OnMouseScrolled));
+        dispatcher.Dispatch<MouseScrolledEvent>(
+                APH_BIND_EVENT_FN(EditorCamera::OnMouseControl));
     }
 
-    void EditorCamera::ProcessKeyboard(CameraMovement direction, float ts) {
-        const float velocity = m_MovementSpeed * ts;
+    void EditorCamera::ProcessMovement(CameraMovement direction, Timestep ts) {
+        const float velocity = m_MovementSpeed * static_cast<float>(ts);
 
         if (direction == CameraMovement::FORWARD)
             m_Position += m_Forward * velocity;
         else if (direction == CameraMovement::BACKWARD)
             m_Position -= m_Forward * velocity;
-
         if (direction == CameraMovement::RIGHT)
             m_Position += m_Right * velocity;
         else if (direction == CameraMovement::LEFT)
             m_Position -= m_Right * velocity;
     }
 
-    bool EditorCamera::OnMouseScrolled(MouseScrolledEvent& e) {
+    bool EditorCamera::OnMouseControl(MouseScrolledEvent& e) {
+        // camera direction
         if (Input::IsMouseButtonPressed(Mouse::ButtonRight)) {
             m_NormalSpeed = std::clamp(m_NormalSpeed += e.GetYOffset(), 0.1f, 50.0f);
+            // camera fov
         } else {
             if (m_ProjectionType == ProjectionType::Perspective) {
                 if (m_FOV >= 4.0f && m_FOV <= 120.0f)
@@ -126,9 +129,8 @@ namespace Aph {
                 if (m_FOV >= 120.0f)
                     m_FOV = 120.0f;
             }
+            UpdateProjection();
         }
-
-        UpdateProjection();
 
         return false;
     }
