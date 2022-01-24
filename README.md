@@ -96,17 +96,17 @@ Tested on Gentoo Base System, BSPWM
 - Ensure that all dependencies above are set up correctly
 - Clone repository and create build directory
   ```shell
-  $ cd Aphrodite
-  $ mkdir build && cd build
+  cd Aphrodite
+  mkdir build && cd build
   ```
 - Build with CMake
   - Runtime Lib only
   ```shell
-  $ cmake -G Ninja ../ && cmake --build . --target Aphrodite-Runtime $(nproc)
+  cmake -G Ninja ../ && cmake --build . --target Aphrodite-Runtime $(nproc)
   ```
   - Runtime Lib && Editor
   ```shell
-  $ cmake -G Ninja ../ && cmake --build . -- target Aphrodite-Editor $(nproc)
+  cmake -G Ninja ../ && cmake --build . -- target Aphrodite-Editor $(nproc)
   ```
 
 ***
