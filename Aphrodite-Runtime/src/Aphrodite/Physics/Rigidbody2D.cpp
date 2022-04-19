@@ -57,8 +57,7 @@ namespace Aph {
     }
 
     void Rigidbody2D::SetMass(const float value) const{
-        b2MassData massData;
-        m_Body2D->GetMassData(&massData);
+        b2MassData massData = m_Body2D->GetMassData();
         massData.mass = value;
         m_Body2D->SetMassData(&massData);
     }

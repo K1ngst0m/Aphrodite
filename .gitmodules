@@ -19,3 +19,6 @@
 [submodule "3rdparty/yaml-cpp"]
 	path = 3rdparty/yaml-cpp
 	url = git@github.com:jbeder/yaml-cpp.git
+[submodule "3rdparty/spirv-cross"]
+	path = 3rdparty/spirv-cross
+	url = git@github.com:KhronosGroup/SPIRV-Cross.git
