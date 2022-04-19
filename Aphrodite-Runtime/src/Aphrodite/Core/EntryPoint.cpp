@@ -1,6 +1,7 @@
 #include "EntryPoint.h"
 
 int main(int argc, char **argv) {
+    #ifdef APH_PLATFORM_LINUX
     // Set current working directory to program binary path
     {
         const std::string& myPath = argv[0];
@@ -11,6 +12,7 @@ int main(int argc, char **argv) {
             exit(1);
         }
     }
+    #endif
 
     // init core utils
     Aph::Log::Init();
