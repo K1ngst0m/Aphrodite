@@ -16,7 +16,7 @@ include_directories(${runtime_src_dir}/include)
 include_directories(${runtime_src_dir}/src)
 
 # 3rdparty
-# set(BUILD_SHARED_LIBS OFF)
+set(BUILD_SHARED_LIBS ON)
 add_subdirectory(${3rdparty_dir}/glad)
 add_subdirectory(${3rdparty_dir}/entt)
 add_subdirectory(${3rdparty_dir}/spdlog)

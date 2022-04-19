@@ -17,7 +17,7 @@ file(GLOB src_utils src/Aphrodite/Utils/*.cpp)
 file(GLOB src_platform_linux src/Platform/Linux/*.cpp)
 file(GLOB src_platform_opengl src/Platform/OpenGL/*.cpp)
 
-add_library(${PROJECT_NAME} STATIC
+add_library(${PROJECT_NAME} SHARED
         ${src_root}
         ${src_physics}
         ${src_input}
