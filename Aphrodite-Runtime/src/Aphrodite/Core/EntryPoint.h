@@ -13,24 +13,9 @@
 #include "Base.h"
 
 #ifdef APH_PLATFORM_LINUX
-
-int main(int argc, char **argv) {
-    // init core utils
-    Aph::Log::Init();
-
-    APH_PROFILE_BEGIN_SESSION("Startup", "APH-Profile-Startup.json");
-    auto app = Aph::CreateApplication({argc, argv});
-    APH_PROFILE_END_SESSION();
-
-    APH_PROFILE_BEGIN_SESSION("Runtime", "APH-Profile-Runtime.json");
-    app->Run();
-    APH_PROFILE_END_SESSION();
-
-    APH_PROFILE_BEGIN_SESSION("Shutdown", "APH-Profile-Shutdown.json");
-    delete app;
-    APH_PROFILE_END_SESSION();
-}
-
+int main(int argc, char **argv);
+#else
+#error NOT_SUPPORTING_PLATFORM
 #endif
 
 #endif
