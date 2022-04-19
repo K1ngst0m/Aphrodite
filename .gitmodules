@@ -1,21 +1,21 @@
-[submodule "3rdparty/spdlog"]
-	path = 3rdparty/spdlog
-	url = https://github.com/gabime/spdlog
-[submodule "3rdparty/yaml-cpp"]
-	path = 3rdparty/yaml-cpp
-	url = https://github.com/jbeder/yaml-cpp
-[submodule "3rdparty/glfw"]
-	path = 3rdparty/glfw
-	url = https://github.com/npchitman/glfw
-[submodule "3rdparty/box2d"]
-	path = 3rdparty/box2d
-	url = https://github.com/npchitman/box2d
 [submodule "3rdparty/assimp"]
 	path = 3rdparty/assimp
-	url = https://github.com/npchitman/assimp
+	url = git@github.com:assimp/assimp.git
+[submodule "3rdparty/box2d"]
+	path = 3rdparty/box2d
+	url = git@github.com:erincatto/box2d.git
 [submodule "3rdparty/fmt"]
 	path = 3rdparty/fmt
-	url = https://github.com/npchitman/fmt
+	url = git@github.com:fmtlib/fmt.git
+[submodule "3rdparty/glfw"]
+	path = 3rdparty/glfw
+	url = git@github.com:glfw/glfw.git
+[submodule "3rdparty/spdlog"]
+	path = 3rdparty/spdlog
+	url = git@github.com:gabime/spdlog.git
 [submodule "3rdparty/stb"]
 	path = 3rdparty/stb
-	url = https://github.com/npchitman/stb
+	url = git@github.com:nothings/stb.git
+[submodule "3rdparty/yaml-cpp"]
+	path = 3rdparty/yaml-cpp
+	url = git@github.com:jbeder/yaml-cpp.git
