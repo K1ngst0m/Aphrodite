@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.18)
 
+set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Libs)
+# set(CMAKE_C_COMPILER clang)
+# set(CMAKE_CXX_COMPILER clang++)
 
 set(3rdparty_dir ${CMAKE_SOURCE_DIR}/3rdparty)
 set(runtime_src_dir ${CMAKE_SOURCE_DIR}/Aphrodite-Runtime)
@@ -13,13 +16,15 @@ include_directories(${runtime_src_dir}/include)
 include_directories(${runtime_src_dir}/src)
 
 # 3rdparty
-set(BUILD_SHARED_LIBS ON)
+# set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${3rdparty_dir}/glad)
 add_subdirectory(${3rdparty_dir}/entt)
 add_subdirectory(${3rdparty_dir}/spdlog)
 set(GLFW_BUILD_DOCS OFF)
 set(GLFW_INSTALL OFF)
 add_subdirectory(${3rdparty_dir}/glfw)
+set(IMGUI_BACKEND_OPENGL3 ON)
+set(IMGUI_BACKEND_GLFW ON)
 add_subdirectory(${3rdparty_dir}/imgui)
 add_subdirectory(${3rdparty_dir}/ImGuizmo)
 set(BOX2D_BUILD_UNIT_TESTS OFF)

@@ -120,7 +120,7 @@ namespace Aph {
     class InstrumentationTimer {
     public:
         explicit InstrumentationTimer(const char* name) : m_Name(name),
-                                                          m_Stopped(m_Stopped) {
+                                                          m_Stopped(false) {
             m_StartTimepoint = std::chrono::steady_clock::now();
         }
 
@@ -142,7 +142,7 @@ namespace Aph {
     private:
         const char* m_Name;
         std::chrono::time_point<std::chrono::steady_clock> m_StartTimepoint;
-        bool m_Stopped;
+        bool m_Stopped = false;
     };
 
     namespace InstrumentorUtils {

@@ -101,7 +101,7 @@ namespace Aph::Editor {
 
     static void SetLabel(const char* label) {
         ImGuiWindow* window = ImGui::GetCurrentWindow();
-        const ImGuiStyle& style = ImGui::GetStyle();
+        // const ImGuiStyle& style = ImGui::GetStyle();
         float fullWidth = ImGui::GetContentRegionAvail().x;
         float itemWidth = fullWidth * 0.6f;
         ImVec2 textSize = ImGui::CalcTextSize(label);
@@ -341,7 +341,7 @@ namespace Aph::Editor {
 
     static void DrawPBRProperties(Ref<PbrMaterial>& materialInstance) {
         const char* filesFlag = "\"Material (*.png/*.jpg/*.bmp/*.tga)|*.[Pp][Nn][Gg] *.[Jj][Pp][Gg] *.[Tt][Gg][Aa] *.[Bb][Mm][Pp]\"";
-        const float itemWidth = ImGui::GetContentRegionAvailWidth() / 1.8f;
+        const float itemWidth = ImGui::GetContentRegionAvail().x / 1.8f;
         int id = 0;
 
         ImVec2 textureImageButtonSize{22, 22};
@@ -475,7 +475,7 @@ namespace Aph::Editor {
             }
         }
 
-        ImGui::SameLine(0, ImGui::GetContentRegionAvailWidth() - 380);
+        ImGui::SameLine(0, ImGui::GetContentRegionAvail().x - 380);
         ImGui::PushItemWidth(-1);
 
         // Draw Components Popup Menu
