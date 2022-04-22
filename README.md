@@ -71,7 +71,6 @@ Tested on Gentoo Base System, BSPWM
 * Clion 2021
 * Visual Studio 2019
 * Development Workflow: [dotfiles](https://github.com/npchitman/dotfiles)
-* Neovim with my personal [profile](https://github.com/npchitman/vimq)
 
 <ins>*Languages:*</ins>
 * C++17 (Core)
