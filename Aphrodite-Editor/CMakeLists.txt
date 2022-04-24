@@ -1,5 +1,12 @@
 project(Aphrodite-Editor)
 
+file(GLOB src_inc_files
+        src/*.h
+        src/Panels/*.h
+        src/Others/*.h
+        src/Utils/*.h
+        )
+
 file(GLOB src_files
         src/*.cpp
         src/Panels/*.cpp
@@ -7,7 +14,7 @@ file(GLOB src_files
         src/Utils/*.cpp
         )
 
-add_executable(${PROJECT_NAME} ${src_files})
+add_executable(${PROJECT_NAME} ${src_inc_files} ${src_files})
 
 target_link_libraries(${PROJECT_NAME} Aphrodite-Runtime)
 

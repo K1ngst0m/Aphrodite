@@ -2,6 +2,20 @@ project(Aphrodite-Runtime)
 
 add_definitions(-DAPH_ENABLE_ASSERTS -DAPH_DEBUG)
 
+file(GLOB src_inc_core src/Aphrodite/Core/*.h)
+file(GLOB src_inc_debug src/Aphrodite/Debug/*.h)
+file(GLOB src_inc_physics src/Aphrodite/Physics/*.h)
+file(GLOB src_inc_input src/Aphrodite/Input/*.h)
+file(GLOB src_inc_events src/Aphrodite/Events/*.h)
+file(GLOB src_inc_fonts src/Aphrodite/Fonts/*.h)
+file(GLOB src_inc_imgui src/Aphrodite/UI/*.h src/Aphrodite/UI/Utilities/*.h)
+file(GLOB src_inc_math src/Aphrodite/Math/*.h)
+file(GLOB src_inc_renderer src/Aphrodite/Renderer/*.h)
+file(GLOB src_inc_scene src/Aphrodite/Scene/*.h)
+file(GLOB src_inc_utils src/Aphrodite/Utils/*.h)
+file(GLOB src_inc_platform_linux src/Platform/Linux/*.h)
+file(GLOB src_inc_platform_opengl src/Platform/OpenGL/*.h)
+
 file(GLOB src_root src/pch.cpp)
 file(GLOB src_core src/Aphrodite/Core/*.cpp)
 file(GLOB src_debug src/Aphrodite/Debug/*.cpp)
@@ -18,6 +32,21 @@ file(GLOB src_platform_linux src/Platform/Linux/*.cpp)
 file(GLOB src_platform_opengl src/Platform/OpenGL/*.cpp)
 
 add_library(${PROJECT_NAME} SHARED
+        ${src_inc_root}
+        ${src_inc_physics}
+        ${src_inc_input}
+        ${src_inc_core}
+        ${src_inc_debug}
+        ${src_inc_events}
+        ${src_inc_fonts}
+        ${src_inc_imgui}
+        ${src_inc_math}
+        ${src_inc_renderer}
+        ${src_inc_scene}
+        ${src_inc_utils}
+        ${src_inc_platform_linux}
+        ${src_inc_platform_opengl}
+
         ${src_root}
         ${src_physics}
         ${src_input}
@@ -31,7 +60,8 @@ add_library(${PROJECT_NAME} SHARED
         ${src_scene}
         ${src_utils}
         ${src_platform_linux}
-        ${src_platform_opengl})
+        ${src_platform_opengl}
+        )
 
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.h)
 
