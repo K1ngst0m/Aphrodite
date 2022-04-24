@@ -5,7 +5,7 @@
 #ifndef APHRODITE_ASSETBROWSER_H
 #define APHRODITE_ASSETBROWSER_H
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 
 namespace Aph::Editor {
     enum class AssetFileType {

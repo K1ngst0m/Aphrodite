@@ -6,7 +6,7 @@
 
 #include <imgui.h>
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 
 #include "../EditorLayer.h"
 #include "../Utils/UIDrawer.h"

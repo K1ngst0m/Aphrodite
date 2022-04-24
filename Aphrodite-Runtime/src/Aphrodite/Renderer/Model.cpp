@@ -2,6 +2,7 @@
 // Created by npchitman on 7/7/21.
 //
 
+#include "Mesh.h"
 #include "Model.h"
 
 #include <assimp/postprocess.h>
@@ -10,6 +11,7 @@
 
 #include "Aphrodite/Renderer/Material.h"
 #include "Aphrodite/Renderer/Texture.h"
+#include "Aphrodite/Renderer/VertexArray.h"
 #include "pch.h"
 
 namespace Aph {

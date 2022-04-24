@@ -5,7 +5,7 @@
 #ifndef APHRODITE_EDITORCONSOLE_H
 #define APHRODITE_EDITORCONSOLE_H
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 
 namespace Aph::Editor {
     static const char* logSign = "\uF292   ";

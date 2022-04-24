@@ -8,7 +8,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
@@ -508,23 +508,27 @@ namespace Aph::Editor {
         // Transform
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
         if (ImGui::Button("\uf05b", toolbarButtonSize)) {
-            if (!ImGuizmo::IsUsing())
+            if (!ImGuizmo::IsUsing()) {
                 m_GizmoType = -1;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button("\uF0B2", toolbarButtonSize)) {
-            if (!ImGuizmo::IsUsing())
+            if (!ImGuizmo::IsUsing()) {
                 m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button("\uF021", toolbarButtonSize)) {
-            if (!ImGuizmo::IsUsing())
+            if (!ImGuizmo::IsUsing()) {
                 m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+            }
         }
         ImGui::SameLine();
         if (ImGui::Button("\uF065", toolbarButtonSize)) {
-            if (!ImGuizmo::IsUsing())
+            if (!ImGuizmo::IsUsing()) {
                 m_GizmoType = ImGuizmo::OPERATION::SCALE;
+            }
         }
         ImGui::SetColumnWidth(0, ImGui::GetWindowWidth() / 2.1);
         ImGui::NextColumn();

@@ -7,7 +7,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "pch.h"

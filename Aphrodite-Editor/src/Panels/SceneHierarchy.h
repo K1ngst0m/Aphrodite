@@ -5,7 +5,7 @@
 #ifndef Aphrodite_ENGINE_SCENEHIERARCHYPANEL_H
 #define Aphrodite_ENGINE_SCENEHIERARCHYPANEL_H
 
-#include <Aphrodite.hpp>
+#include <Aphrodite.h>
 
 namespace Aph::Editor {
     class SceneHierarchy {
