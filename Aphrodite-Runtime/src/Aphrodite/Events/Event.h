@@ -61,7 +61,7 @@ namespace Aph {
         virtual std::string ToString() const { return GetName(); }
 
         bool IsInCateGory(EventCategory category) const {
-            return GetCategoryFlags() & category;
+            return (GetCategoryFlags() & category) != 0;
         }
     };
 

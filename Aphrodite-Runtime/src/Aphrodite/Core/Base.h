@@ -1,10 +1,5 @@
 // Base.h
 
-// marco definition:
-// - platform specification
-// -
-// - encapsulate smart pointer, callback function binding, debug(e.g., assert), etc.
-
 #ifndef Aphrodite_CORE_H
 #define Aphrodite_CORE_H
 

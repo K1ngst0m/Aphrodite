@@ -1,9 +1,5 @@
 // Layer.h
 
-// Layer Class:
-// - control how the layer create and delete
-// - lifecycle function(attach/detach layers, game loop update...)
-
 #ifndef Aphrodite_ENGINE_LAYER_H
 #define Aphrodite_ENGINE_LAYER_H
 
@@ -22,7 +18,7 @@ namespace Aph {
 
         virtual void OnDetach() {}
 
-        virtual void OnUpdate(Timestep ts) {}
+        virtual void OnUpdate(Timestep timestep) {}
 
         virtual void OnUIRender() {}
 

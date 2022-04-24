@@ -1,9 +1,5 @@
 // LayerStack.h
 
-// LayerStack class
-// - control how the layer push
-// - provide layer iterator to traverse layers
-
 #ifndef Aphrodite_ENGINE_LAYERSTACK_H
 #define Aphrodite_ENGINE_LAYERSTACK_H
 

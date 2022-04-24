@@ -8,7 +8,7 @@
 #include <entt.hpp>
 
 #include "Aphrodite/Core/TimeStep.h"
-#include "Aphrodite/Renderer/EditorCamera.h"
+#include "Aphrodite/Scene/EditorCamera.h"
 
 namespace Aph::Editor {
     class SceneHierarchy;

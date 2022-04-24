@@ -11,7 +11,7 @@
 #include "Aphrodite/Core/TimeStep.h"
 #include "Aphrodite/Events/Event.h"
 #include "Aphrodite/Events/MouseEvent.h"
-#include "Camera.h"
+#include "Aphrodite/Scene/Camera.h"
 
 namespace Aph {
     enum class CameraMovement {

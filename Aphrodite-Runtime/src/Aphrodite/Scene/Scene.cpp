@@ -105,8 +105,9 @@ namespace Aph {
         auto view = m_Registry.view<CameraComponent>();
         for (auto entity : view) {
             auto& cameraComponent = view.get<CameraComponent>(entity);
-            if (!cameraComponent.FixedAspectRatio)
+            if (!cameraComponent.FixedAspectRatio) {
                 cameraComponent.Camera.SetViewportSize(width, height);
+            }
         }
     }
 
@@ -143,7 +144,7 @@ namespace Aph {
             }
         }
 
-        if (mainCamera) {
+        if (mainCamera != nullptr) {
 
             // 3D ==============================================================
             Renderer::BeginScene(*mainCamera, cameraTransform);
@@ -153,8 +154,9 @@ namespace Aph {
                 auto view = m_Registry.view<SkylightComponent>();
                 for (auto entity : view) {
                     auto skylight = view.get<SkylightComponent>(entity);
-                    if (skylight.Texture)
+                    if (skylight.Texture) {
                         textureCube = skylight.Texture;
+                    }
                 }
             }
 

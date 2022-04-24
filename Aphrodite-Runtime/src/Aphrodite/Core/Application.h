@@ -1,14 +1,5 @@
 // Application.h
 
-// application class:
-// - control how game create and delete
-// - handle events
-// - manage layer
-// - control game loop
-// - lifecycle function
-// - Window event callback
-
-
 #ifndef Aphrodite_APPLICATION_H
 #define Aphrodite_APPLICATION_H
 
@@ -63,7 +54,7 @@ namespace Aph {
 
     private:
         ApplicationCommandLineArgs m_CommandLineArgs;
-        Scope<Window> m_Window;
+        Scope<Window> m_Window{};
         UILayer *m_ImGuiLayer{};
         bool m_Running = true;
         bool m_Minimized = false;

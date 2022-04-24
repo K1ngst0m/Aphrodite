@@ -5,7 +5,7 @@
 #ifndef Aphrodite_ENGINE_SCENECAMERA_H
 #define Aphrodite_ENGINE_SCENECAMERA_H
 
-#include "Aphrodite/Renderer/Camera.h"
+#include "Aphrodite/Scene/Camera.h"
 
 namespace Aph {
     class SceneCamera : public Camera {

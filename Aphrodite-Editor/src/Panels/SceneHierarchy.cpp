@@ -29,8 +29,9 @@ namespace Aph::Editor {
             DrawEntityNode(entity);
         });
 
-        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
             m_SelectionContext = {};
+        }
 
         RightClickMenuGlobal();
 

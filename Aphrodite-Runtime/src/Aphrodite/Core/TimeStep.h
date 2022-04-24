@@ -1,7 +1,5 @@
 // TimeStep.h
 
-// TimeStep class, provide for game loop, framerate calculate, etc.
-
 #ifndef Aphrodite_ENGINE_TIMESTEP_H
 #define Aphrodite_ENGINE_TIMESTEP_H
 

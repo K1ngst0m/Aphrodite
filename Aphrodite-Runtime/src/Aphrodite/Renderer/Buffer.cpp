@@ -39,13 +39,13 @@ namespace Aph {
     }
 
     Ref<IndexBuffer> IndexBuffer::Create(uint32_t *indices,
-                                         uint32_t size) {
+                                         uint32_t count) {
         switch (Renderer::GetAPI()) {
             case RendererAPI::API::None:
                 APH_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
                 return nullptr;
             case RendererAPI::API::OpenGL:
-                return CreateRef<OpenGLIndexBuffer>(indices, size);
+                return CreateRef<OpenGLIndexBuffer>(indices, count);
             default:
                 APH_CORE_ASSERT(false, "Unknown RendererAPI!");
                 return nullptr;

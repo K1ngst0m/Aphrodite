@@ -56,8 +56,8 @@ namespace Aph {
         }
 
         static void AttachDepthTexture(uint32_t id, uint32_t samples, GLenum format, GLenum attachmentType, uint32_t width, uint32_t height) {
-            bool multisampled = samples > 1;
-            if (multisampled) {
+            bool multiSampled = samples > 1;
+            if (multiSampled) {
                 glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, samples, format, width, height, GL_FALSE);
             } else {
                 glTexStorage2D(GL_TEXTURE_2D, 1, format, width, height);
@@ -69,7 +69,7 @@ namespace Aph {
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             }
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, TextureTarget(multisampled), id, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, attachmentType, TextureTarget(multiSampled), id, 0);
         }
 
         static bool IsDepthFormat(FramebufferTextureFormat format) {

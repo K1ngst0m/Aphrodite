@@ -4,7 +4,7 @@
 
 #include "SceneRenderer.h"
 
-#include "Aphrodite/Renderer/EditorCamera.h"
+#include "Aphrodite/Scene/EditorCamera.h"
 #include "Aphrodite/Renderer/Material.h"
 #include "Aphrodite/Renderer/Model.h"
 #include "Aphrodite/Renderer/RenderCommand.h"

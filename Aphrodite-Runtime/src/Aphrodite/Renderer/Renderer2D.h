@@ -6,8 +6,8 @@
 #define Aphrodite_ENGINE_RENDERER2D_H
 
 #include "Aphrodite/Renderer/Texture.h"
-#include "Aphrodite/Renderer/Camera.h"
-#include "Aphrodite/Renderer/EditorCamera.h"
+#include "Aphrodite/Scene/Camera.h"
+#include "Aphrodite/Scene/EditorCamera.h"
 #include "Aphrodite/Scene/Components.h"
 
 namespace Aph {

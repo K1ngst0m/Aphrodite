@@ -13,7 +13,7 @@
 #include <spirv_glsl.hpp>
 #include <utility>
 
-#include "Aphrodite/Core/Timer.h"
+// #include "Aphrodite/Core/Timer.h"
 #include "pch.h"
 
 #if vulkan_not_yet
@@ -97,11 +97,10 @@ namespace Aph {
         std::string source = ReadFile(filepath);
         auto shaderSources = PreProcess(source);
         {
-            Timer timer;
+            APH_PROFILE_FUNCTION();
             CompileOrGetVulkanBinaries(shaderSources);
             CompileOrGetOpenGLBinaries();
             CreateProgram();
-            APH_CORE_WARN("Shader creation took {0} ms", timer.ElapsedMillis());
         }
 
         // Extract name from filepath

@@ -22,22 +22,24 @@ namespace Aph {
         }
 
         static std::string OpenFileDialogGetPath(const char * filter = "*") {
-            return std::move(ExecCommand(fmt::format(
-                    "zenity --file-selection --file-filter={}", filter)));
+            return ExecCommand(fmt::format(
+                    "zenity --file-selection --file-filter={}", filter));
         }
     }
 
     std::string FileDialogs::OpenFile(const char* filter) {
         auto fileName = Utils::OpenFileDialogGetPath(filter);
-        if(!fileName.empty())
+        if(!fileName.empty()) {
             fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
+        }
         return fileName;
     }
 
     std::string FileDialogs::SaveFile(const char* filter) {
         auto fileName = Utils::OpenFileDialogGetPath(filter);
-        if(!fileName.empty())
+        if(!fileName.empty()) {
             fileName.erase(std::remove(fileName.begin(), fileName.end(), '\n'), fileName.end());
+        }
         return fileName;
     }
 

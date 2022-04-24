@@ -19,7 +19,7 @@ namespace Aph {
 
         glCreateBuffers(1, &m_RendererID);
         glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
-        glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_DYNAMIC_DRAW);
     }
 
     OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size) {
@@ -123,7 +123,7 @@ namespace Aph {
         size *= count;
 
         glBindBuffer(GL_UNIFORM_BUFFER, m_RendererID);
-        glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_STATIC_DRAW);
+        glBufferData(GL_UNIFORM_BUFFER, size, nullptr, GL_DYNAMIC_DRAW);
         glBindBuffer(GL_UNIFORM_BUFFER, 0);
         glBindBufferRange(GL_UNIFORM_BUFFER, blockIndex, m_RendererID, 0, size);
     }

@@ -1,10 +1,5 @@
 // EntryPoint.h
 
-// engine's entry point:
-// - init logging system
-// - create application
-// - run the game circle
-
 
 #ifndef Aphrodite_ENTRYPOINT_H
 #define Aphrodite_ENTRYPOINT_H

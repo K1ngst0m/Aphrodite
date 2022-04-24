@@ -5,10 +5,11 @@
 #ifndef Aphrodite_ENGINE_KEYCODES_H
 #define Aphrodite_ENGINE_KEYCODES_H
 
-namespace Aph {
+namespace Aph{
     using KeyCode = uint16_t;
+}
 
-    namespace Key {
+namespace Aph::Key {
         enum : KeyCode {
             // From glfw3.h
             Space = 32,
@@ -142,7 +143,6 @@ namespace Aph {
             RightSuper = 347,
             Menu = 348
         };
-    }
-}// namespace Aph-Runtime
+    }// namespace Aph-Runtime
 
 #endif// Aphrodite_ENGINE_KEYCODES_H

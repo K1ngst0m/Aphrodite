@@ -18,7 +18,8 @@ int main(int argc, char **argv) {
     Aph::Log::Init();
 
     APH_PROFILE_BEGIN_SESSION("Startup", "APH-Profile-Startup.json");
-    auto app = Aph::CreateApplication({argc, argv});
+
+    auto* app = Aph::CreateApplication({argc, argv});
     APH_PROFILE_END_SESSION();
 
     APH_PROFILE_BEGIN_SESSION("Runtime", "APH-Profile-Runtime.json");
