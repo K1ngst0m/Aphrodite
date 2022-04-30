@@ -133,3 +133,5 @@ CTestTestfile.cmake
 /scripts/3rdParty/VulkanSDK/1.2.170.0/
 .idea/
 .cache/
+.gdb_history
+core
