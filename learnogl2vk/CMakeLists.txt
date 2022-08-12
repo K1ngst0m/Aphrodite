@@ -33,7 +33,7 @@ function(buildExamples)
 endfunction(buildExamples)
 
 set(EXAMPLES
-  getting_started/triangle
+  getting_started/first_triangle
   # getting_started/texture
   # getting_started/transformation
   # getting_started/camera
