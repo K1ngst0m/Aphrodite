@@ -40,11 +40,24 @@ public:
     virtual ~vkBase() = default;
 
 public:
-    void run()
-    {
+    void init(){
         initWindow();
         initVulkan();
-        mainLoop();
+        initDerive();
+    }
+
+    void run()
+    {
+        while (!glfwWindowShouldClose(m_window)) {
+            glfwPollEvents();
+            drawFrame();
+        }
+
+        vkDeviceWaitIdle(m_device);
+    }
+
+    void finish(){
+        cleanupDerive();
         cleanup();
     }
 
@@ -60,14 +73,17 @@ protected:
 
 protected:
     void initWindow();
-    void mainLoop();
     void initVulkan();
     void cleanup();
 
 protected:
+    virtual void initDerive();
+    virtual void cleanupDerive();
+
+protected:
     virtual void createInstance();
     virtual bool checkValidationLayerSupport();
-
+    virtual void getEnabledFeatures();
     virtual void createSwapChain();
     virtual void createSurface();
     virtual void recreateSwapChain();
@@ -83,25 +99,13 @@ protected:
     virtual void createLogicalDevice();
     virtual bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
-    virtual void createGraphicsPipeline();
     virtual void createRenderPass();
 
     virtual void createFramebuffers();
     virtual void createCommandPool();
     virtual void createCommandBuffers();
 
-    virtual void createVertexBuffers();
-    virtual void createIndexBuffers();
-    virtual void createUniformBuffers();
-
-    virtual void createSyncObjects();
-
-    virtual void createDescriptorPool();
-    virtual void createDescriptorSetLayout();
-    virtual void createDescriptorSets();
-
     virtual void drawFrame();
-    virtual void nonCommonResourceCleanup();
 
 protected:
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);

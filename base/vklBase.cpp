@@ -165,6 +165,8 @@ QueueFamilyIndices vkBase::findQueueFamilies(VkPhysicalDevice device)
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
+    assert(queueFamilyCount > 0);
+
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
@@ -249,6 +251,8 @@ void vkBase::pickPhysicalDevice()
     vkGetPhysicalDeviceProperties(m_physicalDevice, &m_deviceProperties);
     vkGetPhysicalDeviceFeatures(m_physicalDevice, &m_deviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &m_deviceMemoryProperties);
+
+    getEnabledFeatures();
 }
 
 void vkBase::createSurface()
@@ -256,16 +260,6 @@ void vkBase::createSurface()
     if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
-}
-
-void vkBase::mainLoop()
-{
-    while (!glfwWindowShouldClose(m_window)) {
-        glfwPollEvents();
-        drawFrame();
-    }
-
-    vkDeviceWaitIdle(m_device);
 }
 
 void vkBase::createRenderPass()
@@ -318,8 +312,6 @@ void vkBase::createRenderPass()
 void vkBase::cleanup()
 {
     cleanupSwapChain();
-
-    nonCommonResourceCleanup();
 
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
@@ -461,16 +453,8 @@ void vkBase::initVulkan()
     createSwapChainImageViews();
     createCommandPool();
     createCommandBuffers();
-    createVertexBuffers();
-    createIndexBuffers();
-    createUniformBuffers();
     createRenderPass();
-    createDescriptorSetLayout();
-    createGraphicsPipeline();
     createFramebuffers();
-    createDescriptorPool();
-    createDescriptorSets();
-    createSyncObjects();
 }
 
 void vkBase::createSwapChainImageViews()
@@ -558,24 +542,6 @@ void vkBase::createSwapChain()
 
     m_swapChainImageFormat = surfaceFormat.format;
     m_swapChainExtent = extent;
-}
-
-void vkBase::createCommandBuffers()
-{
-    commandBuffers.resize(m_settings.max_frames);
-
-    VkCommandBufferAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-    VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &allocInfo, commandBuffers.data()));
-}
-
-void vkBase::createSyncObjects()
-{
-
 }
 
 void vkBase::recreateSwapChain()
@@ -692,52 +658,34 @@ void vkBase::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize siz
     vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
 }
 
-void vkBase::createDescriptorPool()
-{
-    VkDescriptorPoolSize poolSize{
-        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_settings.max_frames),
-        .poolSizeCount = 1,
-        .pPoolSizes = &poolSize,
-    };
-
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
-}
-
-void vkBase::createVertexBuffers()
-{
-}
-
-void vkBase::createIndexBuffers()
-{
-}
-
-void vkBase::createDescriptorSets()
-{
-}
-
 void vkBase::drawFrame()
 {
 }
 
-void vkBase::createUniformBuffers()
+void vkBase::getEnabledFeatures()
 {
 }
 
-void vkBase::createGraphicsPipeline()
+void vkBase::initDerive()
 {
 }
 
-void vkBase::createDescriptorSetLayout()
+void vkBase::cleanupDerive()
 {
 }
 
-void vkBase::nonCommonResourceCleanup(){
+void vkBase::createCommandBuffers()
+{
+    commandBuffers.resize(m_settings.max_frames);
+
+    VkCommandBufferAllocateInfo allocInfo{
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .commandPool = m_commandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = (uint32_t)commandBuffers.size(),
+    };
+
+    VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device, &allocInfo, commandBuffers.data()));
 }
 
 }

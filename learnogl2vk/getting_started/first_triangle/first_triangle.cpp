@@ -8,8 +8,8 @@
 class first_triangle : public vkl::vkBase {
 public:
     first_triangle(){
-        m_width = 1280;
-        m_height = 1280;
+        m_width = 800;
+        m_height = 600;
     }
     ~first_triangle() override = default;
 
@@ -66,7 +66,111 @@ private:
     const std::vector<uint16_t> indices = { 0, 1, 2 };
 
 private:
-    void createVertexBuffers() override
+    void initDerive() override
+    {
+        createVertexBuffers();
+        createIndexBuffers();
+        createUniformBuffers();
+        createDescriptorPool();
+        createDescriptorSetLayout();
+        createDescriptorSets();
+        createSyncObjects();
+        createGraphicsPipeline();
+    }
+
+    void drawFrame() override
+    {
+        vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+
+        uint32_t imageIndex;
+        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
+                                                m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
+                                                &imageIndex);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            recreateSwapChain();
+            return;
+        }
+
+        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            VK_CHECK_RESULT(result);
+        }
+
+        vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
+
+        vkResetCommandBuffer(commandBuffers[m_currentFrame], 0);
+        recordCommandBuffer(commandBuffers[m_currentFrame], imageIndex);
+
+        updateUniformBuffer(m_currentFrame);
+
+        VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
+        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+        VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
+        VkSubmitInfo submitInfo{
+            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = waitSemaphores,
+            .pWaitDstStageMask = waitStages,
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffers[m_currentFrame],
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = signalSemaphores,
+        };
+
+        VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
+
+        VkSwapchainKHR swapChains[] = { m_swapChain };
+
+        VkPresentInfoKHR presentInfo{
+            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores = signalSemaphores,
+            .swapchainCount = 1,
+            .pSwapchains = swapChains,
+            .pImageIndices = &imageIndex,
+            .pResults = nullptr, // Optional
+        };
+
+        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            framebufferResized = false;
+            recreateSwapChain();
+        } else if (result != VK_SUCCESS) {
+            VK_CHECK_RESULT(result);
+        }
+
+        m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
+    }
+
+    void cleanupDerive() override
+    {
+        for (size_t i = 0; i < m_settings.max_frames; i++) {
+            vkDestroyBuffer(m_device, uniformBuffers[i], nullptr);
+            vkFreeMemory(m_device, uniformBuffersMemory[i], nullptr);
+        }
+
+        for (size_t i = 0; i < m_settings.max_frames; i++) {
+            vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+        }
+
+        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+
+        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
+        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
+
+        vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
+        vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+
+        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+    }
+
+private:
+    void createVertexBuffers()
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
@@ -91,7 +195,7 @@ private:
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffers() override
+    void createIndexBuffers() 
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
@@ -115,7 +219,7 @@ private:
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createUniformBuffers() override
+    void createUniformBuffers() 
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -129,7 +233,85 @@ private:
         }
     }
 
-    void createGraphicsPipeline() override
+    void createDescriptorSets()
+    {
+        std::vector<VkDescriptorSetLayout> layouts(m_settings.max_frames, m_descriptorSetLayout);
+        VkDescriptorSetAllocateInfo allocInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = m_descriptorPool,
+            .descriptorSetCount = static_cast<uint32_t>(m_settings.max_frames),
+            .pSetLayouts = layouts.data(),
+        };
+
+        descriptorSets.resize(m_settings.max_frames);
+
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, descriptorSets.data()));
+
+        for (size_t i = 0; i < m_settings.max_frames; i++) {
+            VkDescriptorBufferInfo bufferInfo{
+                .buffer = uniformBuffers[i],
+                .offset = 0,
+                .range = sizeof(UniformBufferObject),
+            };
+
+            VkWriteDescriptorSet descriptorWrite{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo = nullptr, // Optional
+                .pBufferInfo = &bufferInfo,
+                .pTexelBufferView = nullptr, // Optional
+            };
+
+            vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr);
+        }
+    }
+
+    void createDescriptorSetLayout() 
+    {
+        VkDescriptorSetLayoutBinding uboLayoutBinding{
+            .binding = 0,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr, // Optional
+        };
+
+        VkDescriptorSetLayoutCreateInfo layoutInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .bindingCount = 1,
+            .pBindings = &uboLayoutBinding,
+        };
+
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout));
+    }
+
+    void createSyncObjects() 
+    {
+        m_imageAvailableSemaphores.resize(m_settings.max_frames);
+        m_renderFinishedSemaphores.resize(m_settings.max_frames);
+        m_inFlightFences.resize(m_settings.max_frames);
+
+        VkSemaphoreCreateInfo semaphoreInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        };
+
+        VkFenceCreateInfo fenceInfo{
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+        };
+
+        for (size_t i = 0; i < m_settings.max_frames; i++) {
+            VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
+            VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
+            VK_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]));
+        }
+    }
+
+    void createGraphicsPipeline()
     {
         auto vertShaderCode = vkl::utils::readFile(shaderDir / "getting_started/first_triangle/vert.spv");
         auto fragShaderCode = vkl::utils::readFile(shaderDir / "getting_started/first_triangle/frag.spv");
@@ -295,176 +477,23 @@ private:
         vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
     }
 
-    void drawFrame() override
+    void createDescriptorPool()
     {
-        vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
-                                                m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
-                                                &imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapChain();
-            return;
-        }
-
-        if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("failed to acquire swap chain image!");
-        }
-
-        vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
-
-        vkResetCommandBuffer(commandBuffers[m_currentFrame], 0);
-        recordCommandBuffer(commandBuffers[m_currentFrame], imageIndex);
-
-        updateUniformBuffer(m_currentFrame);
-
-        VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
-        VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-        VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
-        VkSubmitInfo submitInfo{
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = waitSemaphores,
-            .pWaitDstStageMask = waitStages,
-            .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffers[m_currentFrame],
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = signalSemaphores,
+        VkDescriptorPoolSize poolSize{
+            .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
         };
 
-        VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
-
-        VkSwapchainKHR swapChains[] = { m_swapChain };
-
-        VkPresentInfoKHR presentInfo{
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = signalSemaphores,
-            .swapchainCount = 1,
-            .pSwapchains = swapChains,
-            .pImageIndices = &imageIndex,
-            .pResults = nullptr, // Optional
+        VkDescriptorPoolCreateInfo poolInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets = static_cast<uint32_t>(m_settings.max_frames),
+            .poolSizeCount = 1,
+            .pPoolSizes = &poolSize,
         };
 
-        result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
-            recreateSwapChain();
-        } else if (result != VK_SUCCESS) {
-            throw std::runtime_error("failed to present swap chain image!");
-        }
-
-        m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
+        VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
     }
 
-    void createDescriptorSets() override
-    {
-        std::vector<VkDescriptorSetLayout> layouts(m_settings.max_frames, m_descriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = m_descriptorPool,
-            .descriptorSetCount = static_cast<uint32_t>(m_settings.max_frames),
-            .pSetLayouts = layouts.data(),
-        };
-
-        descriptorSets.resize(m_settings.max_frames);
-
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, descriptorSets.data()));
-
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            VkDescriptorBufferInfo bufferInfo{
-                .buffer = uniformBuffers[i],
-                .offset = 0,
-                .range = sizeof(UniformBufferObject),
-            };
-
-            VkWriteDescriptorSet descriptorWrite{
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pImageInfo = nullptr, // Optional
-                .pBufferInfo = &bufferInfo,
-                .pTexelBufferView = nullptr, // Optional
-            };
-
-            vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr);
-        }
-    }
-
-    void createDescriptorSetLayout() override
-    {
-        VkDescriptorSetLayoutBinding uboLayoutBinding{
-            .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = nullptr, // Optional
-        };
-
-        VkDescriptorSetLayoutCreateInfo layoutInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = 1,
-            .pBindings = &uboLayoutBinding,
-        };
-
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout));
-    }
-
-    void createSyncObjects() override
-    {
-        m_imageAvailableSemaphores.resize(m_settings.max_frames);
-        m_renderFinishedSemaphores.resize(m_settings.max_frames);
-        m_inFlightFences.resize(m_settings.max_frames);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
-            }
-        }
-    }
-
-    void nonCommonResourceCleanup() override
-    {
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            vkDestroyBuffer(m_device, uniformBuffers[i], nullptr);
-            vkFreeMemory(m_device, uniformBuffersMemory[i], nullptr);
-        }
-
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
-        }
-
-        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
-
-        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
-        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
-        vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
-
-        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-    }
-
-private:
     void updateUniformBuffer(uint32_t currentImage)
     {
         UniformBufferObject ubo{
@@ -560,16 +589,9 @@ private:
 
 int main()
 {
-    auto *app = new first_triangle;
+    first_triangle app;
 
-    try {
-        app->run();
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-        delete app;
-        return EXIT_FAILURE;
-    }
-
-    delete app;
-    return EXIT_SUCCESS;
+    app.init();
+    app.run();
+    app.finish();
 }
