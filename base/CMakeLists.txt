@@ -11,4 +11,4 @@ file(GLOB BASE_HEADERS
 
 add_library(base STATIC ${base_src})
 
-target_link_libraries(base -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi)
+target_link_libraries(base ${vulkan_lib} ${glfw_lib} ${xcb_libraries} ${cmake_thread_libs_init})

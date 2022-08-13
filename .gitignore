@@ -6,3 +6,4 @@ tmp/
 .cache/
 build/
 shader/*.spv
+.gdb_history
