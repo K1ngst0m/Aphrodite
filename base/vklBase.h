@@ -1,13 +1,13 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#include <filesystem>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <vector>
 #include <optional>
 #include <array>
+#include <filesystem>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -40,7 +40,8 @@ public:
     virtual ~vkBase() = default;
 
 public:
-    void init(){
+    void init()
+    {
         initWindow();
         initVulkan();
         initDerive();
@@ -56,14 +57,16 @@ public:
         vkDeviceWaitIdle(m_device);
     }
 
-    void finish(){
+    void finish()
+    {
         cleanupDerive();
         cleanup();
     }
 
 public:
     const static std::filesystem::path assetDir;
-    const static std::filesystem::path shaderDir;
+    const static std::filesystem::path glslShaderDir;
+    const static std::filesystem::path textureDir;
 
 protected:
     struct {
@@ -115,8 +118,17 @@ protected:
     VkShaderModule createShaderModule(const std::vector<char> &code);
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer,
                       VkDeviceMemory &bufferMemory);
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                     VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    VkImageView createImageView(VkImage image, VkFormat format);
+    void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
 
 protected:
     GLFWwindow *m_window = nullptr;

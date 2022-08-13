@@ -3,11 +3,10 @@
 #include <cstring>
 #include <iostream>
 
-#define VKL_DYNAMIC_STATE
-
 class textures_example : public vkl::vkBase {
 public:
-    textures_example(){
+    textures_example()
+    {
         m_width = 800;
         m_height = 600;
     }
@@ -26,6 +25,7 @@ private:
     struct Vertex {
         glm::vec2 pos;
         glm::vec3 color;
+        glm::vec2 texCoord;
 
         static VkVertexInputBindingDescription getBindingDescription()
         {
@@ -37,33 +37,49 @@ private:
             return bindingDescription;
         }
 
-        static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
+        static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
         {
-            std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
+            std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
 
-            attributeDescriptions[0].binding = 0;
-            attributeDescriptions[0].location = 0;
-            attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-            attributeDescriptions[0].offset = offsetof(Vertex, pos);
+            attributeDescriptions[0] = {
+                .location = 0,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .offset = offsetof(Vertex, pos),
+            };
 
-            attributeDescriptions[1].binding = 0;
-            attributeDescriptions[1].location = 1;
-            attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[1].offset = offsetof(Vertex, color);
+            attributeDescriptions[1] = {
+                .location = 1,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset = offsetof(Vertex, color),
+            };
+
+            attributeDescriptions[2] = {
+                .location = 2,
+                .binding = 0,
+                .format = VK_FORMAT_R32G32_SFLOAT,
+                .offset = offsetof(Vertex, texCoord),
+            };
 
             return attributeDescriptions;
         }
     };
 
     // vertex data
-    const std::vector<Vertex> vertices = {
-        { { -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },
-        { { 0.0f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
-        { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
-    };
-
+    const std::vector<Vertex> vertices = { { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
+                                           { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
+                                           { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+                                           { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } } };
     // index data
-    const std::vector<uint16_t> indices = { 0, 1, 2 };
+    const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+
+    struct Texture {
+        VkImage Image;
+        VkDeviceMemory Memory;
+        VkImageView ImageView;
+        VkSampler Sampler;
+    };
 
 private:
     void initDerive() override
@@ -71,6 +87,9 @@ private:
         createVertexBuffers();
         createIndexBuffers();
         createUniformBuffers();
+        createTextureImage();
+        createTextureImageView();
+        createTextureSampler();
         createDescriptorPool();
         createDescriptorSetLayout();
         createDescriptorSets();
@@ -143,6 +162,15 @@ private:
         m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
     }
 
+    // enable anisotropic filtering features
+    void getEnabledFeatures() override
+    {
+        assert(m_deviceFeatures.samplerAnisotropy);
+        m_deviceFeatures = {
+            .samplerAnisotropy = VK_TRUE,
+        };
+    }
+
     void cleanupDerive() override
     {
         for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -164,6 +192,16 @@ private:
 
         vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
         vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+
+        vkDestroySampler(m_device, m_containerTexture.Sampler, nullptr);
+        vkDestroyImageView(m_device, m_containerTexture.ImageView, nullptr);
+        vkDestroyImage(m_device, m_containerTexture.Image, nullptr);
+        vkFreeMemory(m_device, m_containerTexture.Memory, nullptr);
+
+        vkDestroySampler(m_device, m_awesomeFaceTexture.Sampler, nullptr);
+        vkDestroyImageView(m_device, m_awesomeFaceTexture.ImageView, nullptr);
+        vkDestroyImage(m_device, m_awesomeFaceTexture.Image, nullptr);
+        vkFreeMemory(m_device, m_awesomeFaceTexture.Memory, nullptr);
 
         vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
@@ -195,7 +233,7 @@ private:
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffers() 
+    void createIndexBuffers()
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
@@ -219,7 +257,7 @@ private:
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createUniformBuffers() 
+    void createUniformBuffers()
     {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
@@ -231,6 +269,14 @@ private:
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i],
                          uniformBuffersMemory[i]);
         }
+    }
+
+    void createTextureImage()
+    {
+        loadImageFromFile(m_containerTexture.Image, m_containerTexture.Memory,
+                          (textureDir / "container.jpg").u8string().c_str());
+        loadImageFromFile(m_awesomeFaceTexture.Image, m_awesomeFaceTexture.Memory,
+                          (textureDir / "awesomeface.png").u8string().c_str());
     }
 
     void createDescriptorSets()
@@ -254,7 +300,21 @@ private:
                 .range = sizeof(UniformBufferObject),
             };
 
-            VkWriteDescriptorSet descriptorWrite{
+            VkDescriptorImageInfo imageContainerInfo{
+                .sampler = m_containerTexture.Sampler,
+                .imageView = m_containerTexture.ImageView,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            };
+
+            VkDescriptorImageInfo imageAwesomefaceInfo{
+                .sampler = m_awesomeFaceTexture.Sampler,
+                .imageView = m_awesomeFaceTexture.ImageView,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            };
+
+            std::array<VkWriteDescriptorSet, 3> descriptorWrites;
+
+            descriptorWrites[0] = {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = descriptorSets[i],
                 .dstBinding = 0,
@@ -266,30 +326,72 @@ private:
                 .pTexelBufferView = nullptr, // Optional
             };
 
-            vkUpdateDescriptorSets(m_device, 1, &descriptorWrite, 0, nullptr);
+            descriptorWrites[1] = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = 1,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &imageContainerInfo,
+                .pTexelBufferView = nullptr, // Optional
+            };
+
+            descriptorWrites[2] = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSets[i],
+                .dstBinding = 2,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &imageAwesomefaceInfo,
+                .pTexelBufferView = nullptr, // Optional
+            };
+
+            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+                                   nullptr);
         }
     }
 
-    void createDescriptorSetLayout() 
+    void createDescriptorSetLayout()
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding{
             .binding = 0,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = nullptr, // Optional
+            .pImmutableSamplers = nullptr,
         };
+
+        VkDescriptorSetLayoutBinding samplerContainerLayoutBinding{
+            .binding = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
+
+        VkDescriptorSetLayoutBinding samplerAwesomefaceLayoutBinding{
+            .binding = 2,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
+
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, samplerContainerLayoutBinding,
+                                                                 samplerAwesomefaceLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = 1,
-            .pBindings = &uboLayoutBinding,
+            .bindingCount = static_cast<uint32_t>(bindings.size()),
+            .pBindings = bindings.data(),
         };
 
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout));
     }
 
-    void createSyncObjects() 
+    void createSyncObjects()
     {
         m_imageAvailableSemaphores.resize(m_settings.max_frames);
         m_renderFinishedSemaphores.resize(m_settings.max_frames);
@@ -313,8 +415,8 @@ private:
 
     void createGraphicsPipeline()
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         ;
@@ -366,7 +468,6 @@ private:
             .extent = m_swapChainExtent,
         };
 
-#if defined(VKL_DYNAMIC_STATE)
         std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
         VkPipelineDynamicStateCreateInfo dynamicState{
@@ -380,15 +481,6 @@ private:
             .viewportCount = 1,
             .scissorCount = 1,
         };
-#else
-        VkPipelineViewportStateCreateInfo viewportState{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-            .viewportCount = 1,
-            .pViewports = &viewport,
-            .scissorCount = 1,
-            .pScissors = &scissor,
-        };
-#endif
 
         VkPipelineRasterizationStateCreateInfo rasterizer{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -459,11 +551,7 @@ private:
             .pMultisampleState = &multisampling,
             .pDepthStencilState = nullptr, // Optional
             .pColorBlendState = &colorBlending,
-#ifdef VKL_DYNAMIC_STATE
             .pDynamicState = &dynamicState,
-#else
-            .pDynamicState = nullptr,
-#endif
             .layout = m_pipelineLayout,
             .renderPass = m_renderPass,
             .subpass = 0,
@@ -471,7 +559,8 @@ private:
             .basePipelineIndex = -1, // Optional
         };
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
+        VK_CHECK_RESULT(
+                vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
 
         vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
@@ -479,16 +568,25 @@ private:
 
     void createDescriptorPool()
     {
-        VkDescriptorPoolSize poolSize{
+        std::array<VkDescriptorPoolSize, 3> poolSizes{};
+        poolSizes[0] = {
             .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
+        };
+        poolSizes[1] = {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
+        };
+        poolSizes[2] = {
+            .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
         };
 
         VkDescriptorPoolCreateInfo poolInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = static_cast<uint32_t>(m_settings.max_frames),
-            .poolSizeCount = 1,
-            .pPoolSizes = &poolSize,
+            .maxSets = m_settings.max_frames,
+            .poolSizeCount = poolSizes.size(),
+            .pPoolSizes = poolSizes.data(),
         };
 
         VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
@@ -567,6 +665,37 @@ private:
         VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
     }
 
+    void createTextureImageView()
+    {
+        m_containerTexture.ImageView = createImageView(m_containerTexture.Image, VK_FORMAT_R8G8B8A8_SRGB);
+        m_awesomeFaceTexture.ImageView = createImageView(m_awesomeFaceTexture.Image, VK_FORMAT_R8G8B8A8_SRGB);
+    }
+
+    void createTextureSampler()
+    {
+        VkSamplerCreateInfo samplerInfo{
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .magFilter = VK_FILTER_LINEAR,
+            .minFilter = VK_FILTER_LINEAR,
+            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .mipLodBias = 0.0f,
+            .anisotropyEnable = VK_TRUE,
+            .maxAnisotropy = m_deviceProperties.limits.maxSamplerAnisotropy,
+            .compareEnable = VK_FALSE,
+            .compareOp = VK_COMPARE_OP_ALWAYS,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+            .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+            .unnormalizedCoordinates = VK_FALSE,
+        };
+
+        VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_containerTexture.Sampler));
+        VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_awesomeFaceTexture.Sampler));
+    }
+
 private:
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
@@ -577,6 +706,9 @@ private:
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
 
+    Texture m_containerTexture;
+    Texture m_awesomeFaceTexture;
+
     std::vector<VkDescriptorSet> descriptorSets;
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkPipelineLayout m_pipelineLayout;
@@ -585,8 +717,6 @@ private:
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
-
-
 };
 
 int main()
