@@ -1,0 +1,104 @@
+* LearnVulkan
+
+LearnOpenGL but Vulkan implementation
+
+** Cloning
+
+#+BEGIN_SRC bash
+git clone https://github.com/K1ngst0m/learnVK
+
+cd learnVK
+#+END_SRC
+
+** Building and Running
+
+#+BEGIN_SRC bash
+cmake -B build && cmake --build build -- -j$(nproc)
+
+./build/bin/xxx
+#+END_SRC
+
+
+** Implementations List
+
+*** [X] I - Getting Started
+**** [X] 1. Hello Window, Hello Triangle, Shaders
+
+Init vulkan and window, setup graphics pipeline, creating first triangle.
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/first_triangle][First Triangle]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Getting-started/Hello-Window][Hello Window]]
+- [[https://learnopengl.com/Getting-started/Hello-Triangle][Hello Triangle]]
+- [[https://learnopengl.com/Getting-started/Shaders][Shaders]]
+
+**** [X] 2. Textures
+
+Loading a 2D image from disk, upload into video memory and using it with samplers.
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/textures][Textures]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Getting-started/Textures][Textures]]
+
+**** [X] 3. Transformations, Coordinate Systems, Camera
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/transformations][Transformations]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Getting-started/Transformations][Transformations]]
+- [[https://learnopengl.com/Getting-started/Coordinate-Systems][Coordinate Systems]]
+- [[https://learnopengl.com/Getting-started/Camera][Camera]]
+
+*** [-] II - Lighting
+**** [ ] 1. Basic Lighting
+**** [ ] 2. Materials
+**** [ ] 3. Lighting maps
+**** [ ] 4. Light casters
+**** [ ] 5. Multiple lights
+
+*** [ ] III - Model Loading
+**** [ ] 1. Assimp (but tiny-gltf)
+**** [ ] 2. Mesh
+**** [ ] 3. Model
+
+*** [ ] IV - Advanced OpenGL (but Vulkan)
+**** [ ] 1. Depth testing
+**** [ ] 2. Stencil testing
+**** [ ] 3. Blending
+**** [ ] 4. Face culling
+**** [ ] 5. Cubemaps
+**** [ ] 6. Advanced Data
+**** [ ] 7. Advannced GLSL
+**** [ ] 8. Geometry Shader
+**** [ ] 9. Instancing
+**** [ ] 10. Anti Aliasing
+
+*** [ ] V - Advanced Lighting
+**** [ ] 1. Advanced Lighting
+**** [ ] 2. Gamma Correction
+**** [ ] 3. Shadows
+***** [ ] 3.1. Shadow Mapping
+***** [ ] 3.2. Point Shadows
+**** [ ] 4. Normal Mapping
+**** [ ] 5. Parallax Mapping
+**** [ ] 6. HDR
+**** [ ] 7. Bloom
+**** [ ] 8. Deferred Shading
+**** [ ] 9. SSAO
+
+*** [ ] VI - PBR
+**** [ ] 1. Lighting
+**** [ ] 2. IBL
+***** [ ] 2.1. Diffuse irradiance
+***** [ ] 2.2. Specular IBL
