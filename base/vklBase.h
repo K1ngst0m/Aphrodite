@@ -17,7 +17,7 @@
 
 #include "camera.h"
 #include "vklUtils.h"
-#include "vklInit.h"
+#include "vklInit.hpp"
 
 namespace vkl
 {
