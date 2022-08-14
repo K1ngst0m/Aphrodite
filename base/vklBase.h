@@ -10,12 +10,14 @@
 #include <filesystem>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "camera.hpp"
-#include "vklUtils.hpp"
+#include "camera.h"
+#include "vklUtils.h"
+#include "vklInit.h"
 
 namespace vkl
 {
@@ -51,6 +53,7 @@ public:
     {
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
+            keyboardHandleDerive();
             drawFrame();
         }
 
@@ -63,11 +66,58 @@ public:
         cleanup();
     }
 
-public:
+protected:
     const static std::filesystem::path assetDir;
     const static std::filesystem::path glslShaderDir;
     const static std::filesystem::path textureDir;
 
+protected:
+    struct Texture {
+        VkImage image;
+        VkDeviceMemory memory;
+        VkImageView imageView;
+        VkSampler sampler;
+        VkDescriptorImageInfo descriptorInfo;
+
+        void cleanup(VkDevice device) const{
+            vkDestroySampler(device, sampler, nullptr);
+            vkDestroyImageView(device, imageView, nullptr);
+            vkDestroyImage(device, image, nullptr);
+            vkFreeMemory(device, memory, nullptr);
+        }
+    };
+
+    struct VertexBuffer{
+        VkDeviceMemory memory;
+        VkBuffer buffer;
+
+        void cleanup(VkDevice device) const{
+            vkDestroyBuffer(device, buffer, nullptr);
+            vkFreeMemory(device, memory, nullptr);
+        }
+    };
+
+    struct IndexBuffer{
+        VkDeviceMemory memory;
+        VkBuffer buffer;
+        uint32_t count;
+
+        void cleanup(VkDevice device) const{
+            vkDestroyBuffer(device, buffer, nullptr);
+            vkFreeMemory(device, memory, nullptr);
+        }
+    };
+
+    struct UniformBuffer{
+        VkDeviceMemory memory;
+        VkBuffer buffer;
+        VkDescriptorBufferInfo descriptorInfo;
+
+        void cleanup(VkDevice device) const{
+            vkDestroyBuffer(device, buffer, nullptr);
+            vkFreeMemory(device, memory, nullptr);
+        }
+    };
 protected:
     struct {
         bool isEnableValidationLayer = true;
@@ -82,6 +132,8 @@ protected:
 protected:
     virtual void initDerive();
     virtual void cleanupDerive();
+    virtual void keyboardHandleDerive();
+    virtual void mouseHandleDerive(int xposIn, int yposIn);
 
 protected:
     virtual void createInstance();
@@ -103,6 +155,7 @@ protected:
     virtual bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
     virtual void createRenderPass();
+    virtual void createDepthResources();
 
     virtual void createFramebuffers();
     virtual void createCommandPool();
@@ -111,7 +164,6 @@ protected:
     virtual void drawFrame();
 
 protected:
-    static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     std::vector<const char *> getRequiredExtensions();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
@@ -122,12 +174,16 @@ protected:
                      VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+                                 VkFormatFeatureFlags features);
+    VkFormat findDepthFormat();
 
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    VkImageView createImageView(VkImage image, VkFormat format);
+    VkImageView createImageView(VkImage image, VkFormat format,
+                                VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
     void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
 
 protected:
@@ -136,7 +192,6 @@ protected:
     std::vector<const char *> m_supportedInstanceExtensions;
 
     VkPhysicalDevice m_physicalDevice;
-
     VkPhysicalDeviceProperties m_deviceProperties;
     VkPhysicalDeviceFeatures m_deviceFeatures;
     VkPhysicalDeviceMemoryProperties m_deviceMemoryProperties;
@@ -147,33 +202,42 @@ protected:
     VkQueue m_presentQueue;
 
     VkSurfaceKHR m_surface;
+
     VkSwapchainKHR m_swapChain;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
+
     std::vector<VkImage> m_swapChainImages;
     std::vector<VkImageView> m_swapChainImageViews;
-    std::vector<VkFramebuffer> m_swapChainFramebuffers;
+
+    VkImage m_depthImage;
+    VkDeviceMemory m_depthImageMemory;
+    VkImageView m_depthImageView;
+
+    std::vector<VkFramebuffer> m_Framebuffers;
 
     VkRenderPass m_renderPass;
 
     VkDescriptorPool m_descriptorPool;
 
     VkCommandPool m_commandPool;
-    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<VkCommandBuffer> m_commandBuffers;
 
-    bool framebufferResized = false;
+    bool m_framebufferResized = false;
 
     uint32_t m_currentFrame = 0;
 
-    float timer = 0.0f;
-    float timerSpeed = 0.25f;
-    bool paused = false;
-
-    Camera camera;
-    glm::vec2 mousePos;
+    Camera m_camera;
 
     uint32_t m_width = 1280;
     uint32_t m_height = 720;
+
+    float deltaTime = 0.0f; // Time between current frame and last frame
+    float lastFrame = 0.0f; // Time of last frame
+
+    float lastX = m_width / 2.0f;
+    float lastY = m_height / 2.0f;
+    bool firstMouse = true;
 };
 }
 

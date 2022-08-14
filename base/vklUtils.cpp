@@ -1,25 +1,8 @@
-#ifndef VKLUTILS_H_
-#define VKLUTILS_H_
-
-#include <fstream>
-#include <iostream>
-#include <vector>
-#include <vulkan/vulkan.h>
-
-#define VK_CHECK_RESULT(f)                                                                                \
-    {                                                                                                     \
-        VkResult res = (f);                                                                               \
-        if (res != VK_SUCCESS) {                                                                          \
-            std::cout << "Fatal : VkResult is \"" << vkl::utils::errorString(res) << "\" in " << __FILE__ \
-                      << " at line " << __LINE__ << "\n";                                                 \
-            assert(res == VK_SUCCESS);                                                                    \
-        }                                                                                                 \
-    }
+#include "vklUtils.h"
 
 namespace vkl::utils
 {
-
-inline static std::string errorString(VkResult errorCode)
+std::string errorString(VkResult errorCode)
 {
     switch (errorCode) {
 #define STR(r)   \
@@ -54,7 +37,7 @@ inline static std::string errorString(VkResult errorCode)
     }
 }
 
-inline static std::vector<char> readFile(const std::string &filename)
+std::vector<char> readFile(const std::string &filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -72,5 +55,3 @@ inline static std::vector<char> readFile(const std::string &filename)
     return buffer;
 }
 }
-
-#endif // VKLUTILS_H_

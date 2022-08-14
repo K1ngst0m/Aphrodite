@@ -5,25 +5,31 @@
 
 #define VKL_DYNAMIC_STATE
 
-class textures_example : public vkl::vkBase {
+/*
+** - https://learnopengl.com/Getting-started/Hello-Triangle
+** - https://learnopengl.com/Getting-started/Shaders
+*/
+
+class first_triangle : public vkl::vkBase {
 public:
-    textures_example(){
+    first_triangle()
+    {
         m_width = 800;
         m_height = 600;
     }
-    ~textures_example() override = default;
+    ~first_triangle() override = default;
 
     // triangle data
 private:
     // mvp matrix data layout
-    struct UniformBufferObject {
+    struct MVPUBOLayout {
         glm::mat4 model;
         glm::mat4 view;
         glm::mat4 proj;
     };
 
     // vertex data layout
-    struct Vertex {
+    struct VertexLayout {
         glm::vec2 pos;
         glm::vec3 color;
 
@@ -31,7 +37,7 @@ private:
         {
             VkVertexInputBindingDescription bindingDescription{};
             bindingDescription.binding = 0;
-            bindingDescription.stride = sizeof(Vertex);
+            bindingDescription.stride = sizeof(VertexLayout);
             bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
             return bindingDescription;
@@ -44,26 +50,26 @@ private:
             attributeDescriptions[0].binding = 0;
             attributeDescriptions[0].location = 0;
             attributeDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-            attributeDescriptions[0].offset = offsetof(Vertex, pos);
+            attributeDescriptions[0].offset = offsetof(VertexLayout, pos);
 
             attributeDescriptions[1].binding = 0;
             attributeDescriptions[1].location = 1;
             attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-            attributeDescriptions[1].offset = offsetof(Vertex, color);
+            attributeDescriptions[1].offset = offsetof(VertexLayout, color);
 
             return attributeDescriptions;
         }
     };
 
     // vertex data
-    const std::vector<Vertex> vertices = {
+    const std::vector<VertexLayout> triangleVerticesData = {
         { { -0.5f, 0.5f }, { 1.0f, 0.0f, 0.0f } },
         { { 0.0f, -0.5f }, { 0.0f, 1.0f, 0.0f } },
         { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
     };
 
     // index data
-    const std::vector<uint16_t> indices = { 0, 1, 2 };
+    const std::vector<uint16_t> triangleIndicesData = { 0, 1, 2 };
 
 private:
     void initDerive() override
@@ -98,8 +104,8 @@ private:
 
         vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
-        vkResetCommandBuffer(commandBuffers[m_currentFrame], 0);
-        recordCommandBuffer(commandBuffers[m_currentFrame], imageIndex);
+        vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
+        recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
         updateUniformBuffer(m_currentFrame);
 
@@ -112,7 +118,7 @@ private:
             .pWaitSemaphores = waitSemaphores,
             .pWaitDstStageMask = waitStages,
             .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffers[m_currentFrame],
+            .pCommandBuffers = &m_commandBuffers[m_currentFrame],
             .signalSemaphoreCount = 1,
             .pSignalSemaphores = signalSemaphores,
         };
@@ -133,8 +139,8 @@ private:
 
         result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
+            m_framebufferResized = false;
             recreateSwapChain();
         } else if (result != VK_SUCCESS) {
             VK_CHECK_RESULT(result);
@@ -146,8 +152,7 @@ private:
     void cleanupDerive() override
     {
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            vkDestroyBuffer(m_device, uniformBuffers[i], nullptr);
-            vkFreeMemory(m_device, uniformBuffersMemory[i], nullptr);
+            m_mvpUBs[i].cleanup(m_device);
         }
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -159,11 +164,8 @@ private:
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        vkDestroyBuffer(m_device, m_indexBuffer, nullptr);
-        vkFreeMemory(m_device, m_indexBufferMemory, nullptr);
-
-        vkDestroyBuffer(m_device, m_vertexBuffer, nullptr);
-        vkFreeMemory(m_device, m_vertexBufferMemory, nullptr);
+        m_triangleIB.cleanup(m_device);
+        m_triangleVB.cleanup(m_device);
 
         vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
@@ -172,7 +174,7 @@ private:
 private:
     void createVertexBuffers()
     {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = sizeof(triangleVerticesData[0]) * triangleVerticesData.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -182,22 +184,22 @@ private:
 
         void *data;
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, vertices.data(), (size_t)bufferSize);
+        memcpy(data, triangleVerticesData.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_vertexBuffer,
-                     m_vertexBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_triangleVB.buffer,
+                     m_triangleVB.memory);
 
-        copyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, m_triangleVB.buffer, bufferSize);
 
         vkDestroyBuffer(m_device, stagingBuffer, nullptr);
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createIndexBuffers() 
+    void createIndexBuffers()
     {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+        VkDeviceSize bufferSize = sizeof(triangleIndicesData[0]) * triangleIndicesData.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -207,29 +209,34 @@ private:
 
         void *data;
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, indices.data(), (size_t)bufferSize);
+        memcpy(data, triangleIndicesData.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_indexBuffer, m_indexBufferMemory);
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_triangleIB.buffer, m_triangleIB.memory);
 
-        copyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
+        copyBuffer(stagingBuffer, m_triangleIB.buffer, bufferSize);
 
         vkDestroyBuffer(m_device, stagingBuffer, nullptr);
         vkFreeMemory(m_device, stagingBufferMemory, nullptr);
     }
 
-    void createUniformBuffers() 
+    void createUniformBuffers()
     {
-        VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+        VkDeviceSize bufferSize = sizeof(MVPUBOLayout);
 
-        uniformBuffers.resize(m_settings.max_frames);
-        uniformBuffersMemory.resize(m_settings.max_frames);
+        m_mvpUBs.resize(m_settings.max_frames);
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i],
-                         uniformBuffersMemory[i]);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
+                         m_mvpUBs[i].memory);
+
+            m_mvpUBs[i].descriptorInfo = {
+                .buffer = m_mvpUBs[i].buffer,
+                .offset = 0,
+                .range = bufferSize,
+            };
         }
     }
 
@@ -243,26 +250,20 @@ private:
             .pSetLayouts = layouts.data(),
         };
 
-        descriptorSets.resize(m_settings.max_frames);
+        m_descriptorSets.resize(m_settings.max_frames);
 
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, descriptorSets.data()));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, m_descriptorSets.data()));
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            VkDescriptorBufferInfo bufferInfo{
-                .buffer = uniformBuffers[i],
-                .offset = 0,
-                .range = sizeof(UniformBufferObject),
-            };
-
             VkWriteDescriptorSet descriptorWrite{
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = descriptorSets[i],
+                .dstSet = m_descriptorSets[i],
                 .dstBinding = 0,
                 .dstArrayElement = 0,
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pImageInfo = nullptr, // Optional
-                .pBufferInfo = &bufferInfo,
+                .pBufferInfo = &m_mvpUBs[i].descriptorInfo,
                 .pTexelBufferView = nullptr, // Optional
             };
 
@@ -270,7 +271,7 @@ private:
         }
     }
 
-    void createDescriptorSetLayout() 
+    void createDescriptorSetLayout()
     {
         VkDescriptorSetLayoutBinding uboLayoutBinding{
             .binding = 0,
@@ -289,7 +290,7 @@ private:
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout));
     }
 
-    void createSyncObjects() 
+    void createSyncObjects()
     {
         m_imageAvailableSemaphores.resize(m_settings.max_frames);
         m_renderFinishedSemaphores.resize(m_settings.max_frames);
@@ -336,8 +337,8 @@ private:
 
         VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-        auto bindingDescription = Vertex::getBindingDescription();
-        auto attributeDescriptions = Vertex::getAttributeDescriptions();
+        auto bindingDescription = VertexLayout::getBindingDescription();
+        auto attributeDescriptions = VertexLayout::getAttributeDescriptions();
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             .vertexBindingDescriptionCount = 1,
@@ -448,6 +449,19 @@ private:
 
         VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 
+        VkPipelineDepthStencilStateCreateInfo depthStencil{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = VK_COMPARE_OP_LESS,
+            .depthBoundsTestEnable = VK_FALSE,
+            .stencilTestEnable = VK_FALSE,
+            .front = {}, // Optional
+            .back = {}, // Optional
+            .minDepthBounds = 0.0f,
+            .maxDepthBounds = 1.0f,
+        };
+
         VkGraphicsPipelineCreateInfo pipelineInfo{
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = 2,
@@ -457,7 +471,7 @@ private:
             .pViewportState = &viewportState,
             .pRasterizationState = &rasterizer,
             .pMultisampleState = &multisampling,
-            .pDepthStencilState = nullptr, // Optional
+            .pDepthStencilState = &depthStencil,
             .pColorBlendState = &colorBlending,
 #ifdef VKL_DYNAMIC_STATE
             .pDynamicState = &dynamicState,
@@ -471,7 +485,8 @@ private:
             .basePipelineIndex = -1, // Optional
         };
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
+        VK_CHECK_RESULT(
+                vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
 
         vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
@@ -496,7 +511,7 @@ private:
 
     void updateUniformBuffer(uint32_t currentImage)
     {
-        UniformBufferObject ubo{
+        MVPUBOLayout ubo{
             .model = glm::mat4(1.0f),
             .view = glm::lookAt(glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
             .proj = glm::perspective(glm::radians(90.0f), m_swapChainExtent.width / (float)m_swapChainExtent.height,
@@ -505,9 +520,9 @@ private:
         ubo.proj[1][1] *= -1;
 
         void *data;
-        vkMapMemory(m_device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
+        vkMapMemory(m_device, m_mvpUBs[currentImage].memory, 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(m_device, uniformBuffersMemory[currentImage]);
+        vkUnmapMemory(m_device, m_mvpUBs[currentImage].memory);
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -520,14 +535,17 @@ private:
 
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-        VkClearValue clearColor = { { { 0.0f, 0.0f, 0.0f, 1.0f } } };
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+        clearValues[1].depthStencil = { 1.0f, 0 };
         VkRenderPassBeginInfo renderPassInfo{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .renderPass = m_renderPass,
-            .framebuffer = m_swapChainFramebuffers[imageIndex],
-            .clearValueCount = 1,
-            .pClearValues = &clearColor,
+            .framebuffer = m_Framebuffers[imageIndex],
+            .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+            .pClearValues = clearValues.data(),
         };
+
         renderPassInfo.renderArea = {
             .offset = { 0, 0 },
             .extent = m_swapChainExtent,
@@ -552,15 +570,15 @@ private:
         };
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = { m_vertexBuffer };
+        VkBuffer vertexBuffers[] = { m_triangleVB.buffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, m_triangleIB.buffer, 0, VK_INDEX_TYPE_UINT16);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1,
-                                &descriptorSets[m_currentFrame], 0, nullptr);
+                                &m_descriptorSets[m_currentFrame], 0, nullptr);
 
         // vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(triangleIndicesData.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -568,16 +586,12 @@ private:
     }
 
 private:
-    VkBuffer m_vertexBuffer;
-    VkDeviceMemory m_vertexBufferMemory;
+    VertexBuffer m_triangleVB;
+    IndexBuffer m_triangleIB;
 
-    VkBuffer m_indexBuffer;
-    VkDeviceMemory m_indexBufferMemory;
+    std::vector<UniformBuffer> m_mvpUBs;
 
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-
-    std::vector<VkDescriptorSet> descriptorSets;
+    std::vector<VkDescriptorSet> m_descriptorSets;
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
@@ -585,13 +599,11 @@ private:
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
-
-
 };
 
 int main()
 {
-    textures_example app;
+    first_triangle app;
 
     app.init();
     app.run();
