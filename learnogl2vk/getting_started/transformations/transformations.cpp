@@ -284,7 +284,6 @@ private:
         VkDeviceSize bufferSize = sizeof(CameraLayout);
 
         m_mvpUBs.resize(m_settings.max_frames);
-        m_mvpUBs.resize(m_settings.max_frames);
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -636,8 +635,8 @@ private:
     {
         VkCommandBufferBeginInfo beginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = 0, // Optional
-            .pInheritanceInfo = nullptr, // Optional
+            .flags = 0,
+            .pInheritanceInfo = nullptr,
         };
 
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
