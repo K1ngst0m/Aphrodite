@@ -20,14 +20,19 @@ public:
     // triangle data
 private:
     // mvp matrix data layout
-    struct MVPUBOLayout {
-        glm::mat4 model;
+    struct CameraLayout {
         glm::mat4 view;
         glm::mat4 proj;
+        glm::mat4 viewProj;
+    };
+
+    struct ObjectDataLayout {
+        glm::vec4 data;
+        glm::mat4 modelMatrix;
     };
 
     // vertex data layout
-    struct VertexLayout {
+    struct VertexDataLayout {
         glm::vec3 pos;
         glm::vec2 texCoord;
 
@@ -35,7 +40,7 @@ private:
         {
             VkVertexInputBindingDescription bindingDescription{};
             bindingDescription.binding = 0;
-            bindingDescription.stride = sizeof(VertexLayout);
+            bindingDescription.stride = sizeof(VertexDataLayout);
             bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
             return bindingDescription;
@@ -49,41 +54,51 @@ private:
                 .location = 0,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset = offsetof(VertexLayout, pos),
+                .offset = offsetof(VertexDataLayout, pos),
             };
 
             attributeDescriptions[1] = {
                 .location = 1,
                 .binding = 0,
                 .format = VK_FORMAT_R32G32_SFLOAT,
-                .offset = offsetof(VertexLayout, texCoord),
+                .offset = offsetof(VertexDataLayout, texCoord),
             };
 
             return attributeDescriptions;
         }
     };
 
-    const std::vector<VertexLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f } }, { { 0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f } }, { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },
-                                                     { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },   { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } }, { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f } },
+    const std::vector<VertexDataLayout> cubeVertices = {
+        { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f } }, { { 0.5f, -0.5f, -0.5f }, { 1.0f, 0.0f } },
+        { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },   { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },
+        { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } },  { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f } },
 
-                                                     { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },  { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },  { { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f } },
-                                                     { { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f } },    { { -0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f } },  { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },
+        { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },  { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },
+        { { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f } },    { { 0.5f, 0.5f, 0.5f }, { 1.0f, 1.0f } },
+        { { -0.5f, 0.5f, 0.5f }, { 0.0f, 1.0f } },   { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },
 
-                                                     { { -0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },   { { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } }, { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
-                                                     { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } }, { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } }, { { -0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
+        { { -0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },   { { -0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } }, { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },  { { -0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
 
-                                                     { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },    { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },  { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
-                                                     { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },  { { 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },  { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
+        { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },    { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },
+        { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },  { { 0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
+        { { 0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },   { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
 
-                                                     { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } }, { { 0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f } }, { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },
-                                                     { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },   { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } }, { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
+        { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } }, { { 0.5f, -0.5f, -0.5f }, { 1.0f, 1.0f } },
+        { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },   { { 0.5f, -0.5f, 0.5f }, { 1.0f, 0.0f } },
+        { { -0.5f, -0.5f, 0.5f }, { 0.0f, 0.0f } },  { { -0.5f, -0.5f, -0.5f }, { 0.0f, 1.0f } },
 
-                                                     { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } },  { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },  { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
-                                                     { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },    { { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f } },  { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } } };
+        { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } },  { { 0.5f, 0.5f, -0.5f }, { 1.0f, 1.0f } },
+        { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },    { { 0.5f, 0.5f, 0.5f }, { 1.0f, 0.0f } },
+        { { -0.5f, 0.5f, 0.5f }, { 0.0f, 0.0f } },   { { -0.5f, 0.5f, -0.5f }, { 0.0f, 1.0f } }
+    };
 
-    std::vector<glm::vec3> cubePositions = { glm::vec3(0.0f, 0.0f, 0.0f),   glm::vec3(2.0f, 5.0f, -15.0f), glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
-                                             glm::vec3(2.4f, -0.4f, -3.5f), glm::vec3(-1.7f, 3.0f, -7.5f), glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
-                                             glm::vec3(1.5f, 0.2f, -1.5f),  glm::vec3(-1.3f, 1.0f, -1.5f) };
+    std::vector<glm::vec3> cubePositions = { glm::vec3(0.0f, 0.0f, 0.0f),    glm::vec3(2.0f, 5.0f, -15.0f),
+                                             glm::vec3(-1.5f, -2.2f, -2.5f), glm::vec3(-3.8f, -2.0f, -12.3f),
+                                             glm::vec3(2.4f, -0.4f, -3.5f),  glm::vec3(-1.7f, 3.0f, -7.5f),
+                                             glm::vec3(1.3f, -2.0f, -2.5f),  glm::vec3(1.5f, 2.0f, -2.5f),
+                                             glm::vec3(1.5f, 0.2f, -1.5f),   glm::vec3(-1.3f, 1.0f, -1.5f) };
 
 private:
     void initDerive() override
@@ -107,7 +122,9 @@ private:
         vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
+                                                m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
+                                                &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateSwapChain();
@@ -121,9 +138,10 @@ private:
         vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-        recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
         updateUniformBuffer(m_currentFrame);
+
+        recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
 
         VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -242,14 +260,17 @@ private:
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+                     stagingBufferMemory);
 
         void *data;
         vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
         memcpy(data, cubeVertices.data(), (size_t)bufferSize);
         vkUnmapMemory(m_device, stagingBufferMemory);
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB.buffer,
+        createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB.buffer,
                      m_cubeVB.memory);
 
         copyBuffer(stagingBuffer, m_cubeVB.buffer, bufferSize);
@@ -260,13 +281,15 @@ private:
 
     void createUniformBuffers()
     {
-        VkDeviceSize bufferSize = sizeof(MVPUBOLayout);
+        VkDeviceSize bufferSize = sizeof(CameraLayout);
 
         m_mvpUBs.resize(m_settings.max_frames);
         m_mvpUBs.resize(m_settings.max_frames);
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer, m_mvpUBs[i].memory);
+            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
+                         m_mvpUBs[i].memory);
 
             m_mvpUBs[i].descriptorInfo = {
                 .buffer = m_mvpUBs[i].buffer,
@@ -327,7 +350,8 @@ private:
                 .pTexelBufferView = nullptr, // Optional
             };
 
-            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+                                   nullptr);
         }
     }
 
@@ -357,7 +381,8 @@ private:
             .pImmutableSamplers = nullptr,
         };
 
-        std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, samplerContainerLayoutBinding, samplerAwesomefaceLayoutBinding };
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings = { uboLayoutBinding, samplerContainerLayoutBinding,
+                                                                 samplerAwesomefaceLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo layoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -415,8 +440,8 @@ private:
 
         VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-        auto bindingDescription = VertexLayout::getBindingDescription();
-        auto attributeDescriptions = VertexLayout::getAttributeDescriptions();
+        auto bindingDescription = VertexDataLayout::getBindingDescription();
+        auto attributeDescriptions = VertexDataLayout::getAttributeDescriptions();
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -492,7 +517,8 @@ private:
             .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
             .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
             .alphaBlendOp = VK_BLEND_OP_ADD,
-            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                              VK_COLOR_COMPONENT_A_BIT,
         };
 
         VkPipelineColorBlendStateCreateInfo colorBlending{
@@ -502,10 +528,16 @@ private:
             .attachmentCount = 1,
             .pAttachments = &colorBlendAttachment,
         };
-        colorBlending.blendConstants[0] = 0.0f; // Optional
-        colorBlending.blendConstants[1] = 0.0f; // Optional
-        colorBlending.blendConstants[2] = 0.0f; // Optional
-        colorBlending.blendConstants[3] = 0.0f; // Optional
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+
+        VkPushConstantRange pushConstantRange{
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = sizeof(ObjectDataLayout),
+        };
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -514,18 +546,18 @@ private:
             .depthCompareOp = VK_COMPARE_OP_LESS,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE,
-            .front = {}, // Optional
-            .back = {}, // Optional
+            .front = {},
+            .back = {},
             .minDepthBounds = 0.0f,
             .maxDepthBounds = 1.0f,
         };
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .setLayoutCount = 1, // Optional
-            .pSetLayouts = &m_descriptorSetLayout, // Optional
-            .pushConstantRangeCount = 0, // Optional
-            .pPushConstantRanges = nullptr, // Optional
+            .setLayoutCount = 1,
+            .pSetLayouts = &m_descriptorSetLayout,
+            .pushConstantRangeCount = 1,
+            .pPushConstantRanges = &pushConstantRange,
         };
 
         VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
@@ -549,7 +581,8 @@ private:
             .basePipelineIndex = -1, // Optional
         };
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
+        VK_CHECK_RESULT(
+                vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
 
         vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
@@ -583,13 +616,15 @@ private:
 
     void updateUniformBuffer(uint32_t currentFrameIndex)
     {
-        MVPUBOLayout ubo{
-            .model = glm::mat4(1.0f),
+        CameraLayout ubo{
+            // .model = glm::mat4(1.0f),
             // .model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.5f, 1.0f, 0.0f)),
             .view = m_camera.GetViewMatrix(),
-            .proj = glm::perspective(m_camera.Zoom, m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.01f, 100.0f),
+            .proj = glm::perspective(m_camera.Zoom, m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.01f,
+                                     100.0f),
         };
         ubo.proj[1][1] *= -1;
+        ubo.viewProj = ubo.proj * ubo.view;
 
         void *data;
         vkMapMemory(m_device, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(ubo), 0, &data);
@@ -644,8 +679,23 @@ private:
         VkBuffer vertexBuffers[] = { m_cubeVB.buffer };
         VkDeviceSize offsets[] = { 0 };
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &descriptorSets[m_currentFrame], 0, nullptr);
-        vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1,
+                                &descriptorSets[m_currentFrame], 0, nullptr);
+
+        for (size_t i = 0; i < cubePositions.size(); i++) {
+            glm::mat4 model(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+            ObjectDataLayout objectDataConstant{
+                .modelMatrix = model,
+            };
+            vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
+                               &objectDataConstant);
+
+            vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
+        }
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -654,8 +704,10 @@ private:
 
     void createTextures()
     {
-        loadImageFromFile(m_containerTexture.image, m_containerTexture.memory, (textureDir / "container.jpg").u8string().c_str());
-        loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory, (textureDir / "awesomeface.png").u8string().c_str());
+        loadImageFromFile(m_containerTexture.image, m_containerTexture.memory,
+                          (textureDir / "container.jpg").u8string().c_str());
+        loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
+                          (textureDir / "awesomeface.png").u8string().c_str());
 
         m_containerTexture.imageView = createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
         m_awesomeFaceTexture.imageView = createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);

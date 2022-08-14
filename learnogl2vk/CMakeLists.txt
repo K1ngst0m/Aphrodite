@@ -35,7 +35,7 @@ endfunction(buildExamples)
 set(EXAMPLES
   getting_started/first_triangle
   getting_started/textures
-  # getting_started/transformation
+  getting_started/transformations
   # getting_started/camera
 )
 
