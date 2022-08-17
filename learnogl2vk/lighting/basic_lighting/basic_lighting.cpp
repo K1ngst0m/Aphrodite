@@ -55,10 +55,10 @@ void basic_lighting::drawFrame()
     deltaTime = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
-    vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
+    VkResult result = vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX,
                                             m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -70,7 +70,7 @@ void basic_lighting::drawFrame()
         VK_CHECK_RESULT(result);
     }
 
-    vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
+    vkResetFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame]);
 
     vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
 
@@ -119,8 +119,8 @@ void basic_lighting::drawFrame()
 }
 void basic_lighting::getEnabledFeatures()
 {
-    assert(m_deviceFeatures.samplerAnisotropy);
-    m_deviceFeatures = {
+    assert(m_device->features.samplerAnisotropy);
+    m_device->enabledFeatures = {
         .samplerAnisotropy = VK_TRUE,
     };
 }
@@ -159,10 +159,10 @@ void basic_lighting::mouseHandleDerive(int xposIn, int yposIn)
 }
 void basic_lighting::cleanupDerive()
 {
-    vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+    vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayouts.scene, nullptr);
-    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayouts.material, nullptr);
+    vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.scene, nullptr);
+    vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.material, nullptr);
 
     // per frame ubo
     for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -175,38 +175,38 @@ void basic_lighting::cleanupDerive()
     m_materialUB.destroy();
     m_pointLightUB.destroy();
 
-    m_containerTexture.cleanup(m_device);
-    m_awesomeFaceTexture.cleanup(m_device);
+    m_containerTexture.cleanup(m_device->logicalDevice);
+    m_awesomeFaceTexture.cleanup(m_device->logicalDevice);
 
     // perframe sync objects
     for (size_t i = 0; i < m_settings.max_frames; i++) {
-        vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+        vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
+        vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
     }
 
-    vkDestroyPipeline(m_device, m_cubeGraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_device, m_cubePipelineLayout, nullptr);
+    vkDestroyPipeline(m_device->logicalDevice, m_cubeGraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_device->logicalDevice, m_cubePipelineLayout, nullptr);
 
-    vkDestroyPipeline(m_device, m_emissionGraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_device, m_emissionPipelineLayout, nullptr);
+    vkDestroyPipeline(m_device->logicalDevice, m_emissionGraphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(m_device->logicalDevice, m_emissionPipelineLayout, nullptr);
 }
 void basic_lighting::createVertexBuffers()
 {
     VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
 
     vkl::Buffer stagingBuffer;
-    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
     stagingBuffer.map();
     stagingBuffer.copyTo(cubeVertices.data(), static_cast<size_t>(bufferSize));
     stagingBuffer.unmap();
 
-    createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
 
-    copyBuffer(stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
+    m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
 
     stagingBuffer.destroy();
 }
@@ -216,7 +216,7 @@ void basic_lighting::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(CameraDataLayout);
         m_mvpUBs.resize(m_settings.max_frames);
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
             m_mvpUBs[i].descriptorInfo = {
@@ -230,7 +230,7 @@ void basic_lighting::createUniformBuffers()
     {
         // create scene uniform buffer
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
         m_sceneUB.descriptorInfo = {
             .buffer = m_sceneUB.buffer,
@@ -242,7 +242,7 @@ void basic_lighting::createUniformBuffers()
     {
         // create point light uniform buffer
         VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
         m_pointLightUB.descriptorInfo = {
             .buffer = m_pointLightUB.buffer,
@@ -254,7 +254,7 @@ void basic_lighting::createUniformBuffers()
     {
         // create material uniform buffer
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
-        createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
         m_materialUB.descriptorInfo = {
             .buffer = m_materialUB.buffer,
@@ -274,7 +274,7 @@ void basic_lighting::createDescriptorSets()
             .pSetLayouts = sceneLayouts.data(),
         };
         m_perFrameDescriptorSets.resize(m_settings.max_frames);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, m_perFrameDescriptorSets.data()));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             std::array<VkWriteDescriptorSet, 3> descriptorWrites;
@@ -307,7 +307,7 @@ void basic_lighting::createDescriptorSets()
                 .pBufferInfo = &m_pointLightUB.descriptorInfo,
             };
 
-            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
                                    nullptr);
         }
     }
@@ -322,7 +322,7 @@ void basic_lighting::createDescriptorSets()
             .pSetLayouts = materialLayouts.data(),
         };
 
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, &m_cubeMaterialDescriptorSets));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_cubeMaterialDescriptorSets));
 
         std::array<VkWriteDescriptorSet, 3> descriptorWrites;
 
@@ -358,7 +358,7 @@ void basic_lighting::createDescriptorSets()
             .pTexelBufferView = nullptr, // Optional
         };
 
-        vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+        vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
                                nullptr);
     }
 }
@@ -396,7 +396,7 @@ void basic_lighting::createDescriptorSetLayout()
             .pBindings = perSceneBindings.data(),
         };
         VK_CHECK_RESULT(
-                vkCreateDescriptorSetLayout(m_device, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.scene));
+                vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.scene));
     }
 
     // per-material params
@@ -432,7 +432,7 @@ void basic_lighting::createDescriptorSetLayout()
             .pBindings = perMaterialBindings.data(),
         };
 
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &perMaterialLayoutInfo, nullptr,
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perMaterialLayoutInfo, nullptr,
                                                     &m_descriptorSetLayouts.material));
     }
 }
@@ -441,9 +441,8 @@ void basic_lighting::createCubeGraphicsPipeline()
     auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/basic_lighting/cube.vert.spv");
     auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/basic_lighting/cube.frag.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    ;
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+    VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -587,10 +586,10 @@ void basic_lighting::createCubeGraphicsPipeline()
     };
 
     VK_CHECK_RESULT(
-            vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_cubeGraphicsPipeline));
+            vkCreateGraphicsPipelines(m_device->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_cubeGraphicsPipeline));
 
-    vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
 }
 void basic_lighting::createSyncObjects()
 {
@@ -608,9 +607,9 @@ void basic_lighting::createSyncObjects()
     };
 
     for (size_t i = 0; i < m_settings.max_frames; i++) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
-        VK_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
+        VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
     }
 }
 void basic_lighting::createDescriptorPool()
@@ -632,7 +631,7 @@ void basic_lighting::createDescriptorPool()
         .pPoolSizes = poolSizes.data(),
     };
 
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
 void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
 {
@@ -645,9 +644,9 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
         cameraData.proj[1][1] *= -1;
         cameraData.viewProj = cameraData.proj * cameraData.view;
         void *data;
-        vkMapMemory(m_device, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(cameraData), 0, &data);
+        vkMapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(cameraData), 0, &data);
         memcpy(data, &cameraData, sizeof(cameraData));
-        vkUnmapMemory(m_device, m_mvpUBs[currentFrameIndex].memory);
+        vkUnmapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory);
     }
 
     {
@@ -656,9 +655,9 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
             .ambientColor = glm::vec3(0.1f, 0.1f, 0.1f),
         };
         void *data;
-        vkMapMemory(m_device, m_sceneUB.memory, 0, sizeof(sceneData), 0, &data);
+        vkMapMemory(m_device->logicalDevice, m_sceneUB.memory, 0, sizeof(sceneData), 0, &data);
         memcpy(data, &sceneData, sizeof(sceneData));
-        vkUnmapMemory(m_device, m_sceneUB.memory);
+        vkUnmapMemory(m_device->logicalDevice, m_sceneUB.memory);
     }
 
     {
@@ -667,9 +666,9 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
             .color = glm::vec3(1.0f, 1.0f, 1.0f),
         };
         void *data;
-        vkMapMemory(m_device, m_pointLightUB.memory, 0, sizeof(PointLightDataLayout), 0, &data);
+        vkMapMemory(m_device->logicalDevice, m_pointLightUB.memory, 0, sizeof(PointLightDataLayout), 0, &data);
         memcpy(data, &pointLightData, sizeof(PointLightDataLayout));
-        vkUnmapMemory(m_device, m_pointLightUB.memory);
+        vkUnmapMemory(m_device->logicalDevice, m_pointLightUB.memory);
     }
 
     {
@@ -677,9 +676,9 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
             .basicColor = glm::vec3(1.0f, 0.5f, 0.31f),
         };
         void *data;
-        vkMapMemory(m_device, m_materialUB.memory, 0, sizeof(MaterialDataLayout), 0, &data);
+        vkMapMemory(m_device->logicalDevice, m_materialUB.memory, 0, sizeof(MaterialDataLayout), 0, &data);
         memcpy(data, &materialData, sizeof(MaterialDataLayout));
-        vkUnmapMemory(m_device, m_materialUB.memory);
+        vkUnmapMemory(m_device->logicalDevice, m_materialUB.memory);
     }
 }
 void basic_lighting::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -781,14 +780,14 @@ void basic_lighting::createTextures()
     loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
                       (textureDir / "awesomeface.png").u8string().c_str());
 
-    m_containerTexture.imageView = createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    m_awesomeFaceTexture.imageView = createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_containerTexture.imageView = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_awesomeFaceTexture.imageView = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
     samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = m_deviceProperties.limits.maxSamplerAnisotropy;
-    VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_containerTexture.sampler));
-    VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
+    samplerInfo.maxAnisotropy = m_device->properties.limits.maxSamplerAnisotropy;
+    VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerTexture.sampler));
+    VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
 
     m_containerTexture.descriptorInfo = {
         .sampler = m_containerTexture.sampler,
@@ -826,7 +825,7 @@ void basic_lighting::createPipelineLayout()
             .pPushConstantRanges = pushConstantRanges.data(),
         };
 
-        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_cubePipelineLayout));
+        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_cubePipelineLayout));
     }
 
     // emission
@@ -852,7 +851,7 @@ void basic_lighting::createPipelineLayout()
             .pPushConstantRanges = pushConstantRanges.data(),
         };
 
-        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_emissionPipelineLayout));
+        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_emissionPipelineLayout));
     }
 }
 void basic_lighting::createEmissionGraphicsPipeline()
@@ -860,9 +859,8 @@ void basic_lighting::createEmissionGraphicsPipeline()
     auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/basic_lighting/emission.vert.spv");
     auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/basic_lighting/emission.frag.spv");
 
-    VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-    ;
-    VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+    VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
+    VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{
         .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -1005,11 +1003,11 @@ void basic_lighting::createEmissionGraphicsPipeline()
         .basePipelineIndex = -1, // Optional
     };
 
-    VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(m_device->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
                                               &m_emissionGraphicsPipeline));
 
-    vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
 }
 
 int main()

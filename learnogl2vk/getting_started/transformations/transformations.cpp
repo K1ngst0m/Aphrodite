@@ -119,10 +119,10 @@ private:
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+        vkWaitForFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX,
+        VkResult result = vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX,
                                                 m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
                                                 &imageIndex);
 
@@ -135,7 +135,7 @@ private:
             VK_CHECK_RESULT(result);
         }
 
-        vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
+        vkResetFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame]);
 
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
 
@@ -186,8 +186,8 @@ private:
     // enable anisotropic filtering features
     void getEnabledFeatures() override
     {
-        assert(m_deviceFeatures.samplerAnisotropy);
-        m_deviceFeatures = {
+        assert(m_device->features.samplerAnisotropy);
+        m_device->features = {
             .samplerAnisotropy = VK_TRUE,
         };
     }
@@ -229,8 +229,8 @@ private:
 
     void cleanupDerive() override
     {
-        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
-        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayout, nullptr);
 
         // per frame ubo
         for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -239,18 +239,18 @@ private:
 
         m_cubeVB.destroy();
 
-        m_containerTexture.cleanup(m_device);
-        m_awesomeFaceTexture.cleanup(m_device);
+        m_containerTexture.cleanup(m_device->logicalDevice);
+        m_awesomeFaceTexture.cleanup(m_device->logicalDevice);
 
         // perframe sync objects
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
+            vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
+            vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
+            vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
         }
 
-        vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+        vkDestroyPipeline(m_device->logicalDevice, m_graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(m_device->logicalDevice, m_pipelineLayout, nullptr);
     }
 
 private:
@@ -259,17 +259,17 @@ private:
         VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
 
         vkl::Buffer stagingBuffer;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
         stagingBuffer.map();
         stagingBuffer.copyTo(cubeVertices.data(), static_cast<size_t>(bufferSize));
         stagingBuffer.unmap();
 
-        createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
 
-        copyBuffer(stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
+        m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
 
         stagingBuffer.destroy();
     }
@@ -281,7 +281,7 @@ private:
         m_mvpUBs.resize(m_settings.max_frames);
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
             m_mvpUBs[i].descriptorInfo = {
@@ -304,7 +304,7 @@ private:
 
         descriptorSets.resize(m_settings.max_frames);
 
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device, &allocInfo, descriptorSets.data()));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, descriptorSets.data()));
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             std::array<VkWriteDescriptorSet, 3> descriptorWrites;
@@ -343,7 +343,7 @@ private:
                 .pTexelBufferView = nullptr, // Optional
             };
 
-            vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
                                    nullptr);
         }
     }
@@ -383,7 +383,7 @@ private:
             .pBindings = bindings.data(),
         };
 
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout));
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &layoutInfo, nullptr, &m_descriptorSetLayout));
     }
 
     void createSyncObjects()
@@ -402,9 +402,9 @@ private:
         };
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
-            VK_CHECK_RESULT(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
-            VK_CHECK_RESULT(vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]));
+            VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
+            VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
+            VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
         }
     }
 
@@ -413,9 +413,8 @@ private:
         auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/shader.vert.spv");
         auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/shader.frag.spv");
 
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        ;
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+        VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
+        VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -553,7 +552,7 @@ private:
             .pPushConstantRanges = &pushConstantRange,
         };
 
-        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
+        VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 
         VkGraphicsPipelineCreateInfo pipelineInfo{
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -575,10 +574,10 @@ private:
         };
 
         VK_CHECK_RESULT(
-                vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
+                vkCreateGraphicsPipelines(m_device->logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline));
 
-        vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
+        vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
+        vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
 
     void createDescriptorPool()
@@ -604,7 +603,7 @@ private:
             .pPoolSizes = poolSizes.data(),
         };
 
-        VK_CHECK_RESULT(vkCreateDescriptorPool(m_device, &poolInfo, nullptr, &m_descriptorPool));
+        VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
     }
 
     void updateUniformBuffer(uint32_t currentFrameIndex)
@@ -620,9 +619,9 @@ private:
         ubo.viewProj = ubo.proj * ubo.view;
 
         void *data;
-        vkMapMemory(m_device, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(ubo), 0, &data);
+        vkMapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(ubo), 0, &data);
         memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(m_device, m_mvpUBs[currentFrameIndex].memory);
+        vkUnmapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory);
     }
 
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -702,14 +701,14 @@ private:
         loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
                           (textureDir / "awesomeface.png").u8string().c_str());
 
-        m_containerTexture.imageView = createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-        m_awesomeFaceTexture.imageView = createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        m_containerTexture.imageView = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        m_awesomeFaceTexture.imageView = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
         samplerInfo.anisotropyEnable = VK_TRUE;
-        samplerInfo.maxAnisotropy = m_deviceProperties.limits.maxSamplerAnisotropy;
-        VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_containerTexture.sampler));
-        VK_CHECK_RESULT(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
+        samplerInfo.maxAnisotropy = m_device->properties.limits.maxSamplerAnisotropy;
+        VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerTexture.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
 
         m_containerTexture.descriptorInfo = {
             .sampler = m_containerTexture.sampler,

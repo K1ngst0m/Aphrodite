@@ -19,23 +19,15 @@
 #include "vklUtils.h"
 #include "vklInit.hpp"
 #include "vklBuffer.h"
+#include "vklDevice.h"
 
 namespace vkl
 {
+
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
-};
-
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool isComplete() const
-    {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
 };
 
 class vkBase {
@@ -58,7 +50,7 @@ public:
             drawFrame();
         }
 
-        vkDeviceWaitIdle(m_device);
+        vkDeviceWaitIdle(m_device->logicalDevice);
     }
 
     void finish()
@@ -80,13 +72,15 @@ protected:
         VkSampler sampler;
         VkDescriptorImageInfo descriptorInfo;
 
-        void cleanup(VkDevice device) const{
+        void cleanup(VkDevice device) const
+        {
             vkDestroySampler(device, sampler, nullptr);
             vkDestroyImageView(device, imageView, nullptr);
             vkDestroyImage(device, image, nullptr);
             vkFreeMemory(device, memory, nullptr);
         }
     };
+
 protected:
     struct {
         bool isEnableValidationLayer = true;
@@ -94,83 +88,55 @@ protected:
     } m_settings;
 
 protected:
+    void createDevice();
+    void createInstance();
+    bool checkValidationLayerSupport();
+    void createSwapChain();
+    void createSurface();
+    void recreateSwapChain();
+    void cleanupSwapChain();
+    void createDepthResources();
+    void createRenderPass();
+    void createSwapChainImageViews();
+    void createFramebuffers();
+
+protected:
     void initWindow();
     void initVulkan();
     void cleanup();
 
 protected:
-    virtual void initDerive();
-    virtual void cleanupDerive();
-    virtual void keyboardHandleDerive();
-    virtual void mouseHandleDerive(int xposIn, int yposIn);
+    virtual void initDerive() {}
+    virtual void cleanupDerive() {}
+    virtual void keyboardHandleDerive() {}
+    virtual void mouseHandleDerive(int xposIn, int yposIn) {}
 
-protected:
-    virtual void createInstance();
-    virtual bool checkValidationLayerSupport();
-    virtual void getEnabledFeatures();
-    virtual void createSwapChain();
-    virtual void createSurface();
-    virtual void recreateSwapChain();
-    virtual void cleanupSwapChain();
-    virtual VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-    virtual VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    virtual VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-    virtual void createSwapChainImageViews();
+    virtual void getEnabledFeatures() {}
+    virtual void drawFrame() {}
 
-    virtual void pickPhysicalDevice();
-    virtual bool isDeviceSuitable(VkPhysicalDevice device);
-
-    virtual void createLogicalDevice();
-    virtual bool checkDeviceExtensionSupport(VkPhysicalDevice device);
-
-    virtual void createRenderPass();
-    virtual void createDepthResources();
-
-    virtual void createFramebuffers();
-    virtual void createCommandPool();
     virtual void createCommandBuffers();
 
-    virtual void drawFrame();
+protected:
+    std::vector<const char *> getRequiredInstanceExtensions();
+
+    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
+    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+    void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
 
 protected:
-    std::vector<const char *> getRequiredExtensions();
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    VkShaderModule createShaderModule(const std::vector<char> &code);
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer);
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                     VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
-                                 VkFormatFeatureFlags features);
-    VkFormat findDepthFormat();
-
-    VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    VkImageView createImageView(VkImage image, VkFormat format,
-                                VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT);
-    void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
+    Device *m_device;
 
 protected:
     GLFWwindow *m_window = nullptr;
     VkInstance m_instance;
     std::vector<const char *> m_supportedInstanceExtensions;
 
-    VkPhysicalDevice m_physicalDevice;
-    VkPhysicalDeviceProperties m_deviceProperties;
-    VkPhysicalDeviceFeatures m_deviceFeatures;
-    VkPhysicalDeviceMemoryProperties m_deviceMemoryProperties;
-
-    VkDevice m_device;
-
     VkQueue m_graphicsQueue;
     VkQueue m_presentQueue;
 
     VkSurfaceKHR m_surface;
-
     VkSwapchainKHR m_swapChain;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
@@ -188,7 +154,6 @@ protected:
 
     VkDescriptorPool m_descriptorPool;
 
-    VkCommandPool m_commandPool;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
     bool m_framebufferResized = false;
