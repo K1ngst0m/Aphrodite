@@ -1,9 +1,9 @@
 .DS_Store
 .idea
 *.log
+*.spv
 tmp/
 
 .cache/
 build/
-shader/*.spv
 .gdb_history
