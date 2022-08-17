@@ -57,9 +57,9 @@ public:
     }
 
 protected:
-    const static std::filesystem::path assetDir;
-    const static std::filesystem::path glslShaderDir;
-    const static std::filesystem::path textureDir;
+    const std::filesystem::path assetDir = "data";
+    const std::filesystem::path glslShaderDir = assetDir / "shaders/glsl";
+    const std::filesystem::path textureDir = assetDir / "textures";
 
 protected:
     struct Texture {

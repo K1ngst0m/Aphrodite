@@ -15,10 +15,6 @@
 namespace vkl
 {
 
-const std::filesystem::path vkBase::assetDir = "data";
-const std::filesystem::path vkBase::glslShaderDir = assetDir / "shaders/glsl";
-const std::filesystem::path vkBase::textureDir = assetDir / "textures";
-
 const std::vector<const char *> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
@@ -175,7 +171,23 @@ void vkBase::createDevice()
     getEnabledFeatures();
     m_device->createLogicalDevice(m_device->features, deviceExtensions, nullptr);
 
+    VkBool32 presentSupport = false;
+    std::optional<uint32_t> presentQueueFamilyIndices;
+    uint32_t i = 0;
+    for (const auto &queueFamily : m_device->queueFamilyProperties){
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(m_device->physicalDevice, i, m_surface, &presentSupport);
+        if (presentSupport) {
+            presentQueueFamilyIndices = i;
+            break;
+        }
+        i++;
+    }
+    assert(presentQueueFamilyIndices.has_value());
+    m_device->queueFamilyIndices.present = presentQueueFamilyIndices.value();
+
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_presentQueue);
 }
 
 void vkBase::createRenderPass()
@@ -311,23 +323,6 @@ void vkBase::createSwapChain()
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_HANDLE,
     };
-
-    VkBool32 presentSupport = false;
-    std::optional<uint32_t> presentQueueFamilyIndices;
-    uint32_t i = 0;
-    for (const auto &queueFamily : m_device->queueFamilyProperties){
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_device->physicalDevice, i, m_surface, &presentSupport);
-        if (presentSupport) {
-            presentQueueFamilyIndices = i;
-            break;
-        }
-        i++;
-    }
-    assert(presentQueueFamilyIndices.has_value());
-    m_device->queueFamilyIndices.present = presentQueueFamilyIndices.value();
-
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_presentQueue);
 
     std::array<uint32_t, 2> queueFamilyIndices = { m_device->queueFamilyIndices.graphics, m_device->queueFamilyIndices.present };
 
