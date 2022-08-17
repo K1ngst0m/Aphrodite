@@ -1,9 +1,6 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <vector>
 #include <optional>
 #include <array>
@@ -118,11 +115,7 @@ protected:
 
 protected:
     std::vector<const char *> getRequiredInstanceExtensions();
-
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-    VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
     void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
 
 protected:

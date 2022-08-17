@@ -12,13 +12,15 @@ namespace vkl
 
 struct Device {
     VkPhysicalDevice physicalDevice;
-    VkDevice logicalDevice;
     VkPhysicalDeviceProperties properties;
     VkPhysicalDeviceFeatures features;
     VkPhysicalDeviceFeatures enabledFeatures;
     VkPhysicalDeviceMemoryProperties memoryProperties;
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
     std::vector<std::string> supportedExtensions;
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+
+    VkDevice logicalDevice;
+
     VkCommandPool commandPool = VK_NULL_HANDLE;
     bool enableDebugMarkers = true;
 
