@@ -2,6 +2,7 @@
 #define VKLINIT_H_
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace vkl::init
 {
@@ -591,6 +592,21 @@ inline VkWriteDescriptorSetAccelerationStructureKHR writeDescriptorSetAccelerati
     writeDescriptorSetAccelerationStructureKHR.sType =
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
     return writeDescriptorSetAccelerationStructureKHR;
+}
+
+inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage, VkShaderModule shaderModule)
+{
+    VkPipelineShaderStageCreateInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    info.pNext = nullptr;
+
+    //shader stage
+    info.stage = stage;
+    //module containing the code for this shader stage
+    info.module = shaderModule;
+    //the entry point of the shader
+    info.pName = "main";
+    return info;
 }
 
 }

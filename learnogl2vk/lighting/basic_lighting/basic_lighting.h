@@ -56,9 +56,9 @@ struct VertexDataLayout {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
     {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3);
 
         attributeDescriptions[0] = {
             .location = 0,
@@ -103,8 +103,7 @@ private:
         createTextures();
         setupDescriptors();
         createSyncObjects();
-        createCubeGraphicsPipeline();
-        createEmissionGraphicsPipeline();
+        createGraphicsPipeline();
     }
 
     void drawFrame() override;
@@ -130,14 +129,13 @@ private:
     void createUniformBuffers();
     void createDescriptorSets();
     void createDescriptorSetLayout();
-    void createCubeGraphicsPipeline();
+    void createGraphicsPipeline();
     void createSyncObjects();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createTextures();
     void createPipelineLayout();
-    void createEmissionGraphicsPipeline();
 
 private:
     vkl::Buffer m_cubeVB;
