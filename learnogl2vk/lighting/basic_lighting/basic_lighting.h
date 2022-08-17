@@ -102,7 +102,8 @@ private:
         createTextures();
         setupDescriptors();
         createSyncObjects();
-        createGraphicsPipeline();
+        createCubeGraphicsPipeline();
+        createEmissionGraphicsPipeline();
     }
 
     void drawFrame() override;
@@ -128,13 +129,14 @@ private:
     void createUniformBuffers();
     void createDescriptorSets();
     void createDescriptorSetLayout();
-    void createGraphicsPipeline();
+    void createCubeGraphicsPipeline();
     void createSyncObjects();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createTextures();
     void createPipelineLayout();
+    void createEmissionGraphicsPipeline();
 
 private:
     VertexBuffer m_cubeVB;
@@ -153,8 +155,11 @@ private:
     std::vector<VkDescriptorSet> m_perFrameDescriptorSets;
     VkDescriptorSet m_cubeMaterialDescriptorSets;
 
-    VkPipelineLayout m_pipelineLayout;
-    VkPipeline m_graphicsPipeline;
+    VkPipelineLayout m_cubePipelineLayout;
+    VkPipeline m_cubeGraphicsPipeline;
+
+    VkPipelineLayout m_emissionPipelineLayout;
+    VkPipeline m_emissionGraphicsPipeline;
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
