@@ -140,13 +140,13 @@ private:
     void createEmissionGraphicsPipeline();
 
 private:
-    VertexBuffer m_cubeVB;
+    vkl::Buffer m_cubeVB;
 
-    UniformBuffer m_sceneUB;
-    UniformBuffer m_pointLightUB;
-    UniformBuffer m_materialUB;
+    vkl::Buffer m_sceneUB;
+    vkl::Buffer m_pointLightUB;
+    vkl::Buffer m_materialUB;
 
-    std::vector<UniformBuffer> m_mvpUBs;
+    std::vector<vkl::Buffer> m_mvpUBs;
 
     Texture m_containerTexture;
     Texture m_awesomeFaceTexture;

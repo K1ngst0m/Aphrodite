@@ -72,9 +72,9 @@ private:
 
     // vertex data
     const std::vector<VertexLayout> quadVerticesData = { { { -0.5f, -0.5f }, { 1.0f, 0.0f, 0.0f }, { 1.0f, 0.0f } },
-                                           { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
-                                           { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
-                                           { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } } };
+                                                         { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f } },
+                                                         { { 0.5f, 0.5f }, { 0.0f, 0.0f, 1.0f }, { 0.0f, 1.0f } },
+                                                         { { -0.5f, 0.5f }, { 1.0f, 1.0f, 1.0f }, { 1.0f, 1.0f } } };
     // index data
     const std::vector<uint16_t> quadIndicesData = { 0, 1, 2, 2, 3, 0 };
 
@@ -169,7 +169,7 @@ private:
     void cleanupDerive() override
     {
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            m_mvpUBs[i].cleanup(m_device);
+            m_mvpUBs[i].destroy();
         }
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -181,9 +181,8 @@ private:
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        m_quadIB.cleanup(m_device);
-
-        m_quadVB.cleanup(m_device);
+        m_quadIB.destroy();
+        m_quadVB.destroy();
 
         m_containerTexture.cleanup(m_device);
         m_awesomeFaceTexture.cleanup(m_device);
@@ -197,49 +196,40 @@ private:
     {
         VkDeviceSize bufferSize = sizeof(quadVerticesData[0]) * quadVerticesData.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        vkl::Buffer stagingBuffer;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                     stagingBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-        void *data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, quadVerticesData.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device, stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.copyTo(quadVerticesData.data(), static_cast<size_t>(bufferSize));
+        stagingBuffer.unmap();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_quadVB.buffer,
-                     m_quadVB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_quadVB);
 
-        copyBuffer(stagingBuffer, m_quadVB.buffer, bufferSize);
+        copyBuffer(stagingBuffer.buffer, m_quadVB.buffer, bufferSize);
 
-        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+        stagingBuffer.destroy();
     }
 
     void createIndexBuffers()
     {
         VkDeviceSize bufferSize = sizeof(quadIndicesData[0]) * quadIndicesData.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        vkl::Buffer stagingBuffer;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                     stagingBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-        void *data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, quadIndicesData.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device, stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.copyTo(quadIndicesData.data(), static_cast<size_t>(bufferSize));
+        stagingBuffer.unmap();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_quadIB.buffer, m_quadIB.memory);
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_quadIB);
 
-        copyBuffer(stagingBuffer, m_quadIB.buffer, bufferSize);
+        copyBuffer(stagingBuffer.buffer, m_quadIB.buffer, bufferSize);
 
-        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+        stagingBuffer.destroy();
     }
 
     void createUniformBuffers()
@@ -250,15 +240,13 @@ private:
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
-                         m_mvpUBs[i].memory);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
             m_mvpUBs[i].descriptorInfo = {
                 .buffer = m_mvpUBs[i].buffer,
                 .offset = 0,
                 .range = bufferSize,
             };
         }
-
     }
 
     void createDescriptorSets()
@@ -379,8 +367,8 @@ private:
 
     void createGraphicsPipeline()
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/shader.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/textures/shader.frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         ;
@@ -517,7 +505,6 @@ private:
             .maxDepthBounds = 1.0f,
         };
 
-
         VkGraphicsPipelineCreateInfo pipelineInfo{
             .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             .stageCount = 2,
@@ -652,7 +639,8 @@ private:
         VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
     }
 
-    void createTextures(){
+    void createTextures()
+    {
         loadImageFromFile(m_containerTexture.image, m_containerTexture.memory,
                           (textureDir / "container.jpg").u8string().c_str());
         loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
@@ -681,11 +669,11 @@ private:
     }
 
 private:
-    VertexBuffer m_quadVB;
+    vkl::Buffer m_quadVB;
 
-    IndexBuffer m_quadIB;
+    vkl::Buffer m_quadIB;
 
-    std::vector<UniformBuffer> m_mvpUBs;
+    std::vector<vkl::Buffer> m_mvpUBs;
 
     Texture m_containerTexture;
     Texture m_awesomeFaceTexture;

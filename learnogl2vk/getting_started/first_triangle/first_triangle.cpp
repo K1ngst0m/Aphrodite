@@ -69,7 +69,7 @@ private:
     };
 
     // index data
-    const std::vector<uint16_t> triangleIndicesData = { 0, 1, 2 };
+    const std::array<uint16_t, 3> triangleIndicesData = { 0, 1, 2 };
 
 private:
     void initDerive() override
@@ -152,7 +152,7 @@ private:
     void cleanupDerive() override
     {
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            m_mvpUBs[i].cleanup(m_device);
+            m_mvpUBs[i].destroy();
         }
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -164,8 +164,8 @@ private:
         vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
-        m_triangleIB.cleanup(m_device);
-        m_triangleVB.cleanup(m_device);
+        m_triangleIB.destroy();
+        m_triangleVB.destroy();
 
         vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
@@ -176,49 +176,40 @@ private:
     {
         VkDeviceSize bufferSize = sizeof(triangleVerticesData[0]) * triangleVerticesData.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        vkl::Buffer stagingBuffer;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                     stagingBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-        void *data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, triangleVerticesData.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device, stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.copyTo(triangleVerticesData.data(), static_cast<size_t>(bufferSize));
+        stagingBuffer.unmap();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_triangleVB.buffer,
-                     m_triangleVB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_triangleVB);
 
-        copyBuffer(stagingBuffer, m_triangleVB.buffer, bufferSize);
+        copyBuffer(stagingBuffer.buffer, m_triangleVB.buffer, bufferSize);
 
-        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+        stagingBuffer.destroy();
     }
 
     void createIndexBuffers()
     {
         VkDeviceSize bufferSize = sizeof(triangleIndicesData[0]) * triangleIndicesData.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        vkl::Buffer stagingBuffer;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                     stagingBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-        void *data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, triangleIndicesData.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device, stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.copyTo(triangleIndicesData.data(), static_cast<size_t>(bufferSize));
+        stagingBuffer.unmap();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_triangleIB.buffer, m_triangleIB.memory);
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_triangleIB);
 
-        copyBuffer(stagingBuffer, m_triangleIB.buffer, bufferSize);
+        copyBuffer(stagingBuffer.buffer, m_triangleIB.buffer, bufferSize);
 
-        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+        stagingBuffer.destroy();
     }
 
     void createUniformBuffers()
@@ -229,8 +220,7 @@ private:
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
-                         m_mvpUBs[i].memory);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
             m_mvpUBs[i].descriptorInfo = {
                 .buffer = m_mvpUBs[i].buffer,
@@ -314,8 +304,8 @@ private:
 
     void createGraphicsPipeline()
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/shader.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/first_triangle/shader.frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         ;
@@ -586,10 +576,10 @@ private:
     }
 
 private:
-    VertexBuffer m_triangleVB;
-    IndexBuffer m_triangleIB;
+    vkl::Buffer m_triangleVB;
+    vkl::Buffer m_triangleIB;
 
-    std::vector<UniformBuffer> m_mvpUBs;
+    std::vector<vkl::Buffer> m_mvpUBs;
 
     std::vector<VkDescriptorSet> m_descriptorSets;
     VkDescriptorSetLayout m_descriptorSetLayout;

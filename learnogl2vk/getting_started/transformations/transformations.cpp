@@ -234,10 +234,10 @@ private:
 
         // per frame ubo
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            m_mvpUBs[i].cleanup(m_device);
+            m_mvpUBs[i].destroy();
         }
 
-        m_cubeVB.cleanup(m_device);
+        m_cubeVB.destroy();
 
         m_containerTexture.cleanup(m_device);
         m_awesomeFaceTexture.cleanup(m_device);
@@ -258,25 +258,20 @@ private:
     {
         VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
+        vkl::Buffer stagingBuffer;
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                     stagingBufferMemory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-        void *data;
-        vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-        memcpy(data, cubeVertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device, stagingBufferMemory);
+        stagingBuffer.map();
+        stagingBuffer.copyTo(cubeVertices.data(), static_cast<size_t>(bufferSize));
+        stagingBuffer.unmap();
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB.buffer,
-                     m_cubeVB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
 
-        copyBuffer(stagingBuffer, m_cubeVB.buffer, bufferSize);
+        copyBuffer(stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
 
-        vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-        vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+        stagingBuffer.destroy();
     }
 
     void createUniformBuffers()
@@ -287,8 +282,7 @@ private:
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
-                         m_mvpUBs[i].memory);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
             m_mvpUBs[i].descriptorInfo = {
                 .buffer = m_mvpUBs[i].buffer,
@@ -416,8 +410,8 @@ private:
 
     void createGraphicsPipeline()
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/shader.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "getting_started/transformations/shader.frag.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         ;
@@ -731,9 +725,9 @@ private:
     }
 
 private:
-    VertexBuffer m_cubeVB;
+    vkl::Buffer m_cubeVB;
 
-    std::vector<UniformBuffer> m_mvpUBs;
+    std::vector<vkl::Buffer> m_mvpUBs;
 
     Texture m_containerTexture;
     Texture m_awesomeFaceTexture;

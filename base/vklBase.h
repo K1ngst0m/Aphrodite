@@ -18,6 +18,7 @@
 #include "camera.h"
 #include "vklUtils.h"
 #include "vklInit.hpp"
+#include "vklBuffer.h"
 
 namespace vkl
 {
@@ -86,38 +87,6 @@ protected:
             vkFreeMemory(device, memory, nullptr);
         }
     };
-
-    struct VertexBuffer{
-        VkDeviceMemory memory;
-        VkBuffer buffer;
-
-        void cleanup(VkDevice device) const{
-            vkDestroyBuffer(device, buffer, nullptr);
-            vkFreeMemory(device, memory, nullptr);
-        }
-    };
-
-    struct IndexBuffer{
-        VkDeviceMemory memory;
-        VkBuffer buffer;
-        uint32_t count;
-
-        void cleanup(VkDevice device) const{
-            vkDestroyBuffer(device, buffer, nullptr);
-            vkFreeMemory(device, memory, nullptr);
-        }
-    };
-
-    struct UniformBuffer{
-        VkDeviceMemory memory;
-        VkBuffer buffer;
-        VkDescriptorBufferInfo descriptorInfo;
-
-        void cleanup(VkDevice device) const{
-            vkDestroyBuffer(device, buffer, nullptr);
-            vkFreeMemory(device, memory, nullptr);
-        }
-    };
 protected:
     struct {
         bool isEnableValidationLayer = true;
@@ -168,8 +137,7 @@ protected:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     VkShaderModule createShaderModule(const std::vector<char> &code);
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer,
-                      VkDeviceMemory &bufferMemory);
+    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
                      VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);

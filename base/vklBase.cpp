@@ -604,29 +604,42 @@ uint32_t vkBase::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prope
 }
 
 void vkBase::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties,
-                          VkBuffer &buffer, VkDeviceMemory &bufferMemory)
+                          Buffer& buffer)
 {
+    VkBuffer t_buffer;
+    VkDeviceMemory t_memory;
+
+    // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
         .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
+    VK_CHECK_RESULT(vkCreateBuffer(m_device, &bufferInfo, nullptr, &t_buffer));
 
-    VK_CHECK_RESULT(vkCreateBuffer(m_device, &bufferInfo, nullptr, &buffer));
-
+    // create memory
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_device, buffer, &memRequirements);
-
+    vkGetBufferMemoryRequirements(m_device, t_buffer, &memRequirements);
     VkMemoryAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = memRequirements.size,
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
     };
+    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocInfo, nullptr, &t_memory));
 
-    VK_CHECK_RESULT(vkAllocateMemory(m_device, &allocInfo, nullptr, &bufferMemory));
+    buffer = {
+        .device = m_device,
+        .buffer = t_buffer,
+        .memory = t_memory,
+        .size = size,
+        .alignment = 0,
+        .usageFlags = usage,
+        .memoryPropertyFlags = properties
+    };
 
-    vkBindBufferMemory(m_device, buffer, bufferMemory, 0);
+    // bind buffer and memory
+    buffer.bind();
 }
 
 void vkBase::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
@@ -867,16 +880,13 @@ void vkBase::loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::stri
 
     assert(pixels && "read texture failed.");
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
+    vkl::Buffer stagingBuffer;
     createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                 stagingBufferMemory);
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-    void *data;
-    vkMapMemory(m_device, stagingBufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    vkUnmapMemory(m_device, stagingBufferMemory);
+    stagingBuffer.map();
+    stagingBuffer.copyTo(pixels, static_cast<size_t>(imageSize));
+    stagingBuffer.unmap();
 
     stbi_image_free(pixels);
 
@@ -886,12 +896,11 @@ void vkBase::loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::stri
 
     transitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyBufferToImage(stagingBuffer, image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    copyBufferToImage(stagingBuffer.buffer, image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
     transitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-    vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+    stagingBuffer.destroy();
 }
 VkFormat vkBase::findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
                                      VkFormatFeatureFlags features)

@@ -166,14 +166,14 @@ void basic_lighting::cleanupDerive()
 
     // per frame ubo
     for (size_t i = 0; i < m_settings.max_frames; i++) {
-        m_mvpUBs[i].cleanup(m_device);
+        m_mvpUBs[i].destroy();
     }
 
-    m_cubeVB.cleanup(m_device);
+    m_cubeVB.destroy();
 
-    m_sceneUB.cleanup(m_device);
-    m_materialUB.cleanup(m_device);
-    m_pointLightUB.cleanup(m_device);
+    m_sceneUB.destroy();
+    m_materialUB.destroy();
+    m_pointLightUB.destroy();
 
     m_containerTexture.cleanup(m_device);
     m_awesomeFaceTexture.cleanup(m_device);
@@ -195,25 +195,20 @@ void basic_lighting::createVertexBuffers()
 {
     VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
 
-    VkBuffer stagingBuffer;
-    VkDeviceMemory stagingBufferMemory;
+    vkl::Buffer stagingBuffer;
     createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
-                 stagingBufferMemory);
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
-    void *data;
-    vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, cubeVertices.data(), (size_t)bufferSize);
-    vkUnmapMemory(m_device, stagingBufferMemory);
+    stagingBuffer.map();
+    stagingBuffer.copyTo(cubeVertices.data(), static_cast<size_t>(bufferSize));
+    stagingBuffer.unmap();
 
     createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB.buffer,
-                 m_cubeVB.memory);
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
 
-    copyBuffer(stagingBuffer, m_cubeVB.buffer, bufferSize);
+    copyBuffer(stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
 
-    vkDestroyBuffer(m_device, stagingBuffer, nullptr);
-    vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+    stagingBuffer.destroy();
 }
 void basic_lighting::createUniformBuffers()
 {
@@ -222,8 +217,7 @@ void basic_lighting::createUniformBuffers()
         m_mvpUBs.resize(m_settings.max_frames);
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i].buffer,
-                         m_mvpUBs[i].memory);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
             m_mvpUBs[i].descriptorInfo = {
                 .buffer = m_mvpUBs[i].buffer,
@@ -237,8 +231,7 @@ void basic_lighting::createUniformBuffers()
         // create scene uniform buffer
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
         createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB.buffer,
-                     m_sceneUB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
         m_sceneUB.descriptorInfo = {
             .buffer = m_sceneUB.buffer,
             .offset = 0,
@@ -250,8 +243,7 @@ void basic_lighting::createUniformBuffers()
         // create point light uniform buffer
         VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
         createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB.buffer,
-                     m_pointLightUB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
         m_pointLightUB.descriptorInfo = {
             .buffer = m_pointLightUB.buffer,
             .offset = 0,
@@ -263,8 +255,7 @@ void basic_lighting::createUniformBuffers()
         // create material uniform buffer
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB.buffer,
-                     m_materialUB.memory);
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
         m_materialUB.descriptorInfo = {
             .buffer = m_materialUB.buffer,
             .offset = 0,
