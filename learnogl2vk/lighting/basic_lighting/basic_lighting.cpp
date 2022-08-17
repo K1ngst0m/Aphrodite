@@ -661,6 +661,7 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
 
     {
         SceneDataLayout sceneData{
+            .viewPosition = m_camera.Position,
             .ambientColor = glm::vec3(0.1f, 0.1f, 0.1f),
         };
         void *data;

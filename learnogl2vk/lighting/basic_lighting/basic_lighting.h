@@ -13,6 +13,7 @@ struct DescriptorSetLayouts {
 // per scene data
 // general scene data
 struct SceneDataLayout {
+    glm::vec3 viewPosition;
     glm::vec3 ambientColor;
 };
 
