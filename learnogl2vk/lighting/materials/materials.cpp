@@ -49,6 +49,20 @@ std::vector<glm::vec3> cubePositions = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(
                                          glm::vec3(1.3f, -2.0f, -2.5f), glm::vec3(1.5f, 2.0f, -2.5f),
                                          glm::vec3(1.5f, 0.2f, -1.5f), glm::vec3(-1.3f, 1.0f, -1.5f) };
 
+PointLightDataLayout pointLightData{
+    .position = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f),
+    .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
+    .diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+};
+
+MaterialDataLayout materialData{
+    .ambient = glm::vec4(1.0f, 0.5f, 0.31f, 1.0f),
+    .diffuse = glm::vec4(1.0f, 0.5f, 0.31f, 1.0f),
+    .specular = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    .shininess = 128.0f,
+};
+
 void materials::drawFrame()
 {
     float currentFrame = glfwGetTime();
@@ -547,42 +561,30 @@ void materials::updateUniformBuffer(uint32_t currentFrameIndex)
         };
         cameraData.proj[1][1] *= -1;
         cameraData.viewProj = cameraData.proj * cameraData.view;
-        void *data;
-        vkMapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(cameraData), 0, &data);
-        memcpy(data, &cameraData, sizeof(cameraData));
-        vkUnmapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory);
+        m_mvpUBs[currentFrameIndex].map();
+        m_mvpUBs[currentFrameIndex].copyTo(&cameraData, sizeof(CameraDataLayout));
+        m_mvpUBs[currentFrameIndex].unmap();
     }
 
     {
         SceneDataLayout sceneData{
-            .viewPosition = m_camera.Position,
-            .ambientColor = glm::vec3(0.1f, 0.1f, 0.1f),
+            .viewPosition = glm::vec4(m_camera.Position, 1.0f),
         };
-        void *data;
-        vkMapMemory(m_device->logicalDevice, m_sceneUB.memory, 0, sizeof(sceneData), 0, &data);
-        memcpy(data, &sceneData, sizeof(sceneData));
-        vkUnmapMemory(m_device->logicalDevice, m_sceneUB.memory);
+        m_sceneUB.map();
+        m_sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
+        m_sceneUB.unmap();
     }
 
     {
-        PointLightDataLayout pointLightData{
-            .position = glm::vec3(1.2f, 1.0f, 2.0f),
-            .color = glm::vec3(1.0f, 1.0f, 1.0f),
-        };
-        void *data;
-        vkMapMemory(m_device->logicalDevice, m_pointLightUB.memory, 0, sizeof(PointLightDataLayout), 0, &data);
-        memcpy(data, &pointLightData, sizeof(PointLightDataLayout));
-        vkUnmapMemory(m_device->logicalDevice, m_pointLightUB.memory);
+        m_pointLightUB.map();
+        m_pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
+        m_pointLightUB.unmap();
     }
 
     {
-        MaterialDataLayout materialData{
-            .basicColor = glm::vec3(1.0f, 0.5f, 0.31f),
-        };
-        void *data;
-        vkMapMemory(m_device->logicalDevice, m_materialUB.memory, 0, sizeof(MaterialDataLayout), 0, &data);
-        memcpy(data, &materialData, sizeof(MaterialDataLayout));
-        vkUnmapMemory(m_device->logicalDevice, m_materialUB.memory);
+        m_materialUB.map();
+        m_materialUB.copyTo(&materialData, sizeof(MaterialDataLayout));
+        m_materialUB.unmap();
     }
 }
 void materials::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
@@ -785,6 +787,6 @@ void materials::initDerive()
 }
 materials::materials()
 {
-    m_width = 800;
-    m_height = 600;
+    m_width = 2400;
+    m_height = 1800;
 }

@@ -13,14 +13,15 @@ struct DescriptorSetLayouts {
 // per scene data
 // general scene data
 struct SceneDataLayout {
-    glm::vec3 viewPosition;
-    glm::vec3 ambientColor;
+    glm::vec4 viewPosition;
 };
 
 // point light scene data
 struct PointLightDataLayout {
-    glm::vec3 position;
-    glm::vec3 color;
+    glm::vec4 position;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
 };
 
 // mvp matrix data layout
@@ -32,9 +33,9 @@ struct CameraDataLayout {
 
 // per material data
 struct MaterialDataLayout {
-    glm::vec3 ambient;
-    glm::vec3 diffuse;
-    glm::vec3 specular;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
     float     shininess;
 };
 

@@ -37,6 +37,7 @@ set(EXAMPLES
   getting_started/textures
   getting_started/transformations
   lighting/basic_lighting
+  lighting/materials
 )
 
 buildExamples()

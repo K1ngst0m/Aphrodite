@@ -10,17 +10,18 @@ struct DescriptorSetLayouts {
     VkDescriptorSetLayout material;
 };
 
+
 // per scene data
 // general scene data
 struct SceneDataLayout {
-    glm::vec3 viewPosition;
-    glm::vec3 ambientColor;
+    alignas(16) glm::vec3 viewPosition;
+    alignas(16) glm::vec3 ambientColor;
 };
 
 // point light scene data
 struct PointLightDataLayout {
-    glm::vec3 position;
-    glm::vec3 color;
+    alignas(16) glm::vec3 position;
+    alignas(16) glm::vec3 color;
 };
 
 // mvp matrix data layout
