@@ -61,7 +61,17 @@ GL implementations:
 - [[https://learnopengl.com/Getting-started/Camera][Camera]]
 
 *** [-] II - Lighting
-**** [ ] 1. Basic Lighting
+**** [X] 1. Basic Lighting
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/basic_lighting][Basic-Lighting]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Lighting/Colors][Colors]]
+- [[https://learnopengl.com/Lighting/Basic-Lighting][Basic-Lighting]]
+
 **** [ ] 2. Materials
 **** [ ] 3. Lighting maps
 **** [ ] 4. Light casters
