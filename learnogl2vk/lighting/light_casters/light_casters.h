@@ -1,5 +1,5 @@
-#ifndef LIGHTING_MAPS_H_
-#define LIGHTING_MAPS_H_
+#ifndef LIGHT_CASTERS_H_
+#define LIGHT_CASTERS_H_
 #include "vklBase.h"
 /*
 ** - https://learnopengl.com/Lighting/Basic-Lighting
@@ -14,6 +14,15 @@ struct DescriptorSetLayouts {
 // general scene data
 struct SceneDataLayout {
     glm::vec4 viewPosition;
+};
+
+// point light scene data
+struct DirectionalLightDataLayout {
+    glm::vec4 direction;
+
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
 };
 
 // point light scene data
@@ -124,7 +133,10 @@ private:
     vkl::Buffer m_cubeVB;
 
     vkl::Buffer m_sceneUB;
+
     vkl::Buffer m_pointLightUB;
+    vkl::Buffer m_directionalLightUB;
+
     vkl::Buffer m_materialUB;
 
     std::vector<vkl::Buffer> m_mvpUBs;
@@ -149,4 +161,4 @@ private:
 };
 
 
-#endif // LIGHTING_MAPS_H_
+#endif // LIGHT_CASTERS_H_

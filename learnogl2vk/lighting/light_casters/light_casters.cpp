@@ -1,4 +1,4 @@
-#include "lighting_casters.h"
+#include "light_casters.h"
 #include <cstring>
 
 std::vector<VertexDataLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
@@ -48,6 +48,14 @@ std::vector<glm::vec3> cubePositions = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(
                                          glm::vec3(2.4f, -0.4f, -3.5f), glm::vec3(-1.7f, 3.0f, -7.5f),
                                          glm::vec3(1.3f, -2.0f, -2.5f), glm::vec3(1.5f, 2.0f, -2.5f),
                                          glm::vec3(1.5f, 0.2f, -1.5f), glm::vec3(-1.3f, 1.0f, -1.5f) };
+
+DirectionalLightDataLayout directionalLightData{
+    .direction = glm::vec4(-0.2f, -1.0f, -0.3f, 1.0f),
+    .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
+    .diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
+    .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+};
+
 
 PointLightDataLayout pointLightData{
     .position = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f),
@@ -185,6 +193,7 @@ void light_casters::cleanupDerive()
 
     m_sceneUB.destroy();
     m_materialUB.destroy();
+    m_directionalLightUB.destroy();
     m_pointLightUB.destroy();
 
     m_containerDiffuseTexture.cleanup(m_device->logicalDevice);
@@ -264,6 +273,18 @@ void light_casters::createUniformBuffers()
     }
 
     {
+        // create directional light uniform buffer
+        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_directionalLightUB);
+        m_directionalLightUB.descriptorInfo = {
+            .buffer = m_directionalLightUB.buffer,
+            .offset = 0,
+            .range = bufferSize,
+        };
+    }
+
+    {
         // create material uniform buffer
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -289,7 +310,7 @@ void light_casters::createDescriptorSets()
         VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            std::array<VkWriteDescriptorSet, 3> descriptorWrites;
+            std::array<VkWriteDescriptorSet, 4> descriptorWrites;
 
             descriptorWrites[0] = {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -317,6 +338,15 @@ void light_casters::createDescriptorSets()
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pBufferInfo = &m_pointLightUB.descriptorInfo,
+            };
+            descriptorWrites[3] = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = m_perFrameDescriptorSets[i],
+                .dstBinding = 3,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &m_directionalLightUB.descriptorInfo,
             };
 
             vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
@@ -399,9 +429,16 @@ void light_casters::createDescriptorSetLayout()
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
+        VkDescriptorSetLayoutBinding directionalLightLayoutBinding{
+            .binding = 3,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
 
-        std::array<VkDescriptorSetLayoutBinding, 3> perSceneBindings = { cameraLayoutBinding, sceneLayoutBinding,
-                                                                         pointLightLayoutBinding };
+        std::array<VkDescriptorSetLayoutBinding, 4> perSceneBindings = { cameraLayoutBinding, sceneLayoutBinding,
+                                                                         pointLightLayoutBinding, directionalLightLayoutBinding };
         VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perSceneBindings.size()),
@@ -420,14 +457,14 @@ void light_casters::createDescriptorSetLayout()
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding samplerContainerLayoutBinding{
+        VkDescriptorSetLayoutBinding samplerContainerDiffuseLayoutBinding{
             .binding = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding samplerAwesomefaceLayoutBinding{
+        VkDescriptorSetLayoutBinding samplerContainerSpecularLayoutBinding{
             .binding = 2,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
@@ -436,8 +473,8 @@ void light_casters::createDescriptorSetLayout()
         };
 
         std::array<VkDescriptorSetLayoutBinding, 3> perMaterialBindings = { materialLayoutBinding,
-                                                                            samplerContainerLayoutBinding,
-                                                                            samplerAwesomefaceLayoutBinding };
+                                                                            samplerContainerDiffuseLayoutBinding,
+                                                                            samplerContainerSpecularLayoutBinding };
         VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perMaterialBindings.size()),
@@ -479,8 +516,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/lighting_maps/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/lighting_maps/cube.frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -494,8 +531,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._shaderStages.clear();
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/lighting_maps/emission.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/lighting_maps/emission.frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -532,7 +569,7 @@ void light_casters::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0] = {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 3 + 1),
+        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 4 + 1),
     };
     poolSizes[1] = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -576,6 +613,12 @@ void light_casters::updateUniformBuffer(uint32_t currentFrameIndex)
         m_pointLightUB.map();
         m_pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
         m_pointLightUB.unmap();
+    }
+
+    {
+        m_directionalLightUB.map();
+        m_directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
+        m_directionalLightUB.unmap();
     }
 
     {
@@ -759,14 +802,6 @@ void light_casters::createPipelineLayout()
     }
 }
 
-int main()
-{
-    light_casters app;
-
-    app.init();
-    app.run();
-    app.finish();
-}
 void light_casters::setupDescriptors()
 {
     createDescriptorSetLayout();
@@ -787,4 +822,13 @@ light_casters::light_casters()
 {
     m_width = 2400;
     m_height = 1800;
+}
+
+int main()
+{
+    light_casters app;
+
+    app.init();
+    app.run();
+    app.finish();
 }

@@ -18,6 +18,13 @@ layout (set = 0, binding = 2) uniform PointLightUB{
     vec4 specular;
 } pointLightData;
 
+layout (set = 0, binding = 3) uniform DirectionalLightUB{
+    vec4 direction;
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+} directionalLightData;
+
 // set 1: per material binding
 layout (set = 1, binding = 0) uniform MaterialUB{
     float     shininess;
@@ -28,17 +35,35 @@ layout(set = 1, binding = 2) uniform sampler2D texSampler_container_specular;
 
 void main() {
     vec3 N = normalize(fragNormal.xyz);
-    vec3 L = normalize(pointLightData.position.xyz - fragPosition.xyz);
     vec3 V = normalize(sceneData.viewPos.xyz - fragPosition.xyz);
-    vec3 R = reflect(-L, N);
 
-    vec4 ambient = pointLightData.ambient * texture(texSampler_container_diffuse, fragTexCoord);
+    vec4 ambient = vec4(0.0f);
+    vec4 specular = vec4(0.0f);
+    vec4 diffuse = vec4(0.0f);
 
-    float diff = max(dot(N, L), 0.0f);
-    vec4 diffuse = diff * texture(texSampler_container_diffuse, fragTexCoord) * pointLightData.diffuse;
+    // direction light
+    {
+        vec3 L = normalize(-directionalLightData.direction.xyz);
+        vec3 R = reflect(-L, N);
 
-    float spec = pow(max(dot(V, R), 0.0f), materialData.shininess);
-    vec4 specular = texture(texSampler_container_specular, fragTexCoord) * spec * pointLightData.specular;
+        ambient += directionalLightData.ambient * texture(texSampler_container_diffuse, fragTexCoord);
+
+        float diff = max(dot(N, L), 0.0f);
+        diffuse += diff * texture(texSampler_container_diffuse, fragTexCoord) * directionalLightData.diffuse;
+
+        float spec = pow(max(dot(V, R), 0.0f), materialData.shininess);
+        specular += texture(texSampler_container_specular, fragTexCoord) * spec * directionalLightData.specular;
+    }
+
+    // point light
+    {
+
+    }
+
+    // spot light
+    {
+
+    }
 
     vec4 result = ambient + specular + diffuse;
 

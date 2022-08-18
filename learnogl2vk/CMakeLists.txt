@@ -39,6 +39,7 @@ set(EXAMPLES
   lighting/basic_lighting
   lighting/materials
   lighting/lighting_maps
+  lighting/light_casters
 )
 
 buildExamples()
