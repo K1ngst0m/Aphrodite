@@ -73,7 +73,25 @@ GL implementations:
 - [[https://learnopengl.com/Lighting/Basic-Lighting][Basic-Lighting]]
 
 **** [ ] 2. Materials
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/materials][Materials]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Lighting/Materials][Materials]]
+
 **** [ ] 3. Lighting maps
+
+Vulkan implementations:
+
+- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/lighting_maps][Lighting Maps]]
+
+GL implementations:
+
+- [[https://learnopengl.com/Lighting/Lighting-maps][Lighting Maps]]
+
 **** [ ] 4. Light casters
 **** [ ] 5. Multiple lights
 
