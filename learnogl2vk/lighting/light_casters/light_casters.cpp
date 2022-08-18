@@ -62,6 +62,7 @@ PointLightDataLayout pointLightData{
     .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
     .diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
     .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+    .attenuationFactor = glm::vec4(1.0f, 0.09f, 0.032f, 0.0f),
 };
 
 MaterialDataLayout materialData{
