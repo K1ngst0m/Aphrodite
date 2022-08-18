@@ -69,6 +69,7 @@ MaterialDataLayout materialData{
     .shininess = 128.0f,
 };
 
+
 void light_casters::drawFrame()
 {
     float currentFrame = glfwGetTime();
@@ -194,8 +195,10 @@ void light_casters::cleanupDerive()
 
     m_sceneUB.destroy();
     m_materialUB.destroy();
+
     m_directionalLightUB.destroy();
     m_pointLightUB.destroy();
+    m_flashLightUB.destroy();
 
     m_containerDiffuseTexture.cleanup(m_device->logicalDevice);
     m_containerSpecularTexture.cleanup(m_device->logicalDevice);
@@ -286,6 +289,18 @@ void light_casters::createUniformBuffers()
     }
 
     {
+        // create flash light uniform buffer
+        VkDeviceSize bufferSize = sizeof(FlashLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_flashLightUB);
+        m_flashLightUB.descriptorInfo = {
+            .buffer = m_flashLightUB.buffer,
+            .offset = 0,
+            .range = bufferSize,
+        };
+    }
+
+    {
         // create material uniform buffer
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -311,7 +326,7 @@ void light_casters::createDescriptorSets()
         VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
 
         for (size_t i = 0; i < m_settings.max_frames; i++) {
-            std::array<VkWriteDescriptorSet, 4> descriptorWrites;
+            std::array<VkWriteDescriptorSet, 5> descriptorWrites;
 
             descriptorWrites[0] = {
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -348,6 +363,15 @@ void light_casters::createDescriptorSets()
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pBufferInfo = &m_directionalLightUB.descriptorInfo,
+            };
+            descriptorWrites[4] = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = m_perFrameDescriptorSets[i],
+                .dstBinding = 4,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &m_flashLightUB.descriptorInfo,
             };
 
             vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
@@ -437,9 +461,16 @@ void light_casters::createDescriptorSetLayout()
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
+        VkDescriptorSetLayoutBinding flashLightLayoutBinding{
+            .binding = 4,
+            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        };
 
-        std::array<VkDescriptorSetLayoutBinding, 4> perSceneBindings = { cameraLayoutBinding, sceneLayoutBinding,
-                                                                         pointLightLayoutBinding, directionalLightLayoutBinding };
+        std::array<VkDescriptorSetLayoutBinding, 5> perSceneBindings = { cameraLayoutBinding, sceneLayoutBinding,
+                                                                         pointLightLayoutBinding, directionalLightLayoutBinding, flashLightLayoutBinding };
         VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perSceneBindings.size()),
@@ -570,7 +601,7 @@ void light_casters::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0] = {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 4 + 1),
+        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 5 + 1),
     };
     poolSizes[1] = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -586,6 +617,7 @@ void light_casters::createDescriptorPool()
 
     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
+
 void light_casters::updateUniformBuffer(uint32_t currentFrameIndex)
 {
     {
@@ -611,6 +643,23 @@ void light_casters::updateUniformBuffer(uint32_t currentFrameIndex)
     }
 
     {
+
+        FlashLightDataLayout flashLightData{
+            .position = glm::vec4(m_camera.Position, 1.0f),
+            .direction = glm::vec4(m_camera.Front, 1.0f),
+            .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
+            .diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
+            .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
+            .cutOff = glm::cos(glm::radians(12.5f)),
+            .outerCutOff = glm::cos(glm::radians(17.5f)),
+        };
+
+        m_flashLightUB.map();
+        m_flashLightUB.copyTo(&flashLightData, sizeof(FlashLightDataLayout));
+        m_flashLightUB.unmap();
+    }
+
+    {
         m_pointLightUB.map();
         m_pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
         m_pointLightUB.unmap();
@@ -628,6 +677,7 @@ void light_casters::updateUniformBuffer(uint32_t currentFrameIndex)
         m_materialUB.unmap();
     }
 }
+
 void light_casters::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     VkCommandBufferBeginInfo beginInfo{
@@ -821,8 +871,8 @@ void light_casters::initDerive()
 }
 light_casters::light_casters()
 {
-    m_width = 2400;
-    m_height = 1800;
+    m_width = 1024;
+    m_height = 768;
 }
 
 int main()

@@ -27,6 +27,18 @@ layout (set = 0, binding = 3) uniform DirectionalLightUB{
     vec4 specular;
 } directionalLightData;
 
+layout (set = 0, binding = 4) uniform FlashLightUB{
+    vec4 position;
+    vec4 direction;
+
+    vec4 ambient;
+    vec4 diffuse;
+    vec4 specular;
+
+    float cutOff;
+    float outerCutOff;
+} flashLightData;
+
 // set 1: per material binding
 layout (set = 1, binding = 0) uniform MaterialUB{
     float     shininess;
@@ -65,7 +77,7 @@ void main() {
         vec3 L = normalize(pointLightData.position.xyz - fragPosition.xyz);
         vec3 R = reflect(-L, N);
 
-        ambient += pointLightData.ambient * texture(texSampler_container_diffuse, fragTexCoord) * attenuation;
+        ambient += pointLightData.ambient * texture(texSampler_container_diffuse, fragTexCoord);
 
         float diff = max(dot(N, L), 0.0f);
         diffuse += diff * texture(texSampler_container_diffuse, fragTexCoord) * pointLightData.diffuse * attenuation;
@@ -74,9 +86,22 @@ void main() {
         specular += texture(texSampler_container_specular, fragTexCoord) * spec * pointLightData.specular * attenuation;
     }
 
-    // spot light
+    // flash light
     {
+        vec3 L = normalize(flashLightData.position.xyz - fragPosition.xyz);
+        vec3 R = reflect(-L, N);
 
+        float theta = dot(L, normalize(-flashLightData.direction.xyz));
+        float epsilon = flashLightData.cutOff - flashLightData.outerCutOff;
+        float intensity = clamp((theta - flashLightData.outerCutOff) / epsilon, 0.0f, 1.0f);
+
+        ambient += flashLightData.ambient * texture(texSampler_container_diffuse, fragTexCoord);
+
+        float diff = max(dot(N, L), 0.0f);
+        diffuse += diff * texture(texSampler_container_diffuse, fragTexCoord) * flashLightData.diffuse * intensity;
+
+        float spec = pow(max(dot(V, R), 0.0f), materialData.shininess);
+        specular += texture(texSampler_container_specular, fragTexCoord) * spec * flashLightData.specular * intensity;
     }
 
     vec4 result = ambient + specular + diffuse;

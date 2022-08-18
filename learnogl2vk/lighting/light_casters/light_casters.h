@@ -16,6 +16,20 @@ struct SceneDataLayout {
     glm::vec4 viewPosition;
 };
 
+
+// flash light data
+struct FlashLightDataLayout {
+    glm::vec4 position;
+    glm::vec4 direction;
+
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+
+    alignas(4) float cutOff;
+    alignas(4) float outerCutOff;
+};
+
 // point light scene data
 struct DirectionalLightDataLayout {
     glm::vec4 direction;
@@ -137,6 +151,7 @@ private:
     vkl::Buffer m_sceneUB;
 
     vkl::Buffer m_pointLightUB;
+    vkl::Buffer m_flashLightUB;
     vkl::Buffer m_directionalLightUB;
 
     vkl::Buffer m_materialUB;
