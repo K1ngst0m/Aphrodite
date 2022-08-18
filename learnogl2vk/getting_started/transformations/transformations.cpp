@@ -496,7 +496,7 @@ private:
 
     void createDescriptorPool()
     {
-        std::array<VkDescriptorPoolSize, 3> poolSizes{};
+        std::vector<VkDescriptorPoolSize> poolSizes(3);
         poolSizes[0] = {
             .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
@@ -510,12 +510,7 @@ private:
             .descriptorCount = static_cast<uint32_t>(m_settings.max_frames),
         };
 
-        VkDescriptorPoolCreateInfo poolInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-            .maxSets = m_settings.max_frames,
-            .poolSizeCount = poolSizes.size(),
-            .pPoolSizes = poolSizes.data(),
-        };
+        VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, m_settings.max_frames);
 
         VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
     }
