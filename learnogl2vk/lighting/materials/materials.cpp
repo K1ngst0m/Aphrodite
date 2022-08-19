@@ -233,12 +233,7 @@ void materials::createUniformBuffers()
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
-
-            m_mvpUBs[i].descriptorInfo = {
-                .buffer = m_mvpUBs[i].buffer,
-                .offset = 0,
-                .range = bufferSize,
-            };
+            m_mvpUBs[i].setupDescriptor();
         }
     }
 
@@ -247,11 +242,7 @@ void materials::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
-        m_sceneUB.descriptorInfo = {
-            .buffer = m_sceneUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_sceneUB.setupDescriptor();
     }
 
     {
@@ -259,11 +250,7 @@ void materials::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
-        m_pointLightUB.descriptorInfo = {
-            .buffer = m_pointLightUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_pointLightUB.setupDescriptor();
     }
 
     {
@@ -271,11 +258,7 @@ void materials::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
-        m_materialUB.descriptorInfo = {
-            .buffer = m_materialUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_materialUB.setupDescriptor();
     }
 }
 void materials::createDescriptorSets()
@@ -598,7 +581,7 @@ void materials::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
     VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
     std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+    clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

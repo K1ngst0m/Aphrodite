@@ -230,12 +230,7 @@ void lighting_maps::createUniformBuffers()
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
-
-            m_mvpUBs[i].descriptorInfo = {
-                .buffer = m_mvpUBs[i].buffer,
-                .offset = 0,
-                .range = bufferSize,
-            };
+            m_mvpUBs[0].setupDescriptor();
         }
     }
 
@@ -244,11 +239,7 @@ void lighting_maps::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
-        m_sceneUB.descriptorInfo = {
-            .buffer = m_sceneUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_sceneUB.setupDescriptor();
     }
 
     {
@@ -256,11 +247,7 @@ void lighting_maps::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
-        m_pointLightUB.descriptorInfo = {
-            .buffer = m_pointLightUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_pointLightUB.setupDescriptor();
     }
 
     {
@@ -268,11 +255,7 @@ void lighting_maps::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
-        m_materialUB.descriptorInfo = {
-            .buffer = m_materialUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_materialUB.setupDescriptor();
     }
 }
 void lighting_maps::createDescriptorSets()
@@ -662,6 +645,7 @@ void lighting_maps::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
                                 descriptorSets.data(), 0, nullptr);
         glm::mat4 model(1.0f);
         model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
+        model = glm::scale(model, glm::vec3(0.2f));
 
         ObjectDataLayout objectDataConstant{
             .modelMatrix = model,

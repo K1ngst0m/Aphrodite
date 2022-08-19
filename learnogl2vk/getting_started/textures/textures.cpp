@@ -242,11 +242,7 @@ private:
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
-            m_mvpUBs[i].descriptorInfo = {
-                .buffer = m_mvpUBs[i].buffer,
-                .offset = 0,
-                .range = bufferSize,
-            };
+            m_mvpUBs[i].setupDescriptor();
         }
     }
 

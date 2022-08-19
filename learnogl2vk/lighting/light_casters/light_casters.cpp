@@ -244,11 +244,7 @@ void light_casters::createUniformBuffers()
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
 
-            m_mvpUBs[i].descriptorInfo = {
-                .buffer = m_mvpUBs[i].buffer,
-                .offset = 0,
-                .range = bufferSize,
-            };
+            m_mvpUBs[i].setupDescriptor();
         }
     }
 
@@ -257,11 +253,7 @@ void light_casters::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
-        m_sceneUB.descriptorInfo = {
-            .buffer = m_sceneUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_sceneUB.setupDescriptor();
     }
 
     {
@@ -269,11 +261,7 @@ void light_casters::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
-        m_pointLightUB.descriptorInfo = {
-            .buffer = m_pointLightUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_pointLightUB.setupDescriptor();
     }
 
     {
@@ -281,11 +269,7 @@ void light_casters::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_directionalLightUB);
-        m_directionalLightUB.descriptorInfo = {
-            .buffer = m_directionalLightUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_directionalLightUB.setupDescriptor();
     }
 
     {
@@ -293,11 +277,7 @@ void light_casters::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(FlashLightDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_flashLightUB);
-        m_flashLightUB.descriptorInfo = {
-            .buffer = m_flashLightUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_flashLightUB.setupDescriptor();
     }
 
     {
@@ -305,11 +285,7 @@ void light_casters::createUniformBuffers()
         VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
-        m_materialUB.descriptorInfo = {
-            .buffer = m_materialUB.buffer,
-            .offset = 0,
-            .range = bufferSize,
-        };
+        m_materialUB.setupDescriptor();
     }
 }
 void light_casters::createDescriptorSets()
