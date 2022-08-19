@@ -24,5 +24,5 @@ void main() {
     gl_Position = cameraData.viewProj * objectData.modelMatrix * vec4(inPosition, 1.0f);
     fragPosition = vec3(objectData.modelMatrix * vec4(inPosition, 1.0f));
     fragTexCoord = inTexCoord;
-    fragNormal = inNormal;
+    fragNormal = mat3(transpose(inverse(objectData.modelMatrix))) * inNormal;
 }
