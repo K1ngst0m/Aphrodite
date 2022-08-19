@@ -572,7 +572,7 @@ void Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
     buffer.bind();
 }
 void Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                         VkMemoryPropertyFlags properties, VkImage &image, VkDeviceMemory &imageMemory) const
+                         VkMemoryPropertyFlags properties, vkl::Texture& texture) const
 {
     VkImageCreateInfo imageInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -591,12 +591,12 @@ void Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkIma
     imageInfo.extent.height = height;
     imageInfo.extent.depth = 1;
 
-    if (vkCreateImage(logicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    if (vkCreateImage(logicalDevice, &imageInfo, nullptr, &texture.image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
+    vkGetImageMemoryRequirements(logicalDevice, texture.image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -604,10 +604,11 @@ void Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkIma
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
     };
 
-    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &texture.memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    vkBindImageMemory(logicalDevice, image, imageMemory, 0);
+    texture.device = logicalDevice;
+    texture.bind();
 }
 }

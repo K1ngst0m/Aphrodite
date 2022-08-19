@@ -129,8 +129,8 @@ private:
 
     std::vector<vkl::Buffer> m_mvpUBs;
 
-    Texture m_containerDiffuseTexture;
-    Texture m_containerSpecularTexture;
+    vkl::Texture m_containerDiffuseTexture;
+    vkl::Texture m_containerSpecularTexture;
 
     DescriptorSetLayouts m_descriptorSetLayouts;
 

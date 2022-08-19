@@ -187,8 +187,8 @@ void lighting_maps::cleanupDerive()
     m_materialUB.destroy();
     m_pointLightUB.destroy();
 
-    m_containerDiffuseTexture.cleanup(m_device->logicalDevice);
-    m_containerSpecularTexture.cleanup(m_device->logicalDevice);
+    m_containerDiffuseTexture.destroy();
+    m_containerSpecularTexture.destroy();
 
     // perframe sync objects
     for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -230,7 +230,7 @@ void lighting_maps::createUniformBuffers()
         for (size_t i = 0; i < m_settings.max_frames; i++) {
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
-            m_mvpUBs[0].setupDescriptor();
+            m_mvpUBs[i].setupDescriptor();
         }
     }
 
@@ -662,10 +662,8 @@ void lighting_maps::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 }
 void lighting_maps::createTextures()
 {
-    loadImageFromFile(m_containerDiffuseTexture.image, m_containerDiffuseTexture.memory,
-                      (textureDir / "container2.png").u8string().c_str());
-    loadImageFromFile(m_containerSpecularTexture.image, m_containerSpecularTexture.memory,
-                      (textureDir / "container2_specular.png").u8string().c_str());
+    loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
+    loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
 
     m_containerDiffuseTexture.imageView = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
     m_containerSpecularTexture.imageView = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
@@ -676,17 +674,8 @@ void lighting_maps::createTextures()
     VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerDiffuseTexture.sampler));
     VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerSpecularTexture.sampler));
 
-    m_containerDiffuseTexture.descriptorInfo = {
-        .sampler = m_containerDiffuseTexture.sampler,
-        .imageView = m_containerDiffuseTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
-
-    m_containerSpecularTexture.descriptorInfo = {
-        .sampler = m_containerSpecularTexture.sampler,
-        .imageView = m_containerSpecularTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
+    m_containerDiffuseTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    m_containerSpecularTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 void lighting_maps::createPipelineLayout()
 {

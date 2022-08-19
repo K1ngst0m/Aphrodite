@@ -15,8 +15,9 @@
 #include "camera.h"
 #include "vklUtils.h"
 #include "vklInit.hpp"
-#include "vklBuffer.h"
 #include "vklDevice.h"
+#include "vklBuffer.h"
+#include "vklTexture.h"
 
 namespace vkl
 {
@@ -62,23 +63,6 @@ protected:
     const std::filesystem::path textureDir = assetDir / "textures";
 
 protected:
-    struct Texture {
-        VkImage image;
-        VkDeviceMemory memory;
-        VkImageView imageView;
-        VkSampler sampler;
-        VkDescriptorImageInfo descriptorInfo;
-
-        void cleanup(VkDevice device) const
-        {
-            vkDestroySampler(device, sampler, nullptr);
-            vkDestroyImageView(device, imageView, nullptr);
-            vkDestroyImage(device, image, nullptr);
-            vkFreeMemory(device, memory, nullptr);
-        }
-    };
-
-protected:
     struct {
         bool isEnableValidationLayer = true;
         const uint32_t max_frames = 2;
@@ -116,7 +100,7 @@ protected:
 protected:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    void loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath);
+    void loadImageFromFile(vkl::Texture &texture, std::string_view imagePath);
 
 protected:
     Device *m_device;
@@ -137,9 +121,7 @@ protected:
     std::vector<VkImage> m_swapChainImages;
     std::vector<VkImageView> m_swapChainImageViews;
 
-    VkImage m_depthImage;
-    VkDeviceMemory m_depthImageMemory;
-    VkImageView m_depthImageView;
+    vkl::Texture m_depthAttachment;
 
     std::vector<VkFramebuffer> m_Framebuffers;
 

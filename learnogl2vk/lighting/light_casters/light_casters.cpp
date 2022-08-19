@@ -200,8 +200,8 @@ void light_casters::cleanupDerive()
     m_pointLightUB.destroy();
     m_flashLightUB.destroy();
 
-    m_containerDiffuseTexture.cleanup(m_device->logicalDevice);
-    m_containerSpecularTexture.cleanup(m_device->logicalDevice);
+    m_containerDiffuseTexture.destroy();
+    m_containerSpecularTexture.destroy();
 
     // perframe sync objects
     for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -749,10 +749,8 @@ void light_casters::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 }
 void light_casters::createTextures()
 {
-    loadImageFromFile(m_containerDiffuseTexture.image, m_containerDiffuseTexture.memory,
-                      (textureDir / "container2.png").u8string().c_str());
-    loadImageFromFile(m_containerSpecularTexture.image, m_containerSpecularTexture.memory,
-                      (textureDir / "container2_specular.png").u8string().c_str());
+    loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
+    loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
 
     m_containerDiffuseTexture.imageView = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
     m_containerSpecularTexture.imageView = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);

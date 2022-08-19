@@ -22,7 +22,7 @@ void vkBase::createFramebuffers()
 {
     m_Framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
-        std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i], m_depthImageView };
+        std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i], m_depthAttachment.imageView };
 
         VkFramebufferCreateInfo framebufferInfo{
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -367,9 +367,7 @@ void vkBase::recreateSwapChain()
 
 void vkBase::cleanupSwapChain()
 {
-    vkDestroyImageView(m_device->logicalDevice, m_depthImageView, nullptr);
-    vkDestroyImage(m_device->logicalDevice, m_depthImage, nullptr);
-    vkFreeMemory(m_device->logicalDevice, m_depthImageMemory, nullptr);
+    m_depthAttachment.destroy();
 
     for (auto &m_swapChainFramebuffer : m_Framebuffers) {
         vkDestroyFramebuffer(m_device->logicalDevice, m_swapChainFramebuffer, nullptr);
@@ -396,7 +394,7 @@ void vkBase::createCommandBuffers()
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
 }
 
-void vkBase::loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::string_view imagePath)
+void vkBase::loadImageFromFile(vkl::Texture& texture, std::string_view imagePath)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc *pixels = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -416,12 +414,12 @@ void vkBase::loadImageFromFile(VkImage &image, VkDeviceMemory &memory, std::stri
 
     m_device->createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                image, memory);
+                texture);
 
-    m_device->transitionImageLayout(m_graphicsQueue, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+    m_device->transitionImageLayout(m_graphicsQueue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    m_device->copyBufferToImage(m_graphicsQueue, stagingBuffer.buffer, image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    m_device->transitionImageLayout(m_graphicsQueue, image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    m_device->copyBufferToImage(m_graphicsQueue, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    m_device->transitionImageLayout(m_graphicsQueue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     stagingBuffer.destroy();
@@ -431,10 +429,9 @@ void vkBase::createDepthResources()
 {
     VkFormat depthFormat = m_device->findDepthFormat();
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthImage,
-                m_depthImageMemory);
-    m_depthImageView = m_device->createImageView(m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    m_device->transitionImageLayout(m_graphicsQueue, m_depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment);
+    m_depthAttachment.imageView = m_device->createImageView(m_depthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_device->transitionImageLayout(m_graphicsQueue, m_depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 

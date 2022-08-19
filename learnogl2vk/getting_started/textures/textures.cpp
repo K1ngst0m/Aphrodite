@@ -185,8 +185,8 @@ private:
         m_quadIB.destroy();
         m_quadVB.destroy();
 
-        m_containerTexture.cleanup(m_device->logicalDevice);
-        m_awesomeFaceTexture.cleanup(m_device->logicalDevice);
+        m_containerTexture.destroy();
+        m_awesomeFaceTexture.destroy();
 
         vkDestroyPipeline(m_device->logicalDevice, m_graphicsPipeline, nullptr);
         vkDestroyPipelineLayout(m_device->logicalDevice, m_pipelineLayout, nullptr);
@@ -521,10 +521,8 @@ private:
 
     void createTextures()
     {
-        loadImageFromFile(m_containerTexture.image, m_containerTexture.memory,
-                          (textureDir / "container.jpg").u8string().c_str());
-        loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
-                          (textureDir / "awesomeface.png").u8string().c_str());
+        loadImageFromFile(m_containerTexture, (textureDir / "container.jpg").u8string().c_str());
+        loadImageFromFile(m_awesomeFaceTexture, (textureDir / "awesomeface.png").u8string().c_str());
 
         m_containerTexture.imageView = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
         m_awesomeFaceTexture.imageView = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
@@ -535,17 +533,8 @@ private:
         VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerTexture.sampler));
         VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
 
-        m_containerTexture.descriptorInfo = {
-            .sampler = m_containerTexture.sampler,
-            .imageView = m_containerTexture.imageView,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-
-        m_awesomeFaceTexture.descriptorInfo = {
-            .sampler = m_awesomeFaceTexture.sampler,
-            .imageView = m_awesomeFaceTexture.imageView,
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
+        m_containerTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        m_awesomeFaceTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
 private:
@@ -555,8 +544,8 @@ private:
 
     std::vector<vkl::Buffer> m_mvpUBs;
 
-    Texture m_containerTexture;
-    Texture m_awesomeFaceTexture;
+    vkl::Texture m_containerTexture;
+    vkl::Texture m_awesomeFaceTexture;
 
     std::vector<VkDescriptorSet> m_descriptorSets;
     VkDescriptorSetLayout m_descriptorSetLayout;

@@ -190,8 +190,8 @@ void materials::cleanupDerive()
     m_materialUB.destroy();
     m_pointLightUB.destroy();
 
-    m_containerTexture.cleanup(m_device->logicalDevice);
-    m_awesomeFaceTexture.cleanup(m_device->logicalDevice);
+    m_containerTexture.destroy();
+    m_awesomeFaceTexture.destroy();
 
     // perframe sync objects
     for (size_t i = 0; i < m_settings.max_frames; i++) {
@@ -664,10 +664,8 @@ void materials::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imag
 }
 void materials::createTextures()
 {
-    loadImageFromFile(m_containerTexture.image, m_containerTexture.memory,
-                      (textureDir / "container.jpg").u8string().c_str());
-    loadImageFromFile(m_awesomeFaceTexture.image, m_awesomeFaceTexture.memory,
-                      (textureDir / "awesomeface.png").u8string().c_str());
+    loadImageFromFile(m_containerTexture, (textureDir / "container.jpg").u8string().c_str());
+    loadImageFromFile(m_awesomeFaceTexture, (textureDir / "awesomeface.png").u8string().c_str());
 
     m_containerTexture.imageView = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
     m_awesomeFaceTexture.imageView = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
@@ -678,17 +676,8 @@ void materials::createTextures()
     VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerTexture.sampler));
     VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_awesomeFaceTexture.sampler));
 
-    m_containerTexture.descriptorInfo = {
-        .sampler = m_containerTexture.sampler,
-        .imageView = m_containerTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
-
-    m_awesomeFaceTexture.descriptorInfo = {
-        .sampler = m_awesomeFaceTexture.sampler,
-        .imageView = m_awesomeFaceTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
+    m_containerTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    m_awesomeFaceTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
 void materials::createPipelineLayout()
 {
