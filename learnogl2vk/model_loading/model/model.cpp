@@ -1,6 +1,6 @@
 #include "model.h"
 
-std::vector<VertexDataLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
+std::vector<vkl::VertexDataLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
                                                { { 0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 0.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
@@ -383,8 +383,8 @@ void model_loading::createDescriptorSetLayout()
 void model_loading::createGraphicsPipeline()
 {
     vkl::utils::PipelineBuilder pipelineBuilder;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions{ VertexDataLayout::getBindingDescription() };
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = VertexDataLayout::getAttributeDescriptions();
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions{ vkl::VertexDataLayout::getBindingDescription() };
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = vkl::VertexDataLayout::getAttributeDescriptions();
     pipelineBuilder._vertexInputInfo = vkl::init::pipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
     pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
@@ -733,9 +733,8 @@ void model_loading::initDerive()
 
 void model_loading::loadMeshes()
 {
-    m_cubeMesh.device = m_device;
     m_cubeMesh.vertices = cubeVertices;
-    m_cubeMesh.setupMesh(m_graphicsQueue);
+    m_device->setupMesh(m_cubeMesh, m_graphicsQueue);
 }
 
 int main()

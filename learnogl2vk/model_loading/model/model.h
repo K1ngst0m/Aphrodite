@@ -66,7 +66,6 @@ struct ObjectDataLayout {
     glm::mat4 modelMatrix;
 };
 
-
 class model_loading : public vkl::vklBase {
 public:
     ~model_loading() override = default;
@@ -92,7 +91,7 @@ private:
     void loadMeshes();
 
 private:
-    Mesh m_cubeMesh;
+    vkl::Mesh   m_cubeMesh;
 
     vkl::Buffer m_sceneUB;
 

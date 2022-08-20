@@ -3,6 +3,7 @@
 
 #include "vklBuffer.h"
 #include "vklTexture.h"
+#include "vklMesh.hpp"
 #include "vklUtils.h"
 
 namespace vkl
@@ -44,6 +45,7 @@ struct Device {
                                  VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
     void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer);
+    void setupMesh(vkl::Mesh &mesh, VkQueue transferQueue = VK_NULL_HANDLE);
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, vkl::Texture& texture) const;
