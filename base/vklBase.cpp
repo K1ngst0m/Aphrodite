@@ -18,7 +18,7 @@ namespace vkl
 const std::vector<const char *> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-void vkBase::createFramebuffers()
+void vklBase::createFramebuffers()
 {
     m_Framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
@@ -39,7 +39,7 @@ void vkBase::createFramebuffers()
     }
 }
 
-std::vector<const char *> vkBase::getRequiredInstanceExtensions()
+std::vector<const char *> vklBase::getRequiredInstanceExtensions()
 {
     // Get extensions supported by the instance and store for later use
     uint32_t extCount = 0;
@@ -66,7 +66,7 @@ std::vector<const char *> vkBase::getRequiredInstanceExtensions()
     return extensions;
 }
 
-bool vkBase::checkValidationLayerSupport()
+bool vklBase::checkValidationLayerSupport()
 {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -92,14 +92,14 @@ bool vkBase::checkValidationLayerSupport()
     return true;
 }
 
-void vkBase::createSurface()
+void vklBase::createSurface()
 {
     if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 }
 
-void vkBase::createInstance()
+void vklBase::createInstance()
 {
     if (m_settings.isEnableValidationLayer && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
@@ -132,7 +132,7 @@ void vkBase::createInstance()
     VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
 }
 
-void vkBase::initWindow()
+void vklBase::initWindow()
 {
     if (glfwInit() == GLFW_FALSE) {
         throw std::runtime_error("failed to creating window.");
@@ -141,14 +141,14 @@ void vkBase::initWindow()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    m_window = glfwCreateWindow(m_width, m_height, "Demo", nullptr, nullptr);
+    m_window = glfwCreateWindow(m_windowData.width, m_windowData.height, "Demo", nullptr, nullptr);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
-        auto *app = reinterpret_cast<vkBase *>(glfwGetWindowUserPointer(window));
+        auto *app = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
         app->m_framebufferResized = true;
     });
     glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double xposIn, double yposIn) {
-        auto *app = reinterpret_cast<vkBase *>(glfwGetWindowUserPointer(window));
+        auto *app = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
         app->mouseHandleDerive(xposIn, yposIn);
     });
     // TODO keyboard input processing
@@ -158,7 +158,7 @@ void vkBase::initWindow()
     // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void vkBase::createDevice()
+void vklBase::createDevice()
 {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
@@ -190,7 +190,7 @@ void vkBase::createDevice()
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_presentQueue);
 }
 
-void vkBase::createRenderPass()
+void vklBase::createRenderPass()
 {
     VkAttachmentDescription colorAttachment{
         .format = m_swapChainImageFormat,
@@ -255,7 +255,7 @@ void vkBase::createRenderPass()
     VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_renderPass));
 }
 
-void vkBase::cleanup()
+void vklBase::cleanup()
 {
     cleanupSwapChain();
 
@@ -269,7 +269,7 @@ void vkBase::cleanup()
     glfwTerminate();
 }
 
-void vkBase::initVulkan()
+void vklBase::initVulkan()
 {
     createInstance();
     createSurface();
@@ -282,7 +282,7 @@ void vkBase::initVulkan()
     createFramebuffers();
 }
 
-void vkBase::createSwapChainImageViews()
+void vklBase::createSwapChainImageViews()
 {
     m_swapChainImageViews.resize(m_swapChainImages.size());
 
@@ -291,7 +291,7 @@ void vkBase::createSwapChainImageViews()
     }
 }
 
-void vkBase::createSwapChain()
+void vklBase::createSwapChain()
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_device->physicalDevice);
 
@@ -346,7 +346,7 @@ void vkBase::createSwapChain()
     m_swapChainExtent = extent;
 }
 
-void vkBase::recreateSwapChain()
+void vklBase::recreateSwapChain()
 {
     int width = 0, height = 0;
     glfwGetFramebufferSize(m_window, &width, &height);
@@ -365,7 +365,7 @@ void vkBase::recreateSwapChain()
     createFramebuffers();
 }
 
-void vkBase::cleanupSwapChain()
+void vklBase::cleanupSwapChain()
 {
     m_depthAttachment.destroy();
 
@@ -380,8 +380,9 @@ void vkBase::cleanupSwapChain()
     vkDestroySwapchainKHR(m_device->logicalDevice, m_swapChain, nullptr);
 }
 
-void vkBase::createCommandBuffers()
+void vklBase::createCommandBuffers()
 {
+    m_imageIndices.resize(m_settings.max_frames);
     m_commandBuffers.resize(m_settings.max_frames);
 
     VkCommandBufferAllocateInfo allocInfo{
@@ -394,7 +395,7 @@ void vkBase::createCommandBuffers()
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
 }
 
-void vkBase::loadImageFromFile(vkl::Texture& texture, std::string_view imagePath)
+void vklBase::loadImageFromFile(vkl::Texture& texture, std::string_view imagePath)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc *pixels = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -425,7 +426,7 @@ void vkBase::loadImageFromFile(vkl::Texture& texture, std::string_view imagePath
     stagingBuffer.destroy();
 }
 
-void vkBase::createDepthResources()
+void vklBase::createDepthResources()
 {
     VkFormat depthFormat = m_device->findDepthFormat();
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
@@ -435,7 +436,7 @@ void vkBase::createDepthResources()
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-SwapChainSupportDetails vkBase::querySwapChainSupport(VkPhysicalDevice device)
+SwapChainSupportDetails vklBase::querySwapChainSupport(VkPhysicalDevice device)
 {
     SwapChainSupportDetails details;
 
@@ -458,5 +459,128 @@ SwapChainSupportDetails vkBase::querySwapChainSupport(VkPhysicalDevice device)
     }
 
     return details;
+}
+void vklBase::mouseHandleDerive(int xposIn, int yposIn)
+{
+    auto xpos = static_cast<float>(xposIn);
+    auto ypos = static_cast<float>(yposIn);
+
+    if (m_mouseData.firstMouse) {
+        m_mouseData.lastX = xpos;
+        m_mouseData.lastY = ypos;
+        m_mouseData.firstMouse = false;
+    }
+
+    float xoffset = xpos - m_mouseData.lastX;
+    float yoffset = m_mouseData.lastY - ypos;
+
+    m_mouseData.lastX = xpos;
+    m_mouseData.lastY = ypos;
+
+    m_camera.ProcessMouseMovement(xoffset, yoffset);
+}
+void vklBase::keyboardHandleDerive()
+{
+    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(m_window, true);
+
+    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+        m_camera.move(CameraMovementEnum::FORWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+        m_camera.move(CameraMovementEnum::BACKWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+        m_camera.move(CameraMovementEnum::LEFT, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+        m_camera.move(CameraMovementEnum::RIGHT, m_frameData.deltaTime);
+}
+vklBase::vklBase()
+        : m_windowData(800, 600)
+        , m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f)
+        , m_camera(Camera((float)m_windowData.width / m_windowData.height))
+{
+}
+void vklBase::run()
+{
+    while (!glfwWindowShouldClose(m_window)) {
+        glfwPollEvents();
+        keyboardHandleDerive();
+        drawFrame();
+    }
+
+    vkDeviceWaitIdle(m_device->logicalDevice);
+}
+void vklBase::finish()
+{
+    cleanupDerive();
+    cleanup();
+}
+void vklBase::init()
+{
+    initWindow();
+    initVulkan();
+    initDerive();
+}
+void vklBase::prepareFrame()
+{
+    float currentFrame = glfwGetTime();
+    m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
+    m_frameData.lastFrame = currentFrame;
+
+    vkWaitForFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+
+    VkResult result = vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX,
+                                            m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndices[m_currentFrame]);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+        return;
+    }
+
+    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        VK_CHECK_RESULT(result);
+    }
+
+    vkResetFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame]);
+}
+void vklBase::submitFrame()
+{
+    VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
+    VkSubmitInfo submitInfo{
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = waitSemaphores,
+        .pWaitDstStageMask = waitStages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &m_commandBuffers[m_currentFrame],
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = signalSemaphores,
+    };
+
+    VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
+
+    VkSwapchainKHR swapChains[] = { m_swapChain };
+
+    VkPresentInfoKHR presentInfo{
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = signalSemaphores,
+        .swapchainCount = 1,
+        .pSwapchains = swapChains,
+        .pImageIndices = &m_imageIndices[m_currentFrame],
+        .pResults = nullptr, // Optional
+    };
+
+    VkResult result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
+        m_framebufferResized = false;
+        recreateSwapChain();
+    } else if (result != VK_SUCCESS) {
+        VK_CHECK_RESULT(result);
+    }
+
+    m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
 }
 }

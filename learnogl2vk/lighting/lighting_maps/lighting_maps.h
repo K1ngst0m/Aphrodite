@@ -87,9 +87,8 @@ struct VertexDataLayout {
 };
 
 
-class lighting_maps : public vkl::vkBase {
+class lighting_maps : public vkl::vklBase {
 public:
-    lighting_maps();
     ~lighting_maps() override = default;
 
 private:
@@ -99,10 +98,6 @@ private:
 
     // enable anisotropic filtering features
     void getEnabledFeatures() override;
-
-    void keyboardHandleDerive() override;
-
-    void mouseHandleDerive(int xposIn, int yposIn) override;
 
     void cleanupDerive() override;
 
@@ -142,10 +137,6 @@ private:
 
     VkPipelineLayout m_emissionPipelineLayout;
     VkPipeline m_emissionGraphicsPipeline;
-
-    std::vector<VkSemaphore> m_imageAvailableSemaphores;
-    std::vector<VkSemaphore> m_renderFinishedSemaphores;
-    std::vector<VkFence> m_inFlightFences;
 };
 
 

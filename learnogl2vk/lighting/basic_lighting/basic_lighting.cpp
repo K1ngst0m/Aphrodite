@@ -51,71 +51,10 @@ std::vector<glm::vec3> cubePositions = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(
 
 void basic_lighting::drawFrame()
 {
-    float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
-
-    vkWaitForFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX,
-                                            m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return;
-    }
-
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        VK_CHECK_RESULT(result);
-    }
-
-    vkResetFences(m_device->logicalDevice, 1, &m_inFlightFences[m_currentFrame]);
-
-    vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-
+    prepareFrame();
     updateUniformBuffer(m_currentFrame);
-
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
-
-    VkSemaphore waitSemaphores[] = { m_imageAvailableSemaphores[m_currentFrame] };
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signalSemaphores[] = { m_renderFinishedSemaphores[m_currentFrame] };
-    VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = waitSemaphores,
-        .pWaitDstStageMask = waitStages,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &m_commandBuffers[m_currentFrame],
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = signalSemaphores,
-    };
-
-    VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
-
-    VkSwapchainKHR swapChains[] = { m_swapChain };
-
-    VkPresentInfoKHR presentInfo{
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = signalSemaphores,
-        .swapchainCount = 1,
-        .pSwapchains = swapChains,
-        .pImageIndices = &imageIndex,
-        .pResults = nullptr, // Optional
-    };
-
-    result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-        m_framebufferResized = false;
-        recreateSwapChain();
-    } else if (result != VK_SUCCESS) {
-        VK_CHECK_RESULT(result);
-    }
-
-    m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
+    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
+    submitFrame();
 }
 void basic_lighting::getEnabledFeatures()
 {
@@ -123,39 +62,6 @@ void basic_lighting::getEnabledFeatures()
     m_device->enabledFeatures = {
         .samplerAnisotropy = VK_TRUE,
     };
-}
-void basic_lighting::keyboardHandleDerive()
-{
-    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(m_window, true);
-
-    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        m_camera.move(Camera_Movement::FORWARD, deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        m_camera.move(Camera_Movement::BACKWARD, deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-        m_camera.move(Camera_Movement::LEFT, deltaTime);
-    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-        m_camera.move(Camera_Movement::RIGHT, deltaTime);
-}
-void basic_lighting::mouseHandleDerive(int xposIn, int yposIn)
-{
-    auto xpos = static_cast<float>(xposIn);
-    auto ypos = static_cast<float>(yposIn);
-
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-
-    lastX = xpos;
-    lastY = ypos;
-
-    m_camera.ProcessMouseMovement(xoffset, yoffset);
 }
 void basic_lighting::cleanupDerive()
 {
@@ -524,20 +430,18 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
     {
         CameraDataLayout cameraData{
             .view = m_camera.GetViewMatrix(),
-            .proj = glm::perspective(m_camera.Zoom, m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.01f,
-                                     100.0f),
+            .proj = m_camera.GetProjectionMatrix(),
+            .viewProj = m_camera.GetViewProjectionMatrix(),
         };
-        cameraData.proj[1][1] *= -1;
-        cameraData.viewProj = cameraData.proj * cameraData.view;
-        void *data;
-        vkMapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory, 0, sizeof(cameraData), 0, &data);
-        memcpy(data, &cameraData, sizeof(cameraData));
-        vkUnmapMemory(m_device->logicalDevice, m_mvpUBs[currentFrameIndex].memory);
+
+        m_mvpUBs[currentFrameIndex].map();
+        m_mvpUBs[currentFrameIndex].copyTo(&cameraData, sizeof(CameraDataLayout));
+        m_mvpUBs[currentFrameIndex].unmap();
     }
 
     {
         SceneDataLayout sceneData{
-            .viewPosition = m_camera.Position,
+            .viewPosition = m_camera.m_position,
             .ambientColor = glm::vec3(0.1f, 0.1f, 0.1f),
         };
         void *data;
@@ -569,6 +473,7 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
 }
 void basic_lighting::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
+    vkResetCommandBuffer(commandBuffer, 0);
     VkCommandBufferBeginInfo beginInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0, // Optional

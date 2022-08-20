@@ -90,7 +90,7 @@ struct VertexDataLayout {
 };
 
 
-class materials : public vkl::vkBase {
+class materials : public vkl::vklBase {
 public:
     materials();
     ~materials() override = default;
@@ -145,10 +145,6 @@ private:
 
     VkPipelineLayout m_emissionPipelineLayout;
     VkPipeline m_emissionGraphicsPipeline;
-
-    std::vector<VkSemaphore> m_imageAvailableSemaphores;
-    std::vector<VkSemaphore> m_renderFinishedSemaphores;
-    std::vector<VkFence> m_inFlightFences;
 };
 
 

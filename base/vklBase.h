@@ -28,34 +28,43 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-class vkBase {
+struct WindowData {
+    uint32_t width;
+    uint32_t height;
+    WindowData(uint32_t w, uint32_t h)
+            : width(w)
+            , height(h)
+    {
+    }
+};
+
+struct FrameData {
+    float deltaTime = 0.0f;
+    float lastFrame = 0.0f;
+};
+
+struct MouseData {
+    float lastX;
+    float lastY;
+    bool firstMouse{};
+    MouseData(float lastXin, float lastYin)
+            : lastX(lastXin)
+            , lastY(lastYin)
+            , firstMouse(true)
+    {
+    }
+};
+
+class vklBase {
 public:
-    virtual ~vkBase() = default;
+    vklBase();
+
+    virtual ~vklBase() = default;
 
 public:
-    void init()
-    {
-        initWindow();
-        initVulkan();
-        initDerive();
-    }
-
-    void run()
-    {
-        while (!glfwWindowShouldClose(m_window)) {
-            glfwPollEvents();
-            keyboardHandleDerive();
-            drawFrame();
-        }
-
-        vkDeviceWaitIdle(m_device->logicalDevice);
-    }
-
-    void finish()
-    {
-        cleanupDerive();
-        cleanup();
-    }
+    void init();
+    void run();
+    void finish();
 
 protected:
     const std::filesystem::path assetDir = "data";
@@ -80,6 +89,8 @@ protected:
     void createRenderPass();
     void createSwapChainImageViews();
     void createFramebuffers();
+    void prepareFrame();
+    void submitFrame();
 
 protected:
     void initWindow();
@@ -87,13 +98,21 @@ protected:
     void cleanup();
 
 protected:
-    virtual void initDerive() {}
-    virtual void cleanupDerive() {}
-    virtual void keyboardHandleDerive() {}
-    virtual void mouseHandleDerive(int xposIn, int yposIn) {}
+    virtual void initDerive()
+    {
+    }
+    virtual void cleanupDerive()
+    {
+    }
+    virtual void keyboardHandleDerive();
+    virtual void mouseHandleDerive(int xposIn, int yposIn);
 
-    virtual void getEnabledFeatures() {}
-    virtual void drawFrame() {}
+    virtual void getEnabledFeatures()
+    {
+    }
+    virtual void drawFrame()
+    {
+    }
 
     virtual void createCommandBuffers();
 
@@ -127,6 +146,10 @@ protected:
 
     VkRenderPass m_renderPass;
 
+    std::vector<VkSemaphore> m_imageAvailableSemaphores;
+    std::vector<VkSemaphore> m_renderFinishedSemaphores;
+    std::vector<VkFence> m_inFlightFences;
+
     VkDescriptorPool m_descriptorPool;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
@@ -134,18 +157,12 @@ protected:
     bool m_framebufferResized = false;
 
     uint32_t m_currentFrame = 0;
+    std::vector<uint32_t> m_imageIndices;
 
+    WindowData m_windowData;
+    FrameData m_frameData;
+    MouseData m_mouseData;
     Camera m_camera;
-
-    uint32_t m_width = 1280;
-    uint32_t m_height = 720;
-
-    float deltaTime = 0.0f; // Time between current frame and last frame
-    float lastFrame = 0.0f; // Time of last frame
-
-    float lastX = m_width / 2.0f;
-    float lastY = m_height / 2.0f;
-    bool firstMouse = true;
 };
 }
 
