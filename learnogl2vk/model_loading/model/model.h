@@ -66,66 +66,6 @@ struct ObjectDataLayout {
     glm::mat4 modelMatrix;
 };
 
-// vertex data layout
-struct VertexDataLayout {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(VertexDataLayout);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3);
-
-        attributeDescriptions[0] = {
-            .location = 0,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, pos),
-        };
-
-        attributeDescriptions[1] = {
-            .location = 1,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, normal),
-        };
-
-        attributeDescriptions[2] = {
-            .location = 2,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, texCoord),
-        };
-
-        return attributeDescriptions;
-    }
-};
-
-class Mesh {
-    public:
-        // mesh data
-        std::vector<VertexDataLayout>  vertices;
-        std::vector<unsigned int>      indices;
-        std::vector<vkl::Texture>      textures;
-
-        Mesh(std::vector<VertexDataLayout> vertices, std::vector<unsigned int> indices, std::vector<vkl::Texture> textures);
-        void Draw();
-    private:
-        //  render data
-        unsigned int VAO, VBO, EBO;
-
-        void setupMesh();
-};
 
 class model_loading : public vkl::vklBase {
 public:
@@ -133,17 +73,12 @@ public:
 
 private:
     void initDerive() override;
-
     void drawFrame() override;
-
-    // enable anisotropic filtering features
     void getEnabledFeatures() override;
-
     void cleanupDerive() override;
 
 private:
     void setupDescriptors();
-    void createVertexBuffers();
     void createUniformBuffers();
     void createDescriptorSets();
     void createDescriptorSetLayout();
@@ -154,9 +89,10 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createTextures();
     void createPipelineLayout();
+    void loadMeshes();
 
 private:
-    vkl::Buffer m_cubeVB;
+    Mesh m_cubeMesh;
 
     vkl::Buffer m_sceneUB;
 

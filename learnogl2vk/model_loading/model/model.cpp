@@ -96,7 +96,7 @@ void model_loading::cleanupDerive()
         m_mvpUBs[i].destroy();
     }
 
-    m_cubeVB.destroy();
+    m_cubeMesh.destroy();
 
     m_sceneUB.destroy();
     m_materialUB.destroy();
@@ -121,25 +121,7 @@ void model_loading::cleanupDerive()
     vkDestroyPipeline(m_device->logicalDevice, m_emissionGraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device->logicalDevice, m_emissionPipelineLayout, nullptr);
 }
-void model_loading::createVertexBuffers()
-{
-    VkDeviceSize bufferSize = sizeof(cubeVertices[0]) * cubeVertices.size();
 
-    vkl::Buffer stagingBuffer;
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    stagingBuffer.map();
-    stagingBuffer.copyTo(cubeVertices.data(), static_cast<size_t>(bufferSize));
-    stagingBuffer.unmap();
-
-    m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
-
-    m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
-
-    stagingBuffer.destroy();
-}
 void model_loading::createUniformBuffers()
 {
     {
@@ -602,9 +584,10 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     };
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_cubeVB.buffer };
+    VkBuffer vertexBuffers[] = { m_cubeMesh.vertexBuffer.buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
     std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
                                                    m_cubeMaterialDescriptorSets };
@@ -626,7 +609,7 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
             vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                                sizeof(ObjectDataLayout), &objectDataConstant);
 
-            vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
         }
     }
 
@@ -644,8 +627,7 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         };
         vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
                            &objectDataConstant);
-
-        vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -741,12 +723,19 @@ void model_loading::setupDescriptors()
 }
 void model_loading::initDerive()
 {
-    createVertexBuffers();
+    loadMeshes();
     createUniformBuffers();
     createTextures();
     setupDescriptors();
     createSyncObjects();
     createGraphicsPipeline();
+}
+
+void model_loading::loadMeshes()
+{
+    m_cubeMesh.device = m_device;
+    m_cubeMesh.vertices = cubeVertices;
+    m_cubeMesh.setupMesh(m_graphicsQueue);
 }
 
 int main()
