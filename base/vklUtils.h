@@ -1,6 +1,10 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#include <cstring>
+#include <optional>
+#include <array>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <vector>

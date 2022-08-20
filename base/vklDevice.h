@@ -5,9 +5,6 @@
 #include "vklTexture.h"
 #include "vklUtils.h"
 
-#include <string>
-#include <vector>
-
 namespace vkl
 {
 

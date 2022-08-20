@@ -1,11 +1,6 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#include <vector>
-#include <optional>
-#include <array>
-#include <filesystem>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
@@ -16,8 +11,6 @@
 #include "vklUtils.h"
 #include "vklInit.hpp"
 #include "vklDevice.h"
-#include "vklBuffer.h"
-#include "vklTexture.h"
 
 namespace vkl
 {
