@@ -22,84 +22,49 @@ cmake -B build && cmake --build build -- -j$(nproc)
 ** Implementations List
 
 *** [X] I - Getting Started
-**** [X] 1. Hello Window, Hello Triangle, Shaders
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/first_triangle][Hello Window, Hello Triangle, Shaders]]
 
 Init vulkan and window, setup graphics pipeline, creating first triangle.
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/first_triangle][First Triangle]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Getting-started/Hello-Window][Hello Window]]
 - [[https://learnopengl.com/Getting-started/Hello-Triangle][Hello Triangle]]
 - [[https://learnopengl.com/Getting-started/Shaders][Shaders]]
 
-**** [X] 2. Textures
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/textures][Textures]]
 
 Loading a 2D image from disk, upload into video memory and using it with samplers.
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/textures][Textures]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Getting-started/Textures][Textures]]
 
-**** [X] 3. Transformations, Coordinate Systems, Camera
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/transformations][Transformations, Coordinate Systems, Camera]]
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/transformations][Transformations]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Getting-started/Transformations][Transformations]]
 - [[https://learnopengl.com/Getting-started/Coordinate-Systems][Coordinate Systems]]
 - [[https://learnopengl.com/Getting-started/Camera][Camera]]
 
 *** [-] II - Lighting
-**** [X] 1. Basic Lighting
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/basic_lighting][Basic Lighting]]
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/basic_lighting][Basic-Lighting]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Lighting/Colors][Colors]]
 - [[https://learnopengl.com/Lighting/Basic-Lighting][Basic-Lighting]]
 
-**** [X] 2. Materials
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/materials][Materials]]
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/materials][Materials]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Lighting/Materials][Materials]]
 
-**** [X] 3. Lighting maps
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/lighting_maps][Lighting Maps]]
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/lighting_maps][Lighting Maps]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Lighting/Lighting-maps][Lighting Maps]]
 
-**** [X] 4. Light casters
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/light_catsers][Light Casters]]
 
-Vulkan implementations:
-
-- [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/light_catsers][Light Casters]]
-
-GL implementations:
-
+Reference:
 - [[https://learnopengl.com/Lighting/Light-casters][Light Casters]]
 - [[https://learnopengl.com/Lighting/Multiple-lights][Multiple Lights]]
 
