@@ -39,7 +39,7 @@ set(EXAMPLES
   lighting/materials
   lighting/lighting_maps
   lighting/light_casters
-  model_loading/model
+  model_loading/mesh
 )
 
 buildExamples()

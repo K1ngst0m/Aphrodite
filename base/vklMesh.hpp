@@ -61,7 +61,7 @@ struct VertexDataLayout {
 
 struct Mesh {
     std::vector<VertexDataLayout>  vertices;
-    std::vector<uint16_t>      indices;
+    std::vector<uint32_t>      indices;
     // std::vector<vkl::Texture>      textures;
 
     vkl::Buffer vertexBuffer;
