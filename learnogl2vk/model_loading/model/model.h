@@ -1,5 +1,5 @@
-#ifndef MESH_H_
-#define MESH_H_
+#ifndef MODEL_H_
+#define MODEL_H_
 
 #include "vklBase.h"
 
@@ -17,6 +17,9 @@ struct DescriptorSetLayouts {
 // per scene data
 // general scene data
 struct SceneDataLayout {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
     glm::vec4 viewPosition;
 };
 
@@ -50,13 +53,6 @@ struct PointLightDataLayout {
     glm::vec4 specular;
 
     glm::vec4 attenuationFactor;
-};
-
-// mvp matrix data layout
-struct CameraDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
 };
 
 // per object data
@@ -170,8 +166,6 @@ private:
 
     vkl::Buffer m_materialUB;
 
-    std::vector<vkl::Buffer> m_mvpUBs;
-
     vkl::Texture m_containerDiffuseTexture;
     vkl::Texture m_containerSpecularTexture;
 
@@ -186,4 +180,4 @@ private:
     VkPipeline m_emissionGraphicsPipeline;
 };
 
-#endif // MESH_H_
+#endif // MODEL_H_

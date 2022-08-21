@@ -85,11 +85,6 @@ void model::cleanupDerive()
     vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.scene, nullptr);
     vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.material, nullptr);
 
-    // per frame ubo
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        m_mvpUBs[i].destroy();
-    }
-
     m_cubeModel.destroy();
 
     m_sceneUB.destroy();
@@ -118,17 +113,6 @@ void model::cleanupDerive()
 
 void model::createUniformBuffers()
 {
-    {
-        VkDeviceSize bufferSize = sizeof(CameraDataLayout);
-        m_mvpUBs.resize(m_settings.max_frames);
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_mvpUBs[i]);
-
-            m_mvpUBs[i].setupDescriptor();
-        }
-    }
-
     {
         // create scene uniform buffer
         VkDeviceSize bufferSize = sizeof(SceneDataLayout);
@@ -177,7 +161,6 @@ void model::createDescriptorSets()
 
         for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
             std::vector<VkDescriptorBufferInfo> bufferInfos{
-                m_mvpUBs[frameIdx].descriptorInfo,
                 m_sceneUB.descriptorInfo,
                 m_pointLightUB.descriptorInfo,
                 m_directionalLightUB.descriptorInfo,
@@ -212,44 +195,36 @@ void model::createDescriptorSetLayout()
 {
     // per-scene params
     {
-        VkDescriptorSetLayoutBinding cameraLayoutBinding{
+        VkDescriptorSetLayoutBinding sceneLayoutBinding{
             .binding = 0,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding sceneLayoutBinding{
+        VkDescriptorSetLayoutBinding pointLightLayoutBinding{
             .binding = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding pointLightLayoutBinding{
+        VkDescriptorSetLayoutBinding directionalLightLayoutBinding{
             .binding = 2,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding directionalLightLayoutBinding{
+        VkDescriptorSetLayoutBinding flashLightLayoutBinding{
             .binding = 3,
             .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding flashLightLayoutBinding{
-            .binding = 4,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
 
-        std::array<VkDescriptorSetLayoutBinding, 5> perSceneBindings = { cameraLayoutBinding, sceneLayoutBinding,
-                                                                         pointLightLayoutBinding, directionalLightLayoutBinding, flashLightLayoutBinding };
+        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = { sceneLayoutBinding, pointLightLayoutBinding, directionalLightLayoutBinding, flashLightLayoutBinding };
         VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perSceneBindings.size()),
@@ -275,7 +250,7 @@ void model::createDescriptorSetLayout()
             .pImmutableSamplers = nullptr,
         };
 
-        std::array<VkDescriptorSetLayoutBinding, 2> perMaterialBindings = {containerDiffuseLayoutBinding, containerSpecularLayoutBinding };
+        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {containerDiffuseLayoutBinding, containerSpecularLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -368,20 +343,15 @@ void model::createSyncObjects()
 }
 void model::createDescriptorPool()
 {
-    std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0] = {
-        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 5),
-    };
-    poolSizes[1] = {
-        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = 2,
+    std::vector<VkDescriptorPoolSize> poolSizes{
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 5)},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
     };
 
     VkDescriptorPoolCreateInfo poolInfo{
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .maxSets = m_settings.max_frames + 1,
-        .poolSizeCount = poolSizes.size(),
+        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
 
@@ -391,19 +361,10 @@ void model::createDescriptorPool()
 void model::updateUniformBuffer(uint32_t currentFrameIndex)
 {
     {
-        CameraDataLayout cameraData{
+        SceneDataLayout sceneData{
             .view = m_camera.GetViewMatrix(),
             .proj = m_camera.GetProjectionMatrix(),
             .viewProj = m_camera.GetViewProjectionMatrix(),
-        };
-
-        m_mvpUBs[currentFrameIndex].map();
-        m_mvpUBs[currentFrameIndex].copyTo(&cameraData, sizeof(CameraDataLayout));
-        m_mvpUBs[currentFrameIndex].unmap();
-    }
-
-    {
-        SceneDataLayout sceneData{
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
         m_sceneUB.map();
@@ -412,7 +373,6 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
     }
 
     {
-
         FlashLightDataLayout flashLightData{
             .position = glm::vec4(m_camera.m_position, 1.0f),
             .direction = glm::vec4(m_camera.m_front, 1.0f),
@@ -491,7 +451,7 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_cubeModel._mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
+    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
                                                    m_cubeModel._material.descriptorSet };
     // cube drawing
     {
@@ -566,11 +526,11 @@ void model::createPipelineLayout()
             .size = sizeof(ObjectDataLayout),
         };
 
-        std::array<VkPushConstantRange, 1> pushConstantRanges{
+        std::vector<VkPushConstantRange> pushConstantRanges{
             objPushConstantRange,
         };
 
-        std::array<VkDescriptorSetLayout, 2> descriptorSetLayouts{ m_descriptorSetLayouts.scene,
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ m_descriptorSetLayouts.scene,
                                                                    m_descriptorSetLayouts.material };
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -591,11 +551,11 @@ void model::createPipelineLayout()
             .size = sizeof(ObjectDataLayout),
         };
 
-        std::array<VkPushConstantRange, 1> pushConstantRanges{
+        std::vector<VkPushConstantRange> pushConstantRanges{
             objPushConstantRange,
         };
 
-        std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts{
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts{
             m_descriptorSetLayouts.scene,
         };
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{

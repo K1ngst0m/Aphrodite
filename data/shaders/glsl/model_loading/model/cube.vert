@@ -8,11 +8,12 @@ layout(location = 0) out vec4 fragPosition;
 layout(location = 1) out vec4 fragNormal;
 layout(location = 2) out vec2 fragTexCoord;
 
-layout(set = 0, binding = 0) uniform cameraUB{
+layout (set = 0, binding = 0) uniform SceneUB{
     mat4 view;
     mat4 proj;
     mat4 viewProj;
-} cameraData;
+    vec4 viewPos;
+} sceneData;
 
 //push constants block
 layout( push_constant ) uniform constants
@@ -21,7 +22,7 @@ layout( push_constant ) uniform constants
 } objectData;
 
 void main() {
-    gl_Position = cameraData.viewProj * objectData.modelMatrix * vec4(inPosition, 1.0f);
+    gl_Position = sceneData.viewProj * objectData.modelMatrix * vec4(inPosition, 1.0f);
     fragPosition = objectData.modelMatrix * vec4(inPosition, 1.0f);
     fragTexCoord = inTexCoord;
     fragNormal = transpose(inverse(objectData.modelMatrix)) * vec4(inNormal, 1.0f);

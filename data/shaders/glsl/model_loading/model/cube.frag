@@ -7,11 +7,14 @@ layout(location = 2) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 
 // set 0: per scene binding
-layout (set = 0, binding = 1) uniform SceneUB{
+layout (set = 0, binding = 0) uniform SceneUB{
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
     vec4 viewPos;
 } sceneData;
 
-layout (set = 0, binding = 2) uniform PointLightUB{
+layout (set = 0, binding = 1) uniform PointLightUB{
     vec4 position;
     vec4 ambient;
     vec4 diffuse;
@@ -20,14 +23,14 @@ layout (set = 0, binding = 2) uniform PointLightUB{
     vec3 attenuationFactor;
 } pointLightData;
 
-layout (set = 0, binding = 3) uniform DirectionalLightUB{
+layout (set = 0, binding = 2) uniform DirectionalLightUB{
     vec4 direction;
     vec4 ambient;
     vec4 diffuse;
     vec4 specular;
 } directionalLightData;
 
-layout (set = 0, binding = 4) uniform FlashLightUB{
+layout (set = 0, binding = 3) uniform FlashLightUB{
     vec4 position;
     vec4 direction;
 
