@@ -87,12 +87,12 @@ void model::cleanupDerive()
 
     m_cubeModel.destroy();
 
-    m_sceneUB.destroy();
-    m_materialUB.destroy();
-
-    m_directionalLightUB.destroy();
-    m_pointLightUB.destroy();
-    m_flashLightUB.destroy();
+    for (auto & frameData : m_perFrameData){
+        frameData.sceneUB.destroy();
+        frameData.directionalLightUB.destroy();
+        frameData.pointLightUB.destroy();
+        frameData.flashLightUB.destroy();
+    }
 
     m_containerDiffuseTexture.destroy();
     m_containerSpecularTexture.destroy();
@@ -113,58 +113,62 @@ void model::cleanupDerive()
 
 void model::createUniformBuffers()
 {
-    {
+    m_perFrameData.resize(m_settings.max_frames);
+
+    for(auto& frameData : m_perFrameData){
         // create scene uniform buffer
-        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_sceneUB);
-        m_sceneUB.setupDescriptor();
-    }
+        {
+            VkDeviceSize bufferSize = sizeof(SceneDataLayout);
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.sceneUB);
+            frameData.sceneUB.setupDescriptor();
+        }
 
-    {
         // create point light uniform buffer
-        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_pointLightUB);
-        m_pointLightUB.setupDescriptor();
-    }
+        {
+            VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.pointLightUB);
+            frameData.pointLightUB.setupDescriptor();
+        }
 
-    {
         // create directional light uniform buffer
-        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_directionalLightUB);
-        m_directionalLightUB.setupDescriptor();
+        {
+            VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.directionalLightUB);
+            frameData.directionalLightUB.setupDescriptor();
+        }
+
+        // create flash light uniform buffer
+        {
+            VkDeviceSize bufferSize = sizeof(FlashLightDataLayout);
+            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.flashLightUB);
+            frameData.flashLightUB.setupDescriptor();
+        }
     }
 
-    {
-        // create flash light uniform buffer
-        VkDeviceSize bufferSize = sizeof(FlashLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_flashLightUB);
-        m_flashLightUB.setupDescriptor();
-    }
 }
 void model::createDescriptorSets()
 {
     // scene
     {
-        std::vector<VkDescriptorSetLayout> sceneLayouts(m_settings.max_frames, m_descriptorSetLayouts.scene);
-        VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = m_descriptorPool,
-            .descriptorSetCount = static_cast<uint32_t>(sceneLayouts.size()),
-            .pSetLayouts = sceneLayouts.data(),
-        };
-        m_perFrameDescriptorSets.resize(m_settings.max_frames);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
-
         for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
+            std::vector<VkDescriptorSetLayout> sceneLayouts(1, m_descriptorSetLayouts.scene);
+            VkDescriptorSetAllocateInfo allocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = m_descriptorPool,
+                .descriptorSetCount = static_cast<uint32_t>(sceneLayouts.size()),
+                .pSetLayouts = sceneLayouts.data(),
+            };
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameData[frameIdx].descriptorSet));
+
             std::vector<VkDescriptorBufferInfo> bufferInfos{
-                m_sceneUB.descriptorInfo,
-                m_pointLightUB.descriptorInfo,
-                m_directionalLightUB.descriptorInfo,
-                m_flashLightUB.descriptorInfo,
+                m_perFrameData[frameIdx].sceneUB.descriptorInfo,
+                m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
+                m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
+                m_perFrameData[frameIdx].flashLightUB.descriptorInfo,
             };
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -172,7 +176,7 @@ void model::createDescriptorSets()
             for(auto & bufferInfo : bufferInfos){
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_perFrameDescriptorSets[frameIdx],
+                    .dstSet = m_perFrameData[frameIdx].descriptorSet,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -344,7 +348,7 @@ void model::createSyncObjects()
 void model::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 5)},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 4)},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
     };
 
@@ -367,9 +371,9 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
             .viewProj = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        m_sceneUB.map();
-        m_sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
-        m_sceneUB.unmap();
+        m_perFrameData[currentFrameIndex].sceneUB.map();
+        m_perFrameData[currentFrameIndex].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
+        m_perFrameData[currentFrameIndex].sceneUB.unmap();
     }
 
     {
@@ -383,21 +387,21 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
             .outerCutOff = glm::cos(glm::radians(17.5f)),
         };
 
-        m_flashLightUB.map();
-        m_flashLightUB.copyTo(&flashLightData, sizeof(FlashLightDataLayout));
-        m_flashLightUB.unmap();
+        m_perFrameData[currentFrameIndex].flashLightUB.map();
+        m_perFrameData[currentFrameIndex].flashLightUB.copyTo(&flashLightData, sizeof(FlashLightDataLayout));
+        m_perFrameData[currentFrameIndex].flashLightUB.unmap();
     }
 
     {
-        m_pointLightUB.map();
-        m_pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
-        m_pointLightUB.unmap();
+        m_perFrameData[currentFrameIndex].pointLightUB.map();
+        m_perFrameData[currentFrameIndex].pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
+        m_perFrameData[currentFrameIndex].pointLightUB.unmap();
     }
 
     {
-        m_directionalLightUB.map();
-        m_directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
-        m_directionalLightUB.unmap();
+        m_perFrameData[currentFrameIndex].directionalLightUB.map();
+        m_perFrameData[currentFrameIndex].directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
+        m_perFrameData[currentFrameIndex].directionalLightUB.unmap();
     }
 
 }
@@ -451,7 +455,7 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
     vkCmdBindIndexBuffer(commandBuffer, m_cubeModel._mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
+    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameData[m_currentFrame].descriptorSet,
                                                    m_cubeModel._material.descriptorSet };
     // cube drawing
     {

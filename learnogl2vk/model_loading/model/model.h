@@ -156,22 +156,21 @@ private:
     void loadModel();
 
 private:
+    struct PerFrameData{
+        vkl::Buffer sceneUB;
+        vkl::Buffer pointLightUB;
+        vkl::Buffer flashLightUB;
+        vkl::Buffer directionalLightUB;
+        VkDescriptorSet descriptorSet;
+    };
+    std::vector<PerFrameData> m_perFrameData;
+
     vkl::Model m_cubeModel;
-
-    vkl::Buffer m_sceneUB;
-
-    vkl::Buffer m_pointLightUB;
-    vkl::Buffer m_flashLightUB;
-    vkl::Buffer m_directionalLightUB;
-
-    vkl::Buffer m_materialUB;
 
     vkl::Texture m_containerDiffuseTexture;
     vkl::Texture m_containerSpecularTexture;
 
     DescriptorSetLayouts m_descriptorSetLayouts;
-
-    std::vector<VkDescriptorSet> m_perFrameDescriptorSets;
 
     VkPipelineLayout m_cubePipelineLayout;
     VkPipeline m_cubeGraphicsPipeline;
