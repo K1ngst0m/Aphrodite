@@ -66,6 +66,14 @@ struct ObjectDataLayout {
     glm::mat4 modelMatrix;
 };
 
+struct Model{
+    vkl::Mesh _mesh;
+
+    void loadFromFile(const std::filesystem::path& path){
+
+    }
+};
+
 class model_loading : public vkl::vklBase {
 public:
     ~model_loading() override = default;
@@ -88,7 +96,7 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createTextures();
     void createPipelineLayout();
-    void loadMeshes();
+    void loadModel();
 
 private:
     vkl::Mesh   m_cubeMesh;

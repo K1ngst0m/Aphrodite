@@ -587,7 +587,7 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkBuffer vertexBuffers[] = { m_cubeMesh.vertexBuffer.buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
+    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
                                                    m_cubeMaterialDescriptorSets };
@@ -723,7 +723,7 @@ void model_loading::setupDescriptors()
 }
 void model_loading::initDerive()
 {
-    loadMeshes();
+    loadModel();
     createUniformBuffers();
     createTextures();
     setupDescriptors();
@@ -731,7 +731,7 @@ void model_loading::initDerive()
     createGraphicsPipeline();
 }
 
-void model_loading::loadMeshes()
+void model_loading::loadModel()
 {
     m_cubeMesh.vertices = cubeVertices;
     m_device->setupMesh(m_cubeMesh, m_graphicsQueue);
