@@ -2,6 +2,9 @@
 #define MESH_H_
 
 #include "vklBase.h"
+
+#include <tinygltf/tiny_gltf.h>
+
 /*
 ** - https://learnopengl.com/Lighting/Basic-Lighting
  */
@@ -56,27 +59,84 @@ struct CameraDataLayout {
     glm::mat4 viewProj;
 };
 
-// per material data
-struct MaterialDataLayout {
-    alignas(16) float     shininess;
-};
-
 // per object data
 struct ObjectDataLayout {
     glm::mat4 modelMatrix;
 };
 
-struct Model{
-    vkl::Mesh _mesh;
+namespace vkl
+{
 
-    void loadFromFile(const std::filesystem::path& path){
+struct Material {
+    glm::vec4 diffuseFactor = glm::vec4(1.0f);
+    glm::vec4 specularFactor = glm::vec4(1.0f);
+    float shininess = 64.0f;
 
+    vkl::Texture *diffuseTexture = nullptr;
+    vkl::Texture *specularTexture = nullptr;
+
+    VkDescriptorSet descriptorSet;
+
+    void createDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout)
+    {
+        assert(diffuseTexture);
+        assert(specularTexture);
+
+        VkDescriptorSetAllocateInfo descriptorSetAllocInfo{
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = descriptorPool,
+            .descriptorSetCount = 1,
+            .pSetLayouts = &descriptorSetLayout,
+        };
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocInfo, &descriptorSet));
+
+        std::vector<VkDescriptorImageInfo> imageDescriptors{};
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets{};
+
+        if (diffuseTexture){
+            imageDescriptors.push_back(diffuseTexture->descriptorInfo);
+            VkWriteDescriptorSet writeDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSet,
+                .dstBinding = static_cast<uint32_t>(writeDescriptorSets.size()),
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &diffuseTexture->descriptorInfo,
+            };
+            writeDescriptorSets.push_back(writeDescriptorSet);
+        }
+
+        if (specularTexture){
+            imageDescriptors.push_back(specularTexture->descriptorInfo);
+            VkWriteDescriptorSet writeDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSet,
+                .dstBinding = static_cast<uint32_t>(writeDescriptorSets.size()),
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &specularTexture->descriptorInfo,
+            };
+            writeDescriptorSets.push_back(writeDescriptorSet);
+        }
+
+        vkUpdateDescriptorSets(device, static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     }
 };
 
-class model_loading : public vkl::vklBase {
+struct Model {
+    vkl::Mesh _mesh;
+    vkl::Material _material;
+
+    void destroy() const{
+        _mesh.destroy();
+    }
+};
+
+}
+
+class model : public vkl::vklBase {
 public:
-    ~model_loading() override = default;
+    ~model() override = default;
 
 private:
     void initDerive() override;
@@ -96,10 +156,11 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createTextures();
     void createPipelineLayout();
+    void loadModelFromFile(vkl::Model &model, std::string_view path);
     void loadModel();
 
 private:
-    vkl::Mesh   m_cubeMesh;
+    vkl::Model m_cubeModel;
 
     vkl::Buffer m_sceneUB;
 
@@ -117,7 +178,6 @@ private:
     DescriptorSetLayouts m_descriptorSetLayouts;
 
     std::vector<VkDescriptorSet> m_perFrameDescriptorSets;
-    VkDescriptorSet m_cubeMaterialDescriptorSets;
 
     VkPipelineLayout m_cubePipelineLayout;
     VkPipeline m_cubeGraphicsPipeline;

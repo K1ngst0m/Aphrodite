@@ -55,7 +55,6 @@ DirectionalLightDataLayout directionalLightData{
     .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
 };
 
-
 PointLightDataLayout pointLightData{
     .position = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f),
     .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
@@ -64,12 +63,7 @@ PointLightDataLayout pointLightData{
     .attenuationFactor = glm::vec4(1.0f, 0.09f, 0.032f, 0.0f),
 };
 
-MaterialDataLayout materialData{
-    .shininess = 128.0f,
-};
-
-
-void model_loading::drawFrame()
+void model::drawFrame()
 {
     prepareFrame();
     updateUniformBuffer(m_currentFrame);
@@ -77,14 +71,14 @@ void model_loading::drawFrame()
     submitFrame();
 }
 
-void model_loading::getEnabledFeatures()
+void model::getEnabledFeatures()
 {
     assert(m_device->features.samplerAnisotropy);
     m_device->enabledFeatures = {
         .samplerAnisotropy = VK_TRUE,
     };
 }
-void model_loading::cleanupDerive()
+void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
@@ -96,7 +90,7 @@ void model_loading::cleanupDerive()
         m_mvpUBs[i].destroy();
     }
 
-    m_cubeMesh.destroy();
+    m_cubeModel.destroy();
 
     m_sceneUB.destroy();
     m_materialUB.destroy();
@@ -122,7 +116,7 @@ void model_loading::cleanupDerive()
     vkDestroyPipelineLayout(m_device->logicalDevice, m_emissionPipelineLayout, nullptr);
 }
 
-void model_loading::createUniformBuffers()
+void model::createUniformBuffers()
 {
     {
         VkDeviceSize bufferSize = sizeof(CameraDataLayout);
@@ -166,17 +160,10 @@ void model_loading::createUniformBuffers()
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_flashLightUB);
         m_flashLightUB.setupDescriptor();
     }
-
-    {
-        // create material uniform buffer
-        VkDeviceSize bufferSize = sizeof(MaterialDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_materialUB);
-        m_materialUB.setupDescriptor();
-    }
 }
-void model_loading::createDescriptorSets()
+void model::createDescriptorSets()
 {
+    // scene
     {
         std::vector<VkDescriptorSetLayout> sceneLayouts(m_settings.max_frames, m_descriptorSetLayouts.scene);
         VkDescriptorSetAllocateInfo allocInfo{
@@ -188,111 +175,40 @@ void model_loading::createDescriptorSets()
         m_perFrameDescriptorSets.resize(m_settings.max_frames);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
 
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            std::array<VkWriteDescriptorSet, 5> descriptorWrites;
-
-            descriptorWrites[0] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = m_perFrameDescriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &m_mvpUBs[i].descriptorInfo,
-            };
-            descriptorWrites[1] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = m_perFrameDescriptorSets[i],
-                .dstBinding = 1,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &m_sceneUB.descriptorInfo,
-            };
-            descriptorWrites[2] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = m_perFrameDescriptorSets[i],
-                .dstBinding = 2,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &m_pointLightUB.descriptorInfo,
-            };
-            descriptorWrites[3] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = m_perFrameDescriptorSets[i],
-                .dstBinding = 3,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &m_directionalLightUB.descriptorInfo,
-            };
-            descriptorWrites[4] = {
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = m_perFrameDescriptorSets[i],
-                .dstBinding = 4,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &m_flashLightUB.descriptorInfo,
+        for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
+            std::vector<VkDescriptorBufferInfo> bufferInfos{
+                m_mvpUBs[frameIdx].descriptorInfo,
+                m_sceneUB.descriptorInfo,
+                m_pointLightUB.descriptorInfo,
+                m_directionalLightUB.descriptorInfo,
+                m_flashLightUB.descriptorInfo,
             };
 
-            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
-                                   nullptr);
+            std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+            for(auto & bufferInfo : bufferInfos){
+                VkWriteDescriptorSet write = {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet = m_perFrameDescriptorSets[frameIdx],
+                    .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .pBufferInfo = &bufferInfo,
+                };
+                descriptorWrites.push_back(write);
+            }
+
+            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
 
+    // material
     {
-        std::array<VkDescriptorSetLayout, 1> materialLayouts{ m_descriptorSetLayouts.material };
-
-        VkDescriptorSetAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = m_descriptorPool,
-            .descriptorSetCount = static_cast<uint32_t>(materialLayouts.size()),
-            .pSetLayouts = materialLayouts.data(),
-        };
-
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_cubeMaterialDescriptorSets));
-
-        std::array<VkWriteDescriptorSet, 3> descriptorWrites;
-
-        descriptorWrites[0] = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = m_cubeMaterialDescriptorSets,
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo = &m_materialUB.descriptorInfo,
-        };
-
-        descriptorWrites[1] = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = m_cubeMaterialDescriptorSets,
-            .dstBinding = 1,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &m_containerDiffuseTexture.descriptorInfo,
-            .pTexelBufferView = nullptr, // Optional
-        };
-
-        descriptorWrites[2] = {
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = m_cubeMaterialDescriptorSets,
-            .dstBinding = 2,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &m_containerSpecularTexture.descriptorInfo,
-            .pTexelBufferView = nullptr, // Optional
-        };
-
-        vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
-                               nullptr);
+        m_cubeModel._material.createDescriptorSet(m_device->logicalDevice, m_descriptorPool, m_descriptorSetLayouts.material);
     }
 }
-void model_loading::createDescriptorSetLayout()
+void model::createDescriptorSetLayout()
 {
     // per-scene params
     {
@@ -339,37 +255,28 @@ void model_loading::createDescriptorSetLayout()
             .bindingCount = static_cast<uint32_t>(perSceneBindings.size()),
             .pBindings = perSceneBindings.data(),
         };
-        VK_CHECK_RESULT(
-                vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.scene));
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.scene));
     }
 
     // per-material params
     {
-        VkDescriptorSetLayoutBinding materialLayoutBinding{
+        VkDescriptorSetLayoutBinding containerDiffuseLayoutBinding{
             .binding = 0,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding samplerContainerDiffuseLayoutBinding{
+        VkDescriptorSetLayoutBinding containerSpecularLayoutBinding{
             .binding = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding samplerContainerSpecularLayoutBinding{
-            .binding = 2,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
 
-        std::array<VkDescriptorSetLayoutBinding, 3> perMaterialBindings = { materialLayoutBinding,
-                                                                            samplerContainerDiffuseLayoutBinding,
-                                                                            samplerContainerSpecularLayoutBinding };
+        std::array<VkDescriptorSetLayoutBinding, 2> perMaterialBindings = {containerDiffuseLayoutBinding, containerSpecularLayoutBinding };
+
         VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perMaterialBindings.size()),
@@ -380,7 +287,7 @@ void model_loading::createDescriptorSetLayout()
                                                     &m_descriptorSetLayouts.material));
     }
 }
-void model_loading::createGraphicsPipeline()
+void model::createGraphicsPipeline()
 {
     vkl::utils::PipelineBuilder pipelineBuilder;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions{ vkl::VertexDataLayout::getBindingDescription() };
@@ -411,8 +318,8 @@ void model_loading::createGraphicsPipeline()
     pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -426,8 +333,8 @@ void model_loading::createGraphicsPipeline()
     pipelineBuilder._shaderStages.clear();
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
+        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/emission.vert.spv");
+        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/emission.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -438,7 +345,7 @@ void model_loading::createGraphicsPipeline()
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
 }
-void model_loading::createSyncObjects()
+void model::createSyncObjects()
 {
     m_imageAvailableSemaphores.resize(m_settings.max_frames);
     m_renderFinishedSemaphores.resize(m_settings.max_frames);
@@ -459,12 +366,12 @@ void model_loading::createSyncObjects()
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
     }
 }
-void model_loading::createDescriptorPool()
+void model::createDescriptorPool()
 {
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0] = {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 5 + 1),
+        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 5),
     };
     poolSizes[1] = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -481,7 +388,7 @@ void model_loading::createDescriptorPool()
     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
 
-void model_loading::updateUniformBuffer(uint32_t currentFrameIndex)
+void model::updateUniformBuffer(uint32_t currentFrameIndex)
 {
     {
         CameraDataLayout cameraData{
@@ -533,14 +440,9 @@ void model_loading::updateUniformBuffer(uint32_t currentFrameIndex)
         m_directionalLightUB.unmap();
     }
 
-    {
-        m_materialUB.map();
-        m_materialUB.copyTo(&materialData, sizeof(MaterialDataLayout));
-        m_materialUB.unmap();
-    }
 }
 
-void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
     vkResetCommandBuffer(commandBuffer, 0);
     VkCommandBufferBeginInfo beginInfo{
@@ -584,13 +486,13 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     };
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_cubeMesh.vertexBuffer.buffer };
+    VkBuffer vertexBuffers[] = { m_cubeModel._mesh.vertexBuffer.buffer };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, m_cubeModel._mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 
     std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
-                                                   m_cubeMaterialDescriptorSets };
+                                                   m_cubeModel._material.descriptorSet };
     // cube drawing
     {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubeGraphicsPipeline);
@@ -609,7 +511,7 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
             vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                                sizeof(ObjectDataLayout), &objectDataConstant);
 
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeModel._mesh.indices.size()), 1, 0, 0, 0);
         }
     }
 
@@ -627,40 +529,34 @@ void model_loading::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         };
         vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
                            &objectDataConstant);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeModel._mesh.indices.size()), 1, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);
 
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
-void model_loading::createTextures()
+void model::createTextures()
 {
-    loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
-    loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
+    // diffuse
+    {
+        loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
+        m_containerDiffuseTexture.view = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerDiffuseTexture.sampler));
+        m_containerDiffuseTexture.setupDescriptor(VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+    }
 
-    m_containerDiffuseTexture.imageView = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    m_containerSpecularTexture.imageView = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = m_device->properties.limits.maxSamplerAnisotropy;
-    VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerDiffuseTexture.sampler));
-    VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerSpecularTexture.sampler));
-
-    m_containerDiffuseTexture.descriptorInfo = {
-        .sampler = m_containerDiffuseTexture.sampler,
-        .imageView = m_containerDiffuseTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
-
-    m_containerSpecularTexture.descriptorInfo = {
-        .sampler = m_containerSpecularTexture.sampler,
-        .imageView = m_containerSpecularTexture.imageView,
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
+    // specular
+    {
+        loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
+        m_containerSpecularTexture.view = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &m_containerSpecularTexture.sampler));
+        m_containerSpecularTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
 }
-void model_loading::createPipelineLayout()
+void model::createPipelineLayout()
 {
     // cube
     {
@@ -714,14 +610,14 @@ void model_loading::createPipelineLayout()
     }
 }
 
-void model_loading::setupDescriptors()
+void model::setupDescriptors()
 {
     createDescriptorSetLayout();
     createDescriptorPool();
     createDescriptorSets();
     createPipelineLayout();
 }
-void model_loading::initDerive()
+void model::initDerive()
 {
     loadModel();
     createUniformBuffers();
@@ -731,15 +627,25 @@ void model_loading::initDerive()
     createGraphicsPipeline();
 }
 
-void model_loading::loadModel()
+void model::loadModel()
 {
-    m_cubeMesh.vertices = cubeVertices;
-    m_device->setupMesh(m_cubeMesh, m_graphicsQueue);
+    m_cubeModel._mesh.vertices = cubeVertices;
+    m_device->setupMesh(m_cubeModel._mesh, m_graphicsQueue);
+    m_cubeModel._material = {
+        .diffuseTexture = &m_containerDiffuseTexture,
+        .specularTexture = &m_containerSpecularTexture,
+    };
+}
+
+
+void model::loadModelFromFile(vkl::Model &model, std::string_view path)
+{
+
 }
 
 int main()
 {
-    model_loading app;
+    model app;
 
     app.init();
     app.run();
