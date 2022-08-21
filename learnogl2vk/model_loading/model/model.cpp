@@ -91,7 +91,6 @@ void model::cleanupDerive()
         frameData.sceneUB.destroy();
         frameData.directionalLightUB.destroy();
         frameData.pointLightUB.destroy();
-        frameData.flashLightUB.destroy();
     }
 
     m_containerDiffuseTexture.destroy();
@@ -130,6 +129,9 @@ void model::createUniformBuffers()
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.pointLightUB);
             frameData.pointLightUB.setupDescriptor();
+            frameData.pointLightUB.map();
+            frameData.pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
+            frameData.pointLightUB.unmap();
         }
 
         // create directional light uniform buffer
@@ -138,14 +140,9 @@ void model::createUniformBuffers()
             m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.directionalLightUB);
             frameData.directionalLightUB.setupDescriptor();
-        }
-
-        // create flash light uniform buffer
-        {
-            VkDeviceSize bufferSize = sizeof(FlashLightDataLayout);
-            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.flashLightUB);
-            frameData.flashLightUB.setupDescriptor();
+            frameData.directionalLightUB.map();
+            frameData.directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
+            frameData.directionalLightUB.unmap();
         }
     }
 
@@ -168,7 +165,6 @@ void model::createDescriptorSets()
                 m_perFrameData[frameIdx].sceneUB.descriptorInfo,
                 m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
                 m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
-                m_perFrameData[frameIdx].flashLightUB.descriptorInfo,
             };
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -220,15 +216,8 @@ void model::createDescriptorSetLayout()
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding flashLightLayoutBinding{
-            .binding = 3,
-            .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = 1,
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        };
 
-        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = { sceneLayoutBinding, pointLightLayoutBinding, directionalLightLayoutBinding, flashLightLayoutBinding };
+        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = { sceneLayoutBinding, pointLightLayoutBinding, directionalLightLayoutBinding };
         VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .bindingCount = static_cast<uint32_t>(perSceneBindings.size()),
@@ -239,14 +228,14 @@ void model::createDescriptorSetLayout()
 
     // per-material params
     {
-        VkDescriptorSetLayoutBinding containerDiffuseLayoutBinding{
+        VkDescriptorSetLayoutBinding diffuseLayoutBinding{
             .binding = 0,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .pImmutableSamplers = nullptr,
         };
-        VkDescriptorSetLayoutBinding containerSpecularLayoutBinding{
+        VkDescriptorSetLayoutBinding specularLayoutBinding{
             .binding = 1,
             .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
@@ -254,7 +243,7 @@ void model::createDescriptorSetLayout()
             .pImmutableSamplers = nullptr,
         };
 
-        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {containerDiffuseLayoutBinding, containerSpecularLayoutBinding };
+        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {diffuseLayoutBinding, specularLayoutBinding };
 
         VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
@@ -266,6 +255,7 @@ void model::createDescriptorSetLayout()
                                                     &m_descriptorSetLayouts.material));
     }
 }
+
 void model::createGraphicsPipeline()
 {
     vkl::utils::PipelineBuilder pipelineBuilder;
@@ -324,6 +314,7 @@ void model::createGraphicsPipeline()
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
 }
+
 void model::createSyncObjects()
 {
     m_imageAvailableSemaphores.resize(m_settings.max_frames);
@@ -345,10 +336,11 @@ void model::createSyncObjects()
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
     }
 }
+
 void model::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 4)},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2},
     };
 
@@ -374,34 +366,6 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
         m_perFrameData[currentFrameIndex].sceneUB.map();
         m_perFrameData[currentFrameIndex].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
         m_perFrameData[currentFrameIndex].sceneUB.unmap();
-    }
-
-    {
-        FlashLightDataLayout flashLightData{
-            .position = glm::vec4(m_camera.m_position, 1.0f),
-            .direction = glm::vec4(m_camera.m_front, 1.0f),
-            .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
-            .diffuse = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-            .specular = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-            .cutOff = glm::cos(glm::radians(12.5f)),
-            .outerCutOff = glm::cos(glm::radians(17.5f)),
-        };
-
-        m_perFrameData[currentFrameIndex].flashLightUB.map();
-        m_perFrameData[currentFrameIndex].flashLightUB.copyTo(&flashLightData, sizeof(FlashLightDataLayout));
-        m_perFrameData[currentFrameIndex].flashLightUB.unmap();
-    }
-
-    {
-        m_perFrameData[currentFrameIndex].pointLightUB.map();
-        m_perFrameData[currentFrameIndex].pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
-        m_perFrameData[currentFrameIndex].pointLightUB.unmap();
-    }
-
-    {
-        m_perFrameData[currentFrameIndex].directionalLightUB.map();
-        m_perFrameData[currentFrameIndex].directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
-        m_perFrameData[currentFrameIndex].directionalLightUB.unmap();
     }
 
 }
