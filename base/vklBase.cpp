@@ -481,6 +481,15 @@ void vklBase::mouseHandleDerive(int xposIn, int yposIn)
 }
 void vklBase::keyboardHandleDerive()
 {
+    if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
+        if (m_mouseData.isCursorDisable){
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        else{
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
     if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(m_window, true);
 

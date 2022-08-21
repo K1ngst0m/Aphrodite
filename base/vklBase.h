@@ -1,12 +1,6 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "camera.h"
 #include "vklUtils.h"
 #include "vklInit.hpp"
@@ -39,11 +33,11 @@ struct FrameData {
 struct MouseData {
     float lastX;
     float lastY;
-    bool firstMouse{};
+    bool firstMouse = true;
+    bool isCursorDisable = false;
     MouseData(float lastXin, float lastYin)
             : lastX(lastXin)
             , lastY(lastYin)
-            , firstMouse(true)
     {
     }
 };
@@ -63,6 +57,7 @@ protected:
     const std::filesystem::path assetDir = "data";
     const std::filesystem::path glslShaderDir = assetDir / "shaders/glsl";
     const std::filesystem::path textureDir = assetDir / "textures";
+    const std::filesystem::path modelDir = assetDir / "models";
 
 protected:
     struct {
