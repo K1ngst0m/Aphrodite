@@ -56,11 +56,6 @@ struct CameraDataLayout {
     glm::mat4 viewProj;
 };
 
-// per material data
-struct MaterialDataLayout {
-    alignas(16) float     shininess;
-};
-
 // per object data
 struct ObjectDataLayout {
     glm::mat4 modelMatrix;
