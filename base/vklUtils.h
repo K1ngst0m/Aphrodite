@@ -11,6 +11,14 @@
 #include <cassert>
 #include <vulkan/vulkan.h>
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -40,6 +48,7 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwi
 class PipelineBuilder {
 public:
     std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
+    std::vector<VkDynamicState> _dynamicStages;
     VkPipelineVertexInputStateCreateInfo _vertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo _inputAssembly;
     VkViewport _viewport;

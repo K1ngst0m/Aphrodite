@@ -152,9 +152,11 @@ inline VkSubmitInfo submitInfo()
     return submitInfo;
 }
 
-inline VkViewport viewport(float width, float height, float minDepth, float maxDepth)
+inline VkViewport viewport(float width, float height, float x = 0, float y = 0, float minDepth = 0.0f, float maxDepth = 1.0f)
 {
     VkViewport viewport{};
+    viewport.x = x;
+    viewport.y = y;
     viewport.width = width;
     viewport.height = height;
     viewport.minDepth = minDepth;
@@ -162,7 +164,16 @@ inline VkViewport viewport(float width, float height, float minDepth, float maxD
     return viewport;
 }
 
-inline VkRect2D rect2D(int32_t width, int32_t height, int32_t offsetX, int32_t offsetY)
+inline VkRect2D rect2D(VkExtent2D extent, int32_t offsetX = 0, int32_t offsetY = 0)
+{
+    VkRect2D rect2D{};
+    rect2D.extent = extent;
+    rect2D.offset.x = offsetX;
+    rect2D.offset.y = offsetY;
+    return rect2D;
+}
+
+inline VkRect2D rect2D(int32_t width, int32_t height, int32_t offsetX = 0, int32_t offsetY = 0)
 {
     VkRect2D rect2D{};
     rect2D.extent.width = width;
