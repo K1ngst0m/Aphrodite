@@ -3,13 +3,13 @@
 layout(location = 0) out vec4 outColor;
 
 layout (set = 0, binding = 2) uniform PointLightUB{
-    vec4 position;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
 } pointLightData;
 
 void main() {
-    vec4 result = pointLightData.ambient + pointLightData.diffuse + pointLightData.specular;
+    vec4 result = vec4(pointLightData.ambient + pointLightData.diffuse + pointLightData.specular, 1.0f);
     outColor = result;
 }

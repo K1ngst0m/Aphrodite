@@ -1,7 +1,7 @@
 #version 450
 
-layout(location = 0) in vec4 fragPosition;
-layout(location = 1) in vec4 fragNormal;
+layout(location = 0) in vec3 fragPosition;
+layout(location = 1) in vec3 fragNormal;
 layout(location = 2) in vec2 fragTexCoord;
 layout(location = 3) in vec3 fragColor;
 
@@ -12,23 +12,23 @@ layout (set = 0, binding = 0) uniform SceneUB{
     mat4 view;
     mat4 proj;
     mat4 viewProj;
-    vec4 viewPos;
+    vec3 viewPos;
 } sceneData;
 
 layout (set = 0, binding = 1) uniform PointLightUB{
-    vec4 position;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
+    vec3 position;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
 
     vec3 attenuationFactor;
 } pointLightData;
 
 layout (set = 0, binding = 2) uniform DirectionalLightUB{
-    vec4 direction;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 specular;
+    vec3 direction;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
 } directionalLightData;
 
 layout(set = 1, binding = 0) uniform sampler2D sampler_baseColor;
