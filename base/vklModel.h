@@ -7,7 +7,6 @@
 #include "vklDevice.h"
 #include "vklInit.hpp"
 
-#define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tinygltf/tiny_gltf.h>
 
