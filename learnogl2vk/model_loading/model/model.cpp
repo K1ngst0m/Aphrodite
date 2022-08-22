@@ -186,28 +186,6 @@ void model::createGraphicsPipeline()
     }
 }
 
-void model::createSyncObjects()
-{
-    m_imageAvailableSemaphores.resize(m_settings.max_frames);
-    m_renderFinishedSemaphores.resize(m_settings.max_frames);
-    m_inFlightFences.resize(m_settings.max_frames);
-
-    VkSemaphoreCreateInfo semaphoreInfo{
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-    };
-
-    VkFenceCreateInfo fenceInfo{
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
-    };
-
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
-        VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
-    }
-}
-
 void model::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{

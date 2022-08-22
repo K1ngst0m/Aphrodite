@@ -105,7 +105,6 @@ private:
     void createDescriptorSets();
     void createDescriptorSetLayout();
     void createGraphicsPipeline();
-    void createSyncObjects();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);

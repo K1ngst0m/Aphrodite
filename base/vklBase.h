@@ -90,6 +90,7 @@ protected:
     virtual void cleanupDerive() {}
     virtual void keyboardHandleDerive();
     virtual void mouseHandleDerive(int xposIn, int yposIn);
+    virtual void createSyncObjects();
 
     virtual void getEnabledFeatures() {}
     virtual void drawFrame() {}
