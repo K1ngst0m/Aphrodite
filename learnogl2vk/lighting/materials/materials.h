@@ -1,9 +1,6 @@
 #ifndef MATERIALS_H_
 #define MATERIALS_H_
 #include "vklBase.h"
-/*
-** - https://learnopengl.com/Lighting/Basic-Lighting
- */
 
 struct DescriptorSetLayouts {
     VkDescriptorSetLayout scene;

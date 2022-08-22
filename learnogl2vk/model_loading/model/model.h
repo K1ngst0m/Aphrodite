@@ -4,10 +4,6 @@
 #include "vklBase.h"
 #include "vklModel.h"
 
-/*
-** - https://learnopengl.com/Lighting/Basic-Lighting
- */
-
 struct DescriptorSetLayouts {
     VkDescriptorSetLayout scene;
     VkDescriptorSetLayout material;

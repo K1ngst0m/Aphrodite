@@ -3,10 +3,6 @@
 #include <cstring>
 #include <iostream>
 
-/*
-** - https://learnopengl.com/Getting-started/Textures
- */
-
 class textures : public vkl::vklBase {
 public:
     ~textures() override = default;

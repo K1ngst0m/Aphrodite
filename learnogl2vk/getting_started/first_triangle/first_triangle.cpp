@@ -5,11 +5,6 @@
 
 #define VKL_DYNAMIC_STATE
 
-/*
-** - https://learnopengl.com/Getting-started/Hello-Triangle
-** - https://learnopengl.com/Getting-started/Shaders
-*/
-
 class first_triangle : public vkl::vklBase {
 public:
     ~first_triangle() override = default;

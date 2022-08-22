@@ -1,13 +1,6 @@
 #include "vklBase.h"
 #include <cstring>
 
-/*
-**
-** - https://learnopengl.com/Getting-started/Transformations
-** - https://learnopengl.com/Getting-started/Coordinate-Systems
-** - https://learnopengl.com/Getting-started/Camera
-**
- */
 class transformations : public vkl::vklBase {
 public:
     ~transformations() override = default;

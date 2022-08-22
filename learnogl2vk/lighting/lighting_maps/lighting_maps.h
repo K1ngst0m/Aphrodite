@@ -1,9 +1,6 @@
 #ifndef LIGHTING_MAPS_H_
 #define LIGHTING_MAPS_H_
 #include "vklBase.h"
-/*
-** - https://learnopengl.com/Lighting/Basic-Lighting
- */
 
 struct DescriptorSetLayouts {
     VkDescriptorSetLayout scene;
