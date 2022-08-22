@@ -2,7 +2,6 @@
 #define VKLMESH_H_
 
 #include "vklBuffer.h"
-#include "vklTexture.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -43,9 +42,16 @@ struct IndexBuffer : Buffer{
     std::vector<uint32_t> indices;
 };
 
+struct Primitive {
+    uint32_t firstIndex;
+    uint32_t indexCount;
+    int32_t materialIndex;
+};
+
 struct Mesh {
     vkl::VertexBuffer vertexBuffer;
     vkl::IndexBuffer indexBuffer;
+    std::vector<Primitive> primitives;
 
     uint32_t getIndicesCount() const{
         return indexBuffer.indices.size();
