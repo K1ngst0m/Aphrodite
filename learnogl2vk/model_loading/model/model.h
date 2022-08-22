@@ -107,8 +107,64 @@ struct Material {
 };
 
 struct Model {
+    struct Image{
+        vkl::Texture texture;
+        VkDescriptorSet descriptorSet;
+    };
+
+    struct TextureRef{
+        int32_t index;
+    };
+
+    std::vector<Image> _images;
+    std::vector<TextureRef> _textureRefs;
+
     vkl::Mesh _mesh;
     vkl::Material _material;
+
+    void loadImages(tinygltf::Model& input){
+        // Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
+        // loading them from disk, we fetch them from the glTF loader and upload the buffers
+        _images.resize(input.images.size());
+        for (size_t i = 0; i < input.images.size(); i++) {
+            tinygltf::Image& glTFImage = input.images[i];
+            // Get the image data from the glTF loader
+            unsigned char* buffer = nullptr;
+            VkDeviceSize bufferSize = 0;
+            bool deleteBuffer = false;
+            // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
+            if (glTFImage.component == 3) {
+                bufferSize = glTFImage.width * glTFImage.height * 4;
+                buffer = new unsigned char[bufferSize];
+                unsigned char* rgba = buffer;
+                unsigned char* rgb = glTFImage.image.data();
+                for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
+                    memcpy(rgba, rgb, sizeof(unsigned char) * 3);
+                    rgba += 4;
+                    rgb += 3;
+                }
+                deleteBuffer = true;
+            }
+            else {
+                buffer = &glTFImage.image[0];
+                bufferSize = glTFImage.image.size();
+            }
+
+            // Load texture from image buffer
+            _images[i].texture.fromBuffer(buffer, bufferSize, VK_FORMAT_R8G8B8A8_UNORM, glTFImage.width, glTFImage.height, vulkanDevice, copyQueue);
+            if (deleteBuffer) {
+                delete[] buffer;
+            }
+        }
+    }
+
+    void loadTextures(tinygltf::Model& input){
+
+    }
+
+    void loadMaterials(tinygltf::Model& input){
+
+    }
 
     void destroy() const{
         _mesh.destroy();

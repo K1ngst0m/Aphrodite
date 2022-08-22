@@ -3,7 +3,7 @@
 
 #include "vklBuffer.h"
 #include "vklTexture.h"
-#include "vklMesh.hpp"
+#include "vklMesh.h"
 #include "vklUtils.h"
 
 namespace vkl

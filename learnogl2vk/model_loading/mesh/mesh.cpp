@@ -1,6 +1,6 @@
 #include "mesh.h"
 
-std::vector<vkl::VertexDataLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
+std::vector<vkl::VertexLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
                                                { { 0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 0.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
@@ -326,9 +326,8 @@ void mesh::createDescriptorSetLayout()
 void mesh::createGraphicsPipeline()
 {
     vkl::utils::PipelineBuilder pipelineBuilder;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions{ vkl::VertexDataLayout::getBindingDescription() };
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = vkl::VertexDataLayout::getAttributeDescriptions();
-    pipelineBuilder._vertexInputInfo = vkl::init::pipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
+    vkl::VertexLayout::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR});
+    pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
     pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
     pipelineBuilder._viewport = {

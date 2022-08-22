@@ -1,6 +1,6 @@
 #include "model.h"
 
-std::vector<vkl::VertexDataLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
+std::vector<vkl::VertexLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
                                                { { 0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 0.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },
@@ -78,6 +78,7 @@ void model::getEnabledFeatures()
         .samplerAnisotropy = VK_TRUE,
     };
 }
+
 void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
@@ -147,6 +148,7 @@ void model::createUniformBuffers()
     }
 
 }
+
 void model::createDescriptorSets()
 {
     // scene
@@ -191,6 +193,7 @@ void model::createDescriptorSets()
         m_cubeModel._material.createDescriptorSet(m_device->logicalDevice, m_descriptorPool, m_descriptorSetLayouts.material);
     }
 }
+
 void model::createDescriptorSetLayout()
 {
     // per-scene params
@@ -259,9 +262,8 @@ void model::createDescriptorSetLayout()
 void model::createGraphicsPipeline()
 {
     vkl::utils::PipelineBuilder pipelineBuilder;
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions{ vkl::VertexDataLayout::getBindingDescription() };
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = vkl::VertexDataLayout::getAttributeDescriptions();
-    pipelineBuilder._vertexInputInfo = vkl::init::pipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
+    vkl::VertexLayout::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR});
+    pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
     pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
     pipelineBuilder._viewport = {
@@ -464,6 +466,7 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
 
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
+
 void model::createTextures()
 {
     // diffuse
@@ -484,6 +487,7 @@ void model::createTextures()
         m_containerSpecularTexture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 }
+
 void model::createPipelineLayout()
 {
     // cube
@@ -568,7 +572,101 @@ void model::loadModel()
 
 void model::loadModelFromFile(vkl::Model &model, std::string_view path)
 {
+    tinygltf::Model glTFInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string error, warning;
 
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path.data());
+
+    std::vector<uint32_t> indexBuffer;
+    std::vector<vkl::VertexLayout> vertexBuffer;
+
+    if (fileLoaded) {
+        glTFModel.loadImages(glTFInput);
+        glTFModel.loadMaterials(glTFInput);
+        glTFModel.loadTextures(glTFInput);
+        const tinygltf::Scene& scene = glTFInput.scenes[0];
+        for (size_t i = 0; i < scene.nodes.size(); i++) {
+            const tinygltf::Node node = glTFInput.nodes[scene.nodes[i]];
+            glTFModel.loadNode(node, glTFInput, nullptr, indexBuffer, vertexBuffer);
+        }
+    }
+    else {
+        vks::tools::exitFatal("Could not open the glTF file.\n\nThe file is part of the additional asset pack.\n\nRun \"download_assets.py\" in the repository root to download the latest version.", -1);
+        return;
+    }
+
+    // Create and upload vertex and index buffer
+    // We will be using one single vertex buffer and one single index buffer for the whole glTF scene
+    // Primitives (of the glTF model) will then index into these using index offsets
+
+    size_t vertexBufferSize = vertexBuffer.size() * sizeof(VulkanglTFModel::Vertex);
+    size_t indexBufferSize = indexBuffer.size() * sizeof(uint32_t);
+    glTFModel.indices.count = static_cast<uint32_t>(indexBuffer.size());
+
+    struct StagingBuffer {
+        VkBuffer buffer;
+        VkDeviceMemory memory;
+    } vertexStaging, indexStaging;
+
+    // Create host visible staging buffers (source)
+    VK_CHECK_RESULT(vulkanDevice->createBuffer(
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        vertexBufferSize,
+        &vertexStaging.buffer,
+        &vertexStaging.memory,
+        vertexBuffer.data()));
+    // Index data
+    VK_CHECK_RESULT(vulkanDevice->createBuffer(
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        indexBufferSize,
+        &indexStaging.buffer,
+        &indexStaging.memory,
+        indexBuffer.data()));
+
+    // Create device local buffers (target)
+    VK_CHECK_RESULT(vulkanDevice->createBuffer(
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        vertexBufferSize,
+        &glTFModel.vertices.buffer,
+        &glTFModel.vertices.memory));
+    VK_CHECK_RESULT(vulkanDevice->createBuffer(
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        indexBufferSize,
+        &glTFModel.indices.buffer,
+        &glTFModel.indices.memory));
+
+    // Copy data from staging buffers (host) do device local buffer (gpu)
+    VkCommandBuffer copyCmd = vulkanDevice->createCommandBuffer(VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+    VkBufferCopy copyRegion = {};
+
+    copyRegion.size = vertexBufferSize;
+    vkCmdCopyBuffer(
+        copyCmd,
+        vertexStaging.buffer,
+        glTFModel.vertices.buffer,
+        1,
+        &copyRegion);
+
+    copyRegion.size = indexBufferSize;
+    vkCmdCopyBuffer(
+        copyCmd,
+        indexStaging.buffer,
+        glTFModel.indices.buffer,
+        1,
+        &copyRegion);
+
+    vulkanDevice->flushCommandBuffer(copyCmd, queue, true);
+
+    // Free staging resources
+    vkDestroyBuffer(device, vertexStaging.buffer, nullptr);
+    vkFreeMemory(device, vertexStaging.memory, nullptr);
+    vkDestroyBuffer(device, indexStaging.buffer, nullptr);
+    vkFreeMemory(device, indexStaging.memory, nullptr);
 }
 
 int main()
