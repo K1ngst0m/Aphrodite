@@ -545,7 +545,7 @@ void mesh::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInde
             vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
                                sizeof(ObjectDataLayout), &objectDataConstant);
 
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.getIndicesCount()), 1, 0, 0, 0);
         }
     }
 
@@ -563,7 +563,7 @@ void mesh::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInde
         };
         vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
                            &objectDataConstant);
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.indices.size()), 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(m_cubeMesh.getIndicesCount()), 1, 0, 0, 0);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -661,7 +661,7 @@ void mesh::initDerive()
 
 void mesh::loadMeshes()
 {
-    m_cubeMesh.vertices = cubeVertices;
+    m_cubeMesh.vertexBuffer.vertices = cubeVertices;
     m_device->setupMesh(m_cubeMesh, m_graphicsQueue);
 }
 

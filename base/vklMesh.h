@@ -34,12 +34,22 @@ struct VertexLayout {
     static void setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
-struct Mesh {
-    std::vector<VertexLayout>  vertices;
-    std::vector<uint32_t>      indices;
 
-    vkl::Buffer vertexBuffer;
-    vkl::Buffer indexBuffer;
+struct VertexBuffer : Buffer{
+    std::vector<VertexLayout> vertices;
+};
+
+struct IndexBuffer : Buffer{
+    std::vector<uint32_t> indices;
+};
+
+struct Mesh {
+    vkl::VertexBuffer vertexBuffer;
+    vkl::IndexBuffer indexBuffer;
+
+    uint32_t getIndicesCount() const{
+        return indexBuffer.indices.size();
+    }
 
     void destroy() const{
         vertexBuffer.destroy();
