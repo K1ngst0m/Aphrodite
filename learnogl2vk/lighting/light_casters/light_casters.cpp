@@ -659,8 +659,8 @@ void light_casters::createTextures()
     loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
     loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
 
-    m_containerDiffuseTexture.imageView = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    m_containerSpecularTexture.imageView = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_containerDiffuseTexture.view = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_containerSpecularTexture.view = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
     samplerInfo.anisotropyEnable = VK_TRUE;
@@ -670,13 +670,13 @@ void light_casters::createTextures()
 
     m_containerDiffuseTexture.descriptorInfo = {
         .sampler = m_containerDiffuseTexture.sampler,
-        .imageView = m_containerDiffuseTexture.imageView,
+        .imageView = m_containerDiffuseTexture.view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 
     m_containerSpecularTexture.descriptorInfo = {
         .sampler = m_containerSpecularTexture.sampler,
-        .imageView = m_containerSpecularTexture.imageView,
+        .imageView = m_containerSpecularTexture.view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 }

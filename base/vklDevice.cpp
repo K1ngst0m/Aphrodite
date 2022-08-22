@@ -149,8 +149,8 @@ uint32_t Device::findQueueFamilies(VkQueueFlags queueFlags) const
     * @return VkResult of the device creation call
     */
 VkResult Device::createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures,
-                                           std::vector<const char *> enabledExtensions, void *pNextChain,
-                                           bool useSwapChain, VkQueueFlags requestedQueueTypes)
+                                     std::vector<const char *> enabledExtensions, void *pNextChain,
+                                     bool useSwapChain, VkQueueFlags requestedQueueTypes)
 {
     // Desired queues need to be requested upon logical device creation
     // Due to differing queue family configurations of Vulkan implementations this can be a bit tricky, especially if the application
@@ -534,11 +534,8 @@ void Device::transitionImageLayout(VkQueue queue, VkImage image, VkFormat format
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer)
+void Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer) const
 {
-    VkBuffer t_buffer;
-    VkDeviceMemory t_memory;
-
     // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -546,40 +543,38 @@ void Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryP
         .usage = usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
-    VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &t_buffer));
+    VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &buffer.buffer));
 
     // create memory
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice, t_buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(logicalDevice, buffer.buffer, &memRequirements);
     VkMemoryAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = memRequirements.size,
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
     };
-    VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &t_memory));
+    VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &buffer.memory));
 
-    buffer = {
-        .device = logicalDevice,
-        .buffer = t_buffer,
-        .memory = t_memory,
-        .size = size,
-        .alignment = 0,
-        .usageFlags = usage,
-        .memoryPropertyFlags = properties
-    };
+    {
+        buffer.device = logicalDevice;
+        buffer.size = size;
+        buffer.alignment = 0;
+        buffer.usageFlags = usage;
+        buffer.memoryPropertyFlags = properties;
+    }
 
     // bind buffer and memory
     VK_CHECK_RESULT(buffer.bind());
 }
 void Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                         VkMemoryPropertyFlags properties, vkl::Texture& texture) const
+                         VkMemoryPropertyFlags properties, vkl::Texture &texture, uint32_t miplevels, uint32_t layerCount) const
 {
     VkImageCreateInfo imageInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType = VK_IMAGE_TYPE_2D,
         .format = format,
-        .mipLevels = 1,
-        .arrayLayers = 1,
+        .mipLevels = miplevels,
+        .arrayLayers = layerCount,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = tiling,
         .usage = usage,
@@ -608,8 +603,18 @@ void Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkIma
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    texture.device = logicalDevice;
-    texture.bind();
+    {
+        texture.device = logicalDevice;
+        texture.width = width;
+        texture.height = height;
+        texture.mipLevels = miplevels;
+        texture.layerCount = layerCount;
+        texture.usageFlags = usage;
+        texture.memoryPropertyFlags = properties;
+        texture.size = memRequirements.size;
+    }
+
+    VK_CHECK_RESULT(texture.bind());
 }
 void Device::setupMesh(vkl::Mesh &mesh, VkQueue transferQueue)
 {

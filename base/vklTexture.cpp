@@ -4,11 +4,11 @@
 
 namespace vkl {
     /**
-    * Attach the allocated memory block to the buffer
+    * Attach the allocated memory block to the image
     *
     * @param offset (Optional) Byte offset (from the beginning) for the memory region to bind
     *
-    * @return VkResult of the bindBufferMemory call
+    * @return VkResult of the bindImageMemory call
     */
     VkResult Texture::bind(VkDeviceSize offset) const
     {
@@ -16,29 +16,25 @@ namespace vkl {
     }
 
     /**
-    * Setup the default descriptor for this buffer
-    *
-    * @param size (Optional) Size of the memory range of the descriptor
-    * @param offset (Optional) Byte offset from beginning
-    *
+    * Setup the default descriptor for this image
     */
     void Texture::setupDescriptor(VkImageLayout layout)
     {
         descriptorInfo.sampler = sampler;
-        descriptorInfo.imageView = imageView;
+        descriptorInfo.imageView = view;
         descriptorInfo.imageLayout = layout;
     }
 
     /**
-    * Release all Vulkan resources held by this buffer
+    * Release all Vulkan resources held by this image
     */
     void Texture::destroy() const
     {
         if (sampler){
             vkDestroySampler(device, sampler, nullptr);
         }
-        if(imageView){
-            vkDestroyImageView(device, imageView, nullptr);
+        if(view){
+            vkDestroyImageView(device, view, nullptr);
         }
         if (image)
         {

@@ -497,8 +497,8 @@ private:
         loadImageFromFile(m_containerTexture, (textureDir / "container.jpg").u8string().c_str());
         loadImageFromFile(m_awesomeFaceTexture, (textureDir / "awesomeface.png").u8string().c_str());
 
-        m_containerTexture.imageView = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-        m_awesomeFaceTexture.imageView = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        m_containerTexture.view = m_device->createImageView(m_containerTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        m_awesomeFaceTexture.view = m_device->createImageView(m_awesomeFaceTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
         samplerInfo.anisotropyEnable = VK_TRUE;

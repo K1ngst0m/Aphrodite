@@ -570,8 +570,8 @@ void lighting_maps::createTextures()
     loadImageFromFile(m_containerDiffuseTexture, (textureDir / "container2.png").u8string().c_str());
     loadImageFromFile(m_containerSpecularTexture, (textureDir / "container2_specular.png").u8string().c_str());
 
-    m_containerDiffuseTexture.imageView = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    m_containerSpecularTexture.imageView = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_containerDiffuseTexture.view = m_device->createImageView(m_containerDiffuseTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    m_containerSpecularTexture.view = m_device->createImageView(m_containerSpecularTexture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
     samplerInfo.anisotropyEnable = VK_TRUE;

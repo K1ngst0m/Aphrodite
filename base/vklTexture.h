@@ -9,8 +9,12 @@ namespace vkl {
         VkDevice device;
 
         VkImage image;
-        VkImageView imageView;
+        VkImageView view;
         VkSampler sampler = VK_NULL_HANDLE;
+
+        uint32_t width, height;
+        uint32_t mipLevels;
+        uint32_t layerCount;
 
         VkDescriptorImageInfo descriptorInfo;
 

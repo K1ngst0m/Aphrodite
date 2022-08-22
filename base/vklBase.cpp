@@ -22,7 +22,7 @@ void vklBase::createFramebuffers()
 {
     m_Framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
-        std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i], m_depthAttachment.imageView };
+        std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i], m_depthAttachment.view };
 
         VkFramebufferCreateInfo framebufferInfo{
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -431,7 +431,7 @@ void vklBase::createDepthResources()
     VkFormat depthFormat = m_device->findDepthFormat();
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment);
-    m_depthAttachment.imageView = m_device->createImageView(m_depthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_depthAttachment.view = m_device->createImageView(m_depthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     m_device->transitionImageLayout(m_graphicsQueue, m_depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
