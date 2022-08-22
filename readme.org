@@ -68,10 +68,17 @@ Reference:
 - [[https://learnopengl.com/Lighting/Light-casters][Light Casters]]
 - [[https://learnopengl.com/Lighting/Multiple-lights][Multiple Lights]]
 
-*** [ ] III - Model Loading
-**** [ ] 1. Assimp (but tiny-gltf)
-**** [ ] 2. Mesh
-**** [ ] 3. Model
+*** [X] III - Model Loading (but tiny-gltf)
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/mesh][Mesh]]
+
+Reference:
+- [[https://learnopengl.com/Model-Loading/Mesh][Mesh]]
+
+**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/model][Model]]
+
+Reference:
+- [[https://learnopengl.com/Model-Loading/Assimp][Assimp]]
+- [[https://learnopengl.com/Model-Loading/Model][Model]]
 
 *** [ ] IV - Advanced OpenGL (but Vulkan)
 **** [ ] 1. Depth testing
