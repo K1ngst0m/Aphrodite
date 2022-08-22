@@ -86,21 +86,13 @@ protected:
     void cleanup();
 
 protected:
-    virtual void initDerive()
-    {
-    }
-    virtual void cleanupDerive()
-    {
-    }
+    virtual void initDerive() {}
+    virtual void cleanupDerive() {}
     virtual void keyboardHandleDerive();
     virtual void mouseHandleDerive(int xposIn, int yposIn);
 
-    virtual void getEnabledFeatures()
-    {
-    }
-    virtual void drawFrame()
-    {
-    }
+    virtual void getEnabledFeatures() {}
+    virtual void drawFrame() {}
 
     virtual void createCommandBuffers();
 
@@ -113,6 +105,8 @@ protected:
     Device *m_device;
 
 protected:
+    const std::string m_sessionName;
+
     GLFWwindow *m_window = nullptr;
     VkInstance m_instance;
     std::vector<const char *> m_supportedInstanceExtensions;
