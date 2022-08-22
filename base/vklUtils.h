@@ -1,6 +1,7 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#include <algorithm>
 #include <cstring>
 #include <optional>
 #include <array>

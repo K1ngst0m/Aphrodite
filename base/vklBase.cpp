@@ -1,14 +1,5 @@
 #include "vklBase.h"
 
-#include <algorithm>
-#include <limits>
-#include <cstring>
-#include <stdexcept>
-#include <set>
-#include <fstream>
-#include <chrono>
-#include <filesystem>
-
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 

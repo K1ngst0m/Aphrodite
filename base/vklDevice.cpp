@@ -1,12 +1,6 @@
 #include "vklDevice.h"
 #include "vklInit.hpp"
 #include "vklUtils.h"
-#include <cassert>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <algorithm>
-#include <utility>
 
 namespace vkl
 {
