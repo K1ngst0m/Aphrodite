@@ -45,8 +45,8 @@ struct Model {
     void loadNode(const tinygltf::Node &inputNode,
                   const tinygltf::Model &input,
                   Node *parent,
-                  std::vector<uint32_t> &indexBuffer,
-                  std::vector<vkl::VertexLayout> &vertexBuffer);
+                  std::vector<uint32_t> &indices,
+                  std::vector<vkl::VertexLayout> &vertices);
 
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node &node);
 

@@ -499,10 +499,10 @@ void mesh::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInde
     };
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_cubeMesh.vertexBuffer.buffer };
+    VkBuffer vertexBuffers[] = { m_cubeMesh.getVertexBuffer() };
     VkDeviceSize offsets[] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindIndexBuffer(commandBuffer, m_cubeMesh.getIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
     std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
                                                    m_cubeMaterialDescriptorSets };
@@ -640,8 +640,7 @@ void mesh::initDerive()
 
 void mesh::loadMeshes()
 {
-    m_cubeMesh.vertexBuffer.vertices = cubeVertices;
-    m_device->setupMesh(m_cubeMesh, m_graphicsQueue);
+    m_cubeMesh.setup(m_device, m_graphicsQueue, cubeVertices);
 }
 
 int main()

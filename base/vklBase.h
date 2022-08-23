@@ -5,6 +5,8 @@
 #include "vklUtils.h"
 #include "vklInit.hpp"
 #include "vklDevice.h"
+#include "vklMesh.h"
+#include "vklModel.h"
 
 namespace vkl
 {

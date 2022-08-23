@@ -2,7 +2,6 @@
 #define MODEL_H_
 
 #include "vklBase.h"
-#include "vklModel.h"
 
 struct DescriptorSetLayouts {
     VkDescriptorSetLayout scene;
@@ -63,7 +62,7 @@ private:
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createPipelineLayout();
-    void loadModelFromFile(vkl::Model &model, std::string path);
+    void loadModelFromFile(vkl::Model &model, const std::string& path);
     void loadModel();
 
 private:

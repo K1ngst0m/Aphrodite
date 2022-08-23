@@ -27,7 +27,7 @@ void Model::loadImages(vkl::Device *device, VkQueue queue, tinygltf::Model &inpu
             }
             deleteBuffer = true;
         } else {
-            imageData = &glTFImage.image[0];
+            imageData = glTFImage.image.data();
             imageDataSize = glTFImage.image.size();
         }
 
@@ -87,8 +87,8 @@ void Model::loadMaterials(tinygltf::Model &input)
 void Model::loadNode(const tinygltf::Node &inputNode,
                      const tinygltf::Model &input,
                      Node *parent,
-                     std::vector<uint32_t> &indexBuffer,
-                     std::vector<vkl::VertexLayout> &vertexBuffer)
+                     std::vector<uint32_t> &indices,
+                     std::vector<vkl::VertexLayout> &vertices)
 {
     Node node{};
     node.matrix = glm::mat4(1.0f);
@@ -112,7 +112,7 @@ void Model::loadNode(const tinygltf::Node &inputNode,
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNode(input.nodes[nodeIdx], input, &node, indexBuffer, vertexBuffer);
+            loadNode(input.nodes[nodeIdx], input, &node, indices, vertices);
         }
     }
 
@@ -122,9 +122,10 @@ void Model::loadNode(const tinygltf::Node &inputNode,
         const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
         // Iterate through all primitives of this node's mesh
         for (const auto &glTFPrimitive : mesh.primitives) {
-            uint32_t firstIndex = static_cast<uint32_t>(indexBuffer.size());
-            uint32_t vertexStart = static_cast<uint32_t>(vertexBuffer.size());
-            uint32_t indexCount = 0;
+            auto firstIndex = static_cast<uint32_t>(indices.size());
+            auto vertexStart = static_cast<uint32_t>(vertices.size());
+            auto indexCount = static_cast<uint32_t>(0);
+
             // Vertices
             {
                 const float *positionBuffer = nullptr;
@@ -160,7 +161,7 @@ void Model::loadNode(const tinygltf::Node &inputNode,
                     vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
                     vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
-                    vertexBuffer.push_back(vert);
+                    vertices.push_back(vert);
                 }
             }
             // Indices
@@ -176,21 +177,21 @@ void Model::loadNode(const tinygltf::Node &inputNode,
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
                     const auto *buf = reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indexBuffer.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
                     const auto *buf = reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indexBuffer.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
                     const auto *buf = reinterpret_cast<const uint8_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indexBuffer.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }

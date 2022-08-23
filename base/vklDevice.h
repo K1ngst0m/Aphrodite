@@ -3,7 +3,6 @@
 
 #include "vklBuffer.h"
 #include "vklTexture.h"
-#include "vklMesh.h"
 #include "vklUtils.h"
 
 namespace vkl
@@ -45,13 +44,13 @@ struct Device {
                                  VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
     VkResult createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer, void* data = nullptr) const;
-    void setupMesh(vkl::Mesh &mesh, VkQueue transferQueue = VK_NULL_HANDLE);
-
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
     VkResult createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, vkl::Texture& texture, uint32_t miplevels = 1, uint32_t layerCount = 1) const;
     void transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
+    void copyBuffer(VkQueue queue, vkl::Buffer srcBuffer, vkl::Buffer dstBuffer, VkDeviceSize size);
     void copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+    void copyBufferToImage(VkQueue queue, vkl::Buffer buffer, vkl::Texture texture, uint32_t width, uint32_t height);
     void copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
     VkCommandPool createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;

@@ -264,7 +264,7 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelGraphicsPipeline);
 
         ObjectDataLayout objectDataConstant{
-            .modelMatrix = glm::mat4(1.0f),
+            .modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f)),
         };
 
         vkCmdPushConstants(commandBuffer, m_modelPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout), &objectDataConstant);
@@ -325,13 +325,13 @@ void model::loadModel()
 }
 
 
-void model::loadModelFromFile(vkl::Model &model, std::string path)
+void model::loadModelFromFile(vkl::Model &model, const std::string& path)
 {
     tinygltf::Model glTFInput;
     tinygltf::TinyGLTF gltfContext;
     std::string error, warning;
 
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path.data());
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
 
     std::vector<uint32_t> indices;
     std::vector<vkl::VertexLayout> vertices;
@@ -355,41 +355,7 @@ void model::loadModelFromFile(vkl::Model &model, std::string path)
     size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
     size_t indexBufferSize = indices.size() * sizeof(indices[0]);
 
-    vkl::Buffer vertexStaging, indexStaging;
-
-    // vertex buffer
-    {
-        VK_CHECK_RESULT(m_device->createBuffer(vertexBufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            vertexStaging, vertices.data()));
-
-        VK_CHECK_RESULT(m_device->createBuffer(vertexBufferSize,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            model._mesh.vertexBuffer));
-
-        m_device->copyBuffer(m_graphicsQueue, vertexStaging.buffer, model._mesh.vertexBuffer.buffer, vertexStaging.size);
-    }
-
-    // index buffer
-    {
-        VK_CHECK_RESULT(m_device->createBuffer(indexBufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            indexStaging, indices.data()));
-
-        VK_CHECK_RESULT(m_device->createBuffer(indexBufferSize,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            model._mesh.indexBuffer));
-
-        m_device->copyBuffer(m_graphicsQueue, indexStaging.buffer, model._mesh.indexBuffer.buffer, indexStaging.size);
-        model._mesh.indexBuffer.indices = indices;
-    }
-
-    vertexStaging.destroy();
-    indexStaging.destroy();
+    model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 
 void model::setupPipelineBuilder()

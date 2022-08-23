@@ -618,72 +618,13 @@ VkResult Device::createImage(uint32_t width, uint32_t height, VkFormat format, V
 
     return texture.bind();
 }
-void Device::setupMesh(vkl::Mesh &mesh, VkQueue transferQueue)
+
+void Device::copyBuffer(VkQueue queue, vkl::Buffer srcBuffer, vkl::Buffer dstBuffer, VkDeviceSize size)
 {
-    if (mesh.getIndicesCount() == 0) {
-        for (size_t i = 0; i < mesh.vertexBuffer.vertices.size(); i++) {
-            mesh.indexBuffer.indices.push_back(i);
-        }
-    }
-
-    // setup vertex buffer
-    {
-        VkDeviceSize bufferSize = sizeof(mesh.vertexBuffer.vertices[0]) * mesh.vertexBuffer.vertices.size();
-
-        // using staging buffer
-        if (transferQueue != VK_NULL_HANDLE) {
-            vkl::Buffer stagingBuffer;
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-            stagingBuffer.map();
-            stagingBuffer.copyTo(mesh.vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
-            stagingBuffer.unmap();
-
-            createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mesh.vertexBuffer);
-            copyBuffer(transferQueue, stagingBuffer.buffer, mesh.vertexBuffer.buffer, bufferSize);
-
-            stagingBuffer.destroy();
-        }
-
-        else {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mesh.vertexBuffer);
-            mesh.vertexBuffer.map();
-            mesh.vertexBuffer.copyTo(mesh.vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
-            mesh.vertexBuffer.unmap();
-        }
-    }
-
-    // setup index buffer
-    {
-        VkDeviceSize bufferSize = sizeof(mesh.indexBuffer.indices[0]) * mesh.indexBuffer.indices.size();
-
-        // using staging buffer
-        if (transferQueue != VK_NULL_HANDLE) {
-            vkl::Buffer stagingBuffer;
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-            stagingBuffer.map();
-            stagingBuffer.copyTo(mesh.indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
-            stagingBuffer.unmap();
-
-            createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, mesh.indexBuffer);
-            copyBuffer(transferQueue, stagingBuffer.buffer, mesh.indexBuffer.buffer, bufferSize);
-
-            stagingBuffer.destroy();
-        }
-
-        else {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, mesh.indexBuffer);
-            mesh.indexBuffer.map();
-            mesh.indexBuffer.copyTo(mesh.indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
-            mesh.indexBuffer.unmap();
-        }
-    }
+    copyBuffer(queue, srcBuffer.buffer, dstBuffer.buffer, size);
+}
+void Device::copyBufferToImage(VkQueue queue, vkl::Buffer buffer, vkl::Texture texture, uint32_t width, uint32_t height)
+{
+    copyBufferToImage(queue, buffer.buffer, texture.image, width, height);
 }
 }

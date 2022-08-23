@@ -2,6 +2,7 @@
 #define VKLMESH_H_
 
 #include "vklBuffer.h"
+#include "vklDevice.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -52,6 +53,20 @@ struct Mesh {
     vkl::VertexBuffer vertexBuffer;
     vkl::IndexBuffer indexBuffer;
     std::vector<Primitive> primitives;
+
+    void setup(vkl::Device * device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
+
+    VkBuffer getVertexBuffer() const{
+        return vertexBuffer.buffer;
+    }
+
+    VkBuffer getIndexBuffer() const{
+        return indexBuffer.buffer;
+    }
+
+    uint32_t getVerticesCount() const{
+        return vertexBuffer.vertices.size();
+    }
 
     uint32_t getIndicesCount() const{
         return indexBuffer.indices.size();
