@@ -3,44 +3,6 @@
 
 #include "vklBase.h"
 
-struct DescriptorSetLayouts {
-    VkDescriptorSetLayout scene;
-    VkDescriptorSetLayout material;
-};
-
-// per scene data
-// general scene data
-struct SceneDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 viewPosition;
-};
-
-// point light scene data
-struct DirectionalLightDataLayout {
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    glm::vec4 attenuationFactor;
-};
-
-// per object data
-struct ObjectDataLayout {
-    glm::mat4 modelMatrix;
-};
-
 class depth_testing : public vkl::vklBase {
 public:
     ~depth_testing() override = default;
@@ -50,6 +12,7 @@ private:
     void drawFrame() override;
     void getEnabledFeatures() override;
     void cleanupDerive() override;
+    void keyboardHandleDerive() override;
 
 private:
     void setupDescriptors();
@@ -63,25 +26,40 @@ private:
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void createPipelineLayout();
     void loadModelFromFile(vkl::Model &model, const std::string& path);
-    void loadModel();
+    void loadScene();
 
 private:
     struct PerFrameData{
-        vkl::Buffer sceneUB;
+        vkl::Buffer cameraUB;
         vkl::Buffer pointLightUB;
         vkl::Buffer directionalLightUB;
-        VkDescriptorSet descriptorSet;
+        VkDescriptorSet cameraDescriptorSet;
+        VkDescriptorSet sceneDescriptorSet;
     };
     std::vector<PerFrameData> m_perFrameData;
 
+    vkl::Model m_planeModel;
     vkl::Model m_cubeModel;
-
-    DescriptorSetLayouts m_descriptorSetLayouts;
 
     vkl::utils::PipelineBuilder m_pipelineBuilder;
 
-    VkPipelineLayout m_modelPipelineLayout;
-    VkPipeline m_modelGraphicsPipeline;
+    bool enabledDepthVisualizing = false;
+
+    struct{
+        VkDescriptorSetLayout camera;
+        VkDescriptorSetLayout scene;
+        VkDescriptorSetLayout material;
+    } m_descriptorSetLayouts;
+
+    struct{
+        VkPipelineLayout model;
+        VkPipelineLayout depth;
+    } m_pipelineLayouts;
+
+    struct{
+        VkPipeline model;
+        VkPipeline depth;
+    } m_pipelines;
 };
 
 #endif // DEPTH_TESTING_H_
