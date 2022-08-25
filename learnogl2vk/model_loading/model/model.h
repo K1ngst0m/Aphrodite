@@ -3,44 +3,6 @@
 
 #include "vklBase.h"
 
-struct DescriptorSetLayouts {
-    VkDescriptorSetLayout scene;
-    VkDescriptorSetLayout material;
-};
-
-// per scene data
-// general scene data
-struct SceneDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 viewPosition;
-};
-
-// point light scene data
-struct DirectionalLightDataLayout {
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    glm::vec4 attenuationFactor;
-};
-
-// per object data
-struct ObjectDataLayout {
-    glm::mat4 modelMatrix;
-};
-
 class model : public vkl::vklBase {
 public:
     ~model() override = default;
@@ -76,7 +38,10 @@ private:
 
     vkl::Model m_cubeModel;
 
-    DescriptorSetLayouts m_descriptorSetLayouts;
+    struct DescriptorSetLayouts {
+        VkDescriptorSetLayout scene;
+        VkDescriptorSetLayout material;
+    } m_descriptorSetLayouts;
 
     vkl::utils::PipelineBuilder m_pipelineBuilder;
 

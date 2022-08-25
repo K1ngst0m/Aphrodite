@@ -1,5 +1,56 @@
 #include "mesh.h"
 
+// per scene data
+// general scene data
+struct SceneDataLayout {
+    glm::vec4 viewPosition;
+};
+
+// flash light data
+struct FlashLightDataLayout {
+    glm::vec4 position;
+    glm::vec4 direction;
+
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+
+    alignas(4) float cutOff;
+    alignas(4) float outerCutOff;
+};
+
+// point light scene data
+struct DirectionalLightDataLayout {
+    glm::vec4 direction;
+
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+};
+
+// point light scene data
+struct PointLightDataLayout {
+    glm::vec4 position;
+    glm::vec4 ambient;
+    glm::vec4 diffuse;
+    glm::vec4 specular;
+
+    glm::vec4 attenuationFactor;
+};
+
+// mvp matrix data layout
+struct CameraDataLayout {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
+};
+
+// per object data
+struct ObjectDataLayout {
+    glm::mat4 modelMatrix;
+};
+
+
 std::vector<vkl::VertexLayout> cubeVertices = { { { -0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 0.0f, 0.0f } },
                                                { { 0.5f, -0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 0.0f } },
                                                { { 0.5f, 0.5f, -0.5f }, { 0.0f, 0.0f, -1.0f }, { 1.0f, 1.0f } },

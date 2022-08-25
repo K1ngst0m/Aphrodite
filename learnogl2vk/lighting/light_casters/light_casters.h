@@ -2,113 +2,6 @@
 #define LIGHT_CASTERS_H_
 #include "vklBase.h"
 
-struct DescriptorSetLayouts {
-    VkDescriptorSetLayout scene;
-    VkDescriptorSetLayout material;
-};
-
-// per scene data
-// general scene data
-struct SceneDataLayout {
-    glm::vec4 viewPosition;
-};
-
-
-// flash light data
-struct FlashLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    alignas(4) float cutOff;
-    alignas(4) float outerCutOff;
-};
-
-// point light scene data
-struct DirectionalLightDataLayout {
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    glm::vec4 attenuationFactor;
-};
-
-// mvp matrix data layout
-struct CameraDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-};
-
-// per material data
-struct MaterialDataLayout {
-    alignas(16) float     shininess;
-};
-
-// per object data
-struct ObjectDataLayout {
-    glm::mat4 modelMatrix;
-};
-
-// vertex data layout
-struct VertexDataLayout {
-    glm::vec3 pos;
-    glm::vec3 normal;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription()
-    {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(VertexDataLayout);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    }
-
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
-    {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions(3);
-
-        attributeDescriptions[0] = {
-            .location = 0,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, pos),
-        };
-
-        attributeDescriptions[1] = {
-            .location = 1,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, normal),
-        };
-
-        attributeDescriptions[2] = {
-            .location = 2,
-            .binding = 0,
-            .format = VK_FORMAT_R32G32_SFLOAT,
-            .offset = offsetof(VertexDataLayout, texCoord),
-        };
-
-        return attributeDescriptions;
-    }
-};
-
-
 class light_casters : public vkl::vklBase {
 public:
     ~light_casters() override = default;
@@ -152,7 +45,11 @@ private:
     vkl::Texture m_containerDiffuseTexture;
     vkl::Texture m_containerSpecularTexture;
 
-    DescriptorSetLayouts m_descriptorSetLayouts;
+
+    struct DescriptorSetLayouts {
+        VkDescriptorSetLayout scene;
+        VkDescriptorSetLayout material;
+    } m_descriptorSetLayouts;
 
     std::vector<VkDescriptorSet> m_perFrameDescriptorSets;
     VkDescriptorSet m_cubeMaterialDescriptorSets;
