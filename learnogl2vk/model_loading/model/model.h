@@ -15,13 +15,13 @@ private:
 
 private:
     void createUniformBuffers();
-    void setupPipelineBuilder();
     void createDescriptorSetLayouts();
-    void createGraphicsPipeline();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void loadModelFromFile(vkl::Model &model, const std::string &path);
+    void buildShaderEffect();
+    void buildShaderPass();
     void createShaders();
     void loadModel();
 
@@ -31,7 +31,8 @@ private:
         VkShaderModule vert;
     } m_shaderModules;
 
-    vklt::ShaderEffect m_modelShader;
+    vklt::ShaderEffect m_modelShaderEffect;
+    vklt::ShaderPass m_modelShaderPass;
 
     struct PerFrameData {
         vkl::Buffer sceneUB;
@@ -42,10 +43,6 @@ private:
     std::vector<PerFrameData> m_perFrameData;
 
     vkl::Model m_cubeModel;
-
-    vklt::PipelineBuilder m_pipelineBuilder;
-
-    VkPipeline m_modelGraphicsPipeline;
 };
 
 #endif // MODEL_H_

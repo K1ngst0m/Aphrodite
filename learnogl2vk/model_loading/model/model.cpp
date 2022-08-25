@@ -83,7 +83,16 @@ void model::cleanupDerive()
         vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
     }
 
-    vkDestroyPipeline(m_device->logicalDevice, m_modelGraphicsPipeline, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, m_shaderModules.frag, nullptr);
+    vkDestroyShaderModule(m_device->logicalDevice, m_shaderModules.vert, nullptr);
+
+    for (auto &setLayout : m_modelShaderEffect.setLayouts){
+        vkDestroyDescriptorSetLayout(m_device->logicalDevice, setLayout, nullptr);
+    }
+
+    vkDestroyPipelineLayout(m_device->logicalDevice, m_modelShaderEffect.pipelineLayout, nullptr);
+
+    vkDestroyPipeline(m_device->logicalDevice, m_modelShaderPass.pipeline, nullptr);
 }
 
 void model::createUniformBuffers()
@@ -122,14 +131,6 @@ void model::createUniformBuffers()
         }
     }
 
-}
-
-void model::createGraphicsPipeline()
-{
-    {
-        m_pipelineBuilder.setShaders(m_modelShader);
-        m_modelGraphicsPipeline = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
-    }
 }
 
 void model::createDescriptorPool()
@@ -202,13 +203,13 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShader.pipelineLayout, 0,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.pipelineLayout, 0,
                             static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
     // cube drawing
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelGraphicsPipeline);
-        m_cubeModel.draw(commandBuffer, m_modelShader.pipelineLayout);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.pipeline);
+        m_cubeModel.draw(commandBuffer, m_modelShaderEffect.pipelineLayout);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -221,9 +222,7 @@ void model::initDerive()
     createUniformBuffers();
     createDescriptorPool();
     createSyncObjects();
-    setupPipelineBuilder();
     createShaders();
-    createGraphicsPipeline();
 }
 
 void model::loadModel()
@@ -265,23 +264,6 @@ void model::loadModelFromFile(vkl::Model &model, const std::string& path)
     model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 
-void model::setupPipelineBuilder()
-{
-    vkl::VertexLayout::setPipelineVertexInputState({ vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR });
-    m_pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
-    m_pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    m_pipelineBuilder._viewport = vkl::init::viewport(static_cast<float>(m_swapChainExtent.width), static_cast<float>(m_swapChainExtent.height));
-    m_pipelineBuilder._scissor = vkl::init::rect2D(m_swapChainExtent);
-
-    m_pipelineBuilder._dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    m_pipelineBuilder._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(m_pipelineBuilder._dynamicStages.data(), static_cast<uint32_t>(m_pipelineBuilder._dynamicStages.size()));
-
-    m_pipelineBuilder._rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-    m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-    m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
-}
-
 int main()
 {
     model app;
@@ -291,19 +273,18 @@ int main()
     app.finish();
 }
 
-void model::createShaders()
-{
+void model::buildShaderEffect(){
     auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.vert.spv");
     auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.frag.spv");
     m_shaderModules.vert = m_device->createShaderModule(vertShaderCode);
     m_shaderModules.frag = m_device->createShaderModule(fragShaderCode);
-    m_modelShader.stages = {
+    m_modelShaderEffect.stages = {
         { &m_shaderModules.vert, VK_SHADER_STAGE_VERTEX_BIT },
         { &m_shaderModules.frag, VK_SHADER_STAGE_FRAGMENT_BIT },
     };
 
-    auto &sceneSetLayout = m_modelShader.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
-    auto &materialSetLayout = m_modelShader.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
+    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
+    auto &materialSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
 
     // per-scene layout
     {
@@ -332,7 +313,39 @@ void model::createShaders()
     };
     std::vector<VkDescriptorSetLayout> setLayouts{sceneSetLayout, materialSetLayout};
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pushConstantRanges);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_modelShader.pipelineLayout));
+    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_modelShaderEffect.pipelineLayout));
+}
+
+void model::buildShaderPass() {
+    vkl::VertexLayout::setPipelineVertexInputState({ vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR });
+    m_pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
+    m_pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    m_pipelineBuilder._viewport = vkl::init::viewport(static_cast<float>(m_swapChainExtent.width), static_cast<float>(m_swapChainExtent.height));
+    m_pipelineBuilder._scissor = vkl::init::rect2D(m_swapChainExtent);
+
+    m_pipelineBuilder._dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    m_pipelineBuilder._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(m_pipelineBuilder._dynamicStages.data(), static_cast<uint32_t>(m_pipelineBuilder._dynamicStages.size()));
+
+    m_pipelineBuilder._rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+    m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
+    m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+
+    m_pipelineBuilder.setShaders(m_modelShaderEffect);
+
+    {
+        m_modelShaderPass.effect = &m_modelShaderEffect;
+        m_modelShaderPass.layout = m_modelShaderEffect.pipelineLayout;
+        m_modelShaderPass.pipeline = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+    }
+}
+
+void model::createShaders() {
+    buildShaderEffect();
+    buildShaderPass();
+
+    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
+    auto &materialSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
 
     // scene
     {

@@ -148,6 +148,8 @@ protected:
     FrameData m_frameData;
     MouseData m_mouseData;
     Camera m_camera;
+
+    vklt::PipelineBuilder m_pipelineBuilder;
 };
 }
 

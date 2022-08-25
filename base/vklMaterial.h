@@ -31,6 +31,9 @@ enum class DescriptorSetTypes: uint8_t{
     COUNT,
 };
 
+/**
+ * @brief holds all of the shader related state that a pipeline needs to be built.
+ */
 struct ShaderEffect {
     VkPipelineLayout pipelineLayout;
     std::array<VkDescriptorSetLayout, static_cast<uint32_t>(DescriptorSetTypes::COUNT)> setLayouts;
@@ -41,6 +44,15 @@ struct ShaderEffect {
     };
 
     std::vector<ShaderStage> stages;
+};
+
+/**
+ * @brief built version of a Shader Effect, where it stores the built pipeline
+ */
+struct ShaderPass {
+    ShaderEffect* effect = nullptr;
+    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipelineLayout layout = VK_NULL_HANDLE;
 };
 
 enum class VertexAttributeTemplate {
@@ -56,13 +68,6 @@ struct EffectBuilder{
     VkPipelineRasterizationStateCreateInfo rasterizerInfo;
     VkPipelineColorBlendAttachmentState colorBlendAttachmentInfo;
     VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-};
-
-
-struct ShaderPass {
-    ShaderEffect* effect = nullptr;
-    VkPipeline pipeline = VK_NULL_HANDLE;
-    VkPipelineLayout layout = VK_NULL_HANDLE;
 };
 
 class PipelineBuilder {
