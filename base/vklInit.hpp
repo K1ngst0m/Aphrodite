@@ -260,6 +260,18 @@ descriptorSetLayoutCreateInfo(const std::vector<VkDescriptorSetLayoutBinding> &b
     return descriptorSetLayoutCreateInfo;
 }
 
+
+inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const std::vector<VkDescriptorSetLayout>& layouts, const std::vector<VkPushConstantRange>& pushConstantRanges)
+{
+    VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+    pipelineLayoutCreateInfo.pSetLayouts = layouts.data();
+    pipelineLayoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
+    pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
+    return pipelineLayoutCreateInfo;
+}
+
 inline VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo(const VkDescriptorSetLayout *pSetLayouts,
                                                            uint32_t setLayoutCount = 1)
 {

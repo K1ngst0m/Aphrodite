@@ -33,7 +33,6 @@ struct ObjectDataLayout {
     glm::mat4 modelMatrix;
 };
 
-
 DirectionalLightDataLayout directionalLightData{
     .direction = glm::vec4(-0.2f, -1.0f, -0.3f, 1.0f),
     .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
@@ -69,9 +68,6 @@ void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
-    vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.scene, nullptr);
-    vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayouts.material, nullptr);
-
     m_cubeModel.destroy();
 
     for (auto & frameData : m_perFrameData){
@@ -88,7 +84,6 @@ void model::cleanupDerive()
     }
 
     vkDestroyPipeline(m_device->logicalDevice, m_modelGraphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(m_device->logicalDevice, m_modelPipelineLayout, nullptr);
 }
 
 void model::createUniformBuffers()
@@ -129,94 +124,11 @@ void model::createUniformBuffers()
 
 }
 
-void model::createDescriptorSets()
-{
-    // scene
-    {
-        for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
-            std::vector<VkDescriptorSetLayout> sceneLayouts(1, m_descriptorSetLayouts.scene);
-            VkDescriptorSetAllocateInfo allocInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .descriptorPool = m_descriptorPool,
-                .descriptorSetCount = static_cast<uint32_t>(sceneLayouts.size()),
-                .pSetLayouts = sceneLayouts.data(),
-            };
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameData[frameIdx].descriptorSet));
-
-            std::vector<VkDescriptorBufferInfo> bufferInfos{
-                m_perFrameData[frameIdx].sceneUB.descriptorInfo,
-                m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
-                m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
-            };
-
-            std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-            for(auto & bufferInfo : bufferInfos){
-                VkWriteDescriptorSet write = {
-                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_perFrameData[frameIdx].descriptorSet,
-                    .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
-                    .dstArrayElement = 0,
-                    .descriptorCount = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .pBufferInfo = &bufferInfo,
-                };
-                descriptorWrites.push_back(write);
-            }
-
-            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-    }
-
-    // materials
-    {
-        for (auto &image : m_cubeModel._images){
-            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayouts.material, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &image.descriptorSet));
-            VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
-            vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-        }
-    }
-}
-
-void model::createDescriptorSetLayout()
-{
-    // per-scene layout
-    {
-        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-        };
-
-        VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perSceneBindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.scene));
-    }
-
-    // per-material layout
-    {
-        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        };
-
-        VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perMaterialBindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &m_descriptorSetLayouts.material));
-    }
-}
-
 void model::createGraphicsPipeline()
 {
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.frag.spv");
-        VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
-        m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
-        m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule));
-        m_pipelineBuilder._pipelineLayout = m_modelPipelineLayout;
+        m_pipelineBuilder.setShaders(m_modelShader);
         m_modelGraphicsPipeline = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
-        vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
-        vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
 }
 
@@ -290,66 +202,27 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelPipelineLayout, 0,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShader.pipelineLayout, 0,
                             static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
     // cube drawing
     {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelGraphicsPipeline);
-
-        ObjectDataLayout objectDataConstant{
-            .modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f)),
-        };
-
-        vkCmdPushConstants(commandBuffer, m_modelPipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout), &objectDataConstant);
-        m_cubeModel.draw(commandBuffer, m_modelPipelineLayout);
+        m_cubeModel.draw(commandBuffer, m_modelShader.pipelineLayout);
     }
 
     vkCmdEndRenderPass(commandBuffer);
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 
-void model::createPipelineLayout()
-{
-    VkPushConstantRange objPushConstantRange{
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-        .offset = 0,
-        .size = sizeof(ObjectDataLayout),
-    };
-
-    std::vector<VkPushConstantRange> pushConstantRanges{
-        objPushConstantRange,
-    };
-
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{ m_descriptorSetLayouts.scene, m_descriptorSetLayouts.material };
-
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-        .pSetLayouts = descriptorSetLayouts.data(),
-        .pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size()),
-        .pPushConstantRanges = pushConstantRanges.data(),
-    };
-
-    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_modelPipelineLayout));
-
-}
-
-void model::setupDescriptors()
-{
-    createDescriptorPool();
-    createDescriptorSetLayout();
-    createDescriptorSets();
-    createPipelineLayout();
-}
-
 void model::initDerive()
 {
     loadModel();
     createUniformBuffers();
-    setupDescriptors();
+    createDescriptorPool();
     createSyncObjects();
     setupPipelineBuilder();
+    createShaders();
     createGraphicsPipeline();
 }
 
@@ -418,3 +291,93 @@ int main()
     app.finish();
 }
 
+void model::createShaders()
+{
+    auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.vert.spv");
+    auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.frag.spv");
+    m_shaderModules.vert = m_device->createShaderModule(vertShaderCode);
+    m_shaderModules.frag = m_device->createShaderModule(fragShaderCode);
+    m_modelShader.stages = {
+        { &m_shaderModules.vert, VK_SHADER_STAGE_VERTEX_BIT },
+        { &m_shaderModules.frag, VK_SHADER_STAGE_FRAGMENT_BIT },
+    };
+
+    auto &sceneSetLayout = m_modelShader.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
+    auto &materialSetLayout = m_modelShader.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
+
+    // per-scene layout
+    {
+        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+
+        VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perSceneBindings);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &sceneSetLayout));
+    }
+
+    // per-material layout
+    {
+        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        };
+
+        VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perMaterialBindings);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perMaterialLayoutInfo, nullptr, &materialSetLayout));
+    }
+
+    std::vector<VkPushConstantRange> pushConstantRanges{
+        vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(ObjectDataLayout), 0),
+    };
+    std::vector<VkDescriptorSetLayout> setLayouts{sceneSetLayout, materialSetLayout};
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pushConstantRanges);
+    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_modelShader.pipelineLayout));
+
+    // scene
+    {
+        for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
+            std::vector<VkDescriptorSetLayout> sceneLayouts(1, sceneSetLayout);
+            VkDescriptorSetAllocateInfo allocInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = m_descriptorPool,
+                .descriptorSetCount = static_cast<uint32_t>(sceneLayouts.size()),
+                .pSetLayouts = sceneLayouts.data(),
+            };
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameData[frameIdx].descriptorSet));
+
+            std::vector<VkDescriptorBufferInfo> bufferInfos{
+                m_perFrameData[frameIdx].sceneUB.descriptorInfo,
+                m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
+                m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
+            };
+
+            std::vector<VkWriteDescriptorSet> descriptorWrites;
+
+            for(auto & bufferInfo : bufferInfos){
+                VkWriteDescriptorSet write = {
+                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .dstSet = m_perFrameData[frameIdx].descriptorSet,
+                    .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .pBufferInfo = &bufferInfo,
+                };
+                descriptorWrites.push_back(write);
+            }
+
+            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+    }
+
+    // materials
+    {
+        for (auto &image : m_cubeModel._images){
+            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &materialSetLayout, 1);
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &image.descriptorSet));
+            VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
+            vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+        }
+    }
+}

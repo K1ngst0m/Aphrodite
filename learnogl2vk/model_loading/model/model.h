@@ -14,21 +14,26 @@ private:
     void cleanupDerive() override;
 
 private:
-    void setupDescriptors();
     void createUniformBuffers();
-    void createDescriptorSets();
-    void createDescriptorSetLayout();
     void setupPipelineBuilder();
+    void createDescriptorSetLayouts();
     void createGraphicsPipeline();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
-    void createPipelineLayout();
-    void loadModelFromFile(vkl::Model &model, const std::string& path);
+    void loadModelFromFile(vkl::Model &model, const std::string &path);
+    void createShaders();
     void loadModel();
 
 private:
-    struct PerFrameData{
+    struct ShaderModules{
+        VkShaderModule frag;
+        VkShaderModule vert;
+    } m_shaderModules;
+
+    vklt::ShaderEffect m_modelShader;
+
+    struct PerFrameData {
         vkl::Buffer sceneUB;
         vkl::Buffer pointLightUB;
         vkl::Buffer directionalLightUB;
@@ -38,14 +43,8 @@ private:
 
     vkl::Model m_cubeModel;
 
-    struct DescriptorSetLayouts {
-        VkDescriptorSetLayout scene;
-        VkDescriptorSetLayout material;
-    } m_descriptorSetLayouts;
+    vklt::PipelineBuilder m_pipelineBuilder;
 
-    vkl::utils::PipelineBuilder m_pipelineBuilder;
-
-    VkPipelineLayout m_modelPipelineLayout;
     VkPipeline m_modelGraphicsPipeline;
 };
 

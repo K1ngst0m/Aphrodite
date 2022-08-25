@@ -2,6 +2,9 @@
 #define VKLUTILS_H_
 
 #include <algorithm>
+#include <type_traits>
+#include <unordered_map>
+#include <algorithm>
 #include <cstring>
 #include <optional>
 #include <array>
@@ -46,25 +49,6 @@ std::vector<char> readFile(const std::string &filename);
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
 VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
-
-class PipelineBuilder {
-public:
-    std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
-    std::vector<VkDynamicState> _dynamicStages;
-    VkPipelineVertexInputStateCreateInfo _vertexInputInfo;
-    VkPipelineInputAssemblyStateCreateInfo _inputAssembly;
-    VkViewport _viewport;
-    VkRect2D _scissor;
-    VkPipelineDynamicStateCreateInfo _dynamicState;
-    VkPipelineRasterizationStateCreateInfo _rasterizer;
-    VkPipelineColorBlendAttachmentState _colorBlendAttachment;
-    VkPipelineMultisampleStateCreateInfo _multisampling;
-    VkPipelineDepthStencilStateCreateInfo _depthStencil;
-    VkPipelineLayout _pipelineLayout;
-
-    VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
-};
-
 }
 
 #endif // VKLUTILS_H_
