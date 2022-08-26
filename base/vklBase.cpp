@@ -11,7 +11,7 @@ const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_
 
 void vklBase::createFramebuffers()
 {
-    m_Framebuffers.resize(m_swapChainImageViews.size());
+    m_framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
         std::array<VkImageView, 2> attachments = { m_swapChainImageViews[i], m_depthAttachment.view };
 
@@ -26,7 +26,7 @@ void vklBase::createFramebuffers()
         };
 
 
-        VK_CHECK_RESULT(vkCreateFramebuffer(m_device->logicalDevice, &framebufferInfo, nullptr, &m_Framebuffers[i]));
+        VK_CHECK_RESULT(vkCreateFramebuffer(m_device->logicalDevice, &framebufferInfo, nullptr, &m_framebuffers[i]));
     }
 }
 
@@ -360,7 +360,7 @@ void vklBase::cleanupSwapChain()
 {
     m_depthAttachment.destroy();
 
-    for (auto &m_swapChainFramebuffer : m_Framebuffers) {
+    for (auto &m_swapChainFramebuffer : m_framebuffers) {
         vkDestroyFramebuffer(m_device->logicalDevice, m_swapChainFramebuffer, nullptr);
     }
 

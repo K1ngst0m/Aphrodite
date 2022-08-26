@@ -252,8 +252,8 @@ void depth_testing::createGraphicsPipeline()
 {
     // model rendering buffer
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "advance/depth_testing/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "advance/depth_testing/cube.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "advance/depth_testing/cube.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "advance/depth_testing/cube.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -268,8 +268,8 @@ void depth_testing::createGraphicsPipeline()
 
     // depth visual buffer
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "advance/depth_testing/depth.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "advance/depth_testing/depth.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "advance/depth_testing/depth.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "advance/depth_testing/depth.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -325,7 +325,7 @@ void depth_testing::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = m_renderPass,
-        .framebuffer = m_Framebuffers[imageIndex],
+        .framebuffer = m_framebuffers[imageIndex],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),
     };

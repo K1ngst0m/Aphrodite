@@ -53,6 +53,17 @@ inline VkCommandBufferInheritanceInfo commandBufferInheritanceInfo()
     return cmdBufferInheritanceInfo;
 }
 
+inline VkRenderPassBeginInfo renderPassBeginInfo(VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, VkFramebuffer framebuffer)
+{
+    VkRenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.renderPass = renderPass;
+    renderPassBeginInfo.framebuffer = framebuffer;
+    renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+    renderPassBeginInfo.pClearValues = clearValues.data();
+    return renderPassBeginInfo;
+}
+
 inline VkRenderPassBeginInfo renderPassBeginInfo()
 {
     VkRenderPassBeginInfo renderPassBeginInfo{};

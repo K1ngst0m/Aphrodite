@@ -41,8 +41,6 @@ private:
     vkl::Model m_planeModel;
     vkl::Model m_cubeModel;
 
-    vkl::utils::PipelineBuilder m_pipelineBuilder;
-
     bool enabledDepthVisualizing = false;
 
     struct{

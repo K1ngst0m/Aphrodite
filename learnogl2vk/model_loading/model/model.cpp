@@ -171,16 +171,10 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // render pass
-    std::array<VkClearValue, 2> clearValues{};
+    std::vector<VkClearValue> clearValues(2);
     clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
-    VkRenderPassBeginInfo renderPassInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = m_renderPass,
-        .framebuffer = m_Framebuffers[imageIndex],
-        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
-        .pClearValues = clearValues.data(),
-    };
+    VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_renderPass, clearValues, m_framebuffers[imageIndex]);
     renderPassInfo.renderArea = {
         .offset = { 0, 0 },
         .extent = m_swapChainExtent,
@@ -223,13 +217,13 @@ void model::initDerive()
     createDescriptorPool();
     createSyncObjects();
     createShaders();
+    createDescriptorSets();
 }
 
 void model::loadModel()
 {
     loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
-
 
 void model::loadModelFromFile(vkl::Model &model, const std::string& path)
 {
@@ -274,17 +268,12 @@ int main()
 }
 
 void model::buildShaderEffect(){
-    auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.vert.spv");
-    auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "model_loading/model/cube.frag.spv");
-    m_shaderModules.vert = m_device->createShaderModule(vertShaderCode);
-    m_shaderModules.frag = m_device->createShaderModule(fragShaderCode);
-    m_modelShaderEffect.stages = {
-        { &m_shaderModules.vert, VK_SHADER_STAGE_VERTEX_BIT },
-        { &m_shaderModules.frag, VK_SHADER_STAGE_FRAGMENT_BIT },
-    };
+    // m_modelShaderEffect.build(m_device, glslShaderDir / "model_loading/model/cube.vert.spv", glslShaderDir / "model_loading/model/cube.frag.spv");
+    m_modelShaderEffect.build(m_device, glslShaderDir / "model_loading/model/cube.spv");
 
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
+    m_modelShaderEffect.setLayouts.resize(DESCRIPTOR_SET_COUNT);
+    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
+    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
     // per-scene layout
     {
@@ -343,9 +332,12 @@ void model::buildShaderPass() {
 void model::createShaders() {
     buildShaderEffect();
     buildShaderPass();
+}
 
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::SCENE)];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[static_cast<size_t>(vklt::DescriptorSetTypes::MATERIAL)];
+void model::createDescriptorSets()
+{
+    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
+    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
     // scene
     {
@@ -367,7 +359,7 @@ void model::createShaders() {
 
             std::vector<VkWriteDescriptorSet> descriptorWrites;
 
-            for(auto & bufferInfo : bufferInfos){
+            for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                     .dstSet = m_perFrameData[frameIdx].descriptorSet,
@@ -386,7 +378,7 @@ void model::createShaders() {
 
     // materials
     {
-        for (auto &image : m_cubeModel._images){
+        for (auto &image : m_cubeModel._images) {
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &materialSetLayout, 1);
             VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &image.descriptorSet));
             VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);

@@ -7,6 +7,7 @@
 #include "vklDevice.h"
 #include "vklMesh.h"
 #include "vklModel.h"
+#include "vklPipeline.h"
 
 namespace vkl
 {
@@ -127,7 +128,7 @@ protected:
 
     vkl::Texture m_depthAttachment;
 
-    std::vector<VkFramebuffer> m_Framebuffers;
+    std::vector<VkFramebuffer> m_framebuffers;
 
     VkRenderPass m_renderPass;
 
@@ -149,7 +150,7 @@ protected:
     MouseData m_mouseData;
     Camera m_camera;
 
-    vklt::PipelineBuilder m_pipelineBuilder;
+    vkl::PipelineBuilder m_pipelineBuilder;
 };
 }
 

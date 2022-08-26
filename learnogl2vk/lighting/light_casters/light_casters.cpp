@@ -503,7 +503,7 @@ void light_casters::createDescriptorSetLayout()
 }
 void light_casters::createGraphicsPipeline()
 {
-    vkl::utils::PipelineBuilder pipelineBuilder;
+    vkl::PipelineBuilder pipelineBuilder;
     std::vector<VkVertexInputBindingDescription> bindingDescriptions{ VertexDataLayout::getBindingDescription() };
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions = VertexDataLayout::getAttributeDescriptions();
     pipelineBuilder._vertexInputInfo = vkl::init::pipelineVertexInputStateCreateInfo(bindingDescriptions, attributeDescriptions);
@@ -532,8 +532,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -547,8 +547,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._shaderStages.clear();
 
     {
-        auto vertShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
-        auto fragShaderCode = vkl::utils::readFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -657,7 +657,7 @@ void light_casters::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = m_renderPass,
-        .framebuffer = m_Framebuffers[imageIndex],
+        .framebuffer = m_framebuffers[imageIndex],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),
     };

@@ -24,15 +24,22 @@ private:
     void buildShaderPass();
     void createShaders();
     void loadModel();
+    void createDescriptorSets();
 
 private:
-    struct ShaderModules{
+    enum DescriptorSetType {
+        DESCRIPTOR_SET_SCENE,
+        DESCRIPTOR_SET_MATERIAL,
+        DESCRIPTOR_SET_COUNT
+    };
+
+    struct ShaderModules {
         VkShaderModule frag;
         VkShaderModule vert;
     } m_shaderModules;
 
-    vklt::ShaderEffect m_modelShaderEffect;
-    vklt::ShaderPass m_modelShaderPass;
+    vkl::ShaderEffect m_modelShaderEffect;
+    vkl::ShaderPass m_modelShaderPass;
 
     struct PerFrameData {
         vkl::Buffer sceneUB;

@@ -27,6 +27,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <spirv_reflect/spirv_reflect.h>
+
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0
 // Default fence timeout in nanoseconds
@@ -45,7 +47,7 @@
 namespace vkl::utils
 {
 std::string errorString(VkResult errorCode);
-std::vector<char> readFile(const std::string &filename);
+std::vector<char> loadSpvFile(const std::string &filename);
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
 VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
 VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
