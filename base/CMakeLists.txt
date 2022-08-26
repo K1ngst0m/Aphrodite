@@ -2,7 +2,10 @@ file(GLOB base_src
   *.cpp
   *.h
   *.hpp
+  ../external/spirv_reflect/*.cpp
+  ../external/spirv_reflect/*.h
   )
+
 
 file(GLOB BASE_HEADERS
   *.h
