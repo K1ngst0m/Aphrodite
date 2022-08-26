@@ -151,6 +151,8 @@ protected:
     Camera m_camera;
 
     vkl::PipelineBuilder m_pipelineBuilder;
+
+    std::string sessionName;
 };
 }
 

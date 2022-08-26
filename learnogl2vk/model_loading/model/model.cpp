@@ -83,11 +83,12 @@ void model::cleanupDerive()
         vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
     }
 
-    vkDestroyShaderModule(m_device->logicalDevice, m_shaderModules.frag, nullptr);
-    vkDestroyShaderModule(m_device->logicalDevice, m_shaderModules.vert, nullptr);
-
     for (auto &setLayout : m_modelShaderEffect.setLayouts){
         vkDestroyDescriptorSetLayout(m_device->logicalDevice, setLayout, nullptr);
+    }
+
+    for (auto &stage : m_modelShaderEffect.stages){
+        vkDestroyShaderModule(m_device->logicalDevice, stage.shaderModule, nullptr);
     }
 
     vkDestroyPipelineLayout(m_device->logicalDevice, m_modelShaderEffect.pipelineLayout, nullptr);
@@ -212,15 +213,16 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
 
 void model::initDerive()
 {
-    loadModel();
+    loadScene();
     createUniformBuffers();
     createDescriptorPool();
     createSyncObjects();
-    createShaders();
-    createDescriptorSets();
+    setupPipelineBuilder();
+    setupShaders();
+    setupDescriptorSets();
 }
 
-void model::loadModel()
+void model::loadScene()
 {
     loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
@@ -267,14 +269,7 @@ int main()
     app.finish();
 }
 
-void model::buildShaderEffect(){
-    // m_modelShaderEffect.build(m_device, glslShaderDir / "model_loading/model/cube.vert.spv", glslShaderDir / "model_loading/model/cube.frag.spv");
-    m_modelShaderEffect.build(m_device, glslShaderDir / "model_loading/model/cube.spv");
-
-    m_modelShaderEffect.setLayouts.resize(DESCRIPTOR_SET_COUNT);
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
-
+void model::setupShaders() {
     // per-scene layout
     {
         std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -282,9 +277,7 @@ void model::buildShaderEffect(){
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
-
-        VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perSceneBindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perSceneLayoutInfo, nullptr, &sceneSetLayout));
+        m_modelShaderEffect.pushSetLayout(m_device, perSceneBindings);
     }
 
     // per-material layout
@@ -292,49 +285,24 @@ void model::buildShaderEffect(){
         std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-
-        VkDescriptorSetLayoutCreateInfo perMaterialLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(perMaterialBindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device->logicalDevice, &perMaterialLayoutInfo, nullptr, &materialSetLayout));
+        m_modelShaderEffect.pushSetLayout(m_device, perMaterialBindings);
     }
 
-    std::vector<VkPushConstantRange> pushConstantRanges{
-        vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(ObjectDataLayout), 0),
-    };
-    std::vector<VkDescriptorSetLayout> setLayouts{sceneSetLayout, materialSetLayout};
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pushConstantRanges);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(m_device->logicalDevice, &pipelineLayoutInfo, nullptr, &m_modelShaderEffect.pipelineLayout));
-}
-
-void model::buildShaderPass() {
-    vkl::VertexLayout::setPipelineVertexInputState({ vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR });
-    m_pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
-    m_pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    m_pipelineBuilder._viewport = vkl::init::viewport(static_cast<float>(m_swapChainExtent.width), static_cast<float>(m_swapChainExtent.height));
-    m_pipelineBuilder._scissor = vkl::init::rect2D(m_swapChainExtent);
-
-    m_pipelineBuilder._dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    m_pipelineBuilder._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(m_pipelineBuilder._dynamicStages.data(), static_cast<uint32_t>(m_pipelineBuilder._dynamicStages.size()));
-
-    m_pipelineBuilder._rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-    m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-    m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
-
-    m_pipelineBuilder.setShaders(m_modelShaderEffect);
-
+    // push constants
     {
-        m_modelShaderPass.effect = &m_modelShaderEffect;
-        m_modelShaderPass.layout = m_modelShaderEffect.pipelineLayout;
-        m_modelShaderPass.pipeline = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(ObjectDataLayout), 0));
+    }
+
+    // build Shader
+    {
+        auto shaderDir = glslShaderDir/sessionName;
+        m_modelShaderEffect.build(m_device, shaderDir/"cube.vert.spv", shaderDir/"cube.frag.spv");
+        m_pipelineBuilder.setShaders(m_modelShaderEffect);
+        m_modelShaderPass.build(m_modelShaderEffect, m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass));
     }
 }
 
-void model::createShaders() {
-    buildShaderEffect();
-    buildShaderPass();
-}
-
-void model::createDescriptorSets()
+void model::setupDescriptorSets()
 {
     auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
     auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
@@ -385,4 +353,20 @@ void model::createDescriptorSets()
             vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
         }
     }
+}
+void model::setupPipelineBuilder()
+{
+    vkl::VertexLayout::setPipelineVertexInputState({ vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR });
+    m_pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
+    m_pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    m_pipelineBuilder._viewport = vkl::init::viewport(static_cast<float>(m_swapChainExtent.width), static_cast<float>(m_swapChainExtent.height));
+    m_pipelineBuilder._scissor = vkl::init::rect2D(m_swapChainExtent);
+
+    m_pipelineBuilder._dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    m_pipelineBuilder._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(m_pipelineBuilder._dynamicStages.data(), static_cast<uint32_t>(m_pipelineBuilder._dynamicStages.size()));
+
+    m_pipelineBuilder._rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+    m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
+    m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }

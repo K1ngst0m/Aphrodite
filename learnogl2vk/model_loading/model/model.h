@@ -5,6 +5,9 @@
 
 class model : public vkl::vklBase {
 public:
+    model(){
+        sessionName = "model_loading/model";
+    }
     ~model() override = default;
 
 private:
@@ -20,11 +23,10 @@ private:
     void updateUniformBuffer(uint32_t currentFrameIndex);
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void loadModelFromFile(vkl::Model &model, const std::string &path);
-    void buildShaderEffect();
-    void buildShaderPass();
-    void createShaders();
-    void loadModel();
-    void createDescriptorSets();
+    void setupPipelineBuilder();
+    void setupShaders();
+    void loadScene();
+    void setupDescriptorSets();
 
 private:
     enum DescriptorSetType {
@@ -32,11 +34,6 @@ private:
         DESCRIPTOR_SET_MATERIAL,
         DESCRIPTOR_SET_COUNT
     };
-
-    struct ShaderModules {
-        VkShaderModule frag;
-        VkShaderModule vert;
-    } m_shaderModules;
 
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderPass m_modelShaderPass;

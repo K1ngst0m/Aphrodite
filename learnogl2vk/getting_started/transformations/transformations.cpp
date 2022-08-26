@@ -322,8 +322,8 @@ private:
         pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
         {
-            auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "getting_started/transformations/shader.vert.spv");
-            auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "getting_started/transformations/shader.frag.spv");
+            auto vertShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "getting_started/transformations/shader.vert.spv");
+            auto fragShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "getting_started/transformations/shader.frag.spv");
 
             VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
             VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);

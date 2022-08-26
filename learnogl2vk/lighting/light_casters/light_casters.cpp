@@ -532,8 +532,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 
     {
-        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
-        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "lighting/light_casters/cube.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "lighting/light_casters/cube.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
@@ -547,8 +547,8 @@ void light_casters::createGraphicsPipeline()
     pipelineBuilder._shaderStages.clear();
 
     {
-        auto vertShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
-        auto fragShaderCode = vkl::utils::loadSpvFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
+        auto vertShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "lighting/light_casters/emission.vert.spv");
+        auto fragShaderCode = vkl::utils::loadSpvFromFile(glslShaderDir / "lighting/light_casters/emission.frag.spv");
         VkShaderModule vertShaderModule = m_device->createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = m_device->createShaderModule(fragShaderCode);
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
