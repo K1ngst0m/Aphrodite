@@ -493,10 +493,12 @@ void vklBase::keyboardHandleDerive()
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
         m_camera.move(CameraMovementEnum::RIGHT, m_frameData.deltaTime);
 }
-vklBase::vklBase()
-        : m_windowData(800, 600)
+vklBase::vklBase(std::string sessionName)
+        : m_sessionName(std::move(sessionName))
+        , m_windowData(800, 600)
         , m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f)
         , m_camera(Camera((float)m_windowData.width / m_windowData.height))
+
 {
 }
 void vklBase::run()
@@ -603,5 +605,36 @@ void vklBase::createSyncObjects()
         VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]));
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_inFlightFences[i]));
     }
+}
+void vklBase::loadModelFromFile(vkl::Model &model, const std::string &path)
+{
+    tinygltf::Model glTFInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string error, warning;
+
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+
+    std::vector<uint32_t> indices;
+    std::vector<vkl::VertexLayout> vertices;
+
+    if (fileLoaded) {
+        model.loadImages(m_device, m_graphicsQueue, glTFInput);
+        model.loadMaterials(glTFInput);
+        model.loadTextures(glTFInput);
+        const tinygltf::Scene &scene = glTFInput.scenes[0];
+        for (int nodeIdx : scene.nodes) {
+            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
+            model.loadNode(node, glTFInput, nullptr, indices, vertices);
+        }
+    } else {
+        assert("Could not open the glTF file.");
+        return;
+    }
+
+    // Create and upload vertex and index buffer
+    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
+    size_t indexBufferSize = indices.size() * sizeof(indices[0]);
+
+    model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 }

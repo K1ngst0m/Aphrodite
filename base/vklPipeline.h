@@ -25,10 +25,9 @@ struct ShaderEffect {
         uint32_t setCount = 0;
     }reflectData;
 
-    void build(vkl::Device *device, const std::string &vertCodePath, const std::string &fragCodePath);
-
     // TODO reflect to combined shader
     void build(vkl::Device *device, const std::string &combinedCodePath);
+    void build(vkl::Device *device, const std::string &vertCodePath, const std::string &fragCodePath);
 
     void pushSetLayout(vkl::Device *device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
     void pushConstantRanges(VkPushConstantRange constantRange);

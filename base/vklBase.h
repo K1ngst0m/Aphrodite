@@ -47,7 +47,7 @@ struct MouseData {
 
 class vklBase {
 public:
-    vklBase();
+    vklBase(std::string sessionName = "");
 
     virtual ~vklBase() = default;
 
@@ -104,6 +104,7 @@ protected:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     void loadImageFromFile(vkl::Texture &texture, std::string_view imagePath);
+    void loadModelFromFile(vkl::Model &model, const std::string &path);
 
 protected:
     Device *m_device;
@@ -151,8 +152,6 @@ protected:
     Camera m_camera;
 
     vkl::PipelineBuilder m_pipelineBuilder;
-
-    std::string sessionName;
 };
 }
 

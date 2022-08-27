@@ -227,48 +227,6 @@ void model::loadScene()
     loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
 
-void model::loadModelFromFile(vkl::Model &model, const std::string& path)
-{
-    tinygltf::Model glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string error, warning;
-
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
-
-    std::vector<uint32_t> indices;
-    std::vector<vkl::VertexLayout> vertices;
-
-    if (fileLoaded) {
-        model.loadImages(m_device, m_graphicsQueue, glTFInput);
-        model.loadMaterials(glTFInput);
-        model.loadTextures(glTFInput);
-        const tinygltf::Scene& scene = glTFInput.scenes[0];
-        for (int nodeIdx : scene.nodes) {
-            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            model.loadNode(node, glTFInput, nullptr, indices, vertices);
-        }
-    }
-    else {
-        assert("Could not open the glTF file.");
-        return;
-    }
-
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
-    size_t indexBufferSize = indices.size() * sizeof(indices[0]);
-
-    model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
-}
-
-int main()
-{
-    model app;
-
-    app.init();
-    app.run();
-    app.finish();
-}
-
 void model::setupShaders() {
     // per-scene layout
     {
@@ -295,7 +253,7 @@ void model::setupShaders() {
 
     // build Shader
     {
-        auto shaderDir = glslShaderDir/sessionName;
+        auto shaderDir = glslShaderDir/m_sessionName;
         m_modelShaderEffect.build(m_device, shaderDir/"cube.vert.spv", shaderDir/"cube.frag.spv");
         m_pipelineBuilder.setShaders(m_modelShaderEffect);
         m_modelShaderPass.build(m_modelShaderEffect, m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass));
@@ -311,12 +269,7 @@ void model::setupDescriptorSets()
     {
         for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
             std::vector<VkDescriptorSetLayout> sceneLayouts(1, sceneSetLayout);
-            VkDescriptorSetAllocateInfo allocInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .descriptorPool = m_descriptorPool,
-                .descriptorSetCount = static_cast<uint32_t>(sceneLayouts.size()),
-                .pSetLayouts = sceneLayouts.data(),
-            };
+            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &sceneSetLayout, 1);
             VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameData[frameIdx].descriptorSet));
 
             std::vector<VkDescriptorBufferInfo> bufferInfos{
@@ -324,9 +277,7 @@ void model::setupDescriptorSets()
                 m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
                 m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
             };
-
             std::vector<VkWriteDescriptorSet> descriptorWrites;
-
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -369,4 +320,13 @@ void model::setupPipelineBuilder()
     m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
     m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
     m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+}
+
+int main()
+{
+    model app;
+
+    app.init();
+    app.run();
+    app.finish();
 }
