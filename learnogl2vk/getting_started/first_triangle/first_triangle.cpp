@@ -120,7 +120,7 @@ private:
 
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_triangleVB);
-        m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_triangleVB.buffer, bufferSize);
+        m_device->copyBuffer(m_queues.graphics, stagingBuffer.buffer, m_triangleVB.buffer, bufferSize);
 
         stagingBuffer.destroy();
     }
@@ -139,7 +139,7 @@ private:
 
         m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_triangleIB);
-        m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_triangleIB.buffer, bufferSize);
+        m_device->copyBuffer(m_queues.graphics, stagingBuffer.buffer, m_triangleIB.buffer, bufferSize);
 
         stagingBuffer.destroy();
     }

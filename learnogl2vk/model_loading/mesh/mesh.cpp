@@ -691,7 +691,7 @@ void mesh::initDerive()
 
 void mesh::loadMeshes()
 {
-    m_cubeMesh.setup(m_device, m_graphicsQueue, cubeVertices);
+    m_cubeMesh.setup(m_device, m_queues.graphics, cubeVertices);
 }
 
 int main()

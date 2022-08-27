@@ -177,8 +177,9 @@ void vklBase::createDevice()
     assert(presentQueueFamilyIndices.has_value());
     m_device->queueFamilyIndices.present = presentQueueFamilyIndices.value();
 
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_graphicsQueue);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_presentQueue);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_queues.graphics);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_queues.present);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &m_queues.transfer);
 }
 
 void vklBase::createRenderPass()
@@ -408,10 +409,10 @@ void vklBase::loadImageFromFile(vkl::Texture& texture, std::string_view imagePat
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 texture);
 
-    m_device->transitionImageLayout(m_graphicsQueue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+    m_device->transitionImageLayout(m_queues.graphics, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    m_device->copyBufferToImage(m_graphicsQueue, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-    m_device->transitionImageLayout(m_graphicsQueue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+    m_device->copyBufferToImage(m_queues.graphics, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+    m_device->transitionImageLayout(m_queues.graphics, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     stagingBuffer.destroy();
@@ -423,7 +424,7 @@ void vklBase::createDepthResources()
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_depthAttachment);
     m_depthAttachment.view = m_device->createImageView(m_depthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    m_device->transitionImageLayout(m_graphicsQueue, m_depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+    m_device->transitionImageLayout(m_queues.graphics, m_depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
@@ -560,7 +561,7 @@ void vklBase::submitFrame()
         .pSignalSemaphores = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
+    VK_CHECK_RESULT(vkQueueSubmit(m_queues.graphics, 1, &submitInfo, m_inFlightFences[m_currentFrame]));
 
     VkSwapchainKHR swapChains[] = { m_swapChain };
 
@@ -574,7 +575,7 @@ void vklBase::submitFrame()
         .pResults = nullptr, // Optional
     };
 
-    VkResult result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(m_queues.present, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
         m_framebufferResized = false;
@@ -618,7 +619,7 @@ void vklBase::loadModelFromFile(vkl::Model &model, const std::string &path)
     std::vector<vkl::VertexLayout> vertices;
 
     if (fileLoaded) {
-        model.loadImages(m_device, m_graphicsQueue, glTFInput);
+        model.loadImages(m_device, m_queues.graphics, glTFInput);
         model.loadMaterials(glTFInput);
         model.loadTextures(glTFInput);
         const tinygltf::Scene &scene = glTFInput.scenes[0];
@@ -635,6 +636,6 @@ void vklBase::loadModelFromFile(vkl::Model &model, const std::string &path)
     size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
     size_t indexBufferSize = indices.size() * sizeof(indices[0]);
 
-    model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
+    model._mesh.setup(m_device, m_queues.graphics, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 }

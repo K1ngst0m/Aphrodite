@@ -116,8 +116,11 @@ protected:
     VkInstance m_instance;
     std::vector<const char *> m_supportedInstanceExtensions;
 
-    VkQueue m_graphicsQueue;
-    VkQueue m_presentQueue;
+    struct{
+        VkQueue graphics;
+        VkQueue present;
+        VkQueue transfer;
+    } m_queues;
 
     VkSurfaceKHR m_surface;
     VkSwapchainKHR m_swapChain;

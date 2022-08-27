@@ -452,7 +452,7 @@ void depth_testing::loadModelFromFile(vkl::Model &model, const std::string& path
     std::vector<vkl::VertexLayout> vertices;
 
     if (fileLoaded) {
-        model.loadImages(m_device, m_graphicsQueue, glTFInput);
+        model.loadImages(m_device, m_queues.graphics, glTFInput);
         model.loadMaterials(glTFInput);
         model.loadTextures(glTFInput);
         const tinygltf::Scene& scene = glTFInput.scenes[0];
@@ -470,7 +470,7 @@ void depth_testing::loadModelFromFile(vkl::Model &model, const std::string& path
     size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
     size_t indexBufferSize = indices.size() * sizeof(indices[0]);
 
-    model._mesh.setup(m_device, m_graphicsQueue, vertices, indices, vertexBufferSize, indexBufferSize);
+    model._mesh.setup(m_device, m_queues.graphics, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 
 void depth_testing::setupPipelineBuilder()

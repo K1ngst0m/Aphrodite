@@ -200,7 +200,7 @@ void lighting_maps::createVertexBuffers()
     m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_cubeVB);
 
-    m_device->copyBuffer(m_graphicsQueue, stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
+    m_device->copyBuffer(m_queues.graphics, stagingBuffer.buffer, m_cubeVB.buffer, bufferSize);
 
     stagingBuffer.destroy();
 }
