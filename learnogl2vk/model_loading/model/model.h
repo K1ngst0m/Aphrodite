@@ -36,8 +36,8 @@ private:
     void createUniformBuffers();
     void createDescriptorSetLayouts();
     void createDescriptorPool();
-    void updateUniformBuffer(uint32_t currentFrameIndex);
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void updateUniformBuffer(uint32_t frameIdx);
+    void recordCommandBuffer(uint32_t frameIdx);
     void setupPipelineBuilder();
     void setupShaders();
     void loadScene();
@@ -53,13 +53,18 @@ private:
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
 
-    struct PerFrameData {
+    struct PerFrameSceneData {
         vkl::Buffer sceneUB;
         vkl::Buffer pointLightUB;
         vkl::Buffer directionalLightUB;
         VkDescriptorSet descriptorSet;
+        void destroy(VkDevice device) const{
+            sceneUB.destroy();
+            directionalLightUB.destroy();
+            pointLightUB.destroy();
+        }
     };
-    std::vector<PerFrameData> m_perFrameData;
+    std::vector<PerFrameSceneData> m_perFrameSceneData;
 
     vkl::Model m_cubeModel;
 };

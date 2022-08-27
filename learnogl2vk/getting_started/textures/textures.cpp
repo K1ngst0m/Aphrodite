@@ -107,12 +107,6 @@ private:
             m_mvpUBs[i].destroy();
         }
 
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
-            vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
-        }
-
         vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
         vkDestroyDescriptorSetLayout(m_device->logicalDevice, m_descriptorSetLayout, nullptr);
 

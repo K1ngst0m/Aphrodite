@@ -52,7 +52,7 @@ void model::drawFrame()
 {
     prepareFrame();
     updateUniformBuffer(m_currentFrame);
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
+    recordCommandBuffer(m_currentFrame);
     submitFrame();
 }
 
@@ -70,17 +70,8 @@ void model::cleanupDerive()
 
     m_cubeModel.destroy();
 
-    for (auto & frameData : m_perFrameData){
-        frameData.sceneUB.destroy();
-        frameData.directionalLightUB.destroy();
-        frameData.pointLightUB.destroy();
-    }
-
-    // perframe sync objects
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
+    for (auto & sceneFrameData : m_perFrameSceneData){
+        sceneFrameData.destroy(m_device->logicalDevice);
     }
 
     for (auto &setLayout : m_modelShaderEffect.setLayouts){
@@ -98,9 +89,9 @@ void model::cleanupDerive()
 
 void model::createUniformBuffers()
 {
-    m_perFrameData.resize(m_settings.max_frames);
+    m_perFrameSceneData.resize(m_settings.max_frames);
 
-    for(auto& frameData : m_perFrameData){
+    for(auto& frameData : m_perFrameSceneData){
         // create scene uniform buffer
         {
             VkDeviceSize bufferSize = sizeof(SceneDataLayout);
@@ -160,15 +151,18 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
             .viewProj = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        m_perFrameData[currentFrameIndex].sceneUB.map();
-        m_perFrameData[currentFrameIndex].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
-        m_perFrameData[currentFrameIndex].sceneUB.unmap();
+        m_perFrameSceneData[currentFrameIndex].sceneUB.map();
+        m_perFrameSceneData[currentFrameIndex].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
+        m_perFrameSceneData[currentFrameIndex].sceneUB.unmap();
     }
 
 }
 
-void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void model::recordCommandBuffer(uint32_t frameIdx)
 {
+    auto & commandBuffer = m_commandBuffers[frameIdx];
+    auto & imageIndex = m_imageIndices[frameIdx];
+
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // render pass
@@ -190,7 +184,7 @@ void model::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageInd
     VkDeviceSize offsets[] = { 0 };
 
     // descriptor sets
-    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameData[m_currentFrame].descriptorSet };
+    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameSceneData[frameIdx].descriptorSet };
 
     // record command
     vkResetCommandBuffer(commandBuffer, 0);
@@ -270,18 +264,18 @@ void model::setupDescriptorSets()
         for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
             std::vector<VkDescriptorSetLayout> sceneLayouts(1, sceneSetLayout);
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &sceneSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameData[frameIdx].descriptorSet));
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameSceneData[frameIdx].descriptorSet));
 
             std::vector<VkDescriptorBufferInfo> bufferInfos{
-                m_perFrameData[frameIdx].sceneUB.descriptorInfo,
-                m_perFrameData[frameIdx].pointLightUB.descriptorInfo,
-                m_perFrameData[frameIdx].directionalLightUB.descriptorInfo,
+                m_perFrameSceneData[frameIdx].sceneUB.descriptorInfo,
+                m_perFrameSceneData[frameIdx].pointLightUB.descriptorInfo,
+                m_perFrameSceneData[frameIdx].directionalLightUB.descriptorInfo,
             };
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_perFrameData[frameIdx].descriptorSet,
+                    .dstSet = m_perFrameSceneData[frameIdx].descriptorSet,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,

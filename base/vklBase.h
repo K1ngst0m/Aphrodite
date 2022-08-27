@@ -28,7 +28,7 @@ struct WindowData {
     }
 };
 
-struct FrameData {
+struct PerFrameData {
     float deltaTime = 0.0f;
     float lastFrame = 0.0f;
 };
@@ -129,20 +129,28 @@ protected:
 
     std::vector<VkImage> m_swapChainImages;
     std::vector<VkImageView> m_swapChainImageViews;
+    std::vector<VkFramebuffer> m_framebuffers;
 
     vkl::Texture m_depthAttachment;
 
-    std::vector<VkFramebuffer> m_framebuffers;
-
     VkRenderPass m_renderPass;
 
-    std::vector<VkSemaphore> m_imageAvailableSemaphores;
-    std::vector<VkSemaphore> m_renderFinishedSemaphores;
-    std::vector<VkFence> m_inFlightFences;
+    struct PerFrameSyncObject{
+        VkSemaphore renderSemaphore;
+        VkSemaphore presentSemaphores;
+        VkFence inFlightFence;
+        void destroy(VkDevice device) const{
+            vkDestroySemaphore(device, renderSemaphore, nullptr);
+            vkDestroySemaphore(device, presentSemaphores, nullptr);
+            vkDestroyFence(device, inFlightFence, nullptr);
+        }
+    };
 
-    VkDescriptorPool m_descriptorPool;
+    std::vector<PerFrameSyncObject> m_frameSyncObjects;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
+
+    VkDescriptorPool m_descriptorPool;
 
     bool m_framebufferResized = false;
 
@@ -150,7 +158,7 @@ protected:
     std::vector<uint32_t> m_imageIndices;
 
     WindowData m_windowData;
-    FrameData m_frameData;
+    PerFrameData m_frameData;
     MouseData m_mouseData;
     Camera m_camera;
 

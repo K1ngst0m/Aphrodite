@@ -80,13 +80,6 @@ void depth_testing::cleanupDerive()
         frameData.pointLightUB.destroy();
     }
 
-    // perframe sync objects
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
-    }
-
     vkDestroyPipeline(m_device->logicalDevice, m_pipelines.model, nullptr);
     vkDestroyPipelineLayout(m_device->logicalDevice, m_pipelineLayouts.model, nullptr);
     vkDestroyPipeline(m_device->logicalDevice, m_pipelines.depth, nullptr);

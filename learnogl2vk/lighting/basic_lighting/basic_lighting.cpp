@@ -159,13 +159,6 @@ void basic_lighting::cleanupDerive()
     m_containerTexture.destroy();
     m_awesomeFaceTexture.destroy();
 
-    // perframe sync objects
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        vkDestroySemaphore(m_device->logicalDevice, m_renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device->logicalDevice, m_imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(m_device->logicalDevice, m_inFlightFences[i], nullptr);
-    }
-
     vkDestroyPipeline(m_device->logicalDevice, m_cubeGraphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device->logicalDevice, m_cubePipelineLayout, nullptr);
 
