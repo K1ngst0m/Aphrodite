@@ -17,7 +17,7 @@ void vklBase::createFramebuffers()
 
         VkFramebufferCreateInfo framebufferInfo{
             .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            .renderPass = m_renderPass,
+            .renderPass = m_defaultRenderPass,
             .attachmentCount = static_cast<uint32_t>(attachments.size()),
             .pAttachments = attachments.data(),
             .width = m_swapChainExtent.width,
@@ -244,14 +244,14 @@ void vklBase::createRenderPass()
         .pDependencies = &dependency,
     };
 
-    VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_renderPass));
+    VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_defaultRenderPass));
 }
 
 void vklBase::cleanup()
 {
     cleanupSwapChain();
 
-    vkDestroyRenderPass(m_device->logicalDevice, m_renderPass, nullptr);
+    vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr);
 
     for(auto & frameSyncObject : m_frameSyncObjects){
         frameSyncObject.destroy(m_device->logicalDevice);

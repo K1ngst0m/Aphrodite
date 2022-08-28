@@ -133,7 +133,7 @@ protected:
 
     vkl::Texture m_depthAttachment;
 
-    VkRenderPass m_renderPass;
+    VkRenderPass m_defaultRenderPass;
 
     struct PerFrameSyncObject{
         VkSemaphore renderSemaphore;
