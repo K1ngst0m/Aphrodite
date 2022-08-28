@@ -80,6 +80,7 @@ protected:
     void createRenderPass();
     void createSwapChainImageViews();
     void createFramebuffers();
+    void setupPipelineBuilder();
     void prepareFrame();
     void submitFrame();
 

@@ -33,12 +33,10 @@ private:
     void cleanupDerive() override;
 
 private:
-    void createUniformBuffers();
     void createDescriptorSetLayouts();
     void createDescriptorPool();
     void updateUniformBuffer(uint32_t frameIdx);
     void recordCommandBuffer(uint32_t frameIdx);
-    void setupPipelineBuilder();
     void setupShaders();
     void loadScene();
     void setupDescriptorSets();

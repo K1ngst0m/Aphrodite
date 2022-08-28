@@ -78,39 +78,6 @@ void model::cleanupDerive()
     m_shaderCache.destory(m_device->logicalDevice);
 }
 
-void model::createUniformBuffers()
-{
-    // create scene uniform buffer
-    {
-        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sceneUB);
-        sceneUB.setupDescriptor();
-    }
-
-    // create point light uniform buffer
-    {
-        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pointLightUB);
-        pointLightUB.setupDescriptor();
-        pointLightUB.map();
-        pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
-        pointLightUB.unmap();
-    }
-
-    // create directional light uniform buffer
-    {
-        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, directionalLightUB);
-        directionalLightUB.setupDescriptor();
-        directionalLightUB.map();
-        directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
-        directionalLightUB.unmap();
-    }
-}
-
 void model::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
@@ -193,16 +160,45 @@ void model::recordCommandBuffer(uint32_t frameIdx)
 void model::initDerive()
 {
     loadScene();
-    createUniformBuffers();
     createDescriptorPool();
     createSyncObjects();
-    setupPipelineBuilder();
     setupShaders();
     setupDescriptorSets();
 }
 
 void model::loadScene()
 {
+    // create scene uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sceneUB);
+        sceneUB.setupDescriptor();
+    }
+
+    // create point light uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pointLightUB);
+        pointLightUB.setupDescriptor();
+        pointLightUB.map();
+        pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
+        pointLightUB.unmap();
+    }
+
+    // create directional light uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, directionalLightUB);
+        directionalLightUB.setupDescriptor();
+        directionalLightUB.map();
+        directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
+        directionalLightUB.unmap();
+    }
+
+    // load model data
     m_cubeModel.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
 
@@ -280,22 +276,6 @@ void model::setupDescriptorSets()
     {
         m_cubeModel.setupImageDescriptorSet(materialSetLayout);
     }
-}
-void model::setupPipelineBuilder()
-{
-    vkl::VertexLayout::setPipelineVertexInputState({ vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL, vkl::VertexComponent::UV, vkl::VertexComponent::COLOR });
-    m_pipelineBuilder._vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
-    m_pipelineBuilder._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    m_pipelineBuilder._viewport = vkl::init::viewport(static_cast<float>(m_swapChainExtent.width), static_cast<float>(m_swapChainExtent.height));
-    m_pipelineBuilder._scissor = vkl::init::rect2D(m_swapChainExtent);
-
-    m_pipelineBuilder._dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    m_pipelineBuilder._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(m_pipelineBuilder._dynamicStages.data(), static_cast<uint32_t>(m_pipelineBuilder._dynamicStages.size()));
-
-    m_pipelineBuilder._rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    m_pipelineBuilder._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-    m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-    m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 
 int main()
