@@ -611,35 +611,4 @@ void vklBase::createSyncObjects()
     }
 }
 
-void vklBase::loadModelFromFile(vkl::Model &model, const std::string &path)
-{
-    tinygltf::Model glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string error, warning;
-
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
-
-    std::vector<uint32_t> indices;
-    std::vector<vkl::VertexLayout> vertices;
-
-    if (fileLoaded) {
-        model.loadImages(m_device, m_queues.graphics, glTFInput);
-        model.loadMaterials(glTFInput);
-        model.loadTextures(glTFInput);
-        const tinygltf::Scene &scene = glTFInput.scenes[0];
-        for (int nodeIdx : scene.nodes) {
-            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            model.loadNode(node, glTFInput, nullptr, indices, vertices);
-        }
-    } else {
-        assert("Could not open the glTF file.");
-        return;
-    }
-
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
-    size_t indexBufferSize = indices.size() * sizeof(indices[0]);
-
-    model._mesh.setup(m_device, m_queues.graphics, vertices, indices, vertexBufferSize, indexBufferSize);
-}
 }

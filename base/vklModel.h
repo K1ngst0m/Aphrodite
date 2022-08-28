@@ -12,7 +12,16 @@
 
 namespace vkl {
 struct Model {
-    // A primitive contains the data for a single draw call
+    VkBuffer getVertexBuffer(){ return _mesh.getVertexBuffer(); }
+
+    void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
+
+    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+
+    void setupImageDescriptorSet(VkDescriptorSetLayout layout);
+
+    void destroy() const;
+private:
     struct Node {
         Node* parent;
         std::vector<Node*> children;
@@ -29,6 +38,8 @@ struct Model {
         int32_t index;
     };
 
+    vkl::Device * _device;
+
     std::vector<Image> _images;
     std::vector<TextureRef> _textureRefs;
 
@@ -36,7 +47,11 @@ struct Model {
     std::vector<vkl::Material> _materials;
     std::vector<Node*> _nodes;
 
-    void loadImages(vkl::Device *device, VkQueue queue, tinygltf::Model &input);
+    VkDescriptorPool _descriptorPool;
+
+    void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
+
+    void loadImages(VkQueue queue, tinygltf::Model &input);
 
     void loadTextures(tinygltf::Model &input);
 
@@ -47,13 +62,6 @@ struct Model {
                   Node *parent,
                   std::vector<uint32_t> &indices,
                   std::vector<vkl::VertexLayout> &vertices);
-
-    void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
-
-    // Draw the glTF scene starting at the top-level-nodes
-    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
-
-    void destroy() const;
 };
 
 }

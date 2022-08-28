@@ -198,12 +198,7 @@ void depth_testing::createDescriptorSets()
 
     // materials
     {
-        for (auto &image : m_cubeModel._images){
-            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &m_descriptorSetLayouts.material, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &image.descriptorSet));
-            VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
-            vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-        }
+        m_cubeModel.setupImageDescriptorSet(m_descriptorSetLayouts.material);
     }
 }
 
@@ -277,13 +272,12 @@ void depth_testing::createGraphicsPipeline()
 void depth_testing::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3 * 100)},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_cubeModel._images.size() * 100)},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
     };
 
     VkDescriptorPoolCreateInfo poolInfo{
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_settings.max_frames + m_cubeModel._images.size() + 10),
+        .maxSets = static_cast<uint32_t>(m_settings.max_frames),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
@@ -332,7 +326,7 @@ void depth_testing::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
 
     // vertex buffer
-    VkBuffer vertexBuffers[] = { m_cubeModel._mesh.vertexBuffer.buffer };
+    VkBuffer vertexBuffers[] = { m_cubeModel.getVertexBuffer() };
     VkDeviceSize offsets[] = { 0 };
 
     // descriptor sets
@@ -427,43 +421,7 @@ void depth_testing::initDerive()
 
 void depth_testing::loadScene()
 {
-    loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
-    // loadModelFromFile(m_cubeModel, modelDir/"basic/plane.gltf");
-    // loadModelFromFile(m_planeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
-}
-
-
-void depth_testing::loadModelFromFile(vkl::Model &model, const std::string& path)
-{
-    tinygltf::Model glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string error, warning;
-
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
-
-    std::vector<uint32_t> indices;
-    std::vector<vkl::VertexLayout> vertices;
-
-    if (fileLoaded) {
-        model.loadImages(m_device, m_queues.graphics, glTFInput);
-        model.loadMaterials(glTFInput);
-        model.loadTextures(glTFInput);
-        const tinygltf::Scene& scene = glTFInput.scenes[0];
-        for (int nodeIdx : scene.nodes) {
-            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            model.loadNode(node, glTFInput, nullptr, indices, vertices);
-        }
-    }
-    else {
-        assert("Could not open the glTF file.");
-        return;
-    }
-
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
-    size_t indexBufferSize = indices.size() * sizeof(indices[0]);
-
-    model._mesh.setup(m_device, m_queues.graphics, vertices, indices, vertexBufferSize, indexBufferSize);
+    m_cubeModel.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
 
 void depth_testing::setupPipelineBuilder()

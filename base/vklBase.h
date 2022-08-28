@@ -104,7 +104,6 @@ protected:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     void loadImageFromFile(vkl::Texture &texture, std::string_view imagePath);
-    void loadModelFromFile(vkl::Model &model, const std::string &path);
 
 protected:
     Device *m_device;

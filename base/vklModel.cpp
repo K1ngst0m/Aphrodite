@@ -3,7 +3,7 @@
 
 namespace vkl {
 
-void Model::loadImages(vkl::Device *device, VkQueue queue, tinygltf::Model &input)
+void Model::loadImages(VkQueue queue, tinygltf::Model &input)
 {
     // Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
     // loading them from disk, we fetch them from the glTF loader and upload the buffers
@@ -33,25 +33,25 @@ void Model::loadImages(vkl::Device *device, VkQueue queue, tinygltf::Model &inpu
 
         // Load texture from image buffer
         vkl::Buffer stagingBuffer;
-        device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
         stagingBuffer.map();
         stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
         stagingBuffer.unmap();
 
-        device->createImage(glTFImage.width, glTFImage.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+        _device->createImage(glTFImage.width, glTFImage.height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                             _images[i].texture);
 
-        device->transitionImageLayout(queue, _images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+        _device->transitionImageLayout(queue, _images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        device->copyBufferToImage(queue, stagingBuffer.buffer, _images[i].texture.image, static_cast<uint32_t>(glTFImage.width), static_cast<uint32_t>(glTFImage.height));
-        device->transitionImageLayout(queue, _images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        _device->copyBufferToImage(queue, stagingBuffer.buffer, _images[i].texture.image, static_cast<uint32_t>(glTFImage.width), static_cast<uint32_t>(glTFImage.height));
+        _device->transitionImageLayout(queue, _images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        _images[i].texture.view = device->createImageView(_images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        _images[i].texture.view = _device->createImageView(_images[i].texture.image, VK_FORMAT_R8G8B8A8_SRGB);
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        VK_CHECK_RESULT(vkCreateSampler(device->logicalDevice, &samplerInfo, nullptr, &_images[i].texture.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &_images[i].texture.sampler));
         _images[i].texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         stagingBuffer.destroy();
@@ -258,10 +258,67 @@ void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 }
 void Model::destroy() const
 {
+    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
     _mesh.destroy();
 
     for (const auto &image : _images) {
         image.texture.destroy();
+    }
+}
+void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path)
+{
+    _device = device;
+
+    tinygltf::Model glTFInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string error, warning;
+
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+
+    std::vector<uint32_t> indices;
+    std::vector<vkl::VertexLayout> vertices;
+
+    assert(_device);
+    if (fileLoaded) {
+        loadImages(queue, glTFInput);
+        loadMaterials(glTFInput);
+        loadTextures(glTFInput);
+        const tinygltf::Scene &scene = glTFInput.scenes[0];
+        for (int nodeIdx : scene.nodes) {
+            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
+            loadNode(node, glTFInput, nullptr, indices, vertices);
+        }
+    } else {
+        assert("Could not open the glTF file.");
+        return;
+    }
+
+    // Create and upload vertex and index buffer
+    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
+    size_t indexBufferSize = indices.size() * sizeof(indices[0]);
+
+    _mesh.setup(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
+
+    std::vector<VkDescriptorPoolSize> poolSizes{
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size()) },
+    };
+
+    VkDescriptorPoolCreateInfo poolInfo{
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .maxSets = static_cast<uint32_t>(_images.size()),
+        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+        .pPoolSizes = poolSizes.data(),
+    };
+
+    VK_CHECK_RESULT(vkCreateDescriptorPool(device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
+}
+void Model::setupImageDescriptorSet(VkDescriptorSetLayout layout)
+{
+    for (auto &image : _images) {
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &layout, 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &image.descriptorSet));
+        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
+        vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
     }
 }
 }

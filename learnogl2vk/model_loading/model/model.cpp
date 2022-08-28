@@ -115,12 +115,11 @@ void model::createDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_cubeModel._images.size())},
     };
 
     VkDescriptorPoolCreateInfo poolInfo{
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_settings.max_frames + m_cubeModel._images.size()),
+        .maxSets = static_cast<uint32_t>(m_settings.max_frames),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
@@ -166,7 +165,7 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
 
     // vertex buffer
-    VkBuffer vertexBuffers[] = { m_cubeModel._mesh.vertexBuffer.buffer };
+    VkBuffer vertexBuffers[] = { m_cubeModel.getVertexBuffer() };
     VkDeviceSize offsets[] = { 0 };
 
     // descriptor sets
@@ -204,7 +203,7 @@ void model::initDerive()
 
 void model::loadScene()
 {
-    vkl::vklBase::loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
+    m_cubeModel.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
 
 void model::setupShaders() {
@@ -279,12 +278,7 @@ void model::setupDescriptorSets()
 
     // materials
     {
-        for (auto &image : m_cubeModel._images) {
-            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &materialSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &image.descriptorSet));
-            VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
-            vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-        }
+        m_cubeModel.setupImageDescriptorSet(materialSetLayout);
     }
 }
 void model::setupPipelineBuilder()
