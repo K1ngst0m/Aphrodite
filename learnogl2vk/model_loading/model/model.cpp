@@ -68,11 +68,10 @@ void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
-    for (auto & sceneFrameData : m_perFrameSceneData){
-        sceneFrameData.destroy(m_device->logicalDevice);
-    }
-
     m_cubeModel.destroy();
+    sceneUB.destroy();
+    pointLightUB.destroy();
+    directionalLightUB.destroy();
 
     m_modelShaderEffect.destroy(m_device->logicalDevice);
     m_modelShaderPass.destroy(m_device->logicalDevice);
@@ -81,40 +80,35 @@ void model::cleanupDerive()
 
 void model::createUniformBuffers()
 {
-    m_perFrameSceneData.resize(m_settings.max_frames);
-
-    for(auto& frameData : m_perFrameSceneData){
-        // create scene uniform buffer
-        {
-            VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.sceneUB);
-            frameData.sceneUB.setupDescriptor();
-        }
-
-        // create point light uniform buffer
-        {
-            VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.pointLightUB);
-            frameData.pointLightUB.setupDescriptor();
-            frameData.pointLightUB.map();
-            frameData.pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
-            frameData.pointLightUB.unmap();
-        }
-
-        // create directional light uniform buffer
-        {
-            VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
-            m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, frameData.directionalLightUB);
-            frameData.directionalLightUB.setupDescriptor();
-            frameData.directionalLightUB.map();
-            frameData.directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
-            frameData.directionalLightUB.unmap();
-        }
+    // create scene uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sceneUB);
+        sceneUB.setupDescriptor();
     }
 
+    // create point light uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pointLightUB);
+        pointLightUB.setupDescriptor();
+        pointLightUB.map();
+        pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
+        pointLightUB.unmap();
+    }
+
+    // create directional light uniform buffer
+    {
+        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
+        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, directionalLightUB);
+        directionalLightUB.setupDescriptor();
+        directionalLightUB.map();
+        directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
+        directionalLightUB.unmap();
+    }
 }
 
 void model::createDescriptorPool()
@@ -143,9 +137,9 @@ void model::updateUniformBuffer(uint32_t frameIdx)
             .viewProj = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        m_perFrameSceneData[frameIdx].sceneUB.map();
-        m_perFrameSceneData[frameIdx].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
-        m_perFrameSceneData[frameIdx].sceneUB.unmap();
+        sceneUB.map();
+        sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
+        sceneUB.unmap();
     }
 
 }
@@ -176,7 +170,7 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     VkDeviceSize offsets[] = { 0 };
 
     // descriptor sets
-    std::vector<VkDescriptorSet> descriptorSets{ m_perFrameSceneData[frameIdx].descriptorSet };
+    std::vector<VkDescriptorSet> descriptorSets{ m_globalDescriptorSet[frameIdx] };
 
     // record command
     vkResetCommandBuffer(commandBuffer, 0);
@@ -252,23 +246,24 @@ void model::setupDescriptorSets()
     auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
     auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
+    m_globalDescriptorSet.resize(m_settings.max_frames);
     // scene
     {
-        for (size_t frameIdx = 0; frameIdx < m_settings.max_frames; frameIdx++) {
+        for (auto & frameIdx : m_globalDescriptorSet) {
             std::vector<VkDescriptorSetLayout> sceneLayouts(1, sceneSetLayout);
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &sceneSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &m_perFrameSceneData[frameIdx].descriptorSet));
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &frameIdx));
 
             std::vector<VkDescriptorBufferInfo> bufferInfos{
-                m_perFrameSceneData[frameIdx].sceneUB.descriptorInfo,
-                m_perFrameSceneData[frameIdx].pointLightUB.descriptorInfo,
-                m_perFrameSceneData[frameIdx].directionalLightUB.descriptorInfo,
+                sceneUB.descriptorInfo,
+                pointLightUB.descriptorInfo,
+                directionalLightUB.descriptorInfo,
             };
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = m_perFrameSceneData[frameIdx].descriptorSet,
+                    .dstSet = frameIdx,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,

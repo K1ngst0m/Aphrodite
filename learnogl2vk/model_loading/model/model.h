@@ -54,18 +54,10 @@ private:
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
 
-    struct PerFrameSceneData {
-        vkl::Buffer sceneUB;
-        vkl::Buffer pointLightUB;
-        vkl::Buffer directionalLightUB;
-        VkDescriptorSet descriptorSet;
-        void destroy(VkDevice device) const{
-            sceneUB.destroy();
-            directionalLightUB.destroy();
-            pointLightUB.destroy();
-        }
-    };
-    std::vector<PerFrameSceneData> m_perFrameSceneData;
+    vkl::Buffer sceneUB;
+    vkl::Buffer pointLightUB;
+    vkl::Buffer directionalLightUB;
+    std::vector<VkDescriptorSet> m_globalDescriptorSet;
 
     vkl::Model m_cubeModel;
 };
