@@ -28,11 +28,6 @@ struct PointLightDataLayout {
     glm::vec4 attenuationFactor;
 };
 
-// per object data
-struct ObjectDataLayout {
-    glm::mat4 modelMatrix;
-};
-
 DirectionalLightDataLayout directionalLightData{
     .direction = glm::vec4(-0.2f, -1.0f, -0.3f, 1.0f),
     .ambient = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),

@@ -198,7 +198,7 @@ void depth_testing::createDescriptorSets()
 
     // materials
     {
-        m_cubeModel.setupImageDescriptorSet(m_descriptorSetLayouts.material);
+        m_cubeModel.setupDescriptor(m_descriptorSetLayouts.material);
     }
 }
 
@@ -247,7 +247,7 @@ void depth_testing::createGraphicsPipeline()
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule));
         m_pipelineBuilder._pipelineLayout = m_pipelineLayouts.model;
-        m_pipelines.model = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+        m_pipelines.model = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_defaultRenderPass);
         vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
@@ -263,7 +263,7 @@ void depth_testing::createGraphicsPipeline()
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
         m_pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule));
         m_pipelineBuilder._pipelineLayout = m_pipelineLayouts.depth;
-        m_pipelines.depth = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+        m_pipelines.depth = m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_defaultRenderPass);
         vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
@@ -311,7 +311,7 @@ void depth_testing::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     clearValues[1].depthStencil = { 1.0f, 0 };
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = m_renderPass,
+        .renderPass = m_defaultRenderPass,
         .framebuffer = m_framebuffers[imageIndex],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),

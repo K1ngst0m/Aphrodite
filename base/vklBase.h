@@ -47,7 +47,7 @@ struct MouseData {
 
 class vklBase {
 public:
-    vklBase(std::string sessionName = "");
+    vklBase(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
 
     virtual ~vklBase() = default;
 

@@ -278,6 +278,7 @@ void vklBase::initVulkan()
     createRenderPass();
     createFramebuffers();
     setupPipelineBuilder();
+    createSyncObjects();
 }
 
 void vklBase::createSwapChainImageViews()
@@ -500,9 +501,9 @@ void vklBase::keyboardHandleDerive()
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
         m_camera.move(CameraMovementEnum::RIGHT, m_frameData.deltaTime);
 }
-vklBase::vklBase(std::string sessionName)
+vklBase::vklBase(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
         : m_sessionName(std::move(sessionName))
-        , m_windowData(800, 600)
+        , m_windowData(winWidth, winHeight)
         , m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f)
         , m_camera(Camera((float)m_windowData.width / m_windowData.height))
 

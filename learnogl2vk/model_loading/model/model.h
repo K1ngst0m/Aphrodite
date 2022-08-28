@@ -3,27 +3,9 @@
 
 #include "vklBase.h"
 
-namespace vklt {
-struct Transfrom {
-    glm::vec3 pos {0.0f};
-    glm::vec3 eulerRot {0.0f};
-    glm::vec3 scale {1.0f};
-
-    glm::mat4 modelMatrix = glm::mat4(1.0f);
-};
-
-struct Entry{
-
-};
-
-class SceneManager{
-
-};
-}
-
 class model : public vkl::vklBase {
 public:
-    model(): vkl::vklBase("model_loading/model"){}
+    model(): vkl::vklBase("model_loading/model", 1366, 768){}
     ~model() override = default;
 
 private:

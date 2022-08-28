@@ -532,7 +532,7 @@ void light_casters::createGraphicsPipeline()
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule));
         pipelineBuilder._pipelineLayout = m_cubePipelineLayout;
-        m_cubeGraphicsPipeline = pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+        m_cubeGraphicsPipeline = pipelineBuilder.buildPipeline(m_device->logicalDevice, m_defaultRenderPass);
         vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
@@ -547,7 +547,7 @@ void light_casters::createGraphicsPipeline()
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vertShaderModule));
         pipelineBuilder._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fragShaderModule));
         pipelineBuilder._pipelineLayout = m_emissionPipelineLayout;
-        m_emissionGraphicsPipeline = pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass);
+        m_emissionGraphicsPipeline = pipelineBuilder.buildPipeline(m_device->logicalDevice, m_defaultRenderPass);
         vkDestroyShaderModule(m_device->logicalDevice, fragShaderModule, nullptr);
         vkDestroyShaderModule(m_device->logicalDevice, vertShaderModule, nullptr);
     }
@@ -649,7 +649,7 @@ void light_casters::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     clearValues[1].depthStencil = { 1.0f, 0 };
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = m_renderPass,
+        .renderPass = m_defaultRenderPass,
         .framebuffer = m_framebuffers[imageIndex],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),

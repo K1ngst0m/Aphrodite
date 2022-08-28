@@ -54,7 +54,9 @@ struct Mesh {
     vkl::IndexBuffer indexBuffer;
     std::vector<Primitive> primitives;
 
-    void setup(vkl::Device * device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
+    void setup(vkl::Device * device, VkQueue transferQueue,
+               std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {},
+               uint32_t vSize = 0, uint32_t iSize = 0);
 
     VkBuffer getVertexBuffer() const{
         return vertexBuffer.buffer;

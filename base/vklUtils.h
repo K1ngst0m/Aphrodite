@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <type_traits>
 #include <unordered_map>
-#include <algorithm>
 #include <cstring>
 #include <optional>
 #include <array>
@@ -28,6 +27,8 @@
 #include <GLFW/glfw3.h>
 
 #include <spirv_reflect/spirv_reflect.h>
+
+#include <stb_image.h>
 
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0

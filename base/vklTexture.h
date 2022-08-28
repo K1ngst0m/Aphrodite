@@ -8,8 +8,8 @@ namespace vkl {
     {
         VkDevice device;
 
-        VkImage image;
-        VkImageView view;
+        VkImage image = VK_NULL_HANDLE;
+        VkImageView view = VK_NULL_HANDLE;
         VkSampler sampler = VK_NULL_HANDLE;
 
         uint32_t width, height;
