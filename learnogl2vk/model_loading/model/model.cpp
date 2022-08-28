@@ -63,17 +63,18 @@ void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
-    m_cubeModel.destroy();
+    m_planeMesh.destroy();
+    m_model.destroy();
     sceneUB.destroy();
     pointLightUB.destroy();
     directionalLightUB.destroy();
 
-    m_modelShaderEffect.destroy(m_device->logicalDevice);
-    m_modelShaderPass.destroy(m_device->logicalDevice);
+    m_defaultShaderEffect.destroy(m_device->logicalDevice);
+    m_defaultShaderPass.destroy(m_device->logicalDevice);
     m_shaderCache.destory(m_device->logicalDevice);
 }
 
-void model::createDescriptorPool()
+void model::createGlobalDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
@@ -102,7 +103,6 @@ void model::updateUniformBuffer(uint32_t frameIdx)
         sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
         sceneUB.unmap();
     }
-
 }
 
 void model::recordCommandBuffer(uint32_t frameIdx)
@@ -116,7 +116,7 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     std::vector<VkClearValue> clearValues(2);
     clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
-    VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_renderPass, clearValues, m_framebuffers[imageIndex]);
+    VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[imageIndex]);
     renderPassInfo.renderArea = {
         .offset = { 0, 0 },
         .extent = m_swapChainExtent,
@@ -127,7 +127,7 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
 
     // vertex buffer
-    VkBuffer vertexBuffers[] = { m_cubeModel.getVertexBuffer() };
+    VkBuffer vertexBuffers[] = { m_model.getVertexBuffer() };
     VkDeviceSize offsets[] = { 0 };
 
     // descriptor sets
@@ -139,13 +139,20 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultShaderEffect.builtLayout, 0,
                             static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-    // cube drawing
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultShaderPass.builtPipeline);
+    // model drawing
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
-        m_cubeModel.draw(commandBuffer, m_modelShaderEffect.builtLayout);
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_model.setupTransform(modelTransform);
+        m_model.draw(commandBuffer, m_defaultShaderEffect.builtLayout);
+
+        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
+        m_planeMesh.setupTransform(planeTransform);
+        m_planeMesh.draw(commandBuffer, m_defaultShaderEffect.builtLayout);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -155,8 +162,7 @@ void model::recordCommandBuffer(uint32_t frameIdx)
 void model::initDerive()
 {
     loadScene();
-    createDescriptorPool();
-    createSyncObjects();
+    createGlobalDescriptorPool();
     setupShaders();
     setupDescriptorSets();
 }
@@ -194,7 +200,27 @@ void model::loadScene()
     }
 
     // load model data
-    m_cubeModel.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
+    {
+        m_model.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
+    }
+
+    // load plane data
+    {
+        std::vector<vkl::VertexLayout> planeVertices {
+            // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+            {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+            {{-5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+            {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+
+            {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+            {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+            {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+        };
+
+        m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
+        m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
+    }
+
 }
 
 void model::setupShaders() {
@@ -205,7 +231,7 @@ void model::setupShaders() {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
+        m_defaultShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
     }
 
     // per-material layout
@@ -213,28 +239,28 @@ void model::setupShaders() {
         std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
+        m_defaultShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
     }
 
     // push constants
     {
-        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(ObjectDataLayout), 0));
+        m_defaultShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
     }
 
     // build Shader
     {
         auto shaderDir = glslShaderDir/m_sessionName;
-        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"cube.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"cube.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        m_modelShaderEffect.buildPipelineLayout(m_device->logicalDevice);
-        m_modelShaderPass.build(m_device->logicalDevice, m_renderPass, m_pipelineBuilder, &m_modelShaderEffect);
+        m_defaultShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        m_defaultShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_defaultShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_defaultShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_defaultShaderEffect);
     }
 }
 
 void model::setupDescriptorSets()
 {
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
+    auto &sceneSetLayout = m_defaultShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
+    auto &materialSetLayout = m_defaultShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
     m_globalDescriptorSet.resize(m_settings.max_frames);
     // scene
@@ -269,7 +295,9 @@ void model::setupDescriptorSets()
 
     // materials
     {
-        m_cubeModel.setupImageDescriptorSet(materialSetLayout);
+        m_model.setupDescriptor(materialSetLayout);
+
+        m_planeMesh.setupDescriptor(materialSetLayout);
     }
 }
 

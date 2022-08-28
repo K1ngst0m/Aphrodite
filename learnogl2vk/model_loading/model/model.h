@@ -16,7 +16,7 @@ private:
 
 private:
     void createDescriptorSetLayouts();
-    void createDescriptorPool();
+    void createGlobalDescriptorPool();
     void updateUniformBuffer(uint32_t frameIdx);
     void recordCommandBuffer(uint32_t frameIdx);
     void setupShaders();
@@ -31,15 +31,16 @@ private:
     };
 
     vkl::ShaderCache m_shaderCache;
-    vkl::ShaderEffect m_modelShaderEffect;
-    vkl::ShaderPass m_modelShaderPass;
+    vkl::ShaderEffect m_defaultShaderEffect;
+    vkl::ShaderPass m_defaultShaderPass;
 
     vkl::Buffer sceneUB;
     vkl::Buffer pointLightUB;
     vkl::Buffer directionalLightUB;
     std::vector<VkDescriptorSet> m_globalDescriptorSet;
 
-    vkl::Model m_cubeModel;
+    vkl::Model m_model;
+    vkl::RenderObject m_planeMesh;
 };
 
 #endif // MODEL_H_
