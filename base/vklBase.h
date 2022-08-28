@@ -57,7 +57,7 @@ public:
     void finish();
 
 protected:
-    const std::filesystem::path assetDir = "data";
+    const std::filesystem::path assetDir = "assets";
     const std::filesystem::path glslShaderDir = assetDir / "shaders/glsl";
     const std::filesystem::path textureDir = assetDir / "textures";
     const std::filesystem::path modelDir = assetDir / "models";

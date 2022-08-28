@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 
-shader_src_list=$(find -L data -iname '*.vert' -o -iname '*.frag')
+shader_src_list=$(find -L assets -iname '*.vert' -o -iname '*.frag')
 
 for shader_src in $shader_src_list
 do
