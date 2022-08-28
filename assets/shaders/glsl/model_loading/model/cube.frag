@@ -34,5 +34,14 @@ layout (set = 0, binding = 2) uniform DirectionalLightUB{
 layout(set = 1, binding = 0) uniform sampler2D sampler_baseColor;
 
 void main() {
-    outColor = texture(sampler_baseColor, fragTexCoord);
+    vec4 color = texture(sampler_baseColor, fragTexCoord) * vec4(fragColor, 1.0);
+
+    vec3 N = normalize(fragNormal);
+    vec3 L = normalize(directionalLightData.direction);
+    vec3 V = normalize(sceneData.viewPos - fragPosition);
+    vec3 R = reflect(L, N);
+    vec3 diffuse = max(dot(N, L), 0.15) * fragColor;
+    vec3 specular = pow(max(dot(R, V), 0.0), 16.0) * vec3(0.75);
+
+    outColor = vec4(diffuse * color.rgb + specular, 1.0f);
 }
