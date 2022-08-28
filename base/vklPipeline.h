@@ -5,66 +5,75 @@
 #include "vklInit.hpp"
 
 namespace vkl {
+
+struct ShaderModule{
+    std::vector<char> code;
+    VkShaderModule module;
+};
+
+struct ShaderCache{
+    std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
+
+    ShaderModule * getShaders(vkl::Device * device, const std::string & path){
+        if (!shaderModuleCaches.count(path)){
+            std::vector<char> spvCode = vkl::utils::loadSpvFromFile(path);
+            VkShaderModule shaderModule = device->createShaderModule(spvCode);
+
+            shaderModuleCaches[path] = {spvCode, shaderModule};
+        }
+
+        return &shaderModuleCaches[path];
+    }
+
+    void destory(VkDevice device){
+        for (auto & [key, shaderModule]: shaderModuleCaches){
+            vkDestroyShaderModule(device, shaderModule.module, nullptr);
+        }
+    }
+};
 /**
  * @brief holds all of the shader related state that a pipeline needs to be built.
  */
 struct ShaderEffect {
-    VkPipelineLayout pipelineLayout;
+    VkPipelineLayout builtLayout;
     std::vector<VkPushConstantRange> constantRanges;
     std::vector<VkDescriptorSetLayout> setLayouts;
 
     struct ShaderStage {
-        VkShaderModule shaderModule;
+        ShaderModule * shaderModule;
         VkShaderStageFlagBits stage;
     };
 
     std::vector<ShaderStage> stages;
 
-    struct{
-        uint32_t constantCount = 0;
-        uint32_t setCount = 0;
-    }reflectData;
-
-    // TODO reflect to combined shader
-    void build(vkl::Device *device, const std::string &combinedCodePath);
-    void build(vkl::Device *device, const std::string &vertCodePath, const std::string &fragCodePath);
-
-    void pushSetLayout(vkl::Device *device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
+    void buildPipelineLayout(VkDevice device);
+    void buildSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
+    void pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
     void pushConstantRanges(VkPushConstantRange constantRange);
 
-    void reflectToPipelineLayout(vkl::Device *device, const void *spirv_code, size_t spirv_nbytes);
+    void destroy(VkDevice device){
+        for (auto & setLayout: setLayouts){
+            vkDestroyDescriptorSetLayout(device, setLayout, nullptr);
+        }
+        vkDestroyPipelineLayout(device, builtLayout, nullptr);
+    }
 };
 
+class PipelineBuilder;
 /**
  * @brief built version of a Shader Effect, where it stores the built pipeline
  */
 struct ShaderPass {
     ShaderEffect* effect = nullptr;
-    VkPipeline pipeline = VK_NULL_HANDLE;
+    VkPipeline builtPipeline = VK_NULL_HANDLE;
     VkPipelineLayout layout = VK_NULL_HANDLE;
 
-    void build(vkl::ShaderEffect effect, VkPipeline pipeline){
-        this->effect = &effect;
-        this->pipeline = pipeline;
-        this->layout = effect.pipelineLayout;
+    void build(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *effect);
+
+    void destroy(VkDevice device) const{
+        vkDestroyPipeline(device, builtPipeline, nullptr);
     }
 };
-
-enum class VertexAttributeTemplate {
-    DefaultVertex,
-    DefaultVertexPosOnly
-};
-
-struct EffectBuilder{
-    VertexAttributeTemplate vertexAttrib;
-    ShaderEffect* effect{ nullptr };
-
-    VkPrimitiveTopology topology;
-    VkPipelineRasterizationStateCreateInfo rasterizerInfo;
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentInfo;
-    VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-};
-
 
 class PipelineBuilder {
 public:
@@ -83,7 +92,7 @@ public:
 
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
-    void setShaders(const ShaderEffect &shaders);
+    void setShaders(ShaderEffect *shaders);
 };
 }
 

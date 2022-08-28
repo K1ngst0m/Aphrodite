@@ -68,23 +68,15 @@ void model::cleanupDerive()
 {
     vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
 
-    m_cubeModel.destroy();
-
     for (auto & sceneFrameData : m_perFrameSceneData){
         sceneFrameData.destroy(m_device->logicalDevice);
     }
 
-    for (auto &setLayout : m_modelShaderEffect.setLayouts){
-        vkDestroyDescriptorSetLayout(m_device->logicalDevice, setLayout, nullptr);
-    }
+    m_cubeModel.destroy();
 
-    for (auto &stage : m_modelShaderEffect.stages){
-        vkDestroyShaderModule(m_device->logicalDevice, stage.shaderModule, nullptr);
-    }
-
-    vkDestroyPipelineLayout(m_device->logicalDevice, m_modelShaderEffect.pipelineLayout, nullptr);
-
-    vkDestroyPipeline(m_device->logicalDevice, m_modelShaderPass.pipeline, nullptr);
+    m_modelShaderEffect.destroy(m_device->logicalDevice);
+    m_modelShaderPass.destroy(m_device->logicalDevice);
+    m_shaderCache.destory(m_device->logicalDevice);
 }
 
 void model::createUniformBuffers()
@@ -142,7 +134,7 @@ void model::createDescriptorPool()
     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
 
-void model::updateUniformBuffer(uint32_t currentFrameIndex)
+void model::updateUniformBuffer(uint32_t frameIdx)
 {
     {
         SceneDataLayout sceneData{
@@ -151,9 +143,9 @@ void model::updateUniformBuffer(uint32_t currentFrameIndex)
             .viewProj = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        m_perFrameSceneData[currentFrameIndex].sceneUB.map();
-        m_perFrameSceneData[currentFrameIndex].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
-        m_perFrameSceneData[currentFrameIndex].sceneUB.unmap();
+        m_perFrameSceneData[frameIdx].sceneUB.map();
+        m_perFrameSceneData[frameIdx].sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
+        m_perFrameSceneData[frameIdx].sceneUB.unmap();
     }
 
 }
@@ -192,13 +184,13 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.pipelineLayout, 0,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
                             static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
     // cube drawing
     {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.pipeline);
-        m_cubeModel.draw(commandBuffer, m_modelShaderEffect.pipelineLayout);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
+        m_cubeModel.draw(commandBuffer, m_modelShaderEffect.builtLayout);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -229,7 +221,7 @@ void model::setupShaders() {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
-        m_modelShaderEffect.pushSetLayout(m_device, perSceneBindings);
+        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
     }
 
     // per-material layout
@@ -237,7 +229,7 @@ void model::setupShaders() {
         std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        m_modelShaderEffect.pushSetLayout(m_device, perMaterialBindings);
+        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
     }
 
     // push constants
@@ -248,9 +240,10 @@ void model::setupShaders() {
     // build Shader
     {
         auto shaderDir = glslShaderDir/m_sessionName;
-        m_modelShaderEffect.build(m_device, shaderDir/"cube.vert.spv", shaderDir/"cube.frag.spv");
-        m_pipelineBuilder.setShaders(m_modelShaderEffect);
-        m_modelShaderPass.build(m_modelShaderEffect, m_pipelineBuilder.buildPipeline(m_device->logicalDevice, m_renderPass));
+        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"cube.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"cube.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_modelShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_modelShaderPass.build(m_device->logicalDevice, m_renderPass, m_pipelineBuilder, &m_modelShaderEffect);
     }
 }
 

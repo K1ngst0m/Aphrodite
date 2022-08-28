@@ -53,111 +53,43 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)
 
     return newPipeline;
 }
-void PipelineBuilder::setShaders(const ShaderEffect &shaders)
+void PipelineBuilder::setShaders(ShaderEffect *shaders)
 {
     _shaderStages.clear();
-    for (const auto &stage : shaders.stages) {
-        _shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage.stage, stage.shaderModule));
+    for (const auto &stage : shaders->stages) {
+        _shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage.stage, stage.shaderModule->module));
     }
-    _pipelineLayout = shaders.pipelineLayout;
+    _pipelineLayout = shaders->builtLayout;
 }
-void ShaderEffect::build(vkl::Device *device, const std::string &vertCodePath, const std::string &fragCodePath)
+void ShaderEffect::buildPipelineLayout(VkDevice device)
 {
-    {
-        std::vector<char> spvCode = vkl::utils::loadSpvFromFile(vertCodePath);
-        VkShaderModule shaderModule = device->createShaderModule(spvCode);
-        stages.push_back({shaderModule, VK_SHADER_STAGE_VERTEX_BIT});
-    }
-
-    {
-        std::vector<char> spvCode = vkl::utils::loadSpvFromFile(fragCodePath);
-        VkShaderModule shaderModule = device->createShaderModule(spvCode);
-        stages.push_back({shaderModule, VK_SHADER_STAGE_FRAGMENT_BIT});
-    }
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, constantRanges);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(device->logicalDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &builtLayout));
 }
-void ShaderEffect::build(vkl::Device *device, const std::string &combinedCodePath)
-{
-    std::vector<char> spvCode = vkl::utils::loadSpvFromFile(combinedCodePath);
-    VkShaderModule shaderModule = device->createShaderModule(spvCode);
-
-    reflectToPipelineLayout(device, spvCode.data(), spvCode.size());
-}
-void ShaderEffect::reflectToPipelineLayout(vkl::Device *device, const void *spirv_code, size_t spirv_nbytes)
-{
-    // Generate reflection data for a shader
-    SpvReflectShaderModule module;
-    SpvReflectResult result = spvReflectCreateShaderModule(spirv_nbytes, spirv_code, &module);
-    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-    struct DescriptorSetLayoutData {
-        uint32_t setNumber;
-        VkDescriptorSetLayoutCreateInfo createInfo;
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-    };
-
-    // Enumerate and extract shader's input variables
-    uint32_t varCount = 0;
-    result = spvReflectEnumerateDescriptorSets(&module, &varCount, nullptr);
-    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-    std::vector<SpvReflectDescriptorSet *> sets(varCount);
-    result = spvReflectEnumerateDescriptorSets(&module, &varCount, sets.data());
-    assert(result == SPV_REFLECT_RESULT_SUCCESS);
-
-    std::vector<DescriptorSetLayoutData> tempSetLayouts(sets.size(), DescriptorSetLayoutData{});
-    for (size_t setIdx = 0; setIdx < sets.size(); ++setIdx) {
-        const SpvReflectDescriptorSet &currentSetRef = *(sets[setIdx]);
-        DescriptorSetLayoutData &layout = tempSetLayouts[setIdx];
-        layout.bindings.resize(currentSetRef.binding_count);
-        for (uint32_t bindIdx = 0; bindIdx < currentSetRef.binding_count; ++bindIdx) {
-            const SpvReflectDescriptorBinding &currentBindingRef = *(currentSetRef.bindings[bindIdx]);
-            VkDescriptorSetLayoutBinding &layoutBinding = layout.bindings[bindIdx];
-            layoutBinding.binding = currentBindingRef.binding;
-            layoutBinding.descriptorType = static_cast<VkDescriptorType>(currentBindingRef.descriptor_type);
-            layoutBinding.descriptorCount = 1;
-            for (uint32_t dimIdx = 0; dimIdx < currentBindingRef.array.dims_count; ++dimIdx) {
-                layoutBinding.descriptorCount *= currentBindingRef.array.dims[dimIdx];
-            }
-            layoutBinding.stageFlags = static_cast<VkShaderStageFlagBits>(module.shader_stage);
-        }
-        layout.setNumber = currentSetRef.set;
-        layout.createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        layout.createInfo.bindingCount = currentSetRef.binding_count;
-        layout.createInfo.pBindings = layout.bindings.data();
-    }
-
-    std::vector<VkPushConstantRange> constantRanges;
-    for (size_t blockIdx = 0; blockIdx < module.push_constant_block_count; blockIdx++) {
-        VkPushConstantRange range{
-            .stageFlags = static_cast<VkShaderStageFlagBits>(module.shader_stage),
-            .offset = module.push_constant_blocks[blockIdx].offset,
-            .size = module.push_constant_blocks[blockIdx].size,
-        };
-    }
-
-    for (size_t idx = 0; idx < tempSetLayouts.size(); idx++) {
-        auto &currentSetLayoutsCI = tempSetLayouts[idx];
-        vkCreateDescriptorSetLayout(device->logicalDevice, &currentSetLayoutsCI.createInfo, nullptr, &setLayouts[idx]);
-    }
-
-    VkPipelineLayoutCreateInfo createInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, constantRanges);
-
-    vkCreatePipelineLayout(device->logicalDevice, &createInfo, nullptr, &pipelineLayout);
-
-    // Destroy the reflection data when no longer required.
-    spvReflectDestroyShaderModule(&module);
-}
-void ShaderEffect::pushSetLayout(vkl::Device *device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
+void ShaderEffect::buildSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
     VkDescriptorSetLayout setLayout;
     VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device->logicalDevice, &perSceneLayoutInfo, nullptr, &setLayout));
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &perSceneLayoutInfo, nullptr, &setLayout));
     setLayouts.push_back(setLayout);
 }
 void ShaderEffect::pushConstantRanges(VkPushConstantRange constantRange)
 {
     constantRanges.push_back(constantRange);
+}
+void ShaderEffect::pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits)
+{
+    stages.push_back({ module, stageBits });
+}
+void ShaderPass::build(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *shaderEffect)
+{
+    effect = shaderEffect;
+    layout = shaderEffect->builtLayout;
+
+    PipelineBuilder pipbuilder = builder;
+
+    pipbuilder.setShaders(shaderEffect);
+
+    builtPipeline = pipbuilder.buildPipeline(device, renderPass);
 }
 }

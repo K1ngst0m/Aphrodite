@@ -50,6 +50,7 @@ private:
         DESCRIPTOR_SET_COUNT
     };
 
+    vkl::ShaderCache m_shaderCache;
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
 
