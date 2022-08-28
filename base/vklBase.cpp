@@ -610,6 +610,7 @@ void vklBase::createSyncObjects()
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObjects[i].inFlightFence));
     }
 }
+
 void vklBase::loadModelFromFile(vkl::Model &model, const std::string &path)
 {
     tinygltf::Model glTFInput;

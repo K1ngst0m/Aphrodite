@@ -90,29 +90,30 @@ void Model::loadNode(const tinygltf::Node &inputNode,
                      std::vector<uint32_t> &indices,
                      std::vector<vkl::VertexLayout> &vertices)
 {
-    Node node{};
-    node.matrix = glm::mat4(1.0f);
+    Node* node = new Node();
+    node->matrix = glm::mat4(1.0f);
+    node->parent = parent;
 
     // Get the local node matrix
     // It's either made up from translation, rotation, scale or a 4x4 matrix
     if (inputNode.translation.size() == 3) {
-        node.matrix = glm::translate(node.matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+        node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
     }
     if (inputNode.rotation.size() == 4) {
         glm::quat q = glm::make_quat(inputNode.rotation.data());
-        node.matrix *= glm::mat4(q);
+        node->matrix *= glm::mat4(q);
     }
     if (inputNode.scale.size() == 3) {
-        node.matrix = glm::scale(node.matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+        node->matrix = glm::scale(node->matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
     }
     if (inputNode.matrix.size() == 16) {
-        node.matrix = glm::make_mat4x4(inputNode.matrix.data());
+        node->matrix = glm::make_mat4x4(inputNode.matrix.data());
     };
 
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNode(input.nodes[nodeIdx], input, &node, indices, vertices);
+            loadNode(input.nodes[nodeIdx], input, node, indices, vertices);
         }
     }
 
@@ -207,30 +208,30 @@ void Model::loadNode(const tinygltf::Node &inputNode,
                 .materialIndex = glTFPrimitive.material,
             };
 
-            node.mesh.primitives.push_back(primitive);
+            node->mesh.primitives.push_back(primitive);
         }
     }
 
     if (parent) {
         parent->children.push_back(node);
     } else {
-        nodes.push_back(node);
+        _nodes.push_back(node);
     }
 }
-void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node &node)
+void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node)
 {
-    if (!node.mesh.primitives.empty()) {
+    if (!node->mesh.primitives.empty()) {
         // Pass the node's matrix via push constants
         // Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-        glm::mat4 nodeMatrix = node.matrix;
-        Node *currentParent = node.parent;
+        glm::mat4 nodeMatrix = node->matrix;
+        Node *currentParent = node->parent;
         while (currentParent) {
             nodeMatrix = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
         // Pass the final matrix to the vertex shader using push constants
         vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
-        for (const vkl::Primitive &primitive : node.mesh.primitives) {
+        for (const vkl::Primitive &primitive : node->mesh.primitives) {
             if (primitive.indexCount > 0) {
                 // Get the texture index for this primitive
                 TextureRef textureRef = _textureRefs[_materials[primitive.materialIndex].baseColorTextureIndex];
@@ -240,7 +241,7 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
             }
         }
     }
-    for (const auto &child : node.children) {
+    for (Node *child : node->children) {
         drawNode(commandBuffer, pipelineLayout, child);
     }
 }
@@ -251,7 +252,7 @@ void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     // Render all nodes at top-level
-    for (auto &node : nodes) {
+    for (Node *node : _nodes) {
         drawNode(commandBuffer, pipelineLayout, node);
     }
 }

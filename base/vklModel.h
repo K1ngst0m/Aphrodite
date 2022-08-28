@@ -15,7 +15,7 @@ struct Model {
     // A primitive contains the data for a single draw call
     struct Node {
         Node* parent;
-        std::vector<Node> children;
+        std::vector<Node*> children;
         vkl::Mesh mesh;
         glm::mat4 matrix;
     };
@@ -34,7 +34,7 @@ struct Model {
 
     vkl::Mesh _mesh;
     std::vector<vkl::Material> _materials;
-    std::vector<Node> nodes;
+    std::vector<Node*> _nodes;
 
     void loadImages(vkl::Device *device, VkQueue queue, tinygltf::Model &input);
 
@@ -48,7 +48,7 @@ struct Model {
                   std::vector<uint32_t> &indices,
                   std::vector<vkl::VertexLayout> &vertices);
 
-    void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node &node);
+    void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
 
     // Draw the glTF scene starting at the top-level-nodes
     void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);

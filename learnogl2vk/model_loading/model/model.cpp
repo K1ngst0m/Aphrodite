@@ -50,10 +50,10 @@ PointLightDataLayout pointLightData{
 
 void model::drawFrame()
 {
-    prepareFrame();
+    vkl::vklBase::prepareFrame();
     updateUniformBuffer(m_currentFrame);
     recordCommandBuffer(m_currentFrame);
-    submitFrame();
+    vkl::vklBase::submitFrame();
 }
 
 void model::getEnabledFeatures()
@@ -204,7 +204,7 @@ void model::initDerive()
 
 void model::loadScene()
 {
-    loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
+    vkl::vklBase::loadModelFromFile(m_cubeModel, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
 }
 
 void model::setupShaders() {
@@ -308,7 +308,7 @@ int main()
 {
     model app;
 
-    app.init();
-    app.run();
-    app.finish();
+    app.vkl::vklBase::init();
+    app.vkl::vklBase::run();
+    app.vkl::vklBase::finish();
 }
