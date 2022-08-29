@@ -110,7 +110,7 @@ void model::updateUniformBuffer(uint32_t frameIdx)
 void model::recordCommandBuffer(uint32_t frameIdx)
 {
     auto & commandBuffer = m_commandBuffers[frameIdx];
-    auto & imageIndex = m_imageIndices[frameIdx];
+    auto & imageIndex = m_imageIdx;
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 

@@ -17,8 +17,8 @@ private:
 private:
     void createDescriptorSetLayouts();
     void createGlobalDescriptorPool();
-    void updateUniformBuffer(uint32_t frameIdx);
-    void recordCommandBuffer(uint32_t frameIdx);
+    void updateUniformBuffer();
+    void recordCommandBuffer();
     void setupShaders();
     void loadScene();
     void setupDescriptorSets();

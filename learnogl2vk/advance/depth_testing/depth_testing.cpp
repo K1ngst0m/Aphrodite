@@ -53,7 +53,7 @@ void depth_testing::drawFrame()
 {
     prepareFrame();
     updateUniformBuffer(m_currentFrame);
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
+    recordCommandBuffer();
     submitFrame();
 }
 
@@ -301,8 +301,9 @@ void depth_testing::updateUniformBuffer(uint32_t currentFrameIndex)
 
 }
 
-void depth_testing::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void depth_testing::recordCommandBuffer()
 {
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIdx];
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // render pass
@@ -312,7 +313,7 @@ void depth_testing::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = m_defaultRenderPass,
-        .framebuffer = m_framebuffers[imageIndex],
+        .framebuffer = m_framebuffers[m_imageIdx],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),
     };

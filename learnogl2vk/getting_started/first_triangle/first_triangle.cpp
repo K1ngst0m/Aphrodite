@@ -79,7 +79,7 @@ private:
     {
         prepareFrame();
         updateUniformBuffer(m_currentFrame);
-        recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
+        recordCommandBuffer();
         submitFrame();
     }
 
@@ -280,8 +280,9 @@ private:
         vkUnmapMemory(m_device->logicalDevice, m_mvpUBs[currentImage].memory);
     }
 
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+    void recordCommandBuffer()
     {
+        VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIdx];
         vkResetCommandBuffer(commandBuffer, 0);
         VkCommandBufferBeginInfo beginInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -297,7 +298,7 @@ private:
         VkRenderPassBeginInfo renderPassInfo{
             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .renderPass = m_defaultRenderPass,
-            .framebuffer = m_framebuffers[imageIndex],
+            .framebuffer = m_framebuffers[m_imageIdx],
             .clearValueCount = static_cast<uint32_t>(clearValues.size()),
             .pClearValues = clearValues.data(),
         };

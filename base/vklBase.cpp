@@ -251,13 +251,13 @@ void vklBase::cleanup()
 {
     cleanupSwapChain();
 
-    vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr);
-
     for(auto & frameSyncObject : m_frameSyncObjects){
         frameSyncObject.destroy(m_device->logicalDevice);
     }
 
-    delete(m_device);
+    vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr);
+
+    delete m_device;
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vkDestroyInstance(m_instance, nullptr);
 
@@ -381,8 +381,7 @@ void vklBase::cleanupSwapChain()
 
 void vklBase::createCommandBuffers()
 {
-    m_imageIndices.resize(m_settings.max_frames);
-    m_commandBuffers.resize(m_settings.max_frames);
+    m_commandBuffers.resize(m_swapChainImages.size());
 
     VkCommandBufferAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -539,7 +538,7 @@ void vklBase::prepareFrame()
     vkWaitForFences(m_device->logicalDevice, 1, &m_frameSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
     VkResult result = vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX,
-                                            m_frameSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIndices[m_currentFrame]);
+                                            m_frameSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
@@ -556,14 +555,14 @@ void vklBase::submitFrame()
 {
     VkSemaphore waitSemaphores[] = { m_frameSyncObjects[m_currentFrame].renderSemaphore };
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signalSemaphores[] = { m_frameSyncObjects[m_currentFrame].presentSemaphores };
+    VkSemaphore signalSemaphores[] = { m_frameSyncObjects[m_currentFrame].presentSemaphore };
     VkSubmitInfo submitInfo{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = waitSemaphores,
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
-        .pCommandBuffers = &m_commandBuffers[m_currentFrame],
+        .pCommandBuffers = &m_commandBuffers[m_imageIdx],
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = signalSemaphores,
     };
@@ -578,7 +577,7 @@ void vklBase::submitFrame()
         .pWaitSemaphores = signalSemaphores,
         .swapchainCount = 1,
         .pSwapchains = swapChains,
-        .pImageIndices = &m_imageIndices[m_currentFrame],
+        .pImageIndices = &m_imageIdx,
         .pResults = nullptr, // Optional
     };
 
@@ -606,10 +605,10 @@ void vklBase::createSyncObjects()
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
-    for (size_t i = 0; i < m_settings.max_frames; i++) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObjects[i].presentSemaphores));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObjects[i].renderSemaphore));
-        VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObjects[i].inFlightFence));
+    for (auto & m_frameSyncObject : m_frameSyncObjects) {
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
     }
 }
 

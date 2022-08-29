@@ -140,7 +140,6 @@ void lighting_maps::drawFrame()
 {
     prepareFrame();
     updateUniformBuffer(m_currentFrame);
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
     submitFrame();
 }
 
@@ -236,7 +235,7 @@ void lighting_maps::createUniformBuffers()
 void lighting_maps::createDescriptorSets()
 {
     {
-        std::vector<VkDescriptorSetLayout> sceneLayouts(m_settings.max_frames, m_descriptorSetLayouts.scene);
+        std::vector<VkDescriptorSetLayout> sceneLayouts(m_swapChainImageViews.size(), m_descriptorSetLayouts.scene);
         VkDescriptorSetAllocateInfo allocInfo{
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .descriptorPool = m_descriptorPool,
@@ -246,7 +245,7 @@ void lighting_maps::createDescriptorSets()
         m_perFrameDescriptorSets.resize(m_settings.max_frames);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, m_perFrameDescriptorSets.data()));
 
-        for (size_t i = 0; i < m_settings.max_frames; i++) {
+        for (size_t i = 0; i < m_perFrameDescriptorSets.size(); i++) {
             std::array<VkWriteDescriptorSet, 3> descriptorWrites;
 
             descriptorWrites[0] = {
@@ -469,7 +468,7 @@ void lighting_maps::createDescriptorPool()
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0] = {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = static_cast<uint32_t>(m_settings.max_frames * 3 + 1),
+        .descriptorCount = static_cast<uint32_t>(m_swapChainImageViews.size() * 3 + 1),
     };
     poolSizes[1] = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -520,99 +519,102 @@ void lighting_maps::updateUniformBuffer(uint32_t currentFrameIndex)
         m_materialUB.unmap();
     }
 }
-void lighting_maps::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void lighting_maps::recordCommandBuffer()
 {
-    vkResetCommandBuffer(commandBuffer, 0);
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = 0, // Optional
-        .pInheritanceInfo = nullptr, // Optional
-    };
+    for (int frameIdx = 0; frameIdx < m_swapChainImages.size(); frameIdx++){
+        auto &commandBuffer = m_commandBuffers[frameIdx];
+        vkResetCommandBuffer(commandBuffer, 0);
+        VkCommandBufferBeginInfo beginInfo{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = 0, // Optional
+            .pInheritanceInfo = nullptr, // Optional
+        };
 
-    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
-    std::array<VkClearValue, 2> clearValues{};
-    clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-    VkRenderPassBeginInfo renderPassInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-        .renderPass = m_defaultRenderPass,
-        .framebuffer = m_framebuffers[imageIndex],
-        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
-        .pClearValues = clearValues.data(),
-    };
-    renderPassInfo.renderArea = {
-        .offset = { 0, 0 },
-        .extent = m_swapChainExtent,
-    };
+        std::array<VkClearValue, 2> clearValues{};
+        clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
+        clearValues[1].depthStencil = { 1.0f, 0 };
+        VkRenderPassBeginInfo renderPassInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            .renderPass = m_defaultRenderPass,
+            .framebuffer = m_framebuffers[frameIdx],
+            .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+            .pClearValues = clearValues.data(),
+        };
+        renderPassInfo.renderArea = {
+            .offset = { 0, 0 },
+            .extent = m_swapChainExtent,
+        };
 
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    VkViewport viewport{
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(m_swapChainExtent.width),
-        .height = static_cast<float>(m_swapChainExtent.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        VkViewport viewport{
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = static_cast<float>(m_swapChainExtent.width),
+            .height = static_cast<float>(m_swapChainExtent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+        };
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
-    VkRect2D scissor{
-        .offset = { 0, 0 },
-        .extent = m_swapChainExtent,
-    };
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        VkRect2D scissor{
+            .offset = { 0, 0 },
+            .extent = m_swapChainExtent,
+        };
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    VkBuffer vertexBuffers[] = { m_cubeVB.buffer };
-    VkDeviceSize offsets[] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+        VkBuffer vertexBuffers[] = { m_cubeVB.buffer };
+        VkDeviceSize offsets[] = { 0 };
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-    std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[m_currentFrame],
-                                                   m_cubeMaterialDescriptorSets };
-    // cube drawing
-    {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubeGraphicsPipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubePipelineLayout, 0,
-                                static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+        std::array<VkDescriptorSet, 2> descriptorSets{ m_perFrameDescriptorSets[frameIdx],
+                                                       m_cubeMaterialDescriptorSets };
+        // cube drawing
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubeGraphicsPipeline);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubePipelineLayout, 0,
+                                    static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-        for (size_t i = 0; i < cubePositions.size(); i++) {
+            for (size_t i = 0; i < cubePositions.size(); i++) {
+                glm::mat4 model(1.0f);
+                model = glm::translate(model, cubePositions[i]);
+                float angle = 20.0f * i;
+                model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+
+                ObjectDataLayout objectDataConstant{
+                    .modelMatrix = model,
+                };
+                vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                   sizeof(ObjectDataLayout), &objectDataConstant);
+
+                vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
+            }
+        }
+
+        // emission drawing
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_emissionGraphicsPipeline);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_emissionPipelineLayout, 0, 1,
+                                    descriptorSets.data(), 0, nullptr);
             glm::mat4 model(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
+            model = glm::scale(model, glm::vec3(0.2f));
 
             ObjectDataLayout objectDataConstant{
                 .modelMatrix = model,
             };
-            vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-                               sizeof(ObjectDataLayout), &objectDataConstant);
+            vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
+                               &objectDataConstant);
 
             vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
         }
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
     }
-
-    // emission drawing
-    {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_emissionGraphicsPipeline);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_emissionPipelineLayout, 0, 1,
-                                descriptorSets.data(), 0, nullptr);
-        glm::mat4 model(1.0f);
-        model = glm::translate(model, glm::vec3(1.2f, 1.0f, 2.0f));
-        model = glm::scale(model, glm::vec3(0.2f));
-
-        ObjectDataLayout objectDataConstant{
-            .modelMatrix = model,
-        };
-        vkCmdPushConstants(commandBuffer, m_cubePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout),
-                           &objectDataConstant);
-
-        vkCmdDraw(commandBuffer, static_cast<uint32_t>(cubeVertices.size()), 1, 0, 0);
-    }
-
-    vkCmdEndRenderPass(commandBuffer);
-
-    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 void lighting_maps::createTextures()
 {
@@ -708,4 +710,5 @@ void lighting_maps::initDerive()
     setupDescriptors();
     createSyncObjects();
     createGraphicsPipeline();
+    recordCommandBuffer();
 }

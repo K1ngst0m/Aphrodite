@@ -137,15 +137,14 @@ protected:
 
     struct PerFrameSyncObject{
         VkSemaphore renderSemaphore;
-        VkSemaphore presentSemaphores;
+        VkSemaphore presentSemaphore;
         VkFence inFlightFence;
         void destroy(VkDevice device) const{
             vkDestroySemaphore(device, renderSemaphore, nullptr);
-            vkDestroySemaphore(device, presentSemaphores, nullptr);
+            vkDestroySemaphore(device, presentSemaphore, nullptr);
             vkDestroyFence(device, inFlightFence, nullptr);
         }
     };
-
     std::vector<PerFrameSyncObject> m_frameSyncObjects;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
@@ -155,7 +154,7 @@ protected:
     bool m_framebufferResized = false;
 
     uint32_t m_currentFrame = 0;
-    std::vector<uint32_t> m_imageIndices;
+    uint32_t m_imageIdx;
 
     WindowData m_windowData;
     PerFrameData m_frameData;

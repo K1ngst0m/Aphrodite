@@ -128,7 +128,7 @@ void basic_lighting::drawFrame()
 {
     prepareFrame();
     updateUniformBuffer(m_currentFrame);
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], m_imageIndices[m_currentFrame]);
+    recordCommandBuffer();
     submitFrame();
 }
 void basic_lighting::getEnabledFeatures()
@@ -518,8 +518,9 @@ void basic_lighting::updateUniformBuffer(uint32_t currentFrameIndex)
         vkUnmapMemory(m_device->logicalDevice, m_materialUB.memory);
     }
 }
-void basic_lighting::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void basic_lighting::recordCommandBuffer()
 {
+    VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIdx];
     vkResetCommandBuffer(commandBuffer, 0);
     VkCommandBufferBeginInfo beginInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -535,7 +536,7 @@ void basic_lighting::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     VkRenderPassBeginInfo renderPassInfo{
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = m_defaultRenderPass,
-        .framebuffer = m_framebuffers[imageIndex],
+        .framebuffer = m_framebuffers[m_imageIdx],
         .clearValueCount = static_cast<uint32_t>(clearValues.size()),
         .pClearValues = clearValues.data(),
     };

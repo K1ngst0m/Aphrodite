@@ -46,8 +46,7 @@ PointLightDataLayout pointLightData{
 void scene_manager::drawFrame()
 {
     vkl::vklBase::prepareFrame();
-    updateUniformBuffer(m_currentFrame);
-    recordCommandBuffer(m_currentFrame);
+    updateUniformBuffer();
     vkl::vklBase::submitFrame();
 }
 
@@ -79,12 +78,12 @@ void scene_manager::cleanupDerive()
 void scene_manager::createGlobalDescriptorPool()
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_swapChainImages.size() * 3)},
     };
 
     VkDescriptorPoolCreateInfo poolInfo{
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_settings.max_frames),
+        .maxSets = static_cast<uint32_t>(m_swapChainImages.size()),
         .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
@@ -92,7 +91,7 @@ void scene_manager::createGlobalDescriptorPool()
     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
 
-void scene_manager::updateUniformBuffer(uint32_t frameIdx)
+void scene_manager::updateUniformBuffer()
 {
     {
         SceneDataLayout sceneData{
@@ -107,59 +106,60 @@ void scene_manager::updateUniformBuffer(uint32_t frameIdx)
     }
 }
 
-void scene_manager::recordCommandBuffer(uint32_t frameIdx)
+void scene_manager::recordCommandBuffer()
 {
-    auto & commandBuffer = m_commandBuffers[frameIdx];
-    auto & imageIndex = m_imageIndices[frameIdx];
+    for (int frameIdx = 0; frameIdx < m_swapChainImages.size(); frameIdx++){
+        auto & commandBuffer = m_commandBuffers[frameIdx];
 
-    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+        VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
-    // render pass
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-    VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[imageIndex]);
-    renderPassInfo.renderArea = {
-        .offset = { 0, 0 },
-        .extent = m_swapChainExtent,
-    };
+        // render pass
+        std::vector<VkClearValue> clearValues(2);
+        clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
+        clearValues[1].depthStencil = { 1.0f, 0 };
+        VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[frameIdx]);
+        renderPassInfo.renderArea = {
+            .offset = { 0, 0 },
+            .extent = m_swapChainExtent,
+        };
 
-    // dynamic state
-    const VkViewport viewport = vkl::init::viewport(static_cast<float>(m_windowData.width), static_cast<float>(m_windowData.height));
-    const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
+        // dynamic state
+        const VkViewport viewport = vkl::init::viewport(static_cast<float>(m_windowData.width), static_cast<float>(m_windowData.height));
+        const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
 
-    // vertex buffer
-    VkBuffer vertexBuffers[] = { m_model.getVertexBuffer() };
-    VkDeviceSize offsets[] = { 0 };
+        // vertex buffer
+        VkBuffer vertexBuffers[] = { m_model.getVertexBuffer() };
+        VkDeviceSize offsets[] = { 0 };
 
-    // descriptor sets
-    std::vector<VkDescriptorSet> descriptorSets{ m_globalDescriptorSet[frameIdx] };
+        // descriptor sets
+        std::vector<VkDescriptorSet> descriptorSets{ m_globalDescriptorSet[frameIdx] };
 
-    // record command
-    vkResetCommandBuffer(commandBuffer, 0);
-    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
-                            static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
+        // record command
+        vkResetCommandBuffer(commandBuffer, 0);
+        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
+                                static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-    // scene drawing
-    {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model.setupTransform(modelTransform);
-        m_model.draw(commandBuffer, m_modelShaderPass.layout);
+        // scene drawing
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
+            glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+            modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+            m_model.setupTransform(modelTransform);
+            m_model.draw(commandBuffer, m_modelShaderPass.layout);
 
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
-        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
-        m_planeMesh.setupTransform(planeTransform);
-        m_planeMesh.draw(commandBuffer, m_planeShaderPass.layout);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
+            glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
+            m_planeMesh.setupTransform(planeTransform);
+            m_planeMesh.draw(commandBuffer, m_planeShaderPass.layout);
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
     }
-
-    vkCmdEndRenderPass(commandBuffer);
-    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 
 void scene_manager::initDerive()
@@ -168,6 +168,7 @@ void scene_manager::initDerive()
     createGlobalDescriptorPool();
     setupShaders();
     setupDescriptorSets();
+    recordCommandBuffer();
 }
 
 void scene_manager::loadScene()
@@ -273,7 +274,7 @@ void scene_manager::setupDescriptorSets()
     auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
     auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
-    m_globalDescriptorSet.resize(m_settings.max_frames);
+    m_globalDescriptorSet.resize(m_swapChainImages.size());
     // scene
     {
         for (auto & frameIdx : m_globalDescriptorSet) {
