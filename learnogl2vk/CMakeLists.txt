@@ -42,6 +42,7 @@ set(EXAMPLES
   model_loading/mesh
   model_loading/model
   advance/depth_testing
+  extra/scene_manager
 )
 
 buildExamples()
