@@ -15,19 +15,50 @@
 namespace vkl {
 
 class IBaseObject{
+public:
     virtual void destroy() = 0;
 };
 
-class RenderObject : public IBaseObject{
+class UniformBufferObject : IBaseObject{
+public:
+    vkl::UniformBuffer buffer;
+
+    void setupBuffer(vkl::Device * device, VkDeviceSize bufferSize, void * data = nullptr){
+        device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, buffer, data);
+        buffer.setupDescriptor();
+    }
+
+    void update(const void* data){
+        buffer.update(data);
+    }
+
+    void destroy() override{
+        buffer.destroy();
+    }
+};
+
+class RenderObject: IBaseObject{
+public:
+    virtual void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) = 0;
+
+    void setupTransform(glm::mat4 matrix){
+        transform = matrix;
+    }
+
+protected:
+    vkl::Device * _device;
+
+    glm::mat4 transform = glm::mat4(1.0f);
+};
+
+class MeshObject : public RenderObject{
 public:
     void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout>& vertices, const std::vector<uint32_t>& indices = {}, size_t vSize = 0, size_t iSize = 0){
         _device = device;
         _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
     }
 
-    void setupTransform(glm::mat4 matrix){
-        transform = matrix;
-    }
 
     void destroy() override;
 
@@ -40,17 +71,13 @@ public:
     uint32_t getVerticesCount() const { return _mesh.getVerticesCount(); }
     uint32_t getIndicesCount() const { return _mesh.getIndicesCount(); }
 
-    virtual void setupDescriptor(VkDescriptorSetLayout layout);
-    virtual void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout);
+    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) override;
 
-protected:
-    vkl::Device * _device;
+    virtual void setupDescriptor(VkDescriptorSetLayout layout);
 
     vkl::Mesh _mesh;
 
     VkDescriptorPool _descriptorPool;
-
-    glm::mat4 transform = glm::mat4(1.0f);
 
     struct Image{
         vkl::Texture texture;
@@ -60,7 +87,7 @@ protected:
     std::vector<Image> _images;
 };
 
-class Model : public RenderObject{
+class Model : public MeshObject{
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
     void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) override;

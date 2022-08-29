@@ -273,9 +273,9 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
     size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
     size_t indexBufferSize = indices.size() * sizeof(indices[0]);
 
-    RenderObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
+    MeshObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
-void RenderObject::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue)
+void MeshObject::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue)
 {
     // Load texture from image buffer
     vkl::Buffer stagingBuffer;
@@ -305,7 +305,7 @@ void RenderObject::pushImage(uint32_t width, uint32_t height, unsigned char *ima
 
     stagingBuffer.destroy();
 }
-void RenderObject::pushImage(std::string imagePath, VkQueue queue)
+void MeshObject::pushImage(std::string imagePath, VkQueue queue)
 {
     int texWidth, texHeight, texChannels;
     stbi_uc *pixels = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -341,7 +341,7 @@ void RenderObject::pushImage(std::string imagePath, VkQueue queue)
 
     stagingBuffer.destroy();
 }
-void RenderObject::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+void MeshObject::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
 {
     VkDeviceSize offsets[1] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
@@ -351,7 +351,7 @@ void RenderObject::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipeline
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(getIndicesCount()), 1, 0, 0, 0);
 }
-void RenderObject::setupDescriptor(VkDescriptorSetLayout layout)
+void MeshObject::setupDescriptor(VkDescriptorSetLayout layout)
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size()) },
@@ -373,7 +373,7 @@ void RenderObject::setupDescriptor(VkDescriptorSetLayout layout)
         vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
     }
 }
-void RenderObject::destroy()
+void MeshObject::destroy()
 {
     _mesh.destroy();
 

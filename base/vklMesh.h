@@ -43,6 +43,18 @@ struct IndexBuffer : Buffer{
     std::vector<uint32_t> indices;
 };
 
+struct UniformBuffer : Buffer{
+    void update(const void* data){
+        map();
+        copyTo(data, size);
+        unmap();
+    }
+
+    VkDescriptorBufferInfo getBufferInfo(){
+        return descriptorInfo;
+    }
+};
+
 struct Primitive {
     uint32_t firstIndex;
     uint32_t indexCount;

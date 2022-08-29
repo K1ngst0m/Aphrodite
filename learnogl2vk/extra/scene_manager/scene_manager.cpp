@@ -43,6 +43,17 @@ PointLightDataLayout pointLightData{
     .attenuationFactor = glm::vec4(1.0f, 0.09f, 0.032f, 0.0f),
 };
 
+std::vector<vkl::VertexLayout> planeVertices {
+    // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
+    {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+
+    {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+    {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
+};
+
 void scene_manager::drawFrame()
 {
     vkl::vklBase::prepareFrame();
@@ -60,35 +71,19 @@ void scene_manager::getEnabledFeatures()
 
 void scene_manager::cleanupDerive()
 {
-    vkDestroyDescriptorPool(m_device->logicalDevice, m_descriptorPool, nullptr);
-
     m_planeMesh.destroy();
     m_model.destroy();
-    sceneUB.destroy();
-    pointLightUB.destroy();
-    directionalLightUB.destroy();
+    sceneUBO.destroy();
+    pointLightUBO.destroy();
+    directionalLightUBO.destroy();
 
     m_modelShaderEffect.destroy(m_device->logicalDevice);
     m_modelShaderPass.destroy(m_device->logicalDevice);
     m_planeShaderEffect.destroy(m_device->logicalDevice);
     m_planeShaderPass.destroy(m_device->logicalDevice);
     m_shaderCache.destory(m_device->logicalDevice);
-}
 
-void scene_manager::createGlobalDescriptorPool()
-{
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_swapChainImages.size() * 3)},
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_swapChainImages.size()),
-        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
-        .pPoolSizes = poolSizes.data(),
-    };
-
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
+    m_sceneManager.destroy(m_device->logicalDevice);
 }
 
 void scene_manager::updateUniformBuffer()
@@ -100,9 +95,7 @@ void scene_manager::updateUniformBuffer()
             .viewProj = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        sceneUB.map();
-        sceneUB.copyTo(&sceneData, sizeof(SceneDataLayout));
-        sceneUB.unmap();
+        sceneUBO.update(&sceneData);
     }
 }
 
@@ -131,30 +124,17 @@ void scene_manager::recordCommandBuffer()
         VkBuffer vertexBuffers[] = { m_model.getVertexBuffer() };
         VkDeviceSize offsets[] = { 0 };
 
-        // descriptor sets
-        std::vector<VkDescriptorSet> descriptorSets{ m_globalDescriptorSet[frameIdx] };
-
         // record command
         vkResetCommandBuffer(commandBuffer, 0);
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
-                                static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
         // scene drawing
         {
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
-            glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-            modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-            m_model.setupTransform(modelTransform);
-            m_model.draw(commandBuffer, m_modelShaderPass.layout);
-
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
-            glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
-            m_planeMesh.setupTransform(planeTransform);
-            m_planeMesh.draw(commandBuffer, m_planeShaderPass.layout);
+            m_sceneManager.drawSceneRecord(commandBuffer, m_modelShaderPass);
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -165,7 +145,6 @@ void scene_manager::recordCommandBuffer()
 void scene_manager::initDerive()
 {
     loadScene();
-    createGlobalDescriptorPool();
     setupShaders();
     setupDescriptorSets();
     recordCommandBuffer();
@@ -173,61 +152,34 @@ void scene_manager::initDerive()
 
 void scene_manager::loadScene()
 {
-    // create scene uniform buffer
     {
-        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sceneUB);
-        sceneUB.setupDescriptor();
+        sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
+        pointLightUBO.setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
+        directionalLightUBO.setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
     }
 
-    // create point light uniform buffer
-    {
-        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pointLightUB);
-        pointLightUB.setupDescriptor();
-        pointLightUB.map();
-        pointLightUB.copyTo(&pointLightData, sizeof(PointLightDataLayout));
-        pointLightUB.unmap();
-    }
-
-    // create directional light uniform buffer
-    {
-        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, directionalLightUB);
-        directionalLightUB.setupDescriptor();
-        directionalLightUB.map();
-        directionalLightUB.copyTo(&directionalLightData, sizeof(DirectionalLightDataLayout));
-        directionalLightUB.unmap();
-    }
-
-    // load model data
     {
         m_model.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
-    }
-
-    // load plane data
-    {
-        std::vector<vkl::VertexLayout> planeVertices {
-            // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture wrapping mode). this will cause the floor texture to repeat)
-            {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
-            {{-5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
-            {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
-
-            {{ 5.0f, -0.5f,  5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f},{1.0f, 1.0f, 1.0f}},
-            {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
-            {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
-        };
-
         m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
         m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
     }
 
+    {
+        m_sceneManager.pushUniform(&sceneUBO);
+        m_sceneManager.pushUniform(&pointLightUBO);
+        m_sceneManager.pushUniform(&directionalLightUBO);
+
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_sceneManager.pushObject(&m_model, modelTransform);
+
+        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
+        m_sceneManager.pushObject(&m_planeMesh, planeTransform);
+    }
 }
 
-void scene_manager::setupShaders() {
+void scene_manager::setupShaders()
+{
     // per-scene layout
     {
         std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -274,43 +226,9 @@ void scene_manager::setupDescriptorSets()
     auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
     auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
-    m_globalDescriptorSet.resize(m_swapChainImages.size());
-    // scene
-    {
-        for (auto & frameIdx : m_globalDescriptorSet) {
-            std::vector<VkDescriptorSetLayout> sceneLayouts(1, sceneSetLayout);
-            const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &sceneSetLayout, 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->logicalDevice, &allocInfo, &frameIdx));
-
-            std::vector<VkDescriptorBufferInfo> bufferInfos{
-                sceneUB.descriptorInfo,
-                pointLightUB.descriptorInfo,
-                directionalLightUB.descriptorInfo,
-            };
-            std::vector<VkWriteDescriptorSet> descriptorWrites;
-            for (auto &bufferInfo : bufferInfos) {
-                VkWriteDescriptorSet write = {
-                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = frameIdx,
-                    .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
-                    .dstArrayElement = 0,
-                    .descriptorCount = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .pBufferInfo = &bufferInfo,
-                };
-                descriptorWrites.push_back(write);
-            }
-
-            vkUpdateDescriptorSets(m_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-    }
-
-    // materials
-    {
-        m_model.setupDescriptor(materialSetLayout);
-
-        m_planeMesh.setupDescriptor(materialSetLayout);
-    }
+    m_sceneManager.setupDescriptor(m_device, m_swapChainImageViews.size(), sceneSetLayout);
+    m_model.setupDescriptor(materialSetLayout);
+    m_planeMesh.setupDescriptor(materialSetLayout);
 }
 
 int main()

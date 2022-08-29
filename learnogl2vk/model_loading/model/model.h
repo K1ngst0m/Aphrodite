@@ -43,7 +43,7 @@ private:
     std::vector<VkDescriptorSet> m_globalDescriptorSet;
 
     vkl::Model m_model;
-    vkl::RenderObject m_planeMesh;
+    vkl::MeshObject m_planeMesh;
 };
 
 #endif // MODEL_H_
