@@ -31,8 +31,11 @@ private:
     };
 
     vkl::ShaderCache m_shaderCache;
-    vkl::ShaderEffect m_defaultShaderEffect;
-    vkl::ShaderPass m_defaultShaderPass;
+
+    vkl::ShaderEffect m_modelShaderEffect;
+    vkl::ShaderEffect m_planeShaderEffect;
+    vkl::ShaderPass m_modelShaderPass;
+    vkl::ShaderPass m_planeShaderPass;
 
     vkl::Buffer sceneUB;
     vkl::Buffer pointLightUB;

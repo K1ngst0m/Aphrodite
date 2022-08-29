@@ -69,8 +69,10 @@ void model::cleanupDerive()
     pointLightUB.destroy();
     directionalLightUB.destroy();
 
-    m_defaultShaderEffect.destroy(m_device->logicalDevice);
-    m_defaultShaderPass.destroy(m_device->logicalDevice);
+    m_modelShaderEffect.destroy(m_device->logicalDevice);
+    m_modelShaderPass.destroy(m_device->logicalDevice);
+    m_planeShaderEffect.destroy(m_device->logicalDevice);
+    m_planeShaderPass.destroy(m_device->logicalDevice);
     m_shaderCache.destory(m_device->logicalDevice);
 }
 
@@ -139,20 +141,21 @@ void model::recordCommandBuffer(uint32_t frameIdx)
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultShaderEffect.builtLayout, 0,
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderEffect.builtLayout, 0,
                             static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultShaderPass.builtPipeline);
-    // model drawing
+    // scene drawing
     {
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model.setupTransform(modelTransform);
-        m_model.draw(commandBuffer, m_defaultShaderEffect.builtLayout);
+        m_model.draw(commandBuffer, m_modelShaderPass.layout);
 
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
         m_planeMesh.setupTransform(planeTransform);
-        m_planeMesh.draw(commandBuffer, m_defaultShaderEffect.builtLayout);
+        m_planeMesh.draw(commandBuffer, m_planeShaderPass.layout);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -231,7 +234,8 @@ void model::setupShaders() {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
-        m_defaultShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
+        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
+        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
     }
 
     // per-material layout
@@ -239,28 +243,35 @@ void model::setupShaders() {
         std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        m_defaultShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
+        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
+        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
     }
 
     // push constants
     {
-        m_defaultShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        m_planeShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
     }
 
     // build Shader
     {
         auto shaderDir = glslShaderDir/m_sessionName;
-        m_defaultShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        m_defaultShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        m_defaultShaderEffect.buildPipelineLayout(m_device->logicalDevice);
-        m_defaultShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_defaultShaderEffect);
+        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_modelShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
+
+        m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_planeShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
     }
 }
 
 void model::setupDescriptorSets()
 {
-    auto &sceneSetLayout = m_defaultShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
-    auto &materialSetLayout = m_defaultShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
+    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
+    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
     m_globalDescriptorSet.resize(m_settings.max_frames);
     // scene
