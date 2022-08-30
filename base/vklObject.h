@@ -61,7 +61,7 @@ public:
 
 class RenderObject: IBaseObject{
 public:
-    virtual void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) = 0;
+    virtual void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
 
     void setupTransform(glm::mat4 matrix){
         transform = matrix;
@@ -95,7 +95,7 @@ public:
     uint32_t getVerticesCount() const { return _mesh.getVerticesCount(); }
     uint32_t getIndicesCount() const { return _mesh.getIndicesCount(); }
 
-    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) override;
+    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
 
     virtual void setupDescriptor(VkDescriptorSetLayout layout);
 
@@ -115,7 +115,7 @@ protected:
 class Model : public MeshObject{
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) override;
+    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
     void destroy() override;
 
 private:

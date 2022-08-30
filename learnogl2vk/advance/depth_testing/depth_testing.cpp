@@ -351,7 +351,7 @@ void depth_testing::recordCommandBuffer()
         };
 
         vkCmdPushConstants(commandBuffer, enabledDepthVisualizing ? m_pipelineLayouts.depth : m_pipelineLayouts.model, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(ObjectDataLayout), &objectDataConstant);
-        m_cubeModel.draw(commandBuffer, vkl::DRAWCONTEXT_ALL);
+        m_cubeModel.draw(commandBuffer);
     }
 
     // plane drawing

@@ -150,12 +150,12 @@ void model::recordCommandBuffer(uint32_t frameIdx)
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model.setupTransform(modelTransform);
-        m_model.draw(commandBuffer, vkl::DRAWCONTEXT_ALL);
+        m_model.draw(commandBuffer);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
         m_planeMesh.setupTransform(planeTransform);
-        m_planeMesh.draw(commandBuffer, vkl::DRAWCONTEXT_ALL);
+        m_planeMesh.draw(commandBuffer);
     }
 
     vkCmdEndRenderPass(commandBuffer);
