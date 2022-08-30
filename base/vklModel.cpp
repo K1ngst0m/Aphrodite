@@ -177,13 +177,7 @@ void Model::loadNode(const tinygltf::Node &inputNode,
                 }
             }
 
-            vkl::Primitive primitive{
-                .firstIndex = firstIndex,
-                .indexCount = indexCount,
-                .materialIndex = glTFPrimitive.material,
-            };
-
-            node->mesh.primitives.push_back(primitive);
+            node->mesh.pushPrimitive(firstIndex, indexCount, glTFPrimitive.material);
         }
     }
 
@@ -220,16 +214,18 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
         drawNode(commandBuffer, pipelineLayout, child);
     }
 }
-void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+void Model::draw(VkCommandBuffer commandBuffer)
 {
+    assert(_pass);
     // All vertices and indices are stored in single buffers, so we only need to bind once
     VkDeviceSize offsets[1] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
     // Render all nodes at top-level
     for (Node *node : _nodes) {
         node->matrix = transform;
-        drawNode(commandBuffer, pipelineLayout, node);
+        drawNode(commandBuffer, _pass->layout, node);
     }
 }
 void Model::destroy()
@@ -341,14 +337,16 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue)
 
     stagingBuffer.destroy();
 }
-void MeshObject::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout)
+void MeshObject::draw(VkCommandBuffer commandBuffer)
 {
+    assert(_pass);
     VkDeviceSize offsets[1] = { 0 };
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
     vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
+    vkCmdPushConstants(commandBuffer, _pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(getIndicesCount()), 1, 0, 0, 0);
 }
 void MeshObject::setupDescriptor(VkDescriptorSetLayout layout)
@@ -357,12 +355,7 @@ void MeshObject::setupDescriptor(VkDescriptorSetLayout layout)
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size()) },
     };
 
-    VkDescriptorPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(_images.size()),
-        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
-        .pPoolSizes = poolSizes.data(),
-    };
+    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, static_cast<uint32_t>(_images.size()));
 
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
@@ -382,5 +375,17 @@ void MeshObject::destroy()
     for (auto& image : _images){
         image.texture.destroy();
     }
+}
+void MeshObject::setupMesh(vkl::Device *device, VkQueue queue,
+                           const std::vector<VertexLayout> &vertices,
+                           const std::vector<uint32_t> &indices,
+                           size_t vSize, size_t iSize)
+{
+    _device = device;
+    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
+}
+void MeshObject::setShaderPass(vkl::ShaderPass *pass)
+{
+    _pass = pass;
 }
 }

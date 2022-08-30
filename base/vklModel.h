@@ -1,6 +1,7 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
+#include "vklPipeline.h"
 #include "vklUtils.h"
 #include "vklMesh.h"
 #include "vklMaterial.h"
@@ -40,7 +41,7 @@ public:
 
 class RenderObject: IBaseObject{
 public:
-    virtual void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) = 0;
+    virtual void draw(VkCommandBuffer commandBuffer) = 0;
 
     void setupTransform(glm::mat4 matrix){
         transform = matrix;
@@ -54,11 +55,12 @@ protected:
 
 class MeshObject : public RenderObject{
 public:
-    void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout>& vertices, const std::vector<uint32_t>& indices = {}, size_t vSize = 0, size_t iSize = 0){
-        _device = device;
-        _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
-    }
+    void setupMesh(vkl::Device *device, VkQueue queue,
+                   const std::vector<VertexLayout> &vertices,
+                   const std::vector<uint32_t> &indices = {},
+                   size_t vSize = 0, size_t iSize = 0);
 
+    void setShaderPass(vkl::ShaderPass *pass);
 
     void destroy() override;
 
@@ -71,26 +73,29 @@ public:
     uint32_t getVerticesCount() const { return _mesh.getVerticesCount(); }
     uint32_t getIndicesCount() const { return _mesh.getIndicesCount(); }
 
-    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) override;
+    void draw(VkCommandBuffer commandBuffer) override;
 
     virtual void setupDescriptor(VkDescriptorSetLayout layout);
 
-    vkl::Mesh _mesh;
-
-    VkDescriptorPool _descriptorPool;
-
+protected:
     struct Image{
         vkl::Texture texture;
         VkDescriptorSet descriptorSet;
     };
 
+    vkl::Mesh _mesh;
     std::vector<Image> _images;
+    std::vector<vkl::Material> _materials;
+
+    vkl::ShaderPass * _pass;
+
+    VkDescriptorPool _descriptorPool;
 };
 
 class Model : public MeshObject{
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) override;
+    void draw(VkCommandBuffer commandBuffer) override;
     void destroy() override;
 
 private:
@@ -107,7 +112,6 @@ private:
 
     std::vector<TextureRef> _textureRefs;
     std::vector<Node*> _nodes;
-    std::vector<vkl::Material> _materials;
 
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
     void loadImages(VkQueue queue, tinygltf::Model &input);

@@ -5,14 +5,13 @@
 
 namespace vklt{
 class SceneManager{
-    std::vector<vkl::RenderObject*> renderList;
-    std::vector<vkl::UniformBufferObject*> ubolist;
 public:
     void pushUniform(vkl::UniformBufferObject* ubo){
         ubolist.push_back(ubo);
     }
 
-    void pushObject(vkl::MeshObject* object, glm::mat4 transform = glm::mat4(1.0f)){
+    void pushObject(vkl::MeshObject* object, vkl::ShaderPass * pass, glm::mat4 transform = glm::mat4(1.0f)){
+        object->setShaderPass(pass);
         object->setupTransform(transform);
         renderList.push_back(object);
     }
@@ -22,7 +21,7 @@ public:
                                 1, m_globalDescriptorSet.data(), 0, nullptr);
 
         for (auto * renderObj : renderList){
-            renderObj->draw(commandBuffer, pass.layout);
+            renderObj->draw(commandBuffer);
         }
     }
 
@@ -75,6 +74,9 @@ public:
     }
 
 private:
+    std::vector<vkl::RenderObject*> renderList;
+    std::vector<vkl::UniformBufferObject*> ubolist;
+
     VkDescriptorPool m_descriptorPool;
     std::vector<VkDescriptorSet> m_globalDescriptorSet;
 };

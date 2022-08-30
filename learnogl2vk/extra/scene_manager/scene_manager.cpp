@@ -171,10 +171,10 @@ void scene_manager::loadScene()
 
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_sceneManager.pushObject(&m_model, modelTransform);
+        m_sceneManager.pushObject(&m_model, &m_modelShaderPass, modelTransform);
 
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_sceneManager.pushObject(&m_planeMesh, planeTransform);
+        m_sceneManager.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
     }
 }
 

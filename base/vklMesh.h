@@ -70,6 +70,10 @@ struct Mesh {
                std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {},
                uint32_t vSize = 0, uint32_t iSize = 0);
 
+    void pushPrimitive(uint32_t firstIdx, uint32_t indexCount, int32_t materialIdx){
+        primitives.push_back({firstIdx, indexCount, materialIdx});
+    }
+
     VkBuffer getVertexBuffer() const{
         return vertexBuffer.buffer;
     }
