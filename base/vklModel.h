@@ -15,6 +15,26 @@
 
 namespace vkl {
 
+enum DrawContextDirtyBits: uint8_t{
+    DRAWCONTEXT_NONE          = 0b00000,
+    DRAWCONTEXT_VERTEX_BUFFER = 0b00001,
+    DRAWCONTEXT_INDEX_BUFFER  = 0b00010,
+    DRAWCONTEXT_PUSH_CONSTANT = 0b00100,
+    DRAWCONTEXT_GLOBAL_SET    = 0b01000,
+    DRAWCONTEXT_PIPELINE      = 0b10000,
+    DRAWCONTEXT_ALL           = 0b11111,
+};
+
+inline void operator|= (DrawContextDirtyBits &lhs, DrawContextDirtyBits rhs)
+{
+    lhs = static_cast<DrawContextDirtyBits>( static_cast<int>(lhs) | static_cast<int>(rhs) );
+}
+
+inline DrawContextDirtyBits operator| (DrawContextDirtyBits lhs, DrawContextDirtyBits rhs)
+{
+    return static_cast<DrawContextDirtyBits>( static_cast<int>(lhs) | static_cast<int>(rhs) );
+}
+
 class IBaseObject{
 public:
     virtual void destroy() = 0;
@@ -41,11 +61,13 @@ public:
 
 class RenderObject: IBaseObject{
 public:
-    virtual void draw(VkCommandBuffer commandBuffer) = 0;
+    virtual void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) = 0;
 
     void setupTransform(glm::mat4 matrix){
         transform = matrix;
     }
+
+    vkl::ShaderPass * _pass;
 
 protected:
     vkl::Device * _device;
@@ -73,7 +95,7 @@ public:
     uint32_t getVerticesCount() const { return _mesh.getVerticesCount(); }
     uint32_t getIndicesCount() const { return _mesh.getIndicesCount(); }
 
-    void draw(VkCommandBuffer commandBuffer) override;
+    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) override;
 
     virtual void setupDescriptor(VkDescriptorSetLayout layout);
 
@@ -87,15 +109,13 @@ protected:
     std::vector<Image> _images;
     std::vector<vkl::Material> _materials;
 
-    vkl::ShaderPass * _pass;
-
     VkDescriptorPool _descriptorPool;
 };
 
 class Model : public MeshObject{
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer) override;
+    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits) override;
     void destroy() override;
 
 private:

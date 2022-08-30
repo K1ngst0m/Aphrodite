@@ -214,14 +214,22 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
         drawNode(commandBuffer, pipelineLayout, child);
     }
 }
-void Model::draw(VkCommandBuffer commandBuffer)
+void Model::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits)
 {
     assert(_pass);
     // All vertices and indices are stored in single buffers, so we only need to bind once
     VkDeviceSize offsets[1] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+    if (dirtyBits & DRAWCONTEXT_VERTEX_BUFFER){
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_INDEX_BUFFER){
+        vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_PIPELINE){
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+    }
     // Render all nodes at top-level
     for (Node *node : _nodes) {
         node->matrix = transform;
@@ -337,16 +345,31 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue)
 
     stagingBuffer.destroy();
 }
-void MeshObject::draw(VkCommandBuffer commandBuffer)
+void MeshObject::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits)
 {
     assert(_pass);
     VkDeviceSize offsets[1] = { 0 };
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdPushConstants(commandBuffer, _pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+    if (dirtyBits & DRAWCONTEXT_VERTEX_BUFFER){
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_INDEX_BUFFER){
+        vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_PUSH_CONSTANT){
+        vkCmdPushConstants(commandBuffer, _pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_GLOBAL_SET){
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
+    }
+
+    if (dirtyBits & DRAWCONTEXT_PIPELINE){
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+    }
+
     vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(getIndicesCount()), 1, 0, 0, 0);
 }
 void MeshObject::setupDescriptor(VkDescriptorSetLayout layout)

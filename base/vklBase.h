@@ -8,6 +8,7 @@
 #include "vklMesh.h"
 #include "vklModel.h"
 #include "vklPipeline.h"
+#include "vklSceneManger.h"
 
 namespace vkl
 {
