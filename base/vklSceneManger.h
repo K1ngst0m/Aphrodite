@@ -1,7 +1,7 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "vklModel.h"
+#include "vklObject.h"
 
 namespace vkl{
 class SceneManager{

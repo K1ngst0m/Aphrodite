@@ -6,7 +6,7 @@
 #include "vklInit.hpp"
 #include "vklDevice.h"
 #include "vklMesh.h"
-#include "vklModel.h"
+#include "vklObject.h"
 #include "vklPipeline.h"
 #include "vklSceneManger.h"
 

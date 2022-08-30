@@ -1,5 +1,5 @@
 #define TINYGLTF_IMPLEMENTATION
-#include "vklModel.h"
+#include "vklObject.h"
 
 namespace vkl {
 
