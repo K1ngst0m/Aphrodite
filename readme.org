@@ -81,7 +81,11 @@ Reference:
 - [[https://learnopengl.com/Model-Loading/Model][Model]]
 
 *** [ ] IV - Advanced OpenGL (but Vulkan)
-**** [ ] 1. Depth testing
+**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/depth_testing][Depth testing]]
+
+Reference:
+- [[https://learnopengl.com/Advanced-OpenGL/Depth-testing][Depth-Testing]]
+
 **** [ ] 2. Stencil testing
 **** [ ] 3. Blending
 **** [ ] 4. Face culling
