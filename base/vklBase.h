@@ -101,6 +101,7 @@ protected:
     virtual void drawFrame() {}
 
     virtual void createCommandBuffers();
+    virtual void recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands);
 
 protected:
     std::vector<const char *> getRequiredInstanceExtensions();

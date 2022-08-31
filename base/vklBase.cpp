@@ -628,4 +628,38 @@ void vklBase::setupPipelineBuilder()
     m_pipelineBuilder._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
     m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
+void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands)
+{
+    for (int frameIdx = 0; frameIdx < m_swapChainImages.size(); frameIdx++) {
+        auto &commandBuffer = m_commandBuffers[frameIdx];
+
+        VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+
+        // render pass
+        std::vector<VkClearValue> clearValues(2);
+        clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
+        clearValues[1].depthStencil = { 1.0f, 0 };
+        VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[frameIdx]);
+        renderPassInfo.renderArea = {
+            .offset = { 0, 0 },
+            .extent = m_swapChainExtent,
+        };
+
+        // dynamic state
+        const VkViewport viewport = vkl::init::viewport(static_cast<float>(m_windowData.width), static_cast<float>(m_windowData.height));
+        const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
+
+        // record command
+        vkResetCommandBuffer(commandBuffer, 0);
+        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        drawCommands(commandBuffer);
+
+        vkCmdEndRenderPass(commandBuffer);
+        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+    }
+}
 }

@@ -16,7 +16,6 @@ private:
 
 private:
     void updateUniformBuffer();
-    void recordCommandBuffer();
     void setupShaders();
     void loadScene();
     void setupDescriptorSets();

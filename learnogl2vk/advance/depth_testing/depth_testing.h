@@ -16,7 +16,6 @@ private:
 
 private:
     void updateUniformBuffer();
-    void recordCommandBuffer();
     void setupShaders();
     void loadScene();
     void setupDescriptorSets();
@@ -32,8 +31,11 @@ private:
 
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderEffect m_planeShaderEffect;
+    vkl::ShaderEffect m_depthShaderEffect;
+
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
+    vkl::ShaderPass m_depthShaderPass;
 
     vkl::UniformBufferObject sceneUBO;
     vkl::UniformBufferObject pointLightUBO;
