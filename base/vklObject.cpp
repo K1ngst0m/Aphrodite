@@ -214,9 +214,9 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
         drawNode(commandBuffer, pipelineLayout, child);
     }
 }
-void Model::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits)
+void Model::draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4 transform, DrawContextDirtyBits dirtyBits)
 {
-    assert(_pass);
+    assert(pass);
     // All vertices and indices are stored in single buffers, so we only need to bind once
     VkDeviceSize offsets[1] = { 0 };
     if (dirtyBits & DRAWCONTEXT_VERTEX_BUFFER){
@@ -228,12 +228,12 @@ void Model::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits)
     }
 
     if (dirtyBits & DRAWCONTEXT_PIPELINE){
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
     }
     // Render all nodes at top-level
     for (Node *node : _nodes) {
         node->matrix = transform;
-        drawNode(commandBuffer, _pass->layout, node);
+        drawNode(commandBuffer, pass->layout, node);
     }
 }
 void Model::destroy()
@@ -263,6 +263,7 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
         loadImages(queue, glTFInput);
         loadMaterials(glTFInput);
         loadTextures(glTFInput);
+        // TODO multi scene
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for (int nodeIdx : scene.nodes) {
             const tinygltf::Node node = glTFInput.nodes[nodeIdx];
@@ -345,9 +346,9 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue)
 
     stagingBuffer.destroy();
 }
-void MeshObject::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits)
+void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4 transform, DrawContextDirtyBits dirtyBits)
 {
-    assert(_pass);
+    assert(pass);
     VkDeviceSize offsets[1] = { 0 };
 
     if (dirtyBits & DRAWCONTEXT_VERTEX_BUFFER){
@@ -359,18 +360,18 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyB
     }
 
     if (dirtyBits & DRAWCONTEXT_PUSH_CONSTANT){
-        vkCmdPushConstants(commandBuffer, _pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
+        vkCmdPushConstants(commandBuffer, pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
     }
 
     if (dirtyBits & DRAWCONTEXT_GLOBAL_SET){
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
     }
 
     if (dirtyBits & DRAWCONTEXT_PIPELINE){
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pass->builtPipeline);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
     }
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(getIndicesCount()), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, getIndicesCount(), 1, 0, 0, 0);
 }
 void MeshObject::setupDescriptor(VkDescriptorSetLayout layout)
 {
@@ -406,9 +407,5 @@ void MeshObject::setupMesh(vkl::Device *device, VkQueue queue,
 {
     _device = device;
     _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
-}
-void MeshObject::setShaderPass(vkl::ShaderPass *pass)
-{
-    _pass = pass;
 }
 }

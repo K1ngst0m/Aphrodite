@@ -12,7 +12,6 @@
 #include <tinygltf/tiny_gltf.h>
 
 #include <stb_image.h>
-
 namespace vkl {
 
 enum DrawContextDirtyBits: uint8_t{
@@ -34,6 +33,8 @@ inline DrawContextDirtyBits operator| (DrawContextDirtyBits lhs, DrawContextDirt
 {
     return static_cast<DrawContextDirtyBits>( static_cast<int>(lhs) | static_cast<int>(rhs) );
 }
+
+class SceneManager;
 
 class IBaseObject{
 public:
@@ -61,28 +62,19 @@ public:
 
 class RenderObject: IBaseObject{
 public:
-    virtual void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
-
-    void setupTransform(glm::mat4 matrix){
-        transform = matrix;
-    }
-
-    vkl::ShaderPass * _pass;
-
+    virtual void draw(VkCommandBuffer commandBuffer, ShaderPass * pass, glm::mat4 transform = glm::mat4(1.0f), DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
 protected:
     vkl::Device * _device;
-
-    glm::mat4 transform = glm::mat4(1.0f);
 };
 
 class MeshObject : public RenderObject{
 public:
+    friend class vkl::SceneManager;
+
     void setupMesh(vkl::Device *device, VkQueue queue,
                    const std::vector<VertexLayout> &vertices,
                    const std::vector<uint32_t> &indices = {},
                    size_t vSize = 0, size_t iSize = 0);
-
-    void setShaderPass(vkl::ShaderPass *pass);
 
     void destroy() override;
 
@@ -95,7 +87,7 @@ public:
     uint32_t getVerticesCount() const { return _mesh.getVerticesCount(); }
     uint32_t getIndicesCount() const { return _mesh.getIndicesCount(); }
 
-    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
+    void draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4 transform = glm::mat4(1.0f), DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
 
     virtual void setupDescriptor(VkDescriptorSetLayout layout);
 
@@ -115,7 +107,7 @@ protected:
 class Model : public MeshObject{
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
+    void draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4 transform = glm::mat4(1.0f), DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
     void destroy() override;
 
 private:

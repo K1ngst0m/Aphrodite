@@ -149,13 +149,11 @@ void model::recordCommandBuffer(uint32_t frameIdx)
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model.setupTransform(modelTransform);
-        m_model.draw(commandBuffer);
+        m_model.draw(commandBuffer, &m_modelShaderPass, modelTransform);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
-        m_planeMesh.setupTransform(planeTransform);
-        m_planeMesh.draw(commandBuffer);
+        m_planeMesh.draw(commandBuffer, &m_planeShaderPass, planeTransform);
     }
 
     vkCmdEndRenderPass(commandBuffer);
@@ -174,16 +172,14 @@ void model::loadScene()
 {
     // create scene uniform buffer
     {
-        VkDeviceSize bufferSize = sizeof(SceneDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(sizeof(SceneDataLayout), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, sceneUB);
         sceneUB.setupDescriptor();
     }
 
     // create point light uniform buffer
     {
-        VkDeviceSize bufferSize = sizeof(PointLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(sizeof(PointLightDataLayout), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, pointLightUB);
         pointLightUB.setupDescriptor();
         pointLightUB.map();
@@ -193,8 +189,7 @@ void model::loadScene()
 
     // create directional light uniform buffer
     {
-        VkDeviceSize bufferSize = sizeof(DirectionalLightDataLayout);
-        m_device->createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        m_device->createBuffer(sizeof(DirectionalLightDataLayout), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, directionalLightUB);
         directionalLightUB.setupDescriptor();
         directionalLightUB.map();
@@ -205,7 +200,6 @@ void model::loadScene()
     // load model data
     {
         m_model.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
-        m_model.setShaderPass(&m_modelShaderPass);
     }
 
     // load plane data
@@ -223,7 +217,6 @@ void model::loadScene()
 
         m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
         m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
-        m_planeMesh.setShaderPass(&m_planeShaderPass);
     }
 
 }

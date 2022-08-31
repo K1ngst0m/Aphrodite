@@ -132,10 +132,7 @@ void scene_manager::recordCommandBuffer()
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
         // scene drawing
-        {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
-            m_sceneManager.drawSceneRecord(commandBuffer, m_modelShaderPass);
-        }
+        m_sceneManager.drawScene(commandBuffer);
 
         vkCmdEndRenderPass(commandBuffer);
         VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));

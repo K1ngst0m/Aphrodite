@@ -4,38 +4,40 @@ namespace vkl {
 
 void SceneManager::pushUniform(UniformBufferObject *ubo)
 {
-    ubolist.push_back(ubo);
+    _lightNodeList.push_back(new SceneLightNode(ubo));
+    // _lightNodeList.emplace_back(ubo);
 }
 void SceneManager::pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform)
 {
-    object->setShaderPass(pass);
-    object->setupTransform(transform);
-    renderList.push_back(object);
+    _renderNodeList.push_back(new SceneRenderNode(object, pass, &object->_mesh, transform));
 }
-void SceneManager::drawSceneRecord(VkCommandBuffer commandBuffer, ShaderPass &pass)
+void SceneManager::drawScene(VkCommandBuffer commandBuffer)
 {
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass.layout, 0,
-                            1, m_globalDescriptorSet.data(), 0, nullptr);
-
     ShaderPass *lastPass = nullptr;
-    for (auto *renderObj : renderList) {
-        vkl::DrawContextDirtyBits dirtyBits;
+    Mesh * lastMesh = nullptr;
+    for (auto *renderNode : _renderNodeList) {
+
+        vkl::DrawContextDirtyBits dirtyBits = DRAWCONTEXT_GLOBAL_SET | DRAWCONTEXT_PUSH_CONSTANT;
         if (!lastPass) {
             dirtyBits = DRAWCONTEXT_ALL;
         } else {
-            dirtyBits = DRAWCONTEXT_INDEX_BUFFER | DRAWCONTEXT_VERTEX_BUFFER | DRAWCONTEXT_GLOBAL_SET | DRAWCONTEXT_PUSH_CONSTANT;
-            ShaderPass *currentPass = renderObj->_pass;
-            if (currentPass->builtPipeline != lastPass->builtPipeline) {
+            if (renderNode->_pass->builtPipeline != lastPass->builtPipeline) {
                 dirtyBits |= vkl::DRAWCONTEXT_PIPELINE;
             }
+
+            if (lastMesh != renderNode->_mesh){
+                dirtyBits |= DRAWCONTEXT_INDEX_BUFFER | DRAWCONTEXT_VERTEX_BUFFER;
+            }
         }
-        renderObj->draw(commandBuffer, dirtyBits);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &_globalDescriptorSet[0], 0, nullptr);
+        renderNode->draw(commandBuffer, dirtyBits);
     }
 }
 void SceneManager::setupDescriptor(vkl::Device *device, uint32_t setCount, VkDescriptorSetLayout setLayout)
 {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(setCount * ubolist.size()) },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(setCount * _lightNodeList.size()) },
     };
 
     VkDescriptorPoolCreateInfo poolInfo{
@@ -45,18 +47,18 @@ void SceneManager::setupDescriptor(vkl::Device *device, uint32_t setCount, VkDes
         .pPoolSizes = poolSizes.data(),
     };
 
-    VK_CHECK_RESULT(vkCreateDescriptorPool(device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
-    m_globalDescriptorSet.resize(setCount);
+    _globalDescriptorSet.resize(setCount);
 
-    for (auto &set : m_globalDescriptorSet) {
-        const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &setLayout, 1);
+    for (auto &set : _globalDescriptorSet) {
+        const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &setLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(device->logicalDevice, &allocInfo, &set));
 
         std::vector<VkDescriptorBufferInfo> bufferInfos{};
 
-        for (auto *ubo : ubolist) {
-            bufferInfos.push_back(ubo->buffer.descriptorInfo);
+        for (auto *uboNode : _lightNodeList) {
+            bufferInfos.push_back(uboNode->_object->buffer.descriptorInfo);
         }
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -78,6 +80,6 @@ void SceneManager::setupDescriptor(vkl::Device *device, uint32_t setCount, VkDes
 }
 void SceneManager::destroy(VkDevice device)
 {
-    vkDestroyDescriptorPool(device, m_descriptorPool, nullptr);
+    vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 }
 }
