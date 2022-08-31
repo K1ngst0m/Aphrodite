@@ -108,7 +108,16 @@ void depth_testing::initDerive()
     setupShaders();
     setupDescriptorSets();
     vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
-        m_sceneManager.drawScene(commandBuffer);
+        m_sceneManager.bindDescriptorSet(commandBuffer, 0, m_modelShaderPass.layout);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_model.draw(commandBuffer, &m_modelShaderPass, modelTransform);
+
+        m_sceneManager.bindDescriptorSet(commandBuffer, 0, m_planeShaderPass.layout);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
+        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
+        m_planeMesh.draw(commandBuffer, &m_planeShaderPass, planeTransform);
     });
 }
 

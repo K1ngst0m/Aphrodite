@@ -17,6 +17,7 @@ public:
     void pushUniform(UniformBufferObject *ubo);
     void pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f));
     void drawScene(VkCommandBuffer commandBuffer);
+    void bindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setIdx, VkPipelineLayout layout);
     void setupDescriptor(vkl::Device *device, uint32_t setCount, VkDescriptorSetLayout setLayout);
 
     void destroy(VkDevice device);

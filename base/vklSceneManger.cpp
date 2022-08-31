@@ -82,4 +82,8 @@ void SceneManager::destroy(VkDevice device)
 {
     vkDestroyDescriptorPool(device, _descriptorPool, nullptr);
 }
+void SceneManager::bindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setIdx, VkPipelineLayout layout)
+{
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &_globalDescriptorSet[setIdx], 0, nullptr);
+}
 }
