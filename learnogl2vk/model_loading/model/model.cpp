@@ -229,8 +229,8 @@ void model::setupShaders() {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
-        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
+        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, perSceneBindings);
+        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, perSceneBindings);
     }
 
     // per-material layout
@@ -238,8 +238,8 @@ void model::setupShaders() {
         std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
-        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
+        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, perMaterialBindings);
+        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, perMaterialBindings);
     }
 
     // push constants

@@ -66,7 +66,7 @@ void ShaderEffect::buildPipelineLayout(VkDevice device)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, constantRanges);
     VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &builtLayout));
 }
-void ShaderEffect::buildSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
+void ShaderEffect::pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
     VkDescriptorSetLayout setLayout;
     VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);

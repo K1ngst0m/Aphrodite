@@ -47,7 +47,7 @@ struct ShaderEffect {
     std::vector<ShaderStage> stages;
 
     void buildPipelineLayout(VkDevice device);
-    void buildSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
+    void pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
     void pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
     void pushConstantRanges(VkPushConstantRange constantRange);
 

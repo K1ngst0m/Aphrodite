@@ -79,8 +79,13 @@ void depth_testing::cleanupDerive()
 
     m_modelShaderEffect.destroy(m_device->logicalDevice);
     m_modelShaderPass.destroy(m_device->logicalDevice);
+
     m_planeShaderEffect.destroy(m_device->logicalDevice);
     m_planeShaderPass.destroy(m_device->logicalDevice);
+
+    m_depthShaderEffect.destroy(m_device->logicalDevice);
+    m_depthShaderPass.destroy(m_device->logicalDevice);
+
     m_shaderCache.destory(m_device->logicalDevice);
 
     m_sceneManager.destroy(m_device->logicalDevice);
@@ -88,15 +93,13 @@ void depth_testing::cleanupDerive()
 
 void depth_testing::updateUniformBuffer()
 {
-    {
-        SceneDataLayout sceneData{
-            .view = m_camera.GetViewMatrix(),
-            .proj = m_camera.GetProjectionMatrix(),
-            .viewProj = m_camera.GetViewProjectionMatrix(),
-            .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
-        };
-        sceneUBO.update(&sceneData);
-    }
+    SceneDataLayout sceneData{
+        .view = m_camera.GetViewMatrix(),
+        .proj = m_camera.GetProjectionMatrix(),
+        .viewProj = m_camera.GetViewProjectionMatrix(),
+        .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
+    };
+    sceneUBO.update(&sceneData);
 }
 
 void depth_testing::initDerive()
@@ -140,43 +143,54 @@ void depth_testing::loadScene()
 void depth_testing::setupShaders()
 {
     // per-scene layout
-    {
-        std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-        };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
-        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perSceneBindings);
-    }
+    std::vector<VkDescriptorSetLayoutBinding> globalBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+    };
 
     // per-material layout
-    {
-        std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        };
-        m_modelShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
-        m_planeShaderEffect.buildSetLayout(m_device->logicalDevice, perMaterialBindings);
-    }
+    std::vector<VkDescriptorSetLayoutBinding> materialBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+    };
 
-    // push constants
-    {
-        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        m_planeShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-    }
+    // depth layout
+    std::vector<VkDescriptorSetLayoutBinding> depthBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+    };
 
+    auto shaderDir = glslShaderDir/m_sessionName;
     // build Shader
     {
-        auto shaderDir = glslShaderDir/m_sessionName;
+        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings);
+        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
+        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
         m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
         m_modelShaderEffect.buildPipelineLayout(m_device->logicalDevice);
-        m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
 
+        m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
+    }
+
+    {
+        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings);
+        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
+        m_planeShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
         m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
         m_planeShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+
         m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
+    }
+
+    {
+        m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, depthBindings);
+        m_depthShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        m_depthShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+
+        m_depthShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_depthShaderEffect);
     }
 }
 
@@ -186,6 +200,7 @@ void depth_testing::setupDescriptorSets()
     auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
 
     m_sceneManager.setupDescriptor(m_device, m_swapChainImageViews.size(), sceneSetLayout);
+
     m_model.setupDescriptor(materialSetLayout);
     m_planeMesh.setupDescriptor(materialSetLayout);
 }
