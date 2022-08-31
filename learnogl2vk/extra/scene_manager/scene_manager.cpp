@@ -103,7 +103,6 @@ void scene_manager::initDerive()
 {
     loadScene();
     setupShaders();
-    setupDescriptorSets();
     vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
         m_sceneManager.drawScene(commandBuffer);
     });
@@ -178,16 +177,8 @@ void scene_manager::setupShaders()
         m_planeShaderEffect.buildPipelineLayout(m_device->logicalDevice);
         m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
     }
-}
 
-void scene_manager::setupDescriptorSets()
-{
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
-
-    m_sceneManager.setupDescriptor(m_device, m_swapChainImageViews.size(), sceneSetLayout);
-    m_model.setupDescriptor(materialSetLayout);
-    m_planeMesh.setupDescriptor(materialSetLayout);
+    m_sceneManager.setupDescriptor(m_device->logicalDevice);
 }
 
 int main()

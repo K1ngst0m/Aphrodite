@@ -363,9 +363,7 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4
         vkCmdPushConstants(commandBuffer, pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
     }
 
-    if (dirtyBits & DRAWCONTEXT_GLOBAL_SET){
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
-    }
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, &_images[0].descriptorSet, 0, nullptr);
 
     if (dirtyBits & DRAWCONTEXT_PIPELINE){
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);

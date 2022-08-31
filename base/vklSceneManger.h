@@ -12,13 +12,12 @@ enum NodeTypeEnum{
     SCENE_NODE_RENDER_TRANSPARENCY,
 };
 
-class SceneManager{
+class Scene{
 public:
     void pushUniform(UniformBufferObject *ubo);
     void pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f));
     void drawScene(VkCommandBuffer commandBuffer);
-    void bindDescriptorSet(VkCommandBuffer commandBuffer, uint32_t setIdx, VkPipelineLayout layout);
-    void setupDescriptor(vkl::Device *device, uint32_t setCount, VkDescriptorSetLayout setLayout);
+    void setupDescriptor(VkDevice device);
 
     void destroy(VkDevice device);
 private:
@@ -34,7 +33,7 @@ private:
 
         glm::mat4 _transform;
 
-        SceneRenderNode() = default;
+        VkDescriptorSet _globalDescriptorSet;
 
         SceneRenderNode(vkl::RenderObject * object, vkl::ShaderPass * pass, vkl::Mesh * mesh, glm::mat4 transform)
             : _object(object), _pass(pass), _mesh(mesh), _transform(transform)
@@ -48,8 +47,6 @@ private:
     struct SceneLightNode: SceneNode{
         vkl::UniformBufferObject * _object = nullptr;
 
-        SceneLightNode() = default;
-
         SceneLightNode(vkl::UniformBufferObject * object)
             :_object(object)
         {}
@@ -59,7 +56,6 @@ private:
     std::vector<SceneLightNode*> _lightNodeList;
 
     VkDescriptorPool _descriptorPool;
-    std::vector<VkDescriptorSet> _globalDescriptorSet;
 };
 }
 

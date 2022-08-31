@@ -34,7 +34,7 @@ inline DrawContextDirtyBits operator| (DrawContextDirtyBits lhs, DrawContextDirt
     return static_cast<DrawContextDirtyBits>( static_cast<int>(lhs) | static_cast<int>(rhs) );
 }
 
-class SceneManager;
+class Scene;
 
 class IBaseObject{
 public:
@@ -63,13 +63,14 @@ public:
 class RenderObject: IBaseObject{
 public:
     virtual void draw(VkCommandBuffer commandBuffer, ShaderPass * pass, glm::mat4 transform = glm::mat4(1.0f), DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
+    virtual void setupDescriptor(VkDescriptorSetLayout layout) = 0;
 protected:
     vkl::Device * _device;
 };
 
 class MeshObject : public RenderObject{
 public:
-    friend class vkl::SceneManager;
+    friend class vkl::Scene;
 
     void setupMesh(vkl::Device *device, VkQueue queue,
                    const std::vector<VertexLayout> &vertices,
@@ -89,7 +90,7 @@ public:
 
     void draw(VkCommandBuffer commandBuffer, ShaderPass* pass, glm::mat4 transform = glm::mat4(1.0f), DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
 
-    virtual void setupDescriptor(VkDescriptorSetLayout layout);
+    void setupDescriptor(VkDescriptorSetLayout layout) override;
 
 protected:
     struct Image{

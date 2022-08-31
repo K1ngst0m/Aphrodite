@@ -18,7 +18,6 @@ private:
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
-    void setupDescriptorSets();
 
 private:
     enum DescriptorSetType {
@@ -41,7 +40,7 @@ private:
     vkl::Model m_model;
     vkl::MeshObject m_planeMesh;
 
-    vkl::SceneManager m_sceneManager;
+    vkl::Scene m_sceneManager;
 };
 
 #endif // SCENE_MANAGER_H_
