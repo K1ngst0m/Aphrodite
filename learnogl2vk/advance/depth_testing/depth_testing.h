@@ -18,15 +18,9 @@ private:
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
-    void setupDescriptorSets();
+    void buildCommand();
 
 private:
-    enum DescriptorSetType {
-        DESCRIPTOR_SET_SCENE,
-        DESCRIPTOR_SET_MATERIAL,
-        DESCRIPTOR_SET_COUNT
-    };
-
     vkl::ShaderCache m_shaderCache;
 
     vkl::ShaderEffect m_modelShaderEffect;
@@ -44,7 +38,11 @@ private:
     vkl::Model m_model;
     vkl::MeshObject m_planeMesh;
 
-    vkl::SceneManager m_sceneManager;
+    vkl::Scene m_defaultScene;
+
+    vkl::Scene m_depthScene;
+
+    bool enableDepthVisualization = false;
 };
 
 #endif // DEPTH_TESTING_H_

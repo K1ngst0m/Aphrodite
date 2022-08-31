@@ -58,6 +58,14 @@ void depth_testing::drawFrame()
 {
     vkl::vklBase::prepareFrame();
     updateUniformBuffer();
+
+    if (glfwGetKey(m_window, GLFW_KEY_SPACE) == GLFW_PRESS){
+        enableDepthVisualization = !enableDepthVisualization;
+        glfwWaitEvents();
+        vkDeviceWaitIdle(m_device->logicalDevice);
+        buildCommand();
+    }
+
     vkl::vklBase::submitFrame();
 }
 
@@ -88,7 +96,8 @@ void depth_testing::cleanupDerive()
 
     m_shaderCache.destory(m_device->logicalDevice);
 
-    m_sceneManager.destroy(m_device->logicalDevice);
+    m_defaultScene.destroy(m_device->logicalDevice);
+    m_depthScene.destroy(m_device->logicalDevice);
 }
 
 void depth_testing::updateUniformBuffer()
@@ -106,19 +115,7 @@ void depth_testing::initDerive()
 {
     loadScene();
     setupShaders();
-    setupDescriptorSets();
-    vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
-        m_sceneManager.bindDescriptorSet(commandBuffer, 0, m_modelShaderPass.layout);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_modelShaderPass.builtPipeline);
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model.draw(commandBuffer, &m_modelShaderPass, modelTransform);
-
-        m_sceneManager.bindDescriptorSet(commandBuffer, 0, m_planeShaderPass.layout);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_planeShaderPass.builtPipeline);
-        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.5f, 0.0f));
-        m_planeMesh.draw(commandBuffer, &m_planeShaderPass, planeTransform);
-    });
+    buildCommand();
 }
 
 void depth_testing::loadScene()
@@ -135,17 +132,22 @@ void depth_testing::loadScene()
         m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
     }
 
+    glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+    modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
+
     {
-        m_sceneManager.pushUniform(&sceneUBO);
-        m_sceneManager.pushUniform(&pointLightUBO);
-        m_sceneManager.pushUniform(&directionalLightUBO);
+        m_defaultScene.pushUniform(&sceneUBO);
+        m_defaultScene.pushUniform(&pointLightUBO);
+        m_defaultScene.pushUniform(&directionalLightUBO);
+        m_defaultScene.pushObject(&m_model, &m_modelShaderPass, modelTransform);
+        m_defaultScene.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+    }
 
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        modelTransform = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_sceneManager.pushObject(&m_model, &m_modelShaderPass, modelTransform);
-
-        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_sceneManager.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+    {
+        m_depthScene.pushUniform(&sceneUBO);
+        m_depthScene.pushObject(&m_model, &m_depthShaderPass, modelTransform);
+        m_depthScene.pushObject(&m_planeMesh, &m_depthShaderPass, planeTransform);
     }
 }
 
@@ -169,6 +171,7 @@ void depth_testing::setupShaders()
     };
 
     auto shaderDir = glslShaderDir/m_sessionName;
+
     // build Shader
     {
         m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings);
@@ -194,6 +197,7 @@ void depth_testing::setupShaders()
 
     {
         m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, depthBindings);
+        m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
         m_depthShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
         m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -201,17 +205,9 @@ void depth_testing::setupShaders()
 
         m_depthShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_depthShaderEffect);
     }
-}
 
-void depth_testing::setupDescriptorSets()
-{
-    auto &sceneSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_SCENE];
-    auto &materialSetLayout = m_modelShaderEffect.setLayouts[DESCRIPTOR_SET_MATERIAL];
-
-    m_sceneManager.setupDescriptor(m_device, m_swapChainImageViews.size(), sceneSetLayout);
-
-    m_model.setupDescriptor(materialSetLayout);
-    m_planeMesh.setupDescriptor(materialSetLayout);
+    m_defaultScene.setupDescriptor(m_device->logicalDevice);
+    m_depthScene.setupDescriptor(m_device->logicalDevice);
 }
 
 int main()
@@ -221,4 +217,14 @@ int main()
     app.vkl::vklBase::init();
     app.vkl::vklBase::run();
     app.vkl::vklBase::finish();
+}
+void depth_testing::buildCommand()
+{
+    vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
+        if (enableDepthVisualization) {
+            m_depthScene.drawScene(commandBuffer);
+        } else {
+            m_defaultScene.drawScene(commandBuffer);
+        }
+    });
 }
