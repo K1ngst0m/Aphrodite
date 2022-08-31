@@ -15,7 +15,7 @@ layout (set = 0, binding = 0) uniform SceneUB{
     vec3 viewPos;
 } sceneData;
 
-layout (set = 1, binding = 0) uniform PointLightUB{
+layout (set = 0, binding = 1) uniform PointLightUB{
     vec3 position;
     vec3 ambient;
     vec3 diffuse;
@@ -24,15 +24,20 @@ layout (set = 1, binding = 0) uniform PointLightUB{
     vec3 attenuationFactor;
 } pointLightData;
 
-layout (set = 1, binding = 1) uniform DirectionalLightUB{
+layout (set = 0, binding = 2) uniform DirectionalLightUB{
     vec3 direction;
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 } directionalLightData;
 
-layout(set = 2, binding = 0) uniform sampler2D sampler_baseColor;
+layout(set = 1, binding = 0) uniform sampler2D sampler_baseColor;
 
 void main() {
-    outColor = texture(sampler_baseColor, fragTexCoord);
+    vec3 N = normalize(fragNormal);
+    vec3 L = normalize(directionalLightData.direction);
+    vec3 V = normalize(sceneData.viewPos - fragPosition);
+    vec3 diffuse = max(dot(N, L), 0.15) * fragColor;
+
+    outColor = texture(sampler_baseColor, fragTexCoord) * vec4(diffuse, 1.0f);
 }

@@ -5,6 +5,7 @@
 
 class depth_testing : public vkl::vklBase {
 public:
+    depth_testing(): vkl::vklBase("advance/depth_testing", 1366, 768){}
     ~depth_testing() override = default;
 
 private:
@@ -12,51 +13,36 @@ private:
     void drawFrame() override;
     void getEnabledFeatures() override;
     void cleanupDerive() override;
-    void keyboardHandleDerive() override;
 
 private:
-    void setupDescriptors();
-    void createUniformBuffers();
-    void createDescriptorSets();
-    void createDescriptorSetLayout();
-    void setupPipelineBuilder();
-    void createGraphicsPipeline();
-    void createDescriptorPool();
-    void updateUniformBuffer(uint32_t currentFrameIndex);
+    void updateUniformBuffer();
     void recordCommandBuffer();
-    void createPipelineLayout();
+    void setupShaders();
     void loadScene();
+    void setupDescriptorSets();
 
 private:
-    struct PerFrameData{
-        vkl::Buffer cameraUB;
-        vkl::Buffer pointLightUB;
-        vkl::Buffer directionalLightUB;
-        VkDescriptorSet cameraDescriptorSet;
-        VkDescriptorSet sceneDescriptorSet;
+    enum DescriptorSetType {
+        DESCRIPTOR_SET_SCENE,
+        DESCRIPTOR_SET_MATERIAL,
+        DESCRIPTOR_SET_COUNT
     };
-    std::vector<PerFrameData> m_perFrameData;
 
-    vkl::Model m_planeModel;
-    vkl::Model m_cubeModel;
+    vkl::ShaderCache m_shaderCache;
 
-    bool enabledDepthVisualizing = false;
+    vkl::ShaderEffect m_modelShaderEffect;
+    vkl::ShaderEffect m_planeShaderEffect;
+    vkl::ShaderPass m_modelShaderPass;
+    vkl::ShaderPass m_planeShaderPass;
 
-    struct{
-        VkDescriptorSetLayout camera;
-        VkDescriptorSetLayout scene;
-        VkDescriptorSetLayout material;
-    } m_descriptorSetLayouts;
+    vkl::UniformBufferObject sceneUBO;
+    vkl::UniformBufferObject pointLightUBO;
+    vkl::UniformBufferObject directionalLightUBO;
 
-    struct{
-        VkPipelineLayout model;
-        VkPipelineLayout depth;
-    } m_pipelineLayouts;
+    vkl::Model m_model;
+    vkl::MeshObject m_planeMesh;
 
-    struct{
-        VkPipeline model;
-        VkPipeline depth;
-    } m_pipelines;
+    vkl::SceneManager m_sceneManager;
 };
 
 #endif // DEPTH_TESTING_H_
