@@ -73,6 +73,7 @@ protected:
     void createDevice();
     void createInstance();
     bool checkValidationLayerSupport();
+    void setupDebugMessenger();
     void createSwapChain();
     void createSurface();
     void recreateSwapChain();
@@ -107,6 +108,8 @@ protected:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     void loadImageFromFile(vkl::Texture &texture, std::string_view imagePath);
+    void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                       const VkAllocationCallbacks *pAllocator);
 
 protected:
     Device *m_device;
@@ -117,6 +120,8 @@ protected:
     GLFWwindow *m_window = nullptr;
     VkInstance m_instance;
     std::vector<const char *> m_supportedInstanceExtensions;
+
+    VkDebugUtilsMessengerEXT m_debugMessenger;
 
     struct{
         VkQueue graphics;
