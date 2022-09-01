@@ -2,24 +2,24 @@
 #define VKLUTILS_H_
 
 #include <algorithm>
-#include <type_traits>
-#include <unordered_map>
-#include <cstring>
-#include <optional>
 #include <array>
+#include <cassert>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <optional>
+#include <type_traits>
+#include <unordered_map>
 #include <vector>
-#include <cassert>
 #include <vulkan/vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #define GLFW_INCLUDE_NONE
@@ -45,13 +45,12 @@
         }                                                                                                 \
     }
 
-namespace vkl::utils
-{
-std::string errorString(VkResult errorCode);
-std::vector<char> loadSpvFromFile(const std::string &filename);
+namespace vkl::utils {
+std::string        errorString(VkResult errorCode);
+std::vector<char>  loadSpvFromFile(const std::string &filename);
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
-}
+VkPresentModeKHR   chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
+VkExtent2D         chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
+} // namespace vkl::utils
 
 #endif // VKLUTILS_H_

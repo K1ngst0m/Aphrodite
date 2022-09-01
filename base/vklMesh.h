@@ -10,13 +10,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include <vulkan/vulkan.h>
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace vkl {
 
 // vertex data component
-enum class VertexComponent {POSITION, NORMAL, UV, COLOR};
+enum class VertexComponent { POSITION, NORMAL, UV, COLOR };
 
 // vertex data layout
 struct VertexLayout {
@@ -25,32 +25,33 @@ struct VertexLayout {
     glm::vec2 uv;
     glm::vec3 color;
 
-    static VkVertexInputBindingDescription _vertexInputBindingDescription;
+    static VkVertexInputBindingDescription                _vertexInputBindingDescription;
     static std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
-    static VkPipelineVertexInputStateCreateInfo _pipelineVertexInputStateCreateInfo;
+    static VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
 
-    static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
-    static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
+    static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location,
+                                                                       VertexComponent component);
+    static std::vector<VkVertexInputAttributeDescription>
+                inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
     static void setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
-
-struct VertexBuffer : Buffer{
+struct VertexBuffer : Buffer {
     std::vector<VertexLayout> vertices;
 };
 
-struct IndexBuffer : Buffer{
+struct IndexBuffer : Buffer {
     std::vector<uint32_t> indices;
 };
 
-struct UniformBuffer : Buffer{
-    void update(const void* data){
+struct UniformBuffer : Buffer {
+    void update(const void *data) {
         map();
         copyTo(data, size);
         unmap();
     }
 
-    VkDescriptorBufferInfo getBufferInfo(){
+    VkDescriptorBufferInfo getBufferInfo() {
         return descriptorInfo;
     }
 };
@@ -58,45 +59,43 @@ struct UniformBuffer : Buffer{
 struct Primitive {
     uint32_t firstIndex;
     uint32_t indexCount;
-    int32_t materialIndex;
+    int32_t  materialIndex;
 };
 
 struct Mesh {
-    vkl::VertexBuffer vertexBuffer;
-    vkl::IndexBuffer indexBuffer;
+    vkl::VertexBuffer      vertexBuffer;
+    vkl::IndexBuffer       indexBuffer;
     std::vector<Primitive> primitives;
 
-    void setup(vkl::Device * device, VkQueue transferQueue,
-               std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {},
-               uint32_t vSize = 0, uint32_t iSize = 0);
+    void setup(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {},
+               std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
-    void pushPrimitive(uint32_t firstIdx, uint32_t indexCount, int32_t materialIdx){
+    void pushPrimitive(uint32_t firstIdx, uint32_t indexCount, int32_t materialIdx) {
         primitives.push_back({firstIdx, indexCount, materialIdx});
     }
 
-    VkBuffer getVertexBuffer() const{
+    VkBuffer getVertexBuffer() const {
         return vertexBuffer.buffer;
     }
 
-    VkBuffer getIndexBuffer() const{
+    VkBuffer getIndexBuffer() const {
         return indexBuffer.buffer;
     }
 
-    uint32_t getVerticesCount() const{
+    uint32_t getVerticesCount() const {
         return vertexBuffer.vertices.size();
     }
 
-    uint32_t getIndicesCount() const{
+    uint32_t getIndicesCount() const {
         return indexBuffer.indices.size();
     }
 
-    void destroy() const{
+    void destroy() const {
         vertexBuffer.destroy();
         indexBuffer.destroy();
     }
 };
 
-}
-
+} // namespace vkl
 
 #endif // VKLMESH_H_

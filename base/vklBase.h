@@ -1,7 +1,7 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#include "camera.h"
+#include "vklCamera.h"
 #include "vklUtils.h"
 #include "vklInit.hpp"
 #include "vklDevice.h"
