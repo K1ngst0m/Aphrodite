@@ -77,29 +77,6 @@ void depth_testing::getEnabledFeatures()
     };
 }
 
-void depth_testing::cleanupDerive()
-{
-    m_planeMesh.destroy();
-    m_model.destroy();
-    sceneUBO.destroy();
-    pointLightUBO.destroy();
-    directionalLightUBO.destroy();
-
-    m_modelShaderEffect.destroy(m_device->logicalDevice);
-    m_modelShaderPass.destroy(m_device->logicalDevice);
-
-    m_planeShaderEffect.destroy(m_device->logicalDevice);
-    m_planeShaderPass.destroy(m_device->logicalDevice);
-
-    m_depthShaderEffect.destroy(m_device->logicalDevice);
-    m_depthShaderPass.destroy(m_device->logicalDevice);
-
-    m_shaderCache.destory(m_device->logicalDevice);
-
-    m_defaultScene.destroy(m_device->logicalDevice);
-    m_depthScene.destroy(m_device->logicalDevice);
-}
-
 void depth_testing::updateUniformBuffer()
 {
     SceneDataLayout sceneData{
@@ -108,25 +85,27 @@ void depth_testing::updateUniformBuffer()
         .viewProj = m_camera.GetViewProjectionMatrix(),
         .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
     };
-    sceneUBO.update(&sceneData);
+    m_sceneUBO.update(&sceneData);
 }
 
 void depth_testing::initDerive()
 {
     loadScene();
     setupShaders();
-    buildCommands();}
+    buildCommands();
+}
 
 void depth_testing::loadScene()
 {
     {
-        sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
-        pointLightUBO.setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
-        directionalLightUBO.setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
+        m_sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
+        m_pointLightUBO.setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
+        m_directionalLightUBO.setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
     }
 
     {
         m_model.loadFromFile(m_device, m_queues.transfer, modelDir/"FlightHelmet/glTF/FlightHelmet.gltf");
+
         m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
         m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
     }
@@ -136,18 +115,26 @@ void depth_testing::loadScene()
     glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
 
     {
-        m_defaultScene.pushUniform(&sceneUBO);
-        m_defaultScene.pushUniform(&pointLightUBO);
-        m_defaultScene.pushUniform(&directionalLightUBO);
-        m_defaultScene.pushObject(&m_model, &m_modelShaderPass, modelTransform);
-        m_defaultScene.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+        m_defaultScene.pushUniform(&m_sceneUBO)
+                      .pushUniform(&m_pointLightUBO)
+                      .pushUniform(&m_directionalLightUBO)
+                      .pushObject(&m_model, &m_modelShaderPass, modelTransform)
+                      .pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
     }
 
     {
-        m_depthScene.pushUniform(&sceneUBO);
-        m_depthScene.pushObject(&m_model, &m_depthShaderPass, modelTransform);
-        m_depthScene.pushObject(&m_planeMesh, &m_depthShaderPass, planeTransform);
+        m_depthScene.pushUniform(&m_sceneUBO)
+                    .pushObject(&m_model, &m_depthShaderPass, modelTransform)
+                    .pushObject(&m_planeMesh, &m_depthShaderPass, planeTransform);
     }
+
+    m_deletionQueue.push_function([&](){
+        m_planeMesh.destroy();
+        m_model.destroy();
+        m_sceneUBO.destroy();
+        m_pointLightUBO.destroy();
+        m_directionalLightUBO.destroy();
+    });
 }
 
 void depth_testing::setupShaders()
@@ -173,47 +160,71 @@ void depth_testing::setupShaders()
 
     // build Shader
     {
-        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings);
-        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
-        m_modelShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        m_modelShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings)
+                           .pushSetLayout(m_device->logicalDevice, materialBindings)
+                           .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+                           .buildPipelineLayout(m_device->logicalDevice);
 
         m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
     }
 
     {
-        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings);
-        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
-        m_planeShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        m_planeShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        m_planeShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings)
+                           .pushSetLayout(m_device->logicalDevice, materialBindings)
+                           .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"plane.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+                           .buildPipelineLayout(m_device->logicalDevice);
 
         m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
     }
 
     {
-        m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, depthBindings);
-        m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings);
-        m_depthShaderEffect.pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        m_depthShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        m_depthShaderEffect.buildPipelineLayout(m_device->logicalDevice);
+        m_depthShaderEffect.pushSetLayout(m_device->logicalDevice, depthBindings)
+                           .pushSetLayout(m_device->logicalDevice, materialBindings)
+                           .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir/"depth.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+                           .buildPipelineLayout(m_device->logicalDevice);
 
         m_depthShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_depthShaderEffect);
     }
 
-    m_defaultScene.setupDescriptor(m_device->logicalDevice);
-    m_depthScene.setupDescriptor(m_device->logicalDevice);
+    {
+        m_defaultScene.setupDescriptor(m_device->logicalDevice);
+        m_depthScene.setupDescriptor(m_device->logicalDevice);
+    }
+
+    m_deletionQueue.push_function([&](){
+        m_modelShaderEffect.destroy(m_device->logicalDevice);
+        m_modelShaderPass.destroy(m_device->logicalDevice);
+
+        m_planeShaderEffect.destroy(m_device->logicalDevice);
+        m_planeShaderPass.destroy(m_device->logicalDevice);
+
+        m_depthShaderEffect.destroy(m_device->logicalDevice);
+        m_depthShaderPass.destroy(m_device->logicalDevice);
+
+        m_shaderCache.destory(m_device->logicalDevice);
+
+        m_depthScene.destroy(m_device->logicalDevice);
+        m_defaultScene.destroy(m_device->logicalDevice);
+    });
 }
 
 void depth_testing::buildCommands()
 {
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
-        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) { m_defaultScene.drawScene(commandBuffer); },
-                                     idx);
+        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
+            if (enableDepthVisualization){
+                m_depthScene.drawScene(commandBuffer);
+            }
+            else{
+                m_defaultScene.drawScene(commandBuffer);
+            }
+        }, idx);
     }
 }
 

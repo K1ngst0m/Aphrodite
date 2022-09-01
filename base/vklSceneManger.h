@@ -14,8 +14,8 @@ enum NodeTypeEnum{
 
 class Scene{
 public:
-    void pushUniform(UniformBufferObject *ubo);
-    void pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f));
+    Scene& pushUniform(UniformBufferObject *ubo);
+    Scene& pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f));
     void drawScene(VkCommandBuffer commandBuffer);
     void setupDescriptor(VkDevice device);
 

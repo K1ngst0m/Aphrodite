@@ -240,12 +240,13 @@ void Model::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 tran
     }
 }
 void Model::destroy() {
-    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
     _mesh.destroy();
 
     for (const auto &image : _images) {
         image.texture.destroy();
     }
+
+    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
 }
 void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
     _device = device;
@@ -394,11 +395,11 @@ void MeshObject::setupDescriptor(VkDescriptorSetLayout layout) {
 void MeshObject::destroy() {
     _mesh.destroy();
 
-    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
-
     for (auto &image : _images) {
         image.texture.destroy();
     }
+
+    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
 }
 void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                            const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {

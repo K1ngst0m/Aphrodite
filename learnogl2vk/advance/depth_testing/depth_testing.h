@@ -12,7 +12,6 @@ private:
     void initDerive() override;
     void drawFrame() override;
     void getEnabledFeatures() override;
-    void cleanupDerive() override;
 
 private:
     void updateUniformBuffer();
@@ -31,9 +30,9 @@ private:
     vkl::ShaderPass m_planeShaderPass;
     vkl::ShaderPass m_depthShaderPass;
 
-    vkl::UniformBufferObject sceneUBO;
-    vkl::UniformBufferObject pointLightUBO;
-    vkl::UniformBufferObject directionalLightUBO;
+    vkl::UniformBufferObject m_sceneUBO;
+    vkl::UniformBufferObject m_pointLightUBO;
+    vkl::UniformBufferObject m_directionalLightUBO;
 
     vkl::Model m_model;
     vkl::MeshObject m_planeMesh;

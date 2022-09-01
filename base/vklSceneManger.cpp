@@ -2,13 +2,15 @@
 
 namespace vkl {
 
-void Scene::pushUniform(UniformBufferObject *ubo)
+Scene& Scene::pushUniform(UniformBufferObject *ubo)
 {
     _lightNodeList.push_back(new SceneLightNode(ubo));
+    return *this;
 }
-void Scene::pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform)
+Scene& Scene::pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform)
 {
     _renderNodeList.push_back(new SceneRenderNode(object, pass, &object->_mesh, transform));
+    return *this;
 }
 void Scene::drawScene(VkCommandBuffer commandBuffer)
 {

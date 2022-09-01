@@ -46,10 +46,10 @@ struct ShaderEffect {
 
     std::vector<ShaderStage> stages;
 
-    void buildPipelineLayout(VkDevice device);
-    void pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
-    void pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
-    void pushConstantRanges(VkPushConstantRange constantRange);
+    ShaderEffect& buildPipelineLayout(VkDevice device);
+    ShaderEffect& pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
+    ShaderEffect& pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
+    ShaderEffect& pushConstantRanges(VkPushConstantRange constantRange);
 
     void destroy(VkDevice device){
         for (auto & setLayout: setLayouts){
