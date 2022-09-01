@@ -21,12 +21,6 @@ private:
     void buildCommands();
 
 private:
-    enum DescriptorSetType {
-        DESCRIPTOR_SET_SCENE,
-        DESCRIPTOR_SET_MATERIAL,
-        DESCRIPTOR_SET_COUNT
-    };
-
     vkl::ShaderCache m_shaderCache;
 
     vkl::ShaderEffect m_modelShaderEffect;
