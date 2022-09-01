@@ -68,7 +68,7 @@ void imgui_example::drawFrame()
     ImGui::ShowDemoWindow();
     ImGui::Render();
     vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
-        m_defaultScene.drawScene(commandBuffer);
+        // m_defaultScene.drawScene(commandBuffer);
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }, m_imageIdx);
     vkl::vklBase::submitFrame();
@@ -82,36 +82,15 @@ void imgui_example::getEnabledFeatures()
     };
 }
 
-void imgui_example::cleanupDerive()
-{
-    ImGui_ImplVulkan_Shutdown();
-
-    m_planeMesh.destroy();
-    m_model.destroy();
-    sceneUBO.destroy();
-    pointLightUBO.destroy();
-    directionalLightUBO.destroy();
-
-    m_modelShaderEffect.destroy(m_device->logicalDevice);
-    m_modelShaderPass.destroy(m_device->logicalDevice);
-    m_planeShaderEffect.destroy(m_device->logicalDevice);
-    m_planeShaderPass.destroy(m_device->logicalDevice);
-    m_shaderCache.destory(m_device->logicalDevice);
-
-    m_defaultScene.destroy(m_device->logicalDevice);
-}
-
 void imgui_example::updateUniformBuffer()
 {
-    {
-        SceneDataLayout sceneData{
-            .view = m_camera.GetViewMatrix(),
-            .proj = m_camera.GetProjectionMatrix(),
-            .viewProj = m_camera.GetViewProjectionMatrix(),
-            .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
-        };
-        sceneUBO.update(&sceneData);
-    }
+    SceneDataLayout sceneData{
+        .view = m_camera.GetViewMatrix(),
+        .proj = m_camera.GetProjectionMatrix(),
+        .viewProj = m_camera.GetViewProjectionMatrix(),
+        .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
+    };
+    sceneUBO.update(&sceneData);
 }
 
 void imgui_example::initDerive()
@@ -147,6 +126,14 @@ void imgui_example::loadScene()
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
         m_defaultScene.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
     }
+
+    m_deletionQueue.push_function([&](){
+        m_planeMesh.destroy();
+        m_model.destroy();
+        directionalLightUBO.destroy();
+        pointLightUBO.destroy();
+        sceneUBO.destroy();
+    });
 }
 
 void imgui_example::setupImGui() {
@@ -204,6 +191,11 @@ void imgui_example::setupImGui() {
 
     glfwSetKeyCallback(m_window, ImGui_ImplGlfw_KeyCallback);
     glfwSetMouseButtonCallback(m_window, ImGui_ImplGlfw_MouseButtonCallback);
+
+    m_deletionQueue.push_function([=](){
+        vkDestroyDescriptorPool(m_device->logicalDevice, imguiPool, nullptr);
+        ImGui_ImplVulkan_Shutdown();
+    });
 }
 
 void imgui_example::setupShaders()
@@ -249,9 +241,15 @@ void imgui_example::setupShaders()
     }
 
     m_defaultScene.setupDescriptor(m_device->logicalDevice);
-}
 
-void imgui_example::imguiDraw() {
+    m_deletionQueue.push_function([&](){
+        m_defaultScene.destroy(m_device->logicalDevice);
+        m_modelShaderEffect.destroy(m_device->logicalDevice);
+        m_modelShaderPass.destroy(m_device->logicalDevice);
+        m_planeShaderEffect.destroy(m_device->logicalDevice);
+        m_planeShaderPass.destroy(m_device->logicalDevice);
+        m_shaderCache.destory(m_device->logicalDevice);
+    });
 }
 
 int main()

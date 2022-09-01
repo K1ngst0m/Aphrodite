@@ -5,21 +5,19 @@
 
 class imgui_example : public vkl::vklBase {
 public:
-    imgui_example(): vkl::vklBase("extra/imgui", 2000, 1200){}
+    imgui_example(): vkl::vklBase("extra/imgui_example", 2000, 1200){}
     ~imgui_example() override = default;
 
 private:
     void initDerive() override;
     void drawFrame() override;
     void getEnabledFeatures() override;
-    void cleanupDerive() override;
 
 private:
     void setupImGui();
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
-    void imguiDraw();
 
 private:
     enum DescriptorSetType {

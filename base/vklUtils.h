@@ -1,6 +1,7 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#include <deque>
 #include <algorithm>
 #include <array>
 #include <cassert>

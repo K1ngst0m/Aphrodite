@@ -109,6 +109,10 @@ void vklBase::createSurface() {
     if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
+
+    m_deletionQueue.push_function([=](){
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+    });
 }
 
 void vklBase::createInstance() {
@@ -144,6 +148,9 @@ void vklBase::createInstance() {
     }
 
     VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
+    m_deletionQueue.push_function([=](){
+        vkDestroyInstance(m_instance, nullptr);
+    });
 }
 
 void vklBase::initWindow() {
@@ -165,6 +172,11 @@ void vklBase::initWindow() {
     glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double xposIn, double yposIn) {
         auto *app = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
         app->mouseHandleDerive(xposIn, yposIn);
+    });
+
+    m_deletionQueue.push_function([=](){
+        glfwDestroyWindow(m_window);
+        glfwTerminate();
     });
 }
 
@@ -198,6 +210,10 @@ void vklBase::createDevice() {
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_queues.graphics);
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_queues.present);
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &m_queues.transfer);
+
+    m_deletionQueue.push_function([=](){
+        delete m_device;
+    });
 }
 
 void vklBase::createRenderPass() {
@@ -262,31 +278,21 @@ void vklBase::createRenderPass() {
     };
 
     VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_defaultRenderPass));
+
+    m_deletionQueue.push_function([=](){
+        vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr);
+    });
 }
 
 void vklBase::cleanup() {
     cleanupSwapChain();
 
-    for (auto &frameSyncObject : m_frameSyncObjects) {
-        frameSyncObject.destroy(m_device->logicalDevice);
-    }
-
-    vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr);
-
-    delete m_device;
-    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-    if (m_settings.isEnableValidationLayer) {
-        destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
-    }
-    vkDestroyInstance(m_instance, nullptr);
-
-    glfwDestroyWindow(m_window);
-
-    glfwTerminate();
+    m_deletionQueue.flush();
 }
 
 void vklBase::initVulkan() {
     createInstance();
+    setupDebugMessenger();
     createSurface();
     createDevice();
     createSwapChain();
@@ -601,21 +607,17 @@ void vklBase::submitFrame() {
 void vklBase::createSyncObjects() {
     m_frameSyncObjects.resize(m_settings.max_frames);
 
-    VkSemaphoreCreateInfo semaphoreInfo{
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-    };
-
-    VkFenceCreateInfo fenceInfo{
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
-    };
+    VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
+    VkFenceCreateInfo fenceInfo = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
     for (auto &m_frameSyncObject : m_frameSyncObjects) {
-        VK_CHECK_RESULT(
-            vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(
-            vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
+
+        m_deletionQueue.push_function([=](){
+            m_frameSyncObject.destroy(m_device->logicalDevice);
+        });
     }
 }
 
@@ -683,9 +685,10 @@ void vklBase::setupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-        throw std::runtime_error("failed to set up debug messenger!");
-    }
+    VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger));
+    m_deletionQueue.push_function([=](){
+        destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+    });
 }
 
 void vklBase::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,

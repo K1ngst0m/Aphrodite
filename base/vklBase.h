@@ -39,6 +39,23 @@ struct MouseData {
     }
 };
 
+struct DeletionQueue
+{
+    std::deque<std::function<void()>> deletors;
+
+    void push_function(std::function<void()>&& function) {
+        deletors.push_back(function);
+    }
+
+    void flush() {
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+            (*it)();
+        }
+
+        deletors.clear();
+    }
+};
+
 class vklBase {
 public:
     vklBase(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
@@ -167,6 +184,8 @@ protected:
     Camera       m_camera;
 
     vkl::PipelineBuilder m_pipelineBuilder;
+
+    vkl::DeletionQueue m_deletionQueue;
 };
 } // namespace vkl
 
