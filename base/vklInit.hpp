@@ -156,10 +156,12 @@ inline VkEventCreateInfo eventCreateInfo()
     return eventCreateInfo;
 }
 
-inline VkSubmitInfo submitInfo()
+inline VkSubmitInfo submitInfo(VkCommandBuffer* commandBuffers, uint32_t count = 1)
 {
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = count;
+    submitInfo.pCommandBuffers = commandBuffers;
     return submitInfo;
 }
 

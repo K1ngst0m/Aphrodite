@@ -147,15 +147,17 @@ void vklBase::createInstance() {
 }
 
 void vklBase::initWindow() {
-    if (glfwInit() == GLFW_FALSE) {
-        throw std::runtime_error("failed to creating window.");
-    }
+    assert(glfwInit());
+    assert(glfwVulkanSupported());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     m_window = glfwCreateWindow(m_windowData.width, m_windowData.height, "Demo", nullptr, nullptr);
+    assert(m_window);
+
     glfwSetWindowUserPointer(m_window, this);
+
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
         auto *app                 = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
         app->m_framebufferResized = true;
@@ -164,11 +166,6 @@ void vklBase::initWindow() {
         auto *app = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
         app->mouseHandleDerive(xposIn, yposIn);
     });
-    // TODO keyboard input processing
-    glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-
-    });
-    // glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void vklBase::createDevice() {
@@ -279,7 +276,7 @@ void vklBase::cleanup() {
     delete m_device;
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     if (m_settings.isEnableValidationLayer) {
-        DestroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
+        destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
     }
     vkDestroyInstance(m_instance, nullptr);
 
@@ -524,6 +521,7 @@ void vklBase::run() {
     while (!glfwWindowShouldClose(m_window)) {
         glfwPollEvents();
         keyboardHandleDerive();
+
         drawFrame();
     }
 
@@ -644,40 +642,38 @@ void vklBase::setupPipelineBuilder() {
     m_pipelineBuilder._depthStencil =
         vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
-void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands) {
-    for (int frameIdx = 0; frameIdx < m_swapChainImages.size(); frameIdx++) {
-        auto &commandBuffer = m_commandBuffers[frameIdx];
+void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx) {
+    auto &commandBuffer = m_commandBuffers[frameIdx];
 
-        VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
-        // render pass
-        std::vector<VkClearValue> clearValues(2);
-        clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-        VkRenderPassBeginInfo renderPassInfo =
-            vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[frameIdx]);
-        renderPassInfo.renderArea = {
-            .offset = {0, 0},
-            .extent = m_swapChainExtent,
-        };
+    // render pass
+    std::vector<VkClearValue> clearValues(2);
+    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+    VkRenderPassBeginInfo renderPassInfo =
+        vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[frameIdx]);
+    renderPassInfo.renderArea = {
+        .offset = {0, 0},
+        .extent = m_swapChainExtent,
+    };
 
-        // dynamic state
-        const VkViewport viewport =
-            vkl::init::viewport(static_cast<float>(m_windowData.width), static_cast<float>(m_windowData.height));
-        const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
+    // dynamic state
+    const VkViewport viewport =
+        vkl::init::viewport(static_cast<float>(m_windowData.width), static_cast<float>(m_windowData.height));
+    const VkRect2D scissor = vkl::init::rect2D(m_swapChainExtent);
 
-        // record command
-        vkResetCommandBuffer(commandBuffer, 0);
-        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    // record command
+    vkResetCommandBuffer(commandBuffer, 0);
+    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        drawCommands(commandBuffer);
+    drawCommands(commandBuffer);
 
-        vkCmdEndRenderPass(commandBuffer);
-        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
-    }
+    vkCmdEndRenderPass(commandBuffer);
+    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 
 void vklBase::setupDebugMessenger() {
@@ -692,12 +688,18 @@ void vklBase::setupDebugMessenger() {
     }
 }
 
-void vklBase::DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+void vklBase::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                             const VkAllocationCallbacks *pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }
+}
+
+void vklBase::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) {
+    VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
+    function(cmd);
+    m_device->endSingleTimeCommands(cmd, m_queues.graphics);
 }
 
 } // namespace vkl

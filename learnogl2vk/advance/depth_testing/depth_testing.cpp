@@ -63,7 +63,7 @@ void depth_testing::drawFrame()
         enableDepthVisualization = !enableDepthVisualization;
         glfwWaitEvents();
         vkDeviceWaitIdle(m_device->logicalDevice);
-        buildCommand();
+        buildCommands();
     }
 
     vkl::vklBase::submitFrame();
@@ -115,8 +115,7 @@ void depth_testing::initDerive()
 {
     loadScene();
     setupShaders();
-    buildCommand();
-}
+    buildCommands();}
 
 void depth_testing::loadScene()
 {
@@ -210,6 +209,14 @@ void depth_testing::setupShaders()
     m_depthScene.setupDescriptor(m_device->logicalDevice);
 }
 
+void depth_testing::buildCommands()
+{
+    for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
+        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) { m_defaultScene.drawScene(commandBuffer); },
+                                     idx);
+    }
+}
+
 int main()
 {
     depth_testing app;
@@ -217,14 +224,4 @@ int main()
     app.vkl::vklBase::init();
     app.vkl::vklBase::run();
     app.vkl::vklBase::finish();
-}
-void depth_testing::buildCommand()
-{
-    vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
-        if (enableDepthVisualization) {
-            m_depthScene.drawScene(commandBuffer);
-        } else {
-            m_defaultScene.drawScene(commandBuffer);
-        }
-    });
 }

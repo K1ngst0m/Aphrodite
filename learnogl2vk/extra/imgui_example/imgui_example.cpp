@@ -1,4 +1,4 @@
-#include "scene_manager.h"
+#include "imgui.h"
 
 // per scene data
 // general scene data
@@ -54,14 +54,14 @@ std::vector<vkl::VertexLayout> planeVertices {
     {{ 5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f},{1.0f, 1.0f, 1.0f}},
 };
 
-void scene_manager::drawFrame()
+void imgui_example::drawFrame()
 {
     vkl::vklBase::prepareFrame();
     updateUniformBuffer();
     vkl::vklBase::submitFrame();
 }
 
-void scene_manager::getEnabledFeatures()
+void imgui_example::getEnabledFeatures()
 {
     assert(m_device->features.samplerAnisotropy);
     m_device->enabledFeatures = {
@@ -69,7 +69,7 @@ void scene_manager::getEnabledFeatures()
     };
 }
 
-void scene_manager::cleanupDerive()
+void imgui_example::cleanupDerive()
 {
     m_planeMesh.destroy();
     m_model.destroy();
@@ -86,7 +86,7 @@ void scene_manager::cleanupDerive()
     m_sceneManager.destroy(m_device->logicalDevice);
 }
 
-void scene_manager::updateUniformBuffer()
+void imgui_example::updateUniformBuffer()
 {
     {
         SceneDataLayout sceneData{
@@ -99,14 +99,16 @@ void scene_manager::updateUniformBuffer()
     }
 }
 
-void scene_manager::initDerive()
+void imgui_example::initDerive()
 {
     loadScene();
     setupShaders();
-    buildCommands();
+    vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
+        m_sceneManager.drawScene(commandBuffer);
+    });
 }
 
-void scene_manager::loadScene()
+void imgui_example::loadScene()
 {
     {
         sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
@@ -134,7 +136,7 @@ void scene_manager::loadScene()
     }
 }
 
-void scene_manager::setupShaders()
+void imgui_example::setupShaders()
 {
     // per-scene layout
     {
@@ -179,16 +181,9 @@ void scene_manager::setupShaders()
     m_sceneManager.setupDescriptor(m_device->logicalDevice);
 }
 
-void scene_manager::buildCommands() {
-    for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
-        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) { m_sceneManager.drawScene(commandBuffer); },
-                                     idx);
-    }
-}
-
 int main()
 {
-    scene_manager app;
+    imgui_example app;
 
     app.vkl::vklBase::init();
     app.vkl::vklBase::run();

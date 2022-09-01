@@ -18,7 +18,7 @@ private:
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
-    void buildCommand();
+    void buildCommands();
 
 private:
     vkl::ShaderCache m_shaderCache;

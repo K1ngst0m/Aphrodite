@@ -297,9 +297,8 @@ void Device::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, Vk
 
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 
-    VkSubmitInfo submitInfo = vkl::init::submitInfo();
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer);
+
     // Create fence to ensure that the command buffer has finished executing
     VkFenceCreateInfo fenceInfo = vkl::init::fenceCreateInfo(VK_FLAGS_NONE);
     VkFence fence;
@@ -425,10 +424,7 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue)
 {
     vkEndCommandBuffer(commandBuffer);
 
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer);
 
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(queue);

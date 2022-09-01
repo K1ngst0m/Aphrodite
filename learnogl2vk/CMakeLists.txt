@@ -43,6 +43,7 @@ set(EXAMPLES
   model_loading/model
   advance/depth_testing
   extra/scene_manager
+  extra/imgui_example
 )
 
 buildExamples()

@@ -3,10 +3,10 @@
 
 #include "vklBase.h"
 
-class scene_manager : public vkl::vklBase {
+class imgui_example : public vkl::vklBase {
 public:
-    scene_manager(): vkl::vklBase("extra/scene_manager", 1366, 768){}
-    ~scene_manager() override = default;
+    imgui_example(): vkl::vklBase("extra/scene_manager", 1366, 768){}
+    ~imgui_example() override = default;
 
 private:
     void initDerive() override;
@@ -18,7 +18,6 @@ private:
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
-    void buildCommands();
 
 private:
     enum DescriptorSetType {
