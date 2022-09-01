@@ -5,7 +5,7 @@
 
 class imgui_example : public vkl::vklBase {
 public:
-    imgui_example(): vkl::vklBase("extra/scene_manager", 1366, 768){}
+    imgui_example(): vkl::vklBase("extra/imgui", 2000, 1200){}
     ~imgui_example() override = default;
 
 private:
@@ -15,9 +15,11 @@ private:
     void cleanupDerive() override;
 
 private:
+    void setupImGui();
     void updateUniformBuffer();
     void setupShaders();
     void loadScene();
+    void imguiDraw();
 
 private:
     enum DescriptorSetType {
@@ -40,7 +42,7 @@ private:
     vkl::Model m_model;
     vkl::MeshObject m_planeMesh;
 
-    vkl::Scene m_sceneManager;
+    vkl::Scene m_defaultScene;
 };
 
 #endif // SCENE_MANAGER_H_
