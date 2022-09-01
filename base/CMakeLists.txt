@@ -4,12 +4,16 @@ file(GLOB base_src
   *.hpp
   ../external/spirv_reflect/*.cpp
   ../external/spirv_reflect/*.h
+  ../external/imgui/*.cpp
+  ../external/imgui/*.h
   )
 
 
 file(GLOB BASE_HEADERS
   *.h
   *.hpp
+  ../external/spirv_reflect/*.h
+  ../external/imgui/*.h
   )
 
 add_library(base STATIC ${base_src})

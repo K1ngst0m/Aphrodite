@@ -12,6 +12,7 @@ include(cmake/external.cmake)
 include_directories(external)
 include_directories(external/glm)
 include_directories(external/tinygltf)
+include_directories(external/imgui)
 include_directories(external/glfw/include)
 
 include_directories(base)
