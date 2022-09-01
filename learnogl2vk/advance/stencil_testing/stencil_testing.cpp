@@ -61,29 +61,6 @@ void stencil_testing::drawFrame() {
     vkl::vklBase::submitFrame();
 }
 
-void stencil_testing::getEnabledFeatures() {
-    assert(m_device->features.samplerAnisotropy);
-    m_device->enabledFeatures = {
-        .samplerAnisotropy = VK_TRUE,
-    };
-}
-
-void stencil_testing::cleanupDerive() {
-    m_planeMesh.destroy();
-    m_model.destroy();
-    sceneUBO.destroy();
-    pointLightUBO.destroy();
-    directionalLightUBO.destroy();
-
-    m_modelShaderEffect.destroy(m_device->logicalDevice);
-    m_modelShaderPass.destroy(m_device->logicalDevice);
-    m_planeShaderEffect.destroy(m_device->logicalDevice);
-    m_planeShaderPass.destroy(m_device->logicalDevice);
-    m_shaderCache.destory(m_device->logicalDevice);
-
-    m_sceneManager.destroy(m_device->logicalDevice);
-}
-
 void stencil_testing::updateUniformBuffer() {
     {
         SceneDataLayout sceneData{
@@ -127,6 +104,14 @@ void stencil_testing::loadScene() {
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
         m_sceneManager.pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
     }
+
+    m_deletionQueue.push_function([&](){
+        m_planeMesh.destroy();
+        m_model.destroy();
+        sceneUBO.destroy();
+        pointLightUBO.destroy();
+        directionalLightUBO.destroy();
+    });
 }
 
 void stencil_testing::setupShaders() {
@@ -179,6 +164,16 @@ void stencil_testing::setupShaders() {
     }
 
     m_sceneManager.setupDescriptor(m_device->logicalDevice);
+
+    m_deletionQueue.push_function([&](){
+        m_modelShaderEffect.destroy(m_device->logicalDevice);
+        m_modelShaderPass.destroy(m_device->logicalDevice);
+        m_planeShaderEffect.destroy(m_device->logicalDevice);
+        m_planeShaderPass.destroy(m_device->logicalDevice);
+        m_shaderCache.destory(m_device->logicalDevice);
+
+        m_sceneManager.destroy(m_device->logicalDevice);
+    });
 }
 
 void stencil_testing::buildCommands() {

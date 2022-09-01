@@ -11,8 +11,6 @@ public:
 private:
     void initDerive() override;
     void drawFrame() override;
-    void getEnabledFeatures() override;
-    void cleanupDerive() override;
 
 private:
     void updateUniformBuffer();
