@@ -1,9 +1,5 @@
 #include "imgui_example.h"
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
-
 // per scene data
 // general scene data
 struct SceneDataLayout {
@@ -61,15 +57,10 @@ std::vector<vkl::VertexLayout> planeVertices {
 void imgui_example::drawFrame()
 {
     vkl::vklBase::prepareFrame();
+    vkl::vklBase::prepareUI();
     updateUniformBuffer();
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow();
-    ImGui::Render();
     vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer){
         // m_defaultScene.drawScene(commandBuffer);
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }, m_imageIdx);
     vkl::vklBase::submitFrame();
 }
@@ -137,65 +128,6 @@ void imgui_example::loadScene()
 }
 
 void imgui_example::setupImGui() {
-    // 1: create descriptor pool for IMGUI
-    //  the size of the pool is very oversize, but it's copied from imgui demo itself.
-    VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-                                        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-                                        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-                                        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-                                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-                                        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
-
-    VkDescriptorPoolCreateInfo poolInfo = {
-        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-        .maxSets       = 1000,
-        .poolSizeCount = std::size(poolSizes),
-        .pPoolSizes    = poolSizes,
-    };
-
-    VkDescriptorPool imguiPool;
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &imguiPool));
-
-    // 2: initialize imgui library
-
-    // this initializes the core structures of imgui
-    ImGui::CreateContext();
-
-    ImGui_ImplGlfw_InitForVulkan(m_window, true);
-
-    // this initializes imgui for Vulkan
-    ImGui_ImplVulkan_InitInfo initInfo = {
-        .Instance       = m_instance,
-        .PhysicalDevice = m_device->physicalDevice,
-        .Device         = m_device->logicalDevice,
-        .Queue          = m_queues.graphics,
-        .DescriptorPool = imguiPool,
-        .MinImageCount  = 3,
-        .ImageCount     = 3,
-        .MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
-    };
-
-    ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
-
-    // execute a gpu command to upload imgui font textures
-    immediateSubmit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
-
-    // clear font textures from cpu data
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
-
-    glfwSetKeyCallback(m_window, ImGui_ImplGlfw_KeyCallback);
-    glfwSetMouseButtonCallback(m_window, ImGui_ImplGlfw_MouseButtonCallback);
-
-    m_deletionQueue.push_function([=](){
-        vkDestroyDescriptorPool(m_device->logicalDevice, imguiPool, nullptr);
-        ImGui_ImplVulkan_Shutdown();
-    });
 }
 
 void imgui_example::setupShaders()

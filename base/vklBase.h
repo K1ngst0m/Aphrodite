@@ -39,11 +39,10 @@ struct MouseData {
     }
 };
 
-struct DeletionQueue
-{
+struct DeletionQueue {
     std::deque<std::function<void()>> deletors;
 
-    void push_function(std::function<void()>&& function) {
+    void push_function(std::function<void()> &&function) {
         deletors.push_back(function);
     }
 
@@ -75,8 +74,9 @@ protected:
 
 protected:
     struct {
-        bool           isEnableValidationLayer = true;
-        const uint32_t max_frames              = 2;
+        bool           enableValidationLayers = true;
+        bool           enableUI               = false;
+        const uint32_t max_frames             = 2;
     } m_settings;
 
 protected:
@@ -94,11 +94,13 @@ protected:
     void createFramebuffers();
     void setupPipelineBuilder();
     void prepareFrame();
+    void prepareUI();
     void submitFrame();
 
 protected:
     void initWindow();
     void initVulkan();
+    void initImGui();
     void cleanup();
 
 protected:
@@ -116,7 +118,8 @@ protected:
     }
 
     virtual void createCommandBuffers();
-    virtual void recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
+    virtual void recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+                                     uint32_t                                              frameIdx);
 
 protected:
     std::vector<const char *> getRequiredInstanceExtensions();

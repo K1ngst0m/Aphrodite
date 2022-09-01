@@ -3,6 +3,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui_impl_glfw.h>
+
 namespace vkl {
 
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -92,7 +96,7 @@ std::vector<const char *> vklBase::getRequiredInstanceExtensions() {
 
     std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (m_settings.isEnableValidationLayer) {
+    if (m_settings.enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -133,7 +137,7 @@ void vklBase::createSurface() {
 }
 
 void vklBase::createInstance() {
-    if (m_settings.isEnableValidationLayer && !checkValidationLayerSupport()) {
+    if (m_settings.enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -156,7 +160,7 @@ void vklBase::createInstance() {
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     populateDebugMessengerCreateInfo(debugCreateInfo);
-    if (m_settings.isEnableValidationLayer) {
+    if (m_settings.enableValidationLayers) {
         createInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
         createInfo.pNext               = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
@@ -552,6 +556,7 @@ void vklBase::finish() {
 void vklBase::init() {
     initWindow();
     initVulkan();
+    initImGui();
     initDerive();
 }
 void vklBase::prepareFrame() {
@@ -685,6 +690,10 @@ void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBu
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
+    if (m_settings.enableUI){
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+    }
+
     drawCommands(commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
@@ -692,7 +701,7 @@ void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBu
 }
 
 void vklBase::setupDebugMessenger() {
-    if (!m_settings.isEnableValidationLayer)
+    if (!m_settings.enableValidationLayers)
         return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -714,6 +723,78 @@ void vklBase::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&functio
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
     m_device->endSingleTimeCommands(cmd, m_queues.graphics);
+}
+
+void vklBase::initImGui() {
+    // 1: create descriptor pool for IMGUI
+    //  the size of the pool is very oversize, but it's copied from imgui demo itself.
+    VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
+                                        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
+                                        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
+                                        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
+                                        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
+                                        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
+
+    VkDescriptorPoolCreateInfo poolInfo = {
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        .maxSets       = 1000,
+        .poolSizeCount = std::size(poolSizes),
+        .pPoolSizes    = poolSizes,
+    };
+
+    VkDescriptorPool imguiPool;
+    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &imguiPool));
+
+    // 2: initialize imgui library
+
+    // this initializes the core structures of imgui
+    ImGui::CreateContext();
+
+    ImGui_ImplGlfw_InitForVulkan(m_window, true);
+
+    // this initializes imgui for Vulkan
+    ImGui_ImplVulkan_InitInfo initInfo = {
+        .Instance       = m_instance,
+        .PhysicalDevice = m_device->physicalDevice,
+        .Device         = m_device->logicalDevice,
+        .Queue          = m_queues.graphics,
+        .DescriptorPool = imguiPool,
+        .MinImageCount  = 3,
+        .ImageCount     = 3,
+        .MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
+    };
+
+    ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
+
+    // execute a gpu command to upload imgui font textures
+    immediateSubmit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+
+    // clear font textures from cpu data
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    glfwSetKeyCallback(m_window, ImGui_ImplGlfw_KeyCallback);
+    glfwSetMouseButtonCallback(m_window, ImGui_ImplGlfw_MouseButtonCallback);
+
+    m_deletionQueue.push_function([=]() {
+        vkDestroyDescriptorPool(m_device->logicalDevice, imguiPool, nullptr);
+        ImGui_ImplVulkan_Shutdown();
+    });
+}
+
+void vklBase::prepareUI() {
+    if(m_settings.enableUI){
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
+        ImGui::Render();
+    }
 }
 
 } // namespace vkl

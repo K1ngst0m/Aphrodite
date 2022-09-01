@@ -5,7 +5,9 @@
 
 class imgui_example : public vkl::vklBase {
 public:
-    imgui_example(): vkl::vklBase("extra/imgui_example", 2000, 1200){}
+    imgui_example(): vkl::vklBase("extra/imgui_example", 2000, 1200){
+        m_settings.enableUI = true;
+    }
     ~imgui_example() override = default;
 
 private:
