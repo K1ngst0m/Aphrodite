@@ -86,7 +86,11 @@ Reference:
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Depth-testing][Depth-Testing]]
 
-**** [ ] 2. Stencil testing
+**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/stencil_testing][Stencil testing]]
+
+Reference:
+- [[https://learnopengl.com/Advanced-OpenGL/Stencil-testing][Stencil-Testing]]
+
 **** [ ] 3. Blending
 **** [ ] 4. Face culling
 **** [ ] 5. Cubemaps
