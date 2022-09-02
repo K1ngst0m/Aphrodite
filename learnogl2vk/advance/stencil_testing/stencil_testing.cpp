@@ -97,8 +97,8 @@ void stencil_testing::loadScene() {
         m_defaultScene.pushUniform(&sceneUBO)
                       .pushUniform(&pointLightUBO)
                       .pushUniform(&directionalLightUBO)
-                      .pushObject(&m_model, &m_modelShaderPass, modelTransform)
-                      .pushObject(&m_model, &m_modelShaderPass, glm::translate(modelTransform, glm::vec3(1.0f, 0.0f, 0.0f)));
+                      .pushObject(&m_model, &m_outlineShaderPass, modelTransform)
+                      .pushObject(&m_model, &m_modelShaderPass, modelTransform);
     }
 
     m_deletionQueue.push_function([&](){
@@ -141,16 +141,42 @@ void stencil_testing::setupShaders() {
     }
 
     // build Shader
+    auto shaderDir = glslShaderDir / m_sessionName;
     {
-        auto shaderDir = glslShaderDir / m_sessionName;
         m_modelShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
                            .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                            .buildPipelineLayout(m_device->logicalDevice);
+        m_pipelineBuilder._depthStencil.stencilTestEnable = VK_TRUE;
+        m_pipelineBuilder._depthStencil.back = {
+            .failOp = VK_STENCIL_OP_REPLACE,
+            .passOp = VK_STENCIL_OP_REPLACE,
+            .depthFailOp = VK_STENCIL_OP_REPLACE,
+            .compareOp = VK_COMPARE_OP_ALWAYS,
+            .compareMask = 0xff,
+            .writeMask = 0xff,
+            .reference = 1,
+        };
+        m_pipelineBuilder._depthStencil.front = m_pipelineBuilder._depthStencil.back;
         m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
+    }
+
+    {
+        m_pipelineBuilder._depthStencil.depthTestEnable = VK_FALSE;
+        m_pipelineBuilder._depthStencil.stencilTestEnable = VK_TRUE;
+        m_pipelineBuilder._depthStencil.back = {
+            .failOp = VK_STENCIL_OP_KEEP,
+            .passOp = VK_STENCIL_OP_REPLACE,
+            .depthFailOp = VK_STENCIL_OP_KEEP,
+            .compareOp = VK_COMPARE_OP_NOT_EQUAL,
+            .compareMask = 0xff,
+            .writeMask = 0xff,
+            .reference = 1,
+        };
+        m_pipelineBuilder._depthStencil.front = m_pipelineBuilder._depthStencil.back;
 
         m_outlineShaderEffect.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "outline.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-                             .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "outline.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-                             .buildPipelineLayout(m_device->logicalDevice);
+                            .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "outline.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+                            .buildPipelineLayout(m_device->logicalDevice);
         m_outlineShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_outlineShaderEffect);
     }
 
