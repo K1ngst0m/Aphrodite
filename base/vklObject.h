@@ -62,7 +62,9 @@ class RenderObject : IBaseObject {
 public:
     virtual void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
                       DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
-    virtual void setupDescriptor(VkDescriptorSetLayout layout)          = 0;
+    virtual void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool)          = 0;
+
+    virtual std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() = 0;
 
 protected:
     vkl::Device *_device;
@@ -87,7 +89,6 @@ public:
     VkBuffer getIndexBuffer() const {
         return _mesh.getIndexBuffer();
     }
-
     uint32_t getVerticesCount() const {
         return _mesh.getVerticesCount();
     }
@@ -98,7 +99,15 @@ public:
     void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
               DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
 
-    void setupDescriptor(VkDescriptorSetLayout layout) override;
+    void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) override;
+
+    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() override{
+        std::vector<VkDescriptorPoolSize> poolSizes{
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size())},
+        };
+
+        return poolSizes;
+    }
 
 protected:
     struct Image {
@@ -109,8 +118,6 @@ protected:
     vkl::Mesh                  _mesh;
     std::vector<Image>         _images;
     std::vector<vkl::Material> _materials;
-
-    VkDescriptorPool _descriptorPool;
 };
 
 class Model : public MeshObject {

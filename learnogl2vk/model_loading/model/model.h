@@ -16,7 +16,7 @@ private:
 
 private:
     void createDescriptorSetLayouts();
-    void createGlobalDescriptorPool();
+    void createDescriptorPool();
     void updateUniformBuffer(uint32_t frameIdx);
     void recordCommandBuffer(uint32_t frameIdx);
     void setupShaders();

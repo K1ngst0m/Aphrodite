@@ -13,27 +13,27 @@ private:
     void drawFrame() override;
 
 private:
+    void loadScene();
     void updateUniformBuffer();
     void setupShaders();
-    void loadScene();
     void buildCommands();
 
 private:
     vkl::ShaderCache m_shaderCache;
 
     vkl::ShaderEffect m_modelShaderEffect;
-    vkl::ShaderEffect m_planeShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
-    vkl::ShaderPass m_planeShaderPass;
+
+    vkl::ShaderEffect m_outlineShaderEffect;
+    vkl::ShaderPass m_outlineShaderPass;
 
     vkl::UniformBufferObject sceneUBO;
     vkl::UniformBufferObject pointLightUBO;
     vkl::UniformBufferObject directionalLightUBO;
 
     vkl::Model m_model;
-    vkl::MeshObject m_planeMesh;
 
-    vkl::Scene m_sceneManager;
+    vkl::Scene m_defaultScene;
 };
 
 #endif // SCENE_MANAGER_H_

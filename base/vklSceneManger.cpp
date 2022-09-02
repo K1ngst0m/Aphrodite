@@ -39,7 +39,18 @@ void Scene::setupDescriptor(VkDevice device)
     std::vector<VkDescriptorPoolSize> poolSizes{
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(_lightNodeList.size() * _renderNodeList.size()) },
     };
-    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, _renderNodeList.size());
+
+    uint32_t maxSetSize = _renderNodeList.size();
+
+    for (auto & renderNode : _renderNodeList){
+        std::vector<VkDescriptorPoolSize> setInfos = renderNode->_object->getDescriptorSetInfo();
+        for (auto& setInfo : setInfos){
+            maxSetSize += setInfo.descriptorCount;
+            poolSizes.push_back(setInfo);
+        }
+    }
+
+    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(device, &poolInfo, nullptr, &_descriptorPool));
 
     std::vector<VkDescriptorBufferInfo> bufferInfos{};
@@ -65,7 +76,7 @@ void Scene::setupDescriptor(VkDevice device)
         }
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1]);
+        renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
     }
 
 }

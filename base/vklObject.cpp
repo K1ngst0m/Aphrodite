@@ -245,9 +245,8 @@ void Model::destroy() {
     for (const auto &image : _images) {
         image.texture.destroy();
     }
-
-    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
 }
+
 void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
     _device = device;
 
@@ -374,18 +373,9 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4
 
     vkCmdDrawIndexed(commandBuffer, getIndicesCount(), 1, 0, 0, 0);
 }
-void MeshObject::setupDescriptor(VkDescriptorSetLayout layout) {
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size())},
-    };
-
-    VkDescriptorPoolCreateInfo poolInfo =
-        vkl::init::descriptorPoolCreateInfo(poolSizes, static_cast<uint32_t>(_images.size()));
-
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
-
+void MeshObject::setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &image : _images) {
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &layout, 1);
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &image.descriptorSet));
         VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(
             image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
@@ -398,8 +388,6 @@ void MeshObject::destroy() {
     for (auto &image : _images) {
         image.texture.destroy();
     }
-
-    vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
 }
 void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                            const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {

@@ -76,18 +76,30 @@ void model::cleanupDerive()
     m_shaderCache.destory(m_device->logicalDevice);
 }
 
-void model::createGlobalDescriptorPool()
+void model::createDescriptorPool()
 {
+    uint32_t maxSetSize = m_settings.max_frames;
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_settings.max_frames * 3)},
     };
 
-    VkDescriptorPoolCreateInfo poolInfo{
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        .maxSets = static_cast<uint32_t>(m_settings.max_frames),
-        .poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
-        .pPoolSizes = poolSizes.data(),
-    };
+    {
+        std::vector<VkDescriptorPoolSize> setInfos = m_model.getDescriptorSetInfo();
+        for (auto& setInfo : setInfos){
+            maxSetSize += setInfo.descriptorCount;
+            poolSizes.push_back(setInfo);
+        }
+    }
+
+    {
+        std::vector<VkDescriptorPoolSize> setInfos = m_planeMesh.getDescriptorSetInfo();
+        for (auto& setInfo : setInfos){
+            maxSetSize += setInfo.descriptorCount;
+            poolSizes.push_back(setInfo);
+        }
+    }
+
+    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
 
     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &m_descriptorPool));
 }
@@ -163,8 +175,8 @@ void model::recordCommandBuffer(uint32_t frameIdx)
 void model::initDerive()
 {
     loadScene();
-    createGlobalDescriptorPool();
     setupShaders();
+    createDescriptorPool();
     setupDescriptorSets();
 }
 
@@ -295,9 +307,8 @@ void model::setupDescriptorSets()
 
     // materials
     {
-        m_model.setupDescriptor(materialSetLayout);
-
-        m_planeMesh.setupDescriptor(materialSetLayout);
+        m_model.setupDescriptor(materialSetLayout, m_descriptorPool);
+        m_planeMesh.setupDescriptor(materialSetLayout, m_descriptorPool);
     }
 }
 
