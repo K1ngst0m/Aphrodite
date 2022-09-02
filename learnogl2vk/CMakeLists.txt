@@ -43,6 +43,7 @@ set(EXAMPLES
   model_loading/model
   advance/depth_testing
   advance/stencil_testing
+  advance/blending
   extra/scene_manager
   extra/imgui_example
 )
