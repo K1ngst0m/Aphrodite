@@ -1,5 +1,5 @@
-#ifndef SCENE_MANAGER_H_
-#define SCENE_MANAGER_H_
+#ifndef STENCIL_TESTING_H_
+#define STENCIL_TESTING_H_
 
 #include "vklBase.h"
 
@@ -36,4 +36,4 @@ private:
     vkl::Scene m_defaultScene;
 };
 
-#endif // SCENE_MANAGER_H_
+#endif // STENCIL_TESTING_H_
