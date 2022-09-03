@@ -91,7 +91,11 @@ Reference:
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Stencil-testing][Stencil-Testing]]
 
-**** [ ] 3. Blending
+**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/blending][Blending]]
+
+Reference:
+- [[https://learnopengl.com/Advanced-OpenGL/Blending][Blending]]
+
 **** [ ] 4. Face culling
 **** [ ] 5. Cubemaps
 **** [ ] 6. Advanced Data
