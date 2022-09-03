@@ -155,9 +155,8 @@ void blending::loadScene()
         m_transparentMesh.pushImage(textureDir/"blending_transparent_window.png", m_queues.transfer);
     }
 
-
     {
-        m_defaultScene.pushUniform(&m_sceneUBO)
+        m_defaultScene.pushCamera(&m_camera, &m_sceneUBO)
                       .pushObject(&m_planeMesh, &m_defaultShaderPass)
                       .pushObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)))
                       .pushObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
@@ -173,7 +172,7 @@ void blending::loadScene()
 
         for (auto & translate : vegetation){
             glm::mat4 transform = glm::translate(glm::mat4(1.0f), translate);
-            m_defaultScene.pushObject(&m_transparentMesh, &m_defaultShaderPass, transform);
+            m_defaultScene.pushObject(&m_transparentMesh, &m_defaultShaderPass, transform, vkl::SCENE_RENDER_TYPE::TRANSPARENCY);
         }
     }
 
@@ -201,6 +200,7 @@ void blending::setupShaders()
 
     // build Shader
     {
+        m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         m_pipelineBuilder._colorBlendAttachment = {
             .blendEnable = VK_TRUE,
             .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
