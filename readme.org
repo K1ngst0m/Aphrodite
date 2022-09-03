@@ -96,7 +96,12 @@ Reference:
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Blending][Blending]]
 
-**** [ ] 4. Face culling
+
+**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/face_culling][Face Culling]]
+
+Reference:
+- [[https://learnopengl.com/Advanced-OpenGL/Face-Culling][Face Culling]]
+
 **** [ ] 5. Cubemaps
 **** [ ] 6. Advanced Data
 **** [ ] 7. Advannced GLSL
