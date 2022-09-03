@@ -19,8 +19,5 @@ layout(set = 1, binding = 0) uniform sampler2D sampler_baseColor;
 
 void main() {
     vec4 color = texture(sampler_baseColor, fragTexCoord) * vec4(fragColor, 1.0);
-    if (color.a < 0.1)
-        discard;
-
     outColor = vec4(color);
 }

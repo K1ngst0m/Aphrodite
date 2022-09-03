@@ -152,7 +152,7 @@ void blending::loadScene()
         m_planeMesh.pushImage(textureDir/"metal.png", m_queues.transfer);
 
         m_transparentMesh.setupMesh(m_device, m_queues.transfer, transparentVertices);
-        m_transparentMesh.pushImage(textureDir/"grass.png", m_queues.transfer);
+        m_transparentMesh.pushImage(textureDir/"blending_transparent_window.png", m_queues.transfer);
     }
 
 
@@ -201,6 +201,13 @@ void blending::setupShaders()
 
     // build Shader
     {
+        m_pipelineBuilder._colorBlendAttachment = {
+            .blendEnable = VK_TRUE,
+            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            .colorBlendOp = VK_BLEND_OP_ADD,
+            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+        };
         m_defaultShaderEffect.pushSetLayout(m_device->logicalDevice, globalBindings)
                              .pushSetLayout(m_device->logicalDevice, materialBindings)
                              .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
