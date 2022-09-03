@@ -200,6 +200,7 @@ void blending::setupShaders()
 
     // build Shader
     {
+        // TODO : create depth testing enabled pipeline when rendering opaque object
         m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         m_pipelineBuilder._colorBlendAttachment = {
             .blendEnable = VK_TRUE,
