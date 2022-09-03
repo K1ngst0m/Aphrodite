@@ -45,6 +45,7 @@ set(EXAMPLES
   advance/stencil_testing
   advance/blending
   advance/face_culling
+  advance/framebuffers
   extra/scene_manager
   extra/imgui_example
 )
