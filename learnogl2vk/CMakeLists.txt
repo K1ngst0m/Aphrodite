@@ -44,6 +44,7 @@ set(EXAMPLES
   advance/depth_testing
   advance/stencil_testing
   advance/blending
+  advance/face_culling
   extra/scene_manager
   extra/imgui_example
 )
