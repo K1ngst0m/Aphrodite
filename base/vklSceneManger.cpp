@@ -24,7 +24,7 @@ Scene& Scene::pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transfo
     return *this;
 }
 
-void Scene::drawScene(VkCommandBuffer commandBuffer)
+void Scene::draw(VkCommandBuffer commandBuffer)
 {
     ShaderPass *lastPass = nullptr;
     Mesh * lastMesh = nullptr;
@@ -47,7 +47,8 @@ void Scene::drawScene(VkCommandBuffer commandBuffer)
         renderNode->draw(commandBuffer, dirtyBits);
     }
 
-    for (auto iter = _transparentRenderNodeList.rbegin(); iter != _transparentRenderNodeList.rend(); iter++){
+    for (auto iter = _transparentRenderNodeList.rbegin();
+         iter != _transparentRenderNodeList.rend(); iter++){
         auto renderNode = (*iter).second;
         vkl::DrawContextDirtyBits dirtyBits = DRAWCONTEXT_GLOBAL_SET | DRAWCONTEXT_PUSH_CONSTANT;
         if (!lastPass) {
@@ -145,6 +146,7 @@ void Scene::setupDescriptor(VkDevice device)
         renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
     }
 }
+
 void Scene::destroy(VkDevice device)
 {
     vkDestroyDescriptorPool(device, _descriptorPool, nullptr);

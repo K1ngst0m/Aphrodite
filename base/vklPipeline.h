@@ -32,6 +32,7 @@ struct ShaderCache{
         }
     }
 };
+
 /**
  * @brief holds all of the shader related state that a pipeline needs to be built.
  */
@@ -47,10 +48,11 @@ struct ShaderEffect {
 
     std::vector<ShaderStage> stages;
 
-    ShaderEffect& buildPipelineLayout(VkDevice device);
     ShaderEffect& pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
     ShaderEffect& pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
     ShaderEffect& pushConstantRanges(VkPushConstantRange constantRange);
+
+    ShaderEffect& buildPipelineLayout(VkDevice device);
 
     void destroy(VkDevice device){
         for (auto & setLayout: setLayouts){

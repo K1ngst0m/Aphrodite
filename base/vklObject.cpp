@@ -281,6 +281,7 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
 
     MeshObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
+
 void MeshObject::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
                            VkQueue queue) {
     // Load texture from image buffer
@@ -364,8 +365,10 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4
         vkCmdPushConstants(commandBuffer, pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
     }
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1,
-                            &_images[0].descriptorSet, 0, nullptr);
+    if (!_images.empty()){
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1,
+                                &_images[0].descriptorSet, 0, nullptr);
+    }
 
     if (dirtyBits & DRAWCONTEXT_PIPELINE) {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);

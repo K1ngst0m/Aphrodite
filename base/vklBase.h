@@ -118,8 +118,8 @@ protected:
     }
 
     virtual void createCommandBuffers();
-    virtual void recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
-                                     uint32_t                                              frameIdx);
+    void recordCommandBuffer(VkRenderPass renderPass, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
+    void recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
 
 protected:
     std::vector<const char *> getRequiredInstanceExtensions();

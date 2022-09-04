@@ -29,8 +29,14 @@ struct VertexLayout {
     VertexLayout(glm::vec3 p, glm::vec2 u)
         :pos(p), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f))
     {}
+    VertexLayout(glm::vec2 p, glm::vec2 u)
+        :pos(glm::vec3(p, 0.0f)), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f))
+    {}
     VertexLayout(glm::vec3 p, glm::vec3 n, glm::vec2 u, glm::vec3 c = glm::vec3(1.0f))
         :pos(p), normal(n), uv(u), color(c)
+    {}
+    VertexLayout(glm::vec2 p, glm::vec3 n, glm::vec2 u, glm::vec3 c = glm::vec3(1.0f))
+        :pos(glm::vec3(p, 0.0f)), normal(n), uv(u), color(c)
     {}
 
     static VkVertexInputBindingDescription                _vertexInputBindingDescription;
