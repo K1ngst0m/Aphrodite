@@ -219,10 +219,10 @@ void depth_testing::buildCommands()
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
         vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
             if (enableDepthVisualization){
-                m_depthScene.drawScene(commandBuffer);
+                m_depthScene.draw(commandBuffer);
             }
             else{
-                m_defaultScene.drawScene(commandBuffer);
+                m_defaultScene.draw(commandBuffer);
             }
         }, idx);
     }

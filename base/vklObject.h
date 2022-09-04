@@ -83,18 +83,10 @@ public:
                    VkQueue queue);
     void pushImage(std::string imagePath, VkQueue queue);
 
-    VkBuffer getVertexBuffer() const {
-        return _mesh.getVertexBuffer();
-    }
-    VkBuffer getIndexBuffer() const {
-        return _mesh.getIndexBuffer();
-    }
-    uint32_t getVerticesCount() const {
-        return _mesh.getVerticesCount();
-    }
-    uint32_t getIndicesCount() const {
-        return _mesh.getIndicesCount();
-    }
+    VkBuffer getVertexBuffer() const {return _mesh.getVertexBuffer();}
+    VkBuffer getIndexBuffer() const {return _mesh.getIndexBuffer();}
+    uint32_t getVerticesCount() const {return _mesh.getVerticesCount();}
+    uint32_t getIndicesCount() const {return _mesh.getIndicesCount();}
 
     void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
               DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;

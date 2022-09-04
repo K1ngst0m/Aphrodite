@@ -29,7 +29,7 @@ AlwaysBreakTemplateDeclarations: false
 UseTab: Never
 TabWidth: 4
 IndentWidth: 4
-ColumnLimit: 120
+ColumnLimit: 0
 Language: Cpp
 Standard: Cpp11
 BraceWrapping:

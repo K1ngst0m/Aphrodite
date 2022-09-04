@@ -235,7 +235,7 @@ void blending::buildCommands()
 {
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
         vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
-            m_defaultScene.drawScene(commandBuffer);
+            m_defaultScene.draw(commandBuffer);
         }, idx);
     }
 }
