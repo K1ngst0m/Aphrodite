@@ -199,6 +199,7 @@ void framebuffers::setupShaders() {
     }
 
     m_deletionQueue.push_function([&]() {
+        m_postProcessPass.destory(m_device);
         m_offscreenPass.destory(m_device);
         m_defaultScene.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);

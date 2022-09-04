@@ -70,6 +70,7 @@ private:
             for (auto & framebuffer : framebuffers){
                 vkDestroyFramebuffer(device->logicalDevice, framebuffer, nullptr);
             }
+            vkDestroyDescriptorPool(device->logicalDevice, descriptorPool, nullptr);
             vkDestroyRenderPass(device->logicalDevice, renderPass, nullptr);
             shaderPass.destroy(device->logicalDevice);
             shaderEffect.destroy(device->logicalDevice);
