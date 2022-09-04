@@ -114,7 +114,7 @@ void framebuffers::loadScene() {
 
     {
         m_cubeMesh.setupMesh(m_device, m_queues.transfer, cubeVertices);
-        m_cubeMesh.pushImage(textureDir / "marble.jpg", m_queues.transfer);
+        m_cubeMesh.pushImage(textureDir / "container.jpg", m_queues.transfer);
 
         m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
         m_planeMesh.pushImage(textureDir / "metal.png", m_queues.transfer);
@@ -196,9 +196,6 @@ void framebuffers::setupShaders() {
                                                                                     0, &m_offscreenPass.colorAttachments[i].descriptorInfo);
             vkUpdateDescriptorSets(m_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
         }
-        for (auto set : m_postProcessPass.descriptorSets){
-        }
-
     }
 
     m_deletionQueue.push_function([&]() {
