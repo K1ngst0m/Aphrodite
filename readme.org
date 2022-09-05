@@ -21,8 +21,8 @@ cmake -B build && cmake --build build -- -j$(nproc)
 
 ** Implementations List
 
-*** [X] I - Getting Started
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/first_triangle][Hello Window, Hello Triangle, Shaders]]
+*** I - Getting Started
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/first_triangle][Hello Window, Hello Triangle, Shaders]]
 
 Init vulkan and window, setup graphics pipeline, creating first triangle.
 
@@ -31,78 +31,78 @@ Reference:
 - [[https://learnopengl.com/Getting-started/Hello-Triangle][Hello Triangle]]
 - [[https://learnopengl.com/Getting-started/Shaders][Shaders]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/textures][Textures]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/textures][Textures]]
 
 Loading a 2D image from disk, upload into video memory and using it with samplers.
 
 Reference:
 - [[https://learnopengl.com/Getting-started/Textures][Textures]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/transformations][Transformations, Coordinate Systems, Camera]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/getting_started/transformations][Transformations, Coordinate Systems, Camera]]
 
 Reference:
 - [[https://learnopengl.com/Getting-started/Transformations][Transformations]]
 - [[https://learnopengl.com/Getting-started/Coordinate-Systems][Coordinate Systems]]
 - [[https://learnopengl.com/Getting-started/Camera][Camera]]
 
-*** [-] II - Lighting
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/basic_lighting][Basic Lighting]]
+*** II - Lighting
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/basic_lighting][Basic Lighting]]
 
 Reference:
 - [[https://learnopengl.com/Lighting/Colors][Colors]]
 - [[https://learnopengl.com/Lighting/Basic-Lighting][Basic-Lighting]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/materials][Materials]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/materials][Materials]]
 
 Reference:
 - [[https://learnopengl.com/Lighting/Materials][Materials]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/lighting_maps][Lighting Maps]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/lighting_maps][Lighting Maps]]
 
 Reference:
 - [[https://learnopengl.com/Lighting/Lighting-maps][Lighting Maps]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/light_catsers][Light Casters]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/lighting/light_catsers][Light Casters]]
 
 Reference:
 - [[https://learnopengl.com/Lighting/Light-casters][Light Casters]]
 - [[https://learnopengl.com/Lighting/Multiple-lights][Multiple Lights]]
 
-*** [X] III - Model Loading (but tiny-gltf)
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/mesh][Mesh]]
+*** III - Model Loading (but tiny-gltf)
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/mesh][Mesh]]
 
 Reference:
 - [[https://learnopengl.com/Model-Loading/Mesh][Mesh]]
 
-**** [X] [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/model][Model]]
+**** [[https://github.com/K1ngst0m/learnVK/tree/master/learnogl2vk/model_loading/model][Model]]
 
 Reference:
 - [[https://learnopengl.com/Model-Loading/Assimp][Assimp]]
 - [[https://learnopengl.com/Model-Loading/Model][Model]]
 
 *** [ ] IV - Advanced OpenGL (but Vulkan)
-**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/depth_testing][Depth testing]]
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/depth_testing][Depth testing]]
 
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Depth-testing][Depth-Testing]]
 
-**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/stencil_testing][Stencil testing]]
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/stencil_testing][Stencil testing]]
 
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Stencil-testing][Stencil-Testing]]
 
-**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/blending][Blending]]
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/blending][Blending]]
 
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Blending][Blending]]
 
 
-**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/face_culling][Face Culling]]
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/face_culling][Face Culling]]
 
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Face-Culling][Face Culling]]
 
-**** [X] [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/framebuffers][Framebuffers]]
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/advance/framebuffers][Framebuffers]]
 
 Reference:
 - [[https://learnopengl.com/Advanced-OpenGL/Framebuffers][Framebuffers]]
@@ -132,3 +132,9 @@ Reference:
 **** [ ] 2. IBL
 ***** [ ] 2.1. Diffuse irradiance
 ***** [ ] 2.2. Specular IBL
+
+*** VII - Extra
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/extra/scene_manager][Scene Manager]]
+
+**** [[https://github.com/K1ngst0m/FuckVK/tree/master/learnogl2vk/extra/imgui_example][ImGui Example]]
+
