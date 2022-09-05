@@ -49,8 +49,8 @@ private:
             : _object(object), _pass(pass), _mesh(mesh), _transform(transform) {
         }
 
-        void draw(VkCommandBuffer commandBuffer, DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) const {
-            _object->draw(commandBuffer, _pass, _transform, dirtyBits);
+        void draw(VkCommandBuffer commandBuffer) const {
+            _object->draw(commandBuffer, _pass, _transform);
         }
     };
 
@@ -59,8 +59,7 @@ private:
 
         vkl::UniformBufferObject *_object = nullptr;
 
-        SceneUniformNode(vkl::UniformBufferObject *object,
-                         SCENE_UNIFORM_TYPE        uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
+        SceneUniformNode(vkl::UniformBufferObject *object, SCENE_UNIFORM_TYPE        uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
             : _type(uniformType), _object(object) {
         }
     };

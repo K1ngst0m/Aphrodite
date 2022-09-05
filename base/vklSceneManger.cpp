@@ -29,43 +29,14 @@ void Scene::draw(VkCommandBuffer commandBuffer)
     ShaderPass *lastPass = nullptr;
     Mesh * lastMesh = nullptr;
     for (auto *renderNode : _opaqueRenderNodeList) {
-        vkl::DrawContextDirtyBits dirtyBits = DRAWCONTEXT_GLOBAL_SET | DRAWCONTEXT_PUSH_CONSTANT;
-        if (!lastPass) {
-            dirtyBits = DRAWCONTEXT_ALL;
-        }
-        else {
-            if (renderNode->_pass->builtPipeline != lastPass->builtPipeline) {
-                dirtyBits |= vkl::DRAWCONTEXT_PIPELINE;
-            }
-
-            if (lastMesh != renderNode->_mesh){
-                dirtyBits |= DRAWCONTEXT_INDEX_BUFFER | DRAWCONTEXT_VERTEX_BUFFER;
-            }
-        }
-
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &renderNode->_globalDescriptorSet, 0, nullptr);
-        renderNode->draw(commandBuffer, dirtyBits);
+        renderNode->draw(commandBuffer);
     }
 
-    for (auto iter = _transparentRenderNodeList.rbegin();
-         iter != _transparentRenderNodeList.rend(); iter++){
-        auto renderNode = (*iter).second;
-        vkl::DrawContextDirtyBits dirtyBits = DRAWCONTEXT_GLOBAL_SET | DRAWCONTEXT_PUSH_CONSTANT;
-        if (!lastPass) {
-            dirtyBits = DRAWCONTEXT_ALL;
-        }
-        else {
-            if (renderNode->_pass->builtPipeline != lastPass->builtPipeline) {
-                dirtyBits |= vkl::DRAWCONTEXT_PIPELINE;
-            }
-
-            if (lastMesh != renderNode->_mesh){
-                dirtyBits |= DRAWCONTEXT_INDEX_BUFFER | DRAWCONTEXT_VERTEX_BUFFER;
-            }
-        }
-
+    for (auto iter = _transparentRenderNodeList.rbegin(); iter != _transparentRenderNodeList.rend(); iter++){
+        auto* renderNode = (*iter).second;
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &renderNode->_globalDescriptorSet, 0, nullptr);
-        renderNode->draw(commandBuffer, dirtyBits);
+        renderNode->draw(commandBuffer);
     }
 }
 
@@ -100,7 +71,7 @@ void Scene::setupDescriptor(VkDevice device)
     if (!_cameraNodeList.empty()){
         bufferInfos.push_back(_cameraNodeList[0]->_object->buffer.descriptorInfo);
     }
-    for (auto uboNode : _uniformNodeList) {
+    for (auto * uboNode : _uniformNodeList) {
         bufferInfos.push_back(uboNode->_object->buffer.descriptorInfo);
     }
 

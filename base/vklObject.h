@@ -14,24 +14,6 @@
 #include <stb_image.h>
 namespace vkl {
 
-enum DrawContextDirtyBits : uint8_t {
-    DRAWCONTEXT_NONE          = 0b00000,
-    DRAWCONTEXT_VERTEX_BUFFER = 0b00001,
-    DRAWCONTEXT_INDEX_BUFFER  = 0b00010,
-    DRAWCONTEXT_PUSH_CONSTANT = 0b00100,
-    DRAWCONTEXT_GLOBAL_SET    = 0b01000,
-    DRAWCONTEXT_PIPELINE      = 0b10000,
-    DRAWCONTEXT_ALL           = 0b11111,
-};
-
-inline void operator|=(DrawContextDirtyBits &lhs, DrawContextDirtyBits rhs) {
-    lhs = static_cast<DrawContextDirtyBits>(static_cast<int>(lhs) | static_cast<int>(rhs));
-}
-
-inline DrawContextDirtyBits operator|(DrawContextDirtyBits lhs, DrawContextDirtyBits rhs) {
-    return static_cast<DrawContextDirtyBits>(static_cast<int>(lhs) | static_cast<int>(rhs));
-}
-
 class Scene;
 
 class IBaseObject {
@@ -60,8 +42,7 @@ public:
 
 class RenderObject : IBaseObject {
 public:
-    virtual void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
-                      DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) = 0;
+    virtual void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) = 0;
     virtual void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool)          = 0;
 
     virtual std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() = 0;
@@ -76,18 +57,11 @@ public:
 
     void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                    const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);
-
     void destroy() override;
 
     void pushImage(std::string imagePath, VkQueue queue);
 
-    VkBuffer getVertexBuffer() const {return _mesh.getVertexBuffer();}
-    VkBuffer getIndexBuffer() const {return _mesh.getIndexBuffer();}
-    uint32_t getVerticesCount() const {return _mesh.getVerticesCount();}
-    uint32_t getIndicesCount() const {return _mesh.getIndicesCount();}
-
-    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
-              DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
+    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) override;
 
     void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) override;
 
@@ -108,8 +82,7 @@ protected:
 class Model : public MeshObject {
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f),
-              DrawContextDirtyBits dirtyBits = DRAWCONTEXT_ALL) override;
+    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) override;
     void destroy() override;
 
 private:
@@ -121,8 +94,7 @@ private:
     };
     std::vector<Node *>     _nodes;
 
-    void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
-                   VkQueue queue);
+    void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue);
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
     void loadImages(VkQueue queue, tinygltf::Model &input);
     void loadTextures(tinygltf::Model &input);
