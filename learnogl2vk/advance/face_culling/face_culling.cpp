@@ -154,7 +154,7 @@ void face_culling::loadScene()
 
     {
         m_defaultScene.pushCamera(&m_camera, &m_sceneUBO)
-                      .pushObject(&m_cubeMesh, &m_defaultShaderPass,
+                      .pushMeshObject(&m_cubeMesh, &m_defaultShaderPass,
                                   glm::rotate(glm::mat4(1.0f), 1.25f, glm::vec3(0.0f, 1.0f, 0.0f)));
     }
 

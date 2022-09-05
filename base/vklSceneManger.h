@@ -25,7 +25,7 @@ class Scene {
 public:
     Scene &pushUniform(UniformBufferObject *ubo);
     Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
-    Scene &pushObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
+    Scene &pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
     void   draw(VkCommandBuffer commandBuffer);
     void   setupDescriptor(VkDevice device);
 

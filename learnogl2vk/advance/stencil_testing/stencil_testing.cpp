@@ -85,8 +85,8 @@ void stencil_testing::loadScene() {
         m_defaultScene.pushUniform(&sceneUBO)
                       .pushUniform(&pointLightUBO)
                       .pushUniform(&directionalLightUBO)
-                      .pushObject(&m_model, &m_outlineShaderPass, modelTransform)
-                      .pushObject(&m_model, &m_modelShaderPass, modelTransform);
+                      .pushMeshObject(&m_model, &m_outlineShaderPass, modelTransform)
+                      .pushMeshObject(&m_model, &m_modelShaderPass, modelTransform);
     }
 
     m_deletionQueue.push_function([&](){

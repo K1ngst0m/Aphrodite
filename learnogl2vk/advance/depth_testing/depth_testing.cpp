@@ -118,14 +118,14 @@ void depth_testing::loadScene()
         m_defaultScene.pushUniform(&m_sceneUBO)
                       .pushUniform(&m_pointLightUBO)
                       .pushUniform(&m_directionalLightUBO)
-                      .pushObject(&m_model, &m_modelShaderPass, modelTransform)
-                      .pushObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+                      .pushMeshObject(&m_model, &m_modelShaderPass, modelTransform)
+                      .pushMeshObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
     }
 
     {
         m_depthScene.pushUniform(&m_sceneUBO)
-                    .pushObject(&m_model, &m_depthShaderPass, modelTransform)
-                    .pushObject(&m_planeMesh, &m_depthShaderPass, planeTransform);
+                    .pushMeshObject(&m_model, &m_depthShaderPass, modelTransform)
+                    .pushMeshObject(&m_planeMesh, &m_depthShaderPass, planeTransform);
     }
 
     m_deletionQueue.push_function([&](){

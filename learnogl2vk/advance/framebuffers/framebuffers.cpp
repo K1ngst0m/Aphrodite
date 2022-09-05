@@ -123,9 +123,9 @@ void framebuffers::loadScene() {
     {
         // TODO: multi pass support
         m_defaultScene.pushCamera(&m_camera, &m_sceneUBO)
-            .pushObject(&m_planeMesh, &m_offscreenPass.shaderPass)
-            .pushObject(&m_cubeMesh, &m_offscreenPass.shaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)))
-            .pushObject(&m_cubeMesh, &m_offscreenPass.shaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
+            .pushMeshObject(&m_planeMesh, &m_offscreenPass.shaderPass)
+            .pushMeshObject(&m_cubeMesh, &m_offscreenPass.shaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)))
+            .pushMeshObject(&m_cubeMesh, &m_offscreenPass.shaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
     }
 
     m_deletionQueue.push_function([&]() {

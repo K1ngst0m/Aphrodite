@@ -157,9 +157,9 @@ void blending::loadScene()
 
     {
         m_defaultScene.pushCamera(&m_camera, &m_sceneUBO)
-                      .pushObject(&m_planeMesh, &m_defaultShaderPass)
-                      .pushObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)))
-                      .pushObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
+                      .pushMeshObject(&m_planeMesh, &m_defaultShaderPass)
+                      .pushMeshObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f)))
+                      .pushMeshObject(&m_cubeMesh, &m_defaultShaderPass, glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f)));
 
         std::vector<glm::vec3> vegetation
         {
@@ -172,7 +172,7 @@ void blending::loadScene()
 
         for (auto & translate : vegetation){
             glm::mat4 transform = glm::translate(glm::mat4(1.0f), translate);
-            m_defaultScene.pushObject(&m_transparentMesh, &m_defaultShaderPass, transform, vkl::SCENE_RENDER_TYPE::TRANSPARENCY);
+            m_defaultScene.pushMeshObject(&m_transparentMesh, &m_defaultShaderPass, transform, vkl::SCENE_RENDER_TYPE::TRANSPARENCY);
         }
     }
 
