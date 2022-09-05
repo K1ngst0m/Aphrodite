@@ -126,12 +126,6 @@ private:
         vkl::Mesh           mesh;
         glm::mat4           matrix;
     };
-
-    struct TextureRef {
-        int32_t index;
-    };
-
-    std::vector<TextureRef> _textureRefs;
     std::vector<Node *>     _nodes;
 
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);

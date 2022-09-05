@@ -35,12 +35,6 @@ void Model::loadImages(VkQueue queue, tinygltf::Model &input) {
         }
     }
 }
-void Model::loadTextures(tinygltf::Model &input) {
-    _textureRefs.resize(input.textures.size());
-    for (size_t i = 0; i < input.textures.size(); i++) {
-        _textureRefs[i].index = input.textures[i].source;
-    }
-}
 void Model::loadMaterials(tinygltf::Model &input) {
     _materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
@@ -206,10 +200,10 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
         for (const vkl::Primitive &primitive : node->mesh.primitives) {
             if (primitive.indexCount > 0) {
                 // Get the texture index for this primitive
-                TextureRef textureRef = _textureRefs[_materials[primitive.materialIndex].baseColorTextureIndex];
+                Material& material = _materials[primitive.materialIndex];
                 // Bind the descriptor for the current primitive's texture
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                        &_images[textureRef.index].descriptorSet, 0, nullptr);
+                                        &_images[material.baseColorTextureIndex].descriptorSet, 0, nullptr);
                 vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
@@ -263,7 +257,6 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
     if (fileLoaded) {
         loadImages(queue, glTFInput);
         loadMaterials(glTFInput);
-        loadTextures(glTFInput);
         // TODO multi scene
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for (int nodeIdx : scene.nodes) {
