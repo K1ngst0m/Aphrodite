@@ -46,7 +46,7 @@ void Model::loadMaterials(tinygltf::Model &input) {
         }
         // Get base color texture index
         if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
-            _materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+            _materials[i].baseColorTexture = getTexture(glTFMaterial.values["baseColorTexture"].TextureIndex());
         }
     }
 }
@@ -332,7 +332,7 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue) {
     _textures.push_back(texture);
 
     Material materials;
-    materials.baseColorTextureIndex = _textures.size() - 1;
+    materials.baseColorTexture = &_textures.back();
     _materials.push_back(materials);
 
     stagingBuffer.destroy();
@@ -358,8 +358,7 @@ void MeshObject::setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool 
     for (auto &material : _materials) {
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &material.descriptorSet));
-        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(
-            material.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo);
+        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(material.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &material.baseColorTexture->descriptorInfo);
         vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
     }
 }
@@ -375,4 +374,12 @@ void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector
     _device = device;
     _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
 }
+
+vkl::Texture *Model::getTexture(uint32_t index) {
+    if (index < _textures.size()) {
+        return &_textures[index];
+    }
+    return nullptr;
+}
+
 } // namespace vkl

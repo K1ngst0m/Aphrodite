@@ -94,6 +94,7 @@ private:
     };
     std::vector<Node *>     _nodes;
 
+    vkl::Texture *getTexture(uint32_t index);
     void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue);
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
     void loadImages(VkQueue queue, tinygltf::Model &input);
