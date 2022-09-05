@@ -98,9 +98,7 @@ void framebuffers::updateUniformBuffer() {
 
 void framebuffers::initDerive() {
     loadScene();
-    prepareRenderPass();
-    prepareAttachmentResouces();
-    prepareFramebuffers();
+    prepareOffscreen();
     setupShaders();
     buildCommands();
 }
@@ -162,13 +160,14 @@ void framebuffers::setupShaders() {
     }
 
     {
+        m_pipelineBuilder._depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         m_postProcessPass.shaderEffect.pushSetLayout(m_device->logicalDevice, materialBindings)
             .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
             .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "post_process.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
             .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "post_process.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
             .buildPipelineLayout(m_device->logicalDevice);
 
-        m_postProcessPass.build(m_device, m_pipelineBuilder);
+        m_postProcessPass.build(m_device, m_defaultRenderPass, m_pipelineBuilder);
     }
 
     {
@@ -176,7 +175,7 @@ void framebuffers::setupShaders() {
     }
 
     {
-        m_postProcessPass.descriptorSets.resize(m_postProcessPass.framebuffers.size());
+        m_postProcessPass.descriptorSets.resize(m_swapChainImageViews.size());
         std::vector<VkDescriptorPoolSize> sizes{
             {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_postProcessPass.descriptorSets.size())}
         };
@@ -199,11 +198,17 @@ void framebuffers::setupShaders() {
     }
 
     m_deletionQueue.push_function([&]() {
-        m_postProcessPass.destory(m_device);
-        m_offscreenPass.destory(m_device);
+        m_postProcessPass.destroy(m_device);
+        m_offscreenPass.destroy(m_device);
         m_defaultScene.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);
     });
+}
+
+void framebuffers::prepareOffscreen() {
+    m_offscreenPass.prepareAttachmentResources(m_device, m_queues.transfer, m_swapChainImageViews.size(), m_swapChainExtent);
+    m_offscreenPass.prepareRenderPass(m_device, m_swapChainImageFormat);
+    m_offscreenPass.prepareFramebuffers(m_device, m_swapChainImages.size(), m_swapChainExtent);
 }
 
 void framebuffers::buildCommands() {
@@ -240,14 +245,13 @@ void framebuffers::buildCommands() {
 
         // post processing render pass
         {
-            std::vector<VkClearValue> clearValues(1);
-            clearValues[0].color = {{0.1f, 0.1f, 0.1f, 1.0f}};
-            VkRenderPassBeginInfo renderPassInfo =
-                vkl::init::renderPassBeginInfo(m_postProcessPass.renderPass, clearValues, m_postProcessPass.framebuffers[frameIdx]);
+            std::vector<VkClearValue> clearValues(2);
+            clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
+            clearValues[1].depthStencil = {1.0f, 0};
+            VkRenderPassBeginInfo renderPassInfo = vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_framebuffers[frameIdx]);
             renderPassInfo.renderArea = vkl::init::rect2D(m_swapChainExtent);
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            // TODO post processing
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postProcessPass.shaderPass.layout, 0, 1, &m_postProcessPass.descriptorSets[frameIdx], 0, nullptr);
             m_quadMesh.draw(commandBuffer, &m_postProcessPass.shaderPass);
 
@@ -258,184 +262,6 @@ void framebuffers::buildCommands() {
     }
 }
 
-void framebuffers::prepareFramebuffers() {
-    m_offscreenPass.framebuffers.resize(m_swapChainImageViews.size());
-    m_postProcessPass.framebuffers.resize(m_swapChainImageViews.size());
-
-    for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
-        {
-            std::array<VkImageView, 2> attachments = {m_offscreenPass.colorAttachments[i].view,
-                                                      m_offscreenPass.depthAttachment.view};
-
-            VkFramebufferCreateInfo framebufferInfo{
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .renderPass      = m_offscreenPass.renderPass,
-                .attachmentCount = static_cast<uint32_t>(attachments.size()),
-                .pAttachments    = attachments.data(),
-                .width           = m_swapChainExtent.width,
-                .height          = m_swapChainExtent.height,
-                .layers          = 1,
-            };
-
-            VK_CHECK_RESULT(vkCreateFramebuffer(m_device->logicalDevice, &framebufferInfo, nullptr, &m_offscreenPass.framebuffers[i]));
-        }
-
-        {
-            VkFramebufferCreateInfo framebufferInfo{
-                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                .renderPass      = m_postProcessPass.renderPass,
-                .attachmentCount = 1,
-                .pAttachments    = &m_swapChainImageViews[i],
-                .width           = m_swapChainExtent.width,
-                .height          = m_swapChainExtent.height,
-                .layers          = 1,
-            };
-
-            VK_CHECK_RESULT(vkCreateFramebuffer(m_device->logicalDevice, &framebufferInfo, nullptr, &m_postProcessPass.framebuffers[i]));
-        }
-    }
-}
-
-void framebuffers::prepareRenderPass() {
-
-
-    VkAttachmentDescription depthAttachment{
-        .format         = m_device->findDepthFormat(),
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
-    VkAttachmentReference colorAttachmentRef{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,};
-    VkAttachmentReference depthAttachmentRef{1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,};
-
-
-    {
-        VkAttachmentDescription colorAttachment{
-            .format         = m_swapChainImageFormat,
-            .samples        = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-
-        VkSubpassDescription subpass{
-            .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .colorAttachmentCount    = 1,
-            .pColorAttachments       = &colorAttachmentRef,
-            .pDepthStencilAttachment = &depthAttachmentRef,
-        };
-
-        std::array<VkSubpassDependency, 2> dependencies;
-
-        dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[0].dstSubpass = 0;
-        dependencies[0].srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[0].srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        dependencies[1].srcSubpass = 0;
-        dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-        dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependencies[1].dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
-
-        std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-        VkRenderPassCreateInfo                 renderPassInfo{
-                            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-                            .attachmentCount = static_cast<uint32_t>(attachments.size()),
-                            .pAttachments    = attachments.data(),
-                            .subpassCount    = 1,
-                            .pSubpasses      = &subpass,
-                            .dependencyCount = dependencies.size(),
-                            .pDependencies   = dependencies.data(),
-        };
-
-        VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_offscreenPass.renderPass));
-    }
-
-    {
-        VkAttachmentDescription colorAttachment{
-            .format         = m_swapChainImageFormat,
-            .samples        = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        };
-
-        VkSubpassDescription subpass{
-            .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-            .colorAttachmentCount    = 1,
-            .pColorAttachments       = &colorAttachmentRef,
-            .pDepthStencilAttachment = nullptr,
-        };
-
-        VkSubpassDependency dependency{
-            .srcSubpass    = VK_SUBPASS_EXTERNAL,
-            .dstSubpass    = 0,
-            .srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-            .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-            .srcAccessMask = 0,
-            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        };
-
-        VkRenderPassCreateInfo renderPassInfo{
-            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-            .attachmentCount = 1,
-            .pAttachments    = &colorAttachment,
-            .subpassCount    = 1,
-            .pSubpasses      = &subpass,
-            .dependencyCount = 1,
-            .pDependencies   = &dependency,
-        };
-
-        VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_postProcessPass.renderPass));
-    }
-
-}
-
-void framebuffers::prepareAttachmentResouces() {
-    // offscreen - color
-    {
-        m_offscreenPass.colorAttachments.resize(m_swapChainImageViews.size());
-        for (auto & attachment: m_offscreenPass.colorAttachments){
-            m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                                attachment);
-            attachment.view = m_device->createImageView(attachment.image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-
-            VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-            VK_CHECK_RESULT(vkCreateSampler(m_device->logicalDevice, &samplerInfo, nullptr, &attachment.sampler));
-            attachment.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-    }
-
-    // offscreen - depth
-    {
-        VkFormat depthFormat = m_device->findDepthFormat();
-        m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            m_offscreenPass.depthAttachment);
-        m_offscreenPass.depthAttachment.view = m_device->createImageView(m_offscreenPass.depthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-        m_device->transitionImageLayout(m_queues.transfer, m_offscreenPass.depthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
-                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    }
-}
-
 int main() {
     framebuffers app;
 
@@ -443,4 +269,3 @@ int main() {
     app.vkl::vklBase::run();
     app.vkl::vklBase::finish();
 }
-
