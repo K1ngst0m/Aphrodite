@@ -203,7 +203,7 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
                 Material& material = _materials[primitive.materialIndex];
                 // Bind the descriptor for the current primitive's texture
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                        &_images[material.baseColorTextureIndex].descriptorSet, 0, nullptr);
+                                        &material.descriptorSet, 0, nullptr);
                 vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
@@ -236,8 +236,8 @@ void Model::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 tran
 void Model::destroy() {
     _mesh.destroy();
 
-    for (const auto &image : _images) {
-        image.texture.destroy();
+    for (const auto &texture : _textures) {
+        texture.destroy();
     }
 }
 
@@ -275,7 +275,7 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
     MeshObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 
-void MeshObject::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
+void Model::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
                            VkQueue queue) {
     // Load texture from image buffer
     vkl::Buffer stagingBuffer;
@@ -286,22 +286,22 @@ void MeshObject::pushImage(uint32_t width, uint32_t height, unsigned char *image
     stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
     stagingBuffer.unmap();
 
-    Image image;
+    vkl::Texture texture;
     _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                          VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.texture);
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
 
-    _device->transitionImageLayout(queue, image.texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, image.texture.image, width, height);
-    _device->transitionImageLayout(queue, image.texture.image, VK_FORMAT_R8G8B8A8_SRGB,
+    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    image.texture.view              = _device->createImageView(image.texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    texture.view              = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &image.texture.sampler));
-    image.texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
+    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    _images.push_back(image);
+    _textures.push_back(texture);
 
     stagingBuffer.destroy();
 }
@@ -321,23 +321,27 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue) {
 
     stbi_image_free(pixels);
 
-    Image image;
+    vkl::Texture texture;
     _device->createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                          VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image.texture);
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
 
-    _device->transitionImageLayout(queue, image.texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, image.texture.image, static_cast<uint32_t>(texWidth),
+    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth),
                                static_cast<uint32_t>(texHeight));
-    _device->transitionImageLayout(queue, image.texture.image, VK_FORMAT_R8G8B8A8_SRGB,
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    image.texture.view              = _device->createImageView(image.texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+    texture.view              = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &image.texture.sampler));
-    image.texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
+    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-    _images.push_back(image);
+    _textures.push_back(texture);
+
+    Material materials;
+    materials.baseColorTextureIndex = _textures.size() - 1;
+    _materials.push_back(materials);
 
     stagingBuffer.destroy();
 }
@@ -358,9 +362,9 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4
         vkCmdPushConstants(commandBuffer, pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
     }
 
-    if (!_images.empty()){
+    if (!_textures.empty()){
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1,
-                                &_images[0].descriptorSet, 0, nullptr);
+                                &_materials[0].descriptorSet, 0, nullptr);
     }
 
     if (dirtyBits & DRAWCONTEXT_PIPELINE) {
@@ -370,19 +374,19 @@ void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4
     vkCmdDrawIndexed(commandBuffer, getIndicesCount(), 1, 0, 0, 0);
 }
 void MeshObject::setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
-    for (auto &image : _images) {
+    for (auto &material : _materials) {
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &image.descriptorSet));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &material.descriptorSet));
         VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(
-            image.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &image.texture.descriptorInfo);
+            material.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo);
         vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
     }
 }
 void MeshObject::destroy() {
     _mesh.destroy();
 
-    for (auto &image : _images) {
-        image.texture.destroy();
+    for (auto &texture : _textures) {
+        texture.destroy();
     }
 }
 void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,

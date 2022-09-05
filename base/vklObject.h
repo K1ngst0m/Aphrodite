@@ -79,8 +79,6 @@ public:
 
     void destroy() override;
 
-    void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
-                   VkQueue queue);
     void pushImage(std::string imagePath, VkQueue queue);
 
     VkBuffer getVertexBuffer() const {return _mesh.getVertexBuffer();}
@@ -95,20 +93,15 @@ public:
 
     std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() override{
         std::vector<VkDescriptorPoolSize> poolSizes{
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_images.size())},
+            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_textures.size())},
         };
 
         return poolSizes;
     }
 
 protected:
-    struct Image {
-        vkl::Texture    texture;
-        VkDescriptorSet descriptorSet;
-    };
-
     vkl::Mesh                  _mesh;
-    std::vector<Image>         _images;
+    std::vector<vkl::Texture>  _textures;
     std::vector<vkl::Material> _materials;
 };
 
@@ -128,6 +121,8 @@ private:
     };
     std::vector<Node *>     _nodes;
 
+    void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
+                   VkQueue queue);
     void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
     void loadImages(VkQueue queue, tinygltf::Model &input);
     void loadTextures(tinygltf::Model &input);
