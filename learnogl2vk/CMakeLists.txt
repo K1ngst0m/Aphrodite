@@ -39,8 +39,8 @@ set(EXAMPLES
   lighting/materials
   lighting/lighting_maps
   lighting/light_casters
-  model_loading/mesh
-  model_loading/model
+  # model_loading/mesh
+  # model_loading/model
   advance/depth_testing
   advance/stencil_testing
   advance/blending
