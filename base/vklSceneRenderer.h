@@ -38,14 +38,16 @@ public:
     void drawScene() override {
         ShaderPass *lastPass = nullptr;
         Mesh * lastMesh = nullptr;
-        for (auto *renderNode : _scene->_opaqueRenderNodeList) {
-            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &renderNode->_globalDescriptorSet, 0, nullptr);
+        for (auto i = 0; i < _opaqueRenderList.size(); i++){
+            auto * renderNode = _scene->_opaqueRenderNodeList[i];
+            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &_opaqueRenderList[i]._globalDescriptorSet, 0, nullptr);
             renderNode->draw(_drawCmd);
         }
 
+        uint32_t i = _scene->getTransparentRenderableCount() - 1;
         for (auto iter = _scene->_transparentRenderNodeList.rbegin(); iter != _scene->_transparentRenderNodeList.rend(); iter++){
             auto* renderNode = (*iter).second;
-            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &renderNode->_globalDescriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &_transparentRenderList[i--]._globalDescriptorSet, 0, nullptr);
             renderNode->draw(_drawCmd);
         }
     }
@@ -87,12 +89,13 @@ private:
 
         for (auto & renderNode : _scene->_opaqueRenderNodeList){
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderNode->_pass->effect->setLayouts.data(), 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderNode->_globalDescriptorSet));
+            Renderable renderable;
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable._globalDescriptorSet));
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = renderNode->_globalDescriptorSet,
+                    .dstSet = renderable._globalDescriptorSet,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -104,16 +107,18 @@ private:
             vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
             renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
+            _opaqueRenderList.push_back(renderable);
         }
 
         for (auto [_, renderNode] : _scene->_transparentRenderNodeList){
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderNode->_pass->effect->setLayouts.data(), 1);
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderNode->_globalDescriptorSet));
+            Renderable renderable;
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable._globalDescriptorSet));
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = renderNode->_globalDescriptorSet,
+                    .dstSet = renderable._globalDescriptorSet,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -125,6 +130,7 @@ private:
             vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
             renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
+            _transparentRenderList.push_back(renderable);
         }
     }
 
@@ -141,7 +147,8 @@ private:
         std::vector<VkDescriptorSet> materialSet;
     };
 
-    std::vector<Renderable> _renderList;
+    std::vector<Renderable> _opaqueRenderList;
+    std::vector<Renderable> _transparentRenderList;
 
     VkDescriptorPool _descriptorPool;
 };

@@ -21,6 +21,45 @@ enum class SCENE_RENDER_TYPE : uint8_t {
     TRANSPARENCY,
 };
 
+
+struct SceneNode {
+    std::vector<SceneNode *> _children;
+};
+
+struct SceneRenderNode : SceneNode {
+    vkl::RenderObject *_object;
+    vkl::ShaderPass   *_pass;
+
+    glm::mat4 _transform;
+
+    SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, glm::mat4 transform)
+        : _object(object), _pass(pass), _transform(transform) {
+    }
+
+    void draw(VkCommandBuffer commandBuffer) const {
+        _object->draw(commandBuffer, _pass, _transform);
+    }
+};
+
+struct SceneUniformNode : SceneNode {
+    SCENE_UNIFORM_TYPE _type;
+
+    vkl::UniformBufferObject *_object = nullptr;
+
+    SceneUniformNode(vkl::UniformBufferObject *object, SCENE_UNIFORM_TYPE        uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
+        : _type(uniformType), _object(object) {
+    }
+};
+
+struct SceneCameraNode : SceneUniformNode {
+    SceneCameraNode(vkl::UniformBufferObject *object, vkl::Camera *camera)
+        : SceneUniformNode(object, SCENE_UNIFORM_TYPE::CAMERA), _camera(camera) {
+    }
+
+    vkl::Camera *_camera;
+};
+
+
 class Scene {
 public:
     Scene &pushUniform(UniformBufferObject *ubo);
@@ -44,47 +83,9 @@ public:
     }
 
 public:
-    struct SceneNode {
-        std::vector<SceneNode *> _children;
-    };
-
-    struct SceneRenderNode : SceneNode {
-        vkl::RenderObject *_object;
-        vkl::ShaderPass   *_pass;
-
-        glm::mat4 _transform;
-
-        VkDescriptorSet _globalDescriptorSet;
-
-        SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, glm::mat4 transform)
-            : _object(object), _pass(pass), _transform(transform) {
-        }
-
-        void draw(VkCommandBuffer commandBuffer) const {
-            _object->draw(commandBuffer, _pass, _transform);
-        }
-    };
-
-    struct SceneUniformNode : SceneNode {
-        SCENE_UNIFORM_TYPE _type;
-
-        vkl::UniformBufferObject *_object = nullptr;
-
-        SceneUniformNode(vkl::UniformBufferObject *object, SCENE_UNIFORM_TYPE        uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
-            : _type(uniformType), _object(object) {
-        }
-    };
-
-    struct SceneCameraNode : SceneUniformNode {
-        SceneCameraNode(vkl::UniformBufferObject *object, vkl::Camera *camera)
-            : SceneUniformNode(object, SCENE_UNIFORM_TYPE::CAMERA), _camera(camera) {
-        }
-
-        vkl::Camera *_camera;
-    };
-
     std::map<float, SceneRenderNode *>  _transparentRenderNodeList;
     std::vector<SceneRenderNode *>  _opaqueRenderNodeList;
+
     std::vector<SceneUniformNode *> _uniformNodeList;
     std::vector<SceneCameraNode *>  _cameraNodeList;
 };
