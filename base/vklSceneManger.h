@@ -4,7 +4,11 @@
 #include "vklCamera.h"
 #include "vklObject.h"
 
-#include <map>
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#ifdef VK_USE_PLATFORM_ANDROID_KHR
+#define TINYGLTF_ANDROID_LOAD_FROM_ASSETS
+#endif
+#include "tiny_gltf.h"
 
 namespace vkl {
 
@@ -276,6 +280,23 @@ class GlTFScene : public Scene {
         } perspective;
     };
 
+    enum FileLoadingFlags {
+        None = 0x00000000,
+        PreTransformVertices = 0x00000001,
+        PreMultiplyVertexColors = 0x00000002,
+        FlipY = 0x00000004,
+        DontLoadImages = 0x00000008
+    };
+
+    enum RenderFlags {
+        BindImages = 0x00000001,
+        RenderOpaqueNodes = 0x00000002,
+        RenderAlphaMaskedNodes = 0x00000004,
+        RenderAlphaBlendedNodes = 0x00000008
+    };
+
+    std::string path;
+
     std::vector<Node *>     nodes;
     std::vector<Buffer>     buffers;
     std::vector<BufferView> bufferViews;
@@ -286,6 +307,74 @@ class GlTFScene : public Scene {
     std::vector<Material>   materials;
     std::vector<Vertex>     vertices;
     std::vector<Camera>     cameras;
+
+    void loadSceneFromFile(const std::string& filename, uint32_t fileLoadingFlags = FileLoadingFlags::None, float globalScale = 1.0f){
+        tinygltf::Model    gltfModel;
+        tinygltf::TinyGLTF gltfContext;
+        if (fileLoadingFlags & FileLoadingFlags::DontLoadImages) {
+            gltfContext.SetImageLoader([](tinygltf::Image *image, const int imageIndex, std::string *error, std::string *warning, int req_width, int req_height, const unsigned char *bytes, int size, void *userData) {
+                return true;
+            },
+                                       nullptr);
+        } else {
+            gltfContext.SetImageLoader([](tinygltf::Image *image, const int imageIndex, std::string *error, std::string *warning, int req_width, int req_height, const unsigned char *bytes, int size, void *userData) {
+                // handle ktx maunally
+                if (image->uri.find_last_of('.') != std::string::npos &&
+                    (image->uri.substr(image->uri.find_last_of('.') + 1) == "ktx")) {
+                    return true;
+                }
+
+                return tinygltf::LoadImageData(image, imageIndex, error, warning, req_width, req_height, bytes, size, userData);
+            }, nullptr);
+        }
+
+        size_t pos = filename.find_last_of('/');
+        path = filename.substr(0, pos);
+
+        std::string error, warning;
+
+        bool fileLoaded = gltfContext.LoadASCIIFromFile(&gltfModel, &error, &warning, filename);
+
+        std::vector<uint32_t> indices;
+        std::vector<Vertex> vertices;
+
+        if (fileLoaded){
+            if (!(fileLoadingFlags & FileLoadingFlags::DontLoadImages)) {
+                loadImages(gltfModel);
+            }
+        }
+        else{
+            assert("Failed to load scene from gltf file.");
+        }
+    }
+
+    void loadImages(const tinygltf::Scene& gltfScene){
+
+    }
+
+    void loadNodes(){
+
+    }
+
+    void loadBinaryData(){
+
+    }
+
+    void loadGeometryData(){
+
+    }
+
+    void loadTextureData(){
+
+    }
+
+    void loadMaterials(){
+
+    }
+
+    void loadCamera(){
+
+    }
 
     static uint8_t convertAccessorType(AccessorType type) {
         switch (type) {
