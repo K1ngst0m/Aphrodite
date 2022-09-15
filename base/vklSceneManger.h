@@ -22,16 +22,30 @@ enum class SCENE_RENDER_TYPE : uint8_t {
 };
 
 struct SceneNode {
+    SceneNode * _parent;
+    Object * _object;
+    glm::mat4 _transform;
+
     std::vector<SceneNode *> _children;
+
+    SceneNode * createChildNode(){
+        SceneNode * childNode = new SceneNode;
+        _children.push_back(childNode);
+        return childNode;
+    }
+
+    void attachObject(Object* object){
+        _object = object;
+    }
 };
 
 struct SceneRenderNode : SceneNode {
     vkl::RenderObject *_object;
     vkl::ShaderPass   *_pass;
-    glm::mat4 _transform;
 
     SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, glm::mat4 transform)
-        : _object(object), _pass(pass), _transform(transform) {
+        : _object(object), _pass(pass) {
+        _transform = transform;
     }
 };
 
@@ -55,6 +69,9 @@ struct SceneCameraNode : SceneUniformNode {
 
 class Scene {
 public:
+    Scene(){
+        rootNode = new SceneNode;
+    }
     Scene &pushUniform(UniformBufferObject *ubo);
     Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
     Scene &pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
@@ -66,11 +83,53 @@ public:
         return _uniformNodeList.size() + _cameraNodeList.size();
     }
 
+private:
+    SceneNode * rootNode;
+
 public:
     std::vector<SceneRenderNode *>  _renderNodeList;
     std::vector<SceneUniformNode *> _uniformNodeList;
     std::vector<SceneCameraNode *>  _cameraNodeList;
+
 };
+
+class GltfScene : public Scene{
+    struct Texture{
+        uint32_t index;
+    };
+
+    enum class AccessorType{
+        SCALAR,
+        VEC2,
+        VEC3,
+        VEC4,
+    };
+
+    struct Accessor{
+        uint32_t count;
+        AccessorType type;
+    };
+
+    struct Material{
+        struct NormalTexture{
+            uint32_t index = 0;
+        };
+    };
+
+    struct Mesh{
+        struct Primitives{
+            uint32_t indices;
+        };
+        std::string name;
+    };
+
+
+    std::vector<Texture> textures;
+    std::vector<Accessor> accessors;
+    std::vector<Material> materials;
+};
+
+
 } // namespace vkl
 
 #endif // VKLSCENEMANGER_H_

@@ -3,7 +3,7 @@
 
 namespace vkl {
 
-void Model::loadImages(VkQueue queue, tinygltf::Model &input) {
+void Entity::loadImages(VkQueue queue, tinygltf::Model &input) {
     // Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
     // loading them from disk, we fetch them from the glTF loader and upload the buffers
     for (auto &glTFImage : input.images) {
@@ -35,7 +35,7 @@ void Model::loadImages(VkQueue queue, tinygltf::Model &input) {
         }
     }
 }
-void Model::loadMaterials(tinygltf::Model &input) {
+void Entity::loadMaterials(tinygltf::Model &input) {
     _materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
         // We only read the most basic properties required for our sample
@@ -50,7 +50,7 @@ void Model::loadMaterials(tinygltf::Model &input) {
         }
     }
 }
-void Model::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
+void Entity::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
                      std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices) {
     Node *node   = new Node();
     node->matrix = glm::mat4(1.0f);
@@ -184,7 +184,7 @@ void Model::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &inp
         _nodes.push_back(node);
     }
 }
-void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node) {
+void Entity::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node) {
     if (!node->mesh.primitives.empty()) {
         // Pass the node's matrix via push constants
         // Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
@@ -212,7 +212,7 @@ void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLay
         drawNode(commandBuffer, pipelineLayout, child);
     }
 }
-void Model::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform) {
+void Entity::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform) {
     assert(pass);
     // All vertices and indices are stored in single buffers, so we only need to bind once
     VkDeviceSize offsets[1] = {0};
@@ -225,7 +225,7 @@ void Model::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 tran
         drawNode(commandBuffer, pass->layout, node);
     }
 }
-void Model::destroy() {
+void Entity::destroy() {
     _mesh.destroy();
 
     for (const auto &texture : _textures) {
@@ -233,7 +233,7 @@ void Model::destroy() {
     }
 }
 
-void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
+void Entity::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
     _device = device;
 
     tinygltf::Model    glTFInput;
@@ -267,7 +267,7 @@ void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &
     MeshObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
 }
 
-void Model::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
+void Entity::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
                            VkQueue queue) {
     // Load texture from image buffer
     vkl::Buffer stagingBuffer;
@@ -297,6 +297,7 @@ void Model::pushImage(uint32_t width, uint32_t height, unsigned char *imageData,
 
     stagingBuffer.destroy();
 }
+
 void MeshObject::pushImage(std::string imagePath, VkQueue queue) {
     int          texWidth, texHeight, texChannels;
     stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -375,7 +376,7 @@ void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector
     _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
 }
 
-vkl::Texture *Model::getTexture(uint32_t index) {
+vkl::Texture *Entity::getTexture(uint32_t index) {
     if (index < _textures.size()) {
         return &_textures[index];
     }

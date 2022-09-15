@@ -16,12 +16,12 @@ namespace vkl {
 
 class Scene;
 
-class IBaseObject {
+class Object {
 public:
     virtual void destroy() = 0;
 };
 
-class UniformBufferObject : IBaseObject {
+class UniformBufferObject : Object {
 public:
     vkl::UniformBuffer buffer;
 
@@ -40,7 +40,7 @@ public:
     }
 };
 
-class RenderObject : IBaseObject {
+class RenderObject : Object {
 public:
     virtual void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) = 0;
     virtual void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool)          = 0;
@@ -53,8 +53,6 @@ protected:
 
 class MeshObject : public RenderObject {
 public:
-    friend class vkl::Scene;
-
     void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                    const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);
     void destroy() override;
@@ -79,7 +77,7 @@ protected:
     std::vector<vkl::Material> _materials;
 };
 
-class Model : public MeshObject {
+class Entity : public MeshObject {
 public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
     void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) override;
