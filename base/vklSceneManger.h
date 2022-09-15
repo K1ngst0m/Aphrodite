@@ -66,16 +66,8 @@ public:
     Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
     Scene &pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
 
-    uint32_t getTransparentRenderableCount() const{
-        return _transparentRenderNodeList.size();
-    }
-
-    uint32_t getOpaqueRenderableCount() const{
-        return _opaqueRenderNodeList.size();
-    }
-
     uint32_t getRenderableCount() const{
-        return _opaqueRenderNodeList.size() + _transparentRenderNodeList.size();
+        return _renderNodeList.size();
     }
 
     uint32_t getUBOCount() const{
@@ -83,8 +75,7 @@ public:
     }
 
 public:
-    std::map<float, SceneRenderNode *>  _transparentRenderNodeList;
-    std::vector<SceneRenderNode *>  _opaqueRenderNodeList;
+    std::vector<SceneRenderNode *> _renderNodeList;
 
     std::vector<SceneUniformNode *> _uniformNodeList;
     std::vector<SceneCameraNode *>  _cameraNodeList;
