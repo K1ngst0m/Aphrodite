@@ -32,20 +32,34 @@ public:
     }
 
     void prepareResource() override{
+        _initRenderList();
         _setupDescriptor();
     }
 
     void drawScene() override {
-        ShaderPass *lastPass = nullptr;
-        Mesh * lastMesh = nullptr;
-        for (auto i = 0; i < _renderList.size(); i++){
-            auto * renderNode = _scene->_renderNodeList[i];
-            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderNode->_pass->layout, 0, 1, &_renderList[i]._globalDescriptorSet, 0, nullptr);
-            renderNode->draw(_drawCmd);
+        for (auto & renderable : _renderList){
+            vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, renderable.shaderPass->layout, 0, 1, &renderable.globalDescriptorSet, 0, nullptr);
+            renderable.draw(_drawCmd);
         }
     }
 
+    void destroy() override{
+        vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
+    }
+
 private:
+    void _initRenderList(){
+        for (auto * renderNode : _scene->_renderNodeList){
+
+            Renderable renderable;
+            renderable.shaderPass = renderNode->_pass;
+            renderable.object = renderNode->_object;
+            renderable.transform = renderNode->_transform;
+
+            _renderList.push_back(renderable);
+        }
+    }
+
     void _setupDescriptor(){
         std::vector<VkDescriptorPoolSize> poolSizes{
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(_scene->getUBOCount() * _scene->getRenderableCount()) },
@@ -72,15 +86,15 @@ private:
             bufferInfos.push_back(uboNode->_object->buffer.descriptorInfo);
         }
 
-        for (auto & renderNode : _scene->_renderNodeList){
+        for (size_t i = 0; i < _renderList.size(); i++){
+            auto * renderNode = _scene->_renderNodeList[i];
             const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderNode->_pass->effect->setLayouts.data(), 1);
-            Renderable renderable;
-            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable._globalDescriptorSet));
+            VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_renderList[i].globalDescriptorSet));
             std::vector<VkWriteDescriptorSet> descriptorWrites;
             for (auto &bufferInfo : bufferInfos) {
                 VkWriteDescriptorSet write = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = renderable._globalDescriptorSet,
+                    .dstSet = _renderList[i].globalDescriptorSet,
                     .dstBinding = static_cast<uint32_t>(descriptorWrites.size()),
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
@@ -92,12 +106,7 @@ private:
             vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
             renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
-            _renderList.push_back(renderable);
         }
-    }
-
-    void destroy() override{
-        vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
     }
 
 private:
@@ -105,8 +114,16 @@ private:
     vkl::Device    *_device;
 
     struct Renderable{
-        VkDescriptorSet _globalDescriptorSet;
+        VkDescriptorSet globalDescriptorSet;
         std::vector<VkDescriptorSet> materialSet;
+        vkl::RenderObject * object;
+        glm::mat4 transform;
+
+        vkl::ShaderPass * shaderPass;
+
+        void draw(VkCommandBuffer commandBuffer) const{
+            object->draw(commandBuffer, shaderPass, transform);
+        }
     };
 
     std::vector<Renderable> _renderList;
