@@ -22,19 +22,19 @@ enum class SCENE_RENDER_TYPE : uint8_t {
 };
 
 struct SceneNode {
-    SceneNode * _parent;
-    Object * _object;
-    glm::mat4 _transform;
+    SceneNode *_parent;
+    Object    *_object;
+    glm::mat4  _transform;
 
     std::vector<SceneNode *> _children;
 
-    SceneNode * createChildNode(){
-        SceneNode * childNode = new SceneNode;
+    SceneNode *createChildNode() {
+        SceneNode *childNode = new SceneNode;
         _children.push_back(childNode);
         return childNode;
     }
 
-    void attachObject(Object* object){
+    void attachObject(Object *object) {
         _object = object;
     }
 };
@@ -69,7 +69,7 @@ struct SceneCameraNode : SceneUniformNode {
 
 class Scene {
 public:
-    Scene(){
+    Scene() {
         rootNode = new SceneNode;
     }
     Scene &pushUniform(UniformBufferObject *ubo);
@@ -84,51 +84,240 @@ public:
     }
 
 private:
-    SceneNode * rootNode;
+    SceneNode *rootNode;
 
 public:
     std::vector<SceneRenderNode *>  _renderNodeList;
     std::vector<SceneUniformNode *> _uniformNodeList;
     std::vector<SceneCameraNode *>  _cameraNodeList;
-
 };
 
-class GltfScene : public Scene{
-    struct Texture{
-        uint32_t index;
-    };
-
-    enum class AccessorType{
+class GlTFScene : public Scene {
+    enum class AccessorType {
         SCALAR,
         VEC2,
         VEC3,
         VEC4,
+        MAT2,
+        MAT3,
+        MAT4,
     };
 
-    struct Accessor{
-        uint32_t count;
+    enum class AccessorDataType {
+        SIGNED_BYTE    = 5120,
+        UNSIGNED_BYTE  = 5121,
+        SIGNED_SHORT   = 5122,
+        UNSIGNED_SHORT = 5123,
+        UNSIGNED_INT   = 5125,
+        FLOAT          = 5126,
+    };
+
+    /**
+     All binary data for meshes, skins, and animations
+     is stored in buffers and retrieved via accessors.
+    */
+    struct Accessor {
+        uint32_t     bufferView;
+        uint32_t     byteOffset;
+        uint32_t     componentType;
+        uint32_t     count;
         AccessorType type;
+
+        // accessors bounds
+        std::vector<uint32_t> max;
+        std::vector<uint32_t> min;
+        // TODO sparse accessors
     };
 
-    struct Material{
-        struct NormalTexture{
-            uint32_t index = 0;
-        };
-    };
-
-    struct Mesh{
-        struct Primitives{
-            uint32_t indices;
-        };
+    struct Node {
         std::string name;
+
+        glm::vec4 rotation;
+        glm::vec3 scale;
+        glm::vec3 translation;
+        glm::mat4 matrix;
+
+        uint32_t mesh;
+
+        std::vector<Node *> children;
     };
 
+    struct Buffer {
+        std::string uri;
+        uint32_t    byteLength;
+    };
 
-    std::vector<Texture> textures;
-    std::vector<Accessor> accessors;
-    std::vector<Material> materials;
+    struct BufferView {
+        uint32_t buffer;
+        uint32_t byteLength;
+        uint32_t byteOffset;
+
+        // ???
+        uint32_t target;
+        // used for vertex attribute data
+        uint32_t byteStride;
+    };
+
+    struct Texture {
+        uint32_t source;
+        uint32_t sampler;
+    };
+
+    struct Sampler{
+        uint32_t magFilter;
+        uint32_t minFilter;
+        uint32_t wrapS;
+        uint32_t wrapT;
+    };
+
+    enum class ImageMimeType {
+        PNG,
+        JPG,
+    };
+
+    struct Image {
+        std::string   uri;
+        uint32_t      bufferView;
+        ImageMimeType type;
+    };
+
+    struct Material {
+        std::string name;
+
+        struct {
+            glm::vec4 baseColorFactor;
+            glm::vec3 EmissiveFactor;
+            float metallicFactor;
+            float roughnessFactor;
+
+            struct {
+                uint32_t index;
+                uint32_t scale;
+                uint32_t texCoord;
+            } baseColorTexture;
+
+            struct{
+                uint32_t index;
+                uint32_t scale;
+                uint32_t texCoord;
+            } metallicRoughnessTexture;
+
+        } pbrMetallicRoughness;
+
+        struct{
+            uint32_t index;
+            uint32_t scale;
+            uint32_t texCoord;
+        } normalTexture;
+    };
+
+    enum class VertexComponent {
+        Position,
+        Normal,
+        UV,
+        Color,
+        Tangent,
+        Joint0,
+        Weight0
+    };
+
+    struct Vertex {
+        glm::vec3 pos;
+        glm::vec3 normal;
+        glm::vec2 uv;
+        glm::vec3 color;
+        glm::vec4 joint0;
+        glm::vec4 weight0;
+        glm::vec4 tangent;
+    };
+
+    struct VertexAttribute{
+        uint32_t NORMAL;
+        uint32_t POSITION;
+        uint32_t TANGENT;
+        uint32_t TEXCOORD;
+        uint32_t COLOR;
+        uint32_t JOINTS;
+        uint32_t WEIGHTS;
+    };
+
+    struct Primitive {
+        // TODO load vertex attributes
+        VertexAttribute attributes;
+        uint32_t indices;
+        uint32_t material;
+        uint32_t mode;
+    };
+
+    struct Mesh {
+        std::string            name;
+        std::vector<Primitive> primitives;
+    };
+
+    enum class CameraType{
+        PERSPECTIVE,
+        ORTHOGRAPHIC,
+    };
+
+    struct Camera{
+        std::string name;
+        CameraType type;
+        struct {
+            float xmag;
+            float ymag;
+            float znear;
+            float zfar;
+        } orthographic;
+        struct {
+            float aspectRatio;
+            float yfov;
+            float znear;
+            float zfar;
+        } perspective;
+    };
+
+    std::vector<Node *>     nodes;
+    std::vector<Buffer>     buffers;
+    std::vector<BufferView> bufferViews;
+    std::vector<Texture>    textures;
+    std::vector<Sampler>    samplers;
+    std::vector<Image>      images;
+    std::vector<Accessor>   accessors;
+    std::vector<Material>   materials;
+    std::vector<Vertex>     vertices;
+    std::vector<Camera>     cameras;
+
+    static uint8_t convertAccessorType(AccessorType type) {
+        switch (type) {
+        case AccessorType::SCALAR:
+            return 1;
+        case AccessorType::VEC2:
+            return 2;
+        case AccessorType::VEC3:
+            return 3;
+        case AccessorType::VEC4:
+        case AccessorType::MAT2:
+            return 4;
+        case AccessorType::MAT3:
+            return 9;
+        case AccessorType::MAT4:
+            return 16;
+        }
+    }
+    static uint32_t convertAccessorDataType(AccessorDataType type) {
+        switch (type) {
+        case AccessorDataType::SIGNED_BYTE:
+        case AccessorDataType::UNSIGNED_BYTE:
+            return 8;
+        case AccessorDataType::SIGNED_SHORT:
+        case AccessorDataType::UNSIGNED_SHORT:
+            return 16;
+        case AccessorDataType::UNSIGNED_INT:
+        case AccessorDataType::FLOAT:
+            return 32;
+        }
+    };
 };
-
 
 } // namespace vkl
 
