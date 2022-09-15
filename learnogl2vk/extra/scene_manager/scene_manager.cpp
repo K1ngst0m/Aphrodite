@@ -149,7 +149,13 @@ void scene_manager::setupShaders() {
         m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
     }
 
-    m_sceneManager.setupDescriptor(m_device->logicalDevice);
+    {
+        m_sceneRenderer.resize(m_commandBuffers.size());
+        for (size_t i = 0; i < m_sceneRenderer.size(); i++){
+            m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device);
+            m_sceneRenderer[i]->prepareResource();
+        }
+    }
 
     m_deletionQueue.push_function([&](){
         m_modelShaderEffect.destroy(m_device->logicalDevice);
@@ -157,15 +163,16 @@ void scene_manager::setupShaders() {
         m_planeShaderEffect.destroy(m_device->logicalDevice);
         m_planeShaderPass.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);
-
-        m_sceneManager.destroy(m_device->logicalDevice);
+        for(auto* sceneRenderer : m_sceneRenderer){
+            sceneRenderer->destroy();
+        }
     });
 }
 
 void scene_manager::buildCommands() {
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
         vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
-            m_sceneManager.draw(commandBuffer);
+            m_sceneRenderer[idx]->drawScene();
         }, idx);
     }
 }

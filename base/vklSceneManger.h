@@ -26,12 +26,24 @@ public:
     Scene &pushUniform(UniformBufferObject *ubo);
     Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
     Scene &pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
-    void   draw(VkCommandBuffer commandBuffer);
-    void   setupDescriptor(VkDevice device);
 
-    void destroy(VkDevice device);
+    uint32_t getTransparentRenderableCount() const{
+        return _transparentRenderNodeList.size();
+    }
 
-private:
+    uint32_t getOpaqueRenderableCount() const{
+        return _opaqueRenderNodeList.size();
+    }
+
+    uint32_t getRenderableCount() const{
+        return _opaqueRenderNodeList.size() + _transparentRenderNodeList.size();
+    }
+
+    uint32_t getUBOCount() const{
+        return _uniformNodeList.size() + _cameraNodeList.size();
+    }
+
+public:
     struct SceneNode {
         std::vector<SceneNode *> _children;
     };
@@ -39,14 +51,13 @@ private:
     struct SceneRenderNode : SceneNode {
         vkl::RenderObject *_object;
         vkl::ShaderPass   *_pass;
-        vkl::Mesh         *_mesh;
 
         glm::mat4 _transform;
 
         VkDescriptorSet _globalDescriptorSet;
 
-        SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, vkl::Mesh *mesh, glm::mat4 transform)
-            : _object(object), _pass(pass), _mesh(mesh), _transform(transform) {
+        SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, glm::mat4 transform)
+            : _object(object), _pass(pass), _transform(transform) {
         }
 
         void draw(VkCommandBuffer commandBuffer) const {
@@ -76,8 +87,6 @@ private:
     std::vector<SceneRenderNode *>  _opaqueRenderNodeList;
     std::vector<SceneUniformNode *> _uniformNodeList;
     std::vector<SceneCameraNode *>  _cameraNodeList;
-
-    VkDescriptorPool _descriptorPool;
 };
 } // namespace vkl
 

@@ -2,6 +2,7 @@
 #define SCENE_MANAGER_H_
 
 #include "vklBase.h"
+#include "vklSceneRenderer.h"
 
 class scene_manager : public vkl::vklBase {
 public:
@@ -34,6 +35,7 @@ private:
     vkl::MeshObject m_planeMesh;
 
     vkl::Scene m_sceneManager;
+    std::vector<vkl::SceneRenderer *> m_sceneRenderer;
 };
 
 #endif // SCENE_MANAGER_H_
