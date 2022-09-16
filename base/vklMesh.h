@@ -15,8 +15,12 @@
 
 namespace vkl {
 
-// vertex data component
-enum class VertexComponent { POSITION, NORMAL, UV, COLOR };
+enum class VertexComponent {
+    POSITION,
+    NORMAL,
+    UV,
+    COLOR,
+};
 
 // vertex data layout
 struct VertexLayout {
@@ -79,13 +83,13 @@ struct Primitive {
 struct Mesh {
     vkl::VertexBuffer      vertexBuffer;
     vkl::IndexBuffer       indexBuffer;
-    std::vector<Primitive> primitives;
+    std::vector<Primitive*> primitives;
 
     void setup(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {},
                std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
     void pushPrimitive(uint32_t firstIdx, uint32_t indexCount, int32_t materialIdx) {
-        primitives.push_back({firstIdx, indexCount, materialIdx});
+        primitives.push_back(new Primitive{firstIdx, indexCount, materialIdx});
     }
 
     VkBuffer getVertexBuffer() const {
@@ -105,6 +109,9 @@ struct Mesh {
     }
 
     void destroy() const {
+        for (auto * primitive : primitives){
+            delete primitive;
+        }
         vertexBuffer.destroy();
         indexBuffer.destroy();
     }
