@@ -85,20 +85,7 @@ public:
     uint32_t getRenderableCount() const;
     uint32_t getUBOCount() const;
 
-    void destroy(){
-        for (auto * node : _renderNodeList){
-            node->_entity->destroy();
-            delete node;
-        }
-
-        for (auto * node: _lightNodeList){
-            node->_object->destroy();
-            delete node;
-        }
-
-        _camera->_object->destroy();
-        delete _camera;
-    }
+    void destroy();
 
 public:
     std::vector<SceneEntityNode *>  _renderNodeList;

@@ -37,4 +37,18 @@ glm::vec4 SceneManager::getAmbient() {
 SceneManager::SceneManager()
     : _ambient(glm::vec4(0.2f)) {
 }
+void SceneManager::destroy() {
+    for (auto *node : _renderNodeList) {
+        node->_entity->destroy();
+        delete node;
+    }
+
+    for (auto *node : _lightNodeList) {
+        node->_object->destroy();
+        delete node;
+    }
+
+    _camera->_object->destroy();
+    delete _camera;
+}
 } // namespace vkl

@@ -18,10 +18,10 @@ private:
     void mouseHandleDerive(int xposIn, int yposIn) override;
 
 private:
-    void updateUniformBuffer();
-    void setupShaders();
-    void loadScene();
-    void buildCommands();
+    virtual void updateUniformBuffer();
+    virtual void setupShaders();
+    virtual void loadScene();
+    virtual void buildCommands();
 
 private:
     vkl::ShaderCache m_shaderCache;

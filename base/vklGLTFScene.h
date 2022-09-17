@@ -50,7 +50,8 @@ struct BoundingBox {
     BoundingBox getAABB(glm::mat4 m);
 };
 
-class GlTFScene {
+class EntityLoader {
+public:
     struct Image {
         uint32_t       width;
         uint32_t       height;
@@ -195,7 +196,7 @@ private:
     void loadSkins(const tinygltf::Model &gltfModel){}
     void loadAnimations(const tinygltf::Model &gltfModel){}
 
-private:
+public:
     std::vector<Node *>     nodes;
     std::vector<Texture>    textures;
     std::vector<Image>      images;

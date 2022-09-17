@@ -24,10 +24,9 @@ void VulkanSceneRenderer::destroy() {
 }
 void VulkanSceneRenderer::_initRenderList() {
     for (auto *renderNode : _scene->_renderNodeList) {
-
         Renderable renderable;
         renderable.shaderPass = renderNode->_pass;
-        renderable.object     = renderNode->_entity;
+        renderable.entity     = renderNode->_entity;
         renderable.transform  = renderNode->_matrix;
 
         _renderList.push_back(renderable);

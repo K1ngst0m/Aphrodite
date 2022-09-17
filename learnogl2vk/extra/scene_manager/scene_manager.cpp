@@ -102,7 +102,7 @@ void scene_manager::loadScene() {
 
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
         m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
-        m_plane->setupMesh(m_device, m_queues.transfer, planeVertices);
+        m_plane->loadMeshDevice(m_device, m_queues.transfer, planeVertices);
         m_plane->pushImage(textureDir / "metal.png", m_queues.transfer);
     }
 

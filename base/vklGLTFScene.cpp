@@ -44,7 +44,7 @@ static PrimitiveMode convertPrimitiveMode(int value) {
     return static_cast<PrimitiveMode>(value);
 }
 
-void GlTFScene::loadSceneFromFile(const std::string &filename, uint32_t fileLoadingFlags, float globalScale) {
+void EntityLoader::loadSceneFromFile(const std::string &filename, uint32_t fileLoadingFlags, float globalScale) {
     tinygltf::Model    gltfModel;
     tinygltf::TinyGLTF gltfContext;
 
@@ -94,7 +94,7 @@ void GlTFScene::loadSceneFromFile(const std::string &filename, uint32_t fileLoad
         assert("Failed to load scene from gltf file.");
     }
 }
-void GlTFScene::loadMaterials(tinygltf::Model &gltfModel) {
+void EntityLoader::loadMaterials(tinygltf::Model &gltfModel) {
     for (tinygltf::Material &gltfMaterial : gltfModel.materials) {
         Material newMaterial{};
         newMaterial.doubleSided = gltfMaterial.doubleSided;
@@ -147,7 +147,7 @@ void GlTFScene::loadMaterials(tinygltf::Model &gltfModel) {
         materials.push_back(newMaterial);
     }
 }
-void GlTFScene::loadTextures(const tinygltf::Model &gltfModel) {
+void EntityLoader::loadTextures(const tinygltf::Model &gltfModel) {
     for (const tinygltf::Texture &gltfTexture : gltfModel.textures) {
         TextureSampler newSampler;
 
@@ -172,7 +172,7 @@ void GlTFScene::loadTextures(const tinygltf::Model &gltfModel) {
         textures.push_back(texture);
     }
 }
-void GlTFScene::loadImages(const tinygltf::Model &gltfModel) {
+void EntityLoader::loadImages(const tinygltf::Model &gltfModel) {
     for (const tinygltf::Image &gltfImage : gltfModel.images) {
         Image newImage{};
 
@@ -197,7 +197,7 @@ void GlTFScene::loadImages(const tinygltf::Model &gltfModel) {
         images.push_back(newImage);
     }
 }
-void GlTFScene::loadNode(Node *parent, const tinygltf::Node &gltfNode, uint32_t nodeIndex, const tinygltf::Model &gltfModel, LoaderInfo &loaderInfo, float globalscale) {
+void EntityLoader::loadNode(Node *parent, const tinygltf::Node &gltfNode, uint32_t nodeIndex, const tinygltf::Model &gltfModel, LoaderInfo &loaderInfo, float globalscale) {
     Node *newNode      = new Node{};
     newNode->index     = nodeIndex;
     newNode->parent    = parent;
@@ -388,7 +388,7 @@ void GlTFScene::loadNode(Node *parent, const tinygltf::Node &gltfNode, uint32_t 
         nodes.push_back(newNode);
     }
 }
-void GlTFScene::getNodeProps(const tinygltf::Node &node, const tinygltf::Model &model, size_t &vertexCount, size_t &indexCount) {
+void EntityLoader::getNodeProps(const tinygltf::Node &node, const tinygltf::Model &model, size_t &vertexCount, size_t &indexCount) {
     if (!node.children.empty()) {
         for (int n : node.children) {
             getNodeProps(model.nodes[n], model, vertexCount, indexCount);
@@ -405,7 +405,7 @@ void GlTFScene::getNodeProps(const tinygltf::Node &node, const tinygltf::Model &
     }
 }
 
-GlTFScene::Node *GlTFScene::findNode(Node *parent, uint32_t index) {
+EntityLoader::Node *EntityLoader::findNode(Node *parent, uint32_t index) {
     Node *nodeFound = nullptr;
     if (parent->index == index) {
         return parent;
@@ -418,7 +418,7 @@ GlTFScene::Node *GlTFScene::findNode(Node *parent, uint32_t index) {
     }
     return nodeFound;
 }
-GlTFScene::Node *GlTFScene::getNodeFromIndex(uint32_t index) {
+EntityLoader::Node *EntityLoader::getNodeFromIndex(uint32_t index) {
     Node *nodeFound = nullptr;
     for (auto &node : nodes) {
         nodeFound = findNode(node, index);
