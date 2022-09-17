@@ -2,7 +2,8 @@
 #define VKLSCENEMANGER_H_
 
 #include "vklCamera.h"
-#include "vklObject.h"
+#include "vklEntity.h"
+#include "vklLight.h"
 
 namespace vkl {
 

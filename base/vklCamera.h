@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "vklObject.h"
+
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific
 // input methods
 enum class CameraMoveDirection : uint8_t { FORWARD, BACKWARD, LEFT, RIGHT };
@@ -55,6 +57,13 @@ private:
     constexpr static float ZOOM        = 45.0f;
     constexpr static float NEAR        = 0.01f;
     constexpr static float FAR         = 100.0f;
+};
+
+class SceneCamera : public UniformBufferObject, public vkl::Camera{
+public:
+    SceneCamera(float aspectRatio)
+        :vkl::Camera(aspectRatio)
+    {}
 };
 } // namespace vkl
 #endif

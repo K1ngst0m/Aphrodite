@@ -27,11 +27,9 @@ private:
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
 
-    // TODO
-    vkl::SceneCamera* camera;
-
-    vkl::Light* pointLight;
-    vkl::Light* directionalLight;
+    vkl::SceneCamera* m_sceneCamera;
+    vkl::Light* m_pointLight;
+    vkl::Light* m_directionalLight;
 
     vkl::Entity * m_model;
     vkl::Entity * m_plane;

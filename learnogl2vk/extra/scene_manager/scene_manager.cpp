@@ -64,12 +64,12 @@ void scene_manager::drawFrame() {
 void scene_manager::updateUniformBuffer() {
     {
         SceneDataLayout sceneData{
-            .view         = m_camera.GetViewMatrix(),
-            .proj         = m_camera.GetProjectionMatrix(),
-            .viewProj     = m_camera.GetViewProjectionMatrix(),
-            .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
+            .view         = m_sceneCamera->GetViewMatrix(),
+            .proj         = m_sceneCamera->GetProjectionMatrix(),
+            .viewProj     = m_sceneCamera->GetViewProjectionMatrix(),
+            .viewPosition = glm::vec4(m_sceneCamera->m_position, 1.0f),
         };
-        camera->update(&sceneData);
+        m_sceneCamera->update(&sceneData);
     }
 }
 
@@ -81,15 +81,17 @@ void scene_manager::initDerive() {
 
 void scene_manager::loadScene() {
     {
-        camera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
-        camera->setupBuffer(m_device, sizeof(SceneDataLayout));
+        m_sceneCamera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
+        m_sceneCamera->setupBuffer(m_device, sizeof(SceneDataLayout));
+    }
+    {
+        m_pointLight = m_sceneManager.createLight();
+        m_pointLight->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
 
-        pointLight = m_sceneManager.createLight();
-        pointLight->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
-
-        directionalLight = m_sceneManager.createLight();
-        directionalLight->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
-
+        m_directionalLight = m_sceneManager.createLight();
+        m_directionalLight->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
+    }
+    {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model = m_sceneManager.createEntity(&m_modelShaderPass, modelTransform);
