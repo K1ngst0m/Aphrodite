@@ -52,8 +52,8 @@ void VulkanSceneRenderer::_setupDescriptor() {
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
     std::vector<VkDescriptorBufferInfo> bufferInfos{};
-    if (!_scene->_cameraNodeList.empty()) {
-        bufferInfos.push_back(_scene->_cameraNodeList[0]->_object->buffer.descriptorInfo);
+    if (_scene->_camera) {
+        bufferInfos.push_back(_scene->_camera->_object->buffer.descriptorInfo);
     }
     for (auto *uboNode : _scene->_uniformNodeList) {
         bufferInfos.push_back(uboNode->_object->buffer.descriptorInfo);

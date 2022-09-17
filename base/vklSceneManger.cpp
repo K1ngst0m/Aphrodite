@@ -1,8 +1,8 @@
 #include "vklSceneManger.h"
 
 namespace vkl {
-Scene &Scene::pushCamera(vkl::Camera *camera, UniformBufferObject *ubo) {
-    _cameraNodeList.push_back(new SceneCameraNode(ubo, camera));
+Scene &Scene::setCamera(vkl::Camera *camera, UniformBufferObject *ubo) {
+    _camera = new SceneCameraNode(ubo, camera);
     return *this;
 }
 
@@ -22,6 +22,6 @@ uint32_t Scene::getRenderableCount() const {
     return _renderNodeList.size();
 }
 uint32_t Scene::getUBOCount() const {
-    return _uniformNodeList.size() + _cameraNodeList.size();
+    return _uniformNodeList.size() + 1;
 }
 } // namespace vkl

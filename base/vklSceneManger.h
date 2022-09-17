@@ -38,8 +38,8 @@ struct SceneNode {
 };
 
 struct SceneRenderNode : SceneNode {
-    vkl::Entity *_object;
-    vkl::ShaderPass   *_pass;
+    vkl::Entity     *_object;
+    vkl::ShaderPass *_pass;
 
     SceneRenderNode(vkl::Entity *object, vkl::ShaderPass *pass, glm::mat4 transform)
         : _object(object), _pass(pass) {
@@ -68,8 +68,9 @@ struct SceneCameraNode : SceneUniformNode {
 class Scene {
 public:
     Scene &pushUniform(UniformBufferObject *ubo);
-    Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
     Scene &pushEntity(Entity *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
+
+    Scene &setCamera(vkl::Camera *camera, UniformBufferObject *ubo);
 
     uint32_t getRenderableCount() const;
     uint32_t getUBOCount() const;
@@ -77,7 +78,8 @@ public:
 public:
     std::vector<SceneRenderNode *>  _renderNodeList;
     std::vector<SceneUniformNode *> _uniformNodeList;
-    std::vector<SceneCameraNode *>  _cameraNodeList;
+
+    SceneCameraNode *_camera = nullptr;
 };
 
 } // namespace vkl

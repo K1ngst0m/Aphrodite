@@ -33,7 +33,6 @@ public:
 
 private:
     void _initRenderList();
-
     void _setupDescriptor();
 
 private:
