@@ -1,6 +1,8 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
+#define VKL_SESSION_USING_SCENE_MANAGER
+
 #include "vklBase.h"
 #include "vklSceneRenderer.h"
 
@@ -12,6 +14,8 @@ public:
 private:
     void initDerive() override;
     void drawFrame() override;
+    void keyboardHandleDerive() override;
+    void mouseHandleDerive(int xposIn, int yposIn) override;
 
 private:
     void updateUniformBuffer();
@@ -27,12 +31,11 @@ private:
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
 
-    vkl::SceneCamera* m_sceneCamera;
-    vkl::Light* m_pointLight;
-    vkl::Light* m_directionalLight;
-
-    vkl::Entity * m_model;
-    vkl::Entity * m_plane;
+    vkl::SceneCamera* m_sceneCamera = nullptr;
+    vkl::Light* m_pointLight = nullptr;
+    vkl::Light* m_directionalLight = nullptr;
+    vkl::Entity * m_model = nullptr;
+    vkl::Entity * m_plane = nullptr;
 
     vkl::SceneManager m_sceneManager;
     std::vector<vkl::SceneRenderer *> m_sceneRenderer;

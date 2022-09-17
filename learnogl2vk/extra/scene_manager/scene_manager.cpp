@@ -28,6 +28,47 @@ void scene_manager::initDerive() {
     buildCommands();
 }
 
+void scene_manager::keyboardHandleDerive() {
+    if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
+        if (m_mouseData.isCursorDisable) {
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
+    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(m_window, true);
+
+    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
+}
+
+void scene_manager::mouseHandleDerive(int xposIn, int yposIn) {
+    auto xpos = static_cast<float>(xposIn);
+    auto ypos = static_cast<float>(yposIn);
+
+    if (m_mouseData.firstMouse) {
+        m_mouseData.lastX      = xpos;
+        m_mouseData.lastY      = ypos;
+        m_mouseData.firstMouse = false;
+    }
+
+    float xoffset = xpos - m_mouseData.lastX;
+    float yoffset = m_mouseData.lastY - ypos;
+
+    m_mouseData.lastX = xpos;
+    m_mouseData.lastY = ypos;
+
+    m_sceneCamera->ProcessMouseMovement(xoffset, yoffset);
+}
+
 void scene_manager::loadScene() {
     {
         m_sceneManager.setAmbient(glm::vec4(0.2f));
@@ -37,6 +78,7 @@ void scene_manager::loadScene() {
         m_sceneCamera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
         m_sceneCamera->load(m_device);
     }
+
     {
         m_pointLight = m_sceneManager.createLight();
         m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
@@ -51,6 +93,7 @@ void scene_manager::loadScene() {
         m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_directionalLight->load(m_device);
     }
+
     {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));

@@ -73,8 +73,10 @@ public:
     {}
 
     void load(vkl::Device *device);
-
     void update();
+
+    void setPosition(glm::vec4 position);
+    void setAspectRatio(float aspectRatio);
 };
 } // namespace vkl
 #endif

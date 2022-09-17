@@ -96,4 +96,10 @@ void SceneCamera::update() {
     };
     UniformBufferObject::updateBuffer(&data);
 }
+void SceneCamera::setPosition(glm::vec4 position) {
+    m_position = position;
+}
+void SceneCamera::setAspectRatio(float aspectRatio) {
+    m_aspect = aspectRatio;
+}
 } // namespace vkl
