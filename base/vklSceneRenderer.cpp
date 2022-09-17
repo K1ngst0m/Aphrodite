@@ -2,11 +2,11 @@
 
 namespace vkl {
 
-void SceneRenderer::setScene(Scene *scene) {
+void SceneRenderer::setScene(SceneManager *scene) {
     _scene = scene;
     prepareResource();
 }
-VulkanSceneRenderer::VulkanSceneRenderer(Scene *scene, VkCommandBuffer commandBuffer, vkl::Device *device)
+VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::Device *device)
     : SceneRenderer(scene), _drawCmd(commandBuffer), _device(device) {
 }
 void VulkanSceneRenderer::prepareResource() {
@@ -27,7 +27,7 @@ void VulkanSceneRenderer::_initRenderList() {
 
         Renderable renderable;
         renderable.shaderPass = renderNode->_pass;
-        renderable.object     = renderNode->_object;
+        renderable.object     = renderNode->_entity;
         renderable.transform  = renderNode->_transform;
 
         _renderList.push_back(renderable);
@@ -41,7 +41,7 @@ void VulkanSceneRenderer::_setupDescriptor() {
     uint32_t maxSetSize = _scene->getRenderableCount();
 
     for (auto *renderNode : _scene->_renderNodeList) {
-        std::vector<VkDescriptorPoolSize> setInfos = renderNode->_object->getDescriptorSetInfo();
+        std::vector<VkDescriptorPoolSize> setInfos = renderNode->_entity->getDescriptorSetInfo();
         for (auto &setInfo : setInfos) {
             maxSetSize += setInfo.descriptorCount;
             poolSizes.push_back(setInfo);
@@ -78,7 +78,7 @@ void VulkanSceneRenderer::_setupDescriptor() {
         }
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        renderNode->_object->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
+        renderNode->_entity->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
     }
 }
 } // namespace vkl

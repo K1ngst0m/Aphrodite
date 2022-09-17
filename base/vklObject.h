@@ -14,7 +14,7 @@
 #include <stb_image.h>
 namespace vkl {
 
-class Scene;
+class SceneManager;
 
 class Object {
 public:

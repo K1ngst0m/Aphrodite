@@ -1,27 +1,30 @@
 #include "vklSceneManger.h"
 
 namespace vkl {
-Scene &Scene::setCamera(vkl::Camera *camera, UniformBufferObject *ubo) {
+Camera* SceneManager::createCamera(float aspectRatio, UniformBufferObject *ubo) {
+    Camera* camera = new Camera(aspectRatio);
     _camera = new SceneCameraNode(ubo, camera);
-    return *this;
+    return camera;
 }
 
-Scene& Scene::pushUniform(UniformBufferObject *ubo)
+UniformBufferObject* SceneManager::createUniform()
 {
+    UniformBufferObject *ubo = new UniformBufferObject();
     _uniformNodeList.push_back(new SceneUniformNode(ubo));
-    return *this;
+    return ubo;
 }
 
-Scene& Scene::pushEntity(Entity *object, ShaderPass *pass, glm::mat4 transform, SCENE_RENDER_TYPE renderType)
+Entity* SceneManager::createEntity(ShaderPass *pass, glm::mat4 transform, SCENE_RENDER_TYPE renderType)
 {
-    _renderNodeList.push_back(new SceneRenderNode(object, pass, transform));
-    return *this;
+    Entity * entity = new Entity();
+    _renderNodeList.push_back(new SceneEntityNode(entity, pass, transform));
+    return entity;
 }
 
-uint32_t Scene::getRenderableCount() const {
+uint32_t SceneManager::getRenderableCount() const {
     return _renderNodeList.size();
 }
-uint32_t Scene::getUBOCount() const {
+uint32_t SceneManager::getUBOCount() const {
     return _uniformNodeList.size() + 1;
 }
 } // namespace vkl

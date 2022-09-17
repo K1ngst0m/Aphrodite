@@ -69,7 +69,7 @@ void scene_manager::updateUniformBuffer() {
             .viewProj     = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        sceneUBO.update(&sceneData);
+        sceneUBO->update(&sceneData);
     }
 }
 
@@ -81,36 +81,28 @@ void scene_manager::initDerive() {
 
 void scene_manager::loadScene() {
     {
-        sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
-        pointLightUBO.setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
-        directionalLightUBO.setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
-    }
+        sceneUBO = m_sceneManager.createUniform();
+        sceneUBO->setupBuffer(m_device, sizeof(SceneDataLayout));
 
-    {
-        m_model.loadFromFile(m_device, m_queues.transfer, modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
-        m_plane.setupMesh(m_device, m_queues.transfer, planeVertices);
-        m_plane.pushImage(textureDir / "metal.png", m_queues.transfer);
-    }
+        pointLightUBO = m_sceneManager.createUniform();
+        pointLightUBO->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
 
-    {
-        m_sceneManager.pushUniform(&sceneUBO)
-                      .pushUniform(&pointLightUBO)
-                      .pushUniform(&directionalLightUBO);
+        directionalLightUBO = m_sceneManager.createUniform();
+        directionalLightUBO->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
 
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_sceneManager.pushEntity(&m_model, &m_modelShaderPass, modelTransform);
+        m_model = m_sceneManager.createEntity(&m_modelShaderPass, modelTransform);
+        m_model->loadFromFile(m_device, m_queues.transfer, modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
 
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_sceneManager.pushEntity(&m_plane, &m_planeShaderPass, planeTransform);
+        m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
+        m_plane->setupMesh(m_device, m_queues.transfer, planeVertices);
+        m_plane->pushImage(textureDir / "metal.png", m_queues.transfer);
     }
 
     m_deletionQueue.push_function([&](){
-        m_plane.destroy();
-        m_model.destroy();
-        sceneUBO.destroy();
-        pointLightUBO.destroy();
-        directionalLightUBO.destroy();
+        m_sceneManager.destroy();
     });
 }
 

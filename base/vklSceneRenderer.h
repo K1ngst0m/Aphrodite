@@ -7,7 +7,7 @@
 namespace vkl {
 class SceneRenderer {
 public:
-    SceneRenderer(Scene *scene)
+    SceneRenderer(SceneManager *scene)
         :_scene(scene)
     {}
 
@@ -16,15 +16,15 @@ public:
 
     virtual void destroy() = 0;
 
-    void setScene(Scene *scene);
+    void setScene(SceneManager *scene);
 
 protected:
-    Scene *_scene;
+    SceneManager *_scene;
 };
 
 class VulkanSceneRenderer final : public SceneRenderer {
 public:
-    VulkanSceneRenderer(Scene *scene, VkCommandBuffer commandBuffer, vkl::Device *device);
+    VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::Device *device);
 
     void prepareResource() override;
     void drawScene() override;

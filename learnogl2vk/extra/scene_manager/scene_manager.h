@@ -27,14 +27,14 @@ private:
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
 
-    vkl::UniformBufferObject sceneUBO;
-    vkl::UniformBufferObject pointLightUBO;
-    vkl::UniformBufferObject directionalLightUBO;
+    vkl::UniformBufferObject* sceneUBO;
+    vkl::UniformBufferObject* pointLightUBO;
+    vkl::UniformBufferObject* directionalLightUBO;
 
-    vkl::Entity m_model;
-    vkl::Entity m_plane;
+    vkl::Entity * m_model;
+    vkl::Entity * m_plane;
 
-    vkl::Scene m_sceneManager;
+    vkl::SceneManager m_sceneManager;
     std::vector<vkl::SceneRenderer *> m_sceneRenderer;
 };
 
