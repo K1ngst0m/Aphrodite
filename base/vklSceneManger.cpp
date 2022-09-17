@@ -12,10 +12,16 @@ Scene& Scene::pushUniform(UniformBufferObject *ubo)
     return *this;
 }
 
-Scene& Scene::pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform, SCENE_RENDER_TYPE renderType)
+Scene& Scene::pushEntity(Entity *object, ShaderPass *pass, glm::mat4 transform, SCENE_RENDER_TYPE renderType)
 {
     _renderNodeList.push_back(new SceneRenderNode(object, pass, transform));
     return *this;
 }
 
+uint32_t Scene::getRenderableCount() const {
+    return _renderNodeList.size();
+}
+uint32_t Scene::getUBOCount() const {
+    return _uniformNodeList.size() + _cameraNodeList.size();
+}
 } // namespace vkl

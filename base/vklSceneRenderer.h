@@ -43,7 +43,7 @@ private:
     struct Renderable{
         VkDescriptorSet globalDescriptorSet;
         std::vector<VkDescriptorSet> materialSet;
-        vkl::RenderObject * object;
+        vkl::Entity * object;
         glm::mat4 transform;
 
         vkl::ShaderPass * shaderPass;

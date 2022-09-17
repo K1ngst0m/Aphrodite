@@ -32,7 +32,7 @@ private:
     vkl::UniformBufferObject directionalLightUBO;
 
     vkl::Entity m_model;
-    vkl::MeshObject m_planeMesh;
+    vkl::Entity m_plane;
 
     vkl::Scene m_sceneManager;
     std::vector<vkl::SceneRenderer *> m_sceneRenderer;

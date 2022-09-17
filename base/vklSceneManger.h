@@ -4,12 +4,6 @@
 #include "vklCamera.h"
 #include "vklObject.h"
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#ifdef VK_USE_PLATFORM_ANDROID_KHR
-#define TINYGLTF_ANDROID_LOAD_FROM_ASSETS
-#endif
-#include "tiny_gltf.h"
-
 namespace vkl {
 
 enum class SCENE_UNIFORM_TYPE : uint8_t {
@@ -44,10 +38,10 @@ struct SceneNode {
 };
 
 struct SceneRenderNode : SceneNode {
-    vkl::RenderObject *_object;
+    vkl::Entity *_object;
     vkl::ShaderPass   *_pass;
 
-    SceneRenderNode(vkl::RenderObject *object, vkl::ShaderPass *pass, glm::mat4 transform)
+    SceneRenderNode(vkl::Entity *object, vkl::ShaderPass *pass, glm::mat4 transform)
         : _object(object), _pass(pass) {
         _transform = transform;
     }
@@ -73,22 +67,12 @@ struct SceneCameraNode : SceneUniformNode {
 
 class Scene {
 public:
-    Scene() {
-        rootNode = new SceneNode;
-    }
     Scene &pushUniform(UniformBufferObject *ubo);
     Scene &pushCamera(vkl::Camera *camera, UniformBufferObject *ubo);
-    Scene &pushMeshObject(MeshObject *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
+    Scene &pushEntity(Entity *object, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
 
-    uint32_t getRenderableCount() const {
-        return _renderNodeList.size();
-    }
-    uint32_t getUBOCount() const {
-        return _uniformNodeList.size() + _cameraNodeList.size();
-    }
-
-private:
-    SceneNode *rootNode;
+    uint32_t getRenderableCount() const;
+    uint32_t getUBOCount() const;
 
 public:
     std::vector<SceneRenderNode *>  _renderNodeList;

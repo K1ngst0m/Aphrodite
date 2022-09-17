@@ -40,47 +40,18 @@ public:
     }
 };
 
-class RenderObject : Object {
+class Entity : public Object {
 public:
-    virtual void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) = 0;
-    virtual void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool)          = 0;
-
-    virtual std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() = 0;
-
-protected:
-    vkl::Device *_device;
-};
-
-class MeshObject : public RenderObject {
-public:
+    void pushImage(std::string imagePath, VkQueue queue);
     void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                    const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);
-    void destroy() override;
-
-    void pushImage(std::string imagePath, VkQueue queue);
-
-    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) override;
-
-    void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) override;
-
-    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() override{
-        std::vector<VkDescriptorPoolSize> poolSizes{
-            {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_textures.size())},
-        };
-
-        return poolSizes;
-    }
-
-protected:
-    vkl::Mesh                  _mesh;
-    std::vector<vkl::Texture>  _textures;
-    std::vector<vkl::Material> _materials;
-};
-
-class Entity : public MeshObject {
-public:
     void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) override;
+    void setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) ;
+
+    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() ;
+
+    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) ;
+
     void destroy() override;
 
 private:
@@ -90,16 +61,23 @@ private:
         vkl::Mesh           mesh;
         glm::mat4           matrix;
     };
-    std::vector<Node *>     _nodes;
 
     vkl::Texture *getTexture(uint32_t index);
-    void pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue);
-    void drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
-    void loadImages(VkQueue queue, tinygltf::Model &input);
-    void loadTextures(tinygltf::Model &input);
-    void loadMaterials(tinygltf::Model &input);
-    void loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
-                  std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices);
+    void          pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue);
+    void          drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
+    void          loadImages(VkQueue queue, tinygltf::Model &input);
+    void          loadTextures(tinygltf::Model &input);
+    void          loadMaterials(tinygltf::Model &input);
+    void          loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
+                           std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices);
+
+    std::vector<Node *>        _nodes;
+    std::vector<vkl::Texture>  _textures;
+    std::vector<vkl::Material> _materials;
+    vkl::Mesh                  _mesh;
+
+protected:
+    vkl::Device *_device;
 };
 
 } // namespace vkl

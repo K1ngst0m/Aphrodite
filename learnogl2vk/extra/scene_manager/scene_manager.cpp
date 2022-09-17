@@ -88,8 +88,8 @@ void scene_manager::loadScene() {
 
     {
         m_model.loadFromFile(m_device, m_queues.transfer, modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
-        m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
-        m_planeMesh.pushImage(textureDir / "metal.png", m_queues.transfer);
+        m_plane.setupMesh(m_device, m_queues.transfer, planeVertices);
+        m_plane.pushImage(textureDir / "metal.png", m_queues.transfer);
     }
 
     {
@@ -99,14 +99,14 @@ void scene_manager::loadScene() {
 
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_sceneManager.pushMeshObject(&m_model, &m_modelShaderPass, modelTransform);
+        m_sceneManager.pushEntity(&m_model, &m_modelShaderPass, modelTransform);
 
         glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_sceneManager.pushMeshObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+        m_sceneManager.pushEntity(&m_plane, &m_planeShaderPass, planeTransform);
     }
 
     m_deletionQueue.push_function([&](){
-        m_planeMesh.destroy();
+        m_plane.destroy();
         m_model.destroy();
         sceneUBO.destroy();
         pointLightUBO.destroy();
