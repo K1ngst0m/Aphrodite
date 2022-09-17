@@ -73,9 +73,14 @@ struct SceneCameraNode : SceneNode {
 
 class SceneManager {
 public:
+    SceneManager();
+
     Light*  createLight();
     Entity* createEntity(ShaderPass *pass = nullptr, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
     SceneCamera* createCamera(float aspectRatio);
+
+    void setAmbient(glm::vec4 value);
+    glm::vec4 getAmbient();
 
     uint32_t getRenderableCount() const;
     uint32_t getUBOCount() const;
@@ -100,6 +105,9 @@ public:
     std::vector<SceneLightNode *> _lightNodeList;
 
     SceneCameraNode *_camera = nullptr;
+
+private:
+    glm::vec4 _ambient;
 };
 
 } // namespace vkl

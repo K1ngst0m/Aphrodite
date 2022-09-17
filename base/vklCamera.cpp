@@ -80,4 +80,20 @@ glm::mat4 Camera::GetProjectionMatrix() const {
 glm::mat4 Camera::GetViewProjectionMatrix() const {
     return GetProjectionMatrix() * GetViewMatrix();
 }
+
+void SceneCamera::load(vkl::Device *device) {
+    uint32_t bufferSize = sizeof(CameraDataLayout);
+    UniformBufferObject::setupBuffer(device, bufferSize, nullptr);
+}
+
+void SceneCamera::update() {
+    uint32_t bufferSize = sizeof(CameraDataLayout);
+    CameraDataLayout data{
+        .view         = GetViewMatrix(),
+        .proj         = GetProjectionMatrix(),
+        .viewProj     = GetViewProjectionMatrix(),
+        .viewPosition = glm::vec4(m_position, 1.0f),
+    };
+    UniformBufferObject::updateBuffer(&data);
+}
 } // namespace vkl

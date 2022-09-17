@@ -59,11 +59,22 @@ private:
     constexpr static float FAR         = 100.0f;
 };
 
+struct CameraDataLayout {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
+    glm::vec4 viewPosition;
+};
+
 class SceneCamera : public UniformBufferObject, public vkl::Camera{
 public:
-    SceneCamera(float aspectRatio)
-        :vkl::Camera(aspectRatio)
+    SceneCamera(float aspectRatio, SceneManager * manager)
+        :UniformBufferObject(manager), vkl::Camera(aspectRatio)
     {}
+
+    void load(vkl::Device *device);
+
+    void update();
 };
 } // namespace vkl
 #endif

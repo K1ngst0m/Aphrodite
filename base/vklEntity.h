@@ -9,6 +9,10 @@
 namespace vkl {
 class Entity : public Object {
 public:
+    Entity(SceneManager * manager)
+        :Object(manager)
+    {}
+
     void pushImage(std::string imagePath, VkQueue queue);
     void setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
                    const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);

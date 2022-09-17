@@ -1,48 +1,5 @@
 #include "scene_manager.h"
 
-// per scene data
-// general scene data
-struct SceneDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 viewPosition;
-};
-
-// point light scene data
-struct DirectionalLightDataLayout {
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    glm::vec4 attenuationFactor;
-};
-
-DirectionalLightDataLayout directionalLightData{
-    .direction = glm::vec4(-0.2f, -1.0f, -0.3f, 1.0f),
-    .ambient   = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
-    .diffuse   = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-    .specular  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-};
-
-PointLightDataLayout pointLightData{
-    .position          = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f),
-    .ambient           = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
-    .diffuse           = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-    .specular          = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-    .attenuationFactor = glm::vec4(1.0f, 0.09f, 0.032f, 0.0f),
-};
-
 std::vector<vkl::VertexLayout> planeVertices{
     // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture
     // wrapping mode). this will cause the floor texture to repeat)
@@ -62,15 +19,7 @@ void scene_manager::drawFrame() {
 }
 
 void scene_manager::updateUniformBuffer() {
-    {
-        SceneDataLayout sceneData{
-            .view         = m_sceneCamera->GetViewMatrix(),
-            .proj         = m_sceneCamera->GetProjectionMatrix(),
-            .viewProj     = m_sceneCamera->GetViewProjectionMatrix(),
-            .viewPosition = glm::vec4(m_sceneCamera->m_position, 1.0f),
-        };
-        m_sceneCamera->update(&sceneData);
-    }
+    m_sceneCamera->update();
 }
 
 void scene_manager::initDerive() {
@@ -81,15 +30,26 @@ void scene_manager::initDerive() {
 
 void scene_manager::loadScene() {
     {
+        m_sceneManager.setAmbient(glm::vec4(0.2f));
+    }
+
+    {
         m_sceneCamera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
-        m_sceneCamera->setupBuffer(m_device, sizeof(SceneDataLayout));
+        m_sceneCamera->load(m_device);
     }
     {
         m_pointLight = m_sceneManager.createLight();
-        m_pointLight->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
+        m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
+        m_pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        m_pointLight->setType(vkl::LightType::POINT);
+        m_pointLight->load(m_device);
 
         m_directionalLight = m_sceneManager.createLight();
-        m_directionalLight->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
+        m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
+        m_directionalLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        m_directionalLight->load(m_device);
     }
     {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
