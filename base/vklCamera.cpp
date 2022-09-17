@@ -23,15 +23,15 @@ Camera::Camera(float aspect, float posX, float posY, float posZ, float upX, floa
 glm::mat4 Camera::GetViewMatrix() const {
     return glm::lookAt(m_position, m_position + m_front, m_up);
 }
-void Camera::move(CameraMovementEnum direction, float deltaTime) {
+void Camera::move(CameraMoveDirection direction, float deltaTime) {
     float velocity = m_movementSpeed * deltaTime;
-    if (direction == CameraMovementEnum::FORWARD)
+    if (direction == CameraMoveDirection::FORWARD)
         m_position += m_front * velocity;
-    if (direction == CameraMovementEnum::BACKWARD)
+    if (direction == CameraMoveDirection::BACKWARD)
         m_position -= m_front * velocity;
-    if (direction == CameraMovementEnum::LEFT)
+    if (direction == CameraMoveDirection::LEFT)
         m_position -= m_right * velocity;
-    if (direction == CameraMovementEnum::RIGHT)
+    if (direction == CameraMoveDirection::RIGHT)
         m_position += m_right * velocity;
 }
 void Camera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch) {

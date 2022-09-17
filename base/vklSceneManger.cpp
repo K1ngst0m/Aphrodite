@@ -1,16 +1,16 @@
 #include "vklSceneManger.h"
 
 namespace vkl {
-Camera* SceneManager::createCamera(float aspectRatio, UniformBufferObject *ubo) {
-    Camera* camera = new Camera(aspectRatio);
-    _camera = new SceneCameraNode(ubo, camera);
+SceneCamera* SceneManager::createCamera(float aspectRatio) {
+    SceneCamera* camera = new SceneCamera(aspectRatio);
+    _camera = new SceneCameraNode(camera);
     return camera;
 }
 
-UniformBufferObject* SceneManager::createUniform()
+Light* SceneManager::createLight()
 {
-    UniformBufferObject *ubo = new UniformBufferObject();
-    _uniformNodeList.push_back(new SceneUniformNode(ubo));
+    Light *ubo = new Light();
+    _lightNodeList.push_back(new SceneLightNode(ubo));
     return ubo;
 }
 
@@ -25,6 +25,6 @@ uint32_t SceneManager::getRenderableCount() const {
     return _renderNodeList.size();
 }
 uint32_t SceneManager::getUBOCount() const {
-    return _uniformNodeList.size() + 1;
+    return _lightNodeList.size() + 1;
 }
 } // namespace vkl

@@ -27,9 +27,11 @@ private:
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
 
-    vkl::UniformBufferObject* sceneUBO;
-    vkl::UniformBufferObject* pointLightUBO;
-    vkl::UniformBufferObject* directionalLightUBO;
+    // TODO
+    vkl::SceneCamera* camera;
+
+    vkl::Light* pointLight;
+    vkl::Light* directionalLight;
 
     vkl::Entity * m_model;
     vkl::Entity * m_plane;

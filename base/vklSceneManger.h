@@ -21,7 +21,7 @@ enum class SCENE_RENDER_TYPE : uint8_t {
 
 struct SceneNode {
     SceneNode *_parent;
-    glm::mat4  _transform;
+    glm::mat4  _matrix;
 
     std::vector<SceneNode *> _children;
 
@@ -30,42 +30,51 @@ struct SceneNode {
         _children.push_back(childNode);
         return childNode;
     }
+
+    void setTransform(glm::mat4 matrix){
+        _matrix = matrix;
+    }
 };
 
 struct SceneEntityNode : SceneNode {
     vkl::Entity     *_entity;
-    vkl::ShaderPass *_pass;
+    vkl::ShaderPass *_pass = nullptr;
 
     SceneEntityNode(vkl::Entity *entity, vkl::ShaderPass *pass, glm::mat4 transform)
         : _entity(entity), _pass(pass) {
-        _transform = transform;
+        setTransform(_matrix);
+    }
+
+    void setShaderPass(vkl::ShaderPass * pass){
+        _pass = pass;
     }
 };
 
-struct SceneUniformNode : SceneNode {
+struct SceneLightNode : SceneNode {
     SCENE_UNIFORM_TYPE _type;
 
-    vkl::UniformBufferObject *_object = nullptr;
+    vkl::Light *_object = nullptr;
 
-    SceneUniformNode(vkl::UniformBufferObject *object, SCENE_UNIFORM_TYPE uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
+    SceneLightNode(vkl::Light *object, SCENE_UNIFORM_TYPE uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
         : _type(uniformType), _object(object) {
     }
 };
 
-struct SceneCameraNode : SceneUniformNode {
-    SceneCameraNode(vkl::UniformBufferObject *object, vkl::Camera *camera)
-        : SceneUniformNode(object, SCENE_UNIFORM_TYPE::CAMERA), _camera(camera) {
-    }
+struct SceneCameraNode : SceneNode {
+    SCENE_UNIFORM_TYPE _type = SCENE_UNIFORM_TYPE::CAMERA;
 
-    vkl::Camera *_camera;
+    SceneCamera *_object = nullptr;
+
+    SceneCameraNode(vkl::SceneCamera *camera)
+        : _object(camera) {
+    }
 };
 
 class SceneManager {
 public:
-    // Entity* pushLight(UniformBufferObject *ubo);
-    UniformBufferObject* createUniform();
-    Entity* createEntity(ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
-    Camera* createCamera(float aspectRatio, UniformBufferObject *ubo);
+    Light*  createLight();
+    Entity* createEntity(ShaderPass *pass = nullptr, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
+    SceneCamera* createCamera(float aspectRatio);
 
     uint32_t getRenderableCount() const;
     uint32_t getUBOCount() const;
@@ -76,15 +85,18 @@ public:
             delete node;
         }
 
-        for (auto * node: _uniformNodeList){
+        for (auto * node: _lightNodeList){
             node->_object->destroy();
             delete node;
         }
+
+        _camera->_object->destroy();
+        delete _camera;
     }
 
 public:
     std::vector<SceneEntityNode *>  _renderNodeList;
-    std::vector<SceneUniformNode *> _uniformNodeList;
+    std::vector<SceneLightNode *> _lightNodeList;
 
     SceneCameraNode *_camera = nullptr;
 };

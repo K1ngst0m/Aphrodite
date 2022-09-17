@@ -69,7 +69,7 @@ void scene_manager::updateUniformBuffer() {
             .viewProj     = m_camera.GetViewProjectionMatrix(),
             .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
         };
-        sceneUBO->update(&sceneData);
+        camera->update(&sceneData);
     }
 }
 
@@ -81,14 +81,14 @@ void scene_manager::initDerive() {
 
 void scene_manager::loadScene() {
     {
-        sceneUBO = m_sceneManager.createUniform();
-        sceneUBO->setupBuffer(m_device, sizeof(SceneDataLayout));
+        camera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
+        camera->setupBuffer(m_device, sizeof(SceneDataLayout));
 
-        pointLightUBO = m_sceneManager.createUniform();
-        pointLightUBO->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
+        pointLight = m_sceneManager.createLight();
+        pointLight->setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
 
-        directionalLightUBO = m_sceneManager.createUniform();
-        directionalLightUBO->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
+        directionalLight = m_sceneManager.createLight();
+        directionalLight->setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
 
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));

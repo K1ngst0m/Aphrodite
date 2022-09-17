@@ -524,13 +524,13 @@ void vklBase::keyboardHandleDerive() {
         glfwSetWindowShouldClose(m_window, true);
 
     if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        m_camera.move(CameraMovementEnum::FORWARD, m_frameData.deltaTime);
+        m_camera.move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        m_camera.move(CameraMovementEnum::BACKWARD, m_frameData.deltaTime);
+        m_camera.move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-        m_camera.move(CameraMovementEnum::LEFT, m_frameData.deltaTime);
+        m_camera.move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-        m_camera.move(CameraMovementEnum::RIGHT, m_frameData.deltaTime);
+        m_camera.move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
 }
 vklBase::vklBase(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
     : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),

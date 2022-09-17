@@ -28,7 +28,7 @@ void VulkanSceneRenderer::_initRenderList() {
         Renderable renderable;
         renderable.shaderPass = renderNode->_pass;
         renderable.object     = renderNode->_entity;
-        renderable.transform  = renderNode->_transform;
+        renderable.transform  = renderNode->_matrix;
 
         _renderList.push_back(renderable);
     }
@@ -55,7 +55,7 @@ void VulkanSceneRenderer::_setupDescriptor() {
     if (_scene->_camera) {
         bufferInfos.push_back(_scene->_camera->_object->buffer.descriptorInfo);
     }
-    for (auto *uboNode : _scene->_uniformNodeList) {
+    for (auto *uboNode : _scene->_lightNodeList) {
         bufferInfos.push_back(uboNode->_object->buffer.descriptorInfo);
     }
 

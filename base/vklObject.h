@@ -7,6 +7,7 @@
 #include "vklMesh.h"
 #include "vklPipeline.h"
 #include "vklUtils.h"
+#include "vklCamera.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tinygltf/tiny_gltf.h>
@@ -21,7 +22,7 @@ public:
     virtual void destroy() = 0;
 };
 
-class UniformBufferObject : Object {
+class UniformBufferObject : public Object {
 public:
     vkl::UniformBuffer buffer;
 
@@ -38,6 +39,17 @@ public:
     void destroy() override {
         buffer.destroy();
     }
+};
+
+class Light : public UniformBufferObject {
+
+};
+
+class SceneCamera : public UniformBufferObject, public vkl::Camera{
+public:
+    SceneCamera(float aspectRatio)
+        :vkl::Camera(aspectRatio)
+    {}
 };
 
 class Entity : public Object {
