@@ -6,7 +6,28 @@
 #include "vklGLTFScene.h"
 
 namespace vkl {
-void Entity::loadImagesLocal(tinygltf::Model &input) {
+void Entity::loadFromFile(const std::string &path) {
+    tinygltf::Model    glTFInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string        error, warning;
+
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+
+    if (fileLoaded) {
+        loadImages(glTFInput);
+        loadMaterials(glTFInput);
+
+        const tinygltf::Scene &scene = glTFInput.scenes[0];
+        for (int nodeIdx : scene.nodes) {
+            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
+            loadNodes(node, glTFInput, nullptr, indices, vertices);
+        }
+    } else {
+        assert("Could not open the glTF file.");
+        return;
+    }
+}
+void Entity::loadImages(tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
 
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
@@ -43,7 +64,7 @@ void Entity::loadMaterials(tinygltf::Model &input) {
         }
     }
 }
-void Entity::loadNodeLocal(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
+void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
                      std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices) {
     Node *node   = new Node();
     node->matrix = glm::mat4(1.0f);
@@ -66,7 +87,7 @@ void Entity::loadNodeLocal(const tinygltf::Node &inputNode, const tinygltf::Mode
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNodeLocal(input.nodes[nodeIdx], input, node, indices, vertices);
+            loadNodes(input.nodes[nodeIdx], input, node, indices, vertices);
         }
     }
 
@@ -175,39 +196,18 @@ void Entity::loadNodeLocal(const tinygltf::Node &inputNode, const tinygltf::Mode
         _nodes.push_back(node);
     }
 }
-void Entity::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
-    loadFromFileLocal(path);
-    loadFromFileDevice(device, queue);
+void Entity::loadMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
+                           const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {
+    _device = device;
+    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
 }
-void Entity::pushImageDevice(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
-                           VkQueue queue) {
-    // Load texture from image buffer
-    vkl::Buffer stagingBuffer;
-    _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+void Entity::destroy() {
+    _mesh.destroy();
 
-    stagingBuffer.map();
-    stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
-    stagingBuffer.unmap();
-
-    vkl::Texture texture;
-    _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    texture.view              = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
-    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    _textures.push_back(texture);
-
-    stagingBuffer.destroy();
+    for (auto * image : _images){
+        delete image->data;
+        delete image;
+    }
 }
 void Entity::pushImage(std::string imagePath, VkQueue queue) {
     int          texWidth, texHeight, texChannels;
@@ -248,160 +248,5 @@ void Entity::pushImage(std::string imagePath, VkQueue queue) {
     _materials.push_back(materials);
 
     stagingBuffer.destroy();
-}
-void Entity::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
-    for (auto &material : _materials) {
-        VkDescriptorSet materialSet;
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
-        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo);
-        vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-        materialSets.push_back(materialSet);
-    }
-}
-void Entity::loadMeshDevice(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
-                           const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {
-    _device = device;
-    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
-}
-vkl::Texture *Entity::getTexture(uint32_t index) {
-    if (index < _textures.size()) {
-        return &_textures[index];
-    }
-    return nullptr;
-}
-std::vector<VkDescriptorPoolSize> Entity::getDescriptorSetInfo() {
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_textures.size())},
-    };
-
-    return poolSizes;
-}
-void Entity::loadImagesDevice(const std::vector<Image*> &images, VkQueue queue) {
-    for (auto &image : _images) {
-        unsigned char * imageData = image->data;
-        uint32_t imageDataSize = image->dataSize;
-        uint32_t width = image->width;
-        uint32_t height = image->height;
-
-        // Load texture from image buffer
-        vkl::Buffer stagingBuffer;
-        _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-        stagingBuffer.map();
-        stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
-        stagingBuffer.unmap();
-
-        vkl::Texture texture;
-        _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        texture.view                    = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
-        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
-        texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        _textures.push_back(texture);
-
-        stagingBuffer.destroy();
-    }
-}
-
-void Entity::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node) {
-    if (!node->mesh.primitives.empty()) {
-        glm::mat4 nodeMatrix    = node->matrix;
-        Node     *currentParent = node->parent;
-        while (currentParent) {
-            nodeMatrix    = currentParent->matrix * nodeMatrix;
-            currentParent = currentParent->parent;
-        }
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                           &nodeMatrix);
-        for (const Primitive primitive : node->mesh.primitives) {
-            if (primitive.indexCount > 0) {
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                        &materialSets[primitive.materialIndex], 0, nullptr);
-                vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-            }
-        }
-    }
-    for (Node *child : node->children) {
-        drawNode(commandBuffer, pipelineLayout, child);
-    }
-}
-void Entity::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform) {
-    assert(pass);
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
-
-    // manual created
-    if (_nodes.empty()){
-        if (!_textures.empty()){
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, materialSets.data(), 0, nullptr);
-        }
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
-        vkCmdDrawIndexed(commandBuffer, _mesh.getIndicesCount(), 1, 0, 0, 0);
-    }
-    // file loaded
-    else{
-        for (Node *node : _nodes) {
-            node->matrix = transform;
-            drawNode(commandBuffer, pass->layout, node);
-        }
-    }
-}
-
-void Entity::destroy() {
-    _mesh.destroy();
-
-    for (auto * image : _images){
-        delete image->data;
-        delete image;
-    }
-
-    for (const auto &texture : _textures) {
-        texture.destroy();
-    }
-}
-void Entity::loadFromFileDevice(vkl::Device *device, VkQueue queue) {
-    _device = device;
-
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
-    size_t indexBufferSize  = indices.size() * sizeof(indices[0]);
-
-    loadImagesDevice(_images, queue);
-    loadMeshDevice(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
-}
-void Entity::loadFromFileLocal(const std::string &path) {
-    tinygltf::Model    glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string        error, warning;
-
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
-
-    if (fileLoaded) {
-        loadImagesLocal(glTFInput);
-        loadMaterials(glTFInput);
-
-        const tinygltf::Scene &scene = glTFInput.scenes[0];
-        for (int nodeIdx : scene.nodes) {
-            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            loadNodeLocal(node, glTFInput, nullptr, indices, vertices);
-        }
-    } else {
-        assert("Could not open the glTF file.");
-        return;
-    }
 }
 } // namespace vkl

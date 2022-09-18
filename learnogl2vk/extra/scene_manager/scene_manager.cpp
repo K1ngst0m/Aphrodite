@@ -98,12 +98,12 @@ void scene_manager::loadScene() {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model = m_sceneManager.createEntity(&m_modelShaderPass, modelTransform);
-        m_model->loadFromFile(m_device, m_queues.transfer, modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
+        m_model->loadFromFile(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
 
-        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
-        m_plane->loadMeshDevice(m_device, m_queues.transfer, planeVertices);
-        m_plane->pushImage(textureDir / "metal.png", m_queues.transfer);
+        // glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
+        // m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
+        // m_plane->loadMesh(m_device, m_queues.transfer, planeVertices);
+        // m_plane->pushImage(textureDir / "metal.png", m_queues.transfer);
     }
 
     m_deletionQueue.push_function([&](){
@@ -149,7 +149,7 @@ void scene_manager::setupShaders() {
     {
         m_sceneRenderer.resize(m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++){
-            m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device);
+            m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
             m_sceneRenderer[i]->prepareResource();
         }
     }

@@ -17,24 +17,18 @@ public:
     Entity(SceneManager * manager)
         :Object(manager)
     {}
-
-    // manual loading
-    void pushImage(std::string imagePath, VkQueue queue);
-    void loadMeshDevice(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
-                   const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);
-
-    void loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path);
-    void loadFromFileLocal(const std::string &path);
-    void loadFromFileDevice(vkl::Device *device, VkQueue queue);
-
-    void setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) ;
-    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() ;
-
-    void draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform = glm::mat4(1.0f)) ;
-
+    void loadFromFile(const std::string &path);
     void destroy() override;
 
-private:
+    // TODO move to scene renderer
+    void pushImage(std::string imagePath, VkQueue queue);
+    void loadMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
+                   const std::vector<uint32_t> &indices = {}, size_t vSize = 0, size_t iSize = 0);
+    vkl::Mesh                 _mesh;
+    std::vector<vkl::Texture> _textures;
+    std::vector<VkDescriptorSet> materialSets;
+
+public:
     struct Primitive {
         uint32_t firstIndex;
         uint32_t indexCount;
@@ -65,24 +59,15 @@ private:
     // local data
     std::vector<uint32_t>          indices;
     std::vector<vkl::VertexLayout> vertices;
-    std::vector<Image*>             _images;
+    std::vector<Image*>            _images;
     std::vector<Node *>            _nodes;
     std::vector<vkl::Material>     _materials;
 
-    // device data
-    std::vector<vkl::Texture> _textures;
-    std::vector<VkDescriptorSet> materialSets;
-    vkl::Mesh                 _mesh;
-
 private:
-    vkl::Texture *getTexture(uint32_t index);
-    void          pushImageDevice(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize, VkQueue queue);
-    void          loadImagesDevice(const std::vector<Image*> &images, VkQueue queue);
-    void          loadImagesLocal(tinygltf::Model &input);
+    void          loadImages(tinygltf::Model &input);
     void          loadMaterials(tinygltf::Model &input);
-    void          loadNodeLocal(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
+    void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
                                 std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices);
-    void          drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node);
 
 protected:
     vklt::EntityLoader *loader;
