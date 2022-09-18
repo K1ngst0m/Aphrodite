@@ -1,9 +1,9 @@
 #ifndef VKLDEVICE_H_
 #define VKLDEVICE_H_
 
-#include "vklBuffer.h"
-#include "vklTexture.h"
-#include "vklUtils.h"
+#include "buffer.h"
+#include "texture.h"
+#include "vkUtils.h"
 
 namespace vkl {
 

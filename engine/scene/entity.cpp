@@ -1,63 +1,75 @@
 #define TINYGLTF_IMPLEMENTATION
-#include "vklObject.h"
+
+#include "entity.h"
+#include <stb_image.h>
+
+#include "vklGLTFScene.h"
 
 namespace vkl {
+void Entity::loadFromFile(const std::string &path) {
+    tinygltf::Model    glTFInput;
+    tinygltf::TinyGLTF gltfContext;
+    std::string        error, warning;
 
-void Model::loadImages(VkQueue queue, tinygltf::Model &input) {
-    // Images can be stored inside the glTF (which is the case for the sample model), so instead of directly
-    // loading them from disk, we fetch them from the glTF loader and upload the buffers
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+
+    if (fileLoaded) {
+        loadImages(glTFInput);
+        loadMaterials(glTFInput);
+
+        const tinygltf::Scene &scene = glTFInput.scenes[0];
+        for (int nodeIdx : scene.nodes) {
+            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
+            loadNodes(node, glTFInput, nullptr, indices, vertices);
+        }
+    } else {
+        assert("Could not open the glTF file.");
+        return;
+    }
+}
+void Entity::loadImages(tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
-        // Get the image data from the glTF loader
-        unsigned char *imageData     = nullptr;
-        VkDeviceSize   imageDataSize = 0;
-        bool           deleteBuffer  = false;
+
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
+        Image * newImage = new Image;
+        newImage->width= glTFImage.width;
+        newImage->height = glTFImage.height;
+        newImage->dataSize  = glTFImage.width * glTFImage.height * 4;
+        newImage->data      = new unsigned char[newImage->dataSize];
         if (glTFImage.component == 3) {
-            imageDataSize       = glTFImage.width * glTFImage.height * 4;
-            imageData           = new unsigned char[imageDataSize];
-            unsigned char *rgba = imageData;
+            unsigned char *rgba = newImage->data;
             unsigned char *rgb  = glTFImage.image.data();
             for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
             }
-            deleteBuffer = true;
-        } else {
-            imageData     = glTFImage.image.data();
-            imageDataSize = glTFImage.image.size();
+        }
+        else {
+            memcpy(newImage->data, glTFImage.image.data(), glTFImage.image.size());
         }
 
-        pushImage(glTFImage.width, glTFImage.height, imageData, imageDataSize, queue);
-
-        if (deleteBuffer) {
-            delete[] imageData;
-        }
+        _images.push_back(newImage);
     }
 }
-void Model::loadMaterials(tinygltf::Model &input) {
+void Entity::loadMaterials(tinygltf::Model &input) {
     _materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
-        // We only read the most basic properties required for our sample
         tinygltf::Material glTFMaterial = input.materials[i];
-        // Get the base color factor
         if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
             _materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
         }
-        // Get base color texture index
         if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
-            _materials[i].baseColorTexture = getTexture(glTFMaterial.values["baseColorTexture"].TextureIndex());
+            _materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
         }
     }
 }
-void Model::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
+void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
                      std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices) {
     Node *node   = new Node();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
 
-    // Get the local node matrix
-    // It's either made up from translation, rotation, scale or a 4x4 matrix
     if (inputNode.translation.size() == 3) {
         node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
     }
@@ -75,7 +87,7 @@ void Model::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &inp
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNode(input.nodes[nodeIdx], input, node, indices, vertices);
+            loadNodes(input.nodes[nodeIdx], input, node, indices, vertices);
         }
     }
 
@@ -184,120 +196,20 @@ void Model::loadNode(const tinygltf::Node &inputNode, const tinygltf::Model &inp
         _nodes.push_back(node);
     }
 }
-void Model::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, const Node *node) {
-    if (!node->mesh.primitives.empty()) {
-        // Pass the node's matrix via push constants
-        // Traverse the node hierarchy to the top-most parent to get the final matrix of the current node
-        glm::mat4 nodeMatrix    = node->matrix;
-        Node     *currentParent = node->parent;
-        while (currentParent) {
-            nodeMatrix    = currentParent->matrix * nodeMatrix;
-            currentParent = currentParent->parent;
-        }
-        // Pass the final matrix to the vertex shader using push constants
-        vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                           &nodeMatrix);
-        for (const vkl::Primitive &primitive : node->mesh.primitives) {
-            if (primitive.indexCount > 0) {
-                // Get the texture index for this primitive
-                Material& material = _materials[primitive.materialIndex];
-                // Bind the descriptor for the current primitive's texture
-                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                        &material.descriptorSet, 0, nullptr);
-                vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-            }
-        }
-    }
-    for (Node *child : node->children) {
-        drawNode(commandBuffer, pipelineLayout, child);
-    }
+void Entity::loadMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
+                           const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {
+    _device = device;
+    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
 }
-void Model::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform) {
-    assert(pass);
-    // All vertices and indices are stored in single buffers, so we only need to bind once
-    VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
-    // Render all nodes at top-level
-    for (Node *node : _nodes) {
-        node->matrix = transform;
-        drawNode(commandBuffer, pass->layout, node);
-    }
-}
-void Model::destroy() {
+void Entity::destroy() {
     _mesh.destroy();
 
-    for (const auto &texture : _textures) {
-        texture.destroy();
+    for (auto * image : _images){
+        delete image->data;
+        delete image;
     }
 }
-
-void Model::loadFromFile(vkl::Device *device, VkQueue queue, const std::string &path) {
-    _device = device;
-
-    tinygltf::Model    glTFInput;
-    tinygltf::TinyGLTF gltfContext;
-    std::string        error, warning;
-
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
-
-    std::vector<uint32_t>          indices;
-    std::vector<vkl::VertexLayout> vertices;
-
-    assert(_device);
-    if (fileLoaded) {
-        loadImages(queue, glTFInput);
-        loadMaterials(glTFInput);
-        // TODO multi scene
-        const tinygltf::Scene &scene = glTFInput.scenes[0];
-        for (int nodeIdx : scene.nodes) {
-            const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            loadNode(node, glTFInput, nullptr, indices, vertices);
-        }
-    } else {
-        assert("Could not open the glTF file.");
-        return;
-    }
-
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = vertices.size() * sizeof(vkl::VertexLayout);
-    size_t indexBufferSize  = indices.size() * sizeof(indices[0]);
-
-    MeshObject::setupMesh(device, queue, vertices, indices, vertexBufferSize, indexBufferSize);
-}
-
-void Model::pushImage(uint32_t width, uint32_t height, unsigned char *imageData, VkDeviceSize imageDataSize,
-                           VkQueue queue) {
-    // Load texture from image buffer
-    vkl::Buffer stagingBuffer;
-    _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    stagingBuffer.map();
-    stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
-    stagingBuffer.unmap();
-
-    vkl::Texture texture;
-    _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    texture.view              = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
-    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    _textures.push_back(texture);
-
-    stagingBuffer.destroy();
-}
-void MeshObject::pushImage(std::string imagePath, VkQueue queue) {
+void Entity::pushImage(std::string imagePath, VkQueue queue) {
     int          texWidth, texHeight, texChannels;
     stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -332,54 +244,9 @@ void MeshObject::pushImage(std::string imagePath, VkQueue queue) {
     _textures.push_back(texture);
 
     Material materials;
-    materials.baseColorTexture = &_textures.back();
+    materials.baseColorTextureIndex = _textures.size() - 1;
     _materials.push_back(materials);
 
     stagingBuffer.destroy();
 }
-void MeshObject::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 transform) {
-    assert(pass);
-    VkDeviceSize offsets[1] = {0};
-
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-
-    vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdPushConstants(commandBuffer, pass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &transform);
-
-    if (!_textures.empty()){
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, &_materials[0].descriptorSet, 0, nullptr);
-    }
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
-    vkCmdDrawIndexed(commandBuffer, _mesh.getIndicesCount(), 1, 0, 0, 0);
-}
-void MeshObject::setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
-    for (auto &material : _materials) {
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &material.descriptorSet));
-        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(material.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &material.baseColorTexture->descriptorInfo);
-        vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-    }
-}
-void MeshObject::destroy() {
-    _mesh.destroy();
-
-    for (auto &texture : _textures) {
-        texture.destroy();
-    }
-}
-void MeshObject::setupMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
-                           const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {
-    _device = device;
-    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
-}
-
-vkl::Texture *Model::getTexture(uint32_t index) {
-    if (index < _textures.size()) {
-        return &_textures[index];
-    }
-    return nullptr;
-}
-
 } // namespace vkl

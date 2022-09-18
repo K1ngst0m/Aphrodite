@@ -31,7 +31,7 @@ private:
     vkl::UniformBufferObject pointLightUBO;
     vkl::UniformBufferObject directionalLightUBO;
 
-    vkl::Model m_model;
+    vkl::Entity m_model;
 
     vkl::Scene m_defaultScene;
 };

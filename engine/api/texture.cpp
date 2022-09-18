@@ -1,4 +1,4 @@
-#include "vklTexture.h"
+#include "texture.h"
 #include <cassert>
 #include <cstring>
 

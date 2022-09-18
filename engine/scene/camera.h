@@ -4,9 +4,11 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "object.h"
+
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific
 // input methods
-enum class CameraMovementEnum : uint8_t { FORWARD, BACKWARD, LEFT, RIGHT };
+enum class CameraMoveDirection : uint8_t { FORWARD, BACKWARD, LEFT, RIGHT };
 
 namespace vkl {
 class Camera {
@@ -36,7 +38,7 @@ public:
     glm::mat4 GetProjectionMatrix() const;
     glm::mat4 GetViewProjectionMatrix() const;
 
-    void move(CameraMovementEnum direction, float deltaTime);
+    void move(CameraMoveDirection direction, float deltaTime);
 
     void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
 
@@ -55,6 +57,26 @@ private:
     constexpr static float ZOOM        = 45.0f;
     constexpr static float NEAR        = 0.01f;
     constexpr static float FAR         = 100.0f;
+};
+
+struct CameraDataLayout {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
+    glm::vec4 viewPosition;
+};
+
+class SceneCamera : public UniformBufferObject, public vkl::Camera{
+public:
+    SceneCamera(float aspectRatio, SceneManager * manager)
+        :UniformBufferObject(manager), vkl::Camera(aspectRatio)
+    {}
+
+    void load(vkl::Device *device);
+    void update();
+
+    void setPosition(glm::vec4 position);
+    void setAspectRatio(float aspectRatio);
 };
 } // namespace vkl
 #endif

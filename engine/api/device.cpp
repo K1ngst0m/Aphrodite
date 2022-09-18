@@ -1,6 +1,6 @@
-#include "vklDevice.h"
-#include "vklInit.hpp"
-#include "vklUtils.h"
+#include "device.h"
+#include "vkInit.hpp"
+#include "vkUtils.h"
 
 namespace vkl
 {

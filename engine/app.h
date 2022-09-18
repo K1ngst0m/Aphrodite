@@ -1,14 +1,7 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#include "vklCamera.h"
-#include "vklDevice.h"
-#include "vklInit.hpp"
-#include "vklMesh.h"
-#include "vklObject.h"
-#include "vklPipeline.h"
-#include "vklSceneManger.h"
-#include "vklUtils.h"
+#include "vkl.hpp"
 
 namespace vkl {
 
@@ -55,11 +48,11 @@ struct DeletionQueue {
     }
 };
 
-class vklBase {
+class vklApp {
 public:
-    vklBase(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
+    vklApp(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
 
-    virtual ~vklBase() = default;
+    virtual ~vklApp() = default;
 
 public:
     void init();

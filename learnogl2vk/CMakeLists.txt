@@ -20,7 +20,7 @@ function(buildExample EXAMPLE_PATH)
     file(GLOB SHADERS_GLSL "${SHADER_DIR_GLSL}/*.vert" "${SHADER_DIR_GLSL}/*.frag" "${SHADER_DIR_GLSL}/*.comp" "${SHADER_DIR_GLSL}/*.geom" "${SHADER_DIR_GLSL}/*.tesc" "${SHADER_DIR_GLSL}/*.tese" "${SHADER_DIR_GLSL}/*.mesh" "${SHADER_DIR_GLSL}/*.task" "${SHADER_DIR_GLSL}/*.rgen" "${SHADER_DIR_GLSL}/*.rchit" "${SHADER_DIR_GLSL}/*.rmiss" "${SHADER_DIR_GLSL}/*.rcall")
 
     add_executable(${EXAMPLE_NAME} ${MAIN_CPP} ${SOURCE} ${MAIN_HEADER} ${SHADERS_GLSL} ${SHADERS_HLSL} ${README_FILES})
-    target_link_libraries(${EXAMPLE_NAME} base)
+    target_link_libraries(${EXAMPLE_NAME} engine)
     set_target_properties(${EXAMPLE_NAME} PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 endfunction(buildExample)
 
@@ -32,22 +32,22 @@ function(buildExamples)
 endfunction(buildExamples)
 
 set(EXAMPLES
-  getting_started/first_triangle
-  getting_started/textures
-  getting_started/transformations
-  lighting/basic_lighting
-  lighting/materials
-  lighting/lighting_maps
-  lighting/light_casters
+  # getting_started/first_triangle
+  # getting_started/textures
+  # getting_started/transformations
+  # lighting/basic_lighting
+  # lighting/materials
+  # lighting/lighting_maps
+  # lighting/light_casters
   # model_loading/mesh
   # model_loading/model
-  advance/depth_testing
-  advance/stencil_testing
-  advance/blending
-  advance/face_culling
-  advance/framebuffers
+  # advance/depth_testing
+  # advance/stencil_testing
+  # advance/blending
+  # advance/face_culling
+  # advance/framebuffers
   extra/scene_manager
-  extra/imgui_example
+  # extra/imgui_example
 )
 
 buildExamples()

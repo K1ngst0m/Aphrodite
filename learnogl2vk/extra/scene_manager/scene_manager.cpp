@@ -1,47 +1,5 @@
 #include "scene_manager.h"
-
-// per scene data
-// general scene data
-struct SceneDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 viewPosition;
-};
-
-// point light scene data
-struct DirectionalLightDataLayout {
-    glm::vec4 direction;
-
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightDataLayout {
-    glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-
-    glm::vec4 attenuationFactor;
-};
-
-DirectionalLightDataLayout directionalLightData{
-    .direction = glm::vec4(-0.2f, -1.0f, -0.3f, 1.0f),
-    .ambient   = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
-    .diffuse   = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-    .specular  = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-};
-
-PointLightDataLayout pointLightData{
-    .position          = glm::vec4(1.2f, 1.0f, 2.0f, 1.0f),
-    .ambient           = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f),
-    .diffuse           = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f),
-    .specular          = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f),
-    .attenuationFactor = glm::vec4(1.0f, 0.09f, 0.032f, 0.0f),
-};
+#include "api/vkSceneRenderer.h"
 
 std::vector<vkl::VertexLayout> planeVertices{
     // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture
@@ -56,21 +14,13 @@ std::vector<vkl::VertexLayout> planeVertices{
 };
 
 void scene_manager::drawFrame() {
-    vkl::vklBase::prepareFrame();
+    vkl::vklApp::prepareFrame();
     updateUniformBuffer();
-    vkl::vklBase::submitFrame();
+    vkl::vklApp::submitFrame();
 }
 
 void scene_manager::updateUniformBuffer() {
-    {
-        SceneDataLayout sceneData{
-            .view         = m_camera.GetViewMatrix(),
-            .proj         = m_camera.GetProjectionMatrix(),
-            .viewProj     = m_camera.GetViewProjectionMatrix(),
-            .viewPosition = glm::vec4(m_camera.m_position, 1.0f),
-        };
-        sceneUBO.update(&sceneData);
-    }
+    m_sceneCamera->update();
 }
 
 void scene_manager::initDerive() {
@@ -79,38 +29,86 @@ void scene_manager::initDerive() {
     buildCommands();
 }
 
+void scene_manager::keyboardHandleDerive() {
+    if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
+        if (m_mouseData.isCursorDisable) {
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        } else {
+            glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+    }
+
+    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(m_window, true);
+
+    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
+    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
+        m_sceneCamera->move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
+}
+
+void scene_manager::mouseHandleDerive(int xposIn, int yposIn) {
+    auto xpos = static_cast<float>(xposIn);
+    auto ypos = static_cast<float>(yposIn);
+
+    if (m_mouseData.firstMouse) {
+        m_mouseData.lastX      = xpos;
+        m_mouseData.lastY      = ypos;
+        m_mouseData.firstMouse = false;
+    }
+
+    float xoffset = xpos - m_mouseData.lastX;
+    float yoffset = m_mouseData.lastY - ypos;
+
+    m_mouseData.lastX = xpos;
+    m_mouseData.lastY = ypos;
+
+    m_sceneCamera->ProcessMouseMovement(xoffset, yoffset);
+}
+
 void scene_manager::loadScene() {
     {
-        sceneUBO.setupBuffer(m_device, sizeof(SceneDataLayout));
-        pointLightUBO.setupBuffer(m_device, sizeof(PointLightDataLayout), &pointLightData);
-        directionalLightUBO.setupBuffer(m_device, sizeof(DirectionalLightDataLayout), &directionalLightData);
+        m_sceneManager.setAmbient(glm::vec4(0.2f));
     }
 
     {
-        m_model.loadFromFile(m_device, m_queues.transfer, modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
-        m_planeMesh.setupMesh(m_device, m_queues.transfer, planeVertices);
-        m_planeMesh.pushImage(textureDir / "metal.png", m_queues.transfer);
+        m_sceneCamera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
+        m_sceneCamera->load(m_device);
     }
 
     {
-        m_sceneManager.pushUniform(&sceneUBO)
-                      .pushUniform(&pointLightUBO)
-                      .pushUniform(&directionalLightUBO);
+        m_pointLight = m_sceneManager.createLight();
+        m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
+        m_pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        m_pointLight->setType(vkl::LightType::POINT);
+        m_pointLight->load(m_device);
 
+        m_directionalLight = m_sceneManager.createLight();
+        m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
+        m_directionalLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        m_directionalLight->load(m_device);
+    }
+
+    {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_sceneManager.pushMeshObject(&m_model, &m_modelShaderPass, modelTransform);
+        m_model = m_sceneManager.createEntity(&m_modelShaderPass, modelTransform);
+        m_model->loadFromFile(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
 
-        glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        m_sceneManager.pushMeshObject(&m_planeMesh, &m_planeShaderPass, planeTransform);
+        // glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
+        // m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
+        // m_plane->loadMesh(m_device, m_queues.transfer, planeVertices);
+        // m_plane->pushImage(textureDir / "metal.png", m_queues.transfer);
     }
 
     m_deletionQueue.push_function([&](){
-        m_planeMesh.destroy();
-        m_model.destroy();
-        sceneUBO.destroy();
-        pointLightUBO.destroy();
-        directionalLightUBO.destroy();
+        m_sceneManager.destroy();
     });
 }
 
@@ -149,7 +147,13 @@ void scene_manager::setupShaders() {
         m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
     }
 
-    m_sceneManager.setupDescriptor(m_device->logicalDevice);
+    {
+        m_sceneRenderer.resize(m_commandBuffers.size());
+        for (size_t i = 0; i < m_sceneRenderer.size(); i++){
+            m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
+            m_sceneRenderer[i]->prepareResource();
+        }
+    }
 
     m_deletionQueue.push_function([&](){
         m_modelShaderEffect.destroy(m_device->logicalDevice);
@@ -157,15 +161,16 @@ void scene_manager::setupShaders() {
         m_planeShaderEffect.destroy(m_device->logicalDevice);
         m_planeShaderPass.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);
-
-        m_sceneManager.destroy(m_device->logicalDevice);
+        for(auto* sceneRenderer : m_sceneRenderer){
+            sceneRenderer->destroy();
+        }
     });
 }
 
 void scene_manager::buildCommands() {
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
-        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
-            m_sceneManager.draw(commandBuffer);
+        vklApp::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
+            m_sceneRenderer[idx]->drawScene();
         }, idx);
     }
 }
@@ -173,7 +178,7 @@ void scene_manager::buildCommands() {
 int main() {
     scene_manager app;
 
-    app.vkl::vklBase::init();
-    app.vkl::vklBase::run();
-    app.vkl::vklBase::finish();
+    app.vkl::vklApp::init();
+    app.vkl::vklApp::run();
+    app.vkl::vklApp::finish();
 }
