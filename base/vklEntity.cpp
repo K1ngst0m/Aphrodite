@@ -8,36 +8,26 @@
 namespace vkl {
 void Entity::loadImagesLocal(tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
-        // Get the image data from the glTF loader
-        unsigned char *imageData     = nullptr;
-        VkDeviceSize   imageDataSize = 0;
-        bool           deleteBuffer  = false;
+
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
+        Image * newImage = new Image;
+        newImage->width= glTFImage.width;
+        newImage->height = glTFImage.height;
+        newImage->dataSize  = glTFImage.width * glTFImage.height * 4;
+        newImage->data      = new unsigned char[newImage->dataSize];
         if (glTFImage.component == 3) {
-            imageDataSize       = glTFImage.width * glTFImage.height * 4;
-            imageData           = new unsigned char[imageDataSize];
-            unsigned char *rgba = imageData;
+            unsigned char *rgba = newImage->data;
             unsigned char *rgb  = glTFImage.image.data();
             for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
             }
-            deleteBuffer = true;
-        } else {
-            imageData     = glTFImage.image.data();
-            imageDataSize = glTFImage.image.size();
+        }
+        else {
+            memcpy(newImage->data, glTFImage.image.data(), glTFImage.image.size());
         }
 
-        if (deleteBuffer) {
-            delete[] imageData;
-        }
-
-        Image newImage{};
-        newImage.data = imageData;
-        newImage.dataSize = imageDataSize;
-        newImage.width= glTFImage.width;
-        newImage.height = glTFImage.height;
         _images.push_back(newImage);
     }
 }
@@ -259,12 +249,14 @@ void Entity::pushImage(std::string imagePath, VkQueue queue) {
 
     stagingBuffer.destroy();
 }
-void Entity::setupDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
+void Entity::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _materials) {
+        VkDescriptorSet materialSet;
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &material.descriptorSet));
-        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(material.descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
+        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo);
         vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+        materialSets.push_back(materialSet);
     }
 }
 void Entity::loadMeshDevice(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
@@ -285,12 +277,12 @@ std::vector<VkDescriptorPoolSize> Entity::getDescriptorSetInfo() {
 
     return poolSizes;
 }
-void Entity::loadImagesDevice(const std::vector<Image> &images, VkQueue queue) {
+void Entity::loadImagesDevice(const std::vector<Image*> &images, VkQueue queue) {
     for (auto &image : _images) {
-        unsigned char * imageData = image.data;
-        uint32_t imageDataSize = image.dataSize;
-        uint32_t width = image.width;
-        uint32_t height = image.height;
+        unsigned char * imageData = image->data;
+        uint32_t imageDataSize = image->dataSize;
+        uint32_t width = image->width;
+        uint32_t height = image->height;
 
         // Load texture from image buffer
         vkl::Buffer stagingBuffer;
@@ -334,9 +326,8 @@ void Entity::drawNode(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLa
                            &nodeMatrix);
         for (const Primitive primitive : node->mesh.primitives) {
             if (primitive.indexCount > 0) {
-                Material& material = _materials[primitive.materialIndex];
                 vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                        &material.descriptorSet, 0, nullptr);
+                                        &materialSets[primitive.materialIndex], 0, nullptr);
                 vkCmdDrawIndexed(commandBuffer, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
@@ -352,14 +343,16 @@ void Entity::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 tra
     vkCmdBindIndexBuffer(commandBuffer, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
 
+    // manual created
     if (_nodes.empty()){
         if (!_textures.empty()){
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, &_materials[0].descriptorSet, 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->layout, 1, 1, materialSets.data(), 0, nullptr);
         }
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pass->builtPipeline);
         vkCmdDrawIndexed(commandBuffer, _mesh.getIndicesCount(), 1, 0, 0, 0);
     }
+    // file loaded
     else{
         for (Node *node : _nodes) {
             node->matrix = transform;
@@ -370,6 +363,11 @@ void Entity::draw(VkCommandBuffer commandBuffer, ShaderPass *pass, glm::mat4 tra
 
 void Entity::destroy() {
     _mesh.destroy();
+
+    for (auto * image : _images){
+        delete image->data;
+        delete image;
+    }
 
     for (const auto &texture : _textures) {
         texture.destroy();
@@ -392,7 +390,6 @@ void Entity::loadFromFileLocal(const std::string &path) {
 
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
 
-    assert(_device);
     if (fileLoaded) {
         loadImagesLocal(glTFInput);
         loadMaterials(glTFInput);

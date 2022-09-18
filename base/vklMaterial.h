@@ -10,8 +10,6 @@ namespace vkl {
 struct Material {
     glm::vec4 baseColorFactor       = glm::vec4(1.0f);
     uint32_t baseColorTextureIndex = 0;
-
-    VkDescriptorSet descriptorSet;
 };
 } // namespace vkl
 

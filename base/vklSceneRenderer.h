@@ -39,11 +39,13 @@ private:
     vkl::Device    *_device;
 
     struct Renderable{
-        VkDescriptorSet globalDescriptorSet;
-        std::vector<VkDescriptorSet> materialSet;
         vkl::Entity * entity;
+
         glm::mat4 transform;
+
         vkl::ShaderPass * shaderPass;
+        std::vector<VkDescriptorSet> materialSet;
+        VkDescriptorSet globalDescriptorSet;
 
         void draw(VkCommandBuffer commandBuffer) const{
             entity->draw(commandBuffer, shaderPass, transform);

@@ -6,6 +6,7 @@ void SceneRenderer::setScene(SceneManager *scene) {
     _scene = scene;
     prepareResource();
 }
+
 VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::Device *device)
     : SceneRenderer(scene), _drawCmd(commandBuffer), _device(device) {
 }
@@ -77,7 +78,7 @@ void VulkanSceneRenderer::_setupDescriptor() {
         }
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
-        renderNode->_entity->setupDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
+        renderNode->_entity->setupMaterialDescriptor(renderNode->_pass->effect->setLayouts[1], _descriptorPool);
     }
 }
 } // namespace vkl
