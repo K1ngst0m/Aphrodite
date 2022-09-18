@@ -1,4 +1,4 @@
-#include "vklBase.h"
+#include "app.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -58,7 +58,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
     createInfo.pfnUserCallback = debugCallback;
 }
 
-void vklBase::createFramebuffers() {
+void vklApp::createFramebuffers() {
     m_framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
         std::array<VkImageView, 2> attachments = {m_swapChainImageViews[i], m_depthAttachment.view};
@@ -77,7 +77,7 @@ void vklBase::createFramebuffers() {
     }
 }
 
-std::vector<const char *> vklBase::getRequiredInstanceExtensions() {
+std::vector<const char *> vklApp::getRequiredInstanceExtensions() {
     // Get extensions supported by the instance and store for later use
     uint32_t extCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
@@ -103,7 +103,7 @@ std::vector<const char *> vklBase::getRequiredInstanceExtensions() {
     return extensions;
 }
 
-bool vklBase::checkValidationLayerSupport() {
+bool vklApp::checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -128,7 +128,7 @@ bool vklBase::checkValidationLayerSupport() {
     return true;
 }
 
-void vklBase::createSurface() {
+void vklApp::createSurface() {
     if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
@@ -136,7 +136,7 @@ void vklBase::createSurface() {
     m_deletionQueue.push_function([=]() { vkDestroySurfaceKHR(m_instance, m_surface, nullptr); });
 }
 
-void vklBase::createInstance() {
+void vklApp::createInstance() {
     if (m_settings.enableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
@@ -172,7 +172,7 @@ void vklBase::createInstance() {
     m_deletionQueue.push_function([=]() { vkDestroyInstance(m_instance, nullptr); });
 }
 
-void vklBase::initWindow() {
+void vklApp::initWindow() {
     assert(glfwInit());
     assert(glfwVulkanSupported());
 
@@ -185,11 +185,11 @@ void vklBase::initWindow() {
     glfwSetWindowUserPointer(m_window, this);
 
     glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *window, int width, int height) {
-        auto *app                 = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
+        auto *app                 = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
         app->m_framebufferResized = true;
     });
     glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double xposIn, double yposIn) {
-        auto *app = reinterpret_cast<vklBase *>(glfwGetWindowUserPointer(window));
+        auto *app = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
         app->mouseHandleDerive(xposIn, yposIn);
     });
 
@@ -199,7 +199,7 @@ void vklBase::initWindow() {
     });
 }
 
-void vklBase::createDevice() {
+void vklApp::createDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
 
@@ -233,7 +233,7 @@ void vklBase::createDevice() {
     m_deletionQueue.push_function([=]() { delete m_device; });
 }
 
-void vklBase::createRenderPass() {
+void vklApp::createRenderPass() {
     VkAttachmentDescription colorAttachment{
         .format         = m_swapChainImageFormat,
         .samples        = VK_SAMPLE_COUNT_1_BIT,
@@ -300,13 +300,13 @@ void vklBase::createRenderPass() {
         [=]() { vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr); });
 }
 
-void vklBase::cleanup() {
+void vklApp::cleanup() {
     cleanupSwapChain();
 
     m_deletionQueue.flush();
 }
 
-void vklBase::initVulkan() {
+void vklApp::initVulkan() {
     createInstance();
     setupDebugMessenger();
     createSurface();
@@ -321,7 +321,7 @@ void vklBase::initVulkan() {
     createSyncObjects();
 }
 
-void vklBase::createSwapChainImageViews() {
+void vklApp::createSwapChainImageViews() {
     m_swapChainImageViews.resize(m_swapChainImages.size());
 
     for (size_t i = 0; i < m_swapChainImages.size(); i++) {
@@ -329,7 +329,7 @@ void vklBase::createSwapChainImageViews() {
     }
 }
 
-void vklBase::createSwapChain() {
+void vklApp::createSwapChain() {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_device->physicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -384,7 +384,7 @@ void vklBase::createSwapChain() {
     m_swapChainExtent      = extent;
 }
 
-void vklBase::recreateSwapChain() {
+void vklApp::recreateSwapChain() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(m_window, &width, &height);
     while (width == 0 || height == 0) {
@@ -402,7 +402,7 @@ void vklBase::recreateSwapChain() {
     createFramebuffers();
 }
 
-void vklBase::cleanupSwapChain() {
+void vklApp::cleanupSwapChain() {
     m_depthAttachment.destroy();
 
     for (auto &m_swapChainFramebuffer : m_framebuffers) {
@@ -416,7 +416,7 @@ void vklBase::cleanupSwapChain() {
     vkDestroySwapchainKHR(m_device->logicalDevice, m_swapChain, nullptr);
 }
 
-void vklBase::createCommandBuffers() {
+void vklApp::createCommandBuffers() {
     m_commandBuffers.resize(m_swapChainImages.size());
 
     VkCommandBufferAllocateInfo allocInfo{
@@ -429,7 +429,7 @@ void vklBase::createCommandBuffers() {
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
 }
 
-void vklBase::loadImageFromFile(vkl::Texture &texture, std::string_view imagePath) {
+void vklApp::loadImageFromFile(vkl::Texture &texture, std::string_view imagePath) {
     int          texWidth, texHeight, texChannels;
     stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -460,7 +460,7 @@ void vklBase::loadImageFromFile(vkl::Texture &texture, std::string_view imagePat
     stagingBuffer.destroy();
 }
 
-void vklBase::createDepthResources() {
+void vklApp::createDepthResources() {
     VkFormat depthFormat = m_device->findDepthFormat();
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -470,7 +470,7 @@ void vklBase::createDepthResources() {
                                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 }
 
-SwapChainSupportDetails vklBase::querySwapChainSupport(VkPhysicalDevice device) {
+SwapChainSupportDetails vklApp::querySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_surface, &details.capabilities);
@@ -493,7 +493,7 @@ SwapChainSupportDetails vklBase::querySwapChainSupport(VkPhysicalDevice device) 
 
     return details;
 }
-void vklBase::mouseHandleDerive(int xposIn, int yposIn) {
+void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
     auto xpos = static_cast<float>(xposIn);
     auto ypos = static_cast<float>(yposIn);
 
@@ -511,7 +511,7 @@ void vklBase::mouseHandleDerive(int xposIn, int yposIn) {
 
     m_camera.ProcessMouseMovement(xoffset, yoffset);
 }
-void vklBase::keyboardHandleDerive() {
+void vklApp::keyboardHandleDerive() {
     if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
         if (m_mouseData.isCursorDisable) {
             glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -532,14 +532,14 @@ void vklBase::keyboardHandleDerive() {
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
         m_camera.move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
 }
-vklBase::vklBase(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
+vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
     : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),
       m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f),
       m_camera(Camera((float)m_windowData.width / m_windowData.height))
 
 {
 }
-void vklBase::run() {
+void vklApp::run() {
     while (!glfwWindowShouldClose(m_window)) {
         glfwPollEvents();
         keyboardHandleDerive();
@@ -549,17 +549,17 @@ void vklBase::run() {
 
     vkDeviceWaitIdle(m_device->logicalDevice);
 }
-void vklBase::finish() {
+void vklApp::finish() {
     cleanupDerive();
     cleanup();
 }
-void vklBase::init() {
+void vklApp::init() {
     initWindow();
     initVulkan();
     initImGui();
     initDerive();
 }
-void vklBase::prepareFrame() {
+void vklApp::prepareFrame() {
     float currentFrame    = glfwGetTime();
     m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
     m_frameData.lastFrame = currentFrame;
@@ -581,7 +581,7 @@ void vklBase::prepareFrame() {
 
     vkResetFences(m_device->logicalDevice, 1, &m_frameSyncObjects[m_currentFrame].inFlightFence);
 }
-void vklBase::submitFrame() {
+void vklApp::submitFrame() {
     VkSemaphore          waitSemaphores[]   = {m_frameSyncObjects[m_currentFrame].renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore          signalSemaphores[] = {m_frameSyncObjects[m_currentFrame].presentSemaphore};
@@ -621,7 +621,7 @@ void vklBase::submitFrame() {
 
     m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
 }
-void vklBase::createSyncObjects() {
+void vklApp::createSyncObjects() {
     m_frameSyncObjects.resize(m_settings.max_frames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
@@ -638,16 +638,16 @@ void vklBase::createSyncObjects() {
     }
 }
 
-void vklBase::setupPipelineBuilder() {
+void vklApp::setupPipelineBuilder() {
     m_pipelineBuilder.resetToDefault(m_swapChainExtent);
 }
 
-void vklBase::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+void vklApp::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
                                   uint32_t                                              frameIdx) {
     recordCommandBuffer(m_defaultRenderPass, drawCommands, frameIdx);
 }
 
-void vklBase::setupDebugMessenger() {
+void vklApp::setupDebugMessenger() {
     if (!m_settings.enableValidationLayers)
         return;
 
@@ -658,7 +658,7 @@ void vklBase::setupDebugMessenger() {
     m_deletionQueue.push_function([=]() { destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr); });
 }
 
-void vklBase::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+void vklApp::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                             const VkAllocationCallbacks *pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -666,13 +666,13 @@ void vklBase::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMes
     }
 }
 
-void vklBase::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) {
+void vklApp::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) {
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
     m_device->endSingleTimeCommands(cmd, m_queues.graphics);
 }
 
-void vklBase::initImGui() {
+void vklApp::initImGui() {
     // 1: create descriptor pool for IMGUI
     //  the size of the pool is very oversize, but it's copied from imgui demo itself.
     VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
@@ -734,7 +734,7 @@ void vklBase::initImGui() {
     });
 }
 
-void vklBase::prepareUI() {
+void vklApp::prepareUI() {
     if (m_settings.enableUI) {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -744,7 +744,7 @@ void vklBase::prepareUI() {
     }
 }
 
-void vklBase::recordCommandBuffer(VkRenderPass                                          renderPass,
+void vklApp::recordCommandBuffer(VkRenderPass                                          renderPass,
                                   const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
                                   uint32_t                                              frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];

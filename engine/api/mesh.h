@@ -1,8 +1,8 @@
 #ifndef VKLMESH_H_
 #define VKLMESH_H_
 
-#include "vklBuffer.h"
-#include "vklDevice.h"
+#include "buffer.h"
+#include "device.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

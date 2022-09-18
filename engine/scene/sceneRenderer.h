@@ -1,8 +1,8 @@
 #ifndef VKLSCENERENDERER_H_
 #define VKLSCENERENDERER_H_
 
-#include "vklDevice.h"
-#include "vklSceneManger.h"
+#include "api/device.h"
+#include "sceneManager.h"
 
 namespace vkl {
 class SceneRenderer;

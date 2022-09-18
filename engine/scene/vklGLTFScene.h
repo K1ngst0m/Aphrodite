@@ -1,7 +1,7 @@
 #ifndef VKLGLTFSCENE_H_
 #define VKLGLTFSCENE_H_
 
-#include "vklSceneManger.h"
+#include "sceneManager.h"
 
 namespace vklt {
 

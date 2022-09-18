@@ -1,4 +1,4 @@
-#include "vklObject.h"
+#include "object.h"
 
 namespace vkl {
 UniformBufferObject::UniformBufferObject(SceneManager *manager)

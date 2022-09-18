@@ -1,4 +1,4 @@
-#include "vklBuffer.h"
+#include "buffer.h"
 #include <cassert>
 #include <cstring>
 

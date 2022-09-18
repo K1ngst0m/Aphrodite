@@ -1,4 +1,4 @@
-#include "vklCamera.h"
+#include "camera.h"
 
 namespace vkl {
 Camera::Camera(float aspect, glm::vec3 position, glm::vec3 up, float yaw, float pitch)

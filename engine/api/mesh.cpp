@@ -1,4 +1,4 @@
-#include "vklMesh.h"
+#include "mesh.h"
 
 namespace vkl {
 

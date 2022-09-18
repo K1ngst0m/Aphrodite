@@ -1,6 +1,6 @@
 #define TINYGLTF_IMPLEMENTATION
 
-#include "vklEntity.h"
+#include "entity.h"
 #include <stb_image.h>
 
 #include "vklGLTFScene.h"

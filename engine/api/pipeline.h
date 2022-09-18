@@ -1,9 +1,9 @@
 #ifndef PIPELINE_H_
 #define PIPELINE_H_
 
-#include "vklDevice.h"
-#include "vklMesh.h"
-#include "vklInit.hpp"
+#include "device.h"
+#include "mesh.h"
+#include "vkInit.hpp"
 
 namespace vkl {
 

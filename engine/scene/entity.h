@@ -1,7 +1,8 @@
 #ifndef VKLENTITY_H_
 #define VKLENTITY_H_
 
-#include "vklObject.h"
+#include "object.h"
+#include "material.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tinygltf/tiny_gltf.h>

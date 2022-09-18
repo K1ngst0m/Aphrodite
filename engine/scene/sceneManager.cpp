@@ -1,4 +1,4 @@
-#include "vklSceneManger.h"
+#include "sceneManager.h"
 
 namespace vkl {
 SceneCamera* SceneManager::createCamera(float aspectRatio) {

@@ -15,9 +15,9 @@ include_directories(external/tinygltf)
 include_directories(external/imgui)
 include_directories(external/glfw/include)
 
-include_directories(base)
+include_directories(engine)
 
-add_subdirectory(base)
+add_subdirectory(engine)
 add_subdirectory(learnogl2vk)
 
 find_package(Vulkan ${Vulkan_MIN_VERSION} REQUIRED)

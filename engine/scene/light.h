@@ -1,7 +1,7 @@
 #ifndef VKLLIGHT_H_
 #define VKLLIGHT_H_
 
-#include "vklObject.h"
+#include "object.h"
 
 namespace vkl {
 

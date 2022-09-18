@@ -1,9 +1,10 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "vklCamera.h"
-#include "vklEntity.h"
-#include "vklLight.h"
+#include "camera.h"
+#include "entity.h"
+#include "light.h"
+#include "api/pipeline.h"
 
 namespace vkl {
 

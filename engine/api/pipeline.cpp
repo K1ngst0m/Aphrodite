@@ -1,4 +1,4 @@
-#include "vklPipeline.h"
+#include "pipeline.h"
 
 namespace vkl {
 VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)

@@ -13,9 +13,9 @@ std::vector<vkl::VertexLayout> planeVertices{
 };
 
 void scene_manager::drawFrame() {
-    vkl::vklBase::prepareFrame();
+    vkl::vklApp::prepareFrame();
     updateUniformBuffer();
-    vkl::vklBase::submitFrame();
+    vkl::vklApp::submitFrame();
 }
 
 void scene_manager::updateUniformBuffer() {
@@ -168,7 +168,7 @@ void scene_manager::setupShaders() {
 
 void scene_manager::buildCommands() {
     for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
-        vklBase::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
+        vklApp::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
             m_sceneRenderer[idx]->drawScene();
         }, idx);
     }
@@ -177,7 +177,7 @@ void scene_manager::buildCommands() {
 int main() {
     scene_manager app;
 
-    app.vkl::vklBase::init();
-    app.vkl::vklBase::run();
-    app.vkl::vklBase::finish();
+    app.vkl::vklApp::init();
+    app.vkl::vklApp::run();
+    app.vkl::vklApp::finish();
 }

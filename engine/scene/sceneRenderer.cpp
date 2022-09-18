@@ -1,4 +1,4 @@
-#include "vklSceneRenderer.h"
+#include "sceneRenderer.h"
 
 namespace vkl {
 SceneRenderer::SceneRenderer(SceneManager *scene)

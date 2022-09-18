@@ -1,12 +1,7 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
-#include "vklDevice.h"
-#include "vklInit.hpp"
-#include "vklMaterial.h"
-#include "vklMesh.h"
-#include "vklPipeline.h"
-#include "vklUtils.h"
+#include "api/mesh.h"
 
 namespace vkl {
 
