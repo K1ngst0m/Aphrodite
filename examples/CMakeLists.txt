@@ -32,22 +32,8 @@ function(buildExamples)
 endfunction(buildExamples)
 
 set(EXAMPLES
-  # getting_started/first_triangle
-  # getting_started/textures
-  # getting_started/transformations
-  # lighting/basic_lighting
-  # lighting/materials
-  # lighting/lighting_maps
-  # lighting/light_casters
-  # model_loading/mesh
-  # model_loading/model
-  # advance/depth_testing
-  # advance/stencil_testing
-  # advance/blending
-  # advance/face_culling
-  # advance/framebuffers
-  extra/scene_manager
-  # extra/imgui_example
+  scene_manager
+  # imgui_example
 )
 
 buildExamples()

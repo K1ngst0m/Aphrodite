@@ -18,7 +18,7 @@ include_directories(external/glfw/include)
 include_directories(engine)
 
 add_subdirectory(engine)
-add_subdirectory(learnogl2vk)
+add_subdirectory(examples)
 
 find_package(Vulkan ${Vulkan_MIN_VERSION} REQUIRED)
 find_package(PkgConfig REQUIRED)

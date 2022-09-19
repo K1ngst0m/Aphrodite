@@ -7,7 +7,7 @@
 
 class scene_manager : public vkl::vklApp {
 public:
-    scene_manager(): vkl::vklApp("extra/scene_manager", 1366, 768){}
+    scene_manager(): vkl::vklApp("scene_manager", 1366, 768){}
     ~scene_manager() override = default;
 
 private:
