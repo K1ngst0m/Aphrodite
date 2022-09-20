@@ -21,6 +21,9 @@ void scene_manager::drawFrame() {
 
 void scene_manager::updateUniformBuffer() {
     m_sceneManager.update();
+    for (auto * sceneRenderer : m_sceneRenderer){
+        sceneRenderer->update();
+    }
 }
 
 void scene_manager::initDerive() {

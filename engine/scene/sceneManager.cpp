@@ -48,6 +48,5 @@ void SceneManager::destroy() {
 }
 void SceneManager::update() {
     _camera->_object->update();
-    renderer->update();
 }
 } // namespace vkl
