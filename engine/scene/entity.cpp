@@ -203,4 +203,7 @@ Entity::~Entity() {
 Entity::Entity(SceneManager *manager)
     : Object(manager) {
 }
+void Entity::setShaderPass(vkl::ShaderPass *pass) {
+    _pass = pass;
+}
 } // namespace vkl

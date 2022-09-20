@@ -4,25 +4,26 @@
 namespace vkl {
 SceneManager::SceneManager()
     : _ambient(glm::vec4(0.2f)) {
+    rootNode = new SceneNode(nullptr);
 }
 
 SceneCamera* SceneManager::createCamera(float aspectRatio) {
-    SceneCamera* camera = new SceneCamera(aspectRatio, this);
-    _camera = new SceneCameraNode(camera);
-    return camera;
+    _camera = new SceneCamera(aspectRatio, this);
+    return _camera;
 }
 
 Light* SceneManager::createLight()
 {
     Light *ubo = new Light(this);
-    _lightNodeList.push_back(new SceneLightNode(ubo));
     return ubo;
 }
 
-Entity* SceneManager::createEntity(ShaderPass *pass, glm::mat4 transform, SCENE_RENDER_TYPE renderType)
+Entity* SceneManager::createEntity(ShaderPass *pass)
 {
     Entity * entity = new Entity(this);
-    _renderNodeList.push_back(new SceneEntityNode(entity, pass, transform));
+    if (pass){
+        entity->setShaderPass(pass);
+    }
     return entity;
 }
 
@@ -35,38 +36,19 @@ glm::vec4 SceneManager::getAmbient() {
     return glm::vec4(0.2f);
 }
 
-void SceneManager::destroy() {
-    for (auto *node : _renderNodeList) {
-        delete node;
-    }
-
-    for (auto *node : _lightNodeList) {
-        delete node;
-    }
-
-    delete _camera;
-}
-
 void SceneManager::update() {
-    _camera->_object->update();
+    _camera->update();
 }
 
 void SceneManager::setRenderer(SceneRenderer *renderer) {
     _renderer = renderer;
 }
-Camera *SceneManager::getSceneCamera() {
-    return _camera->_object;
+
+SceneManager::~SceneManager() {
+    delete rootNode;
 }
-SceneLightNode *SceneManager::getLightNode(uint32_t idx) {
-    return _lightNodeList[idx];
-}
-SceneEntityNode *SceneManager::getRenderNode(uint32_t idx) {
-    return _renderNodeList[idx];
-}
-uint32_t SceneManager::getLightNodeCount() {
-    return _lightNodeList.size();
-}
-uint32_t SceneManager::getRenderNodeCount() {
-    return _renderNodeList.size();
+
+SceneNode *SceneManager::getRootNode() {
+    return rootNode;
 }
 } // namespace vkl

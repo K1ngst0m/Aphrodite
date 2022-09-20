@@ -3,6 +3,7 @@
 namespace vkl {
 VulkanRenderable::VulkanRenderable(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
     : Renderable(renderer, entity), _device(device), drawCmd(drawCmd) {
+    _shaderPass = entity->_pass;
 }
 vkl::Texture *VulkanRenderable::getTexture(uint32_t index) {
     if (index < _textures.size()) {

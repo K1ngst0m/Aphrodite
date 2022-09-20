@@ -8,27 +8,36 @@
 
 namespace vkl {
 
-enum class SCENE_UNIFORM_TYPE : uint8_t {
-    UNDEFINED,
+enum class AttachType : uint8_t {
+    UNATTACHED,
+    ENTITY,
+    LIGHT,
     CAMERA,
-    POINT_LIGHT,
-    DIRECTIONAL_LIGHT,
-    FLASH_LIGHT,
 };
 
-enum class SCENE_RENDER_TYPE : uint8_t {
-    OPAQUE,
-    TRANSPARENCY,
-};
+class SceneNode {
+public:
+    SceneNode(SceneNode * parent, glm::mat4 matrix = glm::mat4(1.0f))
+        : _parent(parent), _matrix(matrix)
+    {}
 
-struct SceneNode {
-    SceneNode *_parent;
-    glm::mat4  _matrix;
+    void attachObject(vkl::Entity * object){
+        _attachType = AttachType::ENTITY;
+        _object = object;
+    }
 
-    std::vector<SceneNode *> _children;
+    void attachObject(vkl::Light * object){
+        _attachType = AttachType::LIGHT;
+        _object = object;
+    }
 
-    SceneNode *createChildNode() {
-        SceneNode *childNode = new SceneNode;
+    void attachObject(vkl::SceneCamera * object){
+        _attachType = AttachType::CAMERA;
+        _object = object;
+    }
+
+    SceneNode *createChildNode(glm::mat4 matrix = glm::mat4(1.0f)) {
+        SceneNode *childNode = new SceneNode(this, matrix);
         _children.push_back(childNode);
         return childNode;
     }
@@ -36,71 +45,59 @@ struct SceneNode {
     void setTransform(glm::mat4 matrix){
         _matrix = matrix;
     }
-};
 
-struct SceneEntityNode : SceneNode {
-    vkl::Entity     *_entity;
-    vkl::ShaderPass *_pass = nullptr;
-
-    SceneEntityNode(vkl::Entity *entity, vkl::ShaderPass *pass, glm::mat4 transform)
-        : _entity(entity), _pass(pass) {
-        setTransform(_matrix);
+    uint32_t getChildNodeCount(){
+        return _children.size();
     }
 
-    void setShaderPass(vkl::ShaderPass * pass){
-        _pass = pass;
+    SceneNode* getChildNode(uint32_t idx){
+        return _children[idx];
     }
-};
 
-struct SceneLightNode : SceneNode {
-    SCENE_UNIFORM_TYPE _type;
-
-    vkl::Light *_light = nullptr;
-
-    SceneLightNode(vkl::Light *object, SCENE_UNIFORM_TYPE uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
-        : _type(uniformType), _light(object) {
+    AttachType getAttachType(){
+        return _attachType;
     }
-};
 
-struct SceneCameraNode : SceneNode {
-    SCENE_UNIFORM_TYPE _type = SCENE_UNIFORM_TYPE::CAMERA;
-
-    SceneCamera *_object = nullptr;
-
-    SceneCameraNode(vkl::SceneCamera *camera)
-        : _object(camera) {
+    vkl::Object * getObject(){
+        return _object;
     }
+
+    glm::mat4 getTransform(){
+        return _matrix;
+    }
+
+private:
+    SceneNode *_parent;
+    vkl::Object * _object;
+
+    glm::mat4  _matrix;
+    AttachType _attachType = AttachType::UNATTACHED;
+
+    std::vector<SceneNode *> _children;
 };
 
 class SceneRenderer;
 class SceneManager {
 public:
     SceneManager();
-    void destroy();
-
-    void update();
+    ~SceneManager();
     void setRenderer(SceneRenderer *renderer);
+    void update();
+
 public:
     Light*  createLight();
-    Entity* createEntity(ShaderPass *pass = nullptr, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
+    Entity* createEntity(ShaderPass *pass = nullptr);
     SceneCamera* createCamera(float aspectRatio);
+    SceneNode   *getRootNode();
 
-    SceneEntityNode *getRenderNode(uint32_t idx);
-    SceneLightNode  *getLightNode(uint32_t idx);
-    Camera *getSceneCamera();
-
-    uint32_t getRenderNodeCount();
-    uint32_t getLightNodeCount();
 public:
     void setAmbient(glm::vec4 value);
     glm::vec4 getAmbient();
 
-
 private:
-    std::vector<SceneEntityNode *>  _renderNodeList;
-    std::vector<SceneLightNode *> _lightNodeList;
+    SceneNode * rootNode;
 
-    SceneCameraNode *_camera = nullptr;
+    SceneCamera *_camera = nullptr;
     SceneRenderer * _renderer;
 
     glm::vec4 _ambient;

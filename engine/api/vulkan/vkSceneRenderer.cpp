@@ -4,10 +4,11 @@ namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::Device *device, VkQueue graphicsQueue, VkQueue transferQueue)
     : SceneRenderer(scene), _device(device), _drawCmd(commandBuffer), _transferQueue(transferQueue), _graphicsQueue(graphicsQueue)
 {}
+
 void VulkanSceneRenderer::loadResources() {
+    _loadSceneNodes(_sceneManager->getRootNode());
     _initRenderList();
     _initUboList();
-    _setupDescriptor();
 }
 void VulkanSceneRenderer::cleanupResources() {
     vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
@@ -20,20 +21,27 @@ void VulkanSceneRenderer::cleanupResources() {
         delete ubo;
     }
 }
+void VulkanSceneRenderer::drawScene() {
+    for (auto &renderable : _renderList) {
+        renderable->draw();
+    }
+}
+void VulkanSceneRenderer::update() {
+    cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
+    // for (auto * ubo : _uboList){
+    //     if (ubo->_ubo->isNeedUpdate()){
+    //         ubo->updateBuffer(ubo->_ubo->getData());
+    //         ubo->_ubo->setNeedUpdate(false);
+    //     }
+    // }
+}
 
 void VulkanSceneRenderer::_initRenderList() {
-    for (uint32_t idx = 0; idx < _sceneManager->getRenderNodeCount(); idx++){
-        VulkanRenderable * renderable = new VulkanRenderable(this, _device, _sceneManager->getRenderNode(idx)->_entity, _drawCmd);
-        renderable->setShaderPass(_sceneManager->getRenderNode(idx)->_pass);
-        renderable->setTransform(_sceneManager->getRenderNode(idx)->_matrix);
-        _renderList.push_back(renderable);
-    }
-
     for (auto * renderable : _renderList){
         renderable->loadResouces(_transferQueue);
     }
 }
-void VulkanSceneRenderer::_setupDescriptor() {
+void VulkanSceneRenderer::_initUboList() {
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(_uboList.size())},
     };
@@ -70,35 +78,46 @@ void VulkanSceneRenderer::_setupDescriptor() {
         renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[1], _descriptorPool);
     }
 }
-void VulkanSceneRenderer::drawScene() {
-    for (auto &renderable : _renderList) {
-        renderable->draw();
-    }
-}
-void VulkanSceneRenderer::_initUboList() {
-    {
-        SceneCamera * camera  = static_cast<SceneCamera*>(_sceneManager->getSceneCamera());
-        camera->load();
-        cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
-        cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
-        _uboList.push_back(cameraUBO);
+void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
+    if (node->getChildNodeCount() == 0){
+        return;
     }
 
-    for (uint32_t idx = 0; idx < _sceneManager->getLightNodeCount(); idx++){
-        Light * light  = static_cast<Light*>(_sceneManager->getLightNode(idx)->_light);
-        light->load();
-        VulkanUniformBufferObject * ubo = new VulkanUniformBufferObject(this, _device, light);
-        ubo->setupBuffer(light->getDataSize(), light->getData());
-        _uboList.push_back(ubo);
+    for (uint32_t idx = 0; idx < node->getChildNodeCount(); idx++){
+        auto * n = node->getChildNode(idx);
+
+        switch (n->getAttachType()){
+        case AttachType::ENTITY:
+            {
+                VulkanRenderable * renderable = new VulkanRenderable(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
+                renderable->setTransform(n->getTransform());
+                _renderList.push_back(renderable);
+            }
+            break;
+        case AttachType::CAMERA:
+            {
+                SceneCamera * camera  = static_cast<SceneCamera*>(n->getObject());
+                camera->load();
+                cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
+                cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
+                _uboList.push_front(cameraUBO);
+            }
+            break;
+        case AttachType::LIGHT:
+            {
+                Light * light  = static_cast<Light*>(n->getObject());
+                light->load();
+                VulkanUniformBufferObject * ubo = new VulkanUniformBufferObject(this, _device, light);
+                ubo->setupBuffer(light->getDataSize(), light->getData());
+                _uboList.push_back(ubo);
+            }
+            break;
+        default:
+            break;
+        }
+
+        _loadSceneNodes(n);
     }
 }
-void VulkanSceneRenderer::update() {
-    cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
-    // for (auto * ubo : _uboList){
-    //     if (ubo->_ubo->isNeedUpdate()){
-    //         ubo->updateBuffer(ubo->_ubo->getData());
-    //         ubo->_ubo->setNeedUpdate(false);
-    //     }
-    // }
-}
+
 } // namespace vkl

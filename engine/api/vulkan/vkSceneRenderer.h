@@ -17,7 +17,7 @@ public:
 private:
     void _initRenderList();
     void _initUboList();
-    void _setupDescriptor();
+    void _loadSceneNodes(SceneNode * node);
 
 private:
     vkl::Device    *_device;
@@ -28,7 +28,7 @@ private:
 
 private:
     std::vector<VulkanRenderable*> _renderList;
-    std::vector<VulkanUniformBufferObject*> _uboList;
+    std::deque<VulkanUniformBufferObject*> _uboList;
 
     VulkanUniformBufferObject* cameraUBO = nullptr;
 };

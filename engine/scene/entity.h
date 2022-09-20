@@ -1,6 +1,7 @@
 #ifndef VKLENTITY_H_
 #define VKLENTITY_H_
 
+#include "api/vulkan/pipeline.h"
 #include "object.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -17,6 +18,7 @@ public:
     Entity(SceneManager *manager);
     ~Entity() override;
     void loadFromFile(const std::string &path);
+    void setShaderPass(vkl::ShaderPass *pass);
 
 public:
     struct Primitive {
@@ -54,6 +56,7 @@ public:
     std::vector<Node *>       _nodes;
     std::vector<Material>  _materials;
 
+    vkl::ShaderPass *_pass = nullptr;
 private:
     void          loadImages(tinygltf::Model &input);
     void          loadMaterials(tinygltf::Model &input);

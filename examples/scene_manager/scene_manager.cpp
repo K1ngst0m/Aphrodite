@@ -39,6 +39,8 @@ void scene_manager::loadScene() {
 
     {
         m_sceneCamera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
+        auto * node = m_sceneManager.getRootNode()->createChildNode();
+        node->attachObject(m_sceneCamera);
     }
 
     {
@@ -59,20 +61,13 @@ void scene_manager::loadScene() {
         {
             glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
             modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-            m_model = m_sceneManager.createEntity(&m_modelShaderPass, modelTransform);
+            m_model = m_sceneManager.createEntity(&m_modelShaderPass);
             m_model->loadFromFile(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
+
+            auto * node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
+            node->attachObject(m_model);
         }
-
-        // {
-        //     glm::mat4 planeTransform = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -0.4f, 0.0f));
-        //     m_plane = m_sceneManager.createEntity(&m_planeShaderPass, planeTransform);
-        //     m_plane->loadFromFile(modelDir / "basic/plane.gltf");
-        // }
     }
-
-    m_deletionQueue.push_function([&](){
-        m_sceneManager.destroy();
-    });
 }
 
 void scene_manager::setupShaders() {
