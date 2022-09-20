@@ -22,7 +22,6 @@ enum class VertexComponent {
     COLOR,
 };
 
-// vertex data layout
 struct VertexLayout {
     glm::vec3 pos;
     glm::vec3 normal;
@@ -64,8 +63,6 @@ struct IndexBuffer : Buffer {
 
 struct UniformBuffer : Buffer {
     void update(void *data);
-
-    VkDescriptorBufferInfo &getBufferInfo();
 };
 
 struct Mesh {
@@ -95,6 +92,18 @@ struct Mesh {
         vertexBuffer.destroy();
         indexBuffer.destroy();
     }
+};
+
+inline std::vector<vkl::VertexLayout> planeVertices{
+    // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture
+    // wrapping mode). this will cause the floor texture to repeat)
+    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
+
+    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
+    {{5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
 };
 
 } // namespace vkl

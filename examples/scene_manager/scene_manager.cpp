@@ -1,17 +1,4 @@
 #include "scene_manager.h"
-#include "api/vulkan/sceneRenderer.h"
-
-std::vector<vkl::VertexLayout> planeVertices{
-    // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture
-    // wrapping mode). this will cause the floor texture to repeat)
-    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
-
-    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
-    {{5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
-};
 
 void scene_manager::drawFrame() {
     vkl::vklApp::prepareFrame();
@@ -21,9 +8,7 @@ void scene_manager::drawFrame() {
 
 void scene_manager::updateUniformBuffer() {
     m_sceneManager.update();
-    for (auto * sceneRenderer : m_sceneRenderer){
-        sceneRenderer->update();
-    }
+    m_sceneRenderer[m_imageIdx]->update();
 }
 
 void scene_manager::initDerive() {
@@ -44,29 +29,33 @@ void scene_manager::loadScene() {
     }
 
     {
+        auto * node = m_sceneManager.getRootNode()->createChildNode();
         m_pointLight = m_sceneManager.createLight();
         m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
         m_pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
         m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_pointLight->setType(vkl::LightType::POINT);
+        node->attachObject(m_pointLight);
+    }
 
+    {
+        auto * node = m_sceneManager.getRootNode()->createChildNode();
         m_directionalLight = m_sceneManager.createLight();
         m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
         m_directionalLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
         m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_directionalLight->setType(vkl::LightType::DIRECTIONAL);
+        node->attachObject(m_directionalLight);
     }
 
     {
-        {
-            glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-            modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-            m_model = m_sceneManager.createEntity(&m_modelShaderPass);
-            m_model->loadFromFile(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_model = m_sceneManager.createEntity(&m_modelShaderPass);
+        m_model->loadFromFile(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
 
-            auto * node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
-            node->attachObject(m_model);
-        }
+        auto * node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
+        node->attachObject(m_model);
     }
 }
 

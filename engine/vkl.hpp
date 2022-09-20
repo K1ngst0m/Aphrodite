@@ -6,6 +6,7 @@
 #include "api/vulkan/mesh.h"
 #include "api/vulkan/pipeline.h"
 #include "api/vulkan/vkUtils.h"
+#include "api/vulkan/sceneRenderer.h"
 
 #include "scene/camera.h"
 #include "scene/object.h"

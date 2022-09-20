@@ -123,4 +123,7 @@ namespace vkl {
             vkFreeMemory(device, memory, nullptr);
         }
     }
-}
+    VkDescriptorBufferInfo &Buffer::getBufferInfo() {
+        return descriptorInfo;
+    }
+    } // namespace vkl

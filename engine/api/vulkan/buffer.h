@@ -25,6 +25,7 @@ namespace vkl {
         VkResult bind(VkDeviceSize offset = 0) const;
 
         void setupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
+        VkDescriptorBufferInfo &getBufferInfo();
 
         void destroy() const;
     };

@@ -123,7 +123,4 @@ void UniformBuffer::update(void *data) {
     copyTo(data, size);
     unmap();
 }
-VkDescriptorBufferInfo &UniformBuffer::getBufferInfo() {
-    return descriptorInfo;
-}
 } // namespace vkl
