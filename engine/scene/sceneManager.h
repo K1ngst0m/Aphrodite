@@ -4,7 +4,7 @@
 #include "camera.h"
 #include "entity.h"
 #include "light.h"
-#include "api/pipeline.h"
+#include "api/vulkan/pipeline.h"
 
 namespace vkl {
 
@@ -72,6 +72,7 @@ struct SceneCameraNode : SceneNode {
     }
 };
 
+class SceneRenderer;
 class SceneManager {
 public:
     SceneManager();
@@ -80,11 +81,10 @@ public:
     Entity* createEntity(ShaderPass *pass = nullptr, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
     SceneCamera* createCamera(float aspectRatio);
 
+    void update();
+
     void setAmbient(glm::vec4 value);
     glm::vec4 getAmbient();
-
-    uint32_t getRenderableCount() const;
-    uint32_t getUBOCount() const;
 
     void destroy();
 
@@ -93,6 +93,8 @@ public:
     std::vector<SceneLightNode *> _lightNodeList;
 
     SceneCameraNode *_camera = nullptr;
+
+    SceneRenderer * renderer;
 
 private:
     glm::vec4 _ambient;

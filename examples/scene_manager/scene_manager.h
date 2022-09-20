@@ -13,8 +13,6 @@ public:
 private:
     void initDerive() override;
     void drawFrame() override;
-    void keyboardHandleDerive() override;
-    void mouseHandleDerive(int xposIn, int yposIn) override;
 
 private:
     virtual void updateUniformBuffer();
@@ -30,7 +28,6 @@ private:
     vkl::ShaderPass m_modelShaderPass;
     vkl::ShaderPass m_planeShaderPass;
 
-    vkl::SceneCamera* m_sceneCamera = nullptr;
     vkl::Light* m_pointLight = nullptr;
     vkl::Light* m_directionalLight = nullptr;
     vkl::Entity * m_model = nullptr;

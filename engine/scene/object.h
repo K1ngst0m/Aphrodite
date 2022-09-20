@@ -1,7 +1,7 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
-#include "api/mesh.h"
+#include "api/vulkan/mesh.h"
 
 namespace vkl {
 
@@ -22,12 +22,18 @@ class UniformBufferObject : public Object {
 public:
     UniformBufferObject(SceneManager *manager);
 
-    vkl::UniformBuffer buffer;
+    virtual void load() = 0;
+    virtual void update() = 0;
+    virtual void* getData() = 0;
+    virtual uint32_t getDataSize() = 0;
 
-    void setupBuffer(vkl::Device *device, uint32_t bufferSize, void *data = nullptr);
-    void updateBuffer(void *data);
+    void destroy() override = 0;
 
-    void destroy() override;
+    bool isNeedUpdate() const;
+    void setNeedUpdate(bool flag);
+
+protected:
+    bool needUpdate = false;
 };
 } // namespace vkl
 

@@ -1,11 +1,11 @@
 #ifndef VKL_H_
 #define VKL_H_
 
-#include "api/device.h"
-#include "api/vkInit.hpp"
-#include "api/mesh.h"
-#include "api/pipeline.h"
-#include "api/vkUtils.h"
+#include "api/vulkan/device.h"
+#include "api/vulkan/vkInit.hpp"
+#include "api/vulkan/mesh.h"
+#include "api/vulkan/pipeline.h"
+#include "api/vulkan/vkUtils.h"
 
 #include "scene/camera.h"
 #include "scene/object.h"

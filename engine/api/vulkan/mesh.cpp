@@ -1,11 +1,11 @@
 #include "mesh.h"
+#include "scene/camera.h"
 
 namespace vkl {
 
 VkVertexInputBindingDescription VertexLayout::_vertexInputBindingDescription;
 std::vector<VkVertexInputAttributeDescription> VertexLayout::_vertexInputAttributeDescriptions;
 VkPipelineVertexInputStateCreateInfo VertexLayout::_pipelineVertexInputStateCreateInfo;
-
 VkVertexInputAttributeDescription VertexLayout::inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component)
 {
     switch (component) {
@@ -118,4 +118,12 @@ void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexL
         }
     }
 }
+void UniformBuffer::update(void *data) {
+    map();
+    copyTo(data, size);
+    unmap();
 }
+VkDescriptorBufferInfo &UniformBuffer::getBufferInfo() {
+    return descriptorInfo;
+}
+} // namespace vkl

@@ -81,25 +81,36 @@ glm::mat4 Camera::GetViewProjectionMatrix() const {
     return GetProjectionMatrix() * GetViewMatrix();
 }
 
-void SceneCamera::load(vkl::Device *device) {
-    uint32_t bufferSize = sizeof(CameraDataLayout);
-    UniformBufferObject::setupBuffer(device, bufferSize, nullptr);
-}
-
-void SceneCamera::update() {
-    uint32_t bufferSize = sizeof(CameraDataLayout);
-    CameraDataLayout data{
+void SceneCamera::load() {
+    dataSize = sizeof(CameraDataLayout);
+    data = new CameraDataLayout {
         .view         = GetViewMatrix(),
         .proj         = GetProjectionMatrix(),
         .viewProj     = GetViewProjectionMatrix(),
         .viewPosition = glm::vec4(m_position, 1.0f),
     };
-    UniformBufferObject::updateBuffer(&data);
+}
+
+void SceneCamera::update() {
+    needUpdate = true;
+    data->view         = GetViewMatrix();
+    data->proj         = GetProjectionMatrix();
+    data->viewProj     = GetViewProjectionMatrix();
+    data->viewPosition = glm::vec4(m_position, 1.0f);
 }
 void SceneCamera::setPosition(glm::vec4 position) {
     m_position = position;
 }
 void SceneCamera::setAspectRatio(float aspectRatio) {
     m_aspect = aspectRatio;
+}
+void *SceneCamera::getData() {
+    return data;
+}
+uint32_t SceneCamera::getDataSize() {
+    return dataSize;
+}
+void SceneCamera::destroy() {
+    delete data;
 }
 } // namespace vkl

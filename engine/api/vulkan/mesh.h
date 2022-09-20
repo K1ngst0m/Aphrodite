@@ -63,15 +63,9 @@ struct IndexBuffer : Buffer {
 };
 
 struct UniformBuffer : Buffer {
-    void update(const void *data) {
-        map();
-        copyTo(data, size);
-        unmap();
-    }
+    void update(void *data);
 
-    VkDescriptorBufferInfo getBufferInfo() {
-        return descriptorInfo;
-    }
+    VkDescriptorBufferInfo &getBufferInfo();
 };
 
 struct Mesh {

@@ -72,11 +72,21 @@ public:
         :UniformBufferObject(manager), vkl::Camera(aspectRatio)
     {}
 
-    void load(vkl::Device *device);
-    void update();
+    void load() override;
+    void update() override;
 
     void setPosition(glm::vec4 position);
     void setAspectRatio(float aspectRatio);
+
+    void *getData() override;
+
+    uint32_t getDataSize() override;
+
+    void destroy() override;
+
+private:
+    uint32_t dataSize;
+    CameraDataLayout * data;
 };
 } // namespace vkl
 #endif

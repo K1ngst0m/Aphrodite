@@ -1,4 +1,5 @@
 #include "sceneManager.h"
+#include "sceneRenderer.h"
 
 namespace vkl {
 SceneCamera* SceneManager::createCamera(float aspectRatio) {
@@ -21,12 +22,6 @@ Entity* SceneManager::createEntity(ShaderPass *pass, glm::mat4 transform, SCENE_
     return entity;
 }
 
-uint32_t SceneManager::getRenderableCount() const {
-    return _renderNodeList.size();
-}
-uint32_t SceneManager::getUBOCount() const {
-    return _lightNodeList.size() + 1;
-}
 void SceneManager::setAmbient(glm::vec4 value) {
     _ambient = value;
 }
@@ -50,5 +45,9 @@ void SceneManager::destroy() {
 
     _camera->_object->destroy();
     delete _camera;
+}
+void SceneManager::update() {
+    _camera->_object->update();
+    renderer->update();
 }
 } // namespace vkl

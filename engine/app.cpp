@@ -509,7 +509,7 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
     m_mouseData.lastX = xpos;
     m_mouseData.lastY = ypos;
 
-    m_camera.ProcessMouseMovement(xoffset, yoffset);
+    m_sceneCamera->ProcessMouseMovement(xoffset, yoffset);
 }
 void vklApp::keyboardHandleDerive() {
     if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
@@ -524,21 +524,18 @@ void vklApp::keyboardHandleDerive() {
         glfwSetWindowShouldClose(m_window, true);
 
     if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        m_camera.move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
+        m_sceneCamera->move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        m_camera.move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
+        m_sceneCamera->move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-        m_camera.move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
+        m_sceneCamera->move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-        m_camera.move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
+        m_sceneCamera->move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
 }
 vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
     : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),
-      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f),
-      m_camera(Camera((float)m_windowData.width / m_windowData.height))
-
-{
-}
+      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f)
+{}
 void vklApp::run() {
     while (!glfwWindowShouldClose(m_window)) {
         glfwPollEvents();

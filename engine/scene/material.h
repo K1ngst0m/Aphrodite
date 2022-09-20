@@ -1,10 +1,7 @@
 #ifndef VKLMATERIAL_H_
 #define VKLMATERIAL_H_
 
-#include "api/device.h"
-#include "api/vkInit.hpp"
-#include "api/texture.h"
-#include "api/vkUtils.h"
+#include <common.h>
 
 namespace vkl {
 struct Material {

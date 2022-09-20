@@ -177,7 +177,8 @@ protected:
     WindowData   m_windowData;
     PerFrameData m_frameData;
     MouseData    m_mouseData;
-    Camera       m_camera;
+
+    vkl::SceneCamera* m_sceneCamera = nullptr;
 
     vkl::PipelineBuilder m_pipelineBuilder;
 

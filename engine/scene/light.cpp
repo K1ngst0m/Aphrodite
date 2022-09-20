@@ -46,59 +46,62 @@ void Light::setDirection(glm::vec4 value) {
 void Light::setType(LightType type) {
     _type = type;
 }
-void Light::load(vkl::Device *device) {
-    _manager->getAmbient();
+void Light::load() {
+    update();
+    isloaded = true;
+}
+void Light::update() {
+    if (isloaded){
+        needUpdate = true;
+    }
     switch (_type) {
     case LightType::DIRECTIONAL:
         {
-            DirectionalLightLayout data{
+            if (!isloaded){
+                data = new DirectionalLightLayout;
+            }
+            DirectionalLightLayout d{
                 .direction = _direction,
                 .ambient = _manager->getAmbient(),
                 .diffuse = _diffuse,
                 .specular = _specular,
             };
-            UniformBufferObject::setupBuffer(device, sizeof(DirectionalLightLayout), &data);
+            dataSize = sizeof(DirectionalLightLayout);
+            memcpy(data, &d, dataSize);
         }
         break;
     case LightType::POINT:
         {
-            PointLightLayout data{
+            if (!isloaded){
+                data = new PointLightLayout;
+            }
+            PointLightLayout d{
                 .position = _position,
                 .ambient = _manager->getAmbient(),
                 .diffuse = _diffuse,
                 .specular = _specular,
                 .attenuationFactor = _attenuationFactor,
             };
-            UniformBufferObject::setupBuffer(device, sizeof(PointLightLayout), &data);
+            dataSize = sizeof(PointLightLayout);
+            memcpy(data, &d, dataSize);
         }
         break;
     }
 }
-void Light::update() {
+void Light::destroy() {
     switch (_type) {
-    case LightType::DIRECTIONAL:
-        {
-            DirectionalLightLayout data{
-                .direction = _direction,
-                .ambient = _manager->getAmbient(),
-                .diffuse = _diffuse,
-                .specular = _specular,
-            };
-            UniformBufferObject::updateBuffer(&data);
-        }
-        break;
     case LightType::POINT:
-        {
-            PointLightLayout data{
-                .position = _position,
-                .ambient = _manager->getAmbient(),
-                .diffuse = _diffuse,
-                .specular = _specular,
-                .attenuationFactor = _attenuationFactor,
-            };
-            UniformBufferObject::updateBuffer(&data);
-        }
+        delete static_cast<PointLightLayout*>(data);
+        break;
+    case LightType::DIRECTIONAL:
+        delete static_cast<DirectionalLightLayout*>(data);
         break;
     }
+}
+void *Light::getData() {
+    return data;
+}
+uint32_t Light::getDataSize() {
+    return dataSize;
 }
 } // namespace vkl
