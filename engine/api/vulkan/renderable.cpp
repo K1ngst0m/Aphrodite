@@ -1,4 +1,4 @@
-#include "vkRenderable.h"
+#include "renderable.h"
 
 namespace vkl {
 VulkanRenderable::VulkanRenderable(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)

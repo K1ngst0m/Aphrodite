@@ -1,4 +1,4 @@
-#include "vkUniformBufferObject.h"
+#include "uniformBufferObject.h"
 
 namespace vkl {
 VulkanUniformBufferObject::VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::Device *device, vkl::UniformBufferObject *ubo)

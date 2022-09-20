@@ -1,5 +1,5 @@
 #include "scene_manager.h"
-#include "api/vulkan/vkSceneRenderer.h"
+#include "api/vulkan/sceneRenderer.h"
 
 std::vector<vkl::VertexLayout> planeVertices{
     // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture

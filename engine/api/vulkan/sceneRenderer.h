@@ -1,8 +1,8 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "vkRenderable.h"
-#include "vkUniformBufferObject.h"
+#include "renderable.h"
+#include "uniformBufferObject.h"
 
 namespace vkl {
 

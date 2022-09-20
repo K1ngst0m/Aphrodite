@@ -534,8 +534,8 @@ void vklApp::keyboardHandleDerive() {
 }
 vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
     : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),
-      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f)
-{}
+      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f) {
+}
 void vklApp::run() {
     while (!glfwWindowShouldClose(m_window)) {
         glfwPollEvents();
@@ -640,7 +640,7 @@ void vklApp::setupPipelineBuilder() {
 }
 
 void vklApp::recordCommandBuffer(const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
-                                  uint32_t                                              frameIdx) {
+                                 uint32_t                                              frameIdx) {
     recordCommandBuffer(m_defaultRenderPass, drawCommands, frameIdx);
 }
 
@@ -656,7 +656,7 @@ void vklApp::setupDebugMessenger() {
 }
 
 void vklApp::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                            const VkAllocationCallbacks *pAllocator) {
+                                           const VkAllocationCallbacks *pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
@@ -742,8 +742,8 @@ void vklApp::prepareUI() {
 }
 
 void vklApp::recordCommandBuffer(VkRenderPass                                          renderPass,
-                                  const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
-                                  uint32_t                                              frameIdx) {
+                                 const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+                                 uint32_t                                              frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
