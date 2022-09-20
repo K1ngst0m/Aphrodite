@@ -12,8 +12,7 @@ public:
     Object(SceneManager * manager)
         :_manager(manager)
     {}
-
-    virtual void destroy() = 0;
+    virtual ~Object() = default;
 protected:
     SceneManager * _manager;
 };
@@ -21,13 +20,12 @@ protected:
 class UniformBufferObject : public Object {
 public:
     UniformBufferObject(SceneManager *manager);
+    ~UniformBufferObject() override = default;
 
     virtual void load() = 0;
     virtual void update() = 0;
     virtual void* getData() = 0;
     virtual uint32_t getDataSize() = 0;
-
-    void destroy() override = 0;
 
     bool isNeedUpdate() const;
     void setNeedUpdate(bool flag);

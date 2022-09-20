@@ -3,7 +3,7 @@
 namespace vkl {
 SceneRenderer::SceneRenderer(SceneManager *scene)
     : _sceneManager(scene) {
-    _sceneManager->renderer = this;
+    _sceneManager->setRenderer(this);
 }
 
 void SceneRenderer::setScene(SceneManager *scene) {

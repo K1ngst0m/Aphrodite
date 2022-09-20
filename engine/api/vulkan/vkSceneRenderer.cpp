@@ -22,11 +22,10 @@ void VulkanSceneRenderer::cleanupResources() {
 }
 
 void VulkanSceneRenderer::_initRenderList() {
-    for (SceneEntityNode *renderNode : _sceneManager->_renderNodeList) {
-        VulkanRenderable * renderable = new VulkanRenderable(this, _device, renderNode->_entity, _drawCmd);
-        renderable->setShaderPass(renderNode->_pass);
-        renderable->setTransform(renderNode->_matrix);
-
+    for (uint32_t idx = 0; idx < _sceneManager->getRenderNodeCount(); idx++){
+        VulkanRenderable * renderable = new VulkanRenderable(this, _device, _sceneManager->getRenderNode(idx)->_entity, _drawCmd);
+        renderable->setShaderPass(_sceneManager->getRenderNode(idx)->_pass);
+        renderable->setTransform(_sceneManager->getRenderNode(idx)->_matrix);
         _renderList.push_back(renderable);
     }
 
@@ -77,18 +76,16 @@ void VulkanSceneRenderer::drawScene() {
     }
 }
 void VulkanSceneRenderer::_initUboList() {
-    assert(_sceneManager->_camera);
-
     {
-        SceneCamera * camera  = static_cast<SceneCamera*>(_sceneManager->_camera->_object);
+        SceneCamera * camera  = static_cast<SceneCamera*>(_sceneManager->getSceneCamera());
         camera->load();
         cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
         cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
         _uboList.push_back(cameraUBO);
     }
 
-    for (auto *uboNode : _sceneManager->_lightNodeList) {
-        Light * light  = static_cast<Light*>(uboNode->_object);
+    for (uint32_t idx = 0; idx < _sceneManager->getLightNodeCount(); idx++){
+        Light * light  = static_cast<Light*>(_sceneManager->getLightNode(idx)->_light);
         light->load();
         VulkanUniformBufferObject * ubo = new VulkanUniformBufferObject(this, _device, light);
         ubo->setupBuffer(light->getDataSize(), light->getData());

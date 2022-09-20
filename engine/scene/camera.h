@@ -71,6 +71,9 @@ public:
     SceneCamera(float aspectRatio, SceneManager * manager)
         :UniformBufferObject(manager), vkl::Camera(aspectRatio)
     {}
+    ~SceneCamera() override{
+        delete data;
+    }
 
     void load() override;
     void update() override;
@@ -81,8 +84,6 @@ public:
     void *getData() override;
 
     uint32_t getDataSize() override;
-
-    void destroy() override;
 
 private:
     uint32_t dataSize;

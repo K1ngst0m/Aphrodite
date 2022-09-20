@@ -2,6 +2,10 @@
 #include "sceneRenderer.h"
 
 namespace vkl {
+SceneManager::SceneManager()
+    : _ambient(glm::vec4(0.2f)) {
+}
+
 SceneCamera* SceneManager::createCamera(float aspectRatio) {
     SceneCamera* camera = new SceneCamera(aspectRatio, this);
     _camera = new SceneCameraNode(camera);
@@ -25,28 +29,44 @@ Entity* SceneManager::createEntity(ShaderPass *pass, glm::mat4 transform, SCENE_
 void SceneManager::setAmbient(glm::vec4 value) {
     _ambient = value;
 }
+
 glm::vec4 SceneManager::getAmbient() {
     // TODO IDK why this return _ambient causes segment fault
     return glm::vec4(0.2f);
 }
-SceneManager::SceneManager()
-    : _ambient(glm::vec4(0.2f)) {
-}
+
 void SceneManager::destroy() {
     for (auto *node : _renderNodeList) {
-        node->_entity->destroy();
         delete node;
     }
 
     for (auto *node : _lightNodeList) {
-        node->_object->destroy();
         delete node;
     }
 
-    _camera->_object->destroy();
     delete _camera;
 }
+
 void SceneManager::update() {
     _camera->_object->update();
+}
+
+void SceneManager::setRenderer(SceneRenderer *renderer) {
+    _renderer = renderer;
+}
+Camera *SceneManager::getSceneCamera() {
+    return _camera->_object;
+}
+SceneLightNode *SceneManager::getLightNode(uint32_t idx) {
+    return _lightNodeList[idx];
+}
+SceneEntityNode *SceneManager::getRenderNode(uint32_t idx) {
+    return _renderNodeList[idx];
+}
+uint32_t SceneManager::getLightNodeCount() {
+    return _lightNodeList.size();
+}
+uint32_t SceneManager::getRenderNodeCount() {
+    return _renderNodeList.size();
 }
 } // namespace vkl

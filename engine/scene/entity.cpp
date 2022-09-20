@@ -3,8 +3,6 @@
 #include "entity.h"
 #include <stb_image.h>
 
-#include "vklGLTFScene.h"
-
 namespace vkl {
 void Entity::loadFromFile(const std::string &path) {
     tinygltf::Model    glTFInput;
@@ -196,57 +194,13 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
         _nodes.push_back(node);
     }
 }
-void Entity::loadMesh(vkl::Device *device, VkQueue queue, const std::vector<VertexLayout> &vertices,
-                           const std::vector<uint32_t> &indices, size_t vSize, size_t iSize) {
-    _device = device;
-    _mesh.setup(_device, queue, vertices, indices, vSize, iSize);
-}
-void Entity::destroy() {
-    _mesh.destroy();
-
-    for (auto * image : _images){
+Entity::~Entity() {
+    for (auto *image : _images) {
         delete image->data;
         delete image;
     }
 }
-void Entity::pushImage(std::string imagePath, VkQueue queue) {
-    int          texWidth, texHeight, texChannels;
-    stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-    assert(pixels && "read texture failed.");
-
-    vkl::Buffer stagingBuffer;
-    _device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    stagingBuffer.map();
-    stagingBuffer.copyTo(pixels, static_cast<size_t>(imageSize));
-    stagingBuffer.unmap();
-
-    stbi_image_free(pixels);
-
-    vkl::Texture texture;
-    _device->createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth),
-                               static_cast<uint32_t>(texHeight));
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    texture.view              = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
-    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    _textures.push_back(texture);
-
-    Material materials;
-    materials.baseColorTextureIndex = _textures.size() - 1;
-    _materials.push_back(materials);
-
-    stagingBuffer.destroy();
+Entity::Entity(SceneManager *manager)
+    : Object(manager) {
 }
 } // namespace vkl

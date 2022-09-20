@@ -13,6 +13,7 @@ namespace vkl {
     class Light : public UniformBufferObject {
     public:
         Light(SceneManager *manager);
+        ~Light() override;
 
         void setPosition(glm::vec4 value);
         void setDirection(glm::vec4 value);
@@ -26,8 +27,6 @@ namespace vkl {
 
         void *getData() override;
         uint32_t getDataSize() override ;
-
-        void destroy() override;
 
     private:
         // common

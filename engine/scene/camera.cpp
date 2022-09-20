@@ -110,7 +110,4 @@ void *SceneCamera::getData() {
 uint32_t SceneCamera::getDataSize() {
     return dataSize;
 }
-void SceneCamera::destroy() {
-    delete data;
-}
 } // namespace vkl

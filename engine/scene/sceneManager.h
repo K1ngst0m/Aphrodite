@@ -55,10 +55,10 @@ struct SceneEntityNode : SceneNode {
 struct SceneLightNode : SceneNode {
     SCENE_UNIFORM_TYPE _type;
 
-    vkl::Light *_object = nullptr;
+    vkl::Light *_light = nullptr;
 
     SceneLightNode(vkl::Light *object, SCENE_UNIFORM_TYPE uniformType = SCENE_UNIFORM_TYPE::UNDEFINED)
-        : _type(uniformType), _object(object) {
+        : _type(uniformType), _light(object) {
     }
 };
 
@@ -76,27 +76,33 @@ class SceneRenderer;
 class SceneManager {
 public:
     SceneManager();
+    void destroy();
 
+    void update();
+    void setRenderer(SceneRenderer *renderer);
+public:
     Light*  createLight();
     Entity* createEntity(ShaderPass *pass = nullptr, glm::mat4 transform = glm::mat4(1.0f), SCENE_RENDER_TYPE renderType = SCENE_RENDER_TYPE::OPAQUE);
     SceneCamera* createCamera(float aspectRatio);
 
-    void update();
+    SceneEntityNode *getRenderNode(uint32_t idx);
+    SceneLightNode  *getLightNode(uint32_t idx);
+    Camera *getSceneCamera();
 
+    uint32_t getRenderNodeCount();
+    uint32_t getLightNodeCount();
+public:
     void setAmbient(glm::vec4 value);
     glm::vec4 getAmbient();
 
-    void destroy();
 
-public:
+private:
     std::vector<SceneEntityNode *>  _renderNodeList;
     std::vector<SceneLightNode *> _lightNodeList;
 
     SceneCameraNode *_camera = nullptr;
+    SceneRenderer * _renderer;
 
-    SceneRenderer * renderer;
-
-private:
     glm::vec4 _ambient;
 };
 

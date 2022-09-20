@@ -30,7 +30,16 @@ Light::Light(SceneManager *manager)
       _attenuationFactor(1.0f, 0.09f, 0.032f, 0.0f),
       _direction(-0.2f, -1.0f, -0.3f, 1.0f) {
 }
-
+Light::~Light(){
+    switch (_type) {
+    case LightType::POINT:
+        delete static_cast<PointLightLayout*>(data);
+        break;
+    case LightType::DIRECTIONAL:
+        delete static_cast<DirectionalLightLayout*>(data);
+        break;
+    }
+}
 void Light::setDiffuse(glm::vec4 value) {
     _diffuse = value;
 }
@@ -85,16 +94,6 @@ void Light::update() {
             dataSize = sizeof(PointLightLayout);
             memcpy(data, &d, dataSize);
         }
-        break;
-    }
-}
-void Light::destroy() {
-    switch (_type) {
-    case LightType::POINT:
-        delete static_cast<PointLightLayout*>(data);
-        break;
-    case LightType::DIRECTIONAL:
-        delete static_cast<DirectionalLightLayout*>(data);
         break;
     }
 }
