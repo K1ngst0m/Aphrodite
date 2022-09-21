@@ -14,20 +14,12 @@ public:
 
     std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() const;
     void setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
+    VkDescriptorSet &getGlobalDescriptorSet();
 
     void draw() override;
 
-    void setShaderPass(ShaderPass* pass){
-        _shaderPass = pass;
-    }
-
-    ShaderPass * getShaderPass() const{
-        return _shaderPass;
-    }
-
-    VkDescriptorSet& getGlobalSet(){
-        return globalDescriptorSet;
-    }
+    void setShaderPass(ShaderPass *pass);
+    ShaderPass *getShaderPass() const;
 
 private:
     void drawNode(const Entity::Node *node);

@@ -60,12 +60,12 @@ void VulkanSceneRenderer::_initUboList() {
 
     for (auto & renderable : _renderList) {
         const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderable->getShaderPass()->effect->setLayouts.data(), 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable->getGlobalSet()));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable->getGlobalDescriptorSet()));
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for (auto * ubo : _uboList) {
             VkWriteDescriptorSet write = {
                 .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet          = renderable->getGlobalSet(),
+                .dstSet          = renderable->getGlobalDescriptorSet(),
                 .dstBinding      = static_cast<uint32_t>(descriptorWrites.size()),
                 .dstArrayElement = 0,
                 .descriptorCount = 1,

@@ -123,4 +123,13 @@ void VulkanRenderable::cleanupResources() {
         texture.destroy();
     }
 }
+void VulkanRenderable::setShaderPass(ShaderPass *pass) {
+    _shaderPass = pass;
+}
+ShaderPass *VulkanRenderable::getShaderPass() const {
+    return _shaderPass;
+}
+VkDescriptorSet &VulkanRenderable::getGlobalDescriptorSet() {
+    return globalDescriptorSet;
+}
 } // namespace vkl
