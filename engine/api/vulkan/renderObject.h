@@ -4,23 +4,22 @@
 #include "scene/sceneRenderer.h"
 
 namespace vkl {
-class VulkanRenderable : public Renderable{
+class VulkanRenderObject : public RenderObject{
 public:
-    VulkanRenderable(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
-    ~VulkanRenderable() override = default;
+    VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
+    ~VulkanRenderObject() override = default;
 
     void loadResouces(VkQueue queue);
     void cleanupResources();
-
-    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() const;
-    void setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
-    VkDescriptorSet &getGlobalDescriptorSet();
 
     void draw() override;
 
     void setShaderPass(ShaderPass *pass);
     ShaderPass *getShaderPass() const;
 
+    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() const;
+    void setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
+    VkDescriptorSet &getGlobalDescriptorSet();
 private:
     void drawNode(const Entity::Node *node);
     void loadImages(VkQueue queue);

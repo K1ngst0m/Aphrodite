@@ -1,7 +1,7 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "renderable.h"
+#include "renderObject.h"
 #include "uniformBufferObject.h"
 
 namespace vkl {
@@ -17,21 +17,21 @@ public:
 private:
     void _initRenderList();
     void _initUboList();
-    void _loadSceneNodes(SceneNode * node);
+    void _loadSceneNodes(SceneNode *node);
 
 private:
-    vkl::Device    *_device;
-    VkCommandBuffer _drawCmd;
+    vkl::Device     *_device;
+    VkCommandBuffer  _drawCmd;
     VkDescriptorPool _descriptorPool;
-    VkQueue _transferQueue;
-    VkQueue _graphicsQueue;
+    VkQueue          _transferQueue;
+    VkQueue          _graphicsQueue;
 
 private:
-    std::vector<VulkanRenderable*> _renderList;
-    std::deque<VulkanUniformBufferObject*> _uboList;
+    std::vector<VulkanRenderObject *>       _renderList;
+    std::deque<VulkanUniformBufferObject *> _uboList;
 
-    VulkanUniformBufferObject* cameraUBO = nullptr;
+    VulkanUniformBufferObject *cameraUBO = nullptr;
 };
-}
+} // namespace vkl
 
 #endif // VKSCENERENDERER_H_

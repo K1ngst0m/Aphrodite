@@ -89,7 +89,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
         switch (n->getAttachType()){
         case AttachType::ENTITY:
             {
-                VulkanRenderable * renderable = new VulkanRenderable(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
+                VulkanRenderObject * renderable = new VulkanRenderObject(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
                 renderable->setTransform(n->getTransform());
                 _renderList.push_back(renderable);
             }

@@ -1,23 +1,23 @@
-#include "renderable.h"
+#include "renderObject.h"
 
 namespace vkl {
-VulkanRenderable::VulkanRenderable(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
-    : Renderable(renderer, entity), _device(device), drawCmd(drawCmd) {
+VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
+    : RenderObject(renderer, entity), _device(device), drawCmd(drawCmd) {
     _shaderPass = entity->_pass;
 }
-vkl::Texture *VulkanRenderable::getTexture(uint32_t index) {
+vkl::Texture *VulkanRenderObject::getTexture(uint32_t index) {
     if (index < _textures.size()) {
         return &_textures[index];
     }
     return nullptr;
 }
-std::vector<VkDescriptorPoolSize> VulkanRenderable::getDescriptorSetInfo() const {
+std::vector<VkDescriptorPoolSize> VulkanRenderObject::getDescriptorSetInfo() const {
     std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_textures.size())},
     };
     return poolSizes;
 }
-void VulkanRenderable::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
+void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : entity->_materials) {
         VkDescriptorSet             materialSet;
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
@@ -27,7 +27,7 @@ void VulkanRenderable::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkD
         materialSets.push_back(materialSet);
     }
 }
-void VulkanRenderable::loadImages(VkQueue queue) {
+void VulkanRenderObject::loadImages(VkQueue queue) {
     for (auto &image : entity->_images) {
         unsigned char *imageData     = image->data;
         uint32_t       imageDataSize = image->dataSize;
@@ -63,7 +63,7 @@ void VulkanRenderable::loadImages(VkQueue queue) {
         stagingBuffer.destroy();
     }
 }
-void VulkanRenderable::loadResouces(VkQueue queue) {
+void VulkanRenderObject::loadResouces(VkQueue queue) {
     // Create and upload vertex and index buffer
     size_t vertexBufferSize = entity->vertices.size() * sizeof(entity->vertices[0]);
     size_t indexBufferSize  = entity->indices.size() * sizeof(entity->indices[0]);
@@ -71,7 +71,7 @@ void VulkanRenderable::loadResouces(VkQueue queue) {
     loadImages(queue);
     _mesh.setup(_device, queue, entity->vertices, entity->indices, vertexBufferSize, indexBufferSize);
 }
-void VulkanRenderable::drawNode(const Entity::Node *node) {
+void VulkanRenderObject::drawNode(const Entity::Node *node) {
     if (!node->mesh.primitives.empty()) {
         glm::mat4 nodeMatrix    = node->matrix;
         Entity::Node     *currentParent = node->parent;
@@ -93,7 +93,7 @@ void VulkanRenderable::drawNode(const Entity::Node *node) {
         drawNode(child);
     }
 }
-void VulkanRenderable::draw() {
+void VulkanRenderObject::draw() {
     assert(_shaderPass);
     VkDeviceSize offsets[1] = {0};
     vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &globalDescriptorSet, 0, nullptr);
@@ -117,19 +117,19 @@ void VulkanRenderable::draw() {
         }
     }
 }
-void VulkanRenderable::cleanupResources() {
+void VulkanRenderObject::cleanupResources() {
     _mesh.destroy();
     for (auto & texture : _textures){
         texture.destroy();
     }
 }
-void VulkanRenderable::setShaderPass(ShaderPass *pass) {
+void VulkanRenderObject::setShaderPass(ShaderPass *pass) {
     _shaderPass = pass;
 }
-ShaderPass *VulkanRenderable::getShaderPass() const {
+ShaderPass *VulkanRenderObject::getShaderPass() const {
     return _shaderPass;
 }
-VkDescriptorSet &VulkanRenderable::getGlobalDescriptorSet() {
+VkDescriptorSet &VulkanRenderObject::getGlobalDescriptorSet() {
     return globalDescriptorSet;
 }
 } // namespace vkl

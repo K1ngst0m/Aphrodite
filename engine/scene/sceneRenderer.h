@@ -6,12 +6,12 @@
 namespace vkl {
 class SceneRenderer;
 
-class Renderable{
+class RenderObject{
 public:
-    Renderable(SceneRenderer * renderer, vkl::Entity* entity)
+    RenderObject(SceneRenderer * renderer, vkl::Entity* entity)
         : _renderer(renderer), entity(entity)
     {}
-    virtual ~Renderable() = default;
+    virtual ~RenderObject() = default;
     virtual void draw() = 0;
 
     glm::mat4 getTransform() const {return _transform;}
