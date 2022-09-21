@@ -13,6 +13,7 @@ namespace vklt {
 
 namespace vkl {
 
+using TextureIndex = uint32_t;
 class Entity : public Object {
 public:
     Entity(SceneManager *manager);
@@ -45,8 +46,22 @@ public:
         size_t         dataSize;
     };
     struct Material {
+        bool doubleSided = false;
+        enum AlphaMode { ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
+        AlphaMode alphaMode = ALPHAMODE_OPAQUE;
+        float alphaCutoff = 1.0f;
+        float metallicFactor = 1.0f;
+        float roughnessFactor = 1.0f;
         glm::vec4 baseColorFactor       = glm::vec4(1.0f);
-        uint32_t baseColorTextureIndex = 0;
+
+        TextureIndex baseColorTextureIndex  = 0;
+        TextureIndex normalTextureIndex = 0;
+        TextureIndex metallicRoughnessTextureIndex = 0;
+        TextureIndex occlusionTextureIndex = 0;
+        TextureIndex emissiveTextureIndex = 0;
+        TextureIndex specularGlossinessTextureIndex = 0;
+        TextureIndex diffuseTextureIndex = 0;
+        TextureIndex specularTextureIndex = 0;
     };
 
     std::vector<vkl::VertexLayout> vertices;

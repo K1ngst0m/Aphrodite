@@ -60,6 +60,40 @@ void Entity::loadMaterials(tinygltf::Model &input) {
         if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
             _materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
         }
+        if (glTFMaterial.values.find("specularTexture") != glTFMaterial.values.end()) {
+            _materials[i].specularTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("diffuseTexture") != glTFMaterial.values.end()) {
+            _materials[i].diffuseTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("normalTexture") != glTFMaterial.values.end()) {
+            _materials[i].normalTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) {
+            _materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("specularGlossinessTexture") != glTFMaterial.values.end()) {
+            _materials[i].specularGlossinessTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("occlusionTexture") != glTFMaterial.values.end()) {
+            _materials[i].occlusionTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
+        }
+        if (glTFMaterial.values.find("emissiveTexture") != glTFMaterial.values.end()) {
+            _materials[i].emissiveTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
+        }
+        if (glTFMaterial.additionalValues.find("alphaMode") != glTFMaterial.additionalValues.end()) {
+            tinygltf::Parameter param = glTFMaterial.additionalValues["alphaMode"];
+            if (param.string_value == "BLEND") {
+                _materials[i].alphaMode = Material::ALPHAMODE_BLEND;
+            }
+            if (param.string_value == "MASK") {
+                _materials[i].alphaMode = Material::ALPHAMODE_MASK;
+            }
+        }
+        if (glTFMaterial.additionalValues.find("alphaCutoff") != glTFMaterial.additionalValues.end()) {
+            _materials[i].alphaCutoff = static_cast<float>(glTFMaterial.additionalValues["alphaCutoff"].Factor());
+        }
+        _materials[i].doubleSided = glTFMaterial.doubleSided;
     }
 }
 void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,

@@ -123,4 +123,20 @@ void UniformBuffer::update(void *data) {
     copyTo(data, size);
     unmap();
 }
+void Mesh::destroy() const {
+    vertexBuffer.destroy();
+    indexBuffer.destroy();
+}
+uint32_t Mesh::getIndicesCount() const {
+    return indexBuffer.indices.size();
+}
+uint32_t Mesh::getVerticesCount() const {
+    return vertexBuffer.vertices.size();
+}
+VkBuffer Mesh::getIndexBuffer() const {
+    return indexBuffer.buffer;
+}
+VkBuffer Mesh::getVertexBuffer() const {
+    return vertexBuffer.buffer;
+}
 } // namespace vkl

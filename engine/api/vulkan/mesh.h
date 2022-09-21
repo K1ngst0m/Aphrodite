@@ -72,26 +72,15 @@ struct Mesh {
     void setup(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {},
                std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
-    VkBuffer getVertexBuffer() const {
-        return vertexBuffer.buffer;
-    }
+    VkBuffer getVertexBuffer() const;
 
-    VkBuffer getIndexBuffer() const {
-        return indexBuffer.buffer;
-    }
+    VkBuffer getIndexBuffer() const;
 
-    uint32_t getVerticesCount() const {
-        return vertexBuffer.vertices.size();
-    }
+    uint32_t getVerticesCount() const;
 
-    uint32_t getIndicesCount() const {
-        return indexBuffer.indices.size();
-    }
+    uint32_t getIndicesCount() const;
 
-    void destroy() const {
-        vertexBuffer.destroy();
-        indexBuffer.destroy();
-    }
+    void destroy() const;
 };
 
 inline std::vector<vkl::VertexLayout> planeVertices{
