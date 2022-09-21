@@ -11,19 +11,16 @@ vkl::Texture *VulkanRenderObject::getTexture(uint32_t index) {
     }
     return nullptr;
 }
-std::vector<VkDescriptorPoolSize> VulkanRenderObject::getDescriptorSetInfo() const {
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(_textures.size())},
-    };
-    return poolSizes;
-}
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
         VkDescriptorSet             materialSet;
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
-        VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo);
-        vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
+        std::vector<VkWriteDescriptorSet> descriptorWrites{
+            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo),
+            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &getTexture(material.normalTextureIndex)->descriptorInfo),
+        };
+        vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         _materialSets.push_back(materialSet);
     }
 }
@@ -119,5 +116,8 @@ ShaderPass *VulkanRenderObject::getShaderPass() const {
 }
 VkDescriptorSet &VulkanRenderObject::getGlobalDescriptorSet() {
     return _globalDescriptorSet;
+}
+uint32_t VulkanRenderObject::getSetCount() {
+    return 1 + _entity->_materials.size();
 }
 } // namespace vkl

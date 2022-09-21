@@ -41,16 +41,13 @@ void VulkanSceneRenderer::_initRenderList() {
 }
 void VulkanSceneRenderer::_initUboList() {
     std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(_uboList.size())},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
     };
 
-    uint32_t maxSetSize = _renderList.size();
-    for (auto & renderable : _renderList) {
-        std::vector<VkDescriptorPoolSize> setInfos = renderable->getDescriptorSetInfo();
-        for (auto &setInfo : setInfos) {
-            maxSetSize += setInfo.descriptorCount;
-            poolSizes.push_back(setInfo);
-        }
+    uint32_t maxSetSize = 0;
+    for(auto & renderable : _renderList){
+        maxSetSize += renderable->getSetCount();
     }
 
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);

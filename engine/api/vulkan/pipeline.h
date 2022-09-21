@@ -98,7 +98,7 @@ public:
     void setShaders(ShaderEffect *shaders);
     void resetToDefault(VkExtent2D extent){
         vkl::VertexLayout::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
-                                                        vkl::VertexComponent::UV, vkl::VertexComponent::COLOR});
+                                                        vkl::VertexComponent::UV, vkl::VertexComponent::COLOR, vkl::VertexComponent::TANGENT});
         _vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
         _inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
         _viewport = vkl::init::viewport(extent);

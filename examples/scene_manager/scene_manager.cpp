@@ -72,6 +72,7 @@ void scene_manager::setupShaders() {
     // per-material layout
     std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
         vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
     };
 
     // build Shader
@@ -87,16 +88,6 @@ void scene_manager::setupShaders() {
     }
 
     {
-        m_planeShaderEffect.pushSetLayout(m_device->logicalDevice, perSceneBindings)
-                           .pushSetLayout(m_device->logicalDevice, perMaterialBindings)
-                           .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
-                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "plane.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-                           .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "plane.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-                           .buildPipelineLayout(m_device->logicalDevice);
-        m_planeShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_planeShaderEffect);
-    }
-
-    {
         m_sceneRenderer.resize(m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++){
             m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
@@ -107,8 +98,6 @@ void scene_manager::setupShaders() {
     m_deletionQueue.push_function([&](){
         m_modelShaderEffect.destroy(m_device->logicalDevice);
         m_modelShaderPass.destroy(m_device->logicalDevice);
-        m_planeShaderEffect.destroy(m_device->logicalDevice);
-        m_planeShaderPass.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);
 
         for(auto* sceneRenderer : m_sceneRenderer){

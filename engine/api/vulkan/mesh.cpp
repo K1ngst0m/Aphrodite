@@ -16,7 +16,9 @@ VkVertexInputAttributeDescription VertexLayout::inputAttributeDescription(uint32
     case VertexComponent::UV:
         return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexLayout, uv) });
     case VertexComponent::COLOR:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexLayout, color) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexLayout, color) });
+    case VertexComponent::TANGENT:
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexLayout, tangent) });
     default:
         return VkVertexInputAttributeDescription({});
     }

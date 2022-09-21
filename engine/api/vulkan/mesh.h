@@ -20,6 +20,7 @@ enum class VertexComponent {
     NORMAL,
     UV,
     COLOR,
+    TANGENT,
 };
 
 struct VertexLayout {
@@ -27,19 +28,20 @@ struct VertexLayout {
     glm::vec3 normal;
     glm::vec2 uv;
     glm::vec3 color;
+    glm::vec4 tangent;
 
     VertexLayout() = default;
-    VertexLayout(glm::vec3 p, glm::vec2 u)
-        :pos(p), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f))
+    VertexLayout(glm::vec3 p, glm::vec2 u, glm::vec4 t)
+        :pos(p), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t)
     {}
-    VertexLayout(glm::vec2 p, glm::vec2 u)
-        :pos(glm::vec3(p, 0.0f)), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f))
+    VertexLayout(glm::vec2 p, glm::vec2 u, glm::vec4 t)
+        :pos(glm::vec3(p, 0.0f)), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t)
     {}
-    VertexLayout(glm::vec3 p, glm::vec3 n, glm::vec2 u, glm::vec3 c = glm::vec3(1.0f))
-        :pos(p), normal(n), uv(u), color(c)
+    VertexLayout(glm::vec3 p, glm::vec3 n, glm::vec2 u, glm::vec4 t, glm::vec3 c = glm::vec3(1.0f))
+        :pos(p), normal(n), uv(u), color(c), tangent(t)
     {}
-    VertexLayout(glm::vec2 p, glm::vec3 n, glm::vec2 u, glm::vec3 c = glm::vec3(1.0f))
-        :pos(glm::vec3(p, 0.0f)), normal(n), uv(u), color(c)
+    VertexLayout(glm::vec2 p, glm::vec3 n, glm::vec2 u, glm::vec4 t, glm::vec3 c = glm::vec3(1.0f))
+        :pos(glm::vec3(p, 0.0f)), normal(n), uv(u), color(c), tangent(t)
     {}
 
     static VkVertexInputBindingDescription                _vertexInputBindingDescription;
@@ -72,18 +74,6 @@ struct Mesh {
     uint32_t getIndicesCount() const;
 
     void destroy() const;
-};
-
-inline std::vector<vkl::VertexLayout> planeVertices{
-    // positions          // texture Coords (note we set these higher than 1 (together with GL_REPEAT as texture
-    // wrapping mode). this will cause the floor texture to repeat)
-    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
-
-    {{5.0f, -0.5f, 5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-    {{-5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
-    {{5.0f, -0.5f, -5.0f}, {0.0f, 1.0f, 0.0f}, {2.0f, 2.0f}, {1.0f, 1.0f, 1.0f}},
 };
 
 } // namespace vkl

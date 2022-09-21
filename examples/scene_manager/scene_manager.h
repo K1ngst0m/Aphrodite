@@ -24,14 +24,11 @@ private:
     vkl::ShaderCache m_shaderCache;
 
     vkl::ShaderEffect m_modelShaderEffect;
-    vkl::ShaderEffect m_planeShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
-    vkl::ShaderPass m_planeShaderPass;
 
     vkl::Light* m_pointLight = nullptr;
     vkl::Light* m_directionalLight = nullptr;
     vkl::Entity * m_model = nullptr;
-    vkl::Entity * m_plane = nullptr;
 
     vkl::SceneManager m_sceneManager;
     std::vector<vkl::SceneRenderer *> m_sceneRenderer;

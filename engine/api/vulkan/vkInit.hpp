@@ -227,8 +227,7 @@ inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(uint32_t poolSizeCoun
     return descriptorPoolInfo;
 }
 
-inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(const std::vector<VkDescriptorPoolSize> &poolSizes,
-                                                           uint32_t maxSets)
+inline VkDescriptorPoolCreateInfo descriptorPoolCreateInfo(const std::vector<VkDescriptorPoolSize> &poolSizes, uint32_t maxSets)
 {
     VkDescriptorPoolCreateInfo descriptorPoolInfo{};
     descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

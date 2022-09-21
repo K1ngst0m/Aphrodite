@@ -19,9 +19,9 @@ public:
     void        setShaderPass(ShaderPass *pass);
     ShaderPass *getShaderPass() const;
 
-    std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() const;
     void                              setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
     VkDescriptorSet                  &getGlobalDescriptorSet();
+    uint32_t                          getSetCount();
 
 private:
     void          drawNode(const Entity::Node *node);
