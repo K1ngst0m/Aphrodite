@@ -53,21 +53,12 @@ struct VertexLayout {
     static void setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
-struct VertexBuffer : Buffer {
-    std::vector<VertexLayout> vertices;
-};
-
-struct IndexBuffer : Buffer {
-    std::vector<uint32_t> indices;
-};
-
-struct UniformBuffer : Buffer {
-    void update(void *data);
-};
-
 struct Mesh {
-    vkl::VertexBuffer      vertexBuffer;
-    vkl::IndexBuffer       indexBuffer;
+    std::vector<VertexLayout> _vertices;
+    vkl::Buffer      vertexBuffer;
+
+    std::vector<uint32_t> _indices;
+    vkl::Buffer       indexBuffer;
 
     void setup(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {},
                std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);

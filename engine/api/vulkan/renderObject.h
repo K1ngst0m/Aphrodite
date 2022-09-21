@@ -7,7 +7,9 @@ namespace vkl {
 class VulkanRenderObject : public RenderObject {
 public:
     VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
-    ~VulkanRenderObject() override = default;
+    ~VulkanRenderObject() override {
+        cleanupResources();
+    }
 
     void loadResouces(VkQueue queue);
     void cleanupResources();

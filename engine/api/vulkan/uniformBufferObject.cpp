@@ -1,6 +1,12 @@
 #include "uniformBufferObject.h"
 
 namespace vkl {
+
+void VulkanUniformBufferObject::updateBuffer(void *data) {
+    buffer.map();
+    buffer.copyTo(data, buffer.size);
+    buffer.unmap();
+}
 VulkanUniformBufferObject::VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::Device *device, vkl::UniformBufferObject *ubo)
     : _device(device), _renderer(renderer), _ubo(ubo) {
 }
@@ -11,11 +17,12 @@ void VulkanUniformBufferObject::setupBuffer(uint32_t bufferSize, void *data) {
     buffer.setupDescriptor();
 }
 
-void VulkanUniformBufferObject::updateBuffer(void *data) {
-    buffer.update(data);
-}
-
-void VulkanUniformBufferObject::destroy() {
+void VulkanUniformBufferObject::cleanupResources() {
     buffer.destroy();
 }
+
+VulkanUniformBufferObject::~VulkanUniformBufferObject() {
+    cleanupResources();
 }
+
+} // namespace vkl

@@ -46,23 +46,23 @@ void VertexLayout::setPipelineVertexInputState(const std::vector<VertexComponent
 void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexLayout> vertices, std::vector<uint32_t> indices, uint32_t vSize, uint32_t iSize)
 {
     if(!vertices.empty()){
-        vertexBuffer.vertices = std::move(vertices);
+        _vertices = std::move(vertices);
     }
     if(!indices.empty()){
-        indexBuffer.indices = std::move(indices);
+        _indices = std::move(indices);
     }
 
-    assert(!vertexBuffer.vertices.empty());
+    assert(!_vertices.empty());
 
     if (getIndicesCount() == 0) {
         for (size_t i = 0; i < getVerticesCount(); i++) {
-            indexBuffer.indices.push_back(i);
+            _indices.push_back(i);
         }
     }
 
     // setup vertex buffer
     {
-        VkDeviceSize bufferSize = vSize == 0 ? sizeof(vertexBuffer.vertices[0]) * getVerticesCount() : vSize;
+        VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertices[0]) * getVerticesCount() : vSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
             vkl::Buffer stagingBuffer;
@@ -70,7 +70,7 @@ void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexL
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
             stagingBuffer.map();
-            stagingBuffer.copyTo(vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
+            stagingBuffer.copyTo(_vertices.data(), static_cast<VkDeviceSize>(bufferSize));
             stagingBuffer.unmap();
 
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -84,14 +84,14 @@ void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexL
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertexBuffer);
             vertexBuffer.map();
-            vertexBuffer.copyTo(vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
+            vertexBuffer.copyTo(_vertices.data(), static_cast<VkDeviceSize>(bufferSize));
             vertexBuffer.unmap();
         }
     }
 
     // setup index buffer
     {
-        VkDeviceSize bufferSize = iSize == 0 ? sizeof(indexBuffer.indices[0]) * getIndicesCount() : iSize;
+        VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indices[0]) * getIndicesCount() : iSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
             vkl::Buffer stagingBuffer;
@@ -99,7 +99,7 @@ void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexL
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
             stagingBuffer.map();
-            stagingBuffer.copyTo(indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
+            stagingBuffer.copyTo(_indices.data(), static_cast<VkDeviceSize>(bufferSize));
             stagingBuffer.unmap();
 
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -113,25 +113,20 @@ void Mesh::setup(vkl::Device* device, VkQueue transferQueue, std::vector<VertexL
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, indexBuffer);
             indexBuffer.map();
-            indexBuffer.copyTo(indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
+            indexBuffer.copyTo(_indices.data(), static_cast<VkDeviceSize>(bufferSize));
             indexBuffer.unmap();
         }
     }
-}
-void UniformBuffer::update(void *data) {
-    map();
-    copyTo(data, size);
-    unmap();
 }
 void Mesh::destroy() const {
     vertexBuffer.destroy();
     indexBuffer.destroy();
 }
 uint32_t Mesh::getIndicesCount() const {
-    return indexBuffer.indices.size();
+    return _indices.size();
 }
 uint32_t Mesh::getVerticesCount() const {
-    return vertexBuffer.vertices.size();
+    return _vertices.size();
 }
 VkBuffer Mesh::getIndexBuffer() const {
     return indexBuffer.buffer;

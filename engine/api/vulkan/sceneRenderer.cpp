@@ -13,11 +13,9 @@ void VulkanSceneRenderer::loadResources() {
 void VulkanSceneRenderer::cleanupResources() {
     vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
     for (auto * renderable : _renderList){
-        renderable->cleanupResources();
         delete renderable;
     }
     for (auto * ubo : _uboList){
-        ubo->destroy();
         delete ubo;
     }
 }
