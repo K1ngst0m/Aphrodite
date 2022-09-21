@@ -18,7 +18,7 @@ void Entity::loadFromFile(const std::string &path) {
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for (int nodeIdx : scene.nodes) {
             const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            loadNodes(node, glTFInput, nullptr, indices, vertices);
+            loadNodes(node, glTFInput, nullptr);
         }
     } else {
         assert("Could not open the glTF file.");
@@ -96,8 +96,7 @@ void Entity::loadMaterials(tinygltf::Model &input) {
         _materials[i].doubleSided = glTFMaterial.doubleSided;
     }
 }
-void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
-                     std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices) {
+void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent) {
     Node *node   = new Node();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
@@ -119,7 +118,7 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNodes(input.nodes[nodeIdx], input, node, indices, vertices);
+            loadNodes(input.nodes[nodeIdx], input, node);
         }
     }
 
@@ -129,8 +128,8 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
         const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
         // Iterate through all primitives of this node's mesh
         for (const auto &glTFPrimitive : mesh.primitives) {
-            auto firstIndex  = static_cast<uint32_t>(indices.size());
-            auto vertexStart = static_cast<uint32_t>(vertices.size());
+            auto firstIndex  = static_cast<uint32_t>(_indices.size());
+            auto vertexStart = static_cast<uint32_t>(_vertices.size());
             auto indexCount  = static_cast<uint32_t>(0);
 
             // Vertices
@@ -175,7 +174,7 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
                         glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
                     vert.uv    = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
-                    vertices.push_back(vert);
+                    _vertices.push_back(vert);
                 }
             }
             // Indices
@@ -192,7 +191,7 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
                     const auto *buf =
                         reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indices.push_back(buf[index] + vertexStart);
+                        _indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
@@ -200,7 +199,7 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
                     const auto *buf =
                         reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indices.push_back(buf[index] + vertexStart);
+                        _indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
@@ -208,7 +207,7 @@ void Entity::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &i
                     const auto *buf =
                         reinterpret_cast<const uint8_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for (size_t index = 0; index < accessor.count; index++) {
-                        indices.push_back(buf[index] + vertexStart);
+                        _indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }

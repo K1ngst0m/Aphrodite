@@ -27,7 +27,7 @@ void VulkanSceneRenderer::drawScene() {
     }
 }
 void VulkanSceneRenderer::update() {
-    cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
+    _cameraUBO->updateBuffer(_cameraUBO->_ubo->getData());
     // for (auto * ubo : _uboList){
     //     if (ubo->_ubo->isNeedUpdate()){
     //         ubo->updateBuffer(ubo->_ubo->getData());
@@ -98,9 +98,9 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
             {
                 SceneCamera * camera  = static_cast<SceneCamera*>(n->getObject());
                 camera->load();
-                cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
-                cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
-                _uboList.push_front(cameraUBO);
+                _cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
+                _cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
+                _uboList.push_front(_cameraUBO);
             }
             break;
         case AttachType::LIGHT:

@@ -64,22 +64,24 @@ public:
         TextureIndex specularTextureIndex = 0;
     };
 
-    std::vector<vkl::VertexLayout> vertices;
-    std::vector<uint32_t>          indices;
+    std::vector<vkl::VertexLayout> _vertices;
+    std::vector<uint32_t>          _indices;
+    std::vector<Image *>           _images;
+    std::vector<Node *>            _nodes;
+    std::vector<Material>          _materials;
 
-    std::vector<Image*>       _images;
-    std::vector<Node *>       _nodes;
-    std::vector<Material>  _materials;
+public:
+    vkl::ShaderPass* getPass(){
+        return _pass;
+    }
 
-    vkl::ShaderPass *_pass = nullptr;
 private:
     void          loadImages(tinygltf::Model &input);
     void          loadMaterials(tinygltf::Model &input);
-    void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent,
-                                std::vector<uint32_t> &indices, std::vector<vkl::VertexLayout> &vertices);
+    void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent);
 
 protected:
-    vklt::EntityLoader *loader;
+    vkl::ShaderPass *_pass = nullptr;
     vkl::Device        *_device;
 };
 }

@@ -30,7 +30,7 @@ private:
     std::vector<VulkanRenderObject *>       _renderList;
     std::deque<VulkanUniformBufferObject *> _uboList;
 
-    VulkanUniformBufferObject *cameraUBO = nullptr;
+    VulkanUniformBufferObject *_cameraUBO = nullptr;
 };
 } // namespace vkl
 

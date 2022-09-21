@@ -2,8 +2,8 @@
 
 namespace vkl {
 VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
-    : RenderObject(renderer, entity), _device(device), drawCmd(drawCmd) {
-    _shaderPass = entity->_pass;
+    : RenderObject(renderer, entity), _device(device), _drawCmd(drawCmd) {
+    _shaderPass = entity->getPass();
 }
 vkl::Texture *VulkanRenderObject::getTexture(uint32_t index) {
     if (index < _textures.size()) {
@@ -18,17 +18,17 @@ std::vector<VkDescriptorPoolSize> VulkanRenderObject::getDescriptorSetInfo() con
     return poolSizes;
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
-    for (auto &material : entity->_materials) {
+    for (auto &material : _entity->_materials) {
         VkDescriptorSet             materialSet;
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
         VkWriteDescriptorSet writeDescriptorSet = vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo);
         vkUpdateDescriptorSets(_device->logicalDevice, 1, &writeDescriptorSet, 0, nullptr);
-        materialSets.push_back(materialSet);
+        _materialSets.push_back(materialSet);
     }
 }
 void VulkanRenderObject::loadImages(VkQueue queue) {
-    for (auto &image : entity->_images) {
+    for (auto &image : _entity->_images) {
         unsigned char *imageData     = image->data;
         uint32_t       imageDataSize = image->dataSize;
         uint32_t       width         = image->width;
@@ -65,11 +65,11 @@ void VulkanRenderObject::loadImages(VkQueue queue) {
 }
 void VulkanRenderObject::loadResouces(VkQueue queue) {
     // Create and upload vertex and index buffer
-    size_t vertexBufferSize = entity->vertices.size() * sizeof(entity->vertices[0]);
-    size_t indexBufferSize  = entity->indices.size() * sizeof(entity->indices[0]);
+    size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
+    size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
 
     loadImages(queue);
-    _mesh.setup(_device, queue, entity->vertices, entity->indices, vertexBufferSize, indexBufferSize);
+    _mesh.setup(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
 }
 void VulkanRenderObject::drawNode(const Entity::Node *node) {
     if (!node->mesh.primitives.empty()) {
@@ -79,13 +79,13 @@ void VulkanRenderObject::drawNode(const Entity::Node *node) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
-        vkCmdPushConstants(drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
+        vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                            &nodeMatrix);
         for (const Entity::Primitive primitive : node->mesh.primitives) {
             if (primitive.indexCount > 0) {
-                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
-                                        &materialSets[primitive.materialIndex], 0, nullptr);
-                vkCmdDrawIndexed(drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
+                                        &_materialSets[primitive.materialIndex], 0, nullptr);
+                vkCmdDrawIndexed(_drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
@@ -96,25 +96,13 @@ void VulkanRenderObject::drawNode(const Entity::Node *node) {
 void VulkanRenderObject::draw() {
     assert(_shaderPass);
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &globalDescriptorSet, 0, nullptr);
-    vkCmdBindVertexBuffers(drawCmd, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
-    vkCmdBindIndexBuffer(drawCmd, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
+    vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
+    vkCmdBindVertexBuffers(_drawCmd, 0, 1, &_mesh.vertexBuffer.buffer, offsets);
+    vkCmdBindIndexBuffer(_drawCmd, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
-    // manual created
-    if (entity->_nodes.empty()) {
-        if (!_textures.empty()) {
-            vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1, materialSets.data(), 0, nullptr);
-        }
-
-        vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
-        vkCmdDrawIndexed(drawCmd, _mesh.getIndicesCount(), 1, 0, 0, 0);
-    }
-    // file loaded
-    else {
-        for (Entity::Node *node : entity->_nodes) {
-            drawNode(node);
-        }
+    for (Entity::Node *node : _entity->_nodes) {
+        drawNode(node);
     }
 }
 void VulkanRenderObject::cleanupResources() {
@@ -130,6 +118,6 @@ ShaderPass *VulkanRenderObject::getShaderPass() const {
     return _shaderPass;
 }
 VkDescriptorSet &VulkanRenderObject::getGlobalDescriptorSet() {
-    return globalDescriptorSet;
+    return _globalDescriptorSet;
 }
 } // namespace vkl

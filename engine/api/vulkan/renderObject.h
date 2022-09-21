@@ -4,7 +4,7 @@
 #include "scene/sceneRenderer.h"
 
 namespace vkl {
-class VulkanRenderObject : public RenderObject{
+class VulkanRenderObject : public RenderObject {
 public:
     VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
     ~VulkanRenderObject() override = default;
@@ -14,27 +14,28 @@ public:
 
     void draw() override;
 
-    void setShaderPass(ShaderPass *pass);
+    void        setShaderPass(ShaderPass *pass);
     ShaderPass *getShaderPass() const;
 
     std::vector<VkDescriptorPoolSize> getDescriptorSetInfo() const;
-    void setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
-    VkDescriptorSet &getGlobalDescriptorSet();
+    void                              setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
+    VkDescriptorSet                  &getGlobalDescriptorSet();
+
 private:
-    void drawNode(const Entity::Node *node);
-    void loadImages(VkQueue queue);
+    void          drawNode(const Entity::Node *node);
+    void          loadImages(VkQueue queue);
     vkl::Texture *getTexture(uint32_t index);
 
-    vkl::Device                 *_device;
-    vkl::ShaderPass             *_shaderPass;
+    vkl::Device     *_device;
+    vkl::ShaderPass *_shaderPass;
 
-    vkl::Mesh                    _mesh;
-    std::vector<vkl::Texture>    _textures;
+    vkl::Mesh                 _mesh;
+    std::vector<vkl::Texture> _textures;
 
-    std::vector<VkDescriptorSet> materialSets;
-    VkDescriptorSet              globalDescriptorSet;
-    const VkCommandBuffer drawCmd;
+    std::vector<VkDescriptorSet> _materialSets;
+    VkDescriptorSet              _globalDescriptorSet;
+    const VkCommandBuffer        _drawCmd;
 };
-}
+} // namespace vkl
 
 #endif // VKRENDERABLE_H_

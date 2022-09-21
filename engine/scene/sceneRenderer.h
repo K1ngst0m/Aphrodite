@@ -9,7 +9,7 @@ class SceneRenderer;
 class RenderObject{
 public:
     RenderObject(SceneRenderer * renderer, vkl::Entity* entity)
-        : _renderer(renderer), entity(entity)
+        : _renderer(renderer), _entity(entity)
     {}
     virtual ~RenderObject() = default;
     virtual void draw() = 0;
@@ -20,7 +20,7 @@ public:
 protected:
     glm::mat4 _transform;
     vkl::SceneRenderer * _renderer;
-    vkl::Entity * entity;
+    vkl::Entity * _entity;
 };
 
 class SceneRenderer {
