@@ -68,17 +68,17 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadImages(queue);
     _mesh.setup(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
 }
-void VulkanRenderObject::drawNode(const Entity::Node *node) {
+void VulkanRenderObject::drawNode(const SubEntity *node) {
     if (!node->mesh.primitives.empty()) {
         glm::mat4 nodeMatrix    = node->matrix;
-        Entity::Node     *currentParent = node->parent;
+        SubEntity     *currentParent = node->parent;
         while (currentParent) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
         vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                            &nodeMatrix);
-        for (const Entity::Primitive primitive : node->mesh.primitives) {
+        for (const Primitive primitive : node->mesh.primitives) {
             if (primitive.indexCount > 0) {
                 vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
                                         &_materialSets[primitive.materialIndex], 0, nullptr);
@@ -86,7 +86,7 @@ void VulkanRenderObject::drawNode(const Entity::Node *node) {
             }
         }
     }
-    for (Entity::Node *child : node->children) {
+    for (SubEntity *child : node->children) {
         drawNode(child);
     }
 }
@@ -98,7 +98,7 @@ void VulkanRenderObject::draw() {
     vkCmdBindIndexBuffer(_drawCmd, _mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
-    for (Entity::Node *node : _entity->_nodes) {
+    for (SubEntity *node : _entity->_subEntityList) {
         drawNode(node);
     }
 }

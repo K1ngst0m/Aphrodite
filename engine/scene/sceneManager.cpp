@@ -40,10 +40,6 @@ void SceneManager::update() {
     _camera->update();
 }
 
-void SceneManager::setRenderer(SceneRenderer *renderer) {
-    _renderer = renderer;
-}
-
 SceneManager::~SceneManager() {
     delete rootNode;
 }

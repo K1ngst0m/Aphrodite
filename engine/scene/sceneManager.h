@@ -5,14 +5,10 @@
 #include "api/vulkan/pipeline.h"
 
 namespace vkl {
-
-
-class SceneRenderer;
 class SceneManager {
 public:
     SceneManager();
     ~SceneManager();
-    void setRenderer(SceneRenderer *renderer);
     void update();
 
 public:
@@ -29,7 +25,6 @@ private:
     SceneNode * rootNode;
 
     SceneCamera *_camera = nullptr;
-    SceneRenderer * _renderer;
 
     glm::vec4 _ambient;
 };

@@ -24,7 +24,7 @@ public:
     uint32_t                          getSetCount();
 
 private:
-    void          drawNode(const Entity::Node *node);
+    void          drawNode(const SubEntity *node);
     void          loadImages(VkQueue queue);
     vkl::Texture *getTexture(uint32_t index);
 

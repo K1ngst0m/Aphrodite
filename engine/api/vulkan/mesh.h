@@ -32,35 +32,33 @@ struct VertexLayout {
 
     VertexLayout() = default;
     VertexLayout(glm::vec3 p, glm::vec2 u, glm::vec4 t)
-        :pos(p), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t)
-    {}
+        : pos(p), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t) {
+    }
     VertexLayout(glm::vec2 p, glm::vec2 u, glm::vec4 t)
-        :pos(glm::vec3(p, 0.0f)), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t)
-    {}
+        : pos(glm::vec3(p, 0.0f)), normal(glm::vec3(1.0f)), uv(u), color(glm::vec3(1.0f)), tangent(t) {
+    }
     VertexLayout(glm::vec3 p, glm::vec3 n, glm::vec2 u, glm::vec4 t, glm::vec3 c = glm::vec3(1.0f))
-        :pos(p), normal(n), uv(u), color(c), tangent(t)
-    {}
+        : pos(p), normal(n), uv(u), color(c), tangent(t) {
+    }
     VertexLayout(glm::vec2 p, glm::vec3 n, glm::vec2 u, glm::vec4 t, glm::vec3 c = glm::vec3(1.0f))
-        :pos(glm::vec3(p, 0.0f)), normal(n), uv(u), color(c), tangent(t)
-    {}
+        : pos(glm::vec3(p, 0.0f)), normal(n), uv(u), color(c), tangent(t) {
+    }
 
     static VkVertexInputBindingDescription                _vertexInputBindingDescription;
     static std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
     static VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
 
-    static VkVertexInputAttributeDescription inputAttributeDescription(uint32_t binding, uint32_t location,
-                                                                       VertexComponent component);
-    static std::vector<VkVertexInputAttributeDescription>
-                inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
-    static void setPipelineVertexInputState(const std::vector<VertexComponent> &components);
+    static VkVertexInputAttributeDescription              inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
+    static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
+    static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
 struct Mesh {
     std::vector<VertexLayout> _vertices;
-    vkl::Buffer      vertexBuffer;
+    vkl::Buffer               vertexBuffer;
 
     std::vector<uint32_t> _indices;
-    vkl::Buffer       indexBuffer;
+    vkl::Buffer           indexBuffer;
 
     void setup(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {},
                std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
