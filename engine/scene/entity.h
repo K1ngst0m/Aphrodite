@@ -14,9 +14,9 @@ struct SubEntity;
 struct VertexLayout;
 
 using ResourceIndex    = uint32_t;
-using SubEntityList    = std::vector<SubEntity *>;
+using SubEntityList    = std::vector<std::shared_ptr<SubEntity>>;
 using PrimitiveList    = std::vector<Mesh>;
-using TextureData        = std::vector<unsigned char>;
+using TextureData      = std::vector<unsigned char>;
 using VertexLayoutList = std::vector<VertexLayout>;
 using IndexList        = std::vector<uint32_t>;
 using ImageList        = std::vector<Texture>;
@@ -41,18 +41,11 @@ struct SubEntity {
     SubEntityList children;
     PrimitiveList primitives;
     glm::mat4     matrix;
-    ~SubEntity() {
-        if (!children.empty()) {
-            for (auto *subEntity : children) {
-                delete subEntity;
-            }
-        }
-    }
 };
 
 struct Texture {
-    uint32_t  width;
-    uint32_t  height;
+    uint32_t    width;
+    uint32_t    height;
     TextureData data;
 };
 
@@ -67,14 +60,17 @@ struct Material {
     float     roughnessFactor = 1.0f;
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
-    ResourceIndex baseColorTextureIndex          = 0;
-    ResourceIndex normalTextureIndex             = 0;
-    ResourceIndex metallicRoughnessTextureIndex  = 0;
-    ResourceIndex occlusionTextureIndex          = 0;
-    ResourceIndex emissiveTextureIndex           = 0;
+    ResourceIndex baseColorTextureIndex = 0;
+    ResourceIndex diffuseTextureIndex   = 0;
+    ResourceIndex specularTextureIndex  = 0;
+
+    ResourceIndex normalTextureIndex    = 0;
+    ResourceIndex occlusionTextureIndex = 0;
+    ResourceIndex emissiveTextureIndex  = 0;
+
+    ResourceIndex metallicRoughnessTextureIndex = 0;
+
     ResourceIndex specularGlossinessTextureIndex = 0;
-    ResourceIndex diffuseTextureIndex            = 0;
-    ResourceIndex specularTextureIndex           = 0;
 };
 
 class Entity : public Object {

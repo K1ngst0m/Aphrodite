@@ -37,12 +37,12 @@ struct VulkanDevice {
     uint32_t                  findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
                                              VkBool32 *memTypeFound = nullptr) const;
     uint32_t                  findQueueFamilies(VkQueueFlags queueFlags) const;
-    VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions,
-                                 void *pNextChain, bool useSwapChain = true,
-                                 VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    VkResult                  createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions,
+                                                  void *pNextChain, bool useSwapChain = true,
+                                                  VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 
-    VkResult createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer &buffer,
-                          void *data = nullptr) const;
+    VkResult    createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer &buffer,
+                             void *data = nullptr) const;
     VkImageView createImageView(VkImage image, VkFormat format,
                                 VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
     VkResult    createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
@@ -56,13 +56,11 @@ struct VulkanDevice {
     void copyBufferToImage(VkQueue queue, vkl::VulkanBuffer buffer, vkl::VulkanTexture texture, uint32_t width, uint32_t height);
     void copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
-    VkCommandPool
-                    createCommandPool(uint32_t                 queueFamilyIndex,
-                                      VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
+    VkCommandPool   createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
     VkCommandBuffer beginSingleTimeCommands();
     void            endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const;
-    void flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true) const;
-    void flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true) const;
+    void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true) const;
+    void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true) const;
 
     bool     extensionSupported(std::string_view extension) const;
     VkFormat findDepthFormat() const;

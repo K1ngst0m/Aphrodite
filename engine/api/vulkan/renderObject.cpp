@@ -79,8 +79,8 @@ void VulkanRenderObject::drawNode(const SubEntity* node) {
             }
         }
     }
-    for (SubEntity *child : node->children) {
-        drawNode(child);
+    for (const auto &child : node->children) {
+        drawNode(child.get());
     }
 }
 void VulkanRenderObject::draw() {
@@ -91,8 +91,8 @@ void VulkanRenderObject::draw() {
     vkCmdBindIndexBuffer(_drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
-    for (SubEntity *node : _entity->_subEntityList) {
-        drawNode(node);
+    for (auto & node : _entity->_subEntityList) {
+        drawNode(node.get());
     }
 }
 void VulkanRenderObject::cleanupResources() {

@@ -7,11 +7,7 @@ void Entity::loadFromFile(const std::string &path) {
     _loader->load();
 
 }
-Entity::~Entity() {
-    for (auto * subEntity : _subEntityList){
-        delete subEntity;
-    }
-}
+Entity::~Entity() = default;
 Entity::Entity(SceneManager *manager)
     : Object(manager) {
 }

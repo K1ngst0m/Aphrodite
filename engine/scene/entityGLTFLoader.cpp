@@ -98,7 +98,7 @@ void EntityGLTFLoader::loadMaterials(tinygltf::Model &input) {
     }
 }
 void EntityGLTFLoader::loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
-    SubEntity *node   = new SubEntity();
+    auto node   = std::make_shared<SubEntity>();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
 
@@ -119,7 +119,7 @@ void EntityGLTFLoader::loadNodes(const tinygltf::Node &inputNode, const tinygltf
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNodes(input.nodes[nodeIdx], input, node);
+            loadNodes(input.nodes[nodeIdx], input, node.get());
         }
     }
 
