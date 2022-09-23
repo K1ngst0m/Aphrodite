@@ -25,7 +25,6 @@ namespace vkl {
         void load() override;
         void update() override;
 
-        void *getData() override;
         uint32_t getDataSize() override ;
 
     private:
@@ -44,9 +43,6 @@ namespace vkl {
 
     private:
         SceneManager * _manager;
-
-        uint32_t dataSize = 0;
-        void * data = nullptr;
         bool isloaded = false;
     };
 }

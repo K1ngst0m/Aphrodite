@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 
 namespace vkl {
-    struct Texture
+    struct VulkanTexture
     {
         VkDevice device;
 

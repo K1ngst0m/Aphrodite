@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 
 namespace vkl {
-    struct Buffer
+    struct VulkanBuffer
     {
         VkDevice device;
         VkBuffer buffer = VK_NULL_HANDLE;

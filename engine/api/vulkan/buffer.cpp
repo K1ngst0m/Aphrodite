@@ -11,7 +11,7 @@ namespace vkl {
     *
     * @return VkResult of the buffer mapping call
     */
-    VkResult Buffer::map(VkDeviceSize size, VkDeviceSize offset)
+    VkResult VulkanBuffer::map(VkDeviceSize size, VkDeviceSize offset)
     {
         return vkMapMemory(device, memory, offset, size, 0, &mapped);
     }
@@ -21,7 +21,7 @@ namespace vkl {
     *
     * @note Does not return a result as vkUnmapMemory can't fail
     */
-    void Buffer::unmap()
+    void VulkanBuffer::unmap()
     {
         if (mapped)
         {
@@ -37,7 +37,7 @@ namespace vkl {
     *
     * @return VkResult of the bindBufferMemory call
     */
-    VkResult Buffer::bind(VkDeviceSize offset) const
+    VkResult VulkanBuffer::bind(VkDeviceSize offset) const
     {
         return vkBindBufferMemory(device, buffer, memory, offset);
     }
@@ -49,7 +49,7 @@ namespace vkl {
     * @param offset (Optional) Byte offset from beginning
     *
     */
-    void Buffer::setupDescriptor(VkDeviceSize size, VkDeviceSize offset)
+    void VulkanBuffer::setupDescriptor(VkDeviceSize size, VkDeviceSize offset)
     {
         descriptorInfo.offset = offset;
         descriptorInfo.buffer = buffer;
@@ -63,7 +63,7 @@ namespace vkl {
     * @param size Size of the data to copy in machine units
     *
     */
-    void Buffer::copyTo(const void* data, VkDeviceSize size) const
+    void VulkanBuffer::copyTo(const void* data, VkDeviceSize size) const
     {
         assert(mapped);
         memcpy(mapped, data, size);
@@ -79,7 +79,7 @@ namespace vkl {
     *
     * @return VkResult of the flush call
     */
-    VkResult Buffer::flush(VkDeviceSize size, VkDeviceSize offset) const
+    VkResult VulkanBuffer::flush(VkDeviceSize size, VkDeviceSize offset) const
     {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -99,7 +99,7 @@ namespace vkl {
     *
     * @return VkResult of the invalidate call
     */
-    VkResult Buffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const
+    VkResult VulkanBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const
     {
         VkMappedMemoryRange mappedRange = {};
         mappedRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -112,7 +112,7 @@ namespace vkl {
     /**
     * Release all Vulkan resources held by this buffer
     */
-    void Buffer::destroy() const
+    void VulkanBuffer::destroy() const
     {
         if (buffer)
         {
@@ -123,7 +123,7 @@ namespace vkl {
             vkFreeMemory(device, memory, nullptr);
         }
     }
-    VkDescriptorBufferInfo &Buffer::getBufferInfo() {
+    VkDescriptorBufferInfo &VulkanBuffer::getBufferInfo() {
         return descriptorInfo;
     }
     } // namespace vkl

@@ -10,7 +10,7 @@ namespace vkl
     *
     * @param physicalDevice Physical device that is to be used
     */
-Device::Device(VkPhysicalDevice physicalDevice)
+VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
 {
     assert(physicalDevice);
     this->physicalDevice = physicalDevice;
@@ -44,7 +44,7 @@ Device::Device(VkPhysicalDevice physicalDevice)
     *
     * @note Frees the logical device
     */
-Device::~Device()
+VulkanDevice::~VulkanDevice()
 {
     if (commandPool) {
         vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
@@ -65,7 +65,7 @@ Device::~Device()
     *
     * @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
     */
-uint32_t Device::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound) const
+uint32_t VulkanDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound) const
 {
     for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
         if ((typeBits & 1) == 1) {
@@ -97,7 +97,7 @@ uint32_t Device::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags propert
     *
     * @throw Throws an exception if no queue family index could be found that supports the requested flags
     */
-uint32_t Device::findQueueFamilies(VkQueueFlags queueFlags) const
+uint32_t VulkanDevice::findQueueFamilies(VkQueueFlags queueFlags) const
 {
     // Dedicated queue for compute
     // Try to find a queue family index that supports compute but not graphics
@@ -142,7 +142,7 @@ uint32_t Device::findQueueFamilies(VkQueueFlags queueFlags) const
     *
     * @return VkResult of the device creation call
     */
-VkResult Device::createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures,
+VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures,
                                      std::vector<const char *> enabledExtensions, void *pNextChain,
                                      bool useSwapChain, VkQueueFlags requestedQueueTypes)
 {
@@ -267,7 +267,7 @@ VkResult Device::createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures,
     *
     * @return A handle to the created command buffer
     */
-VkCommandPool Device::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) const
+VkCommandPool VulkanDevice::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) const
 {
     VkCommandPoolCreateInfo cmdPoolInfo = {};
     cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -289,7 +289,7 @@ VkCommandPool Device::createCommandPool(uint32_t queueFamilyIndex, VkCommandPool
     * @note The queue that the command buffer is submitted to must be from the same family index as the pool it was allocated from
     * @note Uses a fence to ensure command buffer has finished executing
     */
-void Device::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free) const
+void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free) const
 {
     if (commandBuffer == VK_NULL_HANDLE) {
         return;
@@ -313,7 +313,7 @@ void Device::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, Vk
     }
 }
 
-void Device::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free) const
+void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free) const
 {
     return flushCommandBuffer(commandBuffer, queue, commandPool, free);
 }
@@ -325,7 +325,7 @@ void Device::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bo
     *
     * @return True if the extension is supported (present in the list read at device creation time)
     */
-bool Device::extensionSupported(std::string_view extension) const
+bool VulkanDevice::extensionSupported(std::string_view extension) const
 {
     return (std::find(supportedExtensions.begin(), supportedExtensions.end(), extension) != supportedExtensions.end());
 }
@@ -336,13 +336,13 @@ bool Device::extensionSupported(std::string_view extension) const
     *
     * @throw Throws an exception if no depth format fits the requirements
     */
-VkFormat Device::findDepthFormat() const
+VkFormat VulkanDevice::findDepthFormat() const
 {
     return findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
                                VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkFormat Device::findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
+VkFormat VulkanDevice::findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
                                      VkFormatFeatureFlags features) const
 {
     for (VkFormat format : candidates) {
@@ -361,7 +361,7 @@ VkFormat Device::findSupportedFormat(const std::vector<VkFormat> &candidates, Vk
     return {};
 }
 
-VkShaderModule Device::createShaderModule(const std::vector<char> &code) const
+VkShaderModule VulkanDevice::createShaderModule(const std::vector<char> &code) const
 {
     VkShaderModuleCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -375,7 +375,7 @@ VkShaderModule Device::createShaderModule(const std::vector<char> &code) const
 
     return shaderModule;
 }
-VkImageView Device::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const
+VkImageView VulkanDevice::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const
 {
     VkImageViewCreateInfo viewInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -397,7 +397,7 @@ VkImageView Device::createImageView(VkImage image, VkFormat format, VkImageAspec
 
     return imageView;
 }
-void Device::copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
+void VulkanDevice::copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     VkBufferImageCopy region{
@@ -420,7 +420,7 @@ void Device::copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, ui
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const
+void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const
 {
     vkEndCommandBuffer(commandBuffer);
 
@@ -431,7 +431,7 @@ void Device::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue)
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
 }
-VkCommandBuffer Device::beginSingleTimeCommands()
+VkCommandBuffer VulkanDevice::beginSingleTimeCommands()
 {
     VkCommandBufferAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -452,7 +452,7 @@ VkCommandBuffer Device::beginSingleTimeCommands()
 
     return commandBuffer;
 }
-void Device::copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void VulkanDevice::copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -462,7 +462,7 @@ void Device::copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, V
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void Device::transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
+void VulkanDevice::transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout)
 {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{
@@ -535,7 +535,7 @@ void Device::transitionImageLayout(VkQueue queue, VkImage image, VkFormat format
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-VkResult Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, Buffer &buffer, void * data) const
+VkResult VulkanDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer &buffer, void * data) const
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -575,8 +575,8 @@ VkResult Device::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
 
     return result;
 }
-VkResult Device::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                         VkMemoryPropertyFlags properties, vkl::Texture &texture, uint32_t miplevels, uint32_t layerCount) const
+VkResult VulkanDevice::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
+                         VkMemoryPropertyFlags properties, vkl::VulkanTexture &texture, uint32_t miplevels, uint32_t layerCount) const
 {
     VkImageCreateInfo imageInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -626,11 +626,11 @@ VkResult Device::createImage(uint32_t width, uint32_t height, VkFormat format, V
     return texture.bind();
 }
 
-void Device::copyBuffer(VkQueue queue, vkl::Buffer srcBuffer, vkl::Buffer dstBuffer, VkDeviceSize size)
+void VulkanDevice::copyBuffer(VkQueue queue, vkl::VulkanBuffer srcBuffer, vkl::VulkanBuffer dstBuffer, VkDeviceSize size)
 {
     copyBuffer(queue, srcBuffer.buffer, dstBuffer.buffer, size);
 }
-void Device::copyBufferToImage(VkQueue queue, vkl::Buffer buffer, vkl::Texture texture, uint32_t width, uint32_t height)
+void VulkanDevice::copyBufferToImage(VkQueue queue, vkl::VulkanBuffer buffer, vkl::VulkanTexture texture, uint32_t width, uint32_t height)
 {
     copyBufferToImage(queue, buffer.buffer, texture.image, width, height);
 }

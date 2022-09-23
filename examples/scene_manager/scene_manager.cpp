@@ -51,10 +51,8 @@ void scene_manager::loadScene() {
     {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model = m_sceneManager.createEntity(&m_modelShaderPass);
+        m_model = m_sceneManager.createEntity();
         m_model->loadFromFile(modelDir / "Sponza/glTF/Sponza.gltf");
-        // m_model->loadFromFile(modelDir / "Cube/glTF/Cube.gltf");
-        // m_model->loadFromFile(modelDir / "TwoSidedPlane/glTF/TwoSidedPlane.gltf");
 
         auto * node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
         node->attachObject(m_model);
@@ -91,6 +89,7 @@ void scene_manager::setupShaders() {
         m_sceneRenderer.resize(m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++){
             m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
+            static_cast<vkl::VulkanSceneRenderer*>(m_sceneRenderer[i])->setShaderPass(&m_modelShaderPass);
             m_sceneRenderer[i]->loadResources();
         }
     }

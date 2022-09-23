@@ -2,10 +2,27 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "mesh.h"
+#include "vertexBuffer.h"
 #include "vkInit.hpp"
 
 namespace vkl {
+
+enum class VertexComponent {
+    POSITION,
+    NORMAL,
+    UV,
+    COLOR,
+    TANGENT,
+};
+
+struct VertexInputBuilder{
+    static VkVertexInputBindingDescription                _vertexInputBindingDescription;
+    static std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
+    static VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
+    static VkVertexInputAttributeDescription              inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
+    static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
+    static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
+};
 
 struct ShaderModule{
     std::vector<char> code;
@@ -15,7 +32,7 @@ struct ShaderModule{
 struct ShaderCache{
     std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
 
-    ShaderModule * getShaders(vkl::Device * device, const std::string & path){
+    ShaderModule * getShaders(vkl::VulkanDevice * device, const std::string & path){
         if (!shaderModuleCaches.count(path)){
             std::vector<char> spvCode = vkl::utils::loadSpvFromFile(path);
             VkShaderModule shaderModule = device->createShaderModule(spvCode);
@@ -97,9 +114,9 @@ public:
 
     void setShaders(ShaderEffect *shaders);
     void resetToDefault(VkExtent2D extent){
-        vkl::VertexLayout::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
+        vkl::VertexInputBuilder::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
                                                         vkl::VertexComponent::UV, vkl::VertexComponent::COLOR, vkl::VertexComponent::TANGENT});
-        _vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
+        _vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;
         _inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
         _viewport = vkl::init::viewport(extent);
         _scissor = vkl::init::rect2D(extent);

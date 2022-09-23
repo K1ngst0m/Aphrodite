@@ -18,12 +18,9 @@ Light* SceneManager::createLight()
     return ubo;
 }
 
-Entity* SceneManager::createEntity(ShaderPass *pass)
+Entity* SceneManager::createEntity()
 {
     Entity * entity = new Entity(this);
-    if (pass){
-        entity->setShaderPass(pass);
-    }
     return entity;
 }
 
@@ -38,10 +35,6 @@ glm::vec4 SceneManager::getAmbient() {
 
 void SceneManager::update() {
     _camera->update();
-}
-
-void SceneManager::setRenderer(SceneRenderer *renderer) {
-    _renderer = renderer;
 }
 
 SceneManager::~SceneManager() {

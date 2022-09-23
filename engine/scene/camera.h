@@ -8,7 +8,10 @@
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific
 // input methods
-enum class CameraMoveDirection : uint8_t { FORWARD, BACKWARD, LEFT, RIGHT };
+enum class CameraMoveDirection : uint8_t { FORWARD,
+                                           BACKWARD,
+                                           LEFT,
+                                           RIGHT };
 
 namespace vkl {
 class Camera {
@@ -63,17 +66,18 @@ struct CameraDataLayout {
     glm::mat4 view;
     glm::mat4 proj;
     glm::mat4 viewProj;
-    glm::vec4 viewPosition;
+    glm::vec4 position;
+    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::mat4 viewproj, glm::vec4 viewpos)
+        : view(view), proj(proj), viewProj(viewproj), position(viewpos) {
+    }
 };
 
-class SceneCamera : public UniformBufferObject, public vkl::Camera{
+class SceneCamera : public UniformBufferObject, public vkl::Camera {
 public:
-    SceneCamera(float aspectRatio, SceneManager * manager)
-        :UniformBufferObject(manager), vkl::Camera(aspectRatio)
-    {}
-    ~SceneCamera() override{
-        delete data;
+    SceneCamera(float aspectRatio, SceneManager *manager)
+        : UniformBufferObject(manager), vkl::Camera(aspectRatio) {
     }
+    ~SceneCamera() override = default;
 
     void load() override;
     void update() override;
@@ -84,10 +88,6 @@ public:
     void *getData() override;
 
     uint32_t getDataSize() override;
-
-private:
-    uint32_t dataSize;
-    CameraDataLayout * data;
 };
 } // namespace vkl
 #endif

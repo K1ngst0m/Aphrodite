@@ -10,7 +10,7 @@ namespace vkl {
     *
     * @return VkResult of the bindImageMemory call
     */
-    VkResult Texture::bind(VkDeviceSize offset) const
+    VkResult VulkanTexture::bind(VkDeviceSize offset) const
     {
         return vkBindImageMemory(device, image, memory, offset);
     }
@@ -18,7 +18,7 @@ namespace vkl {
     /**
     * Setup the default descriptor for this image
     */
-    void Texture::setupDescriptor(VkImageLayout layout)
+    void VulkanTexture::setupDescriptor(VkImageLayout layout)
     {
         descriptorInfo.sampler = sampler;
         descriptorInfo.imageView = view;
@@ -28,7 +28,7 @@ namespace vkl {
     /**
     * Release all Vulkan resources held by this image
     */
-    void Texture::destroy() const
+    void VulkanTexture::destroy() const
     {
         if (sampler){
             vkDestroySampler(device, sampler, nullptr);

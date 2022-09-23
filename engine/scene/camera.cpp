@@ -83,20 +83,16 @@ glm::mat4 Camera::GetViewProjectionMatrix() const {
 
 void SceneCamera::load() {
     dataSize = sizeof(CameraDataLayout);
-    data = new CameraDataLayout {
-        .view         = GetViewMatrix(),
-        .proj         = GetProjectionMatrix(),
-        .viewProj     = GetViewProjectionMatrix(),
-        .viewPosition = glm::vec4(m_position, 1.0f),
-    };
+    update();
 }
 
 void SceneCamera::update() {
     needUpdate = true;
-    data->view         = GetViewMatrix();
-    data->proj         = GetProjectionMatrix();
-    data->viewProj     = GetViewProjectionMatrix();
-    data->viewPosition = glm::vec4(m_position, 1.0f);
+    data       = std::make_shared<CameraDataLayout>(
+        GetViewMatrix(),
+        GetProjectionMatrix(),
+        GetViewProjectionMatrix(),
+        glm::vec4(m_position, 1.0f));
 }
 void SceneCamera::setPosition(glm::vec4 position) {
     m_position = position;
@@ -105,7 +101,7 @@ void SceneCamera::setAspectRatio(float aspectRatio) {
     m_aspect = aspectRatio;
 }
 void *SceneCamera::getData() {
-    return data;
+    return data.get();
 }
 uint32_t SceneCamera::getDataSize() {
     return dataSize;

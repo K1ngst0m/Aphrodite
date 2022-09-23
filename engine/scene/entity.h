@@ -1,89 +1,109 @@
 #ifndef VKLENTITY_H_
 #define VKLENTITY_H_
 
-#include "api/vulkan/pipeline.h"
 #include "object.h"
 
-#define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <tinygltf/tiny_gltf.h>
-
-namespace vklt {
-    class EntityLoader;
-}
-
 namespace vkl {
+class EntityLoader;
+class ShaderPass;
+struct Mesh;
+struct SubMesh;
+struct Texture;
+struct Material;
+struct SubEntity;
+struct VertexLayout;
 
-using TextureIndex = uint32_t;
+using ResourceIndex    = uint32_t;
+using SubEntityList    = std::vector<SubEntity *>;
+using PrimitiveList    = std::vector<Mesh>;
+using TextureData        = std::vector<unsigned char>;
+using VertexLayoutList = std::vector<VertexLayout>;
+using IndexList        = std::vector<uint32_t>;
+using ImageList        = std::vector<Texture>;
+using MaterialList     = std::vector<Material>;
+
+struct VertexLayout {
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec2 uv;
+    glm::vec3 color;
+    glm::vec4 tangent;
+};
+
+struct Mesh {
+    ResourceIndex firstIndex;
+    ResourceIndex indexCount;
+    ResourceIndex materialIndex;
+};
+
+struct SubEntity {
+    SubEntity    *parent;
+    SubEntityList children;
+    PrimitiveList primitives;
+    glm::mat4     matrix;
+    ~SubEntity() {
+        if (!children.empty()) {
+            for (auto *subEntity : children) {
+                delete subEntity;
+            }
+        }
+    }
+};
+
+struct Texture {
+    uint32_t  width;
+    uint32_t  height;
+    TextureData data;
+};
+
+struct Material {
+    bool doubleSided = false;
+    enum AlphaMode { ALPHAMODE_OPAQUE,
+                     ALPHAMODE_MASK,
+                     ALPHAMODE_BLEND };
+    AlphaMode alphaMode       = ALPHAMODE_OPAQUE;
+    float     alphaCutoff     = 1.0f;
+    float     metallicFactor  = 1.0f;
+    float     roughnessFactor = 1.0f;
+    glm::vec4 baseColorFactor = glm::vec4(1.0f);
+
+    ResourceIndex baseColorTextureIndex          = 0;
+    ResourceIndex normalTextureIndex             = 0;
+    ResourceIndex metallicRoughnessTextureIndex  = 0;
+    ResourceIndex occlusionTextureIndex          = 0;
+    ResourceIndex emissiveTextureIndex           = 0;
+    ResourceIndex specularGlossinessTextureIndex = 0;
+    ResourceIndex diffuseTextureIndex            = 0;
+    ResourceIndex specularTextureIndex           = 0;
+};
+
 class Entity : public Object {
 public:
     Entity(SceneManager *manager);
     ~Entity() override;
     void loadFromFile(const std::string &path);
-    void setShaderPass(vkl::ShaderPass *pass);
 
 public:
-    struct Primitive {
-        uint32_t firstIndex;
-        uint32_t indexCount;
-        int32_t  materialIndex;
-    };
-    struct Mesh {
-        std::vector<Primitive> primitives;
-        void pushPrimitive(uint32_t firstIdx, uint32_t indexCount, int32_t materialIdx) {
-            primitives.push_back({firstIdx, indexCount, materialIdx});
-        }
-    };
-    struct Node {
-        Node               *parent;
-        std::vector<Node *> children;
-        Mesh                mesh;
-        glm::mat4           matrix;
-    };
-    struct Image {
-        uint32_t       width;
-        uint32_t       height;
-        unsigned char *data;
-        size_t         dataSize;
-    };
-    struct Material {
-        bool doubleSided = false;
-        enum AlphaMode { ALPHAMODE_OPAQUE, ALPHAMODE_MASK, ALPHAMODE_BLEND };
-        AlphaMode alphaMode = ALPHAMODE_OPAQUE;
-        float alphaCutoff = 1.0f;
-        float metallicFactor = 1.0f;
-        float roughnessFactor = 1.0f;
-        glm::vec4 baseColorFactor       = glm::vec4(1.0f);
-
-        TextureIndex baseColorTextureIndex  = 0;
-        TextureIndex normalTextureIndex = 0;
-        TextureIndex metallicRoughnessTextureIndex = 0;
-        TextureIndex occlusionTextureIndex = 0;
-        TextureIndex emissiveTextureIndex = 0;
-        TextureIndex specularGlossinessTextureIndex = 0;
-        TextureIndex diffuseTextureIndex = 0;
-        TextureIndex specularTextureIndex = 0;
-    };
-
-    std::vector<vkl::VertexLayout> _vertices;
-    std::vector<uint32_t>          _indices;
-    std::vector<Image *>           _images;
-    std::vector<Node *>            _nodes;
-    std::vector<Material>          _materials;
-
-public:
-    vkl::ShaderPass* getPass(){
-        return _pass;
-    }
-
-private:
-    void          loadImages(tinygltf::Model &input);
-    void          loadMaterials(tinygltf::Model &input);
-    void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent);
+    VertexLayoutList _vertices;
+    IndexList        _indices;
+    ImageList        _images;
+    SubEntityList    _subEntityList;
+    MaterialList     _materials;
 
 protected:
-    vkl::ShaderPass *_pass = nullptr;
-    vkl::Device        *_device;
+    vkl::EntityLoader *_loader;
 };
-}
+
+class EntityLoader {
+public:
+    EntityLoader(Entity *entity);
+
+    virtual void load() = 0;
+
+protected:
+    Entity *_entity;
+};
+
+} // namespace vkl
 
 #endif // VKLENTITY_H_
