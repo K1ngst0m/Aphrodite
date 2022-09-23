@@ -12,11 +12,11 @@ void VulkanSceneRenderer::loadResources() {
 }
 void VulkanSceneRenderer::cleanupResources() {
     vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
-    for (auto * renderable : _renderList){
-        delete renderable;
+    for (auto & renderObject : _renderList){
+        renderObject->cleanupResources();
     }
-    for (auto * ubo : _uboList){
-        delete ubo;
+    for (auto & ubo : _uboList){
+        ubo->cleanupResources();
     }
 }
 void VulkanSceneRenderer::drawScene() {
@@ -25,17 +25,18 @@ void VulkanSceneRenderer::drawScene() {
     }
 }
 void VulkanSceneRenderer::update() {
-    _cameraUBO->updateBuffer(_cameraUBO->_ubo->getData());
-    // for (auto * ubo : _uboList){
-    //     if (ubo->_ubo->isNeedUpdate()){
-    //         ubo->updateBuffer(ubo->_ubo->getData());
-    //         ubo->_ubo->setNeedUpdate(false);
-    //     }
-    // }
+    auto & cameraUBO = _uboList[0];
+    cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
+    for (auto & ubo : _uboList){
+        if (ubo->_ubo->isNeedUpdate()){
+            ubo->updateBuffer(ubo->_ubo->getData());
+            ubo->_ubo->setNeedUpdate(false);
+        }
+    }
 }
 
 void VulkanSceneRenderer::_initRenderList() {
-    for (auto * renderable : _renderList){
+    for (auto & renderable : _renderList){
         renderable->loadResouces(_transferQueue);
         renderable->setShaderPass(_pass);
     }
@@ -58,7 +59,7 @@ void VulkanSceneRenderer::_initUboList() {
         const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderable->getShaderPass()->effect->setLayouts.data(), 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable->getGlobalDescriptorSet()));
         std::vector<VkWriteDescriptorSet> descriptorWrites;
-        for (auto * ubo : _uboList) {
+        for (auto & ubo : _uboList) {
             VkWriteDescriptorSet write = {
                 .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet          = renderable->getGlobalDescriptorSet(),
@@ -85,27 +86,27 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
         switch (n->getAttachType()){
         case AttachType::ENTITY:
             {
-                VulkanRenderObject * renderable = new VulkanRenderObject(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
+                auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
                 renderable->setTransform(n->getTransform());
-                _renderList.push_back(renderable);
+                _renderList.push_back(std::move(renderable));
             }
             break;
         case AttachType::CAMERA:
             {
                 SceneCamera * camera  = static_cast<SceneCamera*>(n->getObject());
                 camera->load();
-                _cameraUBO = new VulkanUniformBufferObject(this, _device, camera);
-                _cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
-                _uboList.push_front(_cameraUBO);
+                auto cameraUBO = std::make_unique<VulkanUniformBufferObject>(this, _device, camera);
+                cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
+                _uboList.push_front(std::move(cameraUBO));
             }
             break;
         case AttachType::LIGHT:
             {
                 Light * light  = static_cast<Light*>(n->getObject());
                 light->load();
-                VulkanUniformBufferObject * ubo = new VulkanUniformBufferObject(this, _device, light);
+                auto ubo = std::make_unique<VulkanUniformBufferObject>(this, _device, light);
                 ubo->setupBuffer(light->getDataSize(), light->getData());
-                _uboList.push_back(ubo);
+                _uboList.push_back(std::move(ubo));
             }
             break;
         default:

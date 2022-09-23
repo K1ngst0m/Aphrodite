@@ -29,10 +29,8 @@ private:
     VkQueue          _graphicsQueue;
 
 private:
-    std::vector<VulkanRenderObject *>       _renderList;
-    std::deque<VulkanUniformBufferObject *> _uboList;
-
-    VulkanUniformBufferObject *_cameraUBO = nullptr;
+    std::vector<std::unique_ptr<VulkanRenderObject>>       _renderList;
+    std::deque<std::unique_ptr<VulkanUniformBufferObject>> _uboList;
 };
 } // namespace vkl
 
