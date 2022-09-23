@@ -2,8 +2,8 @@
 #include "entityGLTFLoader.h"
 
 namespace vkl {
-EntityGLTFLoader::EntityGLTFLoader(Entity *entity, const std::string& path)
-    : EntityLoader(entity), _path(path){
+EntityGLTFLoader::EntityGLTFLoader(Entity *entity, std::string path)
+    : EntityLoader(entity), _path(std::move(path)){
 }
 
 void EntityGLTFLoader::load(){

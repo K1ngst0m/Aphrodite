@@ -2,7 +2,7 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "mesh.h"
+#include "vertexBuffer.h"
 #include "vkInit.hpp"
 
 namespace vkl {
@@ -97,9 +97,9 @@ public:
 
     void setShaders(ShaderEffect *shaders);
     void resetToDefault(VkExtent2D extent){
-        vkl::VertexLayout::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
+        vkl::VertexInputBuilder::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
                                                         vkl::VertexComponent::UV, vkl::VertexComponent::COLOR, vkl::VertexComponent::TANGENT});
-        _vertexInputInfo = vkl::VertexLayout::_pipelineVertexInputStateCreateInfo;
+        _vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;
         _inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
         _viewport = vkl::init::viewport(extent);
         _scissor = vkl::init::rect2D(extent);

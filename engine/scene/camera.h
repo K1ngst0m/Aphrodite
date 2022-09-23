@@ -68,8 +68,8 @@ struct CameraDataLayout {
     glm::mat4 viewProj;
     glm::vec4 position;
     CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::mat4 viewproj, glm::vec4 viewpos)
-        :view(view), proj(proj), viewProj(viewproj), position(viewpos)
-    {}
+        : view(view), proj(proj), viewProj(viewproj), position(viewpos) {
+    }
 };
 
 class SceneCamera : public UniformBufferObject, public vkl::Camera {

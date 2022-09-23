@@ -11,6 +11,7 @@ struct SubMesh;
 struct Image;
 struct Material;
 struct SubEntity;
+struct VertexLayout;
 
 using ResourceIndex    = uint32_t;
 using SubEntityList    = std::vector<SubEntity *>;
@@ -21,35 +22,47 @@ using IndexList        = std::vector<uint32_t>;
 using ImageList        = std::vector<Image>;
 using MaterialList     = std::vector<Material>;
 
+struct VertexLayout {
+    glm::vec3 pos;
+    glm::vec3 normal;
+    glm::vec2 uv;
+    glm::vec3 color;
+    glm::vec4 tangent;
+};
+
 struct Primitive {
     ResourceIndex firstIndex;
     ResourceIndex indexCount;
     ResourceIndex materialIndex;
 };
+
 struct SubMesh {
     PrimitiveList primitives;
     void          pushPrimitive(ResourceIndex firstIdx, ResourceIndex indexCount, ResourceIndex materialIdx) {
         primitives.push_back({firstIdx, indexCount, materialIdx});
     }
 };
+
 struct SubEntity {
     SubEntity    *parent;
     SubEntityList children;
     SubMesh       mesh;
     glm::mat4     matrix;
-    ~SubEntity(){
-        if (!children.empty()){
-            for (auto * subEntity : children){
+    ~SubEntity() {
+        if (!children.empty()) {
+            for (auto *subEntity : children) {
                 delete subEntity;
             }
         }
     }
 };
+
 struct Image {
     uint32_t  width;
     uint32_t  height;
     ImageData data;
 };
+
 struct Material {
     bool doubleSided = false;
     enum AlphaMode { ALPHAMODE_OPAQUE,

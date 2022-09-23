@@ -10,7 +10,7 @@
 namespace vkl {
 class EntityGLTFLoader : public EntityLoader{
 public:
-    EntityGLTFLoader(Entity *entity, const std::string &path);
+    EntityGLTFLoader(Entity *entity, std::string path);
     void load() override;
 
 private:

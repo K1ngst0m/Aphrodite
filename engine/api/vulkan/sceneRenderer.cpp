@@ -110,6 +110,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
             }
             break;
         default:
+            assert("unattached scene node.");
             break;
         }
 

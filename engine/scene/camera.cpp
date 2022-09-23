@@ -88,12 +88,11 @@ void SceneCamera::load() {
 
 void SceneCamera::update() {
     needUpdate = true;
-    data = std::make_shared<CameraDataLayout>(
-            GetViewMatrix(),
-            GetProjectionMatrix(),
-            GetViewProjectionMatrix(),
-            glm::vec4(m_position, 1.0f)
-        );
+    data       = std::make_shared<CameraDataLayout>(
+        GetViewMatrix(),
+        GetProjectionMatrix(),
+        GetViewProjectionMatrix(),
+        glm::vec4(m_position, 1.0f));
 }
 void SceneCamera::setPosition(glm::vec4 position) {
     m_position = position;
