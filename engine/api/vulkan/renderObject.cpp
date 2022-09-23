@@ -25,10 +25,10 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
 }
 void VulkanRenderObject::loadImages(VkQueue queue) {
     for (auto &image : _entity->_images) {
-        unsigned char *imageData     = image->data;
-        uint32_t       imageDataSize = image->dataSize;
-        uint32_t       width         = image->width;
-        uint32_t       height        = image->height;
+        unsigned char *imageData     = image.data.data();
+        uint32_t       imageDataSize = image.data.size();
+        uint32_t       width         = image.width;
+        uint32_t       height        = image.height;
 
         // Load texture from image buffer
         vkl::Buffer stagingBuffer;

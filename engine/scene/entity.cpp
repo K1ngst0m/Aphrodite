@@ -8,9 +8,8 @@ void Entity::loadFromFile(const std::string &path) {
 
 }
 Entity::~Entity() {
-    for (Image *image : _images) {
-        delete image->data;
-        delete image;
+    for (auto * subEntity : _subEntityList){
+        delete subEntity;
     }
 }
 Entity::Entity(SceneManager *manager)

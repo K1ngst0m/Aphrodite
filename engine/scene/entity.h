@@ -15,10 +15,10 @@ struct SubEntity;
 using ResourceIndex    = uint32_t;
 using SubEntityList    = std::vector<SubEntity *>;
 using PrimitiveList    = std::vector<Primitive>;
-using ImageDataTypePtr = unsigned char *;
+using ImageData        = std::vector<unsigned char>;
 using VertexLayoutList = std::vector<VertexLayout>;
 using IndexList        = std::vector<uint32_t>;
-using ImageList        = std::vector<Image*>;
+using ImageList        = std::vector<Image>;
 using MaterialList     = std::vector<Material>;
 
 struct Primitive {
@@ -37,12 +37,18 @@ struct SubEntity {
     SubEntityList children;
     SubMesh       mesh;
     glm::mat4     matrix;
+    ~SubEntity(){
+        if (!children.empty()){
+            for (auto * subEntity : children){
+                delete subEntity;
+            }
+        }
+    }
 };
 struct Image {
-    uint32_t         width;
-    uint32_t         height;
-    ImageDataTypePtr data;
-    size_t           dataSize;
+    uint32_t  width;
+    uint32_t  height;
+    ImageData data;
 };
 struct Material {
     bool doubleSided = false;

@@ -31,23 +31,23 @@ void EntityGLTFLoader::load(){
 void EntityGLTFLoader::loadImages(tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        Image *newImage    = new Image;
-        newImage->width    = glTFImage.width;
-        newImage->height   = glTFImage.height;
-        newImage->dataSize = glTFImage.width * glTFImage.height * 4;
-        newImage->data     = new unsigned char[newImage->dataSize];
+        Image newImage;
+        newImage.width    = glTFImage.width;
+        newImage.height   = glTFImage.height;
+        newImage.data.resize(glTFImage.width * glTFImage.height * 4);
         if (glTFImage.component == 3) {
-            unsigned char *rgba = newImage->data;
+            unsigned char *rgba = new unsigned char[newImage.data.size()];
             unsigned char *rgb  = glTFImage.image.data();
             for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
             }
-        } else {
-            memcpy(newImage->data, glTFImage.image.data(), glTFImage.image.size());
+            memcpy(newImage.data.data(), rgba, glTFImage.image.size());
         }
-
+        else{
+            memcpy(newImage.data.data(), glTFImage.image.data(), glTFImage.image.size());
+        }
         _entity->_images.push_back(newImage);
     }
 }
