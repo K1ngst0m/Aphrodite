@@ -1,5 +1,6 @@
 #include "sceneManager.h"
 #include "sceneRenderer.h"
+#include "entityGLTFLoader.h"
 
 namespace vkl {
 SceneManager::SceneManager()
@@ -43,5 +44,10 @@ SceneManager::~SceneManager() {
 
 SceneNode *SceneManager::getRootNode() {
     return rootNode;
+}
+Entity *SceneManager::createEntity(const std::string &path) {
+    Entity * entity = new Entity(this);
+    entity->loadFromFile(path);
+    return entity;
 }
 } // namespace vkl

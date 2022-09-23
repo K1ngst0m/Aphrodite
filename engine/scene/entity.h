@@ -85,21 +85,7 @@ public:
     ImageList        _images;
     SubEntityList    _subEntityList;
     MaterialList     _materials;
-
-protected:
-    vkl::EntityLoader *_loader;
 };
-
-class EntityLoader {
-public:
-    EntityLoader(Entity *entity);
-
-    virtual void load() = 0;
-
-protected:
-    Entity *_entity;
-};
-
 } // namespace vkl
 
 #endif // VKLENTITY_H_

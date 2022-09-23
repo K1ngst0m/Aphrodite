@@ -51,8 +51,7 @@ void scene_manager::loadScene() {
     {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model = m_sceneManager.createEntity();
-        m_model->loadFromFile(modelDir / "Sponza/glTF/Sponza.gltf");
+        m_model = m_sceneManager.createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
 
         auto * node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
         node->attachObject(m_model);

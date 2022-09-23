@@ -8,18 +8,14 @@
 #include <tinygltf/tiny_gltf.h>
 
 namespace vkl {
-class EntityGLTFLoader : public EntityLoader{
+class GLTFLoader {
 public:
-    EntityGLTFLoader(Entity *entity, std::string path);
-    void load() override;
-
+    static void load(Entity *entity, const std::string& path);
 private:
-    void          loadImages(tinygltf::Model &input);
-    void          loadMaterials(tinygltf::Model &input);
-    void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent);
-
-    std::string   _path;
+    static void loadImages(Entity* _entity, tinygltf::Model &input);
+    static void loadMaterials(Entity* _entity, tinygltf::Model &input);
+    static void loadNodes(Entity* _entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent);
 };
-}
+} // namespace vkl
 
 #endif // ENTITYGLTFLOADER_H_

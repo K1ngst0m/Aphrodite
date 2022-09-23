@@ -20,6 +20,7 @@ public:
 public:
     Light       *createLight();
     Entity      *createEntity();
+    Entity      *createEntity(const std::string &path);
     SceneCamera *createCamera(float aspectRatio);
     SceneNode   *getRootNode();
 
