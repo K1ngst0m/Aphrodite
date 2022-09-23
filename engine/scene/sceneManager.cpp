@@ -1,27 +1,25 @@
 #include "sceneManager.h"
-#include "sceneRenderer.h"
 #include "entityGLTFLoader.h"
+#include "sceneRenderer.h"
 
 namespace vkl {
 SceneManager::SceneManager()
     : _ambient(glm::vec4(0.2f)) {
-    rootNode = new SceneNode(nullptr);
+    rootNode = std::make_unique<SceneNode>(nullptr);
 }
 
-SceneCamera* SceneManager::createCamera(float aspectRatio) {
-    _camera = new SceneCamera(aspectRatio, this);
+std::shared_ptr<SceneCamera> SceneManager::createCamera(float aspectRatio) {
+    _camera = std::make_shared<SceneCamera>(aspectRatio, this);
     return _camera;
 }
 
-Light* SceneManager::createLight()
-{
-    Light *ubo = new Light(this);
-    return ubo;
+std::shared_ptr<Light> SceneManager::createLight() {
+    auto light = std::make_shared<Light>(this);
+    return light;
 }
 
-Entity* SceneManager::createEntity()
-{
-    Entity * entity = new Entity(this);
+std::shared_ptr<Entity> SceneManager::createEntity() {
+    auto entity = std::make_shared<Entity>(this);
     return entity;
 }
 
@@ -38,15 +36,13 @@ void SceneManager::update() {
     _camera->update();
 }
 
-SceneManager::~SceneManager() {
-    delete rootNode;
-}
+SceneManager::~SceneManager() = default;
 
 SceneNode *SceneManager::getRootNode() {
-    return rootNode;
+    return rootNode.get();
 }
-Entity *SceneManager::createEntity(const std::string &path) {
-    Entity * entity = new Entity(this);
+std::shared_ptr<Entity> SceneManager::createEntity(const std::string &path) {
+    auto entity = std::make_shared<Entity>(this);
     entity->loadFromFile(path);
     return entity;
 }

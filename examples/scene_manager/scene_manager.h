@@ -26,9 +26,9 @@ private:
     vkl::ShaderEffect m_modelShaderEffect;
     vkl::ShaderPass m_modelShaderPass;
 
-    vkl::Light* m_pointLight = nullptr;
-    vkl::Light* m_directionalLight = nullptr;
-    vkl::Entity * m_model = nullptr;
+    std::shared_ptr<vkl::Light> m_pointLight = nullptr;
+    std::shared_ptr<vkl::Light> m_directionalLight = nullptr;
+    std::shared_ptr<vkl::Entity> m_model = nullptr;
 
     vkl::SceneManager m_sceneManager;
     std::vector<vkl::SceneRenderer *> m_sceneRenderer;

@@ -1,8 +1,8 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
-#include "common.h"
 #include "camera.h"
+#include "common.h"
 #include "entity.h"
 #include "light.h"
 
@@ -19,29 +19,29 @@ class SceneNode {
 public:
     SceneNode(SceneNode *parent, glm::mat4 matrix = glm::mat4(1.0f));
 
-    void attachObject(vkl::Entity *object);
-    void attachObject(vkl::Light *object);
-    void attachObject(vkl::SceneCamera *object);
+    void attachObject(const std::shared_ptr<Entity> &object);
+    void attachObject(const std::shared_ptr<Light> &object);
+    void attachObject(const std::shared_ptr<SceneCamera> &object);
 
     vkl::Object *getObject();
-    AttachType getAttachType();
+    AttachType   getAttachType();
 
     SceneNode *createChildNode(glm::mat4 matrix = glm::mat4(1.0f));
     SceneNode *getChildNode(uint32_t idx);
-    uint32_t getChildNodeCount();
+    uint32_t   getChildNodeCount();
 
-    void setTransform(glm::mat4 matrix);
+    void      setTransform(glm::mat4 matrix);
     glm::mat4 getTransform();
 
 private:
-    SceneNode *_parent;
-    vkl::Object * _object;
+    SceneNode              *_parent;
+    std::shared_ptr<Object> _object;
 
     glm::mat4  _matrix;
     AttachType _attachType = AttachType::UNATTACHED;
 
-    std::vector<SceneNode *> _children;
+    std::vector<std::unique_ptr<SceneNode>> _children;
 };
-}
+} // namespace vkl
 
 #endif // SCENENODE_H_

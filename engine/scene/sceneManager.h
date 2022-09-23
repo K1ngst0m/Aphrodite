@@ -5,8 +5,7 @@
 #include "sceneNode.h"
 
 namespace vkl {
-struct AABB
-{
+struct AABB {
     glm::vec3 min;
     glm::vec3 max;
 };
@@ -18,21 +17,21 @@ public:
     void update();
 
 public:
-    Light       *createLight();
-    Entity      *createEntity();
-    Entity      *createEntity(const std::string &path);
-    SceneCamera *createCamera(float aspectRatio);
-    SceneNode   *getRootNode();
+    std::shared_ptr<Light>       createLight();
+    std::shared_ptr<Entity>      createEntity();
+    std::shared_ptr<Entity>      createEntity(const std::string &path);
+    std::shared_ptr<SceneCamera> createCamera(float aspectRatio);
+    SceneNode                   *getRootNode();
 
 public:
     void      setAmbient(glm::vec4 value);
     glm::vec4 getAmbient();
 
 private:
-    AABB aabb;
-    SceneNode *rootNode;
+    AABB                       aabb;
+    std::unique_ptr<SceneNode> rootNode;
 
-    SceneCamera *_camera = nullptr;
+    std::shared_ptr<SceneCamera> _camera = nullptr;
 
     glm::vec4 _ambient;
 };

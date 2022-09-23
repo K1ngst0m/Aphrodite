@@ -178,7 +178,7 @@ protected:
     PerFrameData m_frameData;
     MouseData    m_mouseData;
 
-    vkl::SceneCamera* m_sceneCamera = nullptr;
+    std::shared_ptr<SceneCamera> m_sceneCamera = nullptr;
 
     vkl::PipelineBuilder m_pipelineBuilder;
 
