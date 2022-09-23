@@ -31,24 +31,24 @@ void EntityGLTFLoader::load(){
 void EntityGLTFLoader::loadImages(tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        Image newImage;
-        newImage.width    = glTFImage.width;
-        newImage.height   = glTFImage.height;
-        newImage.data.resize(glTFImage.width * glTFImage.height * 4);
+        Texture newTexture;
+        newTexture.width    = glTFImage.width;
+        newTexture.height   = glTFImage.height;
+        newTexture.data.resize(glTFImage.width * glTFImage.height * 4);
         if (glTFImage.component == 3) {
-            unsigned char *rgba = new unsigned char[newImage.data.size()];
+            unsigned char *rgba = new unsigned char[newTexture.data.size()];
             unsigned char *rgb  = glTFImage.image.data();
             for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
             }
-            memcpy(newImage.data.data(), rgba, glTFImage.image.size());
+            memcpy(newTexture.data.data(), rgba, glTFImage.image.size());
         }
         else{
-            memcpy(newImage.data.data(), glTFImage.image.data(), glTFImage.image.size());
+            memcpy(newTexture.data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
-        _entity->_images.push_back(newImage);
+        _entity->_images.push_back(newTexture);
     }
 }
 void EntityGLTFLoader::loadMaterials(tinygltf::Model &input) {
@@ -225,7 +225,7 @@ void EntityGLTFLoader::loadNodes(const tinygltf::Node &inputNode, const tinygltf
                 }
             }
 
-            node->mesh.pushPrimitive(firstIndex, indexCount, glTFPrimitive.material);
+            node->primitives.push_back({firstIndex, indexCount, static_cast<ResourceIndex>(glTFPrimitive.material)});
         }
     }
 

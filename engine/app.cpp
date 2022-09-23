@@ -207,7 +207,7 @@ void vklApp::createDevice() {
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
-    m_device = new Device(devices[0]);
+    m_device = new VulkanDevice(devices[0]);
     getEnabledFeatures();
     m_device->createLogicalDevice(m_device->features, deviceExtensions, nullptr);
 
@@ -429,14 +429,14 @@ void vklApp::createCommandBuffers() {
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
 }
 
-void vklApp::loadImageFromFile(vkl::Texture &texture, std::string_view imagePath) {
+void vklApp::loadImageFromFile(vkl::VulkanTexture &texture, std::string_view imagePath) {
     int          texWidth, texHeight, texChannels;
     stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
     assert(pixels && "read texture failed.");
 
-    vkl::Buffer stagingBuffer;
+    vkl::VulkanBuffer stagingBuffer;
     m_device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 

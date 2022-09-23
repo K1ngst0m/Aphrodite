@@ -6,7 +6,7 @@
 namespace vkl {
 class VulkanRenderObject : public RenderObject {
 public:
-    VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
+    VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
     ~VulkanRenderObject() override {
         cleanupResources();
     }
@@ -24,25 +24,28 @@ public:
     uint32_t         getSetCount();
 
 private:
-    void          drawNode(const SubEntity *node);
-    void          loadImages(VkQueue queue);
-    void          loadBuffer(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
-    vkl::Texture *getTexture(uint32_t index);
+    void drawNode(const SubEntity *node);
+    void loadImages(VkQueue queue);
+    void loadBuffer(vkl::VulkanDevice *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
-    vkl::Device     *_device;
+    vkl::VulkanDevice     *_device;
     vkl::ShaderPass *_shaderPass;
 
-    struct {
+    struct VulkanVertexBuffer {
         std::vector<VertexLayout> vertices;
-        vkl::Buffer               buffer;
-    } _vertexBuffer;
+        vkl::VulkanBuffer         buffer;
+    };
 
-    struct {
+    VulkanVertexBuffer _vertexBuffer;
+
+    struct VulkanIndexBuffer {
         std::vector<uint32_t> indices;
-        vkl::Buffer           buffer;
-    } _indexBuffer;
+        vkl::VulkanBuffer     buffer;
+    };
 
-    std::vector<vkl::Texture> _textures;
+    VulkanIndexBuffer _indexBuffer;
+
+    std::vector<vkl::VulkanTexture> _textures;
 
     std::vector<VkDescriptorSet> _materialSets;
     VkDescriptorSet              _globalDescriptorSet;

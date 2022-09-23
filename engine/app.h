@@ -118,12 +118,12 @@ protected:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails   querySwapChainSupport(VkPhysicalDevice device);
     void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function);
-    void                      loadImageFromFile(vkl::Texture &texture, std::string_view imagePath);
+    void                      loadImageFromFile(vkl::VulkanTexture &texture, std::string_view imagePath);
     void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                        const VkAllocationCallbacks *pAllocator);
 
 protected:
-    Device *m_device;
+    VulkanDevice *m_device;
 
 protected:
     const std::string m_sessionName;
@@ -149,7 +149,7 @@ protected:
     std::vector<VkImageView>   m_swapChainImageViews;
     std::vector<VkFramebuffer> m_framebuffers;
 
-    vkl::Texture m_depthAttachment;
+    vkl::VulkanTexture m_depthAttachment;
 
     VkRenderPass m_defaultRenderPass;
 

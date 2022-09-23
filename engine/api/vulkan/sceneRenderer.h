@@ -8,7 +8,7 @@ namespace vkl {
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
-    VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::Device *device, VkQueue graphics, VkQueue transfer);
+    VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::VulkanDevice *device, VkQueue graphics, VkQueue transfer);
     void loadResources() override;
     void cleanupResources() override;
     void update() override;
@@ -21,7 +21,7 @@ private:
     void _loadSceneNodes(SceneNode *node);
 
 private:
-    vkl::Device     *_device;
+    vkl::VulkanDevice     *_device;
     vkl::ShaderPass *_pass;
     VkCommandBuffer  _drawCmd;
     VkDescriptorPool _descriptorPool;

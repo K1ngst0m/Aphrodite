@@ -12,7 +12,7 @@ public:
 private:
     std::vector<VertexLayout> _vertices;
     std::vector<uint32_t>     _indices;
-    std::vector<Image *>      _images;
+    std::vector<Texture *>      _images;
     std::vector<SubEntity *>  _subEntityList;
     std::vector<Material>     _materials;
 };

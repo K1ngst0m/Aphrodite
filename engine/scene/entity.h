@@ -6,20 +6,20 @@
 namespace vkl {
 class EntityLoader;
 class ShaderPass;
-struct Primitive;
+struct Mesh;
 struct SubMesh;
-struct Image;
+struct Texture;
 struct Material;
 struct SubEntity;
 struct VertexLayout;
 
 using ResourceIndex    = uint32_t;
 using SubEntityList    = std::vector<SubEntity *>;
-using PrimitiveList    = std::vector<Primitive>;
-using ImageData        = std::vector<unsigned char>;
+using PrimitiveList    = std::vector<Mesh>;
+using TextureData        = std::vector<unsigned char>;
 using VertexLayoutList = std::vector<VertexLayout>;
 using IndexList        = std::vector<uint32_t>;
-using ImageList        = std::vector<Image>;
+using ImageList        = std::vector<Texture>;
 using MaterialList     = std::vector<Material>;
 
 struct VertexLayout {
@@ -30,23 +30,16 @@ struct VertexLayout {
     glm::vec4 tangent;
 };
 
-struct Primitive {
+struct Mesh {
     ResourceIndex firstIndex;
     ResourceIndex indexCount;
     ResourceIndex materialIndex;
 };
 
-struct SubMesh {
-    PrimitiveList primitives;
-    void          pushPrimitive(ResourceIndex firstIdx, ResourceIndex indexCount, ResourceIndex materialIdx) {
-        primitives.push_back({firstIdx, indexCount, materialIdx});
-    }
-};
-
 struct SubEntity {
     SubEntity    *parent;
     SubEntityList children;
-    SubMesh       mesh;
+    PrimitiveList primitives;
     glm::mat4     matrix;
     ~SubEntity() {
         if (!children.empty()) {
@@ -57,10 +50,10 @@ struct SubEntity {
     }
 };
 
-struct Image {
+struct Texture {
     uint32_t  width;
     uint32_t  height;
-    ImageData data;
+    TextureData data;
 };
 
 struct Material {

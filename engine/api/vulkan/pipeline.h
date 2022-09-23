@@ -7,6 +7,23 @@
 
 namespace vkl {
 
+enum class VertexComponent {
+    POSITION,
+    NORMAL,
+    UV,
+    COLOR,
+    TANGENT,
+};
+
+struct VertexInputBuilder{
+    static VkVertexInputBindingDescription                _vertexInputBindingDescription;
+    static std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
+    static VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
+    static VkVertexInputAttributeDescription              inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
+    static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
+    static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
+};
+
 struct ShaderModule{
     std::vector<char> code;
     VkShaderModule module;
@@ -15,7 +32,7 @@ struct ShaderModule{
 struct ShaderCache{
     std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
 
-    ShaderModule * getShaders(vkl::Device * device, const std::string & path){
+    ShaderModule * getShaders(vkl::VulkanDevice * device, const std::string & path){
         if (!shaderModuleCaches.count(path)){
             std::vector<char> spvCode = vkl::utils::loadSpvFromFile(path);
             VkShaderModule shaderModule = device->createShaderModule(spvCode);

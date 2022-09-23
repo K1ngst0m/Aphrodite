@@ -7,7 +7,7 @@ void VulkanUniformBufferObject::updateBuffer(void *data) {
     buffer.copyTo(data, buffer.size);
     buffer.unmap();
 }
-VulkanUniformBufferObject::VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::Device *device, vkl::UniformBufferObject *ubo)
+VulkanUniformBufferObject::VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::UniformBufferObject *ubo)
     : _device(device), _renderer(renderer), _ubo(ubo) {
 }
 

@@ -1,14 +1,8 @@
 #include "renderObject.h"
 
 namespace vkl {
-VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::Device *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
+VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
     : RenderObject(renderer, entity), _device(device), _drawCmd(drawCmd) {
-}
-vkl::Texture *VulkanRenderObject::getTexture(uint32_t index) {
-    if (index < _textures.size()) {
-        return &_textures[index];
-    }
-    return nullptr;
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
@@ -16,8 +10,8 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
         std::vector<VkWriteDescriptorSet> descriptorWrites{
-            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &getTexture(material.baseColorTextureIndex)->descriptorInfo),
-            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &getTexture(material.normalTextureIndex)->descriptorInfo),
+            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo),
+            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo),
         };
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         _materialSets.push_back(materialSet);
@@ -31,7 +25,7 @@ void VulkanRenderObject::loadImages(VkQueue queue) {
         uint32_t       height        = image.height;
 
         // Load texture from image buffer
-        vkl::Buffer stagingBuffer;
+        vkl::VulkanBuffer stagingBuffer;
         _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
@@ -39,7 +33,7 @@ void VulkanRenderObject::loadImages(VkQueue queue) {
         stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
         stagingBuffer.unmap();
 
-        vkl::Texture texture;
+        vkl::VulkanTexture texture;
         _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
                              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
@@ -67,8 +61,8 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadImages(queue);
     loadBuffer(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
 }
-void VulkanRenderObject::drawNode(const SubEntity *node) {
-    if (!node->mesh.primitives.empty()) {
+void VulkanRenderObject::drawNode(const SubEntity* node) {
+    if (!node->primitives.empty()) {
         glm::mat4  nodeMatrix    = node->matrix;
         SubEntity *currentParent = node->parent;
         while (currentParent) {
@@ -77,7 +71,7 @@ void VulkanRenderObject::drawNode(const SubEntity *node) {
         }
         vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                            &nodeMatrix);
-        for (const Primitive primitive : node->mesh.primitives) {
+        for (const Mesh primitive : node->primitives) {
             if (primitive.indexCount > 0) {
                 vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
                                         &_materialSets[primitive.materialIndex], 0, nullptr);
@@ -121,7 +115,7 @@ uint32_t VulkanRenderObject::getSetCount() {
     return 1 + _entity->_materials.size();
 }
 
-void VulkanRenderObject::loadBuffer(vkl::Device *device, VkQueue transferQueue, std::vector<VertexLayout> vertices, std::vector<uint32_t> indices, uint32_t vSize, uint32_t iSize) {
+void VulkanRenderObject::loadBuffer(vkl::VulkanDevice *device, VkQueue transferQueue, std::vector<VertexLayout> vertices, std::vector<uint32_t> indices, uint32_t vSize, uint32_t iSize) {
     if (!vertices.empty()) {
         _vertexBuffer.vertices = std::move(vertices);
     }
@@ -142,7 +136,7 @@ void VulkanRenderObject::loadBuffer(vkl::Device *device, VkQueue transferQueue, 
         VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertexBuffer.vertices[0]) * _vertexBuffer.vertices.size() : vSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
-            vkl::Buffer stagingBuffer;
+            vkl::VulkanBuffer stagingBuffer;
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
@@ -171,7 +165,7 @@ void VulkanRenderObject::loadBuffer(vkl::Device *device, VkQueue transferQueue, 
         VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indexBuffer.indices[0]) * _indexBuffer.indices.size() : iSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
-            vkl::Buffer stagingBuffer;
+            vkl::VulkanBuffer stagingBuffer;
             device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 

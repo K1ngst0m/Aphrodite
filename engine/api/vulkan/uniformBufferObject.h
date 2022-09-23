@@ -5,19 +5,19 @@
 
 namespace vkl {
 struct VulkanUniformBufferObject{
-    VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::Device *device, vkl::UniformBufferObject *ubo);
+    VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::UniformBufferObject *ubo);
     ~VulkanUniformBufferObject();
 
     void cleanupResources();
 
-    vkl::Buffer buffer;
+    vkl::VulkanBuffer buffer;
 
     void setupBuffer(uint32_t bufferSize, void *data = nullptr);
     void updateBuffer(void *data);
 
     void destroy();
 
-    vkl::Device              *_device = nullptr;
+    vkl::VulkanDevice              *_device = nullptr;
     vkl::SceneRenderer       *_renderer = nullptr;
     vkl::UniformBufferObject *_ubo = nullptr;
 };
