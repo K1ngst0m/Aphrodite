@@ -10,13 +10,15 @@
 namespace vkl {
 class EntityGLTFLoader : public EntityLoader{
 public:
-    EntityGLTFLoader(Entity *entity);
-    void loadFromFile(const std::string &path) override;
+    EntityGLTFLoader(Entity *entity, const std::string &path);
+    void load() override;
 
 private:
     void          loadImages(tinygltf::Model &input);
     void          loadMaterials(tinygltf::Model &input);
     void          loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent);
+
+    std::string   _path;
 };
 }
 

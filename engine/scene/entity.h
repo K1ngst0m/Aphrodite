@@ -1,13 +1,25 @@
 #ifndef VKLENTITY_H_
 #define VKLENTITY_H_
 
-#include "api/vulkan/pipeline.h"
 #include "object.h"
 
 namespace vkl {
 class EntityLoader;
+class ShaderPass;
+struct Primitive;
+struct SubMesh;
+struct Image;
+struct Material;
+struct SubEntity;
 
-using ResourceIndex = uint32_t;
+using ResourceIndex    = uint32_t;
+using SubEntityList    = std::vector<SubEntity *>;
+using PrimitiveList    = std::vector<Primitive>;
+using ImageDataTypePtr = unsigned char *;
+using VertexLayoutList = std::vector<VertexLayout>;
+using IndexList        = std::vector<uint32_t>;
+using ImageList        = std::vector<Image*>;
+using MaterialList     = std::vector<Material>;
 
 struct Primitive {
     ResourceIndex firstIndex;
@@ -15,22 +27,22 @@ struct Primitive {
     ResourceIndex materialIndex;
 };
 struct SubMesh {
-    std::vector<Primitive> primitives;
-    void                   pushPrimitive(ResourceIndex firstIdx, ResourceIndex indexCount, ResourceIndex materialIdx) {
+    PrimitiveList primitives;
+    void          pushPrimitive(ResourceIndex firstIdx, ResourceIndex indexCount, ResourceIndex materialIdx) {
         primitives.push_back({firstIdx, indexCount, materialIdx});
     }
 };
 struct SubEntity {
-    SubEntity               *parent;
-    std::vector<SubEntity *> children;
-    SubMesh                  mesh;
-    glm::mat4                matrix;
+    SubEntity    *parent;
+    SubEntityList children;
+    SubMesh       mesh;
+    glm::mat4     matrix;
 };
 struct Image {
-    uint32_t       width;
-    uint32_t       height;
-    unsigned char *data;
-    size_t         dataSize;
+    uint32_t         width;
+    uint32_t         height;
+    ImageDataTypePtr data;
+    size_t           dataSize;
 };
 struct Material {
     bool doubleSided = false;
@@ -61,16 +73,13 @@ public:
     void setShaderPass(vkl::ShaderPass *pass);
 
 public:
-    std::vector<VertexLayout> _vertices;
-    std::vector<uint32_t>     _indices;
-    std::vector<Image *>      _images;
-    std::vector<SubEntity *>  _subEntityList;
-    std::vector<Material>     _materials;
-
+    VertexLayoutList _vertices;
+    IndexList        _indices;
+    ImageList        _images;
+    SubEntityList    _subEntityList;
+    MaterialList     _materials;
 public:
-    vkl::ShaderPass *getPass() {
-        return _pass;
-    }
+    vkl::ShaderPass *getPass();
 
 protected:
     vkl::ShaderPass   *_pass = nullptr;
@@ -81,7 +90,7 @@ class EntityLoader {
 public:
     EntityLoader(Entity *entity);
 
-    virtual void loadFromFile(const std::string &path) = 0;
+    virtual void load() = 0;
 
 protected:
     Entity *_entity;

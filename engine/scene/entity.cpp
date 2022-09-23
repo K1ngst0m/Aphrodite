@@ -3,12 +3,12 @@
 
 namespace vkl {
 void Entity::loadFromFile(const std::string &path) {
-    _loader = new EntityGLTFLoader(this);
-    _loader->loadFromFile(path);
+    _loader = new EntityGLTFLoader(this, path);
+    _loader->load();
 
 }
 Entity::~Entity() {
-    for (auto *image : _images) {
+    for (Image *image : _images) {
         delete image->data;
         delete image;
     }
@@ -21,5 +21,8 @@ void Entity::setShaderPass(vkl::ShaderPass *pass) {
 }
 EntityLoader::EntityLoader(Entity *entity)
     : _entity(entity) {
+}
+vkl::ShaderPass *Entity::getPass() {
+    return _pass;
 }
 } // namespace vkl

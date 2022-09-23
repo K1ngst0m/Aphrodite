@@ -2,16 +2,16 @@
 #include "entityGLTFLoader.h"
 
 namespace vkl {
-EntityGLTFLoader::EntityGLTFLoader(Entity *entity)
-    : EntityLoader(entity) {
+EntityGLTFLoader::EntityGLTFLoader(Entity *entity, const std::string& path)
+    : EntityLoader(entity), _path(path){
 }
 
-void EntityGLTFLoader::loadFromFile(const std::string &path) {
+void EntityGLTFLoader::load(){
     tinygltf::Model    glTFInput;
     tinygltf::TinyGLTF gltfContext;
     std::string        error, warning;
 
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, _path);
 
     if (fileLoaded) {
         loadImages(glTFInput);
