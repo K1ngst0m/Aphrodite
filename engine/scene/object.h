@@ -28,14 +28,14 @@ public:
     virtual void    *getData();
     virtual uint32_t getDataSize();
 
-    bool isNeedUpdate() const;
+    bool isUpdated() const;
     void setNeedUpdate(bool flag);
 
 protected:
     size_t                dataSize = 0;
     std::shared_ptr<void> data     = nullptr;
 
-    bool needUpdate = false;
+    bool updated = false;
 };
 } // namespace vkl
 

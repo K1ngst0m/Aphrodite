@@ -59,7 +59,7 @@ void Light::load() {
 }
 void Light::update() {
     if (isloaded) {
-        needUpdate = true;
+        updated = true;
     }
     switch (_type) {
     case LightType::DIRECTIONAL: {

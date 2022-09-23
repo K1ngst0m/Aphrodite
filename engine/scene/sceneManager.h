@@ -20,7 +20,7 @@ public:
     std::shared_ptr<Light>       createLight();
     std::shared_ptr<Entity>      createEntity();
     std::shared_ptr<Entity>      createEntity(const std::string &path);
-    std::shared_ptr<SceneCamera> createCamera(float aspectRatio);
+    std::shared_ptr<Camera> createCamera(float aspectRatio);
     SceneNode                   *getRootNode();
 
 public:
@@ -31,7 +31,7 @@ private:
     AABB                       aabb;
     std::unique_ptr<SceneNode> rootNode;
 
-    std::shared_ptr<SceneCamera> _camera = nullptr;
+    std::shared_ptr<Camera> _camera = nullptr;
 
     glm::vec4 _ambient;
 };

@@ -1,11 +1,11 @@
 #include "object.h"
 
 namespace vkl {
-bool UniformBufferObject::isNeedUpdate() const {
-    return needUpdate;
+bool UniformBufferObject::isUpdated() const {
+    return updated;
 }
 void UniformBufferObject::setNeedUpdate(bool flag) {
-    needUpdate = flag;
+    updated = flag;
 }
 UniformBufferObject::UniformBufferObject(SceneManager *manager)
     : Object(manager) {

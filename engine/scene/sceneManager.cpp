@@ -8,8 +8,9 @@ SceneManager::SceneManager()
     rootNode = std::make_unique<SceneNode>(nullptr);
 }
 
-std::shared_ptr<SceneCamera> SceneManager::createCamera(float aspectRatio) {
-    _camera = std::make_shared<SceneCamera>(aspectRatio, this);
+std::shared_ptr<Camera> SceneManager::createCamera(float aspectRatio) {
+    _camera = std::make_shared<Camera>(this);
+    _camera->setAspectRatio(aspectRatio);
     return _camera;
 }
 

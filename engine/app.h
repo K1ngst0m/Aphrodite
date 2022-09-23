@@ -124,6 +124,7 @@ protected:
 
 protected:
     VulkanDevice *m_device;
+    VkPhysicalDeviceFeatures             enabledFeatures{};
 
 protected:
     const std::string m_sessionName;
@@ -178,7 +179,7 @@ protected:
     PerFrameData m_frameData;
     MouseData    m_mouseData;
 
-    std::shared_ptr<SceneCamera> m_sceneCamera = nullptr;
+    std::shared_ptr<Camera> m_camera = nullptr;
 
     vkl::PipelineBuilder m_pipelineBuilder;
 

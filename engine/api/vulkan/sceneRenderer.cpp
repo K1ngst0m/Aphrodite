@@ -28,7 +28,7 @@ void VulkanSceneRenderer::update() {
     auto & cameraUBO = _uboList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
     for (auto & ubo : _uboList){
-        if (ubo->_ubo->isNeedUpdate()){
+        if (ubo->_ubo->isUpdated()){
             ubo->updateBuffer(ubo->_ubo->getData());
             ubo->_ubo->setNeedUpdate(false);
         }
@@ -93,7 +93,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
             break;
         case AttachType::CAMERA:
             {
-                SceneCamera * camera  = static_cast<SceneCamera*>(n->getObject());
+                Camera * camera  = static_cast<Camera*>(n->getObject());
                 camera->load();
                 auto cameraUBO = std::make_unique<VulkanUniformBufferObject>(this, _device, camera);
                 cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());

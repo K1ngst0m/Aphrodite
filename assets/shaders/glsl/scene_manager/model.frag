@@ -42,7 +42,7 @@ void main() {
     vec3 T = normalize(fragTangent.xyz);
     vec3 B = cross(fragNormal, fragTangent.xyz) * fragTangent.w;
     mat3 TBN = mat3(T, B, N);
-    N = TBN * normalize(texture(sampler_normal, fragTexCoord).xyz * 2.0 - vec3(1.0));
+    N = TBN * normalize(texture(sampler_baseColor, fragTexCoord).xyz * 2.0 - vec3(1.0));
 
     vec3 L = normalize(directionalLightData.direction);
     vec3 V = normalize(sceneData.viewPos - fragPosition);

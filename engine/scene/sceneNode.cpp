@@ -13,7 +13,7 @@ void SceneNode::attachObject(const std::shared_ptr<Light>& object) {
     _attachType = AttachType::LIGHT;
     _object     = object;
 }
-void SceneNode::attachObject(const std::shared_ptr<SceneCamera>& object) {
+void SceneNode::attachObject(const std::shared_ptr<Camera>& object) {
     _attachType = AttachType::CAMERA;
     _object     = object;
 }

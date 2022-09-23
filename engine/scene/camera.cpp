@@ -1,109 +1,138 @@
 #include "camera.h"
 
 namespace vkl {
-Camera::Camera(float aspect, glm::vec3 position, glm::vec3 up, float yaw, float pitch)
-    : m_front(glm::vec3(0.0f, 0.0f, -1.0f)), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM),
-      m_aspect(aspect) {
-    m_position = position;
-    m_worldUp  = up;
-    m_yaw      = yaw;
-    m_pitch    = pitch;
-    updateCameraVectors();
-}
-Camera::Camera(float aspect, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw,
-               float pitch)
-    : m_front(glm::vec3(0.0f, 0.0f, -1.0f)), m_movementSpeed(SPEED), m_mouseSensitivity(SENSITIVITY), m_zoom(ZOOM),
-      m_aspect(aspect) {
-    m_position = glm::vec3(posX, posY, posZ);
-    m_worldUp  = glm::vec3(upX, upY, upZ);
-    m_yaw      = yaw;
-    m_pitch    = pitch;
-    updateCameraVectors();
-}
-glm::mat4 Camera::GetViewMatrix() const {
-    return glm::lookAt(m_position, m_position + m_front, m_up);
-}
-void Camera::move(CameraMoveDirection direction, float deltaTime) {
-    float velocity = m_movementSpeed * deltaTime;
-    if (direction == CameraMoveDirection::FORWARD)
-        m_position += m_front * velocity;
-    if (direction == CameraMoveDirection::BACKWARD)
-        m_position -= m_front * velocity;
-    if (direction == CameraMoveDirection::LEFT)
-        m_position -= m_right * velocity;
-    if (direction == CameraMoveDirection::RIGHT)
-        m_position += m_right * velocity;
-}
-void Camera::ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch) {
-    xoffset *= m_mouseSensitivity;
-    yoffset *= m_mouseSensitivity;
 
-    m_yaw += xoffset;
-    m_pitch += yoffset;
-
-    // make sure that when pitch is out of bounds, screen doesn't get flipped
-    if (constrainPitch) {
-        if (m_pitch > 89.0f)
-            m_pitch = 89.0f;
-        if (m_pitch < -89.0f)
-            m_pitch = -89.0f;
+struct CameraDataLayout {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewProj;
+    glm::vec4 position;
+    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::mat4 viewproj, glm::vec4 viewpos)
+        : view(view), proj(proj), viewProj(viewproj), position(viewpos) {
     }
+};
 
-    // update Front, Right and Up Vectors using the updated Euler angles
-    updateCameraVectors();
-}
-void Camera::ProcessMouseScroll(float yoffset) {
-    m_zoom -= (float)yoffset;
-    if (m_zoom < 1.0f)
-        m_zoom = 1.0f;
-    if (m_zoom > 45.0f)
-        m_zoom = 45.0f;
-}
-void Camera::updateCameraVectors() {
-    // calculate the new Front vector
-    glm::vec3 front;
-    front.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-    front.y = sin(glm::radians(m_pitch));
-    front.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
-    m_front = glm::normalize(front);
-    // also re-calculate the Right and Up vector
-    m_right = glm::normalize(glm::cross(front,
-                                        m_worldUp)); // normalize the vectors, because their length gets closer to 0 the
-                                                     // more you look up or down which results in slower movement.
-    m_up = glm::normalize(glm::cross(m_right, front));
-}
-glm::mat4 Camera::GetProjectionMatrix() const {
-    auto result = glm::perspective(m_zoom, m_aspect, NEAR, FAR);
-    result[1][1] *= -1;
-    return result;
-}
-glm::mat4 Camera::GetViewProjectionMatrix() const {
-    return GetProjectionMatrix() * GetViewMatrix();
+Camera::Camera(SceneManager *manager)
+    : UniformBufferObject(manager) {
 }
 
-void SceneCamera::load() {
+void Camera::load() {
     dataSize = sizeof(CameraDataLayout);
     update();
 }
 
-void SceneCamera::update() {
-    needUpdate = true;
-    data       = std::make_shared<CameraDataLayout>(
-        GetViewMatrix(),
-        GetProjectionMatrix(),
-        GetViewProjectionMatrix(),
-        glm::vec4(m_position, 1.0f));
+void Camera::update() {
+    updated = true;
+    data    = std::make_shared<CameraDataLayout>(
+        this->matrices.view,
+        this->matrices.perspective,
+        this->matrices.perspective * this->matrices.view,
+        glm::vec4(this->position, 1.0f));
 }
-void SceneCamera::setPosition(glm::vec4 position) {
-    m_position = position;
+
+void Camera::setPosition(glm::vec4 position) {
+    this->position = position;
+    updateViewMatrix();
 }
-void SceneCamera::setAspectRatio(float aspectRatio) {
-    m_aspect = aspectRatio;
+void Camera::setAspectRatio(float aspect) {
+    matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+    if (flipY) {
+        matrices.perspective[1][1] *= -1.0f;
+    }
 }
-void *SceneCamera::getData() {
-    return data.get();
+void Camera::setPerspective(float fov, float aspect, float znear, float zfar) {
+    this->fov            = fov;
+    this->znear          = znear;
+    this->zfar           = zfar;
+    matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+    if (flipY) {
+        matrices.perspective[1][1] *= -1.0f;
+    }
+};
+void Camera::setType(CameraType type) {
+    this->type = type;
 }
-uint32_t SceneCamera::getDataSize() {
-    return dataSize;
+void Camera::setMovementSpeed(float movementSpeed) {
+    this->movementSpeed = movementSpeed;
+}
+void Camera::setRotationSpeed(float rotationSpeed) {
+    this->rotationSpeed = rotationSpeed;
+}
+void Camera::updateViewMatrix() {
+    glm::mat4 rotM = glm::mat4(1.0f);
+    glm::mat4 transM;
+
+    rotM = glm::rotate(rotM, glm::radians(rotation.x * (flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
+    rotM = glm::rotate(rotM, glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
+    rotM = glm::rotate(rotM, glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+
+    glm::vec3 translation = position;
+    if (flipY) {
+        translation.y *= -1.0f;
+    }
+    transM = glm::translate(glm::mat4(1.0f), translation);
+
+    if (type == CameraType::FIRSTPERSON) {
+        matrices.view = rotM * transM;
+    } else {
+        matrices.view = transM * rotM;
+    }
+
+    viewPos = glm::vec4(position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
+
+    updated = true;
+};
+bool Camera::isMoving() const {
+    return keys.left || keys.right || keys.up || keys.down;
+}
+float Camera::getNearClip() const {
+    return znear;
+}
+float Camera::getFarClip() const {
+    return zfar;
+}
+void Camera::rotate(glm::vec3 delta) {
+    this->rotation += delta;
+    updateViewMatrix();
+}
+void Camera::setRotation(glm::vec3 rotation) {
+    this->rotation = rotation;
+    updateViewMatrix();
+}
+void Camera::setTranslation(glm::vec3 translation) {
+    this->position = translation;
+    updateViewMatrix();
+};
+void Camera::translate(glm::vec3 delta) {
+    this->position += delta;
+    updateViewMatrix();
+}
+void Camera::processMove(float deltaTime) {
+    updated = false;
+    if (type == CameraType::FIRSTPERSON) {
+        if (isMoving()) {
+            glm::vec3 camFront;
+            camFront.x = -cos(glm::radians(rotation.x)) * sin(glm::radians(rotation.y));
+            camFront.y = sin(glm::radians(rotation.x));
+            camFront.z = cos(glm::radians(rotation.x)) * cos(glm::radians(rotation.y));
+            camFront   = glm::normalize(camFront);
+
+            float moveSpeed = deltaTime * movementSpeed;
+
+            if (keys.up)
+                position += camFront * moveSpeed;
+            if (keys.down)
+                position -= camFront * moveSpeed;
+            if (keys.left)
+                position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+            if (keys.right)
+                position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+
+            updateViewMatrix();
+        }
+    }
+};
+float Camera::getRotationSpeed() const {
+    return rotationSpeed;
 }
 } // namespace vkl

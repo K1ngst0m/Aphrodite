@@ -2,7 +2,7 @@
 #include "entityGLTFLoader.h"
 
 namespace vkl {
-void GLTFLoader::load(Entity *entity, const std::string& path){
+void GLTFLoader::load(Entity *entity, const std::string &path) {
     tinygltf::Model    glTFInput;
     tinygltf::TinyGLTF gltfContext;
     std::string        error, warning;
@@ -24,12 +24,12 @@ void GLTFLoader::load(Entity *entity, const std::string& path){
     }
 }
 
-void GLTFLoader::loadImages(Entity * entity, tinygltf::Model &input) {
+void GLTFLoader::loadImages(Entity *entity, tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
         Texture newTexture;
-        newTexture.width    = glTFImage.width;
-        newTexture.height   = glTFImage.height;
+        newTexture.width  = glTFImage.width;
+        newTexture.height = glTFImage.height;
         newTexture.data.resize(glTFImage.width * glTFImage.height * 4);
         if (glTFImage.component == 3) {
             unsigned char *rgba = new unsigned char[newTexture.data.size()];
@@ -40,14 +40,13 @@ void GLTFLoader::loadImages(Entity * entity, tinygltf::Model &input) {
                 rgb += 3;
             }
             memcpy(newTexture.data.data(), rgba, glTFImage.image.size());
-        }
-        else{
+        } else {
             memcpy(newTexture.data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
         entity->_images.push_back(newTexture);
     }
 }
-void GLTFLoader::loadMaterials(Entity * entity, tinygltf::Model &input) {
+void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
         tinygltf::Material glTFMaterial = input.materials[i];
@@ -93,8 +92,8 @@ void GLTFLoader::loadMaterials(Entity * entity, tinygltf::Model &input) {
         entity->_materials[i].doubleSided = glTFMaterial.doubleSided;
     }
 }
-void GLTFLoader::loadNodes(Entity * entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
-    auto node   = std::make_shared<SubEntity>();
+void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
+    auto node    = std::make_shared<SubEntity>();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
 
@@ -171,10 +170,9 @@ void GLTFLoader::loadNodes(Entity * entity, const tinygltf::Node &inputNode, con
 
                 // Append data to model's vertex buffer
                 for (size_t v = 0; v < vertexCount; v++) {
-                    vkl::VertexLayout vert{};
-                    vert.pos    = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-                    vert.normal = glm::normalize(
-                        glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+                    VertexLayout vert{};
+                    vert.pos     = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
+                    vert.normal  = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
                     vert.uv      = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color   = glm::vec3(1.0f);
                     vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
@@ -231,4 +229,4 @@ void GLTFLoader::loadNodes(Entity * entity, const tinygltf::Node &inputNode, con
         entity->_subEntityList.push_back(node);
     }
 }
-}
+} // namespace vkl

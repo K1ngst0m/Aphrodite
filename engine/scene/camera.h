@@ -14,80 +14,71 @@ enum class CameraMoveDirection : uint8_t { FORWARD,
                                            RIGHT };
 
 namespace vkl {
-class Camera {
-public:
-    // camera Attributes
-    glm::vec3 m_position;
-    glm::vec3 m_front;
-    glm::vec3 m_up;
-    glm::vec3 m_right;
-    glm::vec3 m_worldUp;
-    // euler Angles
-    float m_yaw;
-    float m_pitch;
-    // camera options
-    float m_movementSpeed;
-    float m_mouseSensitivity;
-    float m_zoom;
-    float m_aspect;
-
-    // constructor with vectors
-    Camera(float aspect, glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-           float yaw = YAW, float pitch = PITCH);
-    // constructor with scalar values
-    Camera(float aspect, float posX, float posY, float posZ, float upX, float upY, float upZ, float yaw, float pitch);
-
-    glm::mat4 GetViewMatrix() const;
-    glm::mat4 GetProjectionMatrix() const;
-    glm::mat4 GetViewProjectionMatrix() const;
-
-    void move(CameraMoveDirection direction, float deltaTime);
-
-    void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true);
-
-    // processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
-    void ProcessMouseScroll(float yoffset);
-
-private:
-    // calculates the front vector from the Camera's (updated) Euler Angles
-    void updateCameraVectors();
-
-    // Default camera values
-    constexpr static float YAW         = -90.0f;
-    constexpr static float PITCH       = 0.0f;
-    constexpr static float SPEED       = 2.5f;
-    constexpr static float SENSITIVITY = 0.1f;
-    constexpr static float ZOOM        = 45.0f;
-    constexpr static float NEAR        = 0.01f;
-    constexpr static float FAR         = 100.0f;
+enum class CameraType {
+    LOOKAT,
+    FIRSTPERSON,
 };
 
-struct CameraDataLayout {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 viewProj;
-    glm::vec4 position;
-    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::mat4 viewproj, glm::vec4 viewpos)
-        : view(view), proj(proj), viewProj(viewproj), position(viewpos) {
-    }
-};
-
-class SceneCamera : public UniformBufferObject, public vkl::Camera {
+class Camera : public UniformBufferObject {
 public:
-    SceneCamera(float aspectRatio, SceneManager *manager)
-        : UniformBufferObject(manager), vkl::Camera(aspectRatio) {
-    }
-    ~SceneCamera() override = default;
+    Camera(SceneManager *manager);
+    ~Camera() override = default;
 
     void load() override;
     void update() override;
 
     void setPosition(glm::vec4 position);
     void setAspectRatio(float aspectRatio);
+    void setPerspective(float fov, float aspect, float znear, float zfar);
+    void rotate(glm::vec3 delta);
+    void setRotation(glm::vec3 rotation);
+    void setTranslation(glm::vec3 translation);
+    void translate(glm::vec3 delta);
 
-    void *getData() override;
+    void setType(CameraType type);
 
-    uint32_t getDataSize() override;
+    void setRotationSpeed(float rotationSpeed);
+    void setMovementSpeed(float movementSpeed);
+
+    bool isMoving() const;
+    float getNearClip() const;
+    float getFarClip() const;
+    float getRotationSpeed() const;
+    void processMove(float deltaTime);
+
+    struct
+    {
+        bool left = false;
+        bool right = false;
+        bool up = false;
+        bool down = false;
+    } keys;
+
+private:
+    void updateViewMatrix();
+    void updateAspectRatio(float aspect);
+
+private:
+    CameraType type;
+
+    glm::vec3 rotation = glm::vec3();
+    glm::vec3 position = glm::vec3();
+    glm::vec4 viewPos = glm::vec4();
+
+    float rotationSpeed = 1.0f;
+    float movementSpeed = 1.0f;
+
+    bool flipY = true;
+
+    struct
+    {
+        glm::mat4 perspective;
+        glm::mat4 view;
+    } matrices;
+
+
+    float fov;
+    float znear, zfar;
 };
 } // namespace vkl
 #endif

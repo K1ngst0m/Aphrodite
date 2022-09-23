@@ -209,7 +209,7 @@ void vklApp::createDevice() {
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
     m_device = new VulkanDevice(devices[0]);
     getEnabledFeatures();
-    m_device->createLogicalDevice(m_device->features, deviceExtensions, nullptr);
+    m_device->createLogicalDevice(enabledFeatures, deviceExtensions, nullptr);
 
     VkBool32                presentSupport = false;
     std::optional<uint32_t> presentQueueFamilyIndices;
@@ -503,13 +503,14 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
         m_mouseData.firstMouse = false;
     }
 
-    float xoffset = xpos - m_mouseData.lastX;
-    float yoffset = m_mouseData.lastY - ypos;
+    float dx = m_mouseData.lastX - xpos;
+    float dy = m_mouseData.lastY - ypos;
 
     m_mouseData.lastX = xpos;
     m_mouseData.lastY = ypos;
 
-    m_sceneCamera->ProcessMouseMovement(xoffset, yoffset);
+    m_camera->rotate(glm::vec3(dy * m_camera->getRotationSpeed(), -dx * m_camera->getRotationSpeed(), 0.0f));
+
 }
 void vklApp::keyboardHandleDerive() {
     if (glfwGetKey(m_window, GLFW_KEY_1) == GLFW_PRESS) {
@@ -524,13 +525,24 @@ void vklApp::keyboardHandleDerive() {
         glfwSetWindowShouldClose(m_window, true);
 
     if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS)
-        m_sceneCamera->move(CameraMoveDirection::FORWARD, m_frameData.deltaTime);
+        m_camera->keys.up = true;
     if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS)
-        m_sceneCamera->move(CameraMoveDirection::BACKWARD, m_frameData.deltaTime);
+        m_camera->keys.down = true;
     if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS)
-        m_sceneCamera->move(CameraMoveDirection::LEFT, m_frameData.deltaTime);
+        m_camera->keys.left = true;
     if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS)
-        m_sceneCamera->move(CameraMoveDirection::RIGHT, m_frameData.deltaTime);
+        m_camera->keys.right = true;
+
+    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_RELEASE)
+        m_camera->keys.up = false;
+    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_RELEASE)
+        m_camera->keys.down = false;
+    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_RELEASE)
+        m_camera->keys.left = false;
+    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_RELEASE)
+        m_camera->keys.right = false;
+
+    m_camera->processMove(m_frameData.deltaTime);
 }
 vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
     : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),

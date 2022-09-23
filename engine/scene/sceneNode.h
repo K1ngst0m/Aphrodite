@@ -21,7 +21,7 @@ public:
 
     void attachObject(const std::shared_ptr<Entity> &object);
     void attachObject(const std::shared_ptr<Light> &object);
-    void attachObject(const std::shared_ptr<SceneCamera> &object);
+    void attachObject(const std::shared_ptr<Camera> &object);
 
     vkl::Object *getObject();
     AttachType   getAttachType();
