@@ -13,7 +13,7 @@ public:
 
 public:
     Light*  createLight();
-    Entity* createEntity(ShaderPass *pass = nullptr);
+    Entity* createEntity();
     SceneCamera* createCamera(float aspectRatio);
     SceneNode   *getRootNode();
 

@@ -13,6 +13,7 @@ public:
     void cleanupResources() override;
     void update() override;
     void drawScene() override;
+    void setShaderPass(vkl::ShaderPass *pass);
 
 private:
     void _initRenderList();
@@ -21,6 +22,7 @@ private:
 
 private:
     vkl::Device     *_device;
+    vkl::ShaderPass *_pass;
     VkCommandBuffer  _drawCmd;
     VkDescriptorPool _descriptorPool;
     VkQueue          _transferQueue;

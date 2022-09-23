@@ -16,13 +16,7 @@ Entity::~Entity() {
 Entity::Entity(SceneManager *manager)
     : Object(manager) {
 }
-void Entity::setShaderPass(vkl::ShaderPass *pass) {
-    _pass = pass;
-}
 EntityLoader::EntityLoader(Entity *entity)
     : _entity(entity) {
-}
-vkl::ShaderPass *Entity::getPass() {
-    return _pass;
 }
 } // namespace vkl

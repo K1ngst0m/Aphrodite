@@ -37,6 +37,7 @@ void VulkanSceneRenderer::update() {
 void VulkanSceneRenderer::_initRenderList() {
     for (auto * renderable : _renderList){
         renderable->loadResouces(_transferQueue);
+        renderable->setShaderPass(_pass);
     }
 }
 void VulkanSceneRenderer::_initUboList() {
@@ -115,4 +116,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
     }
 }
 
+void VulkanSceneRenderer::setShaderPass(vkl::ShaderPass *pass) {
+    _pass = pass;
+}
 } // namespace vkl

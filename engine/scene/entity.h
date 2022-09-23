@@ -70,7 +70,6 @@ public:
     Entity(SceneManager *manager);
     ~Entity() override;
     void loadFromFile(const std::string &path);
-    void setShaderPass(vkl::ShaderPass *pass);
 
 public:
     VertexLayoutList _vertices;
@@ -78,11 +77,8 @@ public:
     ImageList        _images;
     SubEntityList    _subEntityList;
     MaterialList     _materials;
-public:
-    vkl::ShaderPass *getPass();
 
 protected:
-    vkl::ShaderPass   *_pass = nullptr;
     vkl::EntityLoader *_loader;
 };
 
