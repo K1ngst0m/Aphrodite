@@ -3,7 +3,6 @@
 
 #include "api/vulkan/device.h"
 #include "api/vulkan/vkInit.hpp"
-#include "api/vulkan/vertexBuffer.h"
 #include "api/vulkan/pipeline.h"
 #include "api/vulkan/vkUtils.h"
 #include "api/vulkan/sceneRenderer.h"

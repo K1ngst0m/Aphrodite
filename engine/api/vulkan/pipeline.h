@@ -2,7 +2,6 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "vertexBuffer.h"
 #include "vkInit.hpp"
 
 namespace vkl {
