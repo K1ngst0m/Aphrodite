@@ -1,11 +1,16 @@
 #ifndef VKUNIFORMBUFFEROBJECT_H_
 #define VKUNIFORMBUFFEROBJECT_H_
 
-#include "scene/sceneRenderer.h"
+#include "common.h"
+#include "buffer.h"
 
 namespace vkl {
+class SceneRenderer;
+class VulkanDevice;
+class UniformBufferObject;
+
 struct VulkanUniformBufferObject{
-    VulkanUniformBufferObject(vkl::SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::UniformBufferObject *ubo);
+    VulkanUniformBufferObject(SceneRenderer *renderer, VulkanDevice *device, UniformBufferObject *ubo);
     ~VulkanUniformBufferObject();
 
     void cleanupResources();

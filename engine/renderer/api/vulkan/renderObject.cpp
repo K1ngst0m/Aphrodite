@@ -1,7 +1,12 @@
 #include "renderObject.h"
+#include "vkInit.hpp"
+#include "device.h"
+#include "sceneRenderer.h"
+#include "scene/entity.h"
+#include "pipeline.h"
 
 namespace vkl {
-VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
+VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
     : _device(device), _drawCmd(drawCmd), _renderer(renderer), _entity(entity) {
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {

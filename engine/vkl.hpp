@@ -1,11 +1,13 @@
 #ifndef VKL_H_
 #define VKL_H_
 
-#include "api/vulkan/device.h"
-#include "api/vulkan/vkInit.hpp"
-#include "api/vulkan/pipeline.h"
-#include "api/vulkan/vkUtils.h"
-#include "api/vulkan/sceneRenderer.h"
+#include "renderer/api/vulkan/device.h"
+#include "renderer/api/vulkan/pipeline.h"
+#include "renderer/api/vulkan/renderObject.h"
+#include "renderer/api/vulkan/sceneRenderer.h"
+#include "renderer/api/vulkan/uniformBufferObject.h"
+#include "renderer/api/vulkan/vkInit.hpp"
+#include "renderer/api/vulkan/vkUtils.h"
 
 #include "scene/camera.h"
 #include "scene/object.h"

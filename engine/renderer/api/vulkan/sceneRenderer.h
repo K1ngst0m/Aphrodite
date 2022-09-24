@@ -1,14 +1,16 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "renderObject.h"
-#include "uniformBufferObject.h"
+#include "scene/sceneRenderer.h"
 
 namespace vkl {
+class VulkanUniformBufferObject;
+class VulkanRenderObject;
+class VulkanDevice;
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
-    VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::VulkanDevice *device, VkQueue graphics, VkQueue transfer);
+    VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, VulkanDevice *device, VkQueue graphics, VkQueue transfer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;

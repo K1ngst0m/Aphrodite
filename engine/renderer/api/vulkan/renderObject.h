@@ -1,9 +1,15 @@
 #ifndef VKRENDERABLE_H_
 #define VKRENDERABLE_H_
 
-#include "scene/sceneRenderer.h"
+#include "device.h"
 
 namespace vkl {
+class VulkanSceneRenderer;
+class Entity;
+class ShaderPass;
+
+struct VertexLayout;
+struct SubEntity;
 
 struct MaterialGpuData {
     VkDescriptorSet set;
@@ -12,7 +18,7 @@ struct MaterialGpuData {
 
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity, VkCommandBuffer drawCmd);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);
@@ -34,26 +40,26 @@ private:
     void loadImages(VkQueue queue);
     void loadBuffer(vkl::VulkanDevice *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
-    vkl::VulkanDevice *_device;
-    vkl::ShaderPass   *_shaderPass;
+    VulkanDevice *_device;
+    ShaderPass   *_shaderPass;
 
     struct {
         std::vector<VertexLayout> vertices;
-        vkl::VulkanBuffer         buffer;
+        VulkanBuffer         buffer;
     } _vertexBuffer;
 
     struct {
         std::vector<uint32_t> indices;
-        vkl::VulkanBuffer     buffer;
+        VulkanBuffer     buffer;
     } _indexBuffer;
 
-    std::vector<vkl::VulkanTexture> _textures;
+    std::vector<VulkanTexture> _textures;
 
     std::vector<MaterialGpuData> _materialGpuDataList;
     const VkCommandBuffer        _drawCmd;
 
 private:
-    vkl::SceneRenderer *_renderer;
+    VulkanSceneRenderer *_renderer;
     glm::mat4           _transform;
     vkl::Entity        *_entity;
 };

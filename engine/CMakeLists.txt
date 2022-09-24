@@ -3,9 +3,13 @@ file(GLOB base_src
   *.h
   *.hpp
 
-  api/vulkan/*.cpp
-  api/vulkan/*.h
-  api/vulkan/*.hpp
+  renderer/*.cpp
+  renderer/*.h
+  renderer/*.hpp
+
+  renderer/api/vulkan/*.cpp
+  renderer/api/vulkan/*.h
+  renderer/api/vulkan/*.hpp
 
   scene/*.cpp
   scene/*.h
@@ -22,8 +26,8 @@ file(GLOB BASE_HEADERS
   *.h
   *.hpp
 
-  api/vulkan/*.h
-  api/vulkan/*.hpp
+  renderer/*.h
+  renderer/*.hpp
 
   scene/*.h
   scene/*.hpp

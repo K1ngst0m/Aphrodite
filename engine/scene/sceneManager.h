@@ -1,7 +1,6 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "api/vulkan/pipeline.h"
 #include "sceneNode.h"
 
 namespace vkl {

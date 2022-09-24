@@ -1,4 +1,9 @@
 #include "sceneRenderer.h"
+#include "device.h"
+#include "uniformBufferObject.h"
+#include "renderObject.h"
+#include "vkInit.hpp"
+#include "pipeline.h"
 
 namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::VulkanDevice *device, VkQueue graphicsQueue, VkQueue transferQueue)
