@@ -6,15 +6,18 @@ VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevic
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
-        VkDescriptorSet             materialSet;
+        MaterialGpuData materialData {};
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialSet));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{
-            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo),
-            vkl::init::writeDescriptorSet(materialSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo),
+            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo),
+            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo),
         };
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        _materialSets.push_back(materialSet);
+
+        materialData.pipeline = _shaderPass->builtPipeline;
+
+        _materialGpuDataList.push_back(materialData);
     }
 }
 void VulkanRenderObject::loadImages(VkQueue queue) {
@@ -38,13 +41,16 @@ void VulkanRenderObject::loadImages(VkQueue queue) {
                              VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
 
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        texture.view                    = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.maxAnisotropy       = _device->enabledFeatures.samplerAnisotropy ? _device->properties.limits.maxSamplerAnisotropy : 1.0f;
+        samplerInfo.anisotropyEnable    = _device->enabledFeatures.samplerAnisotropy;
+        samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
         VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
         texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
@@ -61,7 +67,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadImages(queue);
     loadBuffer(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
 }
-void VulkanRenderObject::drawNode(const SubEntity* node) {
+void VulkanRenderObject::drawNode(const SubEntity *node) {
     if (!node->primitives.empty()) {
         glm::mat4  nodeMatrix    = node->matrix;
         SubEntity *currentParent = node->parent;
@@ -69,12 +75,11 @@ void VulkanRenderObject::drawNode(const SubEntity* node) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
-        vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                           &nodeMatrix);
-        for (const Mesh primitive : node->primitives) {
+        vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+        for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
                 vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
-                                        &_materialSets[primitive.materialIndex], 0, nullptr);
+                                        &_materialGpuDataList[primitive.materialIndex].set, 0, nullptr);
                 vkCmdDrawIndexed(_drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
@@ -91,7 +96,7 @@ void VulkanRenderObject::draw() {
     vkCmdBindIndexBuffer(_drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
-    for (auto & node : _entity->_subEntityList) {
+    for (auto &node : _entity->_subEntityList) {
         drawNode(node.get());
     }
 }

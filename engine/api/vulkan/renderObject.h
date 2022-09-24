@@ -4,6 +4,12 @@
 #include "scene/sceneRenderer.h"
 
 namespace vkl {
+
+struct MaterialGpuData{
+    VkDescriptorSet set;
+    VkPipeline pipeline;
+};
+
 class VulkanRenderObject : public RenderObject {
 public:
     VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, VkCommandBuffer drawCmd);
@@ -47,7 +53,8 @@ private:
 
     std::vector<vkl::VulkanTexture> _textures;
 
-    std::vector<VkDescriptorSet> _materialSets;
+
+    std::vector<MaterialGpuData> _materialGpuDataList;
     VkDescriptorSet              _globalDescriptorSet;
     const VkCommandBuffer        _drawCmd;
 };
