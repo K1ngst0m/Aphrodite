@@ -29,7 +29,7 @@ public:
     virtual uint32_t getDataSize();
 
     bool isUpdated() const;
-    void setNeedUpdate(bool flag);
+    void setUpdated(bool flag);
 
 protected:
     size_t                dataSize = 0;

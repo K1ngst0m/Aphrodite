@@ -2,7 +2,7 @@
 
 namespace vkl {
 VulkanRenderObject::VulkanRenderObject(SceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
-    : RenderObject(renderer, entity), _device(device), _drawCmd(drawCmd) {
+    : _device(device), _drawCmd(drawCmd), _renderer(renderer), _entity(entity) {
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
@@ -88,10 +88,10 @@ void VulkanRenderObject::drawNode(const SubEntity *node) {
         drawNode(child.get());
     }
 }
-void VulkanRenderObject::draw() {
+void VulkanRenderObject::draw(VkDescriptorSet* globalSet) {
     assert(_shaderPass);
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
+    vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, globalSet, 0, nullptr);
     vkCmdBindVertexBuffers(_drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
     vkCmdBindIndexBuffer(_drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
@@ -112,9 +112,6 @@ void VulkanRenderObject::setShaderPass(ShaderPass *pass) {
 }
 ShaderPass *VulkanRenderObject::getShaderPass() const {
     return _shaderPass;
-}
-VkDescriptorSet &VulkanRenderObject::getGlobalDescriptorSet() {
-    return _globalDescriptorSet;
 }
 uint32_t VulkanRenderObject::getSetCount() {
     return 1 + _entity->_materials.size();
@@ -193,5 +190,11 @@ void VulkanRenderObject::loadBuffer(vkl::VulkanDevice *device, VkQueue transferQ
             _indexBuffer.buffer.unmap();
         }
     }
+}
+glm::mat4 VulkanRenderObject::getTransform() const {
+    return _transform;
+}
+void VulkanRenderObject::setTransform(glm::mat4 transform) {
+    _transform = transform;
 }
 } // namespace vkl

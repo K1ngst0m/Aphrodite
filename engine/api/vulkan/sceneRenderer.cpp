@@ -21,18 +21,18 @@ void VulkanSceneRenderer::cleanupResources() {
 }
 void VulkanSceneRenderer::drawScene() {
     for (auto &renderable : _renderList) {
-        renderable->draw();
+        renderable->draw(&_globalDescriptorSet);
     }
 }
 void VulkanSceneRenderer::update() {
     auto & cameraUBO = _uboList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
-    for (auto & ubo : _uboList){
-        if (ubo->_ubo->isUpdated()){
-            ubo->updateBuffer(ubo->_ubo->getData());
-            ubo->_ubo->setNeedUpdate(false);
-        }
-    }
+    // for (auto & ubo : _uboList){
+    //     if (ubo->_ubo->isUpdated()){
+    //         ubo->updateBuffer(ubo->_ubo->getData());
+    //         ubo->_ubo->setUpdated(false);
+    //     }
+    // }
 }
 
 void VulkanSceneRenderer::_initRenderList() {
@@ -55,23 +55,25 @@ void VulkanSceneRenderer::_initUboList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
+    const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _pass->effect->setLayouts.data(), 1);
+    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_globalDescriptorSet));
+
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    for (auto & ubo : _uboList) {
+        VkWriteDescriptorSet write = {
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = _globalDescriptorSet,
+            .dstBinding      = static_cast<uint32_t>(descriptorWrites.size()),
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo     = &ubo->buffer.getBufferInfo(),
+        };
+        descriptorWrites.push_back(write);
+    }
+    vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
     for (auto & renderable : _renderList) {
-        const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, renderable->getShaderPass()->effect->setLayouts.data(), 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &renderable->getGlobalDescriptorSet()));
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        for (auto & ubo : _uboList) {
-            VkWriteDescriptorSet write = {
-                .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet          = renderable->getGlobalDescriptorSet(),
-                .dstBinding      = static_cast<uint32_t>(descriptorWrites.size()),
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo     = &ubo->buffer.getBufferInfo(),
-            };
-            descriptorWrites.push_back(write);
-        }
-        vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[1], _descriptorPool);
     }
 }

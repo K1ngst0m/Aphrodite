@@ -1,8 +1,8 @@
 #include "scene_manager.h"
 
 void scene_manager::drawFrame() {
-    vkl::vklApp::prepareFrame();
     updateUniformBuffer();
+    vkl::vklApp::prepareFrame();
     vkl::vklApp::submitFrame();
 }
 
@@ -18,6 +18,7 @@ void scene_manager::initDerive() {
 }
 
 void scene_manager::loadScene() {
+    // scene global argument setup
     {
         m_sceneManager.setAmbient(glm::vec4(0.2f));
     }
@@ -57,12 +58,18 @@ void scene_manager::loadScene() {
     }
 
     {
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model                  = m_sceneManager.createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-
-        auto *node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
+        auto *node = m_sceneManager.getRootNode()->createChildNode();
         node->attachObject(m_model);
+    }
+
+    {
+        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        // auto helmet_model        = m_sceneManager.createEntity(modelDir / "FlightHelmet/glTF/FlightHelmet.gltf");
+
+        // auto *node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(helmet_model);
     }
 }
 
@@ -95,8 +102,8 @@ void scene_manager::setupShaders() {
     {
         m_sceneRenderer.resize(m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++) {
-            m_sceneRenderer[i] = new vkl::VulkanSceneRenderer(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
-            static_cast<vkl::VulkanSceneRenderer *>(m_sceneRenderer[i])->setShaderPass(&m_modelShaderPass);
+            m_sceneRenderer[i] = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
+            std::dynamic_pointer_cast<vkl::VulkanSceneRenderer>(m_sceneRenderer[i])->setShaderPass(&m_modelShaderPass);
             m_sceneRenderer[i]->loadResources();
         }
     }
@@ -106,7 +113,7 @@ void scene_manager::setupShaders() {
         m_modelShaderPass.destroy(m_device->logicalDevice);
         m_shaderCache.destory(m_device->logicalDevice);
 
-        for (auto *sceneRenderer : m_sceneRenderer) {
+        for (auto &sceneRenderer : m_sceneRenderer) {
             sceneRenderer->cleanupResources();
         }
     });

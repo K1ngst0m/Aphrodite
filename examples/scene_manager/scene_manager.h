@@ -32,7 +32,7 @@ private:
     std::shared_ptr<vkl::Entity> m_model = nullptr;
 
     vkl::SceneManager m_sceneManager;
-    std::vector<vkl::SceneRenderer *> m_sceneRenderer;
+    std::vector<std::shared_ptr<vkl::SceneRenderer>> m_sceneRenderer;
 };
 
 #endif // SCENE_MANAGER_H_

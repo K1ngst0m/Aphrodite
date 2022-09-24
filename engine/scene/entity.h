@@ -6,7 +6,7 @@
 namespace vkl {
 class EntityLoader;
 class ShaderPass;
-struct Mesh;
+struct Primitive;
 struct SubMesh;
 struct Texture;
 struct Material;
@@ -15,7 +15,7 @@ struct VertexLayout;
 
 using ResourceIndex    = uint32_t;
 using SubEntityList    = std::vector<std::shared_ptr<SubEntity>>;
-using PrimitiveList    = std::vector<Mesh>;
+using PrimitiveList    = std::vector<Primitive>;
 using TextureData      = std::vector<unsigned char>;
 using VertexLayoutList = std::vector<VertexLayout>;
 using IndexList        = std::vector<uint32_t>;
@@ -30,7 +30,7 @@ struct VertexLayout {
     glm::vec4 tangent;
 };
 
-struct Mesh {
+struct Primitive {
     ResourceIndex firstIndex;
     ResourceIndex indexCount;
     ResourceIndex materialIndex;

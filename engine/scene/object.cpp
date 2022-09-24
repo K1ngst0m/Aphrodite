@@ -4,7 +4,7 @@ namespace vkl {
 bool UniformBufferObject::isUpdated() const {
     return updated;
 }
-void UniformBufferObject::setNeedUpdate(bool flag) {
+void UniformBufferObject::setUpdated(bool flag) {
     updated = flag;
 }
 UniformBufferObject::UniformBufferObject(SceneManager *manager)
