@@ -57,25 +57,25 @@ void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
             entity->_materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("specularTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].specularTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+            entity->_materials[i].specularTextureIndex = glTFMaterial.values["specularTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("diffuseTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].diffuseTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+            entity->_materials[i].diffuseTextureIndex = glTFMaterial.values["diffuseTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("normalTexture") != glTFMaterial.values.end()) {
             entity->_materials[i].normalTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+            entity->_materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("specularGlossinessTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].specularGlossinessTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
+            entity->_materials[i].specularGlossinessTextureIndex = glTFMaterial.values["specularGlossinessTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("occlusionTexture") != glTFMaterial.values.end()) {
             entity->_materials[i].occlusionTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
         }
         if (glTFMaterial.values.find("emissiveTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].emissiveTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
+            entity->_materials[i].emissiveTextureIndex = glTFMaterial.values["emissiveTexture"].TextureIndex();
         }
         if (glTFMaterial.additionalValues.find("alphaMode") != glTFMaterial.additionalValues.end()) {
             tinygltf::Parameter param = glTFMaterial.additionalValues["alphaMode"];
