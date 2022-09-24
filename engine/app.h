@@ -64,11 +64,9 @@ protected:
 protected:
     const std::string m_sessionName;
 
-    GLFWwindow *m_window = nullptr;
-
-    WindowData   m_windowData;
-    FrameData m_frameData;
-    MouseData    m_mouseData;
+    WindowData m_windowData;
+    FrameData  m_frameData;
+    MouseData  m_mouseData;
 
     std::shared_ptr<Camera> m_camera = nullptr;
 

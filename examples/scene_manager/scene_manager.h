@@ -21,11 +21,6 @@ private:
     virtual void buildCommands();
 
 private:
-    vkl::ShaderCache m_shaderCache;
-
-    vkl::ShaderEffect m_modelShaderEffect;
-    vkl::ShaderPass m_modelShaderPass;
-
     std::shared_ptr<vkl::Light> m_pointLight = nullptr;
     std::shared_ptr<vkl::Light> m_directionalLight = nullptr;
     std::shared_ptr<vkl::Entity> m_model = nullptr;

@@ -122,7 +122,7 @@ bool VulkanRenderer::checkValidationLayerSupport() {
 }
 
 void VulkanRenderer::createSurface() {
-    if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(m_instance, m_windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 
@@ -279,7 +279,7 @@ void VulkanRenderer::createSwapChain() {
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = vkl::utils::chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D         extent        = vkl::utils::chooseSwapExtent(swapChainSupport.capabilities, m_window);
+    VkExtent2D         extent        = vkl::utils::chooseSwapExtent(swapChainSupport.capabilities, m_windowData->window);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 
@@ -331,9 +331,9 @@ void VulkanRenderer::createSwapChain() {
 
 void VulkanRenderer::recreateSwapChain() {
     int width = 0, height = 0;
-    glfwGetFramebufferSize(m_window, &width, &height);
+    glfwGetFramebufferSize(m_windowData->window, &width, &height);
     while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(m_window, &width, &height);
+        glfwGetFramebufferSize(m_windowData->window, &width, &height);
         glfwWaitEvents();
     }
 
@@ -420,7 +420,7 @@ void VulkanRenderer::setupDebugMessenger() {
 }
 
 void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                           const VkAllocationCallbacks *pAllocator) {
+                                                   const VkAllocationCallbacks *pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
@@ -438,18 +438,16 @@ void VulkanRenderer::createSyncObjects() {
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
     for (auto &m_frameSyncObject : m_frameSyncObjects) {
-        VK_CHECK_RESULT(
-            vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(
-            vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
 
         m_deletionQueue.push_function([=]() { m_frameSyncObject.destroy(m_device->logicalDevice); });
     }
 }
 
-void VulkanRenderer::recordCommandBuffer(WindowData * windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
-                                 uint32_t                                              frameIdx) {
+void VulkanRenderer::recordCommandBuffer(WindowData *windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+                                         uint32_t frameIdx) {
     recordCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
 }
 
@@ -457,37 +455,6 @@ void VulkanRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
     m_device->endSingleTimeCommands(cmd, m_queues.graphics);
-}
-
-void VulkanRenderer::loadImageFromFile(vkl::VulkanTexture &texture, std::string_view imagePath) {
-    int          texWidth, texHeight, texChannels;
-    stbi_uc     *pixels    = stbi_load(imagePath.data(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    assert(pixels && "read texture failed.");
-
-    vkl::VulkanBuffer stagingBuffer;
-    m_device->createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-    stagingBuffer.map();
-    stagingBuffer.copyTo(pixels, static_cast<size_t>(imageSize));
-    stagingBuffer.unmap();
-
-    stbi_image_free(pixels);
-
-    m_device->createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                          VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
-
-    m_device->transitionImageLayout(m_queues.graphics, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    m_device->copyBufferToImage(m_queues.graphics, stagingBuffer.buffer, texture.image, static_cast<uint32_t>(texWidth),
-                                static_cast<uint32_t>(texHeight));
-    m_device->transitionImageLayout(m_queues.graphics, texture.image, VK_FORMAT_R8G8B8A8_SRGB,
-                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    stagingBuffer.destroy();
 }
 
 void VulkanRenderer::prepareFrame() {
@@ -549,9 +516,9 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
 }
 
-void VulkanRenderer::recordCommandBuffer(WindowData * windowData, VkRenderPass                                          renderPass,
-                                 const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
-                                 uint32_t                                              frameIdx) {
+void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
+                                         const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+                                         uint32_t                                              frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
@@ -583,5 +550,29 @@ void VulkanRenderer::recordCommandBuffer(WindowData * windowData, VkRenderPass  
 
     vkCmdEndRenderPass(commandBuffer);
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+}
+void VulkanRenderer::init() {
+    createInstance();
+    setupDebugMessenger();
+    createSurface();
+    createDevice();
+    createSwapChain();
+    createSwapChainImageViews();
+    createCommandBuffers();
+    createDepthResources();
+    createRenderPass();
+    createFramebuffers();
+    setupPipelineBuilder();
+    createSyncObjects();
+}
+void VulkanRenderer::destroy() {
+    cleanupSwapChain();
+    m_deletionQueue.flush();
+}
+void VulkanRenderer::setWindow(GLFWwindow *window) {
+    m_windowData->window = window;
+}
+void VulkanRenderer::waitIdle() const {
+    vkDeviceWaitIdle(m_device->logicalDevice);
 }
 } // namespace vkl

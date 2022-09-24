@@ -1,14 +1,13 @@
 #include "scene_manager.h"
 
 void scene_manager::drawFrame() {
-    updateUniformBuffer();
-
     float currentFrame    = glfwGetTime();
     m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
     m_frameData.lastFrame = currentFrame;
 
     renderer->prepareFrame();
     renderer->submitFrame();
+    updateUniformBuffer();
 }
 
 void scene_manager::updateUniformBuffer() {
@@ -79,45 +78,16 @@ void scene_manager::loadScene() {
 }
 
 void scene_manager::setupShaders() {
-    // per-scene layout
-    std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-    };
-
-    // per-material layout
-    std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-    };
-
-    // build Shader
-    auto shaderDir = glslShaderDir / m_sessionName;
-    {
-        m_modelShaderEffect.pushSetLayout(renderer->m_device->logicalDevice, perSceneBindings)
-            .pushSetLayout(renderer->m_device->logicalDevice, perMaterialBindings)
-            .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
-            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-            .buildPipelineLayout(renderer->m_device->logicalDevice);
-        m_modelShaderPass.build(renderer->m_device->logicalDevice, renderer->m_defaultRenderPass, renderer->m_pipelineBuilder, &m_modelShaderEffect);
-    }
-
     {
         m_sceneRenderer.resize(renderer->m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++) {
             m_sceneRenderer[i] = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, renderer->m_commandBuffers[i], renderer->m_device, renderer->m_queues.graphics, renderer->m_queues.transfer);
-            std::dynamic_pointer_cast<vkl::VulkanSceneRenderer>(m_sceneRenderer[i])->setShaderPass(&m_modelShaderPass);
+            m_sceneRenderer[i]->setRenderer(renderer.get());
             m_sceneRenderer[i]->loadResources();
         }
     }
 
     m_deletionQueue.push_function([&]() {
-        m_modelShaderEffect.destroy(renderer->m_device->logicalDevice);
-        m_modelShaderPass.destroy(renderer->m_device->logicalDevice);
-        m_shaderCache.destory(renderer->m_device->logicalDevice);
-
         for (auto &sceneRenderer : m_sceneRenderer) {
             sceneRenderer->cleanupResources();
         }

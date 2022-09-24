@@ -4,6 +4,7 @@
 #include "renderObject.h"
 #include "vkInit.hpp"
 #include "pipeline.h"
+#include "vulkanRenderer.h"
 
 namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::VulkanDevice *device, VkQueue graphicsQueue, VkQueue transferQueue)
@@ -12,6 +13,7 @@ VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer co
 
 void VulkanSceneRenderer::loadResources() {
     _loadSceneNodes(_sceneManager->getRootNode());
+    _setupDefaultShaderEffect();
     _initRenderList();
     _initUboList();
 }
@@ -127,5 +129,34 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
 
 void VulkanSceneRenderer::setShaderPass(vkl::ShaderPass *pass) {
     _pass = pass;
+}
+void VulkanSceneRenderer::_setupDefaultShaderEffect() {
+    // per-scene layout
+    std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+    };
+
+    // per-material layout
+    std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+    };
+
+    // build Shader
+    std::filesystem::path shaderDir = "assets/shaders/glsl/scene_manager";
+    {
+        auto renderer = static_cast<VulkanRenderer*>(_renderer);
+        _effect = new ShaderEffect;
+        _effect->pushSetLayout(renderer->m_device->logicalDevice, perSceneBindings)
+            .pushSetLayout(renderer->m_device->logicalDevice, perMaterialBindings)
+            .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
+            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+            .buildPipelineLayout(renderer->m_device->logicalDevice);
+        _pass = new ShaderPass;
+        _pass->build(renderer->m_device->logicalDevice, renderer->m_defaultRenderPass, renderer->m_pipelineBuilder, _effect);
+    }
 }
 } // namespace vkl

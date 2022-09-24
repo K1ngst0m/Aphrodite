@@ -19,10 +19,11 @@ struct SwapChainSupportDetails {
 };
 
 struct WindowData {
-    uint32_t width;
-    uint32_t height;
+    GLFWwindow *window;
+    uint32_t    width;
+    uint32_t    height;
     WindowData(uint32_t w, uint32_t h)
-        : width(w), height(h) {
+        : window(nullptr), width(w), height(h) {
     }
 };
 
@@ -34,32 +35,14 @@ class VulkanRenderer : public Renderer {
     } m_settings;
 
 public:
-    void init() override {
-        createInstance();
-        setupDebugMessenger();
-        createSurface();
-        createDevice();
-        createSwapChain();
-        createSwapChainImageViews();
-        createCommandBuffers();
-        createDepthResources();
-        createRenderPass();
-        createFramebuffers();
-        setupPipelineBuilder();
-        createSyncObjects();
-    }
-    void destroy() override {
-        cleanupSwapChain();
-        m_deletionQueue.flush();
+    VulkanRenderer(WindowData *windowData)
+        : m_windowData(windowData) {
     }
 
-    void setWindow(GLFWwindow *window) {
-        m_window = window;
-    }
-
-    void waitIdle() const {
-        vkDeviceWaitIdle(m_device->logicalDevice);
-    }
+    void init() override;
+    void destroy() override;
+    void setWindow(GLFWwindow *window);
+    void waitIdle() const;
 
 public:
     void createInstance();
@@ -81,14 +64,13 @@ public:
     virtual void getEnabledFeatures() {
     }
 
-    void recordCommandBuffer(WindowData* windowData, VkRenderPass renderPass, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
-    void recordCommandBuffer(WindowData * windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
+    void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
+    void recordCommandBuffer(WindowData *windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
 
 public:
     std::vector<const char *> getRequiredInstanceExtensions();
     SwapChainSupportDetails   querySwapChainSupport(VkPhysicalDevice device);
     void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function);
-    void                      loadImageFromFile(VulkanTexture &texture, std::string_view imagePath);
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                                             const VkAllocationCallbacks *pAllocator);
 
@@ -128,6 +110,7 @@ public:
                    vkDestroyFence(device, inFlightFence, nullptr);
         }
     };
+
     std::vector<PerFrameSyncObject> m_frameSyncObjects;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
@@ -137,6 +120,7 @@ public:
     vkl::PipelineBuilder m_pipelineBuilder;
 
     uint32_t m_currentFrame = 0;
+
 public:
     uint32_t m_imageIdx;
 
@@ -144,13 +128,12 @@ public:
     VulkanDevice            *m_device;
     VkPhysicalDeviceFeatures enabledFeatures{};
 
-    GLFWwindow *m_window = nullptr;
-
 public:
     void prepareFrame();
     void submitFrame();
 
-    bool m_framebufferResized = false;
+    bool        m_framebufferResized = false;
+    WindowData *m_windowData         = nullptr;
 };
 } // namespace vkl
 
