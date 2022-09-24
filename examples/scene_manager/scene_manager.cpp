@@ -2,13 +2,18 @@
 
 void scene_manager::drawFrame() {
     updateUniformBuffer();
-    vkl::vklApp::prepareFrame();
-    vkl::vklApp::submitFrame();
+
+    float currentFrame    = glfwGetTime();
+    m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
+    m_frameData.lastFrame = currentFrame;
+
+    renderer->prepareFrame();
+    renderer->submitFrame();
 }
 
 void scene_manager::updateUniformBuffer() {
     m_sceneManager.update();
-    m_sceneRenderer[m_imageIdx]->update();
+    m_sceneRenderer[renderer->m_imageIdx]->update();
 }
 
 void scene_manager::initDerive() {
@@ -90,28 +95,28 @@ void scene_manager::setupShaders() {
     // build Shader
     auto shaderDir = glslShaderDir / m_sessionName;
     {
-        m_modelShaderEffect.pushSetLayout(m_device->logicalDevice, perSceneBindings)
-            .pushSetLayout(m_device->logicalDevice, perMaterialBindings)
+        m_modelShaderEffect.pushSetLayout(renderer->m_device->logicalDevice, perSceneBindings)
+            .pushSetLayout(renderer->m_device->logicalDevice, perMaterialBindings)
             .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
-            .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-            .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-            .buildPipelineLayout(m_device->logicalDevice);
-        m_modelShaderPass.build(m_device->logicalDevice, m_defaultRenderPass, m_pipelineBuilder, &m_modelShaderEffect);
+            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+            .pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+            .buildPipelineLayout(renderer->m_device->logicalDevice);
+        m_modelShaderPass.build(renderer->m_device->logicalDevice, renderer->m_defaultRenderPass, renderer->m_pipelineBuilder, &m_modelShaderEffect);
     }
 
     {
-        m_sceneRenderer.resize(m_commandBuffers.size());
+        m_sceneRenderer.resize(renderer->m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++) {
-            m_sceneRenderer[i] = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, m_commandBuffers[i], m_device, m_queues.graphics, m_queues.transfer);
+            m_sceneRenderer[i] = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, renderer->m_commandBuffers[i], renderer->m_device, renderer->m_queues.graphics, renderer->m_queues.transfer);
             std::dynamic_pointer_cast<vkl::VulkanSceneRenderer>(m_sceneRenderer[i])->setShaderPass(&m_modelShaderPass);
             m_sceneRenderer[i]->loadResources();
         }
     }
 
     m_deletionQueue.push_function([&]() {
-        m_modelShaderEffect.destroy(m_device->logicalDevice);
-        m_modelShaderPass.destroy(m_device->logicalDevice);
-        m_shaderCache.destory(m_device->logicalDevice);
+        m_modelShaderEffect.destroy(renderer->m_device->logicalDevice);
+        m_modelShaderPass.destroy(renderer->m_device->logicalDevice);
+        m_shaderCache.destory(renderer->m_device->logicalDevice);
 
         for (auto &sceneRenderer : m_sceneRenderer) {
             sceneRenderer->cleanupResources();
@@ -120,15 +125,11 @@ void scene_manager::setupShaders() {
 }
 
 void scene_manager::buildCommands() {
-    for (uint32_t idx = 0; idx < m_commandBuffers.size(); idx++) {
-        vklApp::recordCommandBuffer([&](VkCommandBuffer commandBuffer) {
+    for (uint32_t idx = 0; idx < renderer->m_commandBuffers.size(); idx++) {
+        renderer->recordCommandBuffer(&m_windowData, [&](VkCommandBuffer commandBuffer) {
             m_sceneRenderer[idx]->drawScene();
         }, idx);
     }
-}
-
-void scene_manager::getEnabledFeatures() {
-    enabledFeatures.samplerAnisotropy = m_device->features.samplerAnisotropy;
 }
 
 int main() {

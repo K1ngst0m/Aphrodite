@@ -11,7 +11,6 @@ public:
     ~scene_manager() override = default;
 
 private:
-    void getEnabledFeatures() override;
     void initDerive() override;
     void drawFrame() override;
 
