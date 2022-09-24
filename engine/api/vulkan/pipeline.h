@@ -112,22 +112,7 @@ public:
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
     void setShaders(ShaderEffect *shaders);
-    void resetToDefault(VkExtent2D extent){
-        vkl::VertexInputBuilder::setPipelineVertexInputState({vkl::VertexComponent::POSITION, vkl::VertexComponent::NORMAL,
-                                                        vkl::VertexComponent::UV, vkl::VertexComponent::COLOR, vkl::VertexComponent::TANGENT});
-        _vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;
-        _inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-        _viewport = vkl::init::viewport(extent);
-        _scissor = vkl::init::rect2D(extent);
-
-        _dynamicStages = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-        _dynamicState  = vkl::init::pipelineDynamicStateCreateInfo(_dynamicStages.data(), static_cast<uint32_t>(_dynamicStages.size()));
-
-        _rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-        _multisampling        = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-        _colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-        _depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
-    }
+    void resetToDefault(VkExtent2D extent);
 };
 }
 
