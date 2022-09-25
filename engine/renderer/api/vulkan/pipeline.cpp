@@ -104,29 +104,25 @@ void PipelineBuilder::setShaders(ShaderEffect *shaders)
     }
     _pipelineLayout = shaders->builtLayout;
 }
-ShaderEffect& ShaderEffect::buildPipelineLayout(VkDevice device)
+void ShaderEffect::buildPipelineLayout(VkDevice device)
 {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, constantRanges);
     VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &builtLayout));
-    return *this;
 }
-ShaderEffect& ShaderEffect::pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
+void ShaderEffect::pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
 {
     VkDescriptorSetLayout setLayout;
     VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
     VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &perSceneLayoutInfo, nullptr, &setLayout));
     setLayouts.push_back(setLayout);
-    return *this;
 }
-ShaderEffect& ShaderEffect::pushConstantRanges(VkPushConstantRange constantRange)
+void ShaderEffect::pushConstantRanges(VkPushConstantRange constantRange)
 {
     constantRanges.push_back(constantRange);
-    return *this;
 }
-ShaderEffect& ShaderEffect::pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits)
+void ShaderEffect::pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits)
 {
     stages.push_back({ module, stageBits });
-    return *this;
 }
 void ShaderPass::build(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *shaderEffect)
 {

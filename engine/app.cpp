@@ -40,11 +40,11 @@ void vklApp::cleanup() {
 }
 
 void vklApp::initRenderer() {
-    renderer = std::make_unique<VulkanRenderer>(&m_windowData);
-    renderer->initDevice();
+    m_renderer = std::make_unique<VulkanRenderer>(&m_windowData);
+    m_renderer->initDevice();
 
     m_deletionQueue.push_function([&](){
-        renderer->destroyDevice();
+        m_renderer->destroyDevice();
     });
 }
 
@@ -64,7 +64,7 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
     m_mouseData.lastX = xpos;
     m_mouseData.lastY = ypos;
 
-    m_camera->rotate(glm::vec3(dy * m_camera->getRotationSpeed(), -dx * m_camera->getRotationSpeed(), 0.0f));
+    m_defaultCamera->rotate(glm::vec3(dy * m_defaultCamera->getRotationSpeed(), -dx * m_defaultCamera->getRotationSpeed(), 0.0f));
 
 }
 
@@ -81,24 +81,24 @@ void vklApp::keyboardHandleDerive() {
         glfwSetWindowShouldClose(m_windowData.window, true);
 
     if (glfwGetKey(m_windowData.window, GLFW_KEY_W) == GLFW_PRESS)
-        m_camera->keys.up = true;
+        m_defaultCamera->keys.up = true;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_S) == GLFW_PRESS)
-        m_camera->keys.down = true;
+        m_defaultCamera->keys.down = true;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_A) == GLFW_PRESS)
-        m_camera->keys.left = true;
+        m_defaultCamera->keys.left = true;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_D) == GLFW_PRESS)
-        m_camera->keys.right = true;
+        m_defaultCamera->keys.right = true;
 
     if (glfwGetKey(m_windowData.window, GLFW_KEY_W) == GLFW_RELEASE)
-        m_camera->keys.up = false;
+        m_defaultCamera->keys.up = false;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_S) == GLFW_RELEASE)
-        m_camera->keys.down = false;
+        m_defaultCamera->keys.down = false;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_A) == GLFW_RELEASE)
-        m_camera->keys.left = false;
+        m_defaultCamera->keys.left = false;
     if (glfwGetKey(m_windowData.window, GLFW_KEY_D) == GLFW_RELEASE)
-        m_camera->keys.right = false;
+        m_defaultCamera->keys.right = false;
 
-    m_camera->processMove(m_frameData.deltaTime);
+    m_defaultCamera->processMove(m_frameData.deltaTime);
 }
 
 void vklApp::run() {
@@ -108,7 +108,7 @@ void vklApp::run() {
         drawFrame();
     }
 
-    renderer->idleDevice();
+    m_renderer->idleDevice();
 }
 
 void vklApp::finish() {

@@ -7,16 +7,11 @@
 
 #include "device.h"
 #include "pipeline.h"
-#include "texture.h"
 #include "sceneRenderer.h"
+#include "swapChain.h"
+#include "texture.h"
 
 namespace vkl {
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
-};
-
 struct WindowData {
     GLFWwindow *window = nullptr;
     uint32_t    width;
@@ -28,9 +23,8 @@ struct WindowData {
 
 class VulkanRenderer : public Renderer {
 public:
-    VulkanRenderer(WindowData *windowData)
-        : m_windowData(windowData) {
-    }
+    VulkanRenderer(WindowData *windowData);
+    ~VulkanRenderer() = default;
 
     void initDevice() override;
     void destroyDevice() override;
@@ -44,14 +38,15 @@ private:
     void _createDevice();
     void _createSurface();
     void _setupDebugMessenger();
-    void _createSwapChain();
+    void _setupSwapChain();
     void _recreateSwapChain();
-    void _cleanupSwapChain();
     void _createSwapChainImageViews();
     bool _checkValidationLayerSupport();
 
-private:
+public:
     void initDefaultResource();
+
+private:
     void _createDepthResources();
     void _createRenderPass();
     void _createFramebuffers();
@@ -59,26 +54,9 @@ private:
     void _createSyncObjects();
     void _createCommandBuffers();
 
-private:
-    void getEnabledFeatures() {}
-
 public:
     void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
     void recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
-
-public:
-    std::vector<const char *> getRequiredInstanceExtensions();
-    SwapChainSupportDetails   querySwapChainSupport(VkPhysicalDevice device) const;
-    void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function);
-    void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                                            const VkAllocationCallbacks *pAllocator);
-
-    vkl::DeletionQueue m_deletionQueue;
-
-public:
-    VkInstance                m_instance;
-    std::vector<const char *> m_supportedInstanceExtensions;
-    VkDebugUtilsMessengerEXT  m_debugMessenger;
 
     struct {
         VkQueue graphics;
@@ -86,18 +64,29 @@ public:
         VkQueue transfer;
     } m_queues;
 
-    VkSurfaceKHR   m_surface;
-    VkSwapchainKHR m_swapChain;
-    VkFormat       m_swapChainImageFormat;
-    VkExtent2D     m_swapChainExtent;
+    std::vector<VkCommandBuffer> m_commandBuffers;
 
-    std::vector<VkImage>       m_swapChainImages;
-    std::vector<VkImageView>   m_swapChainImageViews;
-    std::vector<VkFramebuffer> m_framebuffers;
+    VkRenderPass         m_defaultRenderPass;
+    vkl::PipelineBuilder m_pipelineBuilder;
 
-    vkl::VulkanTexture m_depthAttachment;
+private:
+    void getEnabledFeatures() {
+    }
 
-    VkRenderPass m_defaultRenderPass;
+private:
+    std::vector<const char *> getRequiredInstanceExtensions();
+    void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function);
+    void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                                            const VkAllocationCallbacks *pAllocator);
+
+    vkl::DeletionQueue m_deletionQueue;
+
+private:
+    VkInstance                m_instance;
+    std::vector<const char *> m_supportedInstanceExtensions;
+    VkDebugUtilsMessengerEXT  m_debugMessenger;
+
+    VkSurfaceKHR m_surface;
 
     struct PerFrameSyncObject {
         VkSemaphore renderSemaphore;
@@ -112,14 +101,8 @@ public:
 
     std::vector<PerFrameSyncObject> m_frameSyncObjects;
 
-    std::vector<VkCommandBuffer> m_commandBuffers;
-
-    vkl::PipelineBuilder m_pipelineBuilder;
-
     uint32_t m_currentFrame = 0;
-
-public:
-    uint32_t m_imageIdx = 0;
+    uint32_t m_imageIdx     = 0;
 
 public:
     VulkanDevice            *m_device;
@@ -134,6 +117,8 @@ public:
 
     void prepareUI();
     void initImGui();
+
+    VulkanSwapChain m_swapChain;
 };
 } // namespace vkl
 

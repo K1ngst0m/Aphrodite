@@ -19,6 +19,7 @@ public:
     void drawScene() override;
 
 private:
+    void _initRenderResource();
     void _initRenderList();
     void _setupDefaultShaderEffect();
     void _initUboList();
@@ -26,10 +27,10 @@ private:
 
 private:
     VkDescriptorPool                   _descriptorPool;
-    std::unique_ptr<vkl::ShaderEffect> _effect;
-    std::unique_ptr<vkl::ShaderPass>   _pass;
     std::vector<VkDescriptorSet>       _globalDescriptorSets;
     vkl::ShaderCache                   m_shaderCache;
+    std::unique_ptr<vkl::ShaderEffect> _effect;
+    std::unique_ptr<vkl::ShaderPass>   _pass;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>>       _renderList;

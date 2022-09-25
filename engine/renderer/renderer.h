@@ -15,9 +15,9 @@ public:
     } m_settings;
 
 public:
-    virtual void initDevice()                  = 0;
-    virtual void destroyDevice()               = 0;
-    virtual void idleDevice()                  = 0;
+    virtual void initDevice()            = 0;
+    virtual void destroyDevice()         = 0;
+    virtual void idleDevice()            = 0;
     virtual void setWindow(void *window) = 0;
 
     virtual void prepareFrame() = 0;
@@ -26,8 +26,8 @@ public:
     virtual std::shared_ptr<SceneRenderer> createSceneRenderer() = 0;
 
 protected:
-    GraphicsDevice *_device;
-    std::shared_ptr<SceneRenderer>  _sceneRenderer;
+    GraphicsDevice                *_device;
+    std::shared_ptr<SceneRenderer> _sceneRenderer;
 };
 } // namespace vkl
 

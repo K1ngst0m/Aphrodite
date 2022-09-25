@@ -63,12 +63,10 @@ protected:
     FrameData  m_frameData;
     MouseData  m_mouseData;
 
-    std::shared_ptr<Camera> m_camera = nullptr;
+    std::shared_ptr<Camera> m_defaultCamera = nullptr;
+    std::unique_ptr<Renderer> m_renderer;
 
     vkl::DeletionQueue m_deletionQueue;
-
-    std::unique_ptr<Renderer> renderer;
-
     bool m_framebufferResized = false;
 };
 } // namespace vkl

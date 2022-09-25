@@ -5,8 +5,8 @@ void scene_manager::drawFrame() {
     m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
     m_frameData.lastFrame = currentFrame;
 
-    renderer->prepareFrame();
-    renderer->submitFrame();
+    m_renderer->prepareFrame();
+    m_renderer->submitFrame();
     updateUniformBuffer();
 }
 
@@ -28,15 +28,15 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_camera = m_sceneManager->createCamera((float)m_windowData.width / m_windowData.height);
-        m_camera->setType(vkl::CameraType::FIRSTPERSON);
-        m_camera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
-        m_camera->setPerspective(60.0f, (float)m_windowData.width / (float)m_windowData.height, 0.1f, 256.0f);
-        m_camera->setMovementSpeed(2.5f);
-        m_camera->setRotationSpeed(0.1f);
+        m_defaultCamera = m_sceneManager->createCamera((float)m_windowData.width / m_windowData.height);
+        m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
+        m_defaultCamera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
+        m_defaultCamera->setPerspective(60.0f, (float)m_windowData.width / (float)m_windowData.height, 0.1f, 256.0f);
+        m_defaultCamera->setMovementSpeed(2.5f);
+        m_defaultCamera->setRotationSpeed(0.1f);
 
         auto *node = m_sceneManager->getRootNode()->createChildNode();
-        node->attachObject(m_camera);
+        node->attachObject(m_defaultCamera);
     }
 
     {
@@ -77,7 +77,7 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer = renderer->createSceneRenderer();
+        m_sceneRenderer = m_renderer->createSceneRenderer();
         m_sceneRenderer->setScene(m_sceneManager.get());
         m_sceneRenderer->loadResources();
     }
