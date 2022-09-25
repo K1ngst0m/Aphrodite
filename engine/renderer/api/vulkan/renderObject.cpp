@@ -6,8 +6,8 @@
 #include "pipeline.h"
 
 namespace vkl {
-VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, const VkCommandBuffer drawCmd)
-    : _device(device), _drawCmd(drawCmd), _renderer(renderer), _entity(entity) {
+VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity)
+    : _device(device), _renderer(renderer), _entity(entity) {
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
@@ -72,7 +72,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadImages(queue);
     loadBuffer(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
 }
-void VulkanRenderObject::drawNode(const SubEntity *node) {
+void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node) {
     if (!node->primitives.empty()) {
         glm::mat4  nodeMatrix    = node->matrix;
         SubEntity *currentParent = node->parent;
@@ -80,29 +80,29 @@ void VulkanRenderObject::drawNode(const SubEntity *node) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
-        vkCmdPushConstants(_drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+        vkCmdPushConstants(drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
         for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
-                vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
+                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
                                         &_materialGpuDataList[primitive.materialIndex].set, 0, nullptr);
-                vkCmdDrawIndexed(_drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                vkCmdDrawIndexed(drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
     for (const auto &child : node->children) {
-        drawNode(child.get());
+        drawNode(drawCmd, child.get());
     }
 }
-void VulkanRenderObject::draw(VkDescriptorSet* globalSet) {
+void VulkanRenderObject::draw(VkCommandBuffer drawCmd, VkDescriptorSet* globalSet) {
     assert(_shaderPass);
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindDescriptorSets(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, globalSet, 0, nullptr);
-    vkCmdBindVertexBuffers(_drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
-    vkCmdBindIndexBuffer(_drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(_drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
+    vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, globalSet, 0, nullptr);
+    vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
+    vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
     for (auto &node : _entity->_subEntityList) {
-        drawNode(node.get());
+        drawNode(drawCmd, node.get());
     }
 }
 void VulkanRenderObject::cleanupResources() {

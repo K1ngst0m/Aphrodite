@@ -28,6 +28,7 @@ struct WindowData {
 };
 
 class VulkanRenderer : public Renderer {
+public:
     struct {
         bool           enableValidationLayers = true;
         bool           enableUI               = false;
@@ -64,8 +65,8 @@ public:
     virtual void getEnabledFeatures() {
     }
 
-    void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
-    void recordCommandBuffer(WindowData *windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands, uint32_t frameIdx);
+    void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
+    void recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
 
 public:
     std::vector<const char *> getRequiredInstanceExtensions();
@@ -122,7 +123,7 @@ public:
     uint32_t m_currentFrame = 0;
 
 public:
-    uint32_t m_imageIdx;
+    uint32_t m_imageIdx = 0;
 
 public:
     VulkanDevice            *m_device;

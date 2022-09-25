@@ -450,7 +450,7 @@ void VulkanRenderer::createSyncObjects() {
     }
 }
 
-void VulkanRenderer::recordCommandBuffer(WindowData *windowData, const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+void VulkanRenderer::recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands,
                                          uint32_t frameIdx) {
     recordCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
 }
@@ -521,7 +521,7 @@ void VulkanRenderer::submitFrame() {
 }
 
 void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
-                                         const std::function<void(VkCommandBuffer cmdBuffer)> &drawCommands,
+                                         const std::function<void()> &drawCommands,
                                          uint32_t                                              frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];
 
@@ -550,7 +550,7 @@ void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass re
         // ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }
 
-    drawCommands(commandBuffer);
+    drawCommands();
 
     vkCmdEndRenderPass(commandBuffer);
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));

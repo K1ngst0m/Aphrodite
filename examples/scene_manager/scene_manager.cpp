@@ -12,7 +12,8 @@ void scene_manager::drawFrame() {
 
 void scene_manager::updateUniformBuffer() {
     m_sceneManager.update();
-    m_sceneRenderer[renderer->m_imageIdx]->update();
+    // m_sceneRenderer[renderer->m_imageIdx]->update();
+    m_sceneRenderer->update();
 }
 
 void scene_manager::initDerive() {
@@ -76,25 +77,19 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer.resize(renderer->m_commandBuffers.size());
-        for (size_t i = 0; i < m_sceneRenderer.size(); i++) {
-            m_sceneRenderer[i] = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, renderer->m_commandBuffers[i], renderer->m_device, renderer->m_queues.graphics, renderer->m_queues.transfer);
-            m_sceneRenderer[i]->setRenderer(renderer.get());
-            m_sceneRenderer[i]->loadResources();
-        }
+        m_sceneRenderer = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, renderer.get());
+        m_sceneRenderer->loadResources();
     }
 
     m_deletionQueue.push_function([&]() {
-        for (auto &sceneRenderer : m_sceneRenderer) {
-            sceneRenderer->cleanupResources();
-        }
+        m_sceneRenderer->cleanupResources();
     });
 }
 
 void scene_manager::buildCommands() {
     for (uint32_t idx = 0; idx < renderer->m_commandBuffers.size(); idx++) {
-        renderer->recordCommandBuffer(&m_windowData, [&](VkCommandBuffer commandBuffer) {
-            m_sceneRenderer[idx]->drawScene();
+        renderer->recordCommandBuffer(&m_windowData, [&]() {
+            m_sceneRenderer->drawScene(idx);
         }, idx);
     }
 }

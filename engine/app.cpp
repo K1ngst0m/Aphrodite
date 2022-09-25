@@ -112,6 +112,7 @@ void vklApp::finish() {
     cleanupDerive();
     cleanup();
 }
+
 void vklApp::init() {
     initWindow();
     initRenderer();

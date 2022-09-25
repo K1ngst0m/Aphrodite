@@ -9,7 +9,4 @@ void SceneRenderer::setScene(SceneManager *scene) {
     _sceneManager = scene;
     loadResources();
 }
-void SceneRenderer::setRenderer(Renderer *renderer) {
-    _renderer = renderer;
-}
 } // namespace vkl

@@ -7,8 +7,8 @@
 #include "vulkanRenderer.h"
 
 namespace vkl {
-VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VkCommandBuffer commandBuffer, vkl::VulkanDevice *device, VkQueue graphicsQueue, VkQueue transferQueue)
-    : SceneRenderer(scene), _device(device), _drawCmd(commandBuffer), _transferQueue(transferQueue), _graphicsQueue(graphicsQueue)
+VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VulkanRenderer * renderer)
+    : SceneRenderer(scene), _device(renderer->m_device), _transferQueue(renderer->m_queues.transfer), _graphicsQueue(renderer->m_queues.graphics), _renderer(renderer)
 {}
 
 void VulkanSceneRenderer::loadResources() {
@@ -26,9 +26,9 @@ void VulkanSceneRenderer::cleanupResources() {
         ubo->cleanupResources();
     }
 }
-void VulkanSceneRenderer::drawScene() {
+void VulkanSceneRenderer::drawScene(uint32_t imageIdx) {
     for (auto &renderable : _renderList) {
-        renderable->draw(&_globalDescriptorSet);
+        renderable->draw(_renderer->m_commandBuffers[imageIdx], &_globalDescriptorSets[imageIdx]);
     }
 }
 void VulkanSceneRenderer::update() {
@@ -54,7 +54,7 @@ void VulkanSceneRenderer::_initUboList() {
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
     };
 
-    uint32_t maxSetSize = 0;
+    uint32_t maxSetSize = 100;
     for(auto & renderable : _renderList){
         maxSetSize += renderable->getSetCount();
     }
@@ -62,23 +62,26 @@ void VulkanSceneRenderer::_initUboList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
-    const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _pass->effect->setLayouts.data(), 1);
-    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_globalDescriptorSet));
-
-    std::vector<VkWriteDescriptorSet> descriptorWrites;
-    for (auto & ubo : _uboList) {
-        VkWriteDescriptorSet write = {
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet          = _globalDescriptorSet,
-            .dstBinding      = static_cast<uint32_t>(descriptorWrites.size()),
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo     = &ubo->buffer.getBufferInfo(),
-        };
-        descriptorWrites.push_back(write);
+    // TODO
+    _globalDescriptorSets.resize(5);
+    for (auto & set : _globalDescriptorSets){
+        const VkDescriptorSetAllocateInfo allocInfo  = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _pass->effect->setLayouts.data(), 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &set));
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        for (auto & ubo : _uboList) {
+            VkWriteDescriptorSet write = {
+                .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet          = set,
+                .dstBinding      = static_cast<uint32_t>(descriptorWrites.size()),
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo     = &ubo->buffer.getBufferInfo(),
+            };
+            descriptorWrites.push_back(write);
+        }
+        vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
-    vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
     for (auto & renderable : _renderList) {
         renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[1], _descriptorPool);
@@ -95,7 +98,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode * node) {
         switch (n->getAttachType()){
         case AttachType::ENTITY:
             {
-                auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity*>(n->getObject()), _drawCmd);
+                auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity*>(n->getObject()));
                 renderable->setTransform(n->getTransform());
                 _renderList.push_back(std::move(renderable));
             }

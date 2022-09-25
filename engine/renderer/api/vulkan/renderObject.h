@@ -18,13 +18,13 @@ struct MaterialGpuData {
 
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity, VkCommandBuffer drawCmd);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);
     void cleanupResources();
 
-    void draw(VkDescriptorSet * globalSet);
+    void draw(VkCommandBuffer drawCmd, VkDescriptorSet * globalSet);
 
     void        setShaderPass(ShaderPass *pass);
     ShaderPass *getShaderPass() const;
@@ -36,7 +36,7 @@ public:
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(const SubEntity *node);
+    void drawNode(VkCommandBuffer drawCmd, const SubEntity *node);
     void loadImages(VkQueue queue);
     void loadBuffer(vkl::VulkanDevice *device, VkQueue transferQueue, std::vector<VertexLayout> vertices = {}, std::vector<uint32_t> indices = {}, uint32_t vSize = 0, uint32_t iSize = 0);
 
@@ -56,7 +56,6 @@ private:
     std::vector<VulkanTexture> _textures;
 
     std::vector<MaterialGpuData> _materialGpuDataList;
-    const VkCommandBuffer        _drawCmd;
 
 private:
     VulkanSceneRenderer *_renderer;
