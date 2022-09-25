@@ -33,7 +33,6 @@ endfunction(buildExamples)
 
 set(EXAMPLES
   scene_manager
-  # imgui_example
 )
 
 buildExamples()

@@ -9,6 +9,11 @@ class VulkanUniformBufferObject;
 class VulkanRenderObject;
 class VulkanRenderer;
 
+enum DescriptorSetBinding {
+    SET_BINDING_SCENE = 0,
+    SET_BINDING_MATERIAL = 1,
+};
+
 class VulkanSceneRenderer : public SceneRenderer {
 public:
     VulkanSceneRenderer(VulkanRenderer *renderer);

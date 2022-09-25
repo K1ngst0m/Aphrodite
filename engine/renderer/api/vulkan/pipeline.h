@@ -38,7 +38,6 @@ struct ShaderCache{
 
             shaderModuleCaches[path] = {spvCode, shaderModule};
         }
-
         return &shaderModuleCaches[path];
     }
 

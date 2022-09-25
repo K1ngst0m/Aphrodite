@@ -1,9 +1,9 @@
 #include "renderObject.h"
-#include "vkInit.hpp"
 #include "device.h"
-#include "sceneRenderer.h"
-#include "scene/entity.h"
 #include "pipeline.h"
+#include "scene/entity.h"
+#include "sceneRenderer.h"
+#include "vkInit.hpp"
 
 namespace vkl {
 VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity)
@@ -11,7 +11,7 @@ VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::Vulka
 }
 void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
-        MaterialGpuData materialData {};
+        MaterialGpuData             materialData{};
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{
@@ -70,7 +70,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
 
     loadImages(queue);
-    loadBuffer(_device, queue, _entity->_vertices, _entity->_indices, vertexBufferSize, indexBufferSize);
+    loadBuffer(queue);
 }
 void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node) {
     if (!node->primitives.empty()) {
@@ -80,23 +80,25 @@ void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
+        nodeMatrix = _transform * nodeMatrix;
         vkCmdPushConstants(drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
         for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
-                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1,
-                                        &_materialGpuDataList[primitive.materialIndex].set, 0, nullptr);
+                MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
+                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1, &materialData.set, 0, nullptr);
                 vkCmdDrawIndexed(drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
+
     for (const auto &child : node->children) {
         drawNode(drawCmd, child.get());
     }
 }
-void VulkanRenderObject::draw(VkCommandBuffer drawCmd, VkDescriptorSet* globalSet) {
+void VulkanRenderObject::draw(VkCommandBuffer drawCmd, VkDescriptorSet &globalSet) {
     assert(_shaderPass);
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, globalSet, 0, nullptr);
+    vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &globalSet, 0, nullptr);
     vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
     vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
@@ -121,8 +123,11 @@ ShaderPass *VulkanRenderObject::getShaderPass() const {
 uint32_t VulkanRenderObject::getSetCount() {
     return 1 + _entity->_materials.size();
 }
+void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
+    auto vertices = _entity->_vertices;
+    auto indices = _entity->_indices;
+    auto device = _device;
 
-void VulkanRenderObject::loadBuffer(vkl::VulkanDevice *device, VkQueue transferQueue, std::vector<VertexLayout> vertices, std::vector<uint32_t> indices, uint32_t vSize, uint32_t iSize) {
     if (!vertices.empty()) {
         _vertexBuffer.vertices = std::move(vertices);
     }
@@ -140,6 +145,7 @@ void VulkanRenderObject::loadBuffer(vkl::VulkanDevice *device, VkQueue transferQ
 
     // setup vertex buffer
     {
+        auto vSize = vertices.size();
         VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertexBuffer.vertices[0]) * _vertexBuffer.vertices.size() : vSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
@@ -169,6 +175,7 @@ void VulkanRenderObject::loadBuffer(vkl::VulkanDevice *device, VkQueue transferQ
 
     // setup index buffer
     {
+        auto iSize = indices.size();
         VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indexBuffer.indices[0]) * _indexBuffer.indices.size() : iSize;
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {

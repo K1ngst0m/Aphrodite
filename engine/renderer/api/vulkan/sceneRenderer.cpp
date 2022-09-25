@@ -41,7 +41,7 @@ void VulkanSceneRenderer::drawScene() {
         _renderer->recordCommandBuffer(
             _renderer->m_windowData, [&]() {
                 for (auto &renderable : _renderList) {
-                    renderable->draw(_renderer->m_commandBuffers[idx], &_globalDescriptorSets[idx]);
+                    renderable->draw(_renderer->m_commandBuffers[idx], _globalDescriptorSets[idx]);
                 }
             }, idx);
     }
@@ -79,7 +79,7 @@ void VulkanSceneRenderer::_initUboList() {
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
     for (auto &set : _globalDescriptorSets) {
-        const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _pass->effect->setLayouts.data(), 1);
+        const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_pass->effect->setLayouts[SET_BINDING_SCENE], 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &set));
 
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -98,7 +98,7 @@ void VulkanSceneRenderer::_initUboList() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[1], _descriptorPool);
+        renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[SET_BINDING_MATERIAL], _descriptorPool);
     }
 }
 void VulkanSceneRenderer::_loadSceneNodes(SceneNode *node) {
@@ -151,7 +151,7 @@ void VulkanSceneRenderer::_setupDefaultShaderEffect() {
     };
 
     // build Shader
-    std::filesystem::path shaderDir = "assets/shaders/glsl/scene_manager";
+    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
     auto renderer = static_cast<VulkanRenderer *>(_renderer);
 

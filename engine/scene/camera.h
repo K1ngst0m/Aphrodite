@@ -33,18 +33,18 @@ public:
     void setRotationSpeed(float rotationSpeed);
     void setMovementSpeed(float movementSpeed);
 
-    bool isMoving() const;
+    bool  isMoving() const;
     float getNearClip() const;
     float getFarClip() const;
     float getRotationSpeed() const;
-    void processMove(float deltaTime);
+    void  processMove(float deltaTime);
 
     struct
     {
-        bool left = false;
+        bool left  = false;
         bool right = false;
-        bool up = false;
-        bool down = false;
+        bool up    = false;
+        bool down  = false;
     } keys;
 
 private:
@@ -56,7 +56,7 @@ private:
 
     glm::vec3 rotation = glm::vec3();
     glm::vec3 position = glm::vec3();
-    glm::vec4 viewPos = glm::vec4();
+    glm::vec4 viewPos  = glm::vec4();
 
     float rotationSpeed = 1.0f;
     float movementSpeed = 1.0f;
@@ -68,7 +68,6 @@ private:
         glm::mat4 perspective;
         glm::mat4 view;
     } matrices;
-
 
     float fov;
     float znear, zfar;

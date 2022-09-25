@@ -20,8 +20,8 @@ void vklApp::initWindow() {
 
     glfwSetFramebufferSizeCallback(m_windowData.window, [](GLFWwindow *window, int width, int height) {
         auto *app                 = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
-        app->m_windowData.width = width;
-        app->m_windowData.height = height;
+        app->m_windowData.width   = width;
+        app->m_windowData.height  = height;
         app->m_framebufferResized = true;
     });
 
@@ -45,7 +45,7 @@ void vklApp::initRenderer() {
     m_renderer->setWindow(&m_windowData);
     m_renderer->initDevice();
 
-    m_deletionQueue.push_function([&](){
+    m_deletionQueue.push_function([&]() {
         m_renderer->destroyDevice();
     });
 }
@@ -67,7 +67,6 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
     m_mouseData.lastY = ypos;
 
     m_defaultCamera->rotate(glm::vec3(dy * m_defaultCamera->getRotationSpeed(), -dx * m_defaultCamera->getRotationSpeed(), 0.0f));
-
 }
 
 void vklApp::keyboardHandleDerive() {
