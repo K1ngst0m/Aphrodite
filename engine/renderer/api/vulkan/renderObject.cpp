@@ -73,6 +73,9 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadBuffer(queue);
 }
 void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node) {
+    if (!node->isVisible){
+        return;
+    }
     if (!node->primitives.empty()) {
         glm::mat4  nodeMatrix    = node->matrix;
         SubEntity *currentParent = node->parent;
@@ -103,8 +106,8 @@ void VulkanRenderObject::draw(VkCommandBuffer drawCmd, VkDescriptorSet &globalSe
     vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
-    for (auto &node : _entity->_subEntityList) {
-        drawNode(drawCmd, node.get());
+    for (auto &subEntity : _entity->_subEntityList) {
+        drawNode(drawCmd, subEntity.get());
     }
 }
 void VulkanRenderObject::cleanupResources() {

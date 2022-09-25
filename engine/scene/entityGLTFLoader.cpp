@@ -52,52 +52,22 @@ void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
         tinygltf::Material glTFMaterial = input.materials[i];
-        if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
-            entity->_materials[i].baseColorFactor = glm::make_vec4(glTFMaterial.values["baseColorFactor"].ColorFactor().data());
+        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1){
+            entity->_materials[i].baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
         }
-        if (glTFMaterial.values.find("baseColorTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].baseColorTextureIndex = glTFMaterial.values["baseColorTexture"].TextureIndex();
+        if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
+            entity->_materials[i].normalTextureIndex = input.textures[glTFMaterial.additionalValues["normalTexture"].TextureIndex()].source;
+        } else {
+            entity->_materials[i].normalTextureIndex = 0;
         }
-        if (glTFMaterial.values.find("specularTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].specularTextureIndex = glTFMaterial.values["specularTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("diffuseTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].diffuseTextureIndex = glTFMaterial.values["diffuseTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("normalTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].normalTextureIndex = glTFMaterial.values["normalTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("metallicRoughnessTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].metallicRoughnessTextureIndex = glTFMaterial.values["metallicRoughnessTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("specularGlossinessTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].specularGlossinessTextureIndex = glTFMaterial.values["specularGlossinessTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("occlusionTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].occlusionTextureIndex = glTFMaterial.values["occlusionTexture"].TextureIndex();
-        }
-        if (glTFMaterial.values.find("emissiveTexture") != glTFMaterial.values.end()) {
-            entity->_materials[i].emissiveTextureIndex = glTFMaterial.values["emissiveTexture"].TextureIndex();
-        }
-        if (glTFMaterial.additionalValues.find("alphaMode") != glTFMaterial.additionalValues.end()) {
-            tinygltf::Parameter param = glTFMaterial.additionalValues["alphaMode"];
-            if (param.string_value == "BLEND") {
-                entity->_materials[i].alphaMode = Material::ALPHAMODE_BLEND;
-            }
-            if (param.string_value == "MASK") {
-                entity->_materials[i].alphaMode = Material::ALPHAMODE_MASK;
-            }
-        }
-        if (glTFMaterial.additionalValues.find("alphaCutoff") != glTFMaterial.additionalValues.end()) {
-            entity->_materials[i].alphaCutoff = static_cast<float>(glTFMaterial.additionalValues["alphaCutoff"].Factor());
-        }
-        entity->_materials[i].doubleSided = glTFMaterial.doubleSided;
+
     }
 }
 void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
     auto node    = std::make_shared<SubEntity>();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
+    node->name   = inputNode.name;
 
     if (inputNode.translation.size() == 3) {
         node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));

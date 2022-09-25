@@ -70,7 +70,7 @@ void VulkanSceneRenderer::_initUboList() {
     };
     _globalDescriptorSets.resize(_renderer->m_commandBuffers.size());
 
-    uint32_t maxSetSize = _globalDescriptorSets.size();
+    uint32_t maxSetSize = _globalDescriptorSets.size() + 100;
     for (auto &renderable : _renderList) {
         maxSetSize += renderable->getSetCount();
     }

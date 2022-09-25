@@ -37,6 +37,8 @@ struct Primitive {
 };
 
 struct SubEntity {
+    std::string   name;
+    bool          isVisible = true;
     SubEntity    *parent;
     SubEntityList children;
     PrimitiveList primitives;
