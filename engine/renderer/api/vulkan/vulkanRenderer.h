@@ -116,8 +116,6 @@ public:
 
     std::vector<VkCommandBuffer> m_commandBuffers;
 
-    VkDescriptorPool m_descriptorPool;
-
     vkl::PipelineBuilder m_pipelineBuilder;
 
     uint32_t m_currentFrame = 0;

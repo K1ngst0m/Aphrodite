@@ -11,8 +11,7 @@ void scene_manager::drawFrame() {
 }
 
 void scene_manager::updateUniformBuffer() {
-    m_sceneManager.update();
-    // m_sceneRenderer[renderer->m_imageIdx]->update();
+    m_sceneManager->update();
     m_sceneRenderer->update();
 }
 
@@ -24,46 +23,47 @@ void scene_manager::initDerive() {
 void scene_manager::loadScene() {
     // scene global argument setup
     {
-        m_sceneManager.setAmbient(glm::vec4(0.2f));
+        m_sceneManager = std::make_shared<vkl::SceneManager>();
+        m_sceneManager->setAmbient(glm::vec4(0.2f));
     }
 
     {
-        m_camera = m_sceneManager.createCamera((float)m_windowData.width / m_windowData.height);
+        m_camera = m_sceneManager->createCamera((float)m_windowData.width / m_windowData.height);
         m_camera->setType(vkl::CameraType::FIRSTPERSON);
         m_camera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
         m_camera->setPerspective(60.0f, (float)m_windowData.width / (float)m_windowData.height, 0.1f, 256.0f);
         m_camera->setMovementSpeed(2.5f);
         m_camera->setRotationSpeed(0.1f);
 
-        auto *node = m_sceneManager.getRootNode()->createChildNode();
+        auto *node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_camera);
     }
 
     {
-        m_pointLight = m_sceneManager.createLight();
+        m_pointLight = m_sceneManager->createLight();
         m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
         m_pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
         m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_pointLight->setType(vkl::LightType::POINT);
 
-        auto *node = m_sceneManager.getRootNode()->createChildNode();
+        auto *node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_pointLight);
     }
 
     {
-        m_directionalLight = m_sceneManager.createLight();
+        m_directionalLight = m_sceneManager->createLight();
         m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
         m_directionalLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
         m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_directionalLight->setType(vkl::LightType::DIRECTIONAL);
 
-        auto *node = m_sceneManager.getRootNode()->createChildNode();
+        auto *node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_directionalLight);
     }
 
     {
-        m_model                  = m_sceneManager.createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-        auto *node = m_sceneManager.getRootNode()->createChildNode();
+        m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
+        auto *node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_model);
     }
 
@@ -77,7 +77,7 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer = std::make_shared<vkl::VulkanSceneRenderer>(&m_sceneManager, renderer.get());
+        m_sceneRenderer = std::make_shared<vkl::VulkanSceneRenderer>(m_sceneManager.get(), renderer.get());
         m_sceneRenderer->loadResources();
     }
 
@@ -87,11 +87,7 @@ void scene_manager::loadScene() {
 }
 
 void scene_manager::buildCommands() {
-    for (uint32_t idx = 0; idx < renderer->m_commandBuffers.size(); idx++) {
-        renderer->recordCommandBuffer(&m_windowData, [&]() {
-            m_sceneRenderer->drawScene(idx);
-        }, idx);
-    }
+    m_sceneRenderer->drawScene();
 }
 
 int main() {

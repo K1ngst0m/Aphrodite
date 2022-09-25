@@ -15,16 +15,16 @@ private:
     void drawFrame() override;
 
 private:
-    virtual void updateUniformBuffer();
-    virtual void loadScene();
-    virtual void buildCommands();
+    void updateUniformBuffer();
+    void loadScene();
+    void buildCommands();
 
 private:
     std::shared_ptr<vkl::Light> m_pointLight = nullptr;
     std::shared_ptr<vkl::Light> m_directionalLight = nullptr;
     std::shared_ptr<vkl::Entity> m_model = nullptr;
 
-    vkl::SceneManager m_sceneManager;
+    std::shared_ptr<vkl::SceneManager> m_sceneManager;
     std::shared_ptr<vkl::SceneRenderer> m_sceneRenderer;
 };
 

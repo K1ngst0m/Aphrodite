@@ -36,13 +36,16 @@ void vklApp::initWindow() {
 }
 
 void vklApp::cleanup() {
-    renderer->destroy();
     m_deletionQueue.flush();
 }
 
 void vklApp::initRenderer() {
     renderer = std::make_unique<VulkanRenderer>(&m_windowData);
     renderer->init();
+
+    m_deletionQueue.push_function([&](){
+        renderer->destroy();
+    });
 }
 
 void vklApp::mouseHandleDerive(int xposIn, int yposIn) {

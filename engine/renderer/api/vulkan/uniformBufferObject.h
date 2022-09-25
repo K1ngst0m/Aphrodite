@@ -11,7 +11,7 @@ class UniformBufferObject;
 
 struct VulkanUniformBufferObject{
     VulkanUniformBufferObject(SceneRenderer *renderer, VulkanDevice *device, UniformBufferObject *ubo);
-    ~VulkanUniformBufferObject();
+    ~VulkanUniformBufferObject() = default;
 
     void cleanupResources();
 

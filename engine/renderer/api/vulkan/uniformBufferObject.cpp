@@ -21,8 +21,4 @@ void VulkanUniformBufferObject::cleanupResources() {
     buffer.destroy();
 }
 
-VulkanUniformBufferObject::~VulkanUniformBufferObject() {
-    cleanupResources();
-}
-
 } // namespace vkl

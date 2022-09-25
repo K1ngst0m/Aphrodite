@@ -12,7 +12,7 @@ public:
 
     virtual void loadResources() = 0;
     virtual void update() = 0;
-    virtual void drawScene(uint32_t imageIdx) = 0;
+    virtual void drawScene() = 0;
 
     virtual void cleanupResources() = 0;
 

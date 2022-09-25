@@ -16,8 +16,7 @@ public:
     void loadResources() override;
     void cleanupResources() override;
     void update() override;
-    void drawScene(uint32_t imageIdx) override;
-    void setShaderPass(vkl::ShaderPass *pass);
+    void drawScene() override;
 
 private:
     void _initRenderList();
@@ -27,10 +26,12 @@ private:
 
 private:
     vkl::VulkanDevice   *_device;
-    vkl::ShaderEffect   *_effect;
-    vkl::ShaderPass     *_pass;
     VkDescriptorPool     _descriptorPool;
+
+    std::unique_ptr<vkl::ShaderEffect>   _effect;
+    std::unique_ptr<vkl::ShaderPass>     _pass;
     std::vector<VkDescriptorSet>      _globalDescriptorSets;
+
     VkQueue              _transferQueue;
     VkQueue              _graphicsQueue;
 
