@@ -17,7 +17,6 @@ void scene_manager::updateUniformBuffer() {
 
 void scene_manager::initDerive() {
     loadScene();
-    setupShaders();
     buildCommands();
 }
 
@@ -75,9 +74,7 @@ void scene_manager::loadScene() {
         // auto *node = m_sceneManager.getRootNode()->createChildNode(modelTransform);
         // node->attachObject(helmet_model);
     }
-}
 
-void scene_manager::setupShaders() {
     {
         m_sceneRenderer.resize(renderer->m_commandBuffers.size());
         for (size_t i = 0; i < m_sceneRenderer.size(); i++) {

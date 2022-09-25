@@ -28,7 +28,7 @@ public:
 
 private:
     AABB                       aabb;
-    std::unique_ptr<SceneNode> rootNode;
+    std::unique_ptr<SceneNode> _rootNode;
 
     std::shared_ptr<Camera> _camera = nullptr;
 

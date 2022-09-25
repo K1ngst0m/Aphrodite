@@ -1,13 +1,10 @@
 #include "app.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
-
 namespace vkl {
+vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
+    : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),
+      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f) {
+}
 
 void vklApp::initWindow() {
     assert(glfwInit());
@@ -40,9 +37,10 @@ void vklApp::initWindow() {
 
 void vklApp::cleanup() {
     renderer->destroy();
+    m_deletionQueue.flush();
 }
 
-void vklApp::initVulkan() {
+void vklApp::initRenderer() {
     renderer = std::make_unique<VulkanRenderer>(&m_windowData);
     renderer->init();
 }
@@ -100,10 +98,6 @@ void vklApp::keyboardHandleDerive() {
     m_camera->processMove(m_frameData.deltaTime);
 }
 
-vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
-    : m_sessionName(std::move(sessionName)), m_windowData(winWidth, winHeight),
-      m_mouseData(m_windowData.width / 2.0f, m_windowData.height / 2.0f) {
-}
 void vklApp::run() {
     while (!glfwWindowShouldClose(m_windowData.window)) {
         glfwPollEvents();
@@ -113,85 +107,15 @@ void vklApp::run() {
 
     renderer->waitIdle();
 }
+
 void vklApp::finish() {
     cleanupDerive();
     cleanup();
 }
 void vklApp::init() {
     initWindow();
-    initVulkan();
+    initRenderer();
     initDerive();
 }
-
-// void vklApp::initImGui() {
-//     // 1: create descriptor pool for IMGUI
-//     //  the size of the pool is very oversize, but it's copied from imgui demo itself.
-//     VkDescriptorPoolSize poolSizes[] = {{VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-//                                         {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
-
-//     VkDescriptorPoolCreateInfo poolInfo = {
-//         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-//         .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-//         .maxSets       = 1000,
-//         .poolSizeCount = std::size(poolSizes),
-//         .pPoolSizes    = poolSizes,
-//     };
-
-//     VkDescriptorPool imguiPool;
-//     VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &imguiPool));
-
-//     // 2: initialize imgui library
-
-//     // this initializes the core structures of imgui
-//     ImGui::CreateContext();
-
-//     ImGui_ImplGlfw_InitForVulkan(m_windowData.window, true);
-
-//     // this initializes imgui for Vulkan
-//     ImGui_ImplVulkan_InitInfo initInfo = {
-//         .Instance       = m_instance,
-//         .PhysicalDevice = m_device->physicalDevice,
-//         .Device         = m_device->logicalDevice,
-//         .Queue          = m_queues.graphics,
-//         .DescriptorPool = imguiPool,
-//         .MinImageCount  = 3,
-//         .ImageCount     = 3,
-//         .MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
-//     };
-
-//     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
-
-//     // execute a gpu command to upload imgui font textures
-//     immediateSubmit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
-
-//     // clear font textures from cpu data
-//     ImGui_ImplVulkan_DestroyFontUploadObjects();
-
-//     glfwSetKeyCallback(m_windowData.window, ImGui_ImplGlfw_KeyCallback);
-//     glfwSetMouseButtonCallback(m_windowData.window, ImGui_ImplGlfw_MouseButtonCallback);
-
-//     m_deletionQueue.push_function([=]() {
-//         vkDestroyDescriptorPool(m_device->logicalDevice, imguiPool, nullptr);
-//         ImGui_ImplVulkan_Shutdown();
-//     });
-// }
-// void vklApp::prepareUI() {
-//     if (m_settings.enableUI) {
-//         ImGui_ImplVulkan_NewFrame();
-//         ImGui_ImplGlfw_NewFrame();
-//         ImGui::NewFrame();
-//         ImGui::ShowDemoWindow();
-//         ImGui::Render();
-//     }
-// }
 
 } // namespace vkl

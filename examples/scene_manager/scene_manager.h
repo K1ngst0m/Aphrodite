@@ -16,7 +16,6 @@ private:
 
 private:
     virtual void updateUniformBuffer();
-    virtual void setupShaders();
     virtual void loadScene();
     virtual void buildCommands();
 

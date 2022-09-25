@@ -19,11 +19,11 @@ struct SwapChainSupportDetails {
 };
 
 struct WindowData {
-    GLFWwindow *window;
+    GLFWwindow *window = nullptr;
     uint32_t    width;
     uint32_t    height;
     WindowData(uint32_t w, uint32_t h)
-        : window(nullptr), width(w), height(h) {
+        : width(w), height(h) {
     }
 };
 
@@ -69,7 +69,7 @@ public:
 
 public:
     std::vector<const char *> getRequiredInstanceExtensions();
-    SwapChainSupportDetails   querySwapChainSupport(VkPhysicalDevice device);
+    SwapChainSupportDetails   querySwapChainSupport(VkPhysicalDevice device) const;
     void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function);
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                                             const VkAllocationCallbacks *pAllocator);
@@ -134,6 +134,9 @@ public:
 
     bool        m_framebufferResized = false;
     WindowData *m_windowData         = nullptr;
+
+    void prepareUI();
+    void initImGui();
 };
 } // namespace vkl
 

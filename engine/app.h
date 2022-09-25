@@ -42,12 +42,10 @@ protected:
         bool           enableUI               = false;
         const uint32_t max_frames             = 2;
     } m_settings;
-    // void prepareUI();
 
 protected:
     void initWindow();
-    void initVulkan();
-    // void initImGui();
+    void initRenderer();
     void cleanup();
 
 protected:

@@ -5,7 +5,7 @@
 namespace vkl {
 SceneManager::SceneManager()
     : _ambient(glm::vec4(0.2f)) {
-    rootNode = std::make_unique<SceneNode>(nullptr);
+    _rootNode = std::make_unique<SceneNode>(nullptr);
 }
 
 std::shared_ptr<Camera> SceneManager::createCamera(float aspectRatio) {
@@ -40,7 +40,7 @@ void SceneManager::update() {
 SceneManager::~SceneManager() = default;
 
 SceneNode *SceneManager::getRootNode() {
-    return rootNode.get();
+    return _rootNode.get();
 }
 std::shared_ptr<Entity> SceneManager::createEntity(const std::string &path) {
     auto entity = std::make_shared<Entity>(this);

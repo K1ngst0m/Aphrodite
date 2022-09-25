@@ -1,5 +1,7 @@
 #define TINYGLTF_IMPLEMENTATION
 #include "entityGLTFLoader.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 namespace vkl {
 void GLTFLoader::load(Entity *entity, const std::string &path) {
