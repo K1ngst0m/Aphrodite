@@ -1,12 +1,10 @@
 #include "sceneRenderer.h"
 
 namespace vkl {
-SceneRenderer::SceneRenderer(SceneManager *scene)
-    : _sceneManager(scene) {
-}
-
 void SceneRenderer::setScene(SceneManager *scene) {
     _sceneManager = scene;
-    loadResources();
+    if (isSceneLoaded){
+        cleanupResources();
+    }
 }
 } // namespace vkl

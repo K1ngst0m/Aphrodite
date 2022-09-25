@@ -7,7 +7,7 @@
 namespace vkl {
 class SceneRenderer {
 public:
-    SceneRenderer(SceneManager *sceneManager);
+    SceneRenderer() = default;
     virtual ~SceneRenderer() = default;
 
     virtual void loadResources() = 0;
@@ -20,6 +20,7 @@ public:
 
 protected:
     SceneManager *_sceneManager;
+    bool isSceneLoaded = false;
 };
 
 } // namespace vkl

@@ -7,8 +7,11 @@
 #include "vulkanRenderer.h"
 
 namespace vkl {
-VulkanSceneRenderer::VulkanSceneRenderer(SceneManager *scene, VulkanRenderer *renderer)
-    : SceneRenderer(scene), _device(renderer->m_device), _transferQueue(renderer->m_queues.transfer), _graphicsQueue(renderer->m_queues.graphics), _renderer(renderer) {
+VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
+    : _device(renderer->m_device),
+      _renderer(renderer),
+      _transferQueue(renderer->m_queues.transfer),
+      _graphicsQueue(renderer->m_queues.graphics) {
 }
 
 void VulkanSceneRenderer::loadResources() {
@@ -16,6 +19,7 @@ void VulkanSceneRenderer::loadResources() {
     _setupDefaultShaderEffect();
     _initRenderList();
     _initUboList();
+    isSceneLoaded = true;
 }
 void VulkanSceneRenderer::cleanupResources() {
     vkDestroyDescriptorPool(_device->logicalDevice, _descriptorPool, nullptr);
@@ -71,8 +75,7 @@ void VulkanSceneRenderer::_initUboList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
-    // TODO
-    _globalDescriptorSets.resize(5);
+    _globalDescriptorSets.resize(_renderer->m_commandBuffers.size());
     for (auto &set : _globalDescriptorSets) {
         const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _pass->effect->setLayouts.data(), 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &set));

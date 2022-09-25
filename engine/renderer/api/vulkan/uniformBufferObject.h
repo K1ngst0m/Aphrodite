@@ -1,15 +1,15 @@
 #ifndef VKUNIFORMBUFFEROBJECT_H_
 #define VKUNIFORMBUFFEROBJECT_H_
 
-#include "common.h"
 #include "buffer.h"
+#include "common.h"
 
 namespace vkl {
 class SceneRenderer;
 class VulkanDevice;
 class UniformBufferObject;
 
-struct VulkanUniformBufferObject{
+struct VulkanUniformBufferObject {
     VulkanUniformBufferObject(SceneRenderer *renderer, VulkanDevice *device, UniformBufferObject *ubo);
     ~VulkanUniformBufferObject() = default;
 
@@ -22,10 +22,10 @@ struct VulkanUniformBufferObject{
 
     void destroy();
 
-    vkl::VulkanDevice              *_device = nullptr;
+    vkl::VulkanDevice        *_device   = nullptr;
     vkl::SceneRenderer       *_renderer = nullptr;
-    vkl::UniformBufferObject *_ubo = nullptr;
+    vkl::UniformBufferObject *_ubo      = nullptr;
 };
-}
+} // namespace vkl
 
 #endif // VKUNIFORMBUFFEROBJECT_H_

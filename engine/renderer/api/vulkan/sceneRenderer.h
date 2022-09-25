@@ -11,7 +11,7 @@ class VulkanRenderer;
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
-    VulkanSceneRenderer(SceneManager *scene, VulkanRenderer * renderer);
+    VulkanSceneRenderer(VulkanRenderer *renderer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;
@@ -25,24 +25,21 @@ private:
     void _loadSceneNodes(SceneNode *node);
 
 private:
-    vkl::VulkanDevice   *_device;
-    VkDescriptorPool     _descriptorPool;
-
-    std::unique_ptr<vkl::ShaderEffect>   _effect;
-    std::unique_ptr<vkl::ShaderPass>     _pass;
-    std::vector<VkDescriptorSet>      _globalDescriptorSets;
-
-    VkQueue              _transferQueue;
-    VkQueue              _graphicsQueue;
-
-    vkl::ShaderCache m_shaderCache;
+    VkDescriptorPool                   _descriptorPool;
+    std::unique_ptr<vkl::ShaderEffect> _effect;
+    std::unique_ptr<vkl::ShaderPass>   _pass;
+    std::vector<VkDescriptorSet>       _globalDescriptorSets;
+    vkl::ShaderCache                   m_shaderCache;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>>       _renderList;
     std::deque<std::unique_ptr<VulkanUniformBufferObject>> _uboList;
 
 private:
-    VulkanRenderer * _renderer;
+    vkl::VulkanDevice *_device;
+    VulkanRenderer    *_renderer;
+    VkQueue            _transferQueue;
+    VkQueue            _graphicsQueue;
 };
 } // namespace vkl
 

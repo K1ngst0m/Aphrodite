@@ -77,7 +77,8 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer = std::make_shared<vkl::VulkanSceneRenderer>(m_sceneManager.get(), renderer.get());
+        m_sceneRenderer = renderer->createSceneRenderer();
+        m_sceneRenderer->setScene(m_sceneManager.get());
         m_sceneRenderer->loadResources();
     }
 

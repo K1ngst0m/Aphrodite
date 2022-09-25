@@ -41,10 +41,10 @@ void vklApp::cleanup() {
 
 void vklApp::initRenderer() {
     renderer = std::make_unique<VulkanRenderer>(&m_windowData);
-    renderer->init();
+    renderer->initDevice();
 
     m_deletionQueue.push_function([&](){
-        renderer->destroy();
+        renderer->destroyDevice();
     });
 }
 
@@ -108,11 +108,10 @@ void vklApp::run() {
         drawFrame();
     }
 
-    renderer->waitIdle();
+    renderer->idleDevice();
 }
 
 void vklApp::finish() {
-    cleanupDerive();
     cleanup();
 }
 

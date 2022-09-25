@@ -5,11 +5,10 @@
 
 #include "renderer/renderer.h"
 
-#include <vulkan/vulkan.h>
-
 #include "device.h"
 #include "pipeline.h"
 #include "texture.h"
+#include "sceneRenderer.h"
 
 namespace vkl {
 struct SwapChainSupportDetails {
@@ -29,42 +28,41 @@ struct WindowData {
 
 class VulkanRenderer : public Renderer {
 public:
-    struct {
-        bool           enableValidationLayers = true;
-        bool           enableUI               = false;
-        const uint32_t max_frames             = 2;
-    } m_settings;
-
-public:
     VulkanRenderer(WindowData *windowData)
         : m_windowData(windowData) {
     }
 
-    void init() override;
-    void destroy() override;
-    void setWindow(GLFWwindow *window);
-    void waitIdle() const;
+    void initDevice() override;
+    void destroyDevice() override;
+    void idleDevice() override;
+    void setWindow(void *window) override;
+
+    std::shared_ptr<SceneRenderer> createSceneRenderer() override;
+
+private:
+    void _createInstance();
+    void _createDevice();
+    void _createSurface();
+    void _setupDebugMessenger();
+    void _createSwapChain();
+    void _recreateSwapChain();
+    void _cleanupSwapChain();
+    void _createSwapChainImageViews();
+    bool _checkValidationLayerSupport();
+
+private:
+    void initDefaultResource();
+    void _createDepthResources();
+    void _createRenderPass();
+    void _createFramebuffers();
+    void _setupPipelineBuilder();
+    void _createSyncObjects();
+    void _createCommandBuffers();
+
+private:
+    void getEnabledFeatures() {}
 
 public:
-    void createInstance();
-    void createDevice();
-    void createSurface();
-    void setupDebugMessenger();
-    void createSwapChain();
-    void recreateSwapChain();
-    void cleanupSwapChain();
-    void createSwapChainImageViews();
-    bool checkValidationLayerSupport();
-    void createDepthResources();
-    void createRenderPass();
-    void createFramebuffers();
-    void setupPipelineBuilder();
-
-    virtual void createSyncObjects();
-    virtual void createCommandBuffers();
-    virtual void getEnabledFeatures() {
-    }
-
     void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
     void recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
 
@@ -128,8 +126,8 @@ public:
     VkPhysicalDeviceFeatures enabledFeatures{};
 
 public:
-    void prepareFrame();
-    void submitFrame();
+    void prepareFrame() override;
+    void submitFrame() override;
 
     bool        m_framebufferResized = false;
     WindowData *m_windowData         = nullptr;

@@ -49,15 +49,12 @@ protected:
     void cleanup();
 
 protected:
-    virtual void initDerive() {
-    }
-    virtual void cleanupDerive() {
-    }
+    virtual void initDerive() = 0;
+    virtual void drawFrame() = 0;
+
+protected:
     virtual void keyboardHandleDerive();
     virtual void mouseHandleDerive(int xposIn, int yposIn);
-
-    virtual void drawFrame() {
-    }
 
 protected:
     const std::string m_sessionName;
@@ -70,7 +67,7 @@ protected:
 
     vkl::DeletionQueue m_deletionQueue;
 
-    std::unique_ptr<VulkanRenderer> renderer;
+    std::unique_ptr<Renderer> renderer;
 
     bool m_framebufferResized = false;
 };

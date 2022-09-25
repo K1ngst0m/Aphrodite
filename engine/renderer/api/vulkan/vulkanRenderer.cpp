@@ -1,4 +1,8 @@
 #include "vulkanRenderer.h"
+#include "scene/sceneRenderer.h"
+#include "renderObject.h"
+#include "uniformBufferObject.h"
+#include "sceneRenderer.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -55,7 +59,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
     createInfo.pfnUserCallback = debugCallback;
 }
 
-void VulkanRenderer::createFramebuffers() {
+void VulkanRenderer::_createFramebuffers() {
     m_framebuffers.resize(m_swapChainImageViews.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
         std::array<VkImageView, 2> attachments = {m_swapChainImageViews[i], m_depthAttachment.view};
@@ -93,14 +97,14 @@ std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
 
     std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (m_settings.enableValidationLayers) {
+    if (m_settings.enableDebug) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
     return extensions;
 }
 
-bool VulkanRenderer::checkValidationLayerSupport() {
+bool VulkanRenderer::_checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -125,7 +129,7 @@ bool VulkanRenderer::checkValidationLayerSupport() {
     return true;
 }
 
-void VulkanRenderer::createSurface() {
+void VulkanRenderer::_createSurface() {
     if (glfwCreateWindowSurface(m_instance, m_windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
@@ -133,8 +137,8 @@ void VulkanRenderer::createSurface() {
     m_deletionQueue.push_function([=]() { vkDestroySurfaceKHR(m_instance, m_surface, nullptr); });
 }
 
-void VulkanRenderer::createInstance() {
-    if (m_settings.enableValidationLayers && !checkValidationLayerSupport()) {
+void VulkanRenderer::_createInstance() {
+    if (m_settings.enableDebug && !_checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -157,7 +161,7 @@ void VulkanRenderer::createInstance() {
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     populateDebugMessengerCreateInfo(debugCreateInfo);
-    if (m_settings.enableValidationLayers) {
+    if (m_settings.enableDebug) {
         createInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
         createInfo.pNext               = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
@@ -169,7 +173,7 @@ void VulkanRenderer::createInstance() {
     m_deletionQueue.push_function([=]() { vkDestroyInstance(m_instance, nullptr); });
 }
 
-void VulkanRenderer::createDevice() {
+void VulkanRenderer::_createDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
 
@@ -203,7 +207,7 @@ void VulkanRenderer::createDevice() {
     m_deletionQueue.push_function([=]() { delete m_device; });
 }
 
-void VulkanRenderer::createRenderPass() {
+void VulkanRenderer::_createRenderPass() {
     VkAttachmentDescription colorAttachment{
         .format         = m_swapChainImageFormat,
         .samples        = VK_SAMPLE_COUNT_1_BIT,
@@ -270,7 +274,7 @@ void VulkanRenderer::createRenderPass() {
         [=]() { vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr); });
 }
 
-void VulkanRenderer::createSwapChainImageViews() {
+void VulkanRenderer::_createSwapChainImageViews() {
     m_swapChainImageViews.resize(m_swapChainImages.size());
 
     for (size_t i = 0; i < m_swapChainImages.size(); i++) {
@@ -278,7 +282,7 @@ void VulkanRenderer::createSwapChainImageViews() {
     }
 }
 
-void VulkanRenderer::createSwapChain() {
+void VulkanRenderer::_createSwapChain() {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_device->physicalDevice);
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -331,9 +335,13 @@ void VulkanRenderer::createSwapChain() {
 
     m_swapChainImageFormat = surfaceFormat.format;
     m_swapChainExtent      = extent;
+
+    m_deletionQueue.push_function([&](){
+        _cleanupSwapChain();
+    });
 }
 
-void VulkanRenderer::recreateSwapChain() {
+void VulkanRenderer::_recreateSwapChain() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(m_windowData->window, &width, &height);
     while (width == 0 || height == 0) {
@@ -343,15 +351,15 @@ void VulkanRenderer::recreateSwapChain() {
 
     vkDeviceWaitIdle(m_device->logicalDevice);
 
-    cleanupSwapChain();
+    _cleanupSwapChain();
 
-    createSwapChain();
-    createSwapChainImageViews();
-    createDepthResources();
-    createFramebuffers();
+    _createSwapChain();
+    _createSwapChainImageViews();
+    _createDepthResources();
+    _createFramebuffers();
 }
 
-void VulkanRenderer::cleanupSwapChain() {
+void VulkanRenderer::_cleanupSwapChain() {
     m_depthAttachment.destroy();
 
     for (auto &m_swapChainFramebuffer : m_framebuffers) {
@@ -365,7 +373,7 @@ void VulkanRenderer::cleanupSwapChain() {
     vkDestroySwapchainKHR(m_device->logicalDevice, m_swapChain, nullptr);
 }
 
-void VulkanRenderer::createCommandBuffers() {
+void VulkanRenderer::_createCommandBuffers() {
     m_commandBuffers.resize(m_swapChainImages.size());
 
     VkCommandBufferAllocateInfo allocInfo{
@@ -378,7 +386,7 @@ void VulkanRenderer::createCommandBuffers() {
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
 }
 
-void VulkanRenderer::createDepthResources() {
+void VulkanRenderer::_createDepthResources() {
     VkFormat depthFormat = m_device->findDepthFormat();
     m_device->createImage(m_swapChainExtent.width, m_swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -412,8 +420,8 @@ SwapChainSupportDetails VulkanRenderer::querySwapChainSupport(VkPhysicalDevice d
     return details;
 }
 
-void VulkanRenderer::setupDebugMessenger() {
-    if (!m_settings.enableValidationLayers)
+void VulkanRenderer::_setupDebugMessenger() {
+    if (!m_settings.enableDebug)
         return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -431,12 +439,12 @@ void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugU
     }
 }
 
-void VulkanRenderer::setupPipelineBuilder() {
+void VulkanRenderer::_setupPipelineBuilder() {
     m_pipelineBuilder.resetToDefault(m_swapChainExtent);
 }
 
-void VulkanRenderer::createSyncObjects() {
-    m_frameSyncObjects.resize(m_settings.max_frames);
+void VulkanRenderer::_createSyncObjects() {
+    m_frameSyncObjects.resize(m_settings.maxFrames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
@@ -469,7 +477,7 @@ void VulkanRenderer::prepareFrame() {
                               m_frameSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
+        _recreateSwapChain();
         return;
     }
 
@@ -512,12 +520,12 @@ void VulkanRenderer::submitFrame() {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
         m_framebufferResized = false;
-        recreateSwapChain();
+        _recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         VK_CHECK_RESULT(result);
     }
 
-    m_currentFrame = (m_currentFrame + 1) % m_settings.max_frames;
+    m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
 }
 
 void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
@@ -555,28 +563,22 @@ void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass re
     vkCmdEndRenderPass(commandBuffer);
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
-void VulkanRenderer::init() {
-    createInstance();
-    setupDebugMessenger();
-    createSurface();
-    createDevice();
-    createSwapChain();
-    createSwapChainImageViews();
-    createCommandBuffers();
-    createDepthResources();
-    createRenderPass();
-    createFramebuffers();
-    setupPipelineBuilder();
-    createSyncObjects();
+void VulkanRenderer::initDevice() {
+    _createInstance();
+    _setupDebugMessenger();
+    _createSurface();
+    _createDevice();
+    _createSwapChain();
+    _createSwapChainImageViews();
+    initDefaultResource();
 }
-void VulkanRenderer::destroy() {
-    cleanupSwapChain();
+void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
-void VulkanRenderer::setWindow(GLFWwindow *window) {
-    m_windowData->window = window;
+void VulkanRenderer::setWindow(void *window) {
+    m_windowData->window = static_cast<GLFWwindow*>(window);
 }
-void VulkanRenderer::waitIdle() const {
+void VulkanRenderer::idleDevice() {
     vkDeviceWaitIdle(m_device->logicalDevice);
 }
 
@@ -651,4 +653,17 @@ void VulkanRenderer::prepareUI() {
     }
 }
 
+void VulkanRenderer::initDefaultResource() {
+    _createCommandBuffers();
+    _createDepthResources();
+    _createRenderPass();
+    _createFramebuffers();
+    _setupPipelineBuilder();
+    _createSyncObjects();
+}
+
+std::shared_ptr<SceneRenderer> VulkanRenderer::createSceneRenderer() {
+    _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
+    return _sceneRenderer;
+}
 } // namespace vkl
