@@ -2,7 +2,7 @@
 #define VKLSCENERENDERER_H_
 
 #include "renderer/renderer.h"
-#include "sceneManager.h"
+#include "scene/sceneManager.h"
 
 namespace vkl {
 class SceneRenderer {

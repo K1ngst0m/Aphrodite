@@ -2,7 +2,7 @@
 #define VKSCENERENDERER_H_
 
 #include "pipeline.h"
-#include "scene/sceneRenderer.h"
+#include "renderer/sceneRenderer.h"
 
 namespace vkl {
 class VulkanUniformBufferObject;

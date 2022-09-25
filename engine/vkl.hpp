@@ -3,6 +3,7 @@
 
 #include "renderer/device.h"
 #include "renderer/renderer.h"
+#include "renderer/sceneRenderer.h"
 
 #include "renderer/api/vulkan/buffer.h"
 #include "renderer/api/vulkan/device.h"
@@ -21,6 +22,5 @@
 #include "scene/object.h"
 #include "scene/sceneManager.h"
 #include "scene/sceneNode.h"
-#include "scene/sceneRenderer.h"
 
 #endif // VKL_H_

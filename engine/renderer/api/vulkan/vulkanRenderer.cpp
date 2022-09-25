@@ -1,8 +1,9 @@
+#include "renderer/sceneRenderer.h"
+
 #include "vulkanRenderer.h"
-#include "scene/sceneRenderer.h"
 #include "renderObject.h"
-#include "uniformBufferObject.h"
 #include "sceneRenderer.h"
+#include "uniformBufferObject.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -336,7 +337,7 @@ void VulkanRenderer::_createSwapChain() {
     m_swapChainImageFormat = surfaceFormat.format;
     m_swapChainExtent      = extent;
 
-    m_deletionQueue.push_function([&](){
+    m_deletionQueue.push_function([&]() {
         _cleanupSwapChain();
     });
 }
@@ -530,7 +531,7 @@ void VulkanRenderer::submitFrame() {
 
 void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
                                          const std::function<void()> &drawCommands,
-                                         uint32_t                                              frameIdx) {
+                                         uint32_t                     frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
@@ -576,7 +577,7 @@ void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
 void VulkanRenderer::setWindow(void *window) {
-    m_windowData->window = static_cast<GLFWwindow*>(window);
+    m_windowData->window = static_cast<GLFWwindow *>(window);
 }
 void VulkanRenderer::idleDevice() {
     vkDeviceWaitIdle(m_device->logicalDevice);
