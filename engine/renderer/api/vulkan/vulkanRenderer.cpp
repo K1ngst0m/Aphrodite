@@ -440,8 +440,8 @@ void VulkanRenderer::initDevice() {
 void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
-void VulkanRenderer::setWindow(void *window) {
-    m_windowData->window = static_cast<GLFWwindow *>(window);
+void VulkanRenderer::setWindow(WindowData *windowData) {
+    m_windowData = windowData;
 }
 void VulkanRenderer::idleDevice() {
     vkDeviceWaitIdle(m_device->logicalDevice);
@@ -530,8 +530,5 @@ void VulkanRenderer::initDefaultResource() {
 std::shared_ptr<SceneRenderer> VulkanRenderer::createSceneRenderer() {
     _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
     return _sceneRenderer;
-}
-VulkanRenderer::VulkanRenderer(WindowData *windowData)
-    : m_windowData(windowData){
 }
 } // namespace vkl

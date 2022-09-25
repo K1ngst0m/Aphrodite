@@ -12,24 +12,15 @@
 #include "texture.h"
 
 namespace vkl {
-struct WindowData {
-    GLFWwindow *window = nullptr;
-    uint32_t    width;
-    uint32_t    height;
-    WindowData(uint32_t w, uint32_t h)
-        : width(w), height(h) {
-    }
-};
-
 class VulkanRenderer : public Renderer {
 public:
-    VulkanRenderer(WindowData *windowData);
+    VulkanRenderer()  = default;
     ~VulkanRenderer() = default;
 
     void initDevice() override;
     void destroyDevice() override;
     void idleDevice() override;
-    void setWindow(void *window) override;
+    void setWindow(WindowData *windowData) override;
 
     std::shared_ptr<SceneRenderer> createSceneRenderer() override;
 

@@ -24,6 +24,7 @@ void vklApp::initWindow() {
         app->m_windowData.height = height;
         app->m_framebufferResized = true;
     });
+
     glfwSetCursorPosCallback(m_windowData.window, [](GLFWwindow *window, double xposIn, double yposIn) {
         auto *app = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
         app->mouseHandleDerive(xposIn, yposIn);
@@ -40,7 +41,8 @@ void vklApp::cleanup() {
 }
 
 void vklApp::initRenderer() {
-    m_renderer = std::make_unique<VulkanRenderer>(&m_windowData);
+    m_renderer = Renderer::CreateRenderer(RenderBackend::VULKAN);
+    m_renderer->setWindow(&m_windowData);
     m_renderer->initDevice();
 
     m_deletionQueue.push_function([&](){

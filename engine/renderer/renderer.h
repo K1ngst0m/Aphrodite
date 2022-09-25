@@ -2,10 +2,24 @@
 #define RENDERER_H_
 
 #include "device.h"
-#include <memory>
+#include "common.h"
 
 namespace vkl {
 class SceneRenderer;
+enum class RenderBackend {
+    VULKAN,
+    OPENGL,
+};
+
+struct WindowData {
+    GLFWwindow *window = nullptr;
+    uint32_t    width;
+    uint32_t    height;
+    WindowData(uint32_t w, uint32_t h)
+        : width(w), height(h) {
+    }
+};
+
 class Renderer {
 public:
     struct {
@@ -15,15 +29,17 @@ public:
     } m_settings;
 
 public:
-    virtual void initDevice()            = 0;
-    virtual void destroyDevice()         = 0;
-    virtual void idleDevice()            = 0;
-    virtual void setWindow(void *window) = 0;
+    virtual void initDevice()                      = 0;
+    virtual void destroyDevice()                   = 0;
+    virtual void idleDevice()                      = 0;
+    virtual void setWindow(WindowData *windowData) = 0;
 
     virtual void prepareFrame() = 0;
     virtual void submitFrame()  = 0;
 
     virtual std::shared_ptr<SceneRenderer> createSceneRenderer() = 0;
+
+    static std::unique_ptr<Renderer> CreateRenderer(RenderBackend backend);
 
 protected:
     GraphicsDevice                *_device;

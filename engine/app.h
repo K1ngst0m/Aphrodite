@@ -66,8 +66,8 @@ protected:
     std::shared_ptr<Camera> m_defaultCamera = nullptr;
     std::unique_ptr<Renderer> m_renderer;
 
-    vkl::DeletionQueue m_deletionQueue;
     bool m_framebufferResized = false;
+    vkl::DeletionQueue m_deletionQueue;
 };
 } // namespace vkl
 

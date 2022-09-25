@@ -5,9 +5,12 @@
 #include "texture.h"
 #include "vkUtils.h"
 
+#include "renderer/device.h"
+
 namespace vkl {
 
-struct VulkanDevice {
+class VulkanDevice : public GraphicsDevice {
+public:
     VkPhysicalDevice                     physicalDevice;
     VkPhysicalDeviceProperties           properties;
     VkPhysicalDeviceFeatures             features;
