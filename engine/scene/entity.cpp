@@ -2,10 +2,10 @@
 #include "entityGLTFLoader.h"
 
 namespace vkl {
-Entity::~Entity() = default;
-Entity::Entity(SceneManager *manager)
-    : Object(manager) {
+Entity::Entity(SceneManager *manager, IdType id)
+    : Object(manager, id) {
 }
+Entity::~Entity() = default;
 void Entity::loadFromFile(const std::string &path) {
     GLTFLoader::load(this, path);
 }

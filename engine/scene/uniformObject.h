@@ -6,7 +6,7 @@
 namespace vkl {
 class UniformObject : public Object {
 public:
-    UniformObject(SceneManager *manager);
+    UniformObject(SceneManager *manager, IdType id);
     ~UniformObject() override = default;
 
     virtual void     load()   = 0;

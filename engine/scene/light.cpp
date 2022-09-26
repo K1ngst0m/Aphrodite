@@ -29,8 +29,8 @@ struct PointLightLayout {
     }
 };
 
-Light::Light(SceneManager *manager)
-    : UniformObject(manager),
+Light::Light(SceneManager *manager, IdType id)
+    : UniformObject(manager, id),
       _diffuse(0.5f, 0.5f, 0.5f, 1.0f),
       _specular(1.0f, 1.0f, 1.0f, 1.0f),
       _position(1.2f, 1.0f, 2.0f, 1.0f),

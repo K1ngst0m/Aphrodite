@@ -47,4 +47,10 @@ std::shared_ptr<Object> SceneNode::getObject() {
 glm::mat4 SceneNode::getTransform() {
     return _matrix;
 }
+IdType SceneNode::getAttachObjectId() {
+    return _object->getId();
+}
+bool SceneNode::isAttached() {
+    return _attachType != AttachType::UNATTACHED;
+}
 } // namespace vkl

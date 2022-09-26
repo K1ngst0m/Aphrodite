@@ -1,14 +1,14 @@
 #include "uniformObject.h"
 
 namespace vkl {
+UniformObject::UniformObject(SceneManager *manager, IdType id)
+    : Object(manager, id) {
+}
 bool UniformObject::isUpdated() const {
     return updated;
 }
 void UniformObject::setUpdated(bool flag) {
     updated = flag;
-}
-UniformObject::UniformObject(SceneManager *manager)
-    : Object(manager) {
 }
 void *UniformObject::getData() {
     return data.get();

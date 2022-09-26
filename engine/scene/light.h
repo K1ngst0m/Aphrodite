@@ -12,7 +12,7 @@ namespace vkl {
 
     class Light : public UniformObject {
     public:
-        Light(SceneManager *manager);
+        Light(SceneManager *manager, IdType id);
         ~Light() override;
 
         void setPosition(glm::vec4 value);

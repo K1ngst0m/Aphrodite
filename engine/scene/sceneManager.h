@@ -16,23 +16,27 @@ public:
     void update();
 
 public:
-    std::shared_ptr<Light>     createLight();
-    std::shared_ptr<Entity>    createEntity();
-    std::shared_ptr<Entity>    createEntity(const std::string &path);
-    std::shared_ptr<Camera>    createCamera(float aspectRatio);
-    std::unique_ptr<SceneNode>& getRootNode();
+    std::shared_ptr<Light>      createLight();
+    std::shared_ptr<Entity>     createEntity();
+    std::shared_ptr<Entity>     createEntity(const std::string &path);
+    std::shared_ptr<Camera>     createCamera(float aspectRatio);
+    std::unique_ptr<SceneNode> &getRootNode();
 
 public:
+    void      setMainCamera(const std::shared_ptr<Camera> &camera);
     void      setAmbient(glm::vec4 value);
     glm::vec4 getAmbient();
 
 private:
-    AABB                       aabb;
-    std::unique_ptr<SceneNode> _rootNode;
-
-    std::shared_ptr<Camera> _camera = nullptr;
-
+    AABB      aabb;
     glm::vec4 _ambient;
+
+    std::unique_ptr<SceneNode> _rootNode;
+    std::shared_ptr<Camera>    _camera = nullptr;
+
+    std::vector<std::shared_ptr<Camera>> _cameraMapList;
+    std::vector<std::shared_ptr<Entity>> _entityMapList;
+    std::vector<std::shared_ptr<Light>>  _lightMapList;
 };
 
 } // namespace vkl

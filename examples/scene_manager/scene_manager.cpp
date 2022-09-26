@@ -37,6 +37,8 @@ void scene_manager::loadScene() {
 
         auto &node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_defaultCamera);
+
+        m_sceneManager->setMainCamera(m_defaultCamera);
     }
 
     {
