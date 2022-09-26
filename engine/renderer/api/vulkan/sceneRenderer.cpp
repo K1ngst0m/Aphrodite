@@ -39,7 +39,7 @@ void VulkanSceneRenderer::cleanupResources() {
 void VulkanSceneRenderer::drawScene() {
     for (uint32_t idx = 0; idx < _renderer->m_commandBuffers.size(); idx++) {
         _renderer->recordCommandBuffer(
-            _renderer->m_windowData, [&]() {
+            _renderer->getWindowData(), [&]() {
                 for (auto &renderable : _renderList) {
                     renderable->draw(_renderer->m_commandBuffers[idx], _globalDescriptorSets[idx]);
                 }

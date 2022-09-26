@@ -440,9 +440,6 @@ void VulkanRenderer::initDevice() {
 void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
-void VulkanRenderer::setWindow(WindowData *windowData) {
-    m_windowData = windowData;
-}
 void VulkanRenderer::idleDevice() {
     vkDeviceWaitIdle(m_device->logicalDevice);
 }

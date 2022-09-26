@@ -1,5 +1,5 @@
-#ifndef SWAPCHAIN_H_
-#define SWAPCHAIN_H_
+#ifndef VULKAN_SWAPCHAIN_H_
+#define VULKAN_SWAPCHAIN_H_
 
 #include "common.h"
 #include "device.h"

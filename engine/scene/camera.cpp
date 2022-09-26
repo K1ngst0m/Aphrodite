@@ -18,16 +18,21 @@ Camera::Camera(SceneManager *manager)
 
 void Camera::load() {
     dataSize = sizeof(CameraDataLayout);
-    update();
-}
-
-void Camera::update() {
-    updated = true;
     data    = std::make_shared<CameraDataLayout>(
         this->matrices.view,
         this->matrices.perspective,
         this->matrices.perspective * this->matrices.view,
-        glm::vec4(this->position, 1.0f));
+        glm::vec4(this->position, 1.0f)
+        );
+}
+
+void Camera::update() {
+    updated = true;
+    auto pData = std::static_pointer_cast<CameraDataLayout>(data);
+    pData->view = this->matrices.view;
+    pData->proj = this->matrices.perspective;
+    pData->viewProj = this->matrices.perspective * this->matrices.view;
+    pData->position = glm::vec4(this->position, 1.0f);
 }
 
 void Camera::setPosition(glm::vec4 position) {

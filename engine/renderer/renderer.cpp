@@ -16,4 +16,10 @@ namespace vkl {
         assert("backend not support.");
         return {};
     }
-}
+    void Renderer::setWindowData(WindowData *windowData) {
+        m_windowData = windowData;
+    }
+    WindowData *Renderer::getWindowData() {
+        return m_windowData;
+    }
+    } // namespace vkl

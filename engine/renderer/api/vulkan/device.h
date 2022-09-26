@@ -1,5 +1,5 @@
-#ifndef VKLDEVICE_H_
-#define VKLDEVICE_H_
+#ifndef VULKAN_DEVICE_H_
+#define VULKAN_DEVICE_H_
 
 #include "buffer.h"
 #include "texture.h"

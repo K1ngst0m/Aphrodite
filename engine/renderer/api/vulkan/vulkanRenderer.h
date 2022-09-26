@@ -1,5 +1,5 @@
-#ifndef VULKANRENDERER_H_
-#define VULKANRENDERER_H_
+#ifndef VULKAN_RENDERER_H_
+#define VULKAN_RENDERER_H_
 
 #include "common.h"
 
@@ -20,7 +20,6 @@ public:
     void initDevice() override;
     void destroyDevice() override;
     void idleDevice() override;
-    void setWindow(WindowData *windowData) override;
 
     std::shared_ptr<SceneRenderer> createSceneRenderer() override;
 
@@ -104,7 +103,6 @@ public:
     void submitFrame() override;
 
     bool        m_framebufferResized = false;
-    WindowData *m_windowData         = nullptr;
 
     void prepareUI();
     void initImGui();

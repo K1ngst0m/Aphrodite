@@ -1,5 +1,5 @@
-#ifndef VKLTEXTURE_H_
-#define VKLTEXTURE_H_
+#ifndef VULKAN_TEXTURE_H_
+#define VULKAN_TEXTURE_H_
 
 #include <vulkan/vulkan.h>
 

@@ -1,5 +1,5 @@
-#ifndef VKRENDERABLE_H_
-#define VKRENDERABLE_H_
+#ifndef VULKAN_RENDERABLE_H_
+#define VULKAN_RENDERABLE_H_
 
 #include "device.h"
 

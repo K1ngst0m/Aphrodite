@@ -1,8 +1,8 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
-#include "device.h"
 #include "common.h"
+#include "device.h"
 
 namespace vkl {
 class SceneRenderer;
@@ -29,21 +29,23 @@ public:
     } m_settings;
 
 public:
-    virtual void initDevice()                      = 0;
-    virtual void destroyDevice()                   = 0;
-    virtual void idleDevice()                      = 0;
-    virtual void setWindow(WindowData *windowData) = 0;
-
-    virtual void prepareFrame() = 0;
-    virtual void submitFrame()  = 0;
+    virtual void initDevice()    = 0;
+    virtual void destroyDevice() = 0;
+    virtual void idleDevice()    = 0;
+    virtual void prepareFrame()  = 0;
+    virtual void submitFrame()   = 0;
 
     virtual std::shared_ptr<SceneRenderer> createSceneRenderer() = 0;
+
+    void        setWindowData(WindowData *windowData);
+    WindowData *getWindowData();
 
     static std::unique_ptr<Renderer> CreateRenderer(RenderBackend backend);
 
 protected:
     GraphicsDevice                *_device;
     std::shared_ptr<SceneRenderer> _sceneRenderer;
+    WindowData                    *m_windowData = nullptr;
 };
 } // namespace vkl
 

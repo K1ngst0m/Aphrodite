@@ -54,13 +54,6 @@ void Light::setType(LightType type) {
     _type = type;
 }
 void Light::load() {
-    update();
-    isloaded = true;
-}
-void Light::update() {
-    if (isloaded) {
-        updated = true;
-    }
     switch (_type) {
     case LightType::DIRECTIONAL: {
         dataSize = sizeof(DirectionalLightLayout);
@@ -82,6 +75,27 @@ void Light::update() {
                 _attenuationFactor);
         }
 
+    } break;
+    }
+    isloaded = true;
+}
+void Light::update() {
+    switch (_type) {
+    case LightType::DIRECTIONAL: {
+        dataSize = sizeof(DirectionalLightLayout);
+        auto pData = std::static_pointer_cast<DirectionalLightLayout>(data);
+        pData->ambient = _manager->getAmbient();
+        pData->direction = _direction;
+        pData->diffuse = _diffuse;
+        pData->specular = _specular;
+    } break;
+    case LightType::POINT: {
+        dataSize = sizeof(PointLightLayout);
+        auto pData = std::static_pointer_cast<PointLightLayout>(data);
+        pData->ambient = _manager->getAmbient();
+        pData->position = _position;
+        pData->diffuse = _diffuse;
+        pData->specular = _specular;
     } break;
     }
 }

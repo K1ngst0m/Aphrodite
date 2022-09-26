@@ -1,5 +1,5 @@
-#ifndef VKUNIFORMBUFFEROBJECT_H_
-#define VKUNIFORMBUFFEROBJECT_H_
+#ifndef VULKAN_UNIFORMBUFFEROBJECT_H_
+#define VULKAN_UNIFORMBUFFEROBJECT_H_
 
 #include "buffer.h"
 #include "common.h"

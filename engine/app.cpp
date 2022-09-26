@@ -42,7 +42,7 @@ void vklApp::cleanup() {
 
 void vklApp::initRenderer() {
     m_renderer = Renderer::CreateRenderer(RenderBackend::VULKAN);
-    m_renderer->setWindow(&m_windowData);
+    m_renderer->setWindowData(&m_windowData);
     m_renderer->initDevice();
 
     m_deletionQueue.push_function([&]() {

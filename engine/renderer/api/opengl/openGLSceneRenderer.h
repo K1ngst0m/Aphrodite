@@ -1,0 +1,8 @@
+#ifndef OPENGLSCENERENDERER_H_
+#define OPENGLSCENERENDERER_H_
+
+namespace vkl {
+
+}
+
+#endif // OPENGLSCENERENDERER_H_
