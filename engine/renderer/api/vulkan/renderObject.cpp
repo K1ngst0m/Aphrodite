@@ -14,10 +14,13 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
         MaterialGpuData             materialData{};
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
-        std::vector<VkWriteDescriptorSet> descriptorWrites{
-            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo),
-            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo),
-        };
+        std::vector<VkWriteDescriptorSet> descriptorWrites{};
+        if (material.baseColorTextureIndex > -1){
+            descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
+        }
+        if (material.normalTextureIndex > -1){
+            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo);
+        }
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         materialData.pipeline = _shaderPass->builtPipeline;
@@ -26,7 +29,7 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
     }
 }
 void VulkanRenderObject::loadImages(VkQueue queue) {
-    for (auto &image : _entity->_images) {
+    for (auto &image : _entity->_textures) {
         unsigned char *imageData     = image.data.data();
         uint32_t       imageDataSize = image.data.size();
         uint32_t       width         = image.width;

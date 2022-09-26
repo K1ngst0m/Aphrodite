@@ -9,9 +9,9 @@ struct AABB {
     glm::vec3 max;
 };
 
-enum PrefabEntity: IdType{
-    PREFAB_ENTITY_PLANE = 0,
-    PREFAB_ENTITY_CUBE = 1,
+enum PrefabEntity : IdType {
+    PREFAB_ENTITY_PLANE  = 0,
+    PREFAB_ENTITY_BOX    = 1,
     PREFAB_ENTITY_SPHERE = 2,
 };
 

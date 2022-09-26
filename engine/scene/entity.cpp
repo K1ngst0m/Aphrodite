@@ -16,7 +16,7 @@ void Entity::loadFromFile(const std::string &path) {
 void Entity::cleanupResources() {
     _vertices.clear();
     _indices.clear();
-    _images.clear();
+    _textures.clear();
     _subEntityList.clear();
     _materials.clear();
 }

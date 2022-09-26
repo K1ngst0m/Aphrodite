@@ -54,7 +54,6 @@ private:
     } _indexBuffer;
 
     std::vector<VulkanTexture> _textures;
-
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:

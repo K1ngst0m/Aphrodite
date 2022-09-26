@@ -13,13 +13,13 @@ struct Material;
 struct SubEntity;
 struct VertexLayout;
 
-using ResourceIndex    = uint32_t;
+using ResourceIndex    = int32_t;
 using SubEntityList    = std::vector<std::shared_ptr<SubEntity>>;
 using PrimitiveList    = std::vector<Primitive>;
 using TextureData      = std::vector<unsigned char>;
 using VertexLayoutList = std::vector<VertexLayout>;
 using IndexList        = std::vector<uint32_t>;
-using ImageList        = std::vector<Texture>;
+using TextureList      = std::vector<Texture>;
 using MaterialList     = std::vector<Material>;
 
 struct VertexLayout {
@@ -31,9 +31,9 @@ struct VertexLayout {
 };
 
 struct Primitive {
-    ResourceIndex firstIndex;
-    ResourceIndex indexCount;
-    ResourceIndex materialIndex;
+    ResourceIndex firstIndex = -1;
+    ResourceIndex indexCount = -1;
+    ResourceIndex materialIndex = -1;
 };
 
 struct SubEntity {
@@ -62,17 +62,17 @@ struct Material {
     float     roughnessFactor = 1.0f;
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
-    ResourceIndex baseColorTextureIndex = 0;
-    ResourceIndex diffuseTextureIndex   = 0;
-    ResourceIndex specularTextureIndex  = 0;
+    ResourceIndex baseColorTextureIndex = -1;
+    ResourceIndex diffuseTextureIndex   = -1;
+    ResourceIndex specularTextureIndex  = -1;
 
-    ResourceIndex normalTextureIndex    = 0;
-    ResourceIndex occlusionTextureIndex = 0;
-    ResourceIndex emissiveTextureIndex  = 0;
+    ResourceIndex normalTextureIndex    = -1;
+    ResourceIndex occlusionTextureIndex = -1;
+    ResourceIndex emissiveTextureIndex  = -1;
 
-    ResourceIndex metallicRoughnessTextureIndex = 0;
+    ResourceIndex metallicRoughnessTextureIndex = -1;
 
-    ResourceIndex specularGlossinessTextureIndex = 0;
+    ResourceIndex specularGlossinessTextureIndex = -1;
 };
 
 class Entity : public Object {
@@ -84,7 +84,7 @@ public:
 public:
     VertexLayoutList _vertices;
     IndexList        _indices;
-    ImageList        _images;
+    TextureList      _textures;
     SubEntityList    _subEntityList;
     MaterialList     _materials;
 

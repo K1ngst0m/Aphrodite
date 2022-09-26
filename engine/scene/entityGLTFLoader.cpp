@@ -45,14 +45,14 @@ void GLTFLoader::loadImages(Entity *entity, tinygltf::Model &input) {
         } else {
             memcpy(newTexture.data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
-        entity->_images.push_back(newTexture);
+        entity->_textures.push_back(newTexture);
     }
 }
 void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
         tinygltf::Material glTFMaterial = input.materials[i];
-        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1){
+        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1) {
             entity->_materials[i].baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
         }
         if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
@@ -60,7 +60,6 @@ void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
         } else {
             entity->_materials[i].normalTextureIndex = 0;
         }
-
     }
 }
 void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
@@ -96,9 +95,9 @@ void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, cons
         const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
         // Iterate through all primitives of this node's mesh
         for (const auto &glTFPrimitive : mesh.primitives) {
-            auto firstIndex  = static_cast<uint32_t>(entity->_indices.size());
-            auto vertexStart = static_cast<uint32_t>(entity->_vertices.size());
-            auto indexCount  = static_cast<uint32_t>(0);
+            auto firstIndex  = static_cast<int32_t>(entity->_indices.size());
+            auto vertexStart = static_cast<int32_t>(entity->_vertices.size());
+            auto indexCount  = static_cast<int32_t>(0);
 
             // Vertices
             {
@@ -191,7 +190,7 @@ void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, cons
                 }
             }
 
-            node->primitives.push_back({firstIndex, indexCount, static_cast<ResourceIndex>(glTFPrimitive.material)});
+            node->primitives.push_back({firstIndex, indexCount, glTFPrimitive.material});
         }
     }
 

@@ -74,7 +74,7 @@ void scene_manager::loadScene() {
     {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_CUBE);
+        auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
         auto &node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_cube_model);
     }

@@ -16,13 +16,13 @@ std::shared_ptr<Camera> SceneManager::createCamera(float aspectRatio) {
 }
 
 std::shared_ptr<Light> SceneManager::createLight() {
-    auto light = std::make_shared<Light>(this, Id::generateNewId<Light>());
+    auto light                    = std::make_shared<Light>(this, Id::generateNewId<Light>());
     _lightMapList[light->getId()] = light;
     return light;
 }
 
 std::shared_ptr<Entity> SceneManager::createEntity() {
-    auto entity = std::make_shared<Entity>(this, Id::generateNewId<Entity>());
+    auto entity                     = std::make_shared<Entity>(this, Id::generateNewId<Entity>());
     _entityMapList[entity->getId()] = entity;
     return entity;
 }
@@ -42,7 +42,7 @@ void SceneManager::update() {
 
 SceneManager::~SceneManager() = default;
 
-std::unique_ptr<SceneNode>& SceneManager::getRootNode() {
+std::unique_ptr<SceneNode> &SceneManager::getRootNode() {
     return _rootNode;
 }
 std::shared_ptr<Entity> SceneManager::createEntity(const std::string &path) {
@@ -62,13 +62,13 @@ std::shared_ptr<Camera> SceneManager::getCameraWithId(IdType id) {
 std::shared_ptr<Entity> SceneManager::getEntityWithId(IdType id) {
     return _entityMapList[id];
 }
-void SceneManager::_createPrefabEntity(){
+void SceneManager::_createPrefabEntity() {
     std::filesystem::path modelPath = "assets/models";
     // plane
-    auto planeEntity = createEntity(modelPath/"TwoSidedPlane/glTF/TwoSidedPlane.gltf");
+    auto planeEntity = createEntity(modelPath / "Plane/glTF/Plane.gltf");
     // cube
-    auto cubeEntity = createEntity(modelPath/"Box/glTF/Box.gltf");
+    auto boxEntity = createEntity(modelPath / "Box/glTF/Box.gltf");
     // sphere
-    auto sphereEntity = createEntity(modelPath/"Sphere/glTF/Sphere.gltf");
+    auto sphereEntity = createEntity(modelPath / "Sphere/glTF/Sphere.gltf");
 };
 } // namespace vkl
