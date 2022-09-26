@@ -25,8 +25,6 @@ namespace vkl {
         void load() override;
         void update() override;
 
-        uint32_t getDataSize() override ;
-
     private:
         // common
         glm::vec4 _diffuse;
@@ -43,7 +41,6 @@ namespace vkl {
 
     private:
         SceneManager * _manager;
-        bool isloaded = false;
     };
 }
 

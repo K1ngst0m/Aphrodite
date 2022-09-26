@@ -23,12 +23,12 @@ public:
     void attachObject(const std::shared_ptr<Light> &object);
     void attachObject(const std::shared_ptr<Camera> &object);
 
-    vkl::Object *getObject();
+    std::shared_ptr<Object> getObject();
     AttachType   getAttachType();
 
-    SceneNode *createChildNode(glm::mat4 matrix = glm::mat4(1.0f));
-    SceneNode *getChildNode(uint32_t idx);
-    uint32_t   getChildNodeCount();
+    std::unique_ptr<SceneNode>& createChildNode(glm::mat4 matrix = glm::mat4(1.0f));
+    std::unique_ptr<SceneNode>& getChildNode(uint32_t idx);
+    uint32_t                   getChildNodeCount();
 
     void      setTransform(glm::mat4 matrix);
     glm::mat4 getTransform();

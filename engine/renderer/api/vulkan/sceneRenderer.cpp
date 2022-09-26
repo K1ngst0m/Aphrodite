@@ -101,29 +101,29 @@ void VulkanSceneRenderer::_initUboList() {
         renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[SET_BINDING_MATERIAL], _descriptorPool);
     }
 }
-void VulkanSceneRenderer::_loadSceneNodes(SceneNode *node) {
+void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode>& node) {
     if (node->getChildNodeCount() == 0) {
         return;
     }
 
     for (uint32_t idx = 0; idx < node->getChildNodeCount(); idx++) {
-        auto *n = node->getChildNode(idx);
+        auto & subNode = node->getChildNode(idx);
 
-        switch (n->getAttachType()) {
+        switch (subNode->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity *>(n->getObject()));
-            renderable->setTransform(n->getTransform());
+            auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity *>(subNode->getObject().get()));
+            renderable->setTransform(subNode->getTransform());
             _renderList.push_back(std::move(renderable));
         } break;
         case AttachType::CAMERA: {
-            Camera *camera = static_cast<Camera *>(n->getObject());
+            Camera * camera = static_cast<Camera *>(subNode->getObject().get());
             camera->load();
             auto cameraUBO = std::make_unique<VulkanUniformObject>(this, _device, camera);
             cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
             _uboList.push_front(std::move(cameraUBO));
         } break;
         case AttachType::LIGHT: {
-            Light *light = static_cast<Light *>(n->getObject());
+            Light *light = static_cast<Light *>(subNode->getObject().get());
             light->load();
             auto ubo = std::make_unique<VulkanUniformObject>(this, _device, light);
             ubo->setupBuffer(light->getDataSize(), light->getData());
@@ -134,7 +134,7 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode *node) {
             break;
         }
 
-        _loadSceneNodes(n);
+        _loadSceneNodes(subNode);
     }
 }
 void VulkanSceneRenderer::_setupDefaultShaderEffect() {

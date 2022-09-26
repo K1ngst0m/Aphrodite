@@ -35,7 +35,7 @@ void scene_manager::loadScene() {
         m_defaultCamera->setMovementSpeed(2.5f);
         m_defaultCamera->setRotationSpeed(0.1f);
 
-        auto *node = m_sceneManager->getRootNode()->createChildNode();
+        auto &node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_defaultCamera);
     }
 
@@ -46,7 +46,7 @@ void scene_manager::loadScene() {
         m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_pointLight->setType(vkl::LightType::POINT);
 
-        auto *node = m_sceneManager->getRootNode()->createChildNode();
+        auto &node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_pointLight);
     }
 
@@ -57,7 +57,7 @@ void scene_manager::loadScene() {
         m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_directionalLight->setType(vkl::LightType::DIRECTIONAL);
 
-        auto *node = m_sceneManager->getRootNode()->createChildNode();
+        auto &node = m_sceneManager->getRootNode()->createChildNode();
         node->attachObject(m_directionalLight);
     }
 
@@ -65,7 +65,7 @@ void scene_manager::loadScene() {
         glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
         m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-        auto *node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
         node->attachObject(m_model);
     }
 

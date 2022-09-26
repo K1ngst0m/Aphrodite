@@ -38,8 +38,8 @@ void SceneManager::update() {
 
 SceneManager::~SceneManager() = default;
 
-SceneNode *SceneManager::getRootNode() {
-    return _rootNode.get();
+std::unique_ptr<SceneNode>& SceneManager::getRootNode() {
+    return _rootNode;
 }
 std::shared_ptr<Entity> SceneManager::createEntity(const std::string &path) {
     auto entity = std::make_shared<Entity>(this);

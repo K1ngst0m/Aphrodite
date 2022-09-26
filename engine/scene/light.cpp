@@ -57,32 +57,26 @@ void Light::load() {
     switch (_type) {
     case LightType::DIRECTIONAL: {
         dataSize = sizeof(DirectionalLightLayout);
-        if (!isloaded) {
-            data = std::make_shared<DirectionalLightLayout>(
-                _direction,
-                _manager->getAmbient(),
-                _diffuse,
-                _specular);
-        }
+        data = std::make_shared<DirectionalLightLayout>(
+            _direction,
+            _manager->getAmbient(),
+            _diffuse,
+            _specular);
     } break;
     case LightType::POINT: {
         dataSize = sizeof(PointLightLayout);
-        if (!isloaded) {
-            data = std::make_shared<PointLightLayout>(
-                _position,
-                _diffuse,
-                _specular,
-                _attenuationFactor);
-        }
+        data = std::make_shared<PointLightLayout>(
+            _position,
+            _diffuse,
+            _specular,
+            _attenuationFactor);
 
     } break;
     }
-    isloaded = true;
 }
 void Light::update() {
     switch (_type) {
     case LightType::DIRECTIONAL: {
-        dataSize = sizeof(DirectionalLightLayout);
         auto pData = std::static_pointer_cast<DirectionalLightLayout>(data);
         pData->ambient = _manager->getAmbient();
         pData->direction = _direction;
@@ -90,7 +84,6 @@ void Light::update() {
         pData->specular = _specular;
     } break;
     case LightType::POINT: {
-        dataSize = sizeof(PointLightLayout);
         auto pData = std::static_pointer_cast<PointLightLayout>(data);
         pData->ambient = _manager->getAmbient();
         pData->position = _position;
@@ -98,8 +91,5 @@ void Light::update() {
         pData->specular = _specular;
     } break;
     }
-}
-uint32_t Light::getDataSize() {
-    return dataSize;
 }
 } // namespace vkl

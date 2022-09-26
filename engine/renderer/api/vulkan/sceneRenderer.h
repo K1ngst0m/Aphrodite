@@ -28,7 +28,7 @@ private:
     void _initRenderList();
     void _setupDefaultShaderEffect();
     void _initUboList();
-    void _loadSceneNodes(SceneNode *node);
+    void _loadSceneNodes(std::unique_ptr<SceneNode>& node);
 
 private:
     VkDescriptorPool                   _descriptorPool;

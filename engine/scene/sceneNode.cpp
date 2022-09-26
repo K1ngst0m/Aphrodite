@@ -17,26 +17,33 @@ void SceneNode::attachObject(const std::shared_ptr<Camera>& object) {
     _attachType = AttachType::CAMERA;
     _object     = object;
 }
-SceneNode *SceneNode::createChildNode(glm::mat4 matrix) {
+
+std::unique_ptr<SceneNode>& SceneNode::createChildNode(glm::mat4 matrix) {
     auto childNode = std::make_unique<SceneNode>(this, matrix);
     _children.push_back(std::move(childNode));
-    return _children.back().get();
+    return _children.back();
 }
+
 void SceneNode::setTransform(glm::mat4 matrix) {
     _matrix = matrix;
 }
+
 uint32_t SceneNode::getChildNodeCount() {
     return _children.size();
 }
-SceneNode *SceneNode::getChildNode(uint32_t idx) {
-    return _children[idx].get();
+
+std::unique_ptr<SceneNode>& SceneNode::getChildNode(uint32_t idx) {
+    return _children[idx];
 }
+
 AttachType SceneNode::getAttachType() {
     return _attachType;
 }
-vkl::Object *SceneNode::getObject() {
-    return _object.get();
+
+std::shared_ptr<Object> SceneNode::getObject() {
+    return _object;
 }
+
 glm::mat4 SceneNode::getTransform() {
     return _matrix;
 }
