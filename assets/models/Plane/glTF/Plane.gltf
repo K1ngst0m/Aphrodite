@@ -121,24 +121,24 @@
    "buffers" : [
       {
          "byteLength" : 300,
-         "uri" : "TwoSidedPlane.bin"
+         "uri" : "Plane.bin"
       }
    ],
    "images" : [
       {
-         "uri" : "TwoSidedPlane_BaseColor.png"
+         "uri" : "Plane_BaseColor.png"
       },
       {
-         "uri" : "TwoSidedPlane_MetallicRoughness.png"
+         "uri" : "Plane_MetallicRoughness.png"
       },
       {
-         "uri" : "TwoSidedPlane_Normal.png"
+         "uri" : "Plane_Normal.png"
       }
    ],
    "materials" : [
       {
          "doubleSided" : true,
-         "name" : "TwoSidedPlane",
+         "name" : "Plane",
          "normalTexture" : {
             "index" : 2
          },
@@ -154,7 +154,7 @@
    ],
    "meshes" : [
       {
-         "name" : "TwoSidedPlane",
+         "name" : "Plane",
          "primitives" : [
             {
                "attributes" : {
@@ -173,7 +173,7 @@
    "nodes" : [
       {
          "mesh" : 0,
-         "name" : "TwoSidedPlane"
+         "name" : "Plane"
       }
    ],
    "samplers" : [
