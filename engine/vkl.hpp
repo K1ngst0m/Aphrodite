@@ -11,7 +11,7 @@
 #include "renderer/api/vulkan/renderObject.h"
 #include "renderer/api/vulkan/sceneRenderer.h"
 #include "renderer/api/vulkan/texture.h"
-#include "renderer/api/vulkan/uniformBufferObject.h"
+#include "renderer/api/vulkan/uniformObject.h"
 #include "renderer/api/vulkan/vkInit.hpp"
 #include "renderer/api/vulkan/vkUtils.h"
 #include "renderer/api/vulkan/vulkanRenderer.h"

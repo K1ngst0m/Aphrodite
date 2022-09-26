@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "object.h"
+#include "uniformObject.h"
 
 namespace vkl {
 enum class CameraType {
@@ -12,7 +12,14 @@ enum class CameraType {
     FIRSTPERSON,
 };
 
-class Camera : public UniformBufferObject {
+enum class CameraDirection{
+    LEFT,
+    RIGHT,
+    UP,
+    DOWN,
+};
+
+class Camera : public UniformObject {
 public:
     Camera(SceneManager *manager);
     ~Camera() override = default;
@@ -37,40 +44,43 @@ public:
     float getNearClip() const;
     float getFarClip() const;
     float getRotationSpeed() const;
-    void  processMove(float deltaTime);
+    void  processMovement(float deltaTime);
 
-    struct
-    {
-        bool left  = false;
-        bool right = false;
-        bool up    = false;
-        bool down  = false;
-    } keys;
+
+    void setMovement(CameraDirection direction, bool flag);
 
 private:
     void updateViewMatrix();
     void updateAspectRatio(float aspect);
 
 private:
-    CameraType type;
+    std::unordered_map<CameraDirection, bool> keys{
+        {CameraDirection::LEFT, false},
+        {CameraDirection::RIGHT, false},
+        {CameraDirection::UP, false},
+        {CameraDirection::DOWN, false}
+    };
 
-    glm::vec3 rotation = glm::vec3();
-    glm::vec3 position = glm::vec3();
-    glm::vec4 viewPos  = glm::vec4();
+    CameraType _cameraType;
 
-    float rotationSpeed = 1.0f;
-    float movementSpeed = 1.0f;
+    glm::vec3 _rotation = glm::vec3();
+    glm::vec3 _position = glm::vec3();
+    glm::vec4 _viewPos  = glm::vec4();
 
-    bool flipY = true;
+    float _rotationSpeed = 1.0f;
+    float _movementSpeed = 1.0f;
+
+    bool _flipY = true;
 
     struct
     {
         glm::mat4 perspective;
         glm::mat4 view;
-    } matrices;
+    } _matrices;
 
-    float fov;
-    float znear, zfar;
+    float _fov;
+    float _znear = 0.1f;
+    float _zfar = 1000.0f;
 };
 } // namespace vkl
 #endif

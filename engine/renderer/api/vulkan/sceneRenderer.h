@@ -5,7 +5,7 @@
 #include "renderer/sceneRenderer.h"
 
 namespace vkl {
-class VulkanUniformBufferObject;
+class VulkanUniformObject;
 class VulkanRenderObject;
 class VulkanRenderer;
 
@@ -39,7 +39,7 @@ private:
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>>       _renderList;
-    std::deque<std::unique_ptr<VulkanUniformBufferObject>> _uboList;
+    std::deque<std::unique_ptr<VulkanUniformObject>> _uboList;
 
 private:
     vkl::VulkanDevice *_device;

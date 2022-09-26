@@ -1,7 +1,7 @@
 #ifndef VKLLIGHT_H_
 #define VKLLIGHT_H_
 
-#include "object.h"
+#include "uniformObject.h"
 
 namespace vkl {
 
@@ -10,7 +10,7 @@ namespace vkl {
         DIRECTIONAL,
     };
 
-    class Light : public UniformBufferObject {
+    class Light : public UniformObject {
     public:
         Light(SceneManager *manager);
         ~Light() override;

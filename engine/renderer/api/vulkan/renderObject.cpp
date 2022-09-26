@@ -129,7 +129,6 @@ uint32_t VulkanRenderObject::getSetCount() {
 void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
     auto vertices = _entity->_vertices;
     auto indices = _entity->_indices;
-    auto device = _device;
 
     if (!vertices.empty()) {
         _vertexBuffer.vertices = std::move(vertices);
@@ -153,22 +152,22 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
             vkl::VulkanBuffer stagingBuffer;
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
             stagingBuffer.map();
             stagingBuffer.copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
             stagingBuffer.unmap();
 
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer.buffer);
-            device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
+            _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
 
             stagingBuffer.destroy();
         }
 
         else {
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _vertexBuffer.buffer);
             _vertexBuffer.buffer.map();
             _vertexBuffer.buffer.copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
@@ -183,22 +182,22 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         // using staging buffer
         if (transferQueue != VK_NULL_HANDLE) {
             vkl::VulkanBuffer stagingBuffer;
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
 
             stagingBuffer.map();
             stagingBuffer.copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
             stagingBuffer.unmap();
 
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer.buffer);
-            device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
+            _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
 
             stagingBuffer.destroy();
         }
 
         else {
-            device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _indexBuffer.buffer);
             _indexBuffer.buffer.map();
             _indexBuffer.buffer.copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));

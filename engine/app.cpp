@@ -82,24 +82,24 @@ void vklApp::keyboardHandleDerive() {
         glfwSetWindowShouldClose(m_windowData.window, true);
 
     if (glfwGetKey(m_windowData.window, GLFW_KEY_W) == GLFW_PRESS)
-        m_defaultCamera->keys.up = true;
+        m_defaultCamera->setMovement(CameraDirection::UP, true);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_S) == GLFW_PRESS)
-        m_defaultCamera->keys.down = true;
+        m_defaultCamera->setMovement(CameraDirection::DOWN, true);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_A) == GLFW_PRESS)
-        m_defaultCamera->keys.left = true;
+        m_defaultCamera->setMovement(CameraDirection::LEFT, true);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_D) == GLFW_PRESS)
-        m_defaultCamera->keys.right = true;
+        m_defaultCamera->setMovement(CameraDirection::RIGHT, true);
 
     if (glfwGetKey(m_windowData.window, GLFW_KEY_W) == GLFW_RELEASE)
-        m_defaultCamera->keys.up = false;
+        m_defaultCamera->setMovement(CameraDirection::UP, false);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_S) == GLFW_RELEASE)
-        m_defaultCamera->keys.down = false;
+        m_defaultCamera->setMovement(CameraDirection::DOWN, false);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_A) == GLFW_RELEASE)
-        m_defaultCamera->keys.left = false;
+        m_defaultCamera->setMovement(CameraDirection::LEFT, false);
     if (glfwGetKey(m_windowData.window, GLFW_KEY_D) == GLFW_RELEASE)
-        m_defaultCamera->keys.right = false;
+        m_defaultCamera->setMovement(CameraDirection::RIGHT, false);
 
-    m_defaultCamera->processMove(m_frameData.deltaTime);
+    m_defaultCamera->processMovement(m_frameData.deltaTime);
 }
 
 void vklApp::run() {

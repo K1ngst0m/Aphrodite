@@ -2,7 +2,7 @@
 #include "device.h"
 #include "pipeline.h"
 #include "renderObject.h"
-#include "uniformBufferObject.h"
+#include "uniformObject.h"
 #include "vkInit.hpp"
 #include "vulkanRenderer.h"
 
@@ -118,14 +118,14 @@ void VulkanSceneRenderer::_loadSceneNodes(SceneNode *node) {
         case AttachType::CAMERA: {
             Camera *camera = static_cast<Camera *>(n->getObject());
             camera->load();
-            auto cameraUBO = std::make_unique<VulkanUniformBufferObject>(this, _device, camera);
+            auto cameraUBO = std::make_unique<VulkanUniformObject>(this, _device, camera);
             cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
             _uboList.push_front(std::move(cameraUBO));
         } break;
         case AttachType::LIGHT: {
             Light *light = static_cast<Light *>(n->getObject());
             light->load();
-            auto ubo = std::make_unique<VulkanUniformBufferObject>(this, _device, light);
+            auto ubo = std::make_unique<VulkanUniformObject>(this, _device, light);
             ubo->setupBuffer(light->getDataSize(), light->getData());
             _uboList.push_back(std::move(ubo));
         } break;
@@ -153,18 +153,16 @@ void VulkanSceneRenderer::_setupDefaultShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    auto renderer = static_cast<VulkanRenderer *>(_renderer);
-
     _effect       = std::make_unique<ShaderEffect>();
-    _effect->pushSetLayout(renderer->m_device->logicalDevice, perSceneBindings);
-    _effect->pushSetLayout(renderer->m_device->logicalDevice, perMaterialBindings);
+    _effect->pushSetLayout(_renderer->m_device->logicalDevice, perSceneBindings);
+    _effect->pushSetLayout(_renderer->m_device->logicalDevice, perMaterialBindings);
     _effect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-    _effect->pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    _effect->pushShaderStages(m_shaderCache.getShaders(renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    _effect->buildPipelineLayout(renderer->m_device->logicalDevice);
+    _effect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    _effect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    _effect->buildPipelineLayout(_renderer->m_device->logicalDevice);
 
     _pass = std::make_unique<ShaderPass>();
-    _pass->build(renderer->m_device->logicalDevice, renderer->m_defaultRenderPass, renderer->m_pipelineBuilder, _effect.get());
+    _pass->build(_renderer->m_device->logicalDevice, _renderer->m_defaultRenderPass, _renderer->m_pipelineBuilder, _effect.get());
 }
 void VulkanSceneRenderer::_initRenderResource() {
     _renderer->initDefaultResource();

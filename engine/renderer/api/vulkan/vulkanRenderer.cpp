@@ -3,7 +3,7 @@
 #include "vulkanRenderer.h"
 #include "renderObject.h"
 #include "sceneRenderer.h"
-#include "uniformBufferObject.h"
+#include "uniformObject.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -342,7 +342,7 @@ void VulkanRenderer::recordCommandBuffer(WindowData *windowData, const std::func
     recordCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
 }
 
-void VulkanRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) {
+void VulkanRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) const {
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
     m_device->endSingleTimeCommands(cmd, m_queues.graphics);
