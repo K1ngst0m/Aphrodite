@@ -87,6 +87,10 @@ public:
     ImageList        _images;
     SubEntityList    _subEntityList;
     MaterialList     _materials;
+
+private:
+    bool isLoaded = false;
+    void cleanupResources();
 };
 } // namespace vkl
 
