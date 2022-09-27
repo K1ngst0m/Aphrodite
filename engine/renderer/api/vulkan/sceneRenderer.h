@@ -34,14 +34,14 @@ private:
     void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
 
 private:
-    VkDescriptorPool             _descriptorPool;
-    vkl::ShaderCache             m_shaderCache;
+    VkDescriptorPool _descriptorPool;
+    vkl::ShaderCache m_shaderCache;
 
-    std::unique_ptr<vkl::ShaderEffect> _baseColorEffect = nullptr;
-    std::unique_ptr<vkl::ShaderPass>   _baseColorPass   = nullptr;
+    std::unique_ptr<vkl::ShaderEffect> _unlitEffect = nullptr;
+    std::unique_ptr<vkl::ShaderPass>   _unlitPass   = nullptr;
 
-    std::unique_ptr<vkl::ShaderEffect> _pbrColorEffect = nullptr;
-    std::unique_ptr<vkl::ShaderPass>   _pbrColorPass   = nullptr;
+    std::unique_ptr<vkl::ShaderEffect> _defaultLitEffect = nullptr;
+    std::unique_ptr<vkl::ShaderPass>   _defaultLitPass   = nullptr;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;

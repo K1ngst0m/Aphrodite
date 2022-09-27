@@ -32,7 +32,6 @@ struct Vertex {
 enum class ShadingModel {
     UNLIT,
     DEFAULTLIT,
-    PBR,
 };
 
 struct Primitive {

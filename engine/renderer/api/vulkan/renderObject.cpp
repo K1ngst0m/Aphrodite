@@ -30,12 +30,10 @@ void VulkanRenderObject::setupGlobalDescriptorSet(VkDescriptorPool descriptorPoo
     uint32_t writeCount = 0;
     switch (_entity->getShadingModel()) {
     case ShadingModel::UNLIT:
-    case ShadingModel::DEFAULTLIT:
         writeCount = 1;
         break;
-    case ShadingModel::PBR:
+    case ShadingModel::DEFAULTLIT:
         writeCount = 3;
-        break;
     }
 
     vkUpdateDescriptorSets(_device->logicalDevice, writeCount, descriptorWrites.data(), 0, nullptr);
@@ -50,7 +48,6 @@ void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
 
         switch (shadingModel) {
         case ShadingModel::UNLIT:
-        case ShadingModel::DEFAULTLIT:
             if (material.baseColorTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
             } else {
@@ -58,7 +55,7 @@ void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
                 std::cerr << "base color texture not found, use default texture." << std::endl;
             }
             break;
-        case ShadingModel::PBR:
+        case ShadingModel::DEFAULTLIT:
             if (material.baseColorTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
             } else {
