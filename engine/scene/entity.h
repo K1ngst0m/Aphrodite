@@ -61,6 +61,7 @@ struct Texture {
 };
 
 struct Material {
+    uint32_t id;
     bool doubleSided = false;
     enum AlphaMode { ALPHAMODE_OPAQUE,
                      ALPHAMODE_MASK,

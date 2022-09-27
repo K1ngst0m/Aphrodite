@@ -51,7 +51,8 @@ void GLTFLoader::_loadTextures(Entity *entity, tinygltf::Model &input) {
 void GLTFLoader::_loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
-        auto              &material     = entity->_materials[i];
+        auto &material                  = entity->_materials[i];
+        material.id                     = i;
         tinygltf::Material glTFMaterial = input.materials[i];
         if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
             material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());

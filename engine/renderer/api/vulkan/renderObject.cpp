@@ -10,7 +10,6 @@ namespace vkl {
 VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, std::unique_ptr<ShaderPass> &pass)
     : _device(device), _shaderPass(pass), _renderer(renderer), _entity(entity) {
 }
-
 void VulkanRenderObject::setupGlobalDescriptorSet(VkDescriptorPool descriptorPool, std::deque<std::unique_ptr<VulkanUniformObject>> &uboList) {
     const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &_shaderPass->effect->setLayouts[SET_BINDING_SCENE], 1);
     VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_globalDescriptorSet));
@@ -41,7 +40,6 @@ void VulkanRenderObject::setupGlobalDescriptorSet(VkDescriptorPool descriptorPoo
 
     vkUpdateDescriptorSets(_device->logicalDevice, writeCount, descriptorWrites.data(), 0, nullptr);
 }
-
 void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
     for (auto &material : _entity->_materials) {
         auto                        shadingModel = _entity->getShadingModel();
@@ -65,12 +63,14 @@ void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
             } else {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
+                std::cerr << "material id: [" << material.id << "] :";
                 std::cerr << "base color texture not found, use default texture." << std::endl;
             }
             if (material.normalTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
             } else {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_emptyTexture.descriptorInfo));
+                std::cerr << "material id: [" << material.id << "] :";
                 std::cerr << "normal texture not found, use default texture." << std::endl;
             }
             break;
@@ -128,7 +128,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadTextures(queue);
     loadBuffer(queue);
 }
-void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node) {
+void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node) {
     if (!node->isVisible) {
         return;
     }
@@ -151,7 +151,7 @@ void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node
     }
 
     for (const auto &child : node->children) {
-        drawNode(drawCmd, child.get());
+        drawNode(drawCmd, child);
     }
 }
 void VulkanRenderObject::draw(VkCommandBuffer drawCmd) {
@@ -162,7 +162,7 @@ void VulkanRenderObject::draw(VkCommandBuffer drawCmd) {
     vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
 
     for (auto &subEntity : _entity->_subEntityList) {
-        drawNode(drawCmd, subEntity.get());
+        drawNode(drawCmd, subEntity);
     }
 }
 void VulkanRenderObject::cleanupResources() {

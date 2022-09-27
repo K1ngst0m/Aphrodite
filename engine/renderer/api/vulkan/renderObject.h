@@ -34,7 +34,7 @@ public:
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(VkCommandBuffer drawCmd, const SubEntity *node);
+    void drawNode(VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node);
     void loadTextures(VkQueue queue);
     void loadBuffer(VkQueue transferQueue);
     void createEmptyTexture(VkQueue queue);

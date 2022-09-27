@@ -16,10 +16,10 @@ public:
 
     virtual void cleanupResources() = 0;
 
-    void setScene(SceneManager *scene);
+    void setScene(const std::shared_ptr<SceneManager>& scene);
 
 protected:
-    SceneManager *_sceneManager;
+    std::shared_ptr<SceneManager> _sceneManager;
     bool isSceneLoaded = false;
 };
 
