@@ -31,8 +31,8 @@ struct VertexLayout {
 };
 
 struct Primitive {
-    ResourceIndex firstIndex = -1;
-    ResourceIndex indexCount = -1;
+    ResourceIndex firstIndex    = -1;
+    ResourceIndex indexCount    = -1;
     ResourceIndex materialIndex = -1;
 };
 
@@ -46,8 +46,11 @@ struct SubEntity {
 };
 
 struct Texture {
-    uint32_t    width;
-    uint32_t    height;
+    uint32_t width;
+    uint32_t height;
+    uint32_t mipLevels;
+    uint32_t layerCount;
+
     TextureData data;
 };
 

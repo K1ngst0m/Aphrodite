@@ -37,8 +37,9 @@ public:
 
 private:
     void drawNode(VkCommandBuffer drawCmd, const SubEntity *node);
-    void loadImages(VkQueue queue);
+    void loadTextures(VkQueue queue);
     void loadBuffer(VkQueue transferQueue);
+    void createEmptyTexture(VkQueue queue);
 
     VulkanDevice *_device;
     ShaderPass   *_shaderPass;
@@ -53,7 +54,8 @@ private:
         VulkanBuffer          buffer;
     } _indexBuffer;
 
-    std::vector<VulkanTexture> _textures;
+    VulkanTexture                _emptyTexture;
+    std::vector<VulkanTexture>   _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:

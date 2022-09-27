@@ -51,14 +51,16 @@ void GLTFLoader::loadImages(Entity *entity, tinygltf::Model &input) {
 void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
+        auto & material = entity->_materials[i];
         tinygltf::Material glTFMaterial = input.materials[i];
-        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1) {
-            entity->_materials[i].baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
+        if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
+            material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
         }
-        if (glTFMaterial.additionalValues.find("normalTexture") != glTFMaterial.additionalValues.end()) {
-            entity->_materials[i].normalTextureIndex = input.textures[glTFMaterial.additionalValues["normalTexture"].TextureIndex()].source;
-        } else {
-            entity->_materials[i].normalTextureIndex = 0;
+        if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1) {
+            material.baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
+        }
+        if (glTFMaterial.normalTexture.index > -1) {
+            material.normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
         }
     }
 }

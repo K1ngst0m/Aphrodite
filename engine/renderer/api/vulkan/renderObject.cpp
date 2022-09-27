@@ -15,11 +15,20 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &layout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{};
+        // TODO default texture
         if (material.baseColorTextureIndex > -1){
             descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
         }
+        else{
+            descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
+            std::cerr << "base color texture not found, use default texture." << std::endl;
+        }
         if (material.normalTextureIndex > -1){
-            vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo);
+            descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
+        }
+        else{
+            descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_emptyTexture.descriptorInfo));
+            std::cerr << "normal texture not found, use default texture." << std::endl;
         }
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
@@ -28,7 +37,7 @@ void VulkanRenderObject::setupMaterialDescriptor(VkDescriptorSetLayout layout, V
         _materialGpuDataList.push_back(materialData);
     }
 }
-void VulkanRenderObject::loadImages(VkQueue queue) {
+void VulkanRenderObject::loadTextures(VkQueue queue) {
     for (auto &image : _entity->_textures) {
         unsigned char *imageData     = image.data.data();
         uint32_t       imageDataSize = image.data.size();
@@ -72,7 +81,8 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
     size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
 
-    loadImages(queue);
+    createEmptyTexture(queue);
+    loadTextures(queue);
     loadBuffer(queue);
 }
 void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const SubEntity *node) {
@@ -119,6 +129,7 @@ void VulkanRenderObject::cleanupResources() {
     for (auto &texture : _textures) {
         texture.destroy();
     }
+    _emptyTexture.destroy();
 }
 void VulkanRenderObject::setShaderPass(ShaderPass *pass) {
     _shaderPass = pass;
@@ -213,5 +224,40 @@ glm::mat4 VulkanRenderObject::getTransform() const {
 }
 void VulkanRenderObject::setTransform(glm::mat4 transform) {
     _transform = transform;
+}
+void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
+    uint32_t       width         = 1;
+    uint32_t       height        = 1;
+    uint32_t       imageDataSize = width * height * 4;
+
+    // Load texture from image buffer
+    vkl::VulkanBuffer stagingBuffer;
+    _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+
+    uint8_t * data;
+    stagingBuffer.map();
+    stagingBuffer.copyTo(data, imageDataSize);
+    stagingBuffer.unmap();
+
+    vkl::VulkanTexture & texture = _emptyTexture;
+    _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
+
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
+    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+
+    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+    samplerInfo.maxAnisotropy       = _device->enabledFeatures.samplerAnisotropy ? _device->properties.limits.maxSamplerAnisotropy : 1.0f;
+    samplerInfo.anisotropyEnable    = _device->enabledFeatures.samplerAnisotropy;
+    samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
+    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    stagingBuffer.destroy();
 }
 } // namespace vkl
