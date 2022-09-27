@@ -9,15 +9,15 @@ VkVertexInputAttributeDescription VertexInputBuilder::inputAttributeDescription(
 {
     switch (component) {
     case VertexComponent::POSITION:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexLayout, pos) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos) });
     case VertexComponent::NORMAL:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexLayout, normal) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal) });
     case VertexComponent::UV:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32_SFLOAT, offsetof(VertexLayout, uv) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv) });
     case VertexComponent::COLOR:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(VertexLayout, color) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) });
     case VertexComponent::TANGENT:
-        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(VertexLayout, tangent) });
+        return VkVertexInputAttributeDescription({ location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent) });
     default:
         return VkVertexInputAttributeDescription({});
     }
@@ -34,7 +34,7 @@ std::vector<VkVertexInputAttributeDescription> VertexInputBuilder::inputAttribut
 }
 void VertexInputBuilder::setPipelineVertexInputState(const std::vector<VertexComponent> &components)
 {
-    _vertexInputBindingDescription = VkVertexInputBindingDescription({ 0, sizeof(VertexLayout), VK_VERTEX_INPUT_RATE_VERTEX });
+    _vertexInputBindingDescription = VkVertexInputBindingDescription({ 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX });
     _vertexInputAttributeDescriptions = VertexInputBuilder::inputAttributeDescriptions(0, components);
     _pipelineVertexInputStateCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -124,7 +124,7 @@ void ShaderEffect::pushShaderStages(ShaderModule *module, VkShaderStageFlagBits 
 {
     stages.push_back({ module, stageBits });
 }
-void ShaderPass::build(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *shaderEffect)
+void ShaderPass::buildEffect(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *shaderEffect)
 {
     effect = shaderEffect;
     layout = shaderEffect->builtLayout;

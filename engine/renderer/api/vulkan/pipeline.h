@@ -86,7 +86,7 @@ struct ShaderPass {
     VkPipeline builtPipeline = VK_NULL_HANDLE;
     VkPipelineLayout layout = VK_NULL_HANDLE;
 
-    void build(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *effect);
+    void buildEffect(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *effect);
 
     void destroy(VkDevice device) const{
         vkDestroyPipeline(device, builtPipeline, nullptr);

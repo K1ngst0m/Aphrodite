@@ -10,7 +10,7 @@ class VulkanRenderObject;
 class VulkanRenderer;
 
 enum DescriptorSetBinding {
-    SET_BINDING_SCENE = 0,
+    SET_BINDING_SCENE    = 0,
     SET_BINDING_MATERIAL = 1,
 };
 
@@ -23,22 +23,28 @@ public:
     void update() override;
     void drawScene() override;
 
+    std::unique_ptr<ShaderPass> &getPrebuiltPass(ShadingModel type);
+
 private:
     void _initRenderResource();
     void _initRenderList();
-    void _setupDefaultShaderEffect();
+    void _setupBaseColorShaderEffect();
+    void _setupPBRShaderEffect();
     void _initUboList();
-    void _loadSceneNodes(std::unique_ptr<SceneNode>& node);
+    void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
 
 private:
-    VkDescriptorPool                   _descriptorPool;
-    std::vector<VkDescriptorSet>       _globalDescriptorSets;
-    vkl::ShaderCache                   m_shaderCache;
-    std::unique_ptr<vkl::ShaderEffect> _effect;
-    std::unique_ptr<vkl::ShaderPass>   _pass;
+    VkDescriptorPool             _descriptorPool;
+    vkl::ShaderCache             m_shaderCache;
+
+    std::unique_ptr<vkl::ShaderEffect> _baseColorEffect = nullptr;
+    std::unique_ptr<vkl::ShaderPass>   _baseColorPass   = nullptr;
+
+    std::unique_ptr<vkl::ShaderEffect> _pbrColorEffect = nullptr;
+    std::unique_ptr<vkl::ShaderPass>   _pbrColorPass   = nullptr;
 
 private:
-    std::vector<std::unique_ptr<VulkanRenderObject>>       _renderList;
+    std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;
     std::deque<std::unique_ptr<VulkanUniformObject>> _uboList;
 
 private:

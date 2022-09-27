@@ -1,5 +1,5 @@
 #include "sceneManager.h"
-#include "entityGLTFLoader.h"
+#include "resourceManager.h"
 
 namespace vkl {
 SceneManager::SceneManager()

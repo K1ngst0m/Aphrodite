@@ -1,5 +1,10 @@
 #include "scene_manager.h"
 
+void scene_manager::initDerive() {
+    loadScene();
+    buildCommands();
+}
+
 void scene_manager::drawFrame() {
     float currentFrame    = glfwGetTime();
     m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
@@ -13,11 +18,6 @@ void scene_manager::drawFrame() {
 void scene_manager::updateUniformBuffer() {
     m_sceneManager->update();
     m_sceneRenderer->update();
-}
-
-void scene_manager::initDerive() {
-    loadScene();
-    buildCommands();
 }
 
 void scene_manager::loadScene() {
@@ -63,22 +63,25 @@ void scene_manager::loadScene() {
         node->attachObject(m_directionalLight);
     }
 
+    // load from gltf file
     {
-        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
-        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        // m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-        // auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(m_model);
-    }
-
-    {
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
         modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        auto &node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(prefab_cube_model);
+        m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
+        auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        node->attachObject(m_model);
     }
 
+    // box prefab
+    {
+        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        // auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
+        // auto &node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(prefab_cube_model);
+    }
+
+    // plane prefab
     {
         // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -87,6 +90,7 @@ void scene_manager::loadScene() {
         // node->attachObject(prefab_plane_model);
     }
 
+    // sphere
     {
         // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
         // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));

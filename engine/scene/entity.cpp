@@ -1,5 +1,5 @@
 #include "entity.h"
-#include "entityGLTFLoader.h"
+#include "resourceManager.h"
 
 namespace vkl {
 Entity::Entity(SceneManager *manager, IdType id)
@@ -19,5 +19,11 @@ void Entity::cleanupResources() {
     _textures.clear();
     _subEntityList.clear();
     _materials.clear();
+}
+void Entity::setShadingModel(ShadingModel type) {
+    _shadingModel = type;
+}
+ShadingModel Entity::getShadingModel() const {
+    return _shadingModel;
 }
 } // namespace vkl

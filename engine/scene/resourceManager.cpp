@@ -1,5 +1,5 @@
 #define TINYGLTF_IMPLEMENTATION
-#include "entityGLTFLoader.h"
+#include "resourceManager.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -12,13 +12,13 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
 
     if (fileLoaded) {
-        loadImages(entity, glTFInput);
-        loadMaterials(entity, glTFInput);
+        _loadTextures(entity, glTFInput);
+        _loadMaterials(entity, glTFInput);
 
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for (int nodeIdx : scene.nodes) {
             const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            loadNodes(entity, node, glTFInput, nullptr);
+            _loadNodes(entity, node, glTFInput, nullptr);
         }
     } else {
         assert("Could not open the glTF file.");
@@ -26,7 +26,7 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
     }
 }
 
-void GLTFLoader::loadImages(Entity *entity, tinygltf::Model &input) {
+void GLTFLoader::_loadTextures(Entity *entity, tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
         Texture newTexture;
@@ -48,10 +48,10 @@ void GLTFLoader::loadImages(Entity *entity, tinygltf::Model &input) {
         entity->_textures.push_back(newTexture);
     }
 }
-void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
+void GLTFLoader::_loadMaterials(Entity *entity, tinygltf::Model &input) {
     entity->_materials.resize(input.materials.size());
     for (size_t i = 0; i < input.materials.size(); i++) {
-        auto & material = entity->_materials[i];
+        auto              &material     = entity->_materials[i];
         tinygltf::Material glTFMaterial = input.materials[i];
         if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
             material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
@@ -64,7 +64,7 @@ void GLTFLoader::loadMaterials(Entity *entity, tinygltf::Model &input) {
         }
     }
 }
-void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
+void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
     auto node    = std::make_shared<SubEntity>();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
@@ -87,7 +87,7 @@ void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, cons
     // Load node's children
     if (!inputNode.children.empty()) {
         for (int nodeIdx : inputNode.children) {
-            loadNodes(entity, input.nodes[nodeIdx], input, node.get());
+            _loadNodes(entity, input.nodes[nodeIdx], input, node.get());
         }
     }
 
@@ -143,7 +143,7 @@ void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, cons
 
                 // Append data to model's vertex buffer
                 for (size_t v = 0; v < vertexCount; v++) {
-                    VertexLayout vert{};
+                    Vertex vert{};
                     vert.pos     = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
                     vert.normal  = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
                     vert.uv      = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
@@ -192,7 +192,13 @@ void GLTFLoader::loadNodes(Entity *entity, const tinygltf::Node &inputNode, cons
                 }
             }
 
-            node->primitives.push_back({firstIndex, indexCount, glTFPrimitive.material});
+            Primitive primitive{
+                .firstIndex    = firstIndex,
+                .indexCount    = indexCount,
+                .materialIndex = glTFPrimitive.material,
+            };
+
+            node->primitives.push_back(primitive);
         }
     }
 

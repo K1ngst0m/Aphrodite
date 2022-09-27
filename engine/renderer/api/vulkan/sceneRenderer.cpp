@@ -17,7 +17,8 @@ VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
 
 void VulkanSceneRenderer::loadResources() {
     _loadSceneNodes(_sceneManager->getRootNode());
-    _setupDefaultShaderEffect();
+    _setupBaseColorShaderEffect();
+    _setupPBRShaderEffect();
     _initRenderList();
     _initUboList();
     isSceneLoaded = true;
@@ -31,8 +32,10 @@ void VulkanSceneRenderer::cleanupResources() {
     for (auto &ubo : _uboList) {
         ubo->cleanupResources();
     }
-    _effect->destroy(_device->logicalDevice);
-    _pass->destroy(_device->logicalDevice);
+    _baseColorEffect->destroy(_device->logicalDevice);
+    _baseColorPass->destroy(_device->logicalDevice);
+    _pbrColorEffect->destroy(_device->logicalDevice);
+    _pbrColorPass->destroy(_device->logicalDevice);
     m_shaderCache.destory(_device->logicalDevice);
 }
 
@@ -40,7 +43,7 @@ void VulkanSceneRenderer::drawScene() {
     for (uint32_t idx = 0; idx < _renderer->m_commandBuffers.size(); idx++) {
         _renderer->recordCommandBuffer(_renderer->getWindowData(), [&]() {
                 for (auto &renderable : _renderList) {
-                    renderable->draw(_renderer->m_commandBuffers[idx], _globalDescriptorSets[idx]);
+                    renderable->draw(_renderer->m_commandBuffers[idx]);
                 }
             }, idx);
     }
@@ -59,7 +62,6 @@ void VulkanSceneRenderer::update() {
 void VulkanSceneRenderer::_initRenderList() {
     for (auto &renderable : _renderList) {
         renderable->loadResouces(_transferQueue);
-        renderable->setShaderPass(_pass.get());
     }
 }
 void VulkanSceneRenderer::_initUboList() {
@@ -67,9 +69,8 @@ void VulkanSceneRenderer::_initUboList() {
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
     };
-    _globalDescriptorSets.resize(_renderer->m_commandBuffers.size());
 
-    uint32_t maxSetSize = _globalDescriptorSets.size() + 100;
+    uint32_t maxSetSize = 0;
     for (auto &renderable : _renderList) {
         maxSetSize += renderable->getSetCount();
     }
@@ -77,27 +78,9 @@ void VulkanSceneRenderer::_initUboList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
-    for (auto &set : _globalDescriptorSets) {
-        const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_pass->effect->setLayouts[SET_BINDING_SCENE], 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &set));
-
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        for (auto &ubo : _uboList) {
-            VkWriteDescriptorSet write = {};
-            write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet               = set;
-            write.dstBinding           = static_cast<uint32_t>(descriptorWrites.size());
-            write.dstArrayElement      = 0;
-            write.descriptorCount      = 1;
-            write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo          = &ubo->buffer.getBufferInfo();
-            descriptorWrites.push_back(write);
-        }
-        vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
     for (auto &renderable : _renderList) {
-        renderable->setupMaterialDescriptor(renderable->getShaderPass()->effect->setLayouts[SET_BINDING_MATERIAL], _descriptorPool);
+        renderable->setupMaterial(_descriptorPool);
+        renderable->setupGlobalDescriptorSet(_descriptorPool, _uboList);
     }
 }
 void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode>& node) {
@@ -110,7 +93,7 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode>& node) {
 
         switch (subNode->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity *>(subNode->getObject().get()));
+            auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity *>(subNode->getObject().get()), getPrebuiltPass(static_cast<Entity*>(subNode->getObject().get())->getShadingModel()));
             renderable->setTransform(subNode->getTransform());
             _renderList.push_back(std::move(renderable));
         } break;
@@ -136,7 +119,33 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode>& node) {
         _loadSceneNodes(subNode);
     }
 }
-void VulkanSceneRenderer::_setupDefaultShaderEffect() {
+void VulkanSceneRenderer::_setupBaseColorShaderEffect() {
+    // per-scene layout
+    std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
+    };
+
+    // per-material layout
+    std::vector<VkDescriptorSetLayoutBinding> perMaterialBindings = {
+        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+    };
+
+    // build Shader
+    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+
+    _baseColorEffect       = std::make_unique<ShaderEffect>();
+    _baseColorEffect->pushSetLayout(_renderer->m_device->logicalDevice, perSceneBindings);
+    _baseColorEffect->pushSetLayout(_renderer->m_device->logicalDevice, perMaterialBindings);
+    _baseColorEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+    _baseColorEffect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "basecolor.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    _baseColorEffect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "basecolor.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    _baseColorEffect->buildPipelineLayout(_renderer->m_device->logicalDevice);
+
+    _baseColorPass = std::make_unique<ShaderPass>();
+    _baseColorPass->buildEffect(_renderer->m_device->logicalDevice, _renderer->m_defaultRenderPass, _renderer->m_pipelineBuilder, _baseColorEffect.get());
+}
+
+void VulkanSceneRenderer::_setupPBRShaderEffect() {
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
         vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
@@ -152,18 +161,29 @@ void VulkanSceneRenderer::_setupDefaultShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    _effect       = std::make_unique<ShaderEffect>();
-    _effect->pushSetLayout(_renderer->m_device->logicalDevice, perSceneBindings);
-    _effect->pushSetLayout(_renderer->m_device->logicalDevice, perMaterialBindings);
-    _effect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-    _effect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "model.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    _effect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "model.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    _effect->buildPipelineLayout(_renderer->m_device->logicalDevice);
+    _pbrColorEffect       = std::make_unique<ShaderEffect>();
+    _pbrColorEffect->pushSetLayout(_renderer->m_device->logicalDevice, perSceneBindings);
+    _pbrColorEffect->pushSetLayout(_renderer->m_device->logicalDevice, perMaterialBindings);
+    _pbrColorEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+    _pbrColorEffect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "pbr.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    _pbrColorEffect->pushShaderStages(m_shaderCache.getShaders(_renderer->m_device, shaderDir / "pbr.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    _pbrColorEffect->buildPipelineLayout(_renderer->m_device->logicalDevice);
 
-    _pass = std::make_unique<ShaderPass>();
-    _pass->build(_renderer->m_device->logicalDevice, _renderer->m_defaultRenderPass, _renderer->m_pipelineBuilder, _effect.get());
+    _pbrColorPass = std::make_unique<ShaderPass>();
+    _pbrColorPass->buildEffect(_renderer->m_device->logicalDevice, _renderer->m_defaultRenderPass, _renderer->m_pipelineBuilder, _pbrColorEffect.get());
 }
+
 void VulkanSceneRenderer::_initRenderResource() {
     _renderer->initDefaultResource();
+}
+
+std::unique_ptr<ShaderPass> &VulkanSceneRenderer::getPrebuiltPass(ShadingModel type) {
+    switch (type) {
+    case ShadingModel::UNLIT:
+    case ShadingModel::DEFAULTLIT:
+        return _baseColorPass;
+    case ShadingModel::PBR:
+        return _pbrColorPass;
+    }
 }
 } // namespace vkl

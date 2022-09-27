@@ -7,27 +7,32 @@ namespace vkl {
 class EntityLoader;
 class ShaderPass;
 struct Primitive;
-struct SubMesh;
 struct Texture;
 struct Material;
 struct SubEntity;
-struct VertexLayout;
+struct Vertex;
 
-using ResourceIndex    = int32_t;
-using SubEntityList    = std::vector<std::shared_ptr<SubEntity>>;
-using PrimitiveList    = std::vector<Primitive>;
-using TextureData      = std::vector<unsigned char>;
-using VertexLayoutList = std::vector<VertexLayout>;
-using IndexList        = std::vector<uint32_t>;
-using TextureList      = std::vector<Texture>;
-using MaterialList     = std::vector<Material>;
+using ResourceIndex = int32_t;
+using SubEntityList = std::vector<std::shared_ptr<SubEntity>>;
+using PrimitiveList = std::vector<Primitive>;
+using TextureData   = std::vector<unsigned char>;
+using VertexList    = std::vector<Vertex>;
+using IndexList     = std::vector<uint32_t>;
+using TextureList   = std::vector<Texture>;
+using MaterialList  = std::vector<Material>;
 
-struct VertexLayout {
+struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec2 uv;
     glm::vec3 color;
     glm::vec4 tangent;
+};
+
+enum class ShadingModel {
+    UNLIT,
+    DEFAULTLIT,
+    PBR,
 };
 
 struct Primitive {
@@ -37,12 +42,13 @@ struct Primitive {
 };
 
 struct SubEntity {
-    std::string   name;
-    bool          isVisible = true;
+    std::string name;
+    glm::mat4   matrix;
+    bool        isVisible = true;
+
     SubEntity    *parent;
     SubEntityList children;
     PrimitiveList primitives;
-    glm::mat4     matrix;
 };
 
 struct Texture {
@@ -83,17 +89,20 @@ public:
     Entity(SceneManager *manager, IdType id);
     ~Entity() override;
     void loadFromFile(const std::string &path);
+    void cleanupResources();
+    void setShadingModel(ShadingModel type);
+    ShadingModel getShadingModel() const;
 
 public:
-    VertexLayoutList _vertices;
-    IndexList        _indices;
-    TextureList      _textures;
-    SubEntityList    _subEntityList;
-    MaterialList     _materials;
+    VertexList    _vertices;
+    IndexList     _indices;
+    TextureList   _textures;
+    SubEntityList _subEntityList;
+    MaterialList  _materials;
 
 private:
     bool isLoaded = false;
-    void cleanupResources();
+    ShadingModel  _shadingModel = ShadingModel::UNLIT;
 };
 } // namespace vkl
 

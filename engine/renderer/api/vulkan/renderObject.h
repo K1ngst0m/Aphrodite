@@ -2,34 +2,32 @@
 #define VULKAN_RENDERABLE_H_
 
 #include "device.h"
+#include "uniformObject.h"
 
 namespace vkl {
 class VulkanSceneRenderer;
 class Entity;
 class ShaderPass;
 
-struct VertexLayout;
+struct Vertex;
 struct SubEntity;
 
 struct MaterialGpuData {
     VkDescriptorSet set;
-    VkPipeline      pipeline;
 };
 
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity, std::unique_ptr<ShaderPass> &shaderPass);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);
     void cleanupResources();
 
-    void draw(VkCommandBuffer drawCmd, VkDescriptorSet &globalSet);
+    void draw(VkCommandBuffer drawCmd);
 
-    void        setShaderPass(ShaderPass *pass);
-    ShaderPass *getShaderPass() const;
-
-    void     setupMaterialDescriptor(VkDescriptorSetLayout layout, VkDescriptorPool descriptorPool);
+    void     setupGlobalDescriptorSet(VkDescriptorPool descriptorPool, std::deque<std::unique_ptr<VulkanUniformObject>> &uboList);
+    void     setupMaterial(VkDescriptorPool descriptorPool);
     uint32_t getSetCount();
 
     glm::mat4 getTransform() const;
@@ -41,12 +39,12 @@ private:
     void loadBuffer(VkQueue transferQueue);
     void createEmptyTexture(VkQueue queue);
 
-    VulkanDevice *_device;
-    ShaderPass   *_shaderPass;
+    VulkanDevice                *_device;
+    std::unique_ptr<ShaderPass> &_shaderPass;
 
     struct {
-        std::vector<VertexLayout> vertices;
-        VulkanBuffer              buffer;
+        std::vector<Vertex> vertices;
+        VulkanBuffer        buffer;
     } _vertexBuffer;
 
     struct {
@@ -57,6 +55,7 @@ private:
     VulkanTexture                _emptyTexture;
     std::vector<VulkanTexture>   _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
+    VkDescriptorSet              _globalDescriptorSet;
 
 private:
     VulkanSceneRenderer *_renderer;
