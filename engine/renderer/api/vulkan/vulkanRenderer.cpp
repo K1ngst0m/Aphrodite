@@ -338,11 +338,6 @@ void VulkanRenderer::_createSyncObjects() {
     }
 }
 
-void VulkanRenderer::recordSinglePassCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands,
-                                                   uint32_t frameIdx) {
-    recordSinglePassCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
-}
-
 void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommandBuffer cmd)> &&function) const {
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
@@ -396,38 +391,22 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
 }
 
-void VulkanRenderer::recordSinglePassCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
+void VulkanRenderer::recordSinglePassCommandBuffer(VkRenderPass                 renderPass,
                                                    const std::function<void()> &drawCommands,
-                                                   uint32_t                     frameIdx) {
-    auto &commandBuffer = m_commandBuffers[frameIdx];
+                                                   uint32_t                     commandIdx) {
+    auto commandBuffer = m_commandBuffers[commandIdx];
+    recordCommandBuffer([&]() {
+        // render pass
+        std::vector<VkClearValue> clearValues(2);
+        clearValues[0].color                 = {{0.1f, 0.1f, 0.1f, 1.0f}};
+        clearValues[1].depthStencil          = {1.0f, 0};
+        VkRenderPassBeginInfo renderPassInfo = m_swapChain.getRenderPassBeginInfo(renderPass, clearValues, commandIdx);
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        drawCommands();
+        vkCmdEndRenderPass(commandBuffer);
+    },
+                        commandIdx);
 
-    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
-
-    // render pass
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color                 = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues[1].depthStencil          = {1.0f, 0};
-    VkRenderPassBeginInfo renderPassInfo = m_swapChain.getRenderPassBeginInfo(renderPass, clearValues, frameIdx);
-
-    // dynamic state
-    const VkViewport viewport = vkl::init::viewport(static_cast<float>(windowData->width), static_cast<float>(windowData->height));
-    const VkRect2D   scissor  = vkl::init::rect2D(m_swapChain.getExtent());
-
-    // record command
-    vkResetCommandBuffer(commandBuffer, 0);
-    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    // if (m_settings.enableUI) {
-    //     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-    // }
-
-    drawCommands();
-
-    vkCmdEndRenderPass(commandBuffer);
     VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 void VulkanRenderer::initDevice() {
@@ -541,5 +520,42 @@ VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
         return m_queues.present;
     }
     return m_queues.graphics;
+}
+void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
+    auto &commandBuffer = m_commandBuffers[commandIdx];
+
+    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+
+    // dynamic state
+    const VkViewport viewport = vkl::init::viewport(static_cast<float>(m_windowData->width), static_cast<float>(m_windowData->height));
+    const VkRect2D   scissor  = vkl::init::rect2D(m_swapChain.getExtent());
+
+    // record command
+    vkResetCommandBuffer(commandBuffer, 0);
+    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    commands();
+
+    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+}
+VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
+    return m_defaultRenderPass;
+}
+VkCommandBuffer VulkanRenderer::getDefaultCommandBuffers(uint32_t idx) const {
+    return m_commandBuffers[idx];
+}
+PipelineBuilder& VulkanRenderer::getPipelineBuilder() {
+    return m_pipelineBuilder;
+}
+uint32_t VulkanRenderer::getCommandBufferCount() const {
+    return m_commandBuffers.size();
+}
+VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassCreateInfo(uint32_t imageIdx) {
+    std::vector<VkClearValue> clearValues(2);
+    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+    return m_swapChain.getRenderPassBeginInfo(m_defaultRenderPass, clearValues, imageIdx);
 }
 } // namespace vkl

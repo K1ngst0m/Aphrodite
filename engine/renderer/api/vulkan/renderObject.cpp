@@ -7,62 +7,26 @@
 
 namespace vkl {
 
-VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity, std::unique_ptr<ShaderPass> &pass)
-    : _device(device), _shaderPass(pass), _renderer(renderer), _entity(entity) {
+VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity)
+    : _device(device), _renderer(renderer), _entity(entity) {
 }
-void VulkanRenderObject::setupGlobalDescriptorSet(VkDescriptorPool descriptorPool, std::deque<std::unique_ptr<VulkanUniformObject>> &uboList) {
-    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &_shaderPass->effect->setLayouts[SET_BINDING_SCENE], 1);
-    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_globalDescriptorSet));
-
-    std::vector<VkWriteDescriptorSet> descriptorWrites;
-    for (auto &ubo : uboList) {
-        VkWriteDescriptorSet write = {};
-        write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet               = _globalDescriptorSet;
-        write.dstBinding           = static_cast<uint32_t>(descriptorWrites.size());
-        write.dstArrayElement      = 0;
-        write.descriptorCount      = 1;
-        write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        write.pBufferInfo          = &ubo->buffer.getBufferInfo();
-        descriptorWrites.push_back(write);
-    }
-
-    uint32_t writeCount = 0;
-    switch (_entity->getShadingModel()) {
-    case ShadingModel::UNLIT:
-        writeCount = 1;
-        break;
-    case ShadingModel::DEFAULTLIT:
-        writeCount = 3;
-    }
-
-    vkUpdateDescriptorSets(_device->logicalDevice, writeCount, descriptorWrites.data(), 0, nullptr);
-}
-void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
+void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
-        auto                        shadingModel = _entity->getShadingModel();
         MaterialGpuData             materialData{};
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &_shaderPass->effect->setLayouts[SET_BINDING_MATERIAL], 1);
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, materialLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
-        switch (shadingModel) {
-        case ShadingModel::UNLIT:
+        if (bindingBits & MATERIAL_BINDING_BASECOLOR){
             if (material.baseColorTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
             } else {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
                 std::cerr << "base color texture not found, use default texture." << std::endl;
             }
-            break;
-        case ShadingModel::DEFAULTLIT:
-            if (material.baseColorTextureIndex > -1) {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
-            } else {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
-                std::cerr << "material id: [" << material.id << "] :";
-                std::cerr << "base color texture not found, use default texture." << std::endl;
-            }
+        }
+
+        if (bindingBits & MATERIAL_BINDING_NORMAL){
             if (material.normalTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
             } else {
@@ -70,8 +34,8 @@ void VulkanRenderObject::setupMaterial(VkDescriptorPool descriptorPool) {
                 std::cerr << "material id: [" << material.id << "] :";
                 std::cerr << "normal texture not found, use default texture." << std::endl;
             }
-            break;
         }
+
         vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         _materialGpuDataList.push_back(materialData);
@@ -125,7 +89,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadTextures(queue);
     loadBuffer(queue);
 }
-void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node) {
+void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node) {
     if (!node->isVisible) {
         return;
     }
@@ -137,29 +101,26 @@ void VulkanRenderObject::drawNode(VkCommandBuffer drawCmd, const std::shared_ptr
             currentParent = currentParent->parent;
         }
         nodeMatrix = _transform * nodeMatrix;
-        vkCmdPushConstants(drawCmd, _shaderPass->layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+        vkCmdPushConstants(drawCmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
         for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
                 MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
-                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 1, 1, &materialData.set, 0, nullptr);
+                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &materialData.set, 0, nullptr);
                 vkCmdDrawIndexed(drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
 
     for (const auto &child : node->children) {
-        drawNode(drawCmd, child);
+        drawNode(layout, drawCmd, child);
     }
 }
-void VulkanRenderObject::draw(VkCommandBuffer drawCmd) {
+void VulkanRenderObject::draw(VkPipelineLayout layout, VkCommandBuffer drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
     vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
     vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-    vkCmdBindPipeline(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _shaderPass->builtPipeline);
-
     for (auto &subEntity : _entity->_subEntityList) {
-        drawNode(drawCmd, subEntity);
+        drawNode(layout, drawCmd, subEntity);
     }
 }
 void VulkanRenderObject::cleanupResources() {
@@ -171,7 +132,7 @@ void VulkanRenderObject::cleanupResources() {
     _emptyTexture.destroy();
 }
 uint32_t VulkanRenderObject::getSetCount() {
-    return 1 + _entity->_materials.size();
+    return _entity->_materials.size();
 }
 void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
     auto& vertices = _entity->_vertices;

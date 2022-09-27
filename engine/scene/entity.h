@@ -90,8 +90,6 @@ public:
     ~Entity() override;
     void loadFromFile(const std::string &path);
     void cleanupResources();
-    void setShadingModel(ShadingModel type);
-    ShadingModel getShadingModel() const;
 
 public:
     VertexList    _vertices;
@@ -102,7 +100,6 @@ public:
 
 private:
     bool isLoaded = false;
-    ShadingModel  _shadingModel = ShadingModel::UNLIT;
 };
 } // namespace vkl
 

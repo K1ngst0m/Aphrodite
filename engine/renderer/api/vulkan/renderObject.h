@@ -16,31 +16,35 @@ struct MaterialGpuData {
     VkDescriptorSet set;
 };
 
+enum MaterialBindingBits{
+    MATERIAL_BINDING_NONE = (1 << 0),
+    MATERIAL_BINDING_BASECOLOR = (1 << 1),
+    MATERIAL_BINDING_NORMAL = (1 << 2),
+};
+
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity, std::unique_ptr<ShaderPass> &shaderPass);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);
     void cleanupResources();
 
-    void draw(VkCommandBuffer drawCmd);
+    void draw(VkPipelineLayout layout, VkCommandBuffer drawCmd);
 
-    void     setupGlobalDescriptorSet(VkDescriptorPool descriptorPool, std::deque<std::unique_ptr<VulkanUniformObject>> &uboList);
-    void     setupMaterial(VkDescriptorPool descriptorPool);
+    void     setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits);
     uint32_t getSetCount();
 
     glm::mat4 getTransform() const;
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node);
+    void drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity> &node);
     void loadTextures(VkQueue queue);
     void loadBuffer(VkQueue transferQueue);
     void createEmptyTexture(VkQueue queue);
 
-    VulkanDevice                *_device;
-    std::unique_ptr<ShaderPass> &_shaderPass;
+    VulkanDevice *_device;
 
     struct {
         std::vector<Vertex> vertices;
@@ -55,7 +59,6 @@ private:
     VulkanTexture                _emptyTexture;
     std::vector<VulkanTexture>   _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
-    VkDescriptorSet              _globalDescriptorSet;
 
 private:
     VulkanSceneRenderer *_renderer;

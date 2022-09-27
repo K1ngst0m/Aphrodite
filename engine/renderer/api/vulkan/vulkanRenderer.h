@@ -29,11 +29,17 @@ public:
     void idleDevice() override;
 
 public:
+    void                           initDefaultResource();
     std::shared_ptr<SceneRenderer> createSceneRenderer() override;
     VkQueue                        getDeviceQueue(DeviceQueueType type) const;
+    VkRenderPass                   getDefaultRenderPass() const;
+    uint32_t                       getCommandBufferCount() const;
+    VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
+    PipelineBuilder               &getPipelineBuilder();
+    VkRenderPassBeginInfo          getDefaultRenderPassCreateInfo(uint32_t imageIdx);
 
-public:
-    void initDefaultResource();
+    void recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
+    void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 private:
     void _createInstance();
@@ -53,16 +59,8 @@ private:
     void _createSyncObjects();
     void _createCommandBuffers();
 
-public:
-    void recordSinglePassCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
-    void recordSinglePassCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
-
-    std::vector<VkCommandBuffer> m_commandBuffers;
-
-    VkRenderPass         m_defaultRenderPass;
-    vkl::PipelineBuilder m_pipelineBuilder;
-
 private:
+    // TODO
     void getEnabledFeatures() {
     }
 
@@ -72,9 +70,11 @@ private:
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                                             const VkAllocationCallbacks *pAllocator);
 
-    vkl::DeletionQueue m_deletionQueue;
-
 private:
+    vkl::DeletionQueue           m_deletionQueue;
+    vkl::PipelineBuilder         m_pipelineBuilder;
+    std::vector<VkCommandBuffer> m_commandBuffers;
+    VkRenderPass                 m_defaultRenderPass;
     struct {
         VkQueue graphics;
         VkQueue present;

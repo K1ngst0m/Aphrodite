@@ -20,10 +20,4 @@ void Entity::cleanupResources() {
     _subEntityList.clear();
     _materials.clear();
 }
-void Entity::setShadingModel(ShadingModel type) {
-    _shadingModel = type;
-}
-ShadingModel Entity::getShadingModel() const {
-    return _shadingModel;
-}
 } // namespace vkl

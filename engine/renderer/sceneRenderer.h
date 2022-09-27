@@ -7,20 +7,23 @@
 namespace vkl {
 class SceneRenderer {
 public:
-    SceneRenderer() = default;
+    SceneRenderer()          = default;
     virtual ~SceneRenderer() = default;
 
     virtual void loadResources() = 0;
-    virtual void update() = 0;
-    virtual void drawScene() = 0;
+    virtual void update()        = 0;
+    virtual void drawScene()     = 0;
 
     virtual void cleanupResources() = 0;
 
-    void setScene(const std::shared_ptr<SceneManager>& scene);
+    void         setScene(const std::shared_ptr<SceneManager> &scene);
+    void         setShadingModel(ShadingModel model);
+    ShadingModel getShadingModel() const;
 
 protected:
     std::shared_ptr<SceneManager> _sceneManager;
-    bool isSceneLoaded = false;
+    bool                          isSceneLoaded = false;
+    ShadingModel                  _shadingModel = ShadingModel::UNLIT;
 };
 
 } // namespace vkl

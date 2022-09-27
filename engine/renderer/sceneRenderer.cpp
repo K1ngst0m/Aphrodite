@@ -7,4 +7,10 @@ void SceneRenderer::setScene(const std::shared_ptr<SceneManager>& scene) {
         cleanupResources();
     }
 }
+ShadingModel SceneRenderer::getShadingModel() const {
+    return _shadingModel;
+}
+void SceneRenderer::setShadingModel(ShadingModel model) {
+    _shadingModel = model;
+}
 } // namespace vkl

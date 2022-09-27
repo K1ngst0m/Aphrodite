@@ -23,17 +23,19 @@ public:
     void update() override;
     void drawScene() override;
 
-    std::unique_ptr<ShaderPass> &getPrebuiltPass(ShadingModel type);
+private:
+    void                         _initRenderResource();
+    void                         _initRenderList();
+    void                         _setupBaseColorShaderEffect();
+    void                         _setupPBRShaderEffect();
+    void                         _initUniformList();
+    void                         _loadSceneNodes(std::unique_ptr<SceneNode> &node);
+    VkDescriptorSetLayout       *getDescriptorSetLayout(DescriptorSetBinding binding);
+    std::unique_ptr<ShaderPass> &_getShaderPass();
 
 private:
-    void _initRenderResource();
-    void _initRenderList();
-    void _setupBaseColorShaderEffect();
-    void _setupPBRShaderEffect();
-    void _initUboList();
-    void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
-
 private:
+    VkDescriptorSet  _globalDescriptorSet;
     VkDescriptorPool _descriptorPool;
     vkl::ShaderCache m_shaderCache;
 
@@ -45,7 +47,7 @@ private:
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;
-    std::deque<std::unique_ptr<VulkanUniformObject>> _uboList;
+    std::deque<std::unique_ptr<VulkanUniformObject>> _uniformList;
 
 private:
     vkl::VulkanDevice *_device;
