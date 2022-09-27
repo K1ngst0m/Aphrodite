@@ -1,9 +1,9 @@
 #include "renderer/sceneRenderer.h"
 
-#include "vulkanRenderer.h"
 #include "renderObject.h"
 #include "sceneRenderer.h"
 #include "uniformObject.h"
+#include "vulkanRenderer.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -189,6 +189,7 @@ void VulkanRenderer::_createDevice() {
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_queues.graphics);
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_queues.present);
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &m_queues.transfer);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.compute, 0, &m_queues.compute);
 
     m_deletionQueue.push_function([=]() { delete m_device; });
 }
@@ -262,7 +263,7 @@ void VulkanRenderer::_createRenderPass() {
 
 void VulkanRenderer::_setupSwapChain() {
     m_swapChain.create(m_device, m_surface, m_windowData->window);
-    m_deletionQueue.push_function([&](){
+    m_deletionQueue.push_function([&]() {
         m_swapChain.cleanup();
     });
 }
@@ -337,15 +338,15 @@ void VulkanRenderer::_createSyncObjects() {
     }
 }
 
-void VulkanRenderer::recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands,
-                                         uint32_t frameIdx) {
-    recordCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
+void VulkanRenderer::recordSinglePassCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands,
+                                                   uint32_t frameIdx) {
+    recordSinglePassCommandBuffer(windowData, m_defaultRenderPass, drawCommands, frameIdx);
 }
 
-void VulkanRenderer::immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) const {
+void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommandBuffer cmd)> &&function) const {
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
-    m_device->endSingleTimeCommands(cmd, m_queues.graphics);
+    m_device->endSingleTimeCommands(cmd, queue);
 }
 
 void VulkanRenderer::prepareFrame() {
@@ -395,9 +396,9 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
 }
 
-void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
-                                         const std::function<void()> &drawCommands,
-                                         uint32_t                     frameIdx) {
+void VulkanRenderer::recordSinglePassCommandBuffer(WindowData *windowData, VkRenderPass renderPass,
+                                                   const std::function<void()> &drawCommands,
+                                                   uint32_t                     frameIdx) {
     auto &commandBuffer = m_commandBuffers[frameIdx];
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
@@ -420,9 +421,9 @@ void VulkanRenderer::recordCommandBuffer(WindowData *windowData, VkRenderPass re
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    if (m_settings.enableUI) {
-        // ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-    }
+    // if (m_settings.enableUI) {
+    //     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+    // }
 
     drawCommands();
 
@@ -492,7 +493,7 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
 
     // execute a gpu command to upload imgui font textures
-    immediateSubmit([&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+    immediateSubmit(m_queues.graphics, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -527,5 +528,18 @@ void VulkanRenderer::initDefaultResource() {
 std::shared_ptr<SceneRenderer> VulkanRenderer::createSceneRenderer() {
     _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
     return _sceneRenderer;
+}
+VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
+    switch (type) {
+    case DeviceQueueType::COMPUTE:
+        return m_queues.compute;
+    case DeviceQueueType::GRAPHICS:
+        return m_queues.graphics;
+    case DeviceQueueType::TRANSFER:
+        return m_queues.transfer;
+    case DeviceQueueType::PRESENT:
+        return m_queues.present;
+    }
+    return m_queues.graphics;
 }
 } // namespace vkl

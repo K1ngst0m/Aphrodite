@@ -12,6 +12,13 @@
 #include "texture.h"
 
 namespace vkl {
+enum class DeviceQueueType {
+    COMPUTE,
+    GRAPHICS,
+    TRANSFER,
+    PRESENT,
+};
+
 class VulkanRenderer : public Renderer {
 public:
     VulkanRenderer()  = default;
@@ -21,7 +28,12 @@ public:
     void destroyDevice() override;
     void idleDevice() override;
 
+public:
     std::shared_ptr<SceneRenderer> createSceneRenderer() override;
+    VkQueue                        getDeviceQueue(DeviceQueueType type) const;
+
+public:
+    void initDefaultResource();
 
 private:
     void _createInstance();
@@ -33,9 +45,6 @@ private:
     void _createSwapChainImageViews();
     bool _checkValidationLayerSupport();
 
-public:
-    void initDefaultResource();
-
 private:
     void _createDepthResources();
     void _createRenderPass();
@@ -45,14 +54,8 @@ private:
     void _createCommandBuffers();
 
 public:
-    void recordCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
-    void recordCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
-
-    struct {
-        VkQueue graphics;
-        VkQueue present;
-        VkQueue transfer;
-    } m_queues;
+    void recordSinglePassCommandBuffer(WindowData *windowData, VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t frameIdx);
+    void recordSinglePassCommandBuffer(WindowData *windowData, const std::function<void()> &drawCommands, uint32_t frameIdx);
 
     std::vector<VkCommandBuffer> m_commandBuffers;
 
@@ -65,13 +68,20 @@ private:
 
 private:
     std::vector<const char *> getRequiredInstanceExtensions();
-    void                      immediateSubmit(std::function<void(VkCommandBuffer cmd)> &&function) const;
+    void                      immediateSubmit(VkQueue queue, std::function<void(VkCommandBuffer cmd)> &&function) const;
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
                                                             const VkAllocationCallbacks *pAllocator);
 
     vkl::DeletionQueue m_deletionQueue;
 
 private:
+    struct {
+        VkQueue graphics;
+        VkQueue present;
+        VkQueue transfer;
+        VkQueue compute;
+    } m_queues;
+
     VkInstance                m_instance;
     std::vector<const char *> m_supportedInstanceExtensions;
     VkDebugUtilsMessengerEXT  m_debugMessenger;
@@ -102,7 +112,7 @@ public:
     void prepareFrame() override;
     void submitFrame() override;
 
-    bool        m_framebufferResized = false;
+    bool m_framebufferResized = false;
 
     void prepareUI();
     void initImGui();
