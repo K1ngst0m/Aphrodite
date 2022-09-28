@@ -61,6 +61,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 }
 
 void VulkanRenderer::_createFramebuffers() {
+    m_swapChain.createDepthResources(transferQueue);
     m_swapChain.createFramebuffers(m_defaultRenderPass);
 }
 
@@ -191,49 +192,32 @@ void VulkanRenderer::_createDevice() {
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &transferQueue);
     vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.compute, 0, &computeQueue);
 
-    m_deletionQueue.push_function([&](){
+    m_deletionQueue.push_function([&]() {
         m_device->destroy();
     });
 }
 
-void VulkanRenderer::_createRenderPass() {
-    VkAttachmentDescription colorAttachment{
-        .format         = m_swapChain.getFormat(),
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+VkRenderPass VulkanRenderer::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription& depthAttachmentDesc) {
+    std::vector<VkAttachmentDescription> attachments;
+    std::vector<VkAttachmentReference>   colorAttachmentRefs;
+    for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
+        attachments.push_back(colorAttachments[idx]);
+        VkAttachmentReference ref{};
+        ref.attachment = idx;
+        ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachmentRefs.push_back(ref);
+    }
 
-    };
-
-    VkAttachmentReference colorAttachmentRef{
-        .attachment = 0,
-        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-
-    VkAttachmentDescription depthAttachment{
-        .format         = m_device->findDepthFormat(),
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
+    attachments.push_back(depthAttachmentDesc);
     VkAttachmentReference depthAttachmentRef{
-        .attachment = 1,
+        .attachment = static_cast<uint32_t>(colorAttachments.size()),
         .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
 
     VkSubpassDescription subpass{
         .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount    = 1,
-        .pColorAttachments       = &colorAttachmentRef,
+        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size()),
+        .pColorAttachments       = colorAttachmentRefs.data(),
         .pDepthStencilAttachment = &depthAttachmentRef,
     };
 
@@ -246,21 +230,53 @@ void VulkanRenderer::_createRenderPass() {
         .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
     };
 
-    std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
-    VkRenderPassCreateInfo                 renderPassInfo{
-                        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-                        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-                        .pAttachments    = attachments.data(),
-                        .subpassCount    = 1,
-                        .pSubpasses      = &subpass,
-                        .dependencyCount = 1,
-                        .pDependencies   = &dependency,
+    VkRenderPassCreateInfo renderPassInfo{
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
+        .subpassCount    = 1,
+        .pSubpasses      = &subpass,
+        .dependencyCount = 1,
+        .pDependencies   = &dependency,
     };
 
-    VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &m_defaultRenderPass));
+    VkRenderPass renderpass;
+    VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &renderpass));
 
     m_deletionQueue.push_function(
-        [=]() { vkDestroyRenderPass(m_device->logicalDevice, m_defaultRenderPass, nullptr); });
+        [=]() { vkDestroyRenderPass(m_device->logicalDevice, renderpass, nullptr); });
+
+    return renderpass;
+}
+
+void VulkanRenderer::_createDefaultRenderPass() {
+    VkAttachmentDescription colorAttachment{
+        .format         = m_swapChain.getFormat(),
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+
+    };
+    VkAttachmentDescription depthAttachment{
+        .format         = m_device->findDepthFormat(),
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+    };
+
+    std::vector<VkAttachmentDescription> colorAttachments{
+        colorAttachment,
+    };
+
+    m_defaultRenderPass = createRenderPass(colorAttachments, depthAttachment);
 }
 
 void VulkanRenderer::_setupSwapChain() {
@@ -296,10 +312,6 @@ void VulkanRenderer::_createCommandBuffers() {
     };
 
     VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
-}
-
-void VulkanRenderer::_createDepthResources() {
-    m_swapChain.createDepthResources(transferQueue);
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -499,8 +511,7 @@ void VulkanRenderer::prepareUI() {
 
 void VulkanRenderer::initDefaultResource() {
     _createCommandBuffers();
-    _createDepthResources();
-    _createRenderPass();
+    _createDefaultRenderPass();
     _createFramebuffers();
     _setupPipelineBuilder();
     _createSyncObjects();
@@ -548,7 +559,7 @@ VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
 VkCommandBuffer VulkanRenderer::getDefaultCommandBuffers(uint32_t idx) const {
     return m_commandBuffers[idx];
 }
-PipelineBuilder& VulkanRenderer::getPipelineBuilder() {
+PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
     return m_pipelineBuilder;
 }
 uint32_t VulkanRenderer::getCommandBufferCount() const {

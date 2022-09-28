@@ -51,6 +51,7 @@ public:
     VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
     PipelineBuilder               &getPipelineBuilder();
     VkRenderPassBeginInfo          getDefaultRenderPassCreateInfo(uint32_t imageIdx);
+    VkRenderPass createRenderPass(const std::vector<VkAttachmentDescription>& colorAttachments, VkAttachmentDescription& depthAttachment);
     std::shared_ptr<VulkanDevice>  getDevice();
     void                           prepareUI();
     void                           initImGui();
@@ -70,7 +71,7 @@ private:
 
 private:
     void _createDepthResources();
-    void _createRenderPass();
+    void _createDefaultRenderPass();
     void _createFramebuffers();
     void _setupPipelineBuilder();
     void _createSyncObjects();

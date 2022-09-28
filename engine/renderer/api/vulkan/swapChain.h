@@ -16,7 +16,6 @@ class VulkanSwapChain {
 public:
     void create(const std::shared_ptr<VulkanDevice>& device, VkSurfaceKHR surface, GLFWwindow *window);
     void cleanup();
-    void recreate();
 
     void createDepthResources(VkQueue transferQueue);
     void createFramebuffers(VkRenderPass renderPass);
