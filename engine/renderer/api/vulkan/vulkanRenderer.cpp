@@ -70,7 +70,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
 
     m_deletionQueue.push_function([=]() {
         for (auto &framebuffer : m_defaultFramebuffers) {
-            vkDestroyFramebuffer(m_device->logicalDevice, framebuffer, nullptr);
+            vkDestroyFramebuffer(m_device->getLogicalDevice(), framebuffer, nullptr);
         }
     });
 }
@@ -173,34 +173,18 @@ void VulkanRenderer::_createInstance() {
 void VulkanRenderer::_createDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
-
     assert(deviceCount > 0 && "failed to find GPUs with Vulkan support!");
-
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+
     m_device = std::make_shared<VulkanDevice>(devices[0]);
-    getEnabledFeatures();
-    m_device->createLogicalDevice(m_enabledFeatures, deviceExtensions, nullptr);
 
-    VkBool32                presentSupport = false;
-    std::optional<uint32_t> presentQueueFamilyIndices;
-    uint32_t                i = 0;
-    for (const auto &queueFamily : m_device->queueFamilyProperties) {
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(m_device->physicalDevice, i, m_surface, &presentSupport);
-        if (presentSupport) {
-            presentQueueFamilyIndices = i;
-            break;
-        }
-        i++;
-    }
-    assert(presentQueueFamilyIndices.has_value());
-    m_device->queueFamilyIndices.present = presentQueueFamilyIndices.value();
+    m_device->create(m_surface, m_enabledFeatures, deviceExtensions);
 
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &graphicsQueue);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &presentQueue);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &transferQueue);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.compute, 0, &computeQueue);
+    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &graphicsQueue);
+    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT), 0, &presentQueue);
+    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::TRANSFER), 0, &transferQueue);
+    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::COMPUTE), 0, &computeQueue);
 
     m_deletionQueue.push_function([&]() {
         m_device->destroy();
@@ -251,10 +235,10 @@ VkRenderPass VulkanRenderer::createRenderPass(const std::vector<VkAttachmentDesc
     };
 
     VkRenderPass renderpass;
-    VK_CHECK_RESULT(vkCreateRenderPass(m_device->logicalDevice, &renderPassInfo, nullptr, &renderpass));
+    VK_CHECK_RESULT(vkCreateRenderPass(m_device->getLogicalDevice(), &renderPassInfo, nullptr, &renderpass));
 
     m_deletionQueue.push_function(
-        [=]() { vkDestroyRenderPass(m_device->logicalDevice, renderpass, nullptr); });
+        [=]() { vkDestroyRenderPass(m_device->getLogicalDevice(), renderpass, nullptr); });
 
     return renderpass;
 }
@@ -304,7 +288,7 @@ void VulkanRenderer::_recreateSwapChain() {
         glfwWaitEvents();
     }
 
-    vkDeviceWaitIdle(m_device->logicalDevice);
+    vkDeviceWaitIdle(m_device->getLogicalDevice());
 
     m_swapChain.cleanup();
     m_swapChain.create(m_device, m_surface, m_windowData->window);
@@ -315,15 +299,7 @@ void VulkanRenderer::_recreateSwapChain() {
 
 void VulkanRenderer::_createCommandBuffers() {
     m_defaultCommandBuffers.resize(m_swapChain.getImageCount());
-
-    VkCommandBufferAllocateInfo allocInfo{
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = m_device->commandPool,
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = (uint32_t)m_defaultCommandBuffers.size(),
-    };
-
-    VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_defaultCommandBuffers.data()));
+    m_device->allocateCommandBuffers(m_defaultCommandBuffers.data(), m_defaultCommandBuffers.size());
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -356,11 +332,11 @@ void VulkanRenderer::_createSyncObjects() {
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
     for (auto &m_frameSyncObject : m_defaultSyncObjects) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
-        VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateFence(m_device->getLogicalDevice(), &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
 
-        m_deletionQueue.push_function([=]() { m_frameSyncObject.destroy(m_device->logicalDevice); });
+        m_deletionQueue.push_function([=]() { m_frameSyncObject.destroy(m_device->getLogicalDevice()); });
     }
 }
 
@@ -371,7 +347,7 @@ void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommand
 }
 
 void VulkanRenderer::prepareFrame() {
-    vkWaitForFences(m_device->logicalDevice, 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
     VkResult result = m_swapChain.acqureNextImage(INT64_MAX, m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
@@ -384,7 +360,7 @@ void VulkanRenderer::prepareFrame() {
         VK_CHECK_RESULT(result);
     }
 
-    vkResetFences(m_device->logicalDevice, 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence);
+    vkResetFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence);
 }
 void VulkanRenderer::submitFrame() {
     VkSemaphore          waitSemaphores[]   = {m_defaultSyncObjects[m_currentFrame].renderSemaphore};
@@ -444,7 +420,7 @@ void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
 void VulkanRenderer::idleDevice() {
-    vkDeviceWaitIdle(m_device->logicalDevice);
+    vkDeviceWaitIdle(m_device->getLogicalDevice());
 }
 
 void VulkanRenderer::initImGui() {
@@ -471,7 +447,7 @@ void VulkanRenderer::initImGui() {
     };
 
     VkDescriptorPool imguiPool;
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->logicalDevice, &poolInfo, nullptr, &imguiPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getLogicalDevice(), &poolInfo, nullptr, &imguiPool));
 
     // 2: initialize imgui library
 
@@ -483,8 +459,8 @@ void VulkanRenderer::initImGui() {
     // this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo initInfo = {
         .Instance       = m_instance,
-        .PhysicalDevice = m_device->physicalDevice,
-        .Device         = m_device->logicalDevice,
+        .PhysicalDevice = m_device->getPhysicalDevice(),
+        .Device         = m_device->getLogicalDevice(),
         .Queue          = graphicsQueue,
         .DescriptorPool = imguiPool,
         .MinImageCount  = 3,
@@ -504,7 +480,7 @@ void VulkanRenderer::initImGui() {
     glfwSetMouseButtonCallback(m_windowData->window, ImGui_ImplGlfw_MouseButtonCallback);
 
     m_deletionQueue.push_function([=]() {
-        vkDestroyDescriptorPool(m_device->logicalDevice, imguiPool, nullptr);
+        vkDestroyDescriptorPool(m_device->getLogicalDevice(), imguiPool, nullptr);
         ImGui_ImplVulkan_Shutdown();
     });
 }

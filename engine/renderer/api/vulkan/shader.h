@@ -56,7 +56,7 @@ struct ShaderPass {
 };
 
 struct EffectTemplate {
-    std::vector<ShaderPass*> passShaders;
+    std::vector<std::shared_ptr<ShaderPass>> passShaders;
     ShaderParameters* defaultParameters;
 };
 

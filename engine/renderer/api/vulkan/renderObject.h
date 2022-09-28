@@ -2,13 +2,11 @@
 #define VULKAN_RENDERABLE_H_
 
 #include "device.h"
-#include "uniformObject.h"
 
 namespace vkl {
 class VulkanSceneRenderer;
 class Entity;
 class ShaderPass;
-
 struct Vertex;
 struct SubEntity;
 
@@ -16,15 +14,15 @@ struct MaterialGpuData {
     VkDescriptorSet set;
 };
 
-enum MaterialBindingBits{
-    MATERIAL_BINDING_NONE = (1 << 0),
+enum MaterialBindingBits {
+    MATERIAL_BINDING_NONE      = (1 << 0),
     MATERIAL_BINDING_BASECOLOR = (1 << 1),
-    MATERIAL_BINDING_NORMAL = (1 << 2),
+    MATERIAL_BINDING_NORMAL    = (1 << 2),
 };
 
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice>& device, Entity *entity);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice> &device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);

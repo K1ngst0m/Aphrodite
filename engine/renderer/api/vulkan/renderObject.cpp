@@ -10,11 +10,12 @@ namespace vkl {
 VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice> &device, vkl::Entity *entity)
     : _device(device), _renderer(renderer), _entity(entity) {
 }
+
 void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
         MaterialGpuData             materialData{};
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, materialLayout, 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &materialData.set));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getLogicalDevice(), &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
         if (bindingBits & MATERIAL_BINDING_BASECOLOR){
@@ -36,7 +37,7 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, Vk
             }
         }
 
-        vkUpdateDescriptorSets(_device->logicalDevice, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(_device->getLogicalDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         _materialGpuDataList.push_back(materialData);
     }
@@ -68,11 +69,11 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
         texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        samplerInfo.maxAnisotropy       = _device->enabledFeatures.samplerAnisotropy ? _device->properties.limits.maxSamplerAnisotropy : 1.0f;
-        samplerInfo.anisotropyEnable    = _device->enabledFeatures.samplerAnisotropy;
+        samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
+        samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
         samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-        VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
         texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         _textures.push_back(texture);
@@ -245,11 +246,11 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
     texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
 
     VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    samplerInfo.maxAnisotropy       = _device->enabledFeatures.samplerAnisotropy ? _device->properties.limits.maxSamplerAnisotropy : 1.0f;
-    samplerInfo.anisotropyEnable    = _device->enabledFeatures.samplerAnisotropy;
+    samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
+    samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
     samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-    VK_CHECK_RESULT(vkCreateSampler(_device->logicalDevice, &samplerInfo, nullptr, &texture.sampler));
+    VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
     texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     stagingBuffer.destroy();

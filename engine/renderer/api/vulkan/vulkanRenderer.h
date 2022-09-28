@@ -12,14 +12,6 @@
 #include "texture.h"
 
 namespace vkl {
-
-enum class DeviceQueueType {
-    COMPUTE,
-    GRAPHICS,
-    TRANSFER,
-    PRESENT,
-};
-
 struct PerFrameSyncObject {
     VkSemaphore renderSemaphore;
     VkSemaphore presentSemaphore;

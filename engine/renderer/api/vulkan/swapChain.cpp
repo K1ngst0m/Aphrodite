@@ -29,7 +29,7 @@ void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice>& device, VkSurf
     m_device = device;
     m_surface = surface;
 
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_device->physicalDevice);
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_device->getPhysicalDevice());
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = vkl::utils::chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -60,10 +60,10 @@ void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice>& device, VkSurf
         .oldSwapchain   = VK_NULL_HANDLE,
     };
 
-    std::array<uint32_t, 2> queueFamilyIndices = {m_device->queueFamilyIndices.graphics,
-                                                  m_device->queueFamilyIndices.present};
+    std::array<uint32_t, 2> queueFamilyIndices = {m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS),
+                                                  m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT)};
 
-    if (m_device->queueFamilyIndices.graphics != m_device->queueFamilyIndices.present) {
+    if (m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS) != m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT)) {
         createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
         createInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
@@ -73,11 +73,11 @@ void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice>& device, VkSurf
         createInfo.pQueueFamilyIndices   = nullptr; // Optional
     }
 
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(m_device->logicalDevice, &createInfo, nullptr, &m_swapChain));
+    VK_CHECK_RESULT(vkCreateSwapchainKHR(m_device->getLogicalDevice(), &createInfo, nullptr, &m_swapChain));
 
-    vkGetSwapchainImagesKHR(m_device->logicalDevice, m_swapChain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(m_device->getLogicalDevice(), m_swapChain, &imageCount, nullptr);
     m_swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(m_device->logicalDevice, m_swapChain, &imageCount, m_swapChainImages.data());
+    vkGetSwapchainImagesKHR(m_device->getLogicalDevice(), m_swapChain, &imageCount, m_swapChainImages.data());
 
     m_swapChainImageFormat = surfaceFormat.format;
     m_swapChainExtent      = extent;
@@ -94,10 +94,10 @@ void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice>& device, VkSurf
 }
 void VulkanSwapChain::cleanup() {
     for (auto &m_swapChainImageView : m_swapChainImageViews) {
-        vkDestroyImageView(m_device->logicalDevice, m_swapChainImageView, nullptr);
+        vkDestroyImageView(m_device->getLogicalDevice(), m_swapChainImageView, nullptr);
     }
 
-    vkDestroySwapchainKHR(m_device->logicalDevice, m_swapChain, nullptr);
+    vkDestroySwapchainKHR(m_device->getLogicalDevice(), m_swapChain, nullptr);
 }
 
 VkFramebuffer VulkanSwapChain::createFramebuffers(VkExtent2D extent, const std::vector<VkImageView>& attachments, VkRenderPass renderPass) {
@@ -113,11 +113,11 @@ VkFramebuffer VulkanSwapChain::createFramebuffers(VkExtent2D extent, const std::
         .layers          = 1,
     };
 
-    VK_CHECK_RESULT(vkCreateFramebuffer(m_device->logicalDevice, &framebufferInfo, nullptr, &framebuffer));
+    VK_CHECK_RESULT(vkCreateFramebuffer(m_device->getLogicalDevice(), &framebufferInfo, nullptr, &framebuffer));
     return framebuffer;
 }
 VkResult VulkanSwapChain::acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const {
-    return vkAcquireNextImageKHR(m_device->logicalDevice, m_swapChain, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
+    return vkAcquireNextImageKHR(m_device->getLogicalDevice(), m_swapChain, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
 }
 VkPresentInfoKHR VulkanSwapChain::getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex) {
     VkPresentInfoKHR presentInfo  = {
