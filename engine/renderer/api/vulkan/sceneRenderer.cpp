@@ -59,6 +59,7 @@ void VulkanSceneRenderer::drawScene() {
 void VulkanSceneRenderer::update() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
+
     // TODO update light data
     // for (auto & ubo : _uboList){
     //     if (ubo->_ubo->isUpdated()){
@@ -95,7 +96,7 @@ void VulkanSceneRenderer::_initUniformList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->logicalDevice, &poolInfo, nullptr, &_descriptorPool));
 
-    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, getDescriptorSetLayout(SET_BINDING_SCENE), 1);
+    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _getDescriptorSetLayout(SET_BINDING_SCENE), 1);
     VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->logicalDevice, &allocInfo, &_globalDescriptorSet));
 
     std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -126,7 +127,7 @@ void VulkanSceneRenderer::_initUniformList() {
     vkUpdateDescriptorSets(_device->logicalDevice, writeCount, descriptorWrites.data(), 0, nullptr);
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterial(getDescriptorSetLayout(SET_BINDING_MATERIAL), _descriptorPool, mtlBindingBits);
+        renderable->setupMaterial(_getDescriptorSetLayout(SET_BINDING_MATERIAL), _descriptorPool, mtlBindingBits);
     }
 }
 void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
@@ -233,7 +234,7 @@ std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
     assert("unexpected behavior");
     return _unlitPass;
 }
-VkDescriptorSetLayout *VulkanSceneRenderer::getDescriptorSetLayout(DescriptorSetBinding binding) {
+VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
     return &_getShaderPass()->effect->setLayouts[binding];
 }
 } // namespace vkl

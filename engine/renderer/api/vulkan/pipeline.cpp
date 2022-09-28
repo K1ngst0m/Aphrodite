@@ -104,37 +104,6 @@ void PipelineBuilder::setShaders(ShaderEffect *shaders)
     }
     _pipelineLayout = shaders->builtLayout;
 }
-void ShaderEffect::buildPipelineLayout(VkDevice device)
-{
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, constantRanges);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &builtLayout));
-}
-void ShaderEffect::pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings)
-{
-    VkDescriptorSetLayout setLayout;
-    VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &perSceneLayoutInfo, nullptr, &setLayout));
-    setLayouts.push_back(setLayout);
-}
-void ShaderEffect::pushConstantRanges(VkPushConstantRange constantRange)
-{
-    constantRanges.push_back(constantRange);
-}
-void ShaderEffect::pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits)
-{
-    stages.push_back({ module, stageBits });
-}
-void ShaderPass::buildEffect(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *shaderEffect)
-{
-    effect = shaderEffect;
-    layout = shaderEffect->builtLayout;
-
-    PipelineBuilder pipbuilder = builder;
-
-    pipbuilder.setShaders(shaderEffect);
-
-    builtPipeline = pipbuilder.buildPipeline(device, renderPass);
-}
 void PipelineBuilder::resetToDefault(VkExtent2D extent) {
     VertexInputBuilder::setPipelineVertexInputState({VertexComponent::POSITION, VertexComponent::NORMAL,
                                                           VertexComponent::UV, VertexComponent::COLOR, VertexComponent::TANGENT});

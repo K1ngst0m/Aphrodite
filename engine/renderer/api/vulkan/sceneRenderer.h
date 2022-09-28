@@ -30,7 +30,7 @@ private:
     void                         _setupPBRShaderEffect();
     void                         _initUniformList();
     void                         _loadSceneNodes(std::unique_ptr<SceneNode> &node);
-    VkDescriptorSetLayout       *getDescriptorSetLayout(DescriptorSetBinding binding);
+    VkDescriptorSetLayout       *_getDescriptorSetLayout(DescriptorSetBinding binding);
     std::unique_ptr<ShaderPass> &_getShaderPass();
 
 private:
