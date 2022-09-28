@@ -60,9 +60,19 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
     createInfo.pfnUserCallback = debugCallback;
 }
 
-void VulkanRenderer::_createFramebuffers() {
-    m_swapChain.createDepthResources(transferQueue);
-    m_swapChain.createFramebuffers(m_defaultRenderPass);
+void VulkanRenderer::_createDefaultFramebuffers() {
+    m_defaultFramebuffers.resize(m_swapChain.getImageCount());
+
+    for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
+        std::vector<VkImageView> attachments = {m_swapChain.getImageViewWithIdx(i), m_defaultDepthAttachment.view};
+        m_defaultFramebuffers[i]                    = m_swapChain.createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
+    }
+
+    m_deletionQueue.push_function([=]() {
+        for (auto &framebuffer : m_defaultFramebuffers) {
+            vkDestroyFramebuffer(m_device->logicalDevice, framebuffer, nullptr);
+        }
+    });
 }
 
 std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
@@ -197,7 +207,7 @@ void VulkanRenderer::_createDevice() {
     });
 }
 
-VkRenderPass VulkanRenderer::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription& depthAttachmentDesc) {
+VkRenderPass VulkanRenderer::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachmentDesc) {
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference>   colorAttachmentRefs;
     for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
@@ -295,23 +305,25 @@ void VulkanRenderer::_recreateSwapChain() {
     }
 
     vkDeviceWaitIdle(m_device->logicalDevice);
+
     m_swapChain.cleanup();
     m_swapChain.create(m_device, m_surface, m_windowData->window);
-    m_swapChain.createDepthResources(transferQueue);
-    m_swapChain.createFramebuffers(m_defaultRenderPass);
+
+    _createDefaultDepthResources();
+    _createDefaultFramebuffers();
 }
 
 void VulkanRenderer::_createCommandBuffers() {
-    m_commandBuffers.resize(m_swapChain.getImageCount());
+    m_defaultCommandBuffers.resize(m_swapChain.getImageCount());
 
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool        = m_device->commandPool,
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = (uint32_t)m_commandBuffers.size(),
+        .commandBufferCount = (uint32_t)m_defaultCommandBuffers.size(),
     };
 
-    VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_commandBuffers.data()));
+    VK_CHECK_RESULT(vkAllocateCommandBuffers(m_device->logicalDevice, &allocInfo, m_defaultCommandBuffers.data()));
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -338,12 +350,12 @@ void VulkanRenderer::_setupPipelineBuilder() {
 }
 
 void VulkanRenderer::_createSyncObjects() {
-    m_frameSyncObjects.resize(m_settings.maxFrames);
+    m_defaultSyncObjects.resize(m_settings.maxFrames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    for (auto &m_frameSyncObject : m_frameSyncObjects) {
+    for (auto &m_frameSyncObject : m_defaultSyncObjects) {
         VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
         VK_CHECK_RESULT(vkCreateSemaphore(m_device->logicalDevice, &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
         VK_CHECK_RESULT(vkCreateFence(m_device->logicalDevice, &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
@@ -359,9 +371,9 @@ void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommand
 }
 
 void VulkanRenderer::prepareFrame() {
-    vkWaitForFences(m_device->logicalDevice, 1, &m_frameSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->logicalDevice, 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
-    VkResult result = m_swapChain.acqureNextImage(INT64_MAX, m_frameSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
+    VkResult result = m_swapChain.acqureNextImage(INT64_MAX, m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         _recreateSwapChain();
@@ -372,24 +384,24 @@ void VulkanRenderer::prepareFrame() {
         VK_CHECK_RESULT(result);
     }
 
-    vkResetFences(m_device->logicalDevice, 1, &m_frameSyncObjects[m_currentFrame].inFlightFence);
+    vkResetFences(m_device->logicalDevice, 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence);
 }
 void VulkanRenderer::submitFrame() {
-    VkSemaphore          waitSemaphores[]   = {m_frameSyncObjects[m_currentFrame].renderSemaphore};
+    VkSemaphore          waitSemaphores[]   = {m_defaultSyncObjects[m_currentFrame].renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore          signalSemaphores[] = {m_frameSyncObjects[m_currentFrame].presentSemaphore};
+    VkSemaphore          signalSemaphores[] = {m_defaultSyncObjects[m_currentFrame].presentSemaphore};
     VkSubmitInfo         submitInfo{
                 .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .waitSemaphoreCount   = 1,
                 .pWaitSemaphores      = waitSemaphores,
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
-                .pCommandBuffers      = &m_commandBuffers[m_imageIdx],
+                .pCommandBuffers      = &m_defaultCommandBuffers[m_imageIdx],
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores    = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_frameSyncObjects[m_currentFrame].inFlightFence));
+    VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_defaultSyncObjects[m_currentFrame].inFlightFence));
 
     VkPresentInfoKHR presentInfo = m_swapChain.getPresentInfo(signalSemaphores, &m_imageIdx);
 
@@ -408,13 +420,10 @@ void VulkanRenderer::submitFrame() {
 void VulkanRenderer::recordSinglePassCommandBuffer(VkRenderPass                 renderPass,
                                                    const std::function<void()> &drawCommands,
                                                    uint32_t                     commandIdx) {
-    VkCommandBuffer commandBuffer = m_commandBuffers[commandIdx];
+    VkCommandBuffer commandBuffer = m_defaultCommandBuffers[commandIdx];
     recordCommandBuffer([&]() {
-        // render pass
-        std::vector<VkClearValue> clearValues(2);
-        clearValues[0].color                 = {{0.1f, 0.1f, 0.1f, 1.0f}};
-        clearValues[1].depthStencil          = {1.0f, 0};
-        VkRenderPassBeginInfo renderPassInfo = m_swapChain.getRenderPassBeginInfo(renderPass, clearValues, commandIdx);
+        VkRenderPassBeginInfo renderPassInfo = getDefaultRenderPassBeginInfo(commandIdx);
+        renderPassInfo.renderArea            = vkl::init::rect2D(m_swapChain.getExtent());
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
         drawCommands();
         vkCmdEndRenderPass(commandBuffer);
@@ -512,7 +521,8 @@ void VulkanRenderer::prepareUI() {
 void VulkanRenderer::initDefaultResource() {
     _createCommandBuffers();
     _createDefaultRenderPass();
-    _createFramebuffers();
+    _createDefaultDepthResources();
+    _createDefaultFramebuffers();
     _setupPipelineBuilder();
     _createSyncObjects();
 }
@@ -535,7 +545,7 @@ VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
     return graphicsQueue;
 }
 void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
-    auto &commandBuffer = m_commandBuffers[commandIdx];
+    auto &commandBuffer = m_defaultCommandBuffers[commandIdx];
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -557,21 +567,37 @@ VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
     return m_defaultRenderPass;
 }
 VkCommandBuffer VulkanRenderer::getDefaultCommandBuffers(uint32_t idx) const {
-    return m_commandBuffers[idx];
+    return m_defaultCommandBuffers[idx];
 }
 PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
     return m_pipelineBuilder;
 }
 uint32_t VulkanRenderer::getCommandBufferCount() const {
-    return m_commandBuffers.size();
+    return m_defaultCommandBuffers.size();
 }
-VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassCreateInfo(uint32_t imageIdx) {
+
+VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassBeginInfo(uint32_t imageIdx) {
     std::vector<VkClearValue> clearValues(2);
     clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
-    return m_swapChain.getRenderPassBeginInfo(m_defaultRenderPass, clearValues, imageIdx);
+    return vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_defaultFramebuffers[imageIdx]);
 }
+
 std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
     return m_device;
+}
+
+void VulkanRenderer::_createDefaultDepthResources() {
+    VkFormat depthFormat = m_device->findDepthFormat();
+    m_device->createImage(m_swapChain.getExtent().width, m_swapChain.getExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                          m_defaultDepthAttachment);
+    m_defaultDepthAttachment.view = m_device->createImageView(m_defaultDepthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    m_device->transitionImageLayout(transferQueue, m_defaultDepthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+    m_deletionQueue.push_function([&]() {
+        m_defaultDepthAttachment.destroy();
+    });
 }
 } // namespace vkl

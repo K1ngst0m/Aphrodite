@@ -44,7 +44,7 @@ void VulkanSceneRenderer::drawScene() {
         _renderer->recordCommandBuffer([&]() {
             VkCommandBuffer command = _renderer->getDefaultCommandBuffers(commandIndex);
             // render pass
-            VkRenderPassBeginInfo renderPassInfo = _renderer->getDefaultRenderPassCreateInfo(commandIndex);
+            VkRenderPassBeginInfo renderPassInfo = _renderer->getDefaultRenderPassBeginInfo(commandIndex);
             vkCmdBeginRenderPass(command, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
             vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
@@ -55,20 +55,6 @@ void VulkanSceneRenderer::drawScene() {
         },
                                        commandIndex);
     }
-    // for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-    //     _renderer->recordCommandBuffer([&]() {
-    //         auto command = _renderer->getDefaultCommandBuffers(commandIndex);
-    //         // render pass
-    //         VkRenderPassBeginInfo renderPassInfo = _renderer->getDefaultRenderPassCreateInfo(commandIndex);
-    //         vkCmdBeginRenderPass(command, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    //         vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
-    //         vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
-    //         for (auto &renderable : _renderList) {
-    //             renderable->draw(_getShaderPass()->layout, _renderer->getDefaultCommandBuffers(commandIndex));
-    //         }
-    //         vkCmdEndRenderPass(command);
-    //     }, commandIndex);
-    // }
 }
 void VulkanSceneRenderer::update() {
     auto &cameraUBO = _uniformList[0];

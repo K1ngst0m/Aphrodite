@@ -50,11 +50,12 @@ public:
     uint32_t                       getCommandBufferCount() const;
     VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
     PipelineBuilder               &getPipelineBuilder();
-    VkRenderPassBeginInfo          getDefaultRenderPassCreateInfo(uint32_t imageIdx);
-    VkRenderPass createRenderPass(const std::vector<VkAttachmentDescription>& colorAttachments, VkAttachmentDescription& depthAttachment);
-    std::shared_ptr<VulkanDevice>  getDevice();
-    void                           prepareUI();
-    void                           initImGui();
+    VkRenderPassBeginInfo          getDefaultRenderPassBeginInfo(uint32_t imageIdx);
+    VkRenderPass                   createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment);
+
+    std::shared_ptr<VulkanDevice> getDevice();
+    void                          prepareUI();
+    void                          initImGui();
 
     void recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
     void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
@@ -70,9 +71,9 @@ private:
     bool _checkValidationLayerSupport();
 
 private:
-    void _createDepthResources();
+    void _createDefaultDepthResources();
     void _createDefaultRenderPass();
-    void _createFramebuffers();
+    void _createDefaultFramebuffers();
     void _setupPipelineBuilder();
     void _createSyncObjects();
     void _createCommandBuffers();
@@ -102,11 +103,15 @@ private:
     VkPhysicalDeviceFeatures        m_enabledFeatures{};
     VkDebugUtilsMessengerEXT        m_debugMessenger;
     VkSurfaceKHR                    m_surface;
-    VkRenderPass                    m_defaultRenderPass;
-    DeletionQueue                   m_deletionQueue;
     PipelineBuilder                 m_pipelineBuilder;
-    std::vector<VkCommandBuffer>    m_commandBuffers;
-    std::vector<PerFrameSyncObject> m_frameSyncObjects;
+    DeletionQueue                   m_deletionQueue;
+
+private:
+    VkRenderPass                    m_defaultRenderPass;
+    std::vector<VkCommandBuffer>    m_defaultCommandBuffers;
+    std::vector<PerFrameSyncObject> m_defaultSyncObjects;
+    std::vector<VkFramebuffer>      m_defaultFramebuffers;
+    vkl::VulkanTexture              m_defaultDepthAttachment;
 
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIdx     = 0;

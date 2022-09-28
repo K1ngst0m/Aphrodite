@@ -14,34 +14,33 @@ struct SwapChainSupportDetails {
 
 class VulkanSwapChain {
 public:
-    void create(const std::shared_ptr<VulkanDevice>& device, VkSurfaceKHR surface, GLFWwindow *window);
+    void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window);
     void cleanup();
 
-    void createDepthResources(VkQueue transferQueue);
-    void createFramebuffers(VkRenderPass renderPass);
+    VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
 
-    VkResult              acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
-    VkPresentInfoKHR      getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
-    VkRenderPassBeginInfo getRenderPassBeginInfo(VkRenderPass renderPass, const std::vector<VkClearValue> &clearValues, uint32_t imageIdx);
+    VkResult         acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
+    VkPresentInfoKHR getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
 
-    VkFormat   getFormat() const;
-    VkExtent2D getExtent() const;
-    uint32_t   getImageCount() const;
+    VkFormat    getFormat() const;
+    VkExtent2D  getExtent() const;
+    uint32_t    getImageCount() const;
+    VkImageView getImageViewWithIdx(uint32_t idx);
 
 private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
     std::shared_ptr<VulkanDevice> m_device;
-    DeletionQueue                 m_deletionQueue;
     std::vector<VkImage>          m_swapChainImages;
     std::vector<VkImageView>      m_swapChainImageViews;
-    vkl::VulkanTexture            m_depthAttachment;
-    std::vector<VkFramebuffer>    m_framebuffers;
     VkSwapchainKHR                m_swapChain;
-    VkFormat                      m_swapChainImageFormat;
-    VkExtent2D                    m_swapChainExtent;
-    VkSurfaceKHR                  m_surface;
+
+    VkFormat     m_swapChainImageFormat;
+    VkExtent2D   m_swapChainExtent;
+    VkSurfaceKHR m_surface;
+
+    DeletionQueue m_deletionQueue;
 };
 } // namespace vkl
 
