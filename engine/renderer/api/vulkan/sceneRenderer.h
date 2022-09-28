@@ -50,10 +50,10 @@ private:
     std::deque<std::unique_ptr<VulkanUniformObject>> _uniformList;
 
 private:
-    vkl::VulkanDevice *_device;
-    VulkanRenderer    *_renderer;
-    VkQueue            _transferQueue;
-    VkQueue            _graphicsQueue;
+    std::shared_ptr<VulkanDevice> _device;
+    VulkanRenderer               *_renderer;
+    VkQueue                       _transferQueue;
+    VkQueue                       _graphicsQueue;
 };
 } // namespace vkl
 

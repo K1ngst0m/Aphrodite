@@ -40,21 +40,6 @@ VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice)
 }
 
 /**
-    * Default destructor
-    *
-    * @note Frees the logical device
-    */
-VulkanDevice::~VulkanDevice()
-{
-    if (commandPool) {
-        vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-    }
-    if (logicalDevice) {
-        vkDestroyDevice(logicalDevice, nullptr);
-    }
-}
-
-/**
     * Get the index of a memory type that has all the requested property bits set
     *
     * @param typeBits Bit mask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
@@ -634,4 +619,12 @@ void VulkanDevice::copyBufferToImage(VkQueue queue, vkl::VulkanBuffer buffer, vk
 {
     copyBufferToImage(queue, buffer.buffer, texture.image, width, height);
 }
+void VulkanDevice::destroy() const {
+    if (commandPool) {
+        vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+    }
+    if (logicalDevice) {
+        vkDestroyDevice(logicalDevice, nullptr);
+    }
 }
+} // namespace vkl

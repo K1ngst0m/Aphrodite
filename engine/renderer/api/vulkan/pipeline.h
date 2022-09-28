@@ -14,7 +14,7 @@ enum class VertexComponent {
     TANGENT,
 };
 
-struct VertexInputBuilder{
+struct VertexInputBuilder {
     static VkVertexInputBindingDescription                _vertexInputBindingDescription;
     static std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
     static VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
@@ -23,26 +23,26 @@ struct VertexInputBuilder{
     static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
-struct ShaderModule{
+struct ShaderModule {
     std::vector<char> code;
-    VkShaderModule module;
+    VkShaderModule    module;
 };
 
-struct ShaderCache{
+struct ShaderCache {
     std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
 
-    ShaderModule * getShaders(vkl::VulkanDevice * device, const std::string & path){
-        if (!shaderModuleCaches.count(path)){
-            std::vector<char> spvCode = vkl::utils::loadSpvFromFile(path);
-            VkShaderModule shaderModule = device->createShaderModule(spvCode);
+    ShaderModule *getShaders(const std::shared_ptr<VulkanDevice> &device, const std::string &path) {
+        if (!shaderModuleCaches.count(path)) {
+            std::vector<char> spvCode      = vkl::utils::loadSpvFromFile(path);
+            VkShaderModule    shaderModule = device->createShaderModule(spvCode);
 
             shaderModuleCaches[path] = {spvCode, shaderModule};
         }
         return &shaderModuleCaches[path];
     }
 
-    void destory(VkDevice device){
-        for (auto & [key, shaderModule]: shaderModuleCaches){
+    void destory(VkDevice device) {
+        for (auto &[key, shaderModule] : shaderModuleCaches) {
             vkDestroyShaderModule(device, shaderModule.module, nullptr);
         }
     }
@@ -52,12 +52,12 @@ struct ShaderCache{
  * @brief holds all of the shader related state that a pipeline needs to be built.
  */
 struct ShaderEffect {
-    VkPipelineLayout builtLayout;
-    std::vector<VkPushConstantRange> constantRanges;
+    VkPipelineLayout                   builtLayout;
+    std::vector<VkPushConstantRange>   constantRanges;
     std::vector<VkDescriptorSetLayout> setLayouts;
 
     struct ShaderStage {
-        ShaderModule * shaderModule;
+        ShaderModule         *shaderModule;
         VkShaderStageFlagBits stage;
     };
 
@@ -69,8 +69,8 @@ struct ShaderEffect {
 
     void buildPipelineLayout(VkDevice device);
 
-    void destroy(VkDevice device){
-        for (auto & setLayout: setLayouts){
+    void destroy(VkDevice device) {
+        for (auto &setLayout : setLayouts) {
             vkDestroyDescriptorSetLayout(device, setLayout, nullptr);
         }
         vkDestroyPipelineLayout(device, builtLayout, nullptr);
@@ -82,13 +82,13 @@ class PipelineBuilder;
  * @brief built version of a Shader Effect, where it stores the built pipeline
  */
 struct ShaderPass {
-    ShaderEffect* effect = nullptr;
-    VkPipeline builtPipeline = VK_NULL_HANDLE;
-    VkPipelineLayout layout = VK_NULL_HANDLE;
+    ShaderEffect    *effect        = nullptr;
+    VkPipeline       builtPipeline = VK_NULL_HANDLE;
+    VkPipelineLayout layout        = VK_NULL_HANDLE;
 
     void buildEffect(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *effect);
 
-    void destroy(VkDevice device) const{
+    void destroy(VkDevice device) const {
         vkDestroyPipeline(device, builtPipeline, nullptr);
     }
 };
@@ -96,23 +96,23 @@ struct ShaderPass {
 class PipelineBuilder {
 public:
     std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
-    std::vector<VkDynamicState> _dynamicStages;
-    VkPipelineVertexInputStateCreateInfo _vertexInputInfo;
-    VkPipelineInputAssemblyStateCreateInfo _inputAssembly;
-    VkViewport _viewport;
-    VkRect2D _scissor;
-    VkPipelineDynamicStateCreateInfo _dynamicState;
-    VkPipelineRasterizationStateCreateInfo _rasterizer;
-    VkPipelineColorBlendAttachmentState _colorBlendAttachment;
-    VkPipelineMultisampleStateCreateInfo _multisampling;
-    VkPipelineDepthStencilStateCreateInfo _depthStencil;
-    VkPipelineLayout _pipelineLayout;
+    std::vector<VkDynamicState>                  _dynamicStages;
+    VkPipelineVertexInputStateCreateInfo         _vertexInputInfo;
+    VkPipelineInputAssemblyStateCreateInfo       _inputAssembly;
+    VkViewport                                   _viewport;
+    VkRect2D                                     _scissor;
+    VkPipelineDynamicStateCreateInfo             _dynamicState;
+    VkPipelineRasterizationStateCreateInfo       _rasterizer;
+    VkPipelineColorBlendAttachmentState          _colorBlendAttachment;
+    VkPipelineMultisampleStateCreateInfo         _multisampling;
+    VkPipelineDepthStencilStateCreateInfo        _depthStencil;
+    VkPipelineLayout                             _pipelineLayout;
 
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
     void setShaders(ShaderEffect *shaders);
     void resetToDefault(VkExtent2D extent);
 };
-}
+} // namespace vkl
 
 #endif // PIPELINE_H_

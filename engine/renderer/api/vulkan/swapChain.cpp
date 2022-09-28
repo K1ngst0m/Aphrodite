@@ -24,7 +24,8 @@ SwapChainSupportDetails VulkanSwapChain::querySwapChainSupport(VkPhysicalDevice 
 
     return details;
 }
-void VulkanSwapChain::create(VulkanDevice* device, VkSurfaceKHR surface, GLFWwindow* window) {
+
+void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice>& device, VkSurfaceKHR surface, GLFWwindow* window) {
     m_device = device;
     m_surface = surface;
 

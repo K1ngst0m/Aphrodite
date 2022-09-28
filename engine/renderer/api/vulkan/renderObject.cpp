@@ -7,7 +7,7 @@
 
 namespace vkl {
 
-VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, vkl::VulkanDevice *device, vkl::Entity *entity)
+VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice> & device, vkl::Entity *entity)
     : _device(device), _renderer(renderer), _entity(entity) {
 }
 void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {

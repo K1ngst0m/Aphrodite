@@ -24,7 +24,7 @@ enum MaterialBindingBits{
 
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice>& device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces(VkQueue queue);
@@ -44,7 +44,7 @@ private:
     void loadBuffer(VkQueue transferQueue);
     void createEmptyTexture(VkQueue queue);
 
-    VulkanDevice *_device;
+    std::shared_ptr<VulkanDevice> _device = nullptr;
 
     struct {
         std::vector<Vertex> vertices;

@@ -12,11 +12,23 @@
 #include "texture.h"
 
 namespace vkl {
+
 enum class DeviceQueueType {
     COMPUTE,
     GRAPHICS,
     TRANSFER,
     PRESENT,
+};
+
+struct PerFrameSyncObject {
+    VkSemaphore renderSemaphore;
+    VkSemaphore presentSemaphore;
+    VkFence     inFlightFence;
+    void        destroy(VkDevice device) const {
+        vkDestroySemaphore(device, renderSemaphore, nullptr);
+        vkDestroySemaphore(device, presentSemaphore, nullptr);
+        vkDestroyFence(device, inFlightFence, nullptr);
+    }
 };
 
 class VulkanRenderer : public Renderer {
@@ -27,6 +39,8 @@ public:
     void initDevice() override;
     void destroyDevice() override;
     void idleDevice() override;
+    void prepareFrame() override;
+    void submitFrame() override;
 
 public:
     void                           initDefaultResource();
@@ -37,6 +51,9 @@ public:
     VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
     PipelineBuilder               &getPipelineBuilder();
     VkRenderPassBeginInfo          getDefaultRenderPassCreateInfo(uint32_t imageIdx);
+    std::shared_ptr<VulkanDevice>  getDevice();
+    void                           prepareUI();
+    void                           initImGui();
 
     void recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
     void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
@@ -71,53 +88,27 @@ private:
                                                             const VkAllocationCallbacks *pAllocator);
 
 private:
-    vkl::DeletionQueue           m_deletionQueue;
-    vkl::PipelineBuilder         m_pipelineBuilder;
-    std::vector<VkCommandBuffer> m_commandBuffers;
-    VkRenderPass                 m_defaultRenderPass;
-    struct {
-        VkQueue graphics;
-        VkQueue present;
-        VkQueue transfer;
-        VkQueue compute;
-    } m_queues;
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
+    VkQueue transferQueue;
+    VkQueue computeQueue;
 
-    VkInstance                m_instance;
-    std::vector<const char *> m_supportedInstanceExtensions;
-    VkDebugUtilsMessengerEXT  m_debugMessenger;
-
-    VkSurfaceKHR m_surface;
-
-    struct PerFrameSyncObject {
-        VkSemaphore renderSemaphore;
-        VkSemaphore presentSemaphore;
-        VkFence     inFlightFence;
-        void        destroy(VkDevice device) const {
-                   vkDestroySemaphore(device, renderSemaphore, nullptr);
-                   vkDestroySemaphore(device, presentSemaphore, nullptr);
-                   vkDestroyFence(device, inFlightFence, nullptr);
-        }
-    };
-
+private:
+    VkInstance                      m_instance;
+    std::shared_ptr<VulkanDevice>   m_device;
+    VulkanSwapChain                 m_swapChain;
+    std::vector<const char *>       m_supportedInstanceExtensions;
+    VkPhysicalDeviceFeatures        m_enabledFeatures{};
+    VkDebugUtilsMessengerEXT        m_debugMessenger;
+    VkSurfaceKHR                    m_surface;
+    VkRenderPass                    m_defaultRenderPass;
+    DeletionQueue                   m_deletionQueue;
+    PipelineBuilder                 m_pipelineBuilder;
+    std::vector<VkCommandBuffer>    m_commandBuffers;
     std::vector<PerFrameSyncObject> m_frameSyncObjects;
 
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIdx     = 0;
-
-public:
-    VulkanDevice            *m_device;
-    VkPhysicalDeviceFeatures enabledFeatures{};
-
-public:
-    void prepareFrame() override;
-    void submitFrame() override;
-
-    bool m_framebufferResized = false;
-
-    void prepareUI();
-    void initImGui();
-
-    VulkanSwapChain m_swapChain;
 };
 } // namespace vkl
 

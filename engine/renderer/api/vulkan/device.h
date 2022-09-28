@@ -33,7 +33,9 @@ public:
 
     explicit VulkanDevice(VkPhysicalDevice physicalDevice);
 
-    ~VulkanDevice();
+    void destroy() const;
+
+    ~VulkanDevice() = default;
 
     VkShaderModule            createShaderModule(const std::vector<char> &code) const;
     std::vector<const char *> getRequiredExtensions();

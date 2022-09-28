@@ -41,6 +41,7 @@ void scene_manager::loadScene() {
         m_sceneManager->setMainCamera(m_defaultCamera);
     }
 
+    // point light
     {
         m_pointLight = m_sceneManager->createLight();
         m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
@@ -52,6 +53,7 @@ void scene_manager::loadScene() {
         node->attachObject(m_pointLight);
     }
 
+    // direction light
     {
         m_directionalLight = m_sceneManager->createLight();
         m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
@@ -102,7 +104,7 @@ void scene_manager::loadScene() {
     {
         m_sceneRenderer = m_renderer->createSceneRenderer();
         m_sceneRenderer->setScene(m_sceneManager);
-        m_sceneRenderer->setShadingModel(vkl::ShadingModel::UNLIT);
+        m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
         m_sceneRenderer->loadResources();
     }
 

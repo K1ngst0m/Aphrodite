@@ -15,6 +15,7 @@ struct WindowData {
     GLFWwindow *window = nullptr;
     uint32_t    width;
     uint32_t    height;
+    bool        resized = false;
     WindowData(uint32_t w, uint32_t h)
         : width(w), height(h) {
     }

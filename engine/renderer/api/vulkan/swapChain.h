@@ -14,7 +14,7 @@ struct SwapChainSupportDetails {
 
 class VulkanSwapChain {
 public:
-    void create(VulkanDevice *device, VkSurfaceKHR surface, GLFWwindow *window);
+    void create(const std::shared_ptr<VulkanDevice>& device, VkSurfaceKHR surface, GLFWwindow *window);
     void cleanup();
     void recreate();
 
@@ -33,16 +33,16 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
-    VulkanDevice              *m_device = nullptr;
-    DeletionQueue              m_deletionQueue;
-    std::vector<VkImage>       m_swapChainImages;
-    std::vector<VkImageView>   m_swapChainImageViews;
-    vkl::VulkanTexture         m_depthAttachment;
-    std::vector<VkFramebuffer> m_framebuffers;
-    VkSwapchainKHR             m_swapChain;
-    VkFormat                   m_swapChainImageFormat;
-    VkExtent2D                 m_swapChainExtent;
-    VkSurfaceKHR               m_surface;
+    std::shared_ptr<VulkanDevice> m_device;
+    DeletionQueue                 m_deletionQueue;
+    std::vector<VkImage>          m_swapChainImages;
+    std::vector<VkImageView>      m_swapChainImageViews;
+    vkl::VulkanTexture            m_depthAttachment;
+    std::vector<VkFramebuffer>    m_framebuffers;
+    VkSwapchainKHR                m_swapChain;
+    VkFormat                      m_swapChainImageFormat;
+    VkExtent2D                    m_swapChainExtent;
+    VkSurfaceKHR                  m_surface;
 };
 } // namespace vkl
 

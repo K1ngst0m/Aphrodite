@@ -167,9 +167,9 @@ void VulkanRenderer::_createDevice() {
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
-    m_device = new VulkanDevice(devices[0]);
+    m_device = std::make_shared<VulkanDevice>(devices[0]);
     getEnabledFeatures();
-    m_device->createLogicalDevice(enabledFeatures, deviceExtensions, nullptr);
+    m_device->createLogicalDevice(m_enabledFeatures, deviceExtensions, nullptr);
 
     VkBool32                presentSupport = false;
     std::optional<uint32_t> presentQueueFamilyIndices;
@@ -186,12 +186,14 @@ void VulkanRenderer::_createDevice() {
     assert(presentQueueFamilyIndices.has_value());
     m_device->queueFamilyIndices.present = presentQueueFamilyIndices.value();
 
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &m_queues.graphics);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &m_queues.present);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &m_queues.transfer);
-    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.compute, 0, &m_queues.compute);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.graphics, 0, &graphicsQueue);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.present, 0, &presentQueue);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.transfer, 0, &transferQueue);
+    vkGetDeviceQueue(m_device->logicalDevice, m_device->queueFamilyIndices.compute, 0, &computeQueue);
 
-    m_deletionQueue.push_function([=]() { delete m_device; });
+    m_deletionQueue.push_function([&](){
+        m_device->destroy();
+    });
 }
 
 void VulkanRenderer::_createRenderPass() {
@@ -279,7 +281,7 @@ void VulkanRenderer::_recreateSwapChain() {
     vkDeviceWaitIdle(m_device->logicalDevice);
     m_swapChain.cleanup();
     m_swapChain.create(m_device, m_surface, m_windowData->window);
-    m_swapChain.createDepthResources(m_queues.transfer);
+    m_swapChain.createDepthResources(transferQueue);
     m_swapChain.createFramebuffers(m_defaultRenderPass);
 }
 
@@ -297,7 +299,7 @@ void VulkanRenderer::_createCommandBuffers() {
 }
 
 void VulkanRenderer::_createDepthResources() {
-    m_swapChain.createDepthResources(m_queues.transfer);
+    m_swapChain.createDepthResources(transferQueue);
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -375,14 +377,14 @@ void VulkanRenderer::submitFrame() {
                 .pSignalSemaphores    = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(m_queues.graphics, 1, &submitInfo, m_frameSyncObjects[m_currentFrame].inFlightFence));
+    VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_frameSyncObjects[m_currentFrame].inFlightFence));
 
     VkPresentInfoKHR presentInfo = m_swapChain.getPresentInfo(signalSemaphores, &m_imageIdx);
 
-    VkResult result = vkQueuePresentKHR(m_queues.present, &presentInfo);
+    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
-        m_framebufferResized = false;
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_windowData->resized) {
+        m_windowData->resized = false;
         _recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         VK_CHECK_RESULT(result);
@@ -394,7 +396,7 @@ void VulkanRenderer::submitFrame() {
 void VulkanRenderer::recordSinglePassCommandBuffer(VkRenderPass                 renderPass,
                                                    const std::function<void()> &drawCommands,
                                                    uint32_t                     commandIdx) {
-    auto commandBuffer = m_commandBuffers[commandIdx];
+    VkCommandBuffer commandBuffer = m_commandBuffers[commandIdx];
     recordCommandBuffer([&]() {
         // render pass
         std::vector<VkClearValue> clearValues(2);
@@ -462,7 +464,7 @@ void VulkanRenderer::initImGui() {
         .Instance       = m_instance,
         .PhysicalDevice = m_device->physicalDevice,
         .Device         = m_device->logicalDevice,
-        .Queue          = m_queues.graphics,
+        .Queue          = graphicsQueue,
         .DescriptorPool = imguiPool,
         .MinImageCount  = 3,
         .ImageCount     = 3,
@@ -472,7 +474,7 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
 
     // execute a gpu command to upload imgui font textures
-    immediateSubmit(m_queues.graphics, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+    immediateSubmit(graphicsQueue, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -511,15 +513,15 @@ std::shared_ptr<SceneRenderer> VulkanRenderer::createSceneRenderer() {
 VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
     switch (type) {
     case DeviceQueueType::COMPUTE:
-        return m_queues.compute;
+        return computeQueue;
     case DeviceQueueType::GRAPHICS:
-        return m_queues.graphics;
+        return graphicsQueue;
     case DeviceQueueType::TRANSFER:
-        return m_queues.transfer;
+        return transferQueue;
     case DeviceQueueType::PRESENT:
-        return m_queues.present;
+        return presentQueue;
     }
-    return m_queues.graphics;
+    return graphicsQueue;
 }
 void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
     auto &commandBuffer = m_commandBuffers[commandIdx];
@@ -557,5 +559,8 @@ VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassCreateInfo(uint32_t im
     clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
     return m_swapChain.getRenderPassBeginInfo(m_defaultRenderPass, clearValues, imageIdx);
+}
+std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
+    return m_device;
 }
 } // namespace vkl
