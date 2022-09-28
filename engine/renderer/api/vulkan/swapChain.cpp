@@ -100,22 +100,6 @@ void VulkanSwapChain::cleanup() {
     vkDestroySwapchainKHR(m_device->getLogicalDevice(), m_swapChain, nullptr);
 }
 
-VkFramebuffer VulkanSwapChain::createFramebuffers(VkExtent2D extent, const std::vector<VkImageView>& attachments, VkRenderPass renderPass) {
-    VkFramebuffer framebuffer;
-
-    VkFramebufferCreateInfo framebufferInfo{
-        .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .renderPass      = renderPass,
-        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .width           = extent.width,
-        .height          = extent.height,
-        .layers          = 1,
-    };
-
-    VK_CHECK_RESULT(vkCreateFramebuffer(m_device->getLogicalDevice(), &framebufferInfo, nullptr, &framebuffer));
-    return framebuffer;
-}
 VkResult VulkanSwapChain::acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const {
     return vkAcquireNextImageKHR(m_device->getLogicalDevice(), m_swapChain, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
 }

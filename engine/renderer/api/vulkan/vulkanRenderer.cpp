@@ -65,7 +65,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
 
     for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
         std::vector<VkImageView> attachments = {m_swapChain.getImageViewWithIdx(i), m_defaultDepthAttachment.view};
-        m_defaultFramebuffers[i]                    = m_swapChain.createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
+        m_defaultFramebuffers[i]                    = m_device->createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
     }
 
     m_deletionQueue.push_function([=]() {

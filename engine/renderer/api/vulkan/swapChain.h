@@ -17,15 +17,13 @@ public:
     void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window);
     void cleanup();
 
-    VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
+    VkResult acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
 
-    VkResult         acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
+    VkFormat         getFormat() const;
+    VkExtent2D       getExtent() const;
+    uint32_t         getImageCount() const;
+    VkImageView      getImageViewWithIdx(uint32_t idx);
     VkPresentInfoKHR getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
-
-    VkFormat    getFormat() const;
-    VkExtent2D  getExtent() const;
-    uint32_t    getImageCount() const;
-    VkImageView getImageViewWithIdx(uint32_t idx);
 
 private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;

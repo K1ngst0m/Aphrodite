@@ -655,4 +655,20 @@ VkPhysicalDeviceFeatures &VulkanDevice::getDeviceEnabledFeatures() {
 VkPhysicalDeviceProperties &VulkanDevice::getDeviceProperties() {
     return properties;
 }
+VkFramebuffer VulkanDevice::createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass) {
+    VkFramebuffer framebuffer;
+
+    VkFramebufferCreateInfo framebufferInfo{
+        .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .renderPass      = renderPass,
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
+        .width           = extent.width,
+        .height          = extent.height,
+        .layers          = 1,
+    };
+
+    VK_CHECK_RESULT(vkCreateFramebuffer(getLogicalDevice(), &framebufferInfo, nullptr, &framebuffer));
+    return framebuffer;
+}
 } // namespace vkl

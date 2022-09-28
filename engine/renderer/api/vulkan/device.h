@@ -35,6 +35,8 @@ public:
     void copyBufferToImage(VkQueue queue, vkl::VulkanBuffer buffer, vkl::VulkanTexture texture, uint32_t width, uint32_t height);
     void copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
+    VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
+
 public:
     void            allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count);
     VkCommandPool   createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
@@ -52,7 +54,7 @@ public:
     VkFormat                    findDepthFormat() const;
 
 private:
-    bool                        extensionSupported(std::string_view extension) const;
+    bool     extensionSupported(std::string_view extension) const;
     VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain = true, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
     uint32_t findQueueFamilies(VkQueueFlags queueFlags) const;
     uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr) const;
