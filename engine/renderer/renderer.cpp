@@ -16,10 +16,11 @@ namespace vkl {
         assert("backend not support.");
         return {};
     }
-    void Renderer::setWindowData(WindowData *windowData) {
-        m_windowData = windowData;
+    void Renderer::setWindowData(const std::shared_ptr<WindowData>& windowData) {
+        _windowData = windowData;
     }
-    WindowData *Renderer::getWindowData() {
-        return m_windowData;
+
+    std::shared_ptr<WindowData> Renderer::getWindowData() {
+        return _windowData;
     }
     } // namespace vkl

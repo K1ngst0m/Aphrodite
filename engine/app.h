@@ -59,7 +59,8 @@ protected:
 protected:
     const std::string m_sessionName;
 
-    WindowData m_windowData;
+    std::shared_ptr<WindowData> m_windowData;
+
     FrameData  m_frameData;
     MouseData  m_mouseData;
 

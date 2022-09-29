@@ -19,6 +19,7 @@ struct WindowData {
     WindowData(uint32_t w, uint32_t h)
         : width(w), height(h) {
     }
+    float getAspectRatio() const{return static_cast<float>(width) * height;}
 };
 
 class Renderer {
@@ -38,15 +39,15 @@ public:
 
     virtual std::shared_ptr<SceneRenderer> createSceneRenderer() = 0;
 
-    void        setWindowData(WindowData *windowData);
-    WindowData *getWindowData();
+    void                        setWindowData(const std::shared_ptr<WindowData> &windowData);
+    std::shared_ptr<WindowData> getWindowData();
 
     static std::unique_ptr<Renderer> CreateRenderer(RenderBackend backend);
 
 protected:
-    GraphicsDevice                *_device;
-    std::shared_ptr<SceneRenderer> _sceneRenderer;
-    WindowData                    *m_windowData = nullptr;
+    std::shared_ptr<GraphicsDevice> _device;
+    std::shared_ptr<SceneRenderer>  _sceneRenderer;
+    std::shared_ptr<WindowData>     _windowData = nullptr;
 };
 } // namespace vkl
 

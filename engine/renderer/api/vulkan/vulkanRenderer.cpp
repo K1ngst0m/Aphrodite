@@ -127,7 +127,7 @@ bool VulkanRenderer::_checkValidationLayerSupport() {
 }
 
 void VulkanRenderer::_createSurface() {
-    if (glfwCreateWindowSurface(m_instance, m_windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(m_instance, _windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 
@@ -274,7 +274,7 @@ void VulkanRenderer::_createDefaultRenderPass() {
 }
 
 void VulkanRenderer::_setupSwapChain() {
-    m_swapChain.create(m_device, m_surface, m_windowData->window);
+    m_swapChain.create(m_device, m_surface, _windowData->window);
     m_deletionQueue.push_function([&]() {
         m_swapChain.cleanup();
     });
@@ -282,16 +282,16 @@ void VulkanRenderer::_setupSwapChain() {
 
 void VulkanRenderer::_recreateSwapChain() {
     int width = 0, height = 0;
-    glfwGetFramebufferSize(m_windowData->window, &width, &height);
+    glfwGetFramebufferSize(_windowData->window, &width, &height);
     while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(m_windowData->window, &width, &height);
+        glfwGetFramebufferSize(_windowData->window, &width, &height);
         glfwWaitEvents();
     }
 
     vkDeviceWaitIdle(m_device->getLogicalDevice());
 
     m_swapChain.cleanup();
-    m_swapChain.create(m_device, m_surface, m_windowData->window);
+    m_swapChain.create(m_device, m_surface, _windowData->window);
 
     _createDefaultDepthResources();
     _createDefaultFramebuffers();
@@ -383,8 +383,8 @@ void VulkanRenderer::submitFrame() {
 
     VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_windowData->resized) {
-        m_windowData->resized = false;
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _windowData->resized) {
+        _windowData->resized = false;
         _recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         VK_CHECK_RESULT(result);
@@ -454,7 +454,7 @@ void VulkanRenderer::initImGui() {
     // this initializes the core structures of imgui
     ImGui::CreateContext();
 
-    ImGui_ImplGlfw_InitForVulkan(m_windowData->window, true);
+    ImGui_ImplGlfw_InitForVulkan(_windowData->window, true);
 
     // this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo initInfo = {
@@ -476,8 +476,8 @@ void VulkanRenderer::initImGui() {
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
 
-    glfwSetKeyCallback(m_windowData->window, ImGui_ImplGlfw_KeyCallback);
-    glfwSetMouseButtonCallback(m_windowData->window, ImGui_ImplGlfw_MouseButtonCallback);
+    glfwSetKeyCallback(_windowData->window, ImGui_ImplGlfw_KeyCallback);
+    glfwSetMouseButtonCallback(_windowData->window, ImGui_ImplGlfw_MouseButtonCallback);
 
     m_deletionQueue.push_function([=]() {
         vkDestroyDescriptorPool(m_device->getLogicalDevice(), imguiPool, nullptr);
@@ -526,7 +526,7 @@ void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // dynamic state
-    const VkViewport viewport = vkl::init::viewport(static_cast<float>(m_windowData->width), static_cast<float>(m_windowData->height));
+    const VkViewport viewport = vkl::init::viewport(static_cast<float>(_windowData->width), static_cast<float>(_windowData->height));
     const VkRect2D   scissor  = vkl::init::rect2D(m_swapChain.getExtent());
 
     // record command

@@ -22,8 +22,8 @@ public:
 
 protected:
     std::shared_ptr<SceneManager> _sceneManager;
-    bool                          isSceneLoaded = false;
     ShadingModel                  _shadingModel = ShadingModel::UNLIT;
+    bool                          isSceneLoaded = false;
 };
 
 } // namespace vkl
