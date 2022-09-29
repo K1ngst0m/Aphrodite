@@ -44,7 +44,10 @@ public:
     virtual std::shared_ptr<SceneRenderer> getSceneRenderer() = 0;
 
     void                        setWindowData(const std::shared_ptr<WindowData> &windowData);
-    std::shared_ptr<WindowData> getWindowData();
+
+    uint32_t                    getWindowHeight();
+    uint32_t                    getWindowWidth();
+    uint32_t                    getWindowAspectRation();
 
 protected:
     std::shared_ptr<GraphicsDevice> _device        = nullptr;

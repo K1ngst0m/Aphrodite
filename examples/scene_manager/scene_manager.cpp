@@ -27,7 +27,8 @@ void scene_manager::loadScene() {
         m_sceneManager->setAmbient(glm::vec4(0.2f));
     }
 
-    {
+    // scene camera
+   {
         m_defaultCamera = m_sceneManager->createCamera(m_windowData->getAspectRatio());
         m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
         m_defaultCamera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
@@ -67,11 +68,11 @@ void scene_manager::loadScene() {
 
     // load from gltf file
     {
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
-        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-        auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(m_model);
+        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
+        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        // m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
+        // auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(m_model);
     }
 
     // box prefab
@@ -104,7 +105,7 @@ void scene_manager::loadScene() {
     {
         m_sceneRenderer = m_renderer->getSceneRenderer();
         m_sceneRenderer->setScene(m_sceneManager);
-        m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
+        m_sceneRenderer->setShadingModel(vkl::ShadingModel::UNLIT);
         m_sceneRenderer->loadResources();
     }
 

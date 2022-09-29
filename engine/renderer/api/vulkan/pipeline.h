@@ -46,7 +46,7 @@ public:
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
     void setShaders(ShaderEffect *shaders);
-    void resetToDefault(VkExtent2D extent);
+    void reset(VkExtent2D extent);
 };
 } // namespace vkl
 

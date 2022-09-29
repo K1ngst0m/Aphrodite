@@ -4,32 +4,32 @@
 #include <vulkan/vulkan.h>
 
 namespace vkl {
-    struct VulkanTexture
-    {
-        VkDevice device;
+class VulkanTexture {
+public:
+    VkDevice device;
 
-        VkImage image = VK_NULL_HANDLE;
-        VkImageView view = VK_NULL_HANDLE;
-        VkSampler sampler = VK_NULL_HANDLE;
+    VkImage     image   = VK_NULL_HANDLE;
+    VkImageView view    = VK_NULL_HANDLE;
+    VkSampler   sampler = VK_NULL_HANDLE;
 
-        uint32_t width, height;
-        uint32_t mipLevels;
-        uint32_t layerCount;
+    uint32_t width, height;
+    uint32_t mipLevels;
+    uint32_t layerCount;
 
-        VkDescriptorImageInfo descriptorInfo;
+    VkDescriptorImageInfo descriptorInfo;
 
-        VkDeviceMemory memory = VK_NULL_HANDLE;
-        VkDeviceSize size = 0;
-        VkDeviceSize alignment = 0;
-        void* mapped = nullptr;
-        VkBufferUsageFlags usageFlags;
-        VkMemoryPropertyFlags memoryPropertyFlags;
+    VkDeviceMemory        memory    = VK_NULL_HANDLE;
+    VkDeviceSize          size      = 0;
+    VkDeviceSize          alignment = 0;
+    void                 *mapped    = nullptr;
+    VkBufferUsageFlags    usageFlags;
+    VkMemoryPropertyFlags memoryPropertyFlags;
 
-        VkResult bind(VkDeviceSize offset = 0) const;
+    VkResult bind(VkDeviceSize offset = 0) const;
 
-        void setupDescriptor(VkImageLayout layout);
-        void destroy() const;
-    };
-}
+    void setupDescriptor(VkImageLayout layout);
+    void destroy() const;
+};
+} // namespace vkl
 
 #endif // VKLTEXTURE_H_

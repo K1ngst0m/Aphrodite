@@ -38,19 +38,50 @@ void VulkanSceneRenderer::cleanupResources() {
 }
 
 void VulkanSceneRenderer::drawScene() {
+    VkExtent2D extent{};
+    extent.width        = _renderer->getWindowWidth();
+    extent.height       = _renderer->getWindowHeight();
+    VkViewport viewport = vkl::init::viewport(extent);
+    VkRect2D   scissor  = vkl::init::rect2D(extent);
+
+    std::vector<VkClearValue> clearValues(2);
+    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    VkRenderPassBeginInfo renderPassBeginInfo    = vkl::init::renderPassBeginInfo();
+    renderPassBeginInfo.renderPass               = _renderer->getDefaultRenderPass();
+    renderPassBeginInfo.renderArea.offset.x      = 0;
+    renderPassBeginInfo.renderArea.offset.y      = 0;
+    renderPassBeginInfo.renderArea.extent.width  = _renderer->getWindowWidth();
+    renderPassBeginInfo.renderArea.extent.height = _renderer->getWindowHeight();
+    renderPassBeginInfo.clearValueCount          = 2;
+    renderPassBeginInfo.pClearValues             = clearValues.data();
+
+    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+
+    // record command
     for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-        _renderer->recordCommandBuffer([&]() {
-            VkCommandBuffer command = _renderer->getDefaultCommandBuffers(commandIndex);
-            // render pass
-            VkRenderPassBeginInfo renderPassInfo = _renderer->getDefaultRenderPassBeginInfo(commandIndex);
-            vkCmdBeginRenderPass(command, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-            vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
-            vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSet, 0, nullptr);
-            for (auto &renderable : _renderList) {
-                renderable->draw(_getShaderPass()->layout, command);
-            }
-            vkCmdEndRenderPass(command);
-        }, commandIndex);
+        VkCommandBuffer commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
+
+        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+        // dynamic state
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+        // render pass
+        renderPassBeginInfo.framebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex], 0, nullptr);
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
+
+        for (auto &renderable : _renderList) {
+            renderable->draw(_getShaderPass()->layout, commandBuffer);
+        }
+        vkCmdEndRenderPass(commandBuffer);
+
+        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
     }
 }
 void VulkanSceneRenderer::update() {
@@ -85,28 +116,10 @@ void VulkanSceneRenderer::_initUniformList() {
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
         {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
 
-    uint32_t maxSetSize = 1;
+    _globalDescriptorSets.resize(_renderer->getCommandBufferCount());
+    uint32_t maxSetSize = _globalDescriptorSets.size();
     for (auto &renderable : _renderList) {
         maxSetSize += renderable->getSetCount();
-    }
-
-    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getLogicalDevice(), &poolInfo, nullptr, &_descriptorPool));
-
-    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _getDescriptorSetLayout(SET_BINDING_SCENE), 1);
-    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getLogicalDevice(), &allocInfo, &_globalDescriptorSet));
-
-    std::vector<VkWriteDescriptorSet> descriptorWrites;
-    for (auto &uniformObj : _uniformList) {
-        VkWriteDescriptorSet write = {};
-        write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        write.dstSet               = _globalDescriptorSet;
-        write.dstBinding           = static_cast<uint32_t>(descriptorWrites.size());
-        write.dstArrayElement      = 0;
-        write.descriptorCount      = 1;
-        write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        write.pBufferInfo          = &uniformObj->buffer.getBufferInfo();
-        descriptorWrites.push_back(write);
     }
 
     uint32_t writeCount     = 0;
@@ -121,7 +134,27 @@ void VulkanSceneRenderer::_initUniformList() {
         writeCount = 3;
     }
 
-    vkUpdateDescriptorSets(_device->getLogicalDevice(), writeCount, descriptorWrites.data(), 0, nullptr);
+    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
+    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getLogicalDevice(), &poolInfo, nullptr, &_descriptorPool));
+
+    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _getDescriptorSetLayout(SET_BINDING_SCENE), 1);
+    for (auto &set : _globalDescriptorSets) {
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getLogicalDevice(), &allocInfo, &set));
+        std::vector<VkWriteDescriptorSet> descriptorWrites;
+        for (auto &uniformObj : _uniformList) {
+            VkWriteDescriptorSet write = {};
+            write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            write.dstSet               = set;
+            write.dstBinding           = static_cast<uint32_t>(descriptorWrites.size());
+            write.dstArrayElement      = 0;
+            write.descriptorCount      = 1;
+            write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            write.pBufferInfo          = &uniformObj->buffer.getBufferInfo();
+            descriptorWrites.push_back(write);
+        }
+
+        vkUpdateDescriptorSets(_device->getLogicalDevice(), writeCount, descriptorWrites.data(), 0, nullptr);
+    }
 
     for (auto &renderable : _renderList) {
         renderable->setupMaterial(_getDescriptorSetLayout(SET_BINDING_MATERIAL), _descriptorPool, mtlBindingBits);

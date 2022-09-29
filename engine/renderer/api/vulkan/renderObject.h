@@ -2,6 +2,8 @@
 #define VULKAN_RENDERABLE_H_
 
 #include "device.h"
+#include "buffer.h"
+#include "texture.h"
 
 namespace vkl {
 class VulkanSceneRenderer;
@@ -61,7 +63,7 @@ private:
 private:
     VulkanSceneRenderer *_renderer;
     glm::mat4            _transform;
-    vkl::Entity         *_entity;
+    Entity         *_entity;
 };
 } // namespace vkl
 

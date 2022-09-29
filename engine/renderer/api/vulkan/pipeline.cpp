@@ -104,7 +104,7 @@ void PipelineBuilder::setShaders(ShaderEffect *shaders)
     }
     _pipelineLayout = shaders->builtLayout;
 }
-void PipelineBuilder::resetToDefault(VkExtent2D extent) {
+void PipelineBuilder::reset(VkExtent2D extent) {
     VertexInputBuilder::setPipelineVertexInputState({VertexComponent::POSITION, VertexComponent::NORMAL,
                                                           VertexComponent::UV, VertexComponent::COLOR, VertexComponent::TANGENT});
     _vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;

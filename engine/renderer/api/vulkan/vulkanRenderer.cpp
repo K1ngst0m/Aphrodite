@@ -62,7 +62,6 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 
 void VulkanRenderer::_createDefaultFramebuffers() {
     m_defaultFramebuffers.resize(m_swapChain.getImageCount());
-
     for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
         std::vector<VkImageView> attachments = {m_swapChain.getImageViewWithIdx(i), m_defaultDepthAttachment.view};
         m_defaultFramebuffers[i]             = m_device->createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
@@ -220,8 +219,9 @@ void VulkanRenderer::_createDefaultRenderPass() {
 
     m_defaultRenderPass = m_device->createRenderPass(colorAttachments, depthAttachment);
 
-    m_deletionQueue.push_function(
-        [=]() { vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass, nullptr); });
+    m_deletionQueue.push_function([=]() {
+        vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass, nullptr);
+    });
 }
 
 void VulkanRenderer::_setupSwapChain() {
@@ -273,7 +273,7 @@ void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugU
 }
 
 void VulkanRenderer::_setupPipelineBuilder() {
-    m_pipelineBuilder.resetToDefault(m_swapChain.getExtent());
+    m_pipelineBuilder.reset(m_swapChain.getExtent());
 }
 
 void VulkanRenderer::_createSyncObjects() {
@@ -348,21 +348,6 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
 }
 
-void VulkanRenderer::recordSinglePassCommandBuffer(VkRenderPass                 renderPass,
-                                                   const std::function<void()> &drawCommands,
-                                                   uint32_t                     commandIdx) {
-    VkCommandBuffer commandBuffer = m_defaultCommandBuffers[commandIdx];
-    recordCommandBuffer([&]() {
-        VkRenderPassBeginInfo renderPassInfo = getDefaultRenderPassBeginInfo(commandIdx);
-        renderPassInfo.renderArea            = vkl::init::rect2D(m_swapChain.getExtent());
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        drawCommands();
-        vkCmdEndRenderPass(commandBuffer);
-    },
-                        commandIdx);
-
-    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
-}
 void VulkanRenderer::initDevice() {
     _createInstance();
     _setupDebugMessenger();
@@ -450,16 +435,16 @@ void VulkanRenderer::prepareUIDraw() {
 }
 
 void VulkanRenderer::initDefaultResource() {
+    _setupPipelineBuilder();
     _createCommandBuffers();
     _createDefaultRenderPass();
     _createDefaultDepthResources();
     _createDefaultFramebuffers();
-    _setupPipelineBuilder();
     _createSyncObjects();
 }
 
 std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
-    if(_sceneRenderer == nullptr){
+    if (_sceneRenderer == nullptr) {
         _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
     }
     return _sceneRenderer;
@@ -478,28 +463,13 @@ VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
     return graphicsQueue;
 }
 void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
-    auto &commandBuffer = m_defaultCommandBuffers[commandIdx];
-
-    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
-
-    // dynamic state
-    const VkViewport viewport = vkl::init::viewport(static_cast<float>(_windowData->width), static_cast<float>(_windowData->height));
-    const VkRect2D   scissor  = vkl::init::rect2D(m_swapChain.getExtent());
-
-    // record command
-    vkResetCommandBuffer(commandBuffer, 0);
-    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     commands();
-
-    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
 }
 VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
     return m_defaultRenderPass;
 }
-VkCommandBuffer VulkanRenderer::getDefaultCommandBuffers(uint32_t idx) const {
+VkCommandBuffer VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
     return m_defaultCommandBuffers[idx];
 }
 PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
@@ -507,13 +477,6 @@ PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
 }
 uint32_t VulkanRenderer::getCommandBufferCount() const {
     return m_defaultCommandBuffers.size();
-}
-
-VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassBeginInfo(uint32_t commandIndex) {
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-    return vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_defaultFramebuffers[commandIndex]);
 }
 
 std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
@@ -532,5 +495,8 @@ void VulkanRenderer::_createDefaultDepthResources() {
     m_deletionQueue.push_function([&]() {
         m_defaultDepthAttachment.destroy();
     });
+}
+VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
+    return m_defaultFramebuffers[idx];
 }
 } // namespace vkl

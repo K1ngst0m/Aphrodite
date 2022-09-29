@@ -4,7 +4,8 @@
 #include <vulkan/vulkan.h>
 
 namespace vkl {
-struct VulkanBuffer {
+class VulkanBuffer {
+public:
     VkDevice               device;
     VkBuffer               buffer = VK_NULL_HANDLE;
     VkDeviceMemory         memory = VK_NULL_HANDLE;

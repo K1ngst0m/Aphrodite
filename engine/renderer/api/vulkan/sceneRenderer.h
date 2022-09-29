@@ -38,9 +38,9 @@ private:
     std::unique_ptr<ShaderPass> &_getShaderPass();
 
 private:
-    VkDescriptorSet  _globalDescriptorSet;
-    VkDescriptorPool _descriptorPool;
-    ShaderCache      _shaderCache;
+    std::vector<VkDescriptorSet> _globalDescriptorSets;
+    VkDescriptorPool             _descriptorPool;
+    ShaderCache                  _shaderCache;
 
     std::unique_ptr<ShaderEffect> _unlitEffect = nullptr;
     std::unique_ptr<ShaderPass>   _unlitPass   = nullptr;

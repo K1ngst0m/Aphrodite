@@ -20,7 +20,13 @@ namespace vkl {
         _windowData = windowData;
     }
 
-    std::shared_ptr<WindowData> Renderer::getWindowData() {
-        return _windowData;
+    uint32_t Renderer::getWindowHeight() {
+        return _windowData->height;
+    };
+    uint32_t Renderer::getWindowWidth() {
+        return _windowData->width;
+    };
+    uint32_t Renderer::getWindowAspectRation() {
+        return _windowData->getAspectRatio();
     }
     } // namespace vkl
