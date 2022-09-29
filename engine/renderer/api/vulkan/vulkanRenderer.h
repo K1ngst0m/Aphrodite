@@ -30,21 +30,21 @@ public:
     void submitFrame() override;
 
 public:
-    void                           initDefaultResource();
-    void                           initImGui();
-    std::shared_ptr<SceneRenderer> createSceneRenderer() override;
-    void                           prepareUIDraw();
-    void                           recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
-    void                           recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
+    void initDefaultResource();
+    void initImGui();
+    void prepareUIDraw();
+    void recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
+    void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 public:
-    VkQueue                       getDeviceQueue(DeviceQueueType type) const;
-    VkRenderPass                  getDefaultRenderPass() const;
-    uint32_t                      getCommandBufferCount() const;
-    VkCommandBuffer               getDefaultCommandBuffers(uint32_t idx) const;
-    PipelineBuilder              &getPipelineBuilder();
-    VkRenderPassBeginInfo         getDefaultRenderPassBeginInfo(uint32_t commandIndex);
-    std::shared_ptr<VulkanDevice> getDevice();
+    VkQueue                        getDeviceQueue(DeviceQueueType type) const;
+    VkRenderPass                   getDefaultRenderPass() const;
+    uint32_t                       getCommandBufferCount() const;
+    VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
+    PipelineBuilder               &getPipelineBuilder();
+    VkRenderPassBeginInfo          getDefaultRenderPassBeginInfo(uint32_t commandIndex);
+    std::shared_ptr<VulkanDevice>  getDevice();
+    std::shared_ptr<SceneRenderer> getSceneRenderer() override;
 
 private:
     void _createInstance();

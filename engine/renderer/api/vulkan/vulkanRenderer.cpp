@@ -458,8 +458,10 @@ void VulkanRenderer::initDefaultResource() {
     _createSyncObjects();
 }
 
-std::shared_ptr<SceneRenderer> VulkanRenderer::createSceneRenderer() {
-    _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
+std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
+    if(_sceneRenderer == nullptr){
+        _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
+    }
     return _sceneRenderer;
 }
 VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {

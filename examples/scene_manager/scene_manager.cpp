@@ -102,7 +102,7 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer = m_renderer->createSceneRenderer();
+        m_sceneRenderer = m_renderer->getSceneRenderer();
         m_sceneRenderer->setScene(m_sceneManager);
         m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
         m_sceneRenderer->loadResources();
