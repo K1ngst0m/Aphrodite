@@ -65,7 +65,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
 
     for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
         std::vector<VkImageView> attachments = {m_swapChain.getImageViewWithIdx(i), m_defaultDepthAttachment.view};
-        m_defaultFramebuffers[i]                    = m_device->createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
+        m_defaultFramebuffers[i]             = m_device->createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
     }
 
     m_deletionQueue.push_function([=]() {
@@ -191,58 +191,6 @@ void VulkanRenderer::_createDevice() {
     });
 }
 
-VkRenderPass VulkanRenderer::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachmentDesc) {
-    std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference>   colorAttachmentRefs;
-    for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
-        attachments.push_back(colorAttachments[idx]);
-        VkAttachmentReference ref{};
-        ref.attachment = idx;
-        ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachmentRefs.push_back(ref);
-    }
-
-    attachments.push_back(depthAttachmentDesc);
-    VkAttachmentReference depthAttachmentRef{
-        .attachment = static_cast<uint32_t>(colorAttachments.size()),
-        .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
-    VkSubpassDescription subpass{
-        .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size()),
-        .pColorAttachments       = colorAttachmentRefs.data(),
-        .pDepthStencilAttachment = &depthAttachmentRef,
-    };
-
-    VkSubpassDependency dependency{
-        .srcSubpass    = VK_SUBPASS_EXTERNAL,
-        .dstSubpass    = 0,
-        .srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-    };
-
-    VkRenderPassCreateInfo renderPassInfo{
-        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .subpassCount    = 1,
-        .pSubpasses      = &subpass,
-        .dependencyCount = 1,
-        .pDependencies   = &dependency,
-    };
-
-    VkRenderPass renderpass;
-    VK_CHECK_RESULT(vkCreateRenderPass(m_device->getLogicalDevice(), &renderPassInfo, nullptr, &renderpass));
-
-    m_deletionQueue.push_function(
-        [=]() { vkDestroyRenderPass(m_device->getLogicalDevice(), renderpass, nullptr); });
-
-    return renderpass;
-}
-
 void VulkanRenderer::_createDefaultRenderPass() {
     VkAttachmentDescription colorAttachment{
         .format         = m_swapChain.getFormat(),
@@ -270,7 +218,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
         colorAttachment,
     };
 
-    m_defaultRenderPass = createRenderPass(colorAttachments, depthAttachment);
+    m_defaultRenderPass = m_device->createRenderPass(colorAttachments, depthAttachment);
+
+    m_deletionQueue.push_function(
+        [=]() { vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass, nullptr); });
 }
 
 void VulkanRenderer::_setupSwapChain() {
@@ -331,12 +282,16 @@ void VulkanRenderer::_createSyncObjects() {
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    for (auto &m_frameSyncObject : m_defaultSyncObjects) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &m_frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &m_frameSyncObject.renderSemaphore));
-        VK_CHECK_RESULT(vkCreateFence(m_device->getLogicalDevice(), &fenceInfo, nullptr, &m_frameSyncObject.inFlightFence));
+    for (auto &frameSyncObject : m_defaultSyncObjects) {
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateFence(m_device->getLogicalDevice(), &fenceInfo, nullptr, &frameSyncObject.inFlightFence));
 
-        m_deletionQueue.push_function([=]() { m_frameSyncObject.destroy(m_device->getLogicalDevice()); });
+        m_deletionQueue.push_function([=]() {
+            vkDestroyFence(m_device->getLogicalDevice(), frameSyncObject.inFlightFence, nullptr);
+            vkDestroySemaphore(m_device->getLogicalDevice(), frameSyncObject.renderSemaphore, nullptr);
+            vkDestroySemaphore(m_device->getLogicalDevice(), frameSyncObject.presentSemaphore, nullptr);
+        });
     }
 }
 
@@ -484,7 +439,7 @@ void VulkanRenderer::initImGui() {
         ImGui_ImplVulkan_Shutdown();
     });
 }
-void VulkanRenderer::prepareUI() {
+void VulkanRenderer::prepareUIDraw() {
     if (m_settings.enableUI) {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -552,11 +507,11 @@ uint32_t VulkanRenderer::getCommandBufferCount() const {
     return m_defaultCommandBuffers.size();
 }
 
-VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassBeginInfo(uint32_t imageIdx) {
+VkRenderPassBeginInfo VulkanRenderer::getDefaultRenderPassBeginInfo(uint32_t commandIndex) {
     std::vector<VkClearValue> clearValues(2);
     clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
-    return vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_defaultFramebuffers[imageIdx]);
+    return vkl::init::renderPassBeginInfo(m_defaultRenderPass, clearValues, m_defaultFramebuffers[commandIndex]);
 }
 
 std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {

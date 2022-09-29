@@ -16,11 +16,6 @@ struct PerFrameSyncObject {
     VkSemaphore renderSemaphore;
     VkSemaphore presentSemaphore;
     VkFence     inFlightFence;
-    void        destroy(VkDevice device) const {
-        vkDestroySemaphore(device, renderSemaphore, nullptr);
-        vkDestroySemaphore(device, presentSemaphore, nullptr);
-        vkDestroyFence(device, inFlightFence, nullptr);
-    }
 };
 
 class VulkanRenderer : public Renderer {
@@ -36,21 +31,20 @@ public:
 
 public:
     void                           initDefaultResource();
+    void                           initImGui();
     std::shared_ptr<SceneRenderer> createSceneRenderer() override;
-    VkQueue                        getDeviceQueue(DeviceQueueType type) const;
-    VkRenderPass                   getDefaultRenderPass() const;
-    uint32_t                       getCommandBufferCount() const;
-    VkCommandBuffer                getDefaultCommandBuffers(uint32_t idx) const;
-    PipelineBuilder               &getPipelineBuilder();
-    VkRenderPassBeginInfo          getDefaultRenderPassBeginInfo(uint32_t imageIdx);
-    VkRenderPass                   createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment);
+    void                           prepareUIDraw();
+    void                           recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
+    void                           recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
+public:
+    VkQueue                       getDeviceQueue(DeviceQueueType type) const;
+    VkRenderPass                  getDefaultRenderPass() const;
+    uint32_t                      getCommandBufferCount() const;
+    VkCommandBuffer               getDefaultCommandBuffers(uint32_t idx) const;
+    PipelineBuilder              &getPipelineBuilder();
+    VkRenderPassBeginInfo         getDefaultRenderPassBeginInfo(uint32_t commandIndex);
     std::shared_ptr<VulkanDevice> getDevice();
-    void                          prepareUI();
-    void                          initImGui();
-
-    void recordSinglePassCommandBuffer(VkRenderPass renderPass, const std::function<void()> &drawCommands, uint32_t commandIdx);
-    void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 private:
     void _createInstance();
@@ -88,15 +82,18 @@ private:
     VkQueue computeQueue;
 
 private:
-    VkInstance                      m_instance;
-    std::shared_ptr<VulkanDevice>   m_device;
-    VulkanSwapChain                 m_swapChain;
-    std::vector<const char *>       m_supportedInstanceExtensions;
-    VkPhysicalDeviceFeatures        m_enabledFeatures{};
-    VkDebugUtilsMessengerEXT        m_debugMessenger;
-    VkSurfaceKHR                    m_surface;
-    PipelineBuilder                 m_pipelineBuilder;
-    DeletionQueue                   m_deletionQueue;
+    VkInstance                    m_instance;
+    std::shared_ptr<VulkanDevice> m_device;
+    VulkanSwapChain               m_swapChain;
+    std::vector<const char *>     m_supportedInstanceExtensions;
+    VkPhysicalDeviceFeatures      m_enabledFeatures{};
+    VkDebugUtilsMessengerEXT      m_debugMessenger;
+    VkSurfaceKHR                  m_surface;
+    PipelineBuilder               m_pipelineBuilder;
+    DeletionQueue                 m_deletionQueue;
+
+    uint32_t m_currentFrame = 0;
+    uint32_t m_imageIdx     = 0;
 
 private:
     VkRenderPass                    m_defaultRenderPass;
@@ -104,9 +101,6 @@ private:
     std::vector<PerFrameSyncObject> m_defaultSyncObjects;
     std::vector<VkFramebuffer>      m_defaultFramebuffers;
     vkl::VulkanTexture              m_defaultDepthAttachment;
-
-    uint32_t m_currentFrame = 0;
-    uint32_t m_imageIdx     = 0;
 };
 } // namespace vkl
 

@@ -50,8 +50,7 @@ void VulkanSceneRenderer::drawScene() {
                 renderable->draw(_getShaderPass()->layout, command);
             }
             vkCmdEndRenderPass(command);
-        },
-                                       commandIndex);
+        }, commandIndex);
     }
 }
 void VulkanSceneRenderer::update() {

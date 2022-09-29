@@ -36,6 +36,7 @@ public:
     void copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
     VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
+    VkRenderPass  createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment);
 
 public:
     void            allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count);
