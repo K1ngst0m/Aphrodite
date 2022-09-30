@@ -1,6 +1,7 @@
 #ifndef VULKAN_BUFFER_H_
 #define VULKAN_BUFFER_H_
 
+#include "renderer/gpuResource.h"
 #include <vulkan/vulkan.h>
 
 namespace vkl {
@@ -10,11 +11,7 @@ public:
     VkBuffer               buffer = VK_NULL_HANDLE;
     VkDeviceMemory         memory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo descriptorInfo;
-    VkDeviceSize           size      = 0;
-    VkDeviceSize           alignment = 0;
-    void                  *mapped    = nullptr;
-    VkBufferUsageFlags     usageFlags;
-    VkMemoryPropertyFlags  memoryPropertyFlags;
+    void                  *mapped = nullptr;
 
     VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     void     unmap();
@@ -28,6 +25,10 @@ public:
     VkDescriptorBufferInfo &getBufferInfo();
 
     void destroy() const;
+
+    BufferCreateInfo createInfo;
+    uint32_t         getSize() const;
+    uint32_t         getOffset() const;
 };
 } // namespace vkl
 

@@ -11,14 +11,14 @@ VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, const std:
     : _device(device), _renderer(renderer), _entity(entity) {
 }
 
-void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
+void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
         MaterialGpuData             materialData{};
         VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, materialLayout, 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getLogicalDevice(), &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
-        if (bindingBits & MATERIAL_BINDING_BASECOLOR){
+        if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
             if (material.baseColorTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
             } else {
@@ -27,7 +27,7 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout* materialLayout, Vk
             }
         }
 
-        if (bindingBits & MATERIAL_BINDING_NORMAL){
+        if (bindingBits & MATERIAL_BINDING_NORMAL) {
             if (material.normalTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
             } else {
@@ -51,8 +51,11 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
 
         // Load texture from image buffer
         vkl::VulkanBuffer stagingBuffer;
-        _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                              VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+        BufferCreateInfo  createInfo{};
+        createInfo.size     = imageDataSize;
+        createInfo.property = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        createInfo.usage    = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        _device->createBuffer(&createInfo, stagingBuffer);
 
         stagingBuffer.map();
         stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
@@ -90,7 +93,7 @@ void VulkanRenderObject::loadResouces(VkQueue queue) {
     loadTextures(queue);
     loadBuffer(queue);
 }
-void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity>& node) {
+void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity> &node) {
     if (!node->isVisible) {
         return;
     }
@@ -136,8 +139,8 @@ uint32_t VulkanRenderObject::getSetCount() {
     return _entity->_materials.size();
 }
 void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
-    auto& vertices = _entity->_vertices;
-    auto& indices  = _entity->_indices;
+    auto &vertices = _entity->_vertices;
+    auto &indices  = _entity->_indices;
 
     if (!vertices.empty()) {
         _vertexBuffer.vertices = std::move(vertices);
@@ -159,29 +162,30 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         auto         vSize      = vertices.size();
         VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertexBuffer.vertices[0]) * _vertexBuffer.vertices.size() : vSize;
         // using staging buffer
-        if (transferQueue != VK_NULL_HANDLE) {
-            vkl::VulkanBuffer stagingBuffer;
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
-
-            stagingBuffer.map();
-            stagingBuffer.copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
-            stagingBuffer.unmap();
-
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _vertexBuffer.buffer);
-            _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
-
-            stagingBuffer.destroy();
+        vkl::VulkanBuffer stagingBuffer;
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size     = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            _device->createBuffer(&createInfo, stagingBuffer);
         }
 
-        else {
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _vertexBuffer.buffer);
-            _vertexBuffer.buffer.map();
-            _vertexBuffer.buffer.copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
-            _vertexBuffer.buffer.unmap();
+        stagingBuffer.map();
+        stagingBuffer.copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer.unmap();
+
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size     = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            _device->createBuffer(&createInfo, _vertexBuffer.buffer);
         }
+
+        _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
+
+        stagingBuffer.destroy();
     }
 
     // setup index buffer
@@ -189,29 +193,31 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         auto         iSize      = indices.size();
         VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indexBuffer.indices[0]) * _indexBuffer.indices.size() : iSize;
         // using staging buffer
-        if (transferQueue != VK_NULL_HANDLE) {
-            vkl::VulkanBuffer stagingBuffer;
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+        vkl::VulkanBuffer stagingBuffer;
 
-            stagingBuffer.map();
-            stagingBuffer.copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
-            stagingBuffer.unmap();
-
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, _indexBuffer.buffer);
-            _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
-
-            stagingBuffer.destroy();
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size     = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            _device->createBuffer(&createInfo, stagingBuffer);
         }
 
-        else {
-            _device->createBuffer(bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, _indexBuffer.buffer);
-            _indexBuffer.buffer.map();
-            _indexBuffer.buffer.copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
-            _indexBuffer.buffer.unmap();
+        stagingBuffer.map();
+        stagingBuffer.copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer.unmap();
+
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size     = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            _device->createBuffer(&createInfo, _indexBuffer.buffer);
         }
+
+        _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
+
+        stagingBuffer.destroy();
     }
 }
 glm::mat4 VulkanRenderObject::getTransform() const {
@@ -227,8 +233,11 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
     // Load texture from image buffer
     vkl::VulkanBuffer stagingBuffer;
-    _device->createBuffer(imageDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer);
+    BufferCreateInfo createInfo{};
+    createInfo.size = imageDataSize;
+    createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
+    createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    _device->createBuffer(&createInfo, stagingBuffer);
 
     uint8_t *data;
     stagingBuffer.map();

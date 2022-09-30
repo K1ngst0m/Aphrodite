@@ -498,12 +498,12 @@ void VulkanDevice::transitionImageLayout(VkQueue queue, VkImage image, VkFormat 
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-VkResult VulkanDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer &buffer, void *data) const {
+VkResult VulkanDevice::createBuffer(BufferCreateInfo * pCreateInfo, VulkanBuffer &buffer, void *data) const {
     // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size        = size,
-        .usage       = usage,
+        .size        = pCreateInfo->size,
+        .usage       = pCreateInfo->usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &buffer.buffer));
@@ -514,24 +514,22 @@ VkResult VulkanDevice::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
     VkMemoryAllocateInfo allocInfo{
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize  = memRequirements.size,
-        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
+        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
     };
     VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &buffer.memory));
 
     {
         buffer.device              = logicalDevice;
-        buffer.size                = size;
-        buffer.alignment           = 0;
-        buffer.usageFlags          = usage;
-        buffer.memoryPropertyFlags = properties;
+        memcpy(&buffer.createInfo, pCreateInfo, sizeof(BufferCreateInfo));
     }
 
     // bind buffer and memory
     VkResult result = buffer.bind();
+    VK_CHECK_RESULT(result);
 
     if (data) {
         buffer.map();
-        buffer.copyTo(data, buffer.size);
+        buffer.copyTo(data, buffer.getSize());
         buffer.unmap();
     }
 

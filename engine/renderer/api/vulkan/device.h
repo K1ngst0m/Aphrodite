@@ -1,8 +1,9 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
-#include "vkUtils.h"
 #include "renderer/device.h"
+#include "vkUtils.h"
+#include "renderer/gpuResource.h"
 
 namespace vkl {
 
@@ -25,10 +26,11 @@ public:
     void destroy() const;
 
 public:
+    VkResult createBuffer(BufferCreateInfo * createInfo, VulkanBuffer &buffer, void *data = nullptr) const;
+    VkResult createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VulkanTexture &texture, uint32_t miplevels = 1, uint32_t layerCount = 1) const;
+
+    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
     VkShaderModule createShaderModule(const std::vector<char> &code) const;
-    VkResult       createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VulkanBuffer &buffer, void *data = nullptr) const;
-    VkImageView    createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
-    VkResult       createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VulkanTexture &texture, uint32_t miplevels = 1, uint32_t layerCount = 1) const;
 
     void transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copyBuffer(VkQueue queue, VulkanBuffer srcBuffer, VulkanBuffer dstBuffer, VkDeviceSize size);
