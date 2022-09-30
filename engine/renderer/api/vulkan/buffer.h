@@ -5,17 +5,18 @@
 #include <vulkan/vulkan.h>
 
 namespace vkl {
-class VulkanBuffer {
+class VulkanDevice;
+class VulkanBuffer : public Buffer<VkBuffer> {
 public:
-    VkDevice               device;
-    VkBuffer               buffer = VK_NULL_HANDLE;
-    VkDeviceMemory         memory = VK_NULL_HANDLE;
-    VkDescriptorBufferInfo descriptorInfo;
-    void                  *mapped = nullptr;
+    static VulkanBuffer *createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory);
 
+    VkDeviceMemory getMemory();
+
+public:
     VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     void     unmap();
     void     copyTo(const void *data, VkDeviceSize size) const;
+
     VkResult flush(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
     VkResult invalidate(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
 
@@ -26,9 +27,12 @@ public:
 
     void destroy() const;
 
-    BufferCreateInfo createInfo;
-    uint32_t         getSize() const;
-    uint32_t         getOffset() const;
+private:
+    VkDevice               device;
+    VkBuffer               buffer = VK_NULL_HANDLE;
+    VkDeviceMemory         memory = VK_NULL_HANDLE;
+    VkDescriptorBufferInfo descriptorInfo;
+    void                  *mapped = nullptr;
 };
 } // namespace vkl
 

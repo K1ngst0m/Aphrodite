@@ -1,6 +1,5 @@
 #include "buffer.h"
-#include <cassert>
-#include <cstring>
+#include "device.h"
 
 namespace vkl {
 /**
@@ -115,10 +114,17 @@ void VulkanBuffer::destroy() const {
 VkDescriptorBufferInfo &VulkanBuffer::getBufferInfo() {
     return descriptorInfo;
 }
-uint32_t VulkanBuffer::getSize() const {
-    return createInfo.size;
+VulkanBuffer *VulkanBuffer::createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
+    VulkanBuffer *instance = new VulkanBuffer;
+    memcpy(&instance->createInfo, pCreateInfo, sizeof(BufferCreateInfo));
+    instance->device = pDevice->getLogicalDevice();
+
+    instance->buffer = buffer;
+    instance->memory = memory;
+
+    return instance;
 }
-uint32_t VulkanBuffer::getOffset() const {
-    return createInfo.alignment;
+VkDeviceMemory VulkanBuffer::getMemory() {
+    return memory;
 }
 } // namespace vkl
