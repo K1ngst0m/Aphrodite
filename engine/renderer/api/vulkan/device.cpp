@@ -1,7 +1,8 @@
 #include "device.h"
-#include "vkInit.hpp"
 #include "buffer.h"
+#include "image.h"
 #include "texture.h"
+#include "vkInit.hpp"
 
 namespace vkl {
 /**
@@ -348,10 +349,10 @@ VkShaderModule VulkanDevice::createShaderModule(const std::vector<char> &code) c
 
     return shaderModule;
 }
-VkImageView VulkanDevice::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) const {
+VkImageView VulkanDevice::createImageView(VulkanImage* image, VkFormat format, VkImageAspectFlags aspectFlags) const {
     VkImageViewCreateInfo viewInfo{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image    = image,
+        .image    = image->getHandle(),
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
         .format   = format,
     };
@@ -369,7 +370,7 @@ VkImageView VulkanDevice::createImageView(VkImage image, VkFormat format, VkImag
 
     return imageView;
 }
-void VulkanDevice::copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
+void VulkanDevice::copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image) {
     VkCommandBuffer   commandBuffer = beginSingleTimeCommands();
     VkBufferImageCopy region{
         .bufferOffset      = 0,
@@ -385,9 +386,9 @@ void VulkanDevice::copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage ima
     };
 
     region.imageOffset = {0, 0, 0};
-    region.imageExtent = {width, height, 1};
+    region.imageExtent = {image->getWidth(), image->getHeight(), 1};
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     endSingleTimeCommands(commandBuffer, queue);
 }
@@ -421,16 +422,16 @@ VkCommandBuffer VulkanDevice::beginSingleTimeCommands() {
 
     return commandBuffer;
 }
-void VulkanDevice::copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void VulkanDevice::copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void VulkanDevice::transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage * image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -438,7 +439,7 @@ void VulkanDevice::transitionImageLayout(VkQueue queue, VkImage image, VkFormat 
         .newLayout           = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = image,
+        .image               = image->getHandle(),
     };
 
     barrier.subresourceRange = {
@@ -498,7 +499,9 @@ void VulkanDevice::transitionImageLayout(VkQueue queue, VkImage image, VkFormat 
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-VkResult VulkanDevice::createBuffer(BufferCreateInfo * pCreateInfo, VulkanBuffer &buffer, void *data) const {
+VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer *pBuffer, void *data) {
+    VkBuffer       buffer;
+    VkDeviceMemory memory;
     // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -506,91 +509,76 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo * pCreateInfo, VulkanBuffer
         .usage       = pCreateInfo->usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
-    VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &buffer.buffer));
+    VK_CHECK_RESULT(vkCreateBuffer(logicalDevice, &bufferInfo, nullptr, &buffer));
 
     // create memory
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(logicalDevice, buffer.buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(logicalDevice, buffer, &memRequirements);
     VkMemoryAllocateInfo allocInfo{
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize  = memRequirements.size,
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
     };
-    VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &buffer.memory));
+    VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory));
 
     {
-        buffer.device              = logicalDevice;
-        memcpy(&buffer.createInfo, pCreateInfo, sizeof(BufferCreateInfo));
+        pBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
     }
 
     // bind buffer and memory
-    VkResult result = buffer.bind();
+    VkResult result = pBuffer->bind();
     VK_CHECK_RESULT(result);
 
     if (data) {
-        buffer.map();
-        buffer.copyTo(data, buffer.getSize());
-        buffer.unmap();
+        pBuffer->map();
+        pBuffer->copyTo(data, pBuffer->getSize());
+        pBuffer->unmap();
     }
 
     return result;
 }
-VkResult VulkanDevice::createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage,
-                                   VkMemoryPropertyFlags properties, vkl::VulkanTexture &texture, uint32_t miplevels, uint32_t layerCount) const {
+VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage) {
+    VkImage        image;
+    VkDeviceMemory memory;
+
     VkImageCreateInfo imageInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType     = VK_IMAGE_TYPE_2D,
-        .format        = format,
-        .mipLevels     = miplevels,
-        .arrayLayers   = layerCount,
+        .format        = static_cast<VkFormat>(pCreateInfo->format),
+        .mipLevels     = pCreateInfo->mipLevels,
+        .arrayLayers   = pCreateInfo->layerCount,
         .samples       = VK_SAMPLE_COUNT_1_BIT,
-        .tiling        = tiling,
-        .usage         = usage,
+        .tiling        = static_cast<VkImageTiling>(pCreateInfo->tiling),
+        .usage         = pCreateInfo->usage,
         .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    imageInfo.extent.width  = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth  = 1;
+    imageInfo.extent.width  = pCreateInfo->extent.width;
+    imageInfo.extent.height = pCreateInfo->extent.height;
+    imageInfo.extent.depth  = pCreateInfo->extent.depth;
 
-    if (vkCreateImage(logicalDevice, &imageInfo, nullptr, &texture.image) != VK_SUCCESS) {
+    if (vkCreateImage(logicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(logicalDevice, texture.image, &memRequirements);
+    vkGetImageMemoryRequirements(logicalDevice, image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize  = memRequirements.size,
-        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties),
+        .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
     };
 
-    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &texture.memory) != VK_SUCCESS) {
+    if (vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    {
-        texture.device              = logicalDevice;
-        texture.width               = width;
-        texture.height              = height;
-        texture.mipLevels           = miplevels;
-        texture.layerCount          = layerCount;
-        texture.usageFlags          = usage;
-        texture.memoryPropertyFlags = properties;
-        texture.size                = memRequirements.size;
-    }
-
-    return texture.bind();
+    pImage = VulkanImage::createFromHandle(this, pCreateInfo, image, memory);
+    return pImage->bind();
 }
 
-void VulkanDevice::copyBuffer(VkQueue queue, vkl::VulkanBuffer srcBuffer, vkl::VulkanBuffer dstBuffer, VkDeviceSize size) {
-    copyBuffer(queue, srcBuffer.buffer, dstBuffer.buffer, size);
-}
-void VulkanDevice::copyBufferToImage(VkQueue queue, vkl::VulkanBuffer buffer, vkl::VulkanTexture texture, uint32_t width, uint32_t height) {
-    copyBufferToImage(queue, buffer.buffer, texture.image, width, height);
-}
 void VulkanDevice::destroy() const {
     if (commandPool) {
         vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
@@ -696,20 +684,20 @@ VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescri
 
     std::array<VkSubpassDependency, 2> dependencies;
 
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-    dependencies[1].srcSubpass = 0;
-    dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+    dependencies[1].srcSubpass      = 0;
+    dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[1].dstAccessMask   = VK_ACCESS_MEMORY_READ_BIT;
     dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
     VkRenderPassCreateInfo renderPassInfo{

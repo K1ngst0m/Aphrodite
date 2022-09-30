@@ -2,8 +2,8 @@
 #define VULKAN_DEVICE_H_
 
 #include "renderer/device.h"
-#include "vkUtils.h"
 #include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl {
 
@@ -16,6 +16,7 @@ enum class DeviceQueueType {
 
 class VulkanBuffer;
 class VulkanTexture;
+class VulkanImage;
 
 class VulkanDevice : public GraphicsDevice {
 public:
@@ -26,17 +27,17 @@ public:
     void destroy() const;
 
 public:
-    VkResult createBuffer(BufferCreateInfo * createInfo, VulkanBuffer &buffer, void *data = nullptr) const;
-    VkResult createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VulkanTexture &texture, uint32_t miplevels = 1, uint32_t layerCount = 1) const;
+    VkResult createBuffer(BufferCreateInfo *createInfo, VulkanBuffer *buffer, void *data = nullptr);
+    VkResult createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage);
 
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT) const;
+    VkImageView    createImageView(VulkanImage *image, VkFormat format, VkImageAspectFlags aspectFlags/* = VK_IMAGE_ASPECT_COLOR_BIT */) const;
     VkShaderModule createShaderModule(const std::vector<char> &code) const;
 
-    void transitionImageLayout(VkQueue queue, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void copyBuffer(VkQueue queue, VulkanBuffer srcBuffer, VulkanBuffer dstBuffer, VkDeviceSize size);
-    void copyBuffer(VkQueue queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-    void copyBufferToImage(VkQueue queue, VulkanBuffer buffer, VulkanTexture texture, uint32_t width, uint32_t height);
-    void copyBufferToImage(VkQueue queue, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+    void transitionImageLayout(VkQueue queue, VulkanImage *image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+    void copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size);
+
+    void copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image);
 
     VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
     VkRenderPass  createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment);
