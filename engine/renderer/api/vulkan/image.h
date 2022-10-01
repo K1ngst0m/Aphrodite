@@ -3,22 +3,25 @@
 
 #include "common.h"
 #include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl {
 class VulkanDevice;
 class VulkanImage : public Image<VkImage> {
 public:
-    static VulkanImage *createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImage image, VkDeviceMemory memory);
+    static VulkanImage *createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImageLayout defaultLayout, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
 
     VkDeviceMemory getMemory();
     VulkanDevice  *getDevice();
+    VkImageLayout  getImageLayout();
 
     VkResult bind(VkDeviceSize offset = 0) const;
     void     destroy() const;
 
 private:
-    VulkanDevice  *_device = nullptr;
-    VkDeviceMemory _memory = VK_NULL_HANDLE;
+    VulkanDevice  *_device             = nullptr;
+    VkDeviceMemory _memory             = VK_NULL_HANDLE;
+    VkImageLayout  _defaultImageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
     void *_mapped = nullptr;
 };

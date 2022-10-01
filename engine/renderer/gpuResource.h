@@ -369,6 +369,39 @@ enum ImageViewType {
     IMAGE_VIEW_TYPE_MAX_ENUM   = 0x7FFFFFFF
 };
 
+enum ImageViewDimension {
+    IMAGE_VIEW_DIMENSION_1D          = 0,
+    IMAGE_VIEW_DIMENSION_2D          = 1,
+    IMAGE_VIEW_DIMENSION_3D          = 2,
+    IMAGE_VIEW_DIMENSION_CUBE        = 3,
+    IMAGE_VIEW_DIMENSION_1D_ARRAY    = 4,
+    IMAGE_VIEW_DIMENSION_2D_ARRAY    = 5,
+    IMAGE_VIEW_DIMENSION_CUBE_ARRAY  = 6,
+    IMAGE_VIEW_DIMENSION_BEGIN_RANGE = IMAGE_VIEW_DIMENSION_1D,
+    IMAGE_VIEW_DIMENSION_END_RANGE   = IMAGE_VIEW_DIMENSION_CUBE_ARRAY,
+    IMAGE_VIEW_DIMENSION_NUM         = (IMAGE_VIEW_DIMENSION_CUBE_ARRAY - IMAGE_VIEW_DIMENSION_1D + 1),
+    IMAGE_VIEW_DIMENSION_MAX_ENUM    = 0x7FFFFFFF
+};
+
+enum ImageType {
+    IMAGE_TYPE_1D       = 0,
+    IMAGE_TYPE_2D       = 1,
+    IMAGE_TYPE_3D       = 2,
+    IMAGE_TYPE_MAX_ENUM = 0x7FFFFFFF
+};
+
+enum SampleCountFlagBits {
+    SAMPLE_COUNT_1_BIT              = 0x00000001,
+    SAMPLE_COUNT_2_BIT              = 0x00000002,
+    SAMPLE_COUNT_4_BIT              = 0x00000004,
+    SAMPLE_COUNT_8_BIT              = 0x00000008,
+    SAMPLE_COUNT_16_BIT             = 0x00000010,
+    SAMPLE_COUNT_32_BIT             = 0x00000020,
+    SAMPLE_COUNT_64_BIT             = 0x00000040,
+    SAMPLE_COUNT_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+};
+using SampleCountFlags = uint32_t;
+
 struct Extent2D {
     uint32_t width;
     uint32_t height;
@@ -380,23 +413,29 @@ struct Extent3D {
     uint32_t depth;
 };
 
-struct BufferCreateInfo {
-    uint32_t            size      = 0;
-    uint32_t            alignment = 0;
-    BufferUsageFlags    usage;
-    MemoryPropertyFlags property;
+enum ComponentSwizzle {
+    COMPONENT_SWIZZLE_IDENTITY = 0,
+    COMPONENT_SWIZZLE_ZERO     = 1,
+    COMPONENT_SWIZZLE_ONE      = 2,
+    COMPONENT_SWIZZLE_R        = 3,
+    COMPONENT_SWIZZLE_G        = 4,
+    COMPONENT_SWIZZLE_B        = 5,
+    COMPONENT_SWIZZLE_A        = 6,
+    COMPONENT_SWIZZLE_MAX_ENUM = 0x7FFFFFFF
 };
 
-struct ImageCreateInfo {
-    Extent3D            extent;
-    uint32_t            mipLevels  = 1;
-    uint32_t            layerCount = 1;
-    uint32_t            size       = 0;
-    uint32_t            alignment  = 0;
-    ImageUsageFlags     usage;
-    MemoryPropertyFlags property;
-    Format              format;
-    ImageTiling         tiling;
+struct ComponentMapping {
+    ComponentSwizzle r;
+    ComponentSwizzle g;
+    ComponentSwizzle b;
+    ComponentSwizzle a;
+};
+
+struct ImageSubresourceRange {
+    uint32_t baseMipLevel;
+    uint32_t levelCount;
+    uint32_t baseArrayLayer;
+    uint32_t layerCount;
 };
 
 enum Result {
@@ -450,39 +489,22 @@ enum Result {
     RESULT_MAX_ENUM                                    = 0x7FFFFFFF
 };
 
-struct ImageSubresourceRange {
-    uint32_t baseMipLevel;
-    uint32_t levelCount;
-    uint32_t baseArrayLayer;
-    uint32_t layerCount;
-};
-
-enum ComponentSwizzle {
-    COMPONENT_SWIZZLE_IDENTITY = 0,
-    COMPONENT_SWIZZLE_ZERO     = 1,
-    COMPONENT_SWIZZLE_ONE      = 2,
-    COMPONENT_SWIZZLE_R        = 3,
-    COMPONENT_SWIZZLE_G        = 4,
-    COMPONENT_SWIZZLE_B        = 5,
-    COMPONENT_SWIZZLE_A        = 6,
-    COMPONENT_SWIZZLE_MAX_ENUM = 0x7FFFFFFF
-};
-
-struct ComponentMapping {
-    ComponentSwizzle r;
-    ComponentSwizzle g;
-    ComponentSwizzle b;
-    ComponentSwizzle a;
-};
-
 template <typename ResourceHandleType>
 class Resource {
 public:
-    ResourceHandleType& getHandle() {
-        return resourceHandle;
+    ResourceHandleType &getHandle() {
+        return _resourceHandle;
     }
 
-    ResourceHandleType resourceHandle;
+protected:
+    ResourceHandleType _resourceHandle;
+};
+
+struct BufferCreateInfo {
+    uint32_t            size      = 0;
+    uint32_t            alignment = 0;
+    BufferUsageFlags    usage;
+    MemoryPropertyFlags property;
 };
 
 template <typename ResourceHandleType>
@@ -499,7 +521,23 @@ protected:
     BufferCreateInfo createInfo;
 };
 
-class BufferView {
+template <typename ResourceHandleType>
+class BufferView : public Resource<ResourceHandleType> {
+};
+
+struct ImageCreateInfo {
+    Extent3D            extent;
+    ImageType           imageType;
+    uint32_t            mipLevels   = 1;
+    uint32_t            layerCount  = 1;
+    uint32_t            arrayLayers = 1;
+    uint32_t            size        = 0;
+    uint32_t            alignment   = 0;
+    ImageUsageFlags     usage;
+    MemoryPropertyFlags property;
+    SampleCountFlags    samples;
+    Format              format;
+    ImageTiling         tiling;
 };
 
 template <typename ResourceHandleType>
@@ -531,27 +569,36 @@ protected:
     ImageCreateInfo createInfo;
 };
 
+struct ImageViewCreateInfo {
+    ImageViewType         viewType;
+    ImageViewDimension    dimension;
+    Format                format;
+    ComponentMapping      components;
+    ImageSubresourceRange subresourceRange;
+};
+
 template <typename ResourceHandleType>
 class ImageView : public Resource<ResourceHandleType> {
 public:
     ImageViewType getImageViewType() {
-        return _viewType;
+        return _createInfo.viewType;
     }
     Format getFormat() {
-        return _format;
+        return _createInfo.format;
     }
     ComponentMapping getComponentMapping() {
-        return _components;
+        return _createInfo.components;
     }
     const ImageSubresourceRange &GetSubresourceRange() {
-        return _subresourceRange;
+        return _createInfo.subresourceRange;
     }
 
 protected:
-    ImageViewType         _viewType;
-    Format                _format;
-    ComponentMapping      _components;
-    ImageSubresourceRange _subresourceRange;
+    ImageViewCreateInfo _createInfo;
+};
+
+template <typename ResourceHandleType>
+class Sampler : public Resource<ResourceHandleType> {
 };
 
 } // namespace vkl

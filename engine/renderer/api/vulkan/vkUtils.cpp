@@ -94,4 +94,38 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwi
     return actualExtent;
 }
 
+VkImageAspectFlags getImageAspectFlags(VkFormat format) {
+    switch (format) {
+    case VK_FORMAT_D16_UNORM:
+    case VK_FORMAT_D32_SFLOAT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT;
+
+    case VK_FORMAT_D16_UNORM_S8_UINT:
+    case VK_FORMAT_D24_UNORM_S8_UINT:
+    case VK_FORMAT_D32_SFLOAT_S8_UINT:
+        return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+
+    default:
+        return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
 }
+
+VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage) {
+    if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    if (usage & VK_IMAGE_USAGE_STORAGE_BIT)
+        return VK_IMAGE_LAYOUT_GENERAL;
+    if (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    if (usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    if (usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+        return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+    return VK_IMAGE_LAYOUT_GENERAL;
+}
+} // namespace vkl::utils

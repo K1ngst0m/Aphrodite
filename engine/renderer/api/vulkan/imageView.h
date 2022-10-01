@@ -2,6 +2,7 @@
 #define IMAGEVIEW_H_
 
 #include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl {
 class VulkanDevice;
@@ -9,15 +10,12 @@ class VulkanImage;
 
 class VulkanImageView : public ImageView<VkImageView> {
 public:
-    static VkResult create(VulkanImage *pImage, const void *pNext,
-                           VkImageViewType       viewType,
-                           VkFormat              format,
-                           VkComponentMapping    components,
-                           ImageSubresourceRange subresourceRange,
-                           VulkanImageView      *pView);
+    static VulkanImageView* create(ImageViewCreateInfo* createInfo, VulkanImage *pImage, VkImageView handle);
 
     VulkanImage *getImage();
     VulkanDevice *getDevice();
+
+    void destroy();
 
 private:
     VulkanDevice *_device;

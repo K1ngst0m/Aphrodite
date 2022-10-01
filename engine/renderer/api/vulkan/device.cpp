@@ -1,8 +1,9 @@
 #include "device.h"
 #include "buffer.h"
 #include "image.h"
-#include "texture.h"
 #include "vkInit.hpp"
+#include "vkUtils.h"
+#include "imageView.h"
 
 namespace vkl {
 /**
@@ -349,26 +350,32 @@ VkShaderModule VulkanDevice::createShaderModule(const std::vector<char> &code) c
 
     return shaderModule;
 }
-VkImageView VulkanDevice::createImageView(VulkanImage* image, VkFormat format, VkImageAspectFlags aspectFlags) const {
-    VkImageViewCreateInfo viewInfo{
-        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .image    = image->getHandle(),
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format   = format,
-    };
 
-    viewInfo.subresourceRange = {
-        .aspectMask     = aspectFlags,
-        .baseMipLevel   = 0,
-        .levelCount     = 1,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
+VkResult VulkanDevice::createImageView(ImageViewCreateInfo* pCreateInfo, VulkanImageView *pImageView, VulkanImage *pImage) const {
+    // Create a new Vulkan image view.
+    VkImageViewCreateInfo createInfo = {};
+    createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.pNext                 = nullptr;
+    createInfo.image                 = pImage->getHandle();
+    createInfo.viewType              = static_cast<VkImageViewType>(pCreateInfo->viewType);
+    createInfo.format                = static_cast<VkFormat>(pCreateInfo->format);
+    memcpy(&createInfo.components, &pCreateInfo->components, sizeof(VkComponentMapping));
+    createInfo.subresourceRange.aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format));
+    createInfo.subresourceRange.baseMipLevel   = pCreateInfo->subresourceRange.baseMipLevel;
+    createInfo.subresourceRange.levelCount     = pCreateInfo->subresourceRange.levelCount;
+    createInfo.subresourceRange.baseArrayLayer = pCreateInfo->subresourceRange.baseArrayLayer;
+    createInfo.subresourceRange.layerCount     = pCreateInfo->subresourceRange.layerCount;
+    VkImageView handle                         = VK_NULL_HANDLE;
+    auto        result                         = vkCreateImageView(pImage->getDevice()->getLogicalDevice(), &createInfo, nullptr, &handle);
+    if (result != VK_SUCCESS)
+        return result;
 
     VkImageView imageView;
-    VK_CHECK_RESULT(vkCreateImageView(logicalDevice, &viewInfo, nullptr, &imageView));
+    VK_CHECK_RESULT(vkCreateImageView(logicalDevice, &createInfo, nullptr, &imageView));
 
-    return imageView;
+    pImageView = VulkanImageView::create(pCreateInfo, pImage, imageView);
+
+    return VK_SUCCESS;
 }
 void VulkanDevice::copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image) {
     VkCommandBuffer   commandBuffer = beginSingleTimeCommands();
@@ -431,7 +438,7 @@ void VulkanDevice::copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuff
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage * image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -541,7 +548,7 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pI
     VkImage        image;
     VkDeviceMemory memory;
 
-    VkImageCreateInfo imageInfo{
+    VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .imageType     = VK_IMAGE_TYPE_2D,
         .format        = static_cast<VkFormat>(pCreateInfo->format),
@@ -554,11 +561,11 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pI
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    imageInfo.extent.width  = pCreateInfo->extent.width;
-    imageInfo.extent.height = pCreateInfo->extent.height;
-    imageInfo.extent.depth  = pCreateInfo->extent.depth;
+    imageCreateInfo.extent.width  = pCreateInfo->extent.width;
+    imageCreateInfo.extent.height = pCreateInfo->extent.height;
+    imageCreateInfo.extent.depth  = pCreateInfo->extent.depth;
 
-    if (vkCreateImage(logicalDevice, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+    if (vkCreateImage(logicalDevice, &imageCreateInfo, nullptr, &image) != VK_SUCCESS) {
         throw std::runtime_error("failed to create image!");
     }
 
@@ -575,7 +582,9 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pI
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    pImage = VulkanImage::createFromHandle(this, pCreateInfo, image, memory);
+    VkImageLayout defaultLayout = utils::getDefaultImageLayoutFromUsage(pCreateInfo->usage);
+
+    pImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
     return pImage->bind();
 }
 

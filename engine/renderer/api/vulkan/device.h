@@ -15,8 +15,9 @@ enum class DeviceQueueType {
 };
 
 class VulkanBuffer;
-class VulkanTexture;
 class VulkanImage;
+class VulkanImageView;
+class VulkanSampler;
 
 class VulkanDevice : public GraphicsDevice {
 public:
@@ -27,16 +28,13 @@ public:
     void destroy() const;
 
 public:
-    VkResult createBuffer(BufferCreateInfo *createInfo, VulkanBuffer *buffer, void *data = nullptr);
-    VkResult createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage);
-
-    VkImageView    createImageView(VulkanImage *image, VkFormat format, VkImageAspectFlags aspectFlags/* = VK_IMAGE_ASPECT_COLOR_BIT */) const;
+    VkResult       createBuffer(BufferCreateInfo *createInfo, VulkanBuffer *buffer, void *data = nullptr);
+    VkResult       createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage);
+    VkResult       createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView *pImageView, VulkanImage *pImage) const;
     VkShaderModule createShaderModule(const std::vector<char> &code) const;
 
     void transitionImageLayout(VkQueue queue, VulkanImage *image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
     void copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size);
-
     void copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image);
 
     VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);

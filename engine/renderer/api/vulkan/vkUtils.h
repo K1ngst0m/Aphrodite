@@ -1,11 +1,11 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
-#include <deque>
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstring>
+#include <deque>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -52,6 +52,8 @@ std::vector<char>  loadSpvFromFile(const std::string &filename);
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
 VkPresentModeKHR   chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
 VkExtent2D         chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
+VkImageAspectFlags getImageAspectFlags(VkFormat format);
+VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
 } // namespace vkl::utils
 
 #endif // VKLUTILS_H_
