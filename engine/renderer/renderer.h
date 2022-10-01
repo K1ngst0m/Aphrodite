@@ -4,6 +4,8 @@
 #include "common.h"
 #include "device.h"
 
+class GLFWwindow;
+
 namespace vkl {
 class SceneRenderer;
 enum class RenderBackend {

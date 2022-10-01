@@ -2,8 +2,6 @@
 #define VULKAN_RENDERABLE_H_
 
 #include "device.h"
-#include "buffer.h"
-#include "texture.h"
 
 namespace vkl {
 class VulkanSceneRenderer;
@@ -11,9 +9,20 @@ class Entity;
 class ShaderPass;
 struct Vertex;
 struct SubEntity;
+class VulkanImage;
+class VulkanImageView;
+class VulkanSampler;
 
 struct MaterialGpuData {
     VkDescriptorSet set;
+};
+
+struct TextureGpuData {
+    VulkanImage     *image;
+    VulkanImageView *imageView;
+    VkSampler        sampler;
+
+    VkDescriptorImageInfo descriptorInfo;
 };
 
 enum MaterialBindingBits {
@@ -48,22 +57,22 @@ private:
 
     struct {
         std::vector<Vertex> vertices;
-        VulkanBuffer        buffer;
+        VulkanBuffer       *buffer;
     } _vertexBuffer;
 
     struct {
         std::vector<uint32_t> indices;
-        VulkanBuffer          buffer;
+        VulkanBuffer         *buffer;
     } _indexBuffer;
 
-    VulkanTexture                _emptyTexture;
-    std::vector<VulkanTexture>   _textures;
+    TextureGpuData               _emptyTexture;
+    std::vector<TextureGpuData>  _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:
     VulkanSceneRenderer *_renderer;
     glm::mat4            _transform;
-    Entity         *_entity;
+    Entity              *_entity;
 };
 } // namespace vkl
 

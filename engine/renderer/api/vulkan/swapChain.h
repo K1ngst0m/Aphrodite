@@ -12,6 +12,13 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR>   presentModes;
 };
 
+struct SwapChainCreateInfo {
+    const void        *pNext;
+    VkSurfaceKHR       surface;
+    VkSurfaceFormatKHR format;
+    VkBool32           tripleBuffer;
+};
+
 class VulkanSwapChain {
 public:
     void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window);
@@ -22,23 +29,23 @@ public:
     VkFormat         getFormat() const;
     VkExtent2D       getExtent() const;
     uint32_t         getImageCount() const;
-    VkImageView      getImageViewWithIdx(uint32_t idx);
     VkPresentInfoKHR getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
+    VulkanImage     *getImage(uint32_t idx) const;
 
 private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
-    std::shared_ptr<VulkanDevice> m_device;
-    std::vector<VkImage>          m_swapChainImages;
-    std::vector<VkImageView>      m_swapChainImageViews;
-    VkSwapchainKHR                m_swapChain;
+    void                          allocate(GLFWwindow * window);
+    std::shared_ptr<VulkanDevice> _device;
+    std::vector<VulkanImage *>    _swapChainImages;
+    VkSwapchainKHR                _swapChain;
 
-    VkFormat     m_swapChainImageFormat;
-    VkExtent2D   m_swapChainExtent;
-    VkSurfaceKHR m_surface;
+    VkFormat     _swapChainImageFormat;
+    VkExtent2D   _swapChainExtent;
+    VkSurfaceKHR _surface;
 
-    DeletionQueue m_deletionQueue;
+    DeletionQueue _deletionQueue;
 };
 } // namespace vkl
 

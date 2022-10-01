@@ -1,6 +1,10 @@
 #include "renderObject.h"
+#include "buffer.h"
 #include "device.h"
+#include "image.h"
+#include "imageView.h"
 #include "pipeline.h"
+#include "sampler.h"
 #include "scene/entity.h"
 #include "sceneRenderer.h"
 #include "vkInit.hpp"
@@ -44,40 +48,68 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, Vk
 }
 void VulkanRenderObject::loadTextures(VkQueue queue) {
     for (auto &image : _entity->_textures) {
+        // raw image data
         unsigned char *imageData     = image.data.data();
         uint32_t       imageDataSize = image.data.size();
         uint32_t       width         = image.width;
         uint32_t       height        = image.height;
 
-        // Load texture from image buffer
-        vkl::VulkanBuffer stagingBuffer;
-        BufferCreateInfo  createInfo{};
-        createInfo.size     = imageDataSize;
-        createInfo.property = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        createInfo.usage    = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        _device->createBuffer(&createInfo, stagingBuffer);
+        // staging buffer
+        VulkanBuffer stagingBuffer;
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size     = imageDataSize;
+            createInfo.property = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            createInfo.usage    = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            _device->createBuffer(&createInfo, &stagingBuffer);
+        }
 
         stagingBuffer.map();
         stagingBuffer.copyTo(imageData, static_cast<size_t>(imageDataSize));
         stagingBuffer.unmap();
 
-        vkl::VulkanTexture texture;
-        _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                             VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
+        // texture
+        TextureGpuData texture;
+        texture.image     = new VulkanImage;
+        texture.imageView = new VulkanImageView;
+        // texture.sampler   = new VulkanSampler;
 
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-        _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        // texture image resource
+        {
+            ImageCreateInfo createInfo{};
+            createInfo.extent   = {width, height, 1};
+            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
+            createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+            createInfo.usage    = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
-        samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
-        samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            _device->createImage(&createInfo, texture.image);
 
-        VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
-        texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            _device->copyBufferToImage(queue, &stagingBuffer, texture.image);
+            _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+
+        // texture image view
+        {
+            ImageViewCreateInfo createInfo{};
+            createInfo.format = FORMAT_R8G8B8A8_SRGB;
+            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            _device->createImageView(&createInfo, texture.imageView, texture.image);
+        }
+
+        // texture sampler
+        {
+            VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+            samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
+            samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
+            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+            VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
+        }
+
+        texture.descriptorInfo = vkl::init::descriptorImageInfo(texture.sampler, texture.imageView->getHandle(), texture.image->getImageLayout());
 
         _textures.push_back(texture);
 
@@ -121,19 +153,24 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawC
 }
 void VulkanRenderObject::draw(VkPipelineLayout layout, VkCommandBuffer drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer.buffer, offsets);
-    vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer->getHandle(), offsets);
+    vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer->getHandle(), 0, VK_INDEX_TYPE_UINT32);
     for (auto &subEntity : _entity->_subEntityList) {
         drawNode(layout, drawCmd, subEntity);
     }
 }
 void VulkanRenderObject::cleanupResources() {
-    _vertexBuffer.buffer.destroy();
-    _indexBuffer.buffer.destroy();
+    _vertexBuffer.buffer->destroy();
+    _indexBuffer.buffer->destroy();
     for (auto &texture : _textures) {
-        texture.destroy();
+        texture.imageView->destroy();
+        texture.image->destroy();
+        vkDestroySampler(_device->getLogicalDevice(), texture.sampler, nullptr);
     }
-    _emptyTexture.destroy();
+
+    _emptyTexture.imageView->destroy();
+    _emptyTexture.image->destroy();
+    vkDestroySampler(_device->getLogicalDevice(), _emptyTexture.sampler, nullptr);
 }
 uint32_t VulkanRenderObject::getSetCount() {
     return _entity->_materials.size();
@@ -168,7 +205,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            _device->createBuffer(&createInfo, stagingBuffer);
+            _device->createBuffer(&createInfo, &stagingBuffer);
         }
 
         stagingBuffer.map();
@@ -183,7 +220,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             _device->createBuffer(&createInfo, _vertexBuffer.buffer);
         }
 
-        _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        _device->copyBuffer(transferQueue, &stagingBuffer, _vertexBuffer.buffer, bufferSize);
 
         stagingBuffer.destroy();
     }
@@ -200,7 +237,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            _device->createBuffer(&createInfo, stagingBuffer);
+            _device->createBuffer(&createInfo, &stagingBuffer);
         }
 
         stagingBuffer.map();
@@ -215,7 +252,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             _device->createBuffer(&createInfo, _indexBuffer.buffer);
         }
 
-        _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
+        _device->copyBuffer(transferQueue, &stagingBuffer, _indexBuffer.buffer, bufferSize);
 
         stagingBuffer.destroy();
     }
@@ -233,34 +270,48 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
     // Load texture from image buffer
     vkl::VulkanBuffer stagingBuffer;
-    BufferCreateInfo createInfo{};
-    createInfo.size = imageDataSize;
-    createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
+    BufferCreateInfo  createInfo{};
+    createInfo.size     = imageDataSize;
+    createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
     createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    _device->createBuffer(&createInfo, stagingBuffer);
+    _device->createBuffer(&createInfo, &stagingBuffer);
 
     uint8_t *data;
     stagingBuffer.map();
     stagingBuffer.copyTo(data, imageDataSize);
     stagingBuffer.unmap();
 
-    vkl::VulkanTexture &texture = _emptyTexture;
-    _device->createImage(width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture);
+    {
+        ImageCreateInfo createInfo{};
+        createInfo.extent = {width, height, 1};
+        createInfo.format = FORMAT_R8G8B8A8_SRGB;
+        createInfo.tiling = IMAGE_TILING_OPTIMAL;
+        createInfo.usage = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+        createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    _device->copyBufferToImage(queue, stagingBuffer.buffer, texture.image, width, height);
-    _device->transitionImageLayout(queue, texture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    texture.view = _device->createImageView(texture.image, VK_FORMAT_R8G8B8A8_SRGB);
+        _device->createImage(&createInfo, _emptyTexture.image);
 
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
-    samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
-    samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        _device->transitionImageLayout(queue, _emptyTexture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        _device->copyBufferToImage(queue, &stagingBuffer, _emptyTexture.image);
+        _device->transitionImageLayout(queue, _emptyTexture.image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    }
 
-    VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
-    texture.setupDescriptor(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    {
+        ImageViewCreateInfo createInfo{};
+        createInfo.format = FORMAT_R8G8B8A8_SRGB;
+        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+        VK_CHECK_RESULT(_device->createImageView(&createInfo, _emptyTexture.imageView, _emptyTexture.image));
+    }
+
+    {
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
+        samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
+        samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &_emptyTexture.sampler));
+    }
+
+    _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler, _emptyTexture.imageView->getHandle(), _emptyTexture.image->getImageLayout());
 
     stagingBuffer.destroy();
 }

@@ -1,7 +1,7 @@
 #ifndef RESOURCEBINDING_H_
 #define RESOURCEBINDING_H_
 
-#include <common.h>
+#include "vkUtils.h"
 #include <map>
 
 namespace vkl {

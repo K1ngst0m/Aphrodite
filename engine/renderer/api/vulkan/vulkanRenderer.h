@@ -9,7 +9,6 @@
 #include "pipeline.h"
 #include "sceneRenderer.h"
 #include "swapChain.h"
-#include "texture.h"
 
 namespace vkl {
 struct PerFrameSyncObject {
@@ -100,7 +99,18 @@ private:
     std::vector<VkCommandBuffer>    m_defaultCommandBuffers;
     std::vector<PerFrameSyncObject> m_defaultSyncObjects;
     std::vector<VkFramebuffer>      m_defaultFramebuffers;
-    vkl::VulkanTexture              m_defaultDepthAttachment;
+
+    struct ColorAttachment{
+        VulkanImage * image;
+        VulkanImageView * imageView;
+    } ;
+
+    std::vector<ColorAttachment> m_defaultColorAttachments;
+
+    struct {
+        VulkanImage *image;
+        VulkanImageView *imageView;
+    } m_defaultDepthAttachment;
 };
 } // namespace vkl
 

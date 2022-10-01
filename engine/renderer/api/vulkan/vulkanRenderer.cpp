@@ -1,9 +1,13 @@
-#include "renderer/sceneRenderer.h"
-
+#include "vulkanRenderer.h"
+#include "buffer.h"
+#include "device.h"
+#include "image.h"
+#include "imageView.h"
 #include "renderObject.h"
+#include "renderer/sceneRenderer.h"
 #include "sceneRenderer.h"
 #include "uniformObject.h"
-#include "vulkanRenderer.h"
+#include "vkUtils.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -61,9 +65,17 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
+    m_defaultColorAttachments.resize(m_swapChain.getImageCount());
     m_defaultFramebuffers.resize(m_swapChain.getImageCount());
+
     for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
-        std::vector<VkImageView> attachments = {m_swapChain.getImageViewWithIdx(i), m_defaultDepthAttachment.view};
+        ImageViewCreateInfo createInfo{};
+        createInfo.format                  = FORMAT_R8G8B8A8_SRGB;
+        createInfo.viewType                = IMAGE_VIEW_TYPE_2D;
+        m_defaultColorAttachments[i].image = m_swapChain.getImage(i);
+        m_device->createImageView(&createInfo, m_defaultColorAttachments[i].imageView, m_defaultColorAttachments[i].image);
+
+        std::vector<VkImageView> attachments = {m_defaultColorAttachments[i].imageView->getHandle(), m_defaultDepthAttachment.imageView->getHandle()};
         m_defaultFramebuffers[i]             = m_device->createFramebuffers(m_swapChain.getExtent(), attachments, m_defaultRenderPass);
     }
 
@@ -484,16 +496,29 @@ std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
 }
 
 void VulkanRenderer::_createDefaultDepthResources() {
-    VkFormat depthFormat = m_device->findDepthFormat();
-    m_device->createImage(m_swapChain.getExtent().width, m_swapChain.getExtent().height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                          VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                          m_defaultDepthAttachment);
-    m_defaultDepthAttachment.view = m_device->createImageView(m_defaultDepthAttachment.image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    m_device->transitionImageLayout(transferQueue, m_defaultDepthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
-                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    {
+        VkFormat        depthFormat = m_device->findDepthFormat();
+        ImageCreateInfo createInfo{};
+        createInfo.extent   = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
+        createInfo.format   = static_cast<Format>(depthFormat);
+        createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+        createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        VK_CHECK_RESULT(m_device->createImage(&createInfo, m_defaultDepthAttachment.image));
+        m_device->transitionImageLayout(transferQueue, m_defaultDepthAttachment.image, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    }
+
+    {
+        ImageViewCreateInfo createInfo{};
+        createInfo.format   = FORMAT_D32_SFLOAT_S8_UINT;
+        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+        VK_CHECK_RESULT(m_device->createImageView(&createInfo, m_defaultDepthAttachment.imageView, m_defaultDepthAttachment.image));
+    }
 
     m_deletionQueue.push_function([&]() {
-        m_defaultDepthAttachment.destroy();
+        m_defaultDepthAttachment.image->destroy();
+        m_defaultDepthAttachment.imageView->destroy();
     });
 }
 VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
