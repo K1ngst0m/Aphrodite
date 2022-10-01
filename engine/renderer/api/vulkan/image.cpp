@@ -4,11 +4,11 @@
 namespace vkl {
 
 VkResult VulkanImage::bind(VkDeviceSize offset) const {
-    return vkBindImageMemory(_device->getLogicalDevice(), _resourceHandle, _memory, offset);
+    return vkBindImageMemory(_device->getLogicalDevice(), _handle, _memory, offset);
 }
 void VulkanImage::destroy() const {
-    if (_resourceHandle) {
-        vkDestroyImage(_device->getLogicalDevice(), _resourceHandle, nullptr);
+    if (_handle) {
+        vkDestroyImage(_device->getLogicalDevice(), _handle, nullptr);
     }
     if (_memory) {
         vkFreeMemory(_device->getLogicalDevice(), _memory, nullptr);
@@ -16,10 +16,10 @@ void VulkanImage::destroy() const {
 }
 VulkanImage *VulkanImage::createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImageLayout defaultLayout, VkImage image, VkDeviceMemory memory) {
     VulkanImage *instance = new VulkanImage;
-    memcpy(&instance->createInfo, pCreateInfo, sizeof(ImageCreateInfo));
+    memcpy(&instance->_createInfo, pCreateInfo, sizeof(ImageCreateInfo));
     instance->_device              = pDevice;
     instance->_defaultImageLayout = defaultLayout;
-    instance->_resourceHandle       = image;
+    instance->_handle       = image;
     instance->_memory              = memory;
 
     return instance;

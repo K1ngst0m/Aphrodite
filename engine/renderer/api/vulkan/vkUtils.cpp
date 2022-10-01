@@ -37,7 +37,6 @@ std::string errorString(VkResult errorCode)
     }
 }
 
-
 std::vector<char> loadSpvFromFile(const std::string &filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);

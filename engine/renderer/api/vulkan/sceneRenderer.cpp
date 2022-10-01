@@ -149,7 +149,7 @@ void VulkanSceneRenderer::_initUniformList() {
             write.dstArrayElement      = 0;
             write.descriptorCount      = 1;
             write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo          = &uniformObj->buffer.getBufferInfo();
+            write.pBufferInfo          = &uniformObj->buffer->getBufferInfo();
             descriptorWrites.push_back(write);
         }
 

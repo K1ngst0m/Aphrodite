@@ -105,7 +105,6 @@ void VulkanSwapChain::allocate(GLFWwindow *window) {
     }
 
     VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getLogicalDevice(), &createInfo, nullptr, &_swapChain));
-    _swapChainImages.resize(imageCount);
 
     vkGetSwapchainImagesKHR(_device->getLogicalDevice(), _swapChain, &imageCount, nullptr);
     std::vector<VkImage> images(imageCount);
@@ -122,13 +121,15 @@ void VulkanSwapChain::allocate(GLFWwindow *window) {
         imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
         imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
         imageCreateInfo.usage           = IMAGE_USAGE_TRANSFER_DST_BIT;
+
         auto image                      = VulkanImage::createFromHandle(_device.get(), &imageCreateInfo, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, handle);
-        _swapChainImages.push_back(image);
 
         // Transition image to default layout.
         VkQueue queue;
         vkGetDeviceQueue(_device->getLogicalDevice(), _device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &queue);
-        _device->transitionImageLayout(queue, _swapChainImages.back(), _swapChainImageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        _device->transitionImageLayout(queue, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+        _swapChainImages.push_back(image);
     }
 
     _swapChainImageFormat = surfaceFormat.format;

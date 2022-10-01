@@ -8,9 +8,9 @@ namespace vkl {
 class VulkanDevice;
 class VulkanImage;
 
-class VulkanImageView : public ImageView<VkImageView> {
+class VulkanImageView : public ImageView, public ResourceHandle<VkImageView> {
 public:
-    static VulkanImageView* create(ImageViewCreateInfo* createInfo, VulkanImage *pImage, VkImageView handle);
+    static VulkanImageView* createFromHandle(ImageViewCreateInfo* createInfo, VulkanImage *pImage, VkImageView handle);
 
     VulkanImage *getImage();
     VulkanDevice *getDevice();

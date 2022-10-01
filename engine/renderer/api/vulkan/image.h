@@ -7,7 +7,7 @@
 
 namespace vkl {
 class VulkanDevice;
-class VulkanImage : public Image<VkImage> {
+class VulkanImage : public Image, public ResourceHandle<VkImage> {
 public:
     static VulkanImage *createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImageLayout defaultLayout, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
 

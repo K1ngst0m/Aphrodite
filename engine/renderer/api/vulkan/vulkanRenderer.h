@@ -35,12 +35,12 @@ public:
     void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 public:
-    VkQueue          getDeviceQueue(DeviceQueueType type) const;
-    VkRenderPass     getDefaultRenderPass() const;
-    uint32_t         getCommandBufferCount() const;
-    VkCommandBuffer  getDefaultCommandBuffer(uint32_t idx) const;
-    VkFramebuffer    getDefaultFrameBuffer(uint32_t idx) const;
-    PipelineBuilder &getPipelineBuilder();
+    VkQueue            getDeviceQueue(DeviceQueueType type) const;
+    VkRenderPass       getDefaultRenderPass() const;
+    uint32_t           getCommandBufferCount() const;
+    VkCommandBuffer    getDefaultCommandBuffer(uint32_t idx) const;
+    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const;
+    PipelineBuilder   &getPipelineBuilder();
 
     std::shared_ptr<VulkanDevice>  getDevice();
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
@@ -98,19 +98,15 @@ private:
     VkRenderPass                    m_defaultRenderPass;
     std::vector<VkCommandBuffer>    m_defaultCommandBuffers;
     std::vector<PerFrameSyncObject> m_defaultSyncObjects;
-    std::vector<VkFramebuffer>      m_defaultFramebuffers;
 
-    struct ColorAttachment{
-        VulkanImage * image;
-        VulkanImageView * imageView;
-    } ;
-
-    std::vector<ColorAttachment> m_defaultColorAttachments;
-
-    struct {
-        VulkanImage *image;
-        VulkanImageView *imageView;
-    } m_defaultDepthAttachment;
+    struct FrameBufferData {
+        VulkanImage       *colorImage;
+        VulkanImageView   *colorImageView;
+        VulkanImage       *depthImage;
+        VulkanImageView   *depthImageView;
+        VulkanFramebuffer *framebuffer;
+    };
+    std::vector<FrameBufferData> m_defaultFramebuffers;
 };
 } // namespace vkl
 

@@ -18,35 +18,75 @@ class VulkanBuffer;
 class VulkanImage;
 class VulkanImageView;
 class VulkanSampler;
+class VulkanFramebuffer;
 
 class VulkanDevice : public GraphicsDevice {
 public:
     explicit VulkanDevice(VkPhysicalDevice physicalDevice);
     ~VulkanDevice() = default;
 
-    void create(VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension);
+    void create(VkSurfaceKHR                     surface,
+                VkPhysicalDeviceFeatures         features,
+                const std::vector<const char *> &extension);
+
     void destroy() const;
 
 public:
-    VkResult       createBuffer(BufferCreateInfo *createInfo, VulkanBuffer *buffer, void *data = nullptr);
-    VkResult       createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage);
-    VkResult       createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView *pImageView, VulkanImage *pImage) const;
+    VkResult createBuffer(BufferCreateInfo *pCreateInfo,
+                          VulkanBuffer    **ppBuffer,
+                          void             *data = nullptr);
+
+    VkResult createImage(ImageCreateInfo *pCreateInfo,
+                         VulkanImage    **ppImage);
+
+    VkResult createImageView(ImageViewCreateInfo *pCreateInfo,
+                             VulkanImageView    **ppImageView,
+                             VulkanImage         *pImage);
+
     VkShaderModule createShaderModule(const std::vector<char> &code) const;
 
-    void transitionImageLayout(VkQueue queue, VulkanImage *image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-    void copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size);
-    void copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image);
+    void transitionImageLayout(VkQueue       queue,
+                               VulkanImage  *image,
+                               VkImageLayout oldLayout,
+                               VkImageLayout newLayout);
 
-    VkFramebuffer createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass);
-    VkRenderPass  createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment);
+    void copyBuffer(VkQueue       queue,
+                    VulkanBuffer *srcBuffer,
+                    VulkanBuffer *dstBuffer,
+                    VkDeviceSize  size);
+
+    void copyBufferToImage(VkQueue       queue,
+                           VulkanBuffer *buffer,
+                           VulkanImage  *image);
+
+    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo,
+                                VulkanFramebuffer    **ppFramebuffer,
+                                uint32_t               attachmentCount,
+                                VulkanImageView       *pAttachments);
+
+    VkRenderPass createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments,
+                                  VkAttachmentDescription                    &depthAttachment);
 
 public:
-    void            allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count);
-    VkCommandPool   createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
+    void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
+                                uint32_t         count);
+
+    VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
+                                    VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
+
     VkCommandBuffer beginSingleTimeCommands();
-    void            endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const;
-    void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free = true) const;
-    void            flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free = true) const;
+
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer,
+                               VkQueue         queue) const;
+
+    void flushCommandBuffer(VkCommandBuffer commandBuffer,
+                            VkQueue         queue,
+                            VkCommandPool   pool,
+                            bool            free = true) const;
+
+    void flushCommandBuffer(VkCommandBuffer commandBuffer,
+                            VkQueue         queue,
+                            bool            free = true) const;
 
 public:
     VkPhysicalDevice            getPhysicalDevice();

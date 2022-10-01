@@ -1,9 +1,10 @@
 #include "device.h"
 #include "buffer.h"
+#include "framebuffer.h"
 #include "image.h"
+#include "imageView.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
-#include "imageView.h"
 
 namespace vkl {
 /**
@@ -351,7 +352,7 @@ VkShaderModule VulkanDevice::createShaderModule(const std::vector<char> &code) c
     return shaderModule;
 }
 
-VkResult VulkanDevice::createImageView(ImageViewCreateInfo* pCreateInfo, VulkanImageView *pImageView, VulkanImage *pImage) const {
+VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView, VulkanImage *pImage) {
     // Create a new Vulkan image view.
     VkImageViewCreateInfo createInfo = {};
     createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -373,7 +374,7 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo* pCreateInfo, VulkanI
     VkImageView imageView;
     VK_CHECK_RESULT(vkCreateImageView(logicalDevice, &createInfo, nullptr, &imageView));
 
-    pImageView = VulkanImageView::create(pCreateInfo, pImage, imageView);
+    *ppImageView = VulkanImageView::createFromHandle(pCreateInfo, pImage, imageView);
 
     return VK_SUCCESS;
 }
@@ -438,10 +439,12 @@ void VulkanDevice::copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuff
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask       = 0,
+        .dstAccessMask       = 0,
         .oldLayout           = oldLayout,
         .newLayout           = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -449,64 +452,20 @@ void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkFo
         .image               = image->getHandle(),
     };
 
-    barrier.subresourceRange = {
-        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-        .baseMipLevel   = 0,
-        .levelCount     = 1,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
+    const auto &imageCreateInfo = image->getCreateInfo();
+    barrier.subresourceRange    = {
+           .aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+           .baseMipLevel   = 0,
+           .levelCount     = imageCreateInfo.mipLevels,
+           .baseArrayLayer = 0,
+           .layerCount     = imageCreateInfo.arrayLayers,
     };
 
-    VkPipelineStageFlags sourceStage;
-    VkPipelineStageFlags destinationStage;
-
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-        if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT) {
-            barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-    } else {
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
-    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-        sourceStage      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
-               newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        sourceStage      = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
-                                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-        sourceStage      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-               newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        sourceStage      = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    } else {
-        throw std::invalid_argument("unsupported layout transition!");
-    }
-
-    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     endSingleTimeCommands(commandBuffer, queue);
 }
-VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer *pBuffer, void *data) {
+VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data) {
     VkBuffer       buffer;
     VkDeviceMemory memory;
     // create buffer
@@ -529,22 +488,22 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory));
 
     {
-        pBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
+        *ppBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
     }
 
     // bind buffer and memory
-    VkResult result = pBuffer->bind();
+    VkResult result = (*ppBuffer)->bind();
     VK_CHECK_RESULT(result);
 
     if (data) {
-        pBuffer->map();
-        pBuffer->copyTo(data, pBuffer->getSize());
-        pBuffer->unmap();
+        (*ppBuffer)->map();
+        (*ppBuffer)->copyTo(data, (*ppBuffer)->getSize());
+        (*ppBuffer)->unmap();
     }
 
     return result;
 }
-VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pImage) {
+VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage) {
     VkImage        image;
     VkDeviceMemory memory;
 
@@ -584,8 +543,8 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage *pI
 
     VkImageLayout defaultLayout = utils::getDefaultImageLayoutFromUsage(pCreateInfo->usage);
 
-    pImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
-    return pImage->bind();
+    *ppImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
+    return (*ppImage)->bind();
 }
 
 void VulkanDevice::destroy() const {
@@ -651,22 +610,6 @@ VkPhysicalDeviceFeatures &VulkanDevice::getDeviceEnabledFeatures() {
 VkPhysicalDeviceProperties &VulkanDevice::getDeviceProperties() {
     return properties;
 }
-VkFramebuffer VulkanDevice::createFramebuffers(VkExtent2D extent, const std::vector<VkImageView> &attachments, VkRenderPass renderPass) {
-    VkFramebuffer framebuffer;
-
-    VkFramebufferCreateInfo framebufferInfo{
-        .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-        .renderPass      = renderPass,
-        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .width           = extent.width,
-        .height          = extent.height,
-        .layers          = 1,
-    };
-
-    VK_CHECK_RESULT(vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &framebuffer));
-    return framebuffer;
-}
 VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment) {
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference>   colorAttachmentRefs;
@@ -724,4 +667,12 @@ VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescri
 
     return renderpass;
 }
+
+VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo,
+                                          VulkanFramebuffer    **ppFramebuffer,
+                                          uint32_t               attachmentCount,
+                                          VulkanImageView       *pAttachments) {
+    return VulkanFramebuffer::create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
+}
+
 } // namespace vkl

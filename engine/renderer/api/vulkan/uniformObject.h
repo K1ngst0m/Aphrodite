@@ -15,7 +15,7 @@ struct VulkanUniformObject {
 
     void cleanupResources() const;
 
-    vkl::VulkanBuffer buffer;
+    vkl::VulkanBuffer * buffer;
 
     void setupBuffer(uint32_t bufferSize, void *data = nullptr);
     void updateBuffer(void *data) const;
