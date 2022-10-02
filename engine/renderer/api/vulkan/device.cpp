@@ -338,20 +338,6 @@ VkFormat VulkanDevice::findSupportedFormat(const std::vector<VkFormat> &candidat
     return {};
 }
 
-VkShaderModule VulkanDevice::createShaderModule(const std::vector<char> &code) const {
-    VkShaderModuleCreateInfo createInfo{
-        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = code.size(),
-        .pCode    = reinterpret_cast<const uint32_t *>(code.data()),
-    };
-
-    VkShaderModule shaderModule;
-
-    VK_CHECK_RESULT(vkCreateShaderModule(logicalDevice, &createInfo, nullptr, &shaderModule));
-
-    return shaderModule;
-}
-
 VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView, VulkanImage *pImage) {
     // Create a new Vulkan image view.
     VkImageViewCreateInfo createInfo = {};

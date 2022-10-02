@@ -2,7 +2,23 @@
 #include "pipeline.h"
 
 namespace vkl {
+static VkShaderModule createShaderModule(const std::shared_ptr<VulkanDevice> &device,
+                                    const std::vector<char>             &code){
+    VkShaderModuleCreateInfo createInfo{
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = code.size(),
+        .pCode    = reinterpret_cast<const uint32_t *>(code.data()),
+    };
+
+    VkShaderModule shaderModule;
+
+    VK_CHECK_RESULT(vkCreateShaderModule(device->getLogicalDevice(), &createInfo, nullptr, &shaderModule));
+
+    return shaderModule;
+}
+
 void ShaderEffect::pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings) {
+
     VkDescriptorSetLayout           setLayout;
     VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
     VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &perSceneLayoutInfo, nullptr, &setLayout));
@@ -37,7 +53,7 @@ void ShaderCache::destory(VkDevice device) {
 ShaderModule *ShaderCache::getShaders(const std::shared_ptr<VulkanDevice> &device, const std::string &path) {
     if (!shaderModuleCaches.count(path)) {
         std::vector<char> spvCode      = vkl::utils::loadSpvFromFile(path);
-        VkShaderModule    shaderModule = device->createShaderModule(spvCode);
+        VkShaderModule    shaderModule = createShaderModule(device, spvCode);
 
         shaderModuleCaches[path] = {spvCode, shaderModule};
     }

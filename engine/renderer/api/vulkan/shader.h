@@ -12,7 +12,6 @@ struct ShaderModule {
 };
 
 struct ShaderParameters {
-
 };
 
 /**
@@ -42,7 +41,7 @@ struct ShaderEffect {
 struct ShaderCache {
     std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
     ShaderModule *getShaders(const std::shared_ptr<VulkanDevice> &device, const std::string &path);
-    void destory(VkDevice device);
+    void          destory(VkDevice device);
 };
 
 struct ShaderPass {
@@ -57,7 +56,7 @@ struct ShaderPass {
 
 struct EffectTemplate {
     std::vector<std::shared_ptr<ShaderPass>> passShaders;
-    ShaderParameters* defaultParameters;
+    ShaderParameters                        *defaultParameters;
 };
 
 } // namespace vkl

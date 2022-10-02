@@ -43,8 +43,6 @@ public:
                              VulkanImageView    **ppImageView,
                              VulkanImage         *pImage);
 
-    VkShaderModule createShaderModule(const std::vector<char> &code) const;
-
     void transitionImageLayout(VkQueue       queue,
                                VulkanImage  *image,
                                VkImageLayout oldLayout,
