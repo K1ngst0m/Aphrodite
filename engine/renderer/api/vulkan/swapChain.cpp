@@ -28,10 +28,10 @@ SwapChainSupportDetails VulkanSwapChain::querySwapChainSupport(VkPhysicalDevice 
     return details;
 }
 
-void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window) {
+void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, WindowData *data) {
     _device  = device;
     _surface = surface;
-    allocate(window);
+    allocate(data);
 }
 
 void VulkanSwapChain::cleanup() {
@@ -54,12 +54,12 @@ VkPresentInfoKHR VulkanSwapChain::getPresentInfo(VkSemaphore *waitSemaphores, co
     return presentInfo;
 }
 
-void VulkanSwapChain::allocate(GLFWwindow *window) {
+void VulkanSwapChain::allocate(WindowData *data) {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_device->getPhysicalDevice());
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = vkl::utils::chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D         extent        = vkl::utils::chooseSwapExtent(swapChainSupport.capabilities, window);
+    VkExtent2D         extent        = vkl::utils::chooseSwapExtent(swapChainSupport.capabilities, data->window);
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 

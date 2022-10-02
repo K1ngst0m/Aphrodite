@@ -51,7 +51,6 @@ private:
     void _createSurface();
     void _setupDebugMessenger();
     void _setupSwapChain();
-    void _recreateSwapChain();
     bool _checkValidationLayerSupport();
 
 private:

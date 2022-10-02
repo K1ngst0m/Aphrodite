@@ -1,6 +1,7 @@
 #ifndef VKLCOMMON_H_
 #define VKLCOMMON_H_
 
+#include <chrono>
 #include <algorithm>
 #include <array>
 #include <cassert>

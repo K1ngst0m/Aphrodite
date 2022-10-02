@@ -10,12 +10,11 @@ void Window::init(uint32_t width, uint32_t height) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    glfwSetWindowUserPointer(getHandle(), this);
+    _data = std::make_shared<WindowData>(width, height);
 
     _data->window = glfwCreateWindow(_data->width, _data->height, "Demo", nullptr, nullptr);
     assert(_data->window);
-
-    _data = std::make_shared<WindowData>(width, height);
+    glfwSetWindowUserPointer(getHandle(), this);
 }
 
 GLFWwindow *Window::getHandle() {
@@ -53,8 +52,9 @@ void Window::setFramebufferSizeCallback(const FramebufferSizeFunc &cbFunc) {
 
 void Window::setCursorPosCallback(const CursorPosFunc &cbFunc) {
     _cursorPosCB = cbFunc;
+
     glfwSetCursorPosCallback(getHandle(), [](GLFWwindow *window, double xposIn, double yposIn) {
-        auto *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+        Window *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
         ptr->_cursorPosCB(xposIn, yposIn);
     });
 }

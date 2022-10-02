@@ -7,7 +7,7 @@
 
 class triangle : public vkl::vklApp {
 public:
-    triangle(): vkl::vklApp("scene_manager", 1366, 768){}
+    triangle(): vkl::vklApp("triangle", 1366, 768){}
     ~triangle() override = default;
 
 private:
@@ -16,7 +16,6 @@ private:
 
 private:
     void updateUniformBuffer();
-    void loadScene();
     void buildCommands();
 
 private:

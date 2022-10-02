@@ -15,11 +15,6 @@ struct MouseData {
     }
 };
 
-struct FrameData {
-    float deltaTime = 0.0f;
-    float lastFrame = 0.0f;
-};
-
 class vklApp {
 public:
     vklApp(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
@@ -50,25 +45,27 @@ protected:
 
 protected:
     virtual void initDerive() = 0;
-    virtual void drawFrame() = 0;
+    virtual void drawFrame()  = 0;
 
 protected:
     virtual void keyboardHandleDerive(int key, int scancode, int action, int mods);
-    virtual void mouseHandleDerive(int xposIn, int yposIn);
+    virtual void mouseHandleDerive(double xposIn, double yposIn);
 
 protected:
     const std::string m_sessionName;
 
     Window m_window;
 
-    FrameData  m_frameData;
-    MouseData  m_mouseData;
+    MouseData m_mouseData;
+    float     m_deltaTime;
 
-    std::shared_ptr<Camera> m_defaultCamera = nullptr;
+    std::shared_ptr<Camera>   m_defaultCamera = nullptr;
     std::unique_ptr<Renderer> m_renderer;
 
-    bool m_framebufferResized = false;
+    bool               m_framebufferResized = false;
     vkl::DeletionQueue m_deletionQueue;
+
+    CursorPosFunc func;
 };
 } // namespace vkl
 

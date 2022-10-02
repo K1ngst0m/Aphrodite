@@ -2,6 +2,7 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "device.h"
+#include "window.h"
 
 namespace vkl {
 struct SwapChainSupportDetails {
@@ -19,7 +20,7 @@ struct SwapChainCreateInfo {
 
 class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR> {
 public:
-    void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window);
+    void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, WindowData *window);
     void cleanup();
 
     VkResult acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
@@ -34,7 +35,7 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
-    void allocate(GLFWwindow *window);
+    void allocate(WindowData *windowData);
 
     std::shared_ptr<VulkanDevice> _device;
     std::vector<VulkanImage *>    _images;

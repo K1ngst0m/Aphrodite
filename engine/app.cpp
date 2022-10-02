@@ -8,18 +8,16 @@ vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
 }
 
 void vklApp::initWindow() {
-    glfwSetWindowUserPointer(m_window.getHandle(), this);
-
-    m_window.setCursorPosCallback([&](double xposIn, double yposIn) {
-        mouseHandleDerive(xposIn, yposIn);
+    m_window.setCursorPosCallback([=](double xposIn, double yposIn) {
+        this->mouseHandleDerive(xposIn, yposIn);
     });
 
-    m_window.setFramebufferSizeCallback([&](int width, int height) {
-        m_framebufferResized = true;
+    m_window.setFramebufferSizeCallback([=](int width, int height) {
+        this->m_framebufferResized = true;
     });
 
-    m_window.setKeyCallback([&](int key, int scancode, int action, int mods) {
-        keyboardHandleDerive(key, scancode, action, mods);
+    m_window.setKeyCallback([=](int key, int scancode, int action, int mods) {
+        this->keyboardHandleDerive(key, scancode, action, mods);
     });
 
     m_deletionQueue.push_function([=]() {
@@ -41,7 +39,9 @@ void vklApp::initRenderer() {
     });
 }
 
-void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
+void vklApp::mouseHandleDerive(double xposIn, double yposIn) {
+    // TODO remove
+    return;
     auto xpos = static_cast<float>(xposIn);
     auto ypos = static_cast<float>(yposIn);
 
@@ -61,56 +61,59 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
 }
 
 void vklApp::keyboardHandleDerive(int key, int scancode, int action, int mods) {
-    if (action == GLFW_PRESS) {
+    if (action == VKL_PRESS) {
         switch (key) {
-        case GLFW_KEY_ESCAPE:
+        case VKL_KEY_ESCAPE:
             m_window.close();
             break;
-        case GLFW_KEY_1:
+        case VKL_KEY_1:
             m_window.toggleCurosrVisibility();
             break;
-        case GLFW_KEY_W:
+        case VKL_KEY_W:
             m_defaultCamera->setMovement(CameraDirection::UP, true);
             break;
-        case GLFW_KEY_A:
+        case VKL_KEY_A:
             m_defaultCamera->setMovement(CameraDirection::LEFT, true);
             break;
-        case GLFW_KEY_S:
+        case VKL_KEY_S:
             m_defaultCamera->setMovement(CameraDirection::DOWN, true);
             break;
-        case GLFW_KEY_D:
+        case VKL_KEY_D:
             m_defaultCamera->setMovement(CameraDirection::RIGHT, true);
             break;
         }
     }
 
-    if (action == GLFW_RELEASE) {
+    if (action == VKL_RELEASE) {
         switch (key) {
-        case GLFW_KEY_W:
+        case VKL_KEY_W:
             m_defaultCamera->setMovement(CameraDirection::UP, false);
             break;
-        case GLFW_KEY_A:
+        case VKL_KEY_A:
             m_defaultCamera->setMovement(CameraDirection::LEFT, false);
             break;
-        case GLFW_KEY_S:
+        case VKL_KEY_S:
             m_defaultCamera->setMovement(CameraDirection::DOWN, false);
             break;
-        case GLFW_KEY_D:
+        case VKL_KEY_D:
             m_defaultCamera->setMovement(CameraDirection::RIGHT, false);
             break;
         }
     }
 
-    m_defaultCamera->processMovement(m_frameData.deltaTime);
+    m_defaultCamera->processMovement(m_deltaTime);
 }
 
 void vklApp::run() {
+    auto loop_start_point = std::chrono::steady_clock::now();
     while (!m_window.shouldClose()) {
         m_window.pollEvents();
         drawFrame();
     }
 
     m_renderer->idleDevice();
+    auto loop_end_point = std::chrono::steady_clock::now();
+    m_deltaTime         = (loop_end_point - loop_start_point).count();
 }
 
 void vklApp::finish() {

@@ -2,6 +2,7 @@
 #define WINDOW_H_
 
 #include "common.h"
+#include "inputCode.h"
 
 class GLFWwindow;
 

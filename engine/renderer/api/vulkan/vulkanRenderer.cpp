@@ -10,6 +10,7 @@
 #include "sceneRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
+#include <GLFW/glfw3.h>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -189,7 +190,7 @@ void VulkanRenderer::_createDevice() {
 
     m_device = std::make_shared<VulkanDevice>(devices[0]);
 
-    m_device->create(m_surface, m_enabledFeatures, deviceExtensions);
+    m_device->init(m_surface, m_enabledFeatures, deviceExtensions);
 
     vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &graphicsQueue);
     vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT), 0, &presentQueue);
@@ -236,26 +237,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
 }
 
 void VulkanRenderer::_setupSwapChain() {
-    m_swapChain.create(m_device, m_surface, _windowData->window);
+    m_swapChain.create(m_device, m_surface, _windowData.get());
     m_deletionQueue.push_function([&]() {
         m_swapChain.cleanup();
     });
-}
-
-void VulkanRenderer::_recreateSwapChain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(_windowData->window, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(_windowData->window, &width, &height);
-        glfwWaitEvents();
-    }
-
-    vkDeviceWaitIdle(m_device->getLogicalDevice());
-
-    m_swapChain.cleanup();
-    m_swapChain.create(m_device, m_surface, _windowData->window);
-
-    _createDefaultFramebuffers();
 }
 
 void VulkanRenderer::_createCommandBuffers() {
@@ -317,7 +302,8 @@ void VulkanRenderer::prepareFrame() {
     VkResult result = m_swapChain.acqureNextImage(INT64_MAX, m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        _recreateSwapChain();
+        assert("swapchain recreation current not support.");
+        // _recreateSwapChain();
         return;
     }
 
@@ -351,7 +337,7 @@ void VulkanRenderer::submitFrame() {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _windowData->resized) {
         assert("recreate swapchain currently not support.");
         _windowData->resized = false;
-        _recreateSwapChain();
+        // _recreateSwapChain();
     } else if (result != VK_SUCCESS) {
         VK_CHECK_RESULT(result);
     }
