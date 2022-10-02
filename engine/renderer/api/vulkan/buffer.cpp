@@ -110,17 +110,6 @@ VkResult VulkanBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const 
     return vkInvalidateMappedMemoryRanges(device, 1, &mappedRange);
 }
 
-/**
- * Release all Vulkan resources held by this buffer
- */
-void VulkanBuffer::destroy() const {
-    if (buffer) {
-        vkDestroyBuffer(device, buffer, nullptr);
-    }
-    if (memory) {
-        vkFreeMemory(device, memory, nullptr);
-    }
-}
 VkDescriptorBufferInfo &VulkanBuffer::getBufferInfo() {
     return descriptorInfo;
 }

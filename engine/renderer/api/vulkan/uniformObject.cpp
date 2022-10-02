@@ -22,7 +22,7 @@ void VulkanUniformObject::setupBuffer(uint32_t bufferSize, void *data) {
 }
 
 void VulkanUniformObject::cleanupResources() const {
-    buffer->destroy();
+    _device->destroyBuffer(buffer);
 }
 
 } // namespace vkl

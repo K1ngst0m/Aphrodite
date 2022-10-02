@@ -25,8 +25,6 @@ public:
     void                    setupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     VkDescriptorBufferInfo &getBufferInfo();
 
-    void destroy() const;
-
 private:
     VkDevice               device;
     VkBuffer               buffer = VK_NULL_HANDLE;

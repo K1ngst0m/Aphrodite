@@ -15,8 +15,6 @@ public:
     VulkanImage *getImage();
     VulkanDevice *getDevice();
 
-    void destroy();
-
 private:
     VulkanDevice *_device;
     VulkanImage  *_image;

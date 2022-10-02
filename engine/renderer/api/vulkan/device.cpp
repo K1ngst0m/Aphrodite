@@ -531,7 +531,7 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     VkImageLayout defaultLayout = utils::getDefaultImageLayoutFromUsage(pCreateInfo->usage);
 
     *ppImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
-    if ((*ppImage)->getMemory() != VK_NULL_HANDLE){
+    if ((*ppImage)->getMemory() != VK_NULL_HANDLE) {
         return (*ppImage)->bind();
     }
     return VK_SUCCESS;
@@ -671,8 +671,33 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
 VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo,
                                           VulkanFramebuffer    **ppFramebuffer,
                                           uint32_t               attachmentCount,
-                                          VulkanImageView       **pAttachments) {
+                                          VulkanImageView      **pAttachments) {
     return VulkanFramebuffer::create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
 }
 
+void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer) {
+    if (pBuffer->getMemory() != VK_NULL_HANDLE) {
+        vkFreeMemory(logicalDevice, pBuffer->getMemory(), nullptr);
+    }
+    vkDestroyBuffer(logicalDevice, pBuffer->getHandle(), nullptr);
+    delete pBuffer;
+}
+void VulkanDevice::destroyImage(VulkanImage *pImage) {
+    if (pImage->getMemory() != VK_NULL_HANDLE) {
+        vkFreeMemory(logicalDevice, pImage->getMemory(), nullptr);
+    }
+    vkDestroyImage(logicalDevice, pImage->getHandle(), nullptr);
+    delete pImage;
+}
+void VulkanDevice::destroyImageView(VulkanImageView *pImageView) {
+    vkDestroyImageView(logicalDevice, pImageView->getHandle(), nullptr);
+    delete pImageView;
+}
+void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass) {
+    vkDestroyRenderPass(logicalDevice, pRenderpass->getHandle(), nullptr);
+    delete pRenderpass;
+}
+void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
+    delete pFramebuffer;
+}
 } // namespace vkl

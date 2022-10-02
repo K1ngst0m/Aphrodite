@@ -46,6 +46,24 @@ public:
                              VulkanImageView    **ppImageView,
                              VulkanImage         *pImage);
 
+    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo,
+                                VulkanFramebuffer    **ppFramebuffer,
+                                uint32_t               attachmentCount,
+                                VulkanImageView      **pAttachments);
+
+    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
+                              VulkanRenderPass                          **ppRenderPass,
+                              const std::vector<VkAttachmentDescription> &colorAttachments,
+                              const VkAttachmentDescription              &depthAttachment);
+
+public:
+    void destroyBuffer(VulkanBuffer *pBuffer);
+    void destroyImage(VulkanImage *pImage);
+    void destroyImageView(VulkanImageView *pImageView);
+    void destroyFramebuffers(VulkanFramebuffer *pFramebuffer);
+    void destoryRenderPass(VulkanRenderPass *pRenderpass);
+
+public:
     void transitionImageLayout(VkQueue       queue,
                                VulkanImage  *image,
                                VkImageLayout oldLayout,
@@ -59,16 +77,6 @@ public:
     void copyBufferToImage(VkQueue       queue,
                            VulkanBuffer *buffer,
                            VulkanImage  *image);
-
-    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo,
-                                VulkanFramebuffer    **ppFramebuffer,
-                                uint32_t               attachmentCount,
-                                VulkanImageView       **pAttachments);
-
-    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
-                              VulkanRenderPass                          **ppRenderPass,
-                              const std::vector<VkAttachmentDescription> &colorAttachments,
-                              const VkAttachmentDescription              &depthAttachment);
 
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,

@@ -112,7 +112,7 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
 
         _textures.push_back(texture);
 
-        stagingBuffer->destroy();
+        _device->destroyBuffer(stagingBuffer);
     }
 }
 void VulkanRenderObject::loadResouces(VkQueue queue) {
@@ -159,16 +159,17 @@ void VulkanRenderObject::draw(VkPipelineLayout layout, VkCommandBuffer drawCmd) 
     }
 }
 void VulkanRenderObject::cleanupResources() {
-    _vertexBuffer.buffer->destroy();
-    _indexBuffer.buffer->destroy();
-    for (auto &texture : _textures) {
-        texture.imageView->destroy();
-        texture.image->destroy();
+    _device->destroyBuffer(_vertexBuffer.buffer);
+    _device->destroyBuffer(_indexBuffer.buffer);
+
+    for (TextureGpuData& texture : _textures) {
+        _device->destroyImage(texture.image);
+        _device->destroyImageView(texture.imageView);
         vkDestroySampler(_device->getLogicalDevice(), texture.sampler, nullptr);
     }
 
-    _emptyTexture.imageView->destroy();
-    _emptyTexture.image->destroy();
+    _device->destroyImage(_emptyTexture.image);
+    _device->destroyImageView(_emptyTexture.imageView);
     vkDestroySampler(_device->getLogicalDevice(), _emptyTexture.sampler, nullptr);
 }
 uint32_t VulkanRenderObject::getSetCount() {
@@ -221,7 +222,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
 
         _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
 
-        stagingBuffer->destroy();
+        _device->destroyBuffer(stagingBuffer);
     }
 
     // setup index buffer
@@ -253,7 +254,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
 
         _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
 
-        stagingBuffer->destroy();
+        _device->destroyBuffer(stagingBuffer);
     }
 }
 glm::mat4 VulkanRenderObject::getTransform() const {
@@ -312,6 +313,6 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
     _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler, _emptyTexture.imageView->getHandle(), _emptyTexture.image->getImageLayout());
 
-    stagingBuffer->destroy();
+    _device->destroyBuffer(stagingBuffer);
 }
 } // namespace vkl

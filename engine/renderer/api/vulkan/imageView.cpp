@@ -23,8 +23,4 @@ VulkanImage *VulkanImageView::getImage() {
 VulkanDevice *VulkanImageView::getDevice() {
     return _device;
 }
-
-void VulkanImageView::destroy() {
-    vkDestroyImageView(_device->getLogicalDevice(), getHandle(), nullptr);
-}
 } // namespace vkl

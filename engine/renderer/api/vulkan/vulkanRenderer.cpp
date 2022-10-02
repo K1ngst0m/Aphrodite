@@ -514,8 +514,8 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
         }
 
         m_deletionQueue.push_function([&]() {
-            fb.depthImage->destroy();
-            fb.depthImageView->destroy();
+            m_device->destroyImage(fb.depthImage);
+            m_device->destroyImageView(fb.depthImageView);
         });
     }
 }
@@ -530,16 +530,21 @@ void VulkanRenderer::_createDefaultColorAttachments() {
             createInfo.extent    = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
             createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            createInfo.format    = FORMAT_R8G8B8A8_SRGB;
+            createInfo.format    = FORMAT_B8G8R8A8_SRGB;
             m_device->createImage(&createInfo, &fb.colorImage);
         }
 
         {
             ImageViewCreateInfo createInfo{};
-            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
+            createInfo.format   = FORMAT_B8G8R8A8_SRGB;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             m_device->createImageView(&createInfo, &fb.colorImageView, fb.colorImage);
         }
+
+        m_deletionQueue.push_function([&]() {
+            m_device->destroyImage(fb.colorImage);
+            m_device->destroyImageView(fb.colorImageView);
+        });
     }
 }
 } // namespace vkl

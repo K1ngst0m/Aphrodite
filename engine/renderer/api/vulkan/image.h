@@ -16,7 +16,6 @@ public:
     VkImageLayout  getImageLayout();
 
     VkResult bind(VkDeviceSize offset = 0) const;
-    void     destroy() const;
 
 private:
     VulkanDevice  *_device             = nullptr;
