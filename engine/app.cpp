@@ -2,37 +2,28 @@
 
 namespace vkl {
 vklApp::vklApp(std::string sessionName, uint32_t winWidth, uint32_t winHeight)
-    : m_sessionName(std::move(sessionName)), m_windowData(std::make_shared<WindowData>(winWidth, winHeight)),
+    : m_sessionName(std::move(sessionName)),
       m_mouseData(winWidth / 2.0f, winHeight / 2.0f) {
+    m_window.init(winWidth, winHeight);
 }
 
 void vklApp::initWindow() {
-    assert(glfwInit());
-    assert(glfwVulkanSupported());
+    glfwSetWindowUserPointer(m_window.getHandle(), this);
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    m_windowData->window = glfwCreateWindow(m_windowData->width, m_windowData->height, "Demo", nullptr, nullptr);
-    assert(m_windowData->window);
-
-    glfwSetWindowUserPointer(m_windowData->window, this);
-
-    glfwSetFramebufferSizeCallback(m_windowData->window, [](GLFWwindow *window, int width, int height) {
-        auto *app                 = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
-        app->m_windowData->width   = width;
-        app->m_windowData->height  = height;
-        app->m_framebufferResized = true;
+    m_window.setCursorPosCallback([&](double xposIn, double yposIn) {
+        mouseHandleDerive(xposIn, yposIn);
     });
 
-    glfwSetCursorPosCallback(m_windowData->window, [](GLFWwindow *window, double xposIn, double yposIn) {
-        auto *app = reinterpret_cast<vklApp *>(glfwGetWindowUserPointer(window));
-        app->mouseHandleDerive(xposIn, yposIn);
+    m_window.setFramebufferSizeCallback([&](int width, int height) {
+        m_framebufferResized = true;
+    });
+
+    m_window.setKeyCallback([&](int key, int scancode, int action, int mods) {
+        keyboardHandleDerive(key, scancode, action, mods);
     });
 
     m_deletionQueue.push_function([=]() {
-        glfwDestroyWindow(m_windowData->window);
-        glfwTerminate();
+        m_window.cleanup();
     });
 }
 
@@ -42,7 +33,7 @@ void vklApp::cleanup() {
 
 void vklApp::initRenderer() {
     m_renderer = Renderer::CreateRenderer(RenderBackend::VULKAN);
-    m_renderer->setWindowData(m_windowData);
+    m_renderer->setWindowData(m_window.getWindowData());
     m_renderer->initDevice();
 
     m_deletionQueue.push_function([&]() {
@@ -69,43 +60,53 @@ void vklApp::mouseHandleDerive(int xposIn, int yposIn) {
     m_defaultCamera->rotate(glm::vec3(dy * m_defaultCamera->getRotationSpeed(), -dx * m_defaultCamera->getRotationSpeed(), 0.0f));
 }
 
-void vklApp::keyboardHandleDerive() {
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_1) == GLFW_PRESS) {
-        if (m_mouseData.isCursorDisable) {
-            glfwSetInputMode(m_windowData->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        } else {
-            glfwSetInputMode(m_windowData->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+void vklApp::keyboardHandleDerive(int key, int scancode, int action, int mods) {
+    if (action == GLFW_PRESS) {
+        switch (key) {
+        case GLFW_KEY_ESCAPE:
+            m_window.close();
+            break;
+        case GLFW_KEY_1:
+            m_window.toggleCurosrVisibility();
+            break;
+        case GLFW_KEY_W:
+            m_defaultCamera->setMovement(CameraDirection::UP, true);
+            break;
+        case GLFW_KEY_A:
+            m_defaultCamera->setMovement(CameraDirection::LEFT, true);
+            break;
+        case GLFW_KEY_S:
+            m_defaultCamera->setMovement(CameraDirection::DOWN, true);
+            break;
+        case GLFW_KEY_D:
+            m_defaultCamera->setMovement(CameraDirection::RIGHT, true);
+            break;
         }
     }
 
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(m_windowData->window, true);
-
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_W) == GLFW_PRESS)
-        m_defaultCamera->setMovement(CameraDirection::UP, true);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_S) == GLFW_PRESS)
-        m_defaultCamera->setMovement(CameraDirection::DOWN, true);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_A) == GLFW_PRESS)
-        m_defaultCamera->setMovement(CameraDirection::LEFT, true);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_D) == GLFW_PRESS)
-        m_defaultCamera->setMovement(CameraDirection::RIGHT, true);
-
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_W) == GLFW_RELEASE)
-        m_defaultCamera->setMovement(CameraDirection::UP, false);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_S) == GLFW_RELEASE)
-        m_defaultCamera->setMovement(CameraDirection::DOWN, false);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_A) == GLFW_RELEASE)
-        m_defaultCamera->setMovement(CameraDirection::LEFT, false);
-    if (glfwGetKey(m_windowData->window, GLFW_KEY_D) == GLFW_RELEASE)
-        m_defaultCamera->setMovement(CameraDirection::RIGHT, false);
+    if (action == GLFW_RELEASE) {
+        switch (key) {
+        case GLFW_KEY_W:
+            m_defaultCamera->setMovement(CameraDirection::UP, false);
+            break;
+        case GLFW_KEY_A:
+            m_defaultCamera->setMovement(CameraDirection::LEFT, false);
+            break;
+        case GLFW_KEY_S:
+            m_defaultCamera->setMovement(CameraDirection::DOWN, false);
+            break;
+        case GLFW_KEY_D:
+            m_defaultCamera->setMovement(CameraDirection::RIGHT, false);
+            break;
+        }
+    }
 
     m_defaultCamera->processMovement(m_frameData.deltaTime);
 }
 
 void vklApp::run() {
-    while (!glfwWindowShouldClose(m_windowData->window)) {
-        glfwPollEvents();
-        keyboardHandleDerive();
+    while (!m_window.shouldClose()) {
+        m_window.pollEvents();
         drawFrame();
     }
 

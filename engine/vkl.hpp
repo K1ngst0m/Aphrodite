@@ -18,6 +18,9 @@
 #include "renderer/api/vulkan/vkUtils.h"
 #include "renderer/api/vulkan/vulkanRenderer.h"
 
+#include "common.h"
+#include "window.h"
+
 #include "scene/camera.h"
 #include "scene/entity.h"
 #include "scene/light.h"

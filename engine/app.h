@@ -53,13 +53,13 @@ protected:
     virtual void drawFrame() = 0;
 
 protected:
-    virtual void keyboardHandleDerive();
+    virtual void keyboardHandleDerive(int key, int scancode, int action, int mods);
     virtual void mouseHandleDerive(int xposIn, int yposIn);
 
 protected:
     const std::string m_sessionName;
 
-    std::shared_ptr<WindowData> m_windowData;
+    Window m_window;
 
     FrameData  m_frameData;
     MouseData  m_mouseData;

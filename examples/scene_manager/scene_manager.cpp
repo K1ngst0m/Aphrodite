@@ -29,10 +29,10 @@ void scene_manager::loadScene() {
 
     // scene camera
    {
-        m_defaultCamera = m_sceneManager->createCamera(m_windowData->getAspectRatio());
+        m_defaultCamera = m_sceneManager->createCamera(m_window.getAspectRatio());
         m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
         m_defaultCamera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
-        m_defaultCamera->setPerspective(60.0f, m_windowData->getAspectRatio(), 0.1f, 256.0f);
+        m_defaultCamera->setPerspective(60.0f, m_window.getAspectRatio(), 0.1f, 256.0f);
         m_defaultCamera->setMovementSpeed(2.5f);
         m_defaultCamera->setRotationSpeed(0.1f);
 

@@ -3,27 +3,16 @@
 
 #include "common.h"
 #include "device.h"
+#include "window.h"
 
 class GLFWwindow;
 
 namespace vkl {
 class SceneRenderer;
+
 enum class RenderBackend {
     VULKAN,
     OPENGL,
-};
-
-struct WindowData {
-    GLFWwindow *window = nullptr;
-    uint32_t    width;
-    uint32_t    height;
-    bool        resized = false;
-    WindowData(uint32_t w, uint32_t h)
-        : width(w), height(h) {
-    }
-    float getAspectRatio() const {
-        return static_cast<float>(width) * height;
-    }
 };
 
 class Renderer {
