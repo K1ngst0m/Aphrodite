@@ -28,7 +28,7 @@ public:
     explicit VulkanDevice(VkPhysicalDevice physicalDevice);
     ~VulkanDevice() = default;
 
-    void create(VkSurfaceKHR                     surface,
+    void init(VkSurfaceKHR                     surface,
                 VkPhysicalDeviceFeatures         features,
                 const std::vector<const char *> &extension);
 

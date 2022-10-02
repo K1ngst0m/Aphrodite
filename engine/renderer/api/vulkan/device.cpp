@@ -554,7 +554,7 @@ uint32_t &VulkanDevice::GetQueueFamilyIndices(DeviceQueueType type) {
     }
     return queueFamilyIndices.graphics;
 }
-void VulkanDevice::create(VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
+void VulkanDevice::init(VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
     createLogicalDevice(features, extension, nullptr);
     VkBool32                presentSupport = false;
     std::optional<uint32_t> presentQueueFamilyIndices;
