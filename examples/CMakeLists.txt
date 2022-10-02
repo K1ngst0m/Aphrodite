@@ -32,7 +32,8 @@ function(buildExamples)
 endfunction(buildExamples)
 
 set(EXAMPLES
-  scene_manager
+    triangle
+    scene_manager
 )
 
 buildExamples()
