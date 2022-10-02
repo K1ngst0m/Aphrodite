@@ -3,6 +3,7 @@
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
+#include "renderpass.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
@@ -530,7 +531,10 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     VkImageLayout defaultLayout = utils::getDefaultImageLayoutFromUsage(pCreateInfo->usage);
 
     *ppImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
-    return (*ppImage)->bind();
+    if ((*ppImage)->getMemory() != VK_NULL_HANDLE){
+        return (*ppImage)->bind();
+    }
+    return VK_SUCCESS;
 }
 
 void VulkanDevice::destroy() const {
@@ -596,9 +600,15 @@ VkPhysicalDeviceFeatures &VulkanDevice::getDeviceEnabledFeatures() {
 VkPhysicalDeviceProperties &VulkanDevice::getDeviceProperties() {
     return properties;
 }
-VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments, VkAttachmentDescription &depthAttachment) {
+
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                       *createInfo,
+                                        VulkanRenderPass                          **ppRenderPass,
+                                        const std::vector<VkAttachmentDescription> &colorAttachments,
+                                        const VkAttachmentDescription              &depthAttachment) {
+
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference>   colorAttachmentRefs;
+
     for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
         attachments.push_back(colorAttachments[idx]);
         VkAttachmentReference ref{};
@@ -608,17 +618,15 @@ VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescri
     }
 
     attachments.push_back(depthAttachment);
-    VkAttachmentReference depthAttachmentRef{
-        .attachment = static_cast<uint32_t>(colorAttachments.size()),
-        .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = static_cast<uint32_t>(colorAttachments.size());
+    depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    VkSubpassDescription subpassDescription{
-        .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size()),
-        .pColorAttachments       = colorAttachmentRefs.data(),
-        .pDepthStencilAttachment = &depthAttachmentRef,
-    };
+    VkSubpassDescription subpassDescription{};
+    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size());
+    subpassDescription.pColorAttachments       = colorAttachmentRefs.data();
+    subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
 
     std::array<VkSubpassDependency, 2> dependencies;
 
@@ -649,15 +657,21 @@ VkRenderPass VulkanDevice::createRenderPass(const std::vector<VkAttachmentDescri
     };
 
     VkRenderPass renderpass;
-    VK_CHECK_RESULT(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderpass));
+    auto         result = vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderpass);
 
-    return renderpass;
+    if (result != VK_SUCCESS) {
+        return result;
+    }
+
+    *ppRenderPass = new VulkanRenderPass(renderpass, colorAttachmentRefs.size());
+
+    return VK_SUCCESS;
 }
 
 VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo,
                                           VulkanFramebuffer    **ppFramebuffer,
                                           uint32_t               attachmentCount,
-                                          VulkanImageView       *pAttachments) {
+                                          VulkanImageView       **pAttachments) {
     return VulkanFramebuffer::create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
 }
 

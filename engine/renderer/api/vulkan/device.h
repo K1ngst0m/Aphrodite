@@ -15,10 +15,13 @@ enum class DeviceQueueType {
 };
 
 class VulkanBuffer;
+class VulkanBufferView;
 class VulkanImage;
 class VulkanImageView;
 class VulkanSampler;
 class VulkanFramebuffer;
+class VulkanRenderPass;
+struct RenderPassCreateInfo;
 
 class VulkanDevice : public GraphicsDevice {
 public:
@@ -60,10 +63,12 @@ public:
     VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo,
                                 VulkanFramebuffer    **ppFramebuffer,
                                 uint32_t               attachmentCount,
-                                VulkanImageView       *pAttachments);
+                                VulkanImageView       **pAttachments);
 
-    VkRenderPass createRenderPass(const std::vector<VkAttachmentDescription> &colorAttachments,
-                                  VkAttachmentDescription                    &depthAttachment);
+    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
+                              VulkanRenderPass                          **ppRenderPass,
+                              const std::vector<VkAttachmentDescription> &colorAttachments,
+                              const VkAttachmentDescription              &depthAttachment);
 
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
