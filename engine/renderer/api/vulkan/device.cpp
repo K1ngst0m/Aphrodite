@@ -358,10 +358,7 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
     if (result != VK_SUCCESS)
         return result;
 
-    VkImageView imageView;
-    VK_CHECK_RESULT(vkCreateImageView(logicalDevice, &createInfo, nullptr, &imageView));
-
-    *ppImageView = VulkanImageView::createFromHandle(pCreateInfo, pImage, imageView);
+    *ppImageView = VulkanImageView::createFromHandle(pCreateInfo, pImage, handle);
 
     return VK_SUCCESS;
 }
@@ -474,9 +471,7 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     };
     VK_CHECK_RESULT(vkAllocateMemory(logicalDevice, &allocInfo, nullptr, &memory));
 
-    {
-        *ppBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
-    }
+    *ppBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
 
     // bind buffer and memory
     VkResult result = (*ppBuffer)->bind();

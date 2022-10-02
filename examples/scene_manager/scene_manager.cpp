@@ -6,18 +6,18 @@ void scene_manager::initDerive() {
 }
 
 void scene_manager::drawFrame() {
-    float currentFrame    = glfwGetTime();
-    m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
-    m_frameData.lastFrame = currentFrame;
+    // float currentFrame    = glfwGetTime();
+    // m_frameData.deltaTime = currentFrame - m_frameData.lastFrame;
+    // m_frameData.lastFrame = currentFrame;
 
-    m_renderer->prepareFrame();
-    m_renderer->submitFrame();
-    updateUniformBuffer();
+    // m_renderer->prepareFrame();
+    // m_renderer->submitFrame();
+    // updateUniformBuffer();
 }
 
 void scene_manager::updateUniformBuffer() {
-    m_sceneManager->update();
-    m_sceneRenderer->update();
+    // m_sceneManager->update();
+    // m_sceneRenderer->update();
 }
 
 void scene_manager::loadScene() {

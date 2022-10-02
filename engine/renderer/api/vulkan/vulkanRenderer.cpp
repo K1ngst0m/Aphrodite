@@ -349,6 +349,7 @@ void VulkanRenderer::submitFrame() {
     VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _windowData->resized) {
+        assert("recreate swapchain currently not support.");
         _windowData->resized = false;
         _recreateSwapChain();
     } else if (result != VK_SUCCESS) {
@@ -513,7 +514,7 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
             VK_CHECK_RESULT(m_device->createImageView(&createInfo, &fb.depthImageView, fb.depthImage));
         }
 
-        m_deletionQueue.push_function([&]() {
+        m_deletionQueue.push_function([=]() {
             m_device->destroyImage(fb.depthImage);
             m_device->destroyImageView(fb.depthImageView);
         });
@@ -541,7 +542,7 @@ void VulkanRenderer::_createDefaultColorAttachments() {
             m_device->createImageView(&createInfo, &fb.colorImageView, fb.colorImage);
         }
 
-        m_deletionQueue.push_function([&]() {
+        m_deletionQueue.push_function([=]() {
             m_device->destroyImage(fb.colorImage);
             m_device->destroyImageView(fb.colorImageView);
         });

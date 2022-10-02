@@ -1,9 +1,7 @@
 #ifndef VULKAN_SWAPCHAIN_H_
 #define VULKAN_SWAPCHAIN_H_
 
-#include "common.h"
 #include "device.h"
-#include "vkInit.hpp"
 
 namespace vkl {
 struct SwapChainSupportDetails {
@@ -19,7 +17,7 @@ struct SwapChainCreateInfo {
     VkBool32           tripleBuffer;
 };
 
-class VulkanSwapChain {
+class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR> {
 public:
     void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, GLFWwindow *window);
     void cleanup();
@@ -36,13 +34,13 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
-    void                          allocate(GLFWwindow * window);
-    std::shared_ptr<VulkanDevice> _device;
-    std::vector<VulkanImage *>    _swapChainImages;
-    VkSwapchainKHR                _swapChain;
+    void allocate(GLFWwindow *window);
 
-    VkFormat     _swapChainImageFormat;
-    VkExtent2D   _swapChainExtent;
+    std::shared_ptr<VulkanDevice> _device;
+    std::vector<VulkanImage *>    _images;
+
+    VkFormat     _imageFormat;
+    VkExtent2D   _extent;
     VkSurfaceKHR _surface;
 
     DeletionQueue _deletionQueue;

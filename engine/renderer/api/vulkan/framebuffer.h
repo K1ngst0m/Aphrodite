@@ -12,7 +12,7 @@ public:
 
     ~VulkanFramebuffer() = default;
 
-    VkFramebuffer getHandle(VulkanRenderPass* pRenderPass);
+    VkFramebuffer getHandle(VulkanRenderPass *pRenderPass);
 
     uint32_t GetAttachmentCount() const;
 
@@ -21,11 +21,10 @@ public:
     VulkanImageView *GetAttachment(uint32_t attachmentIndex);
 
 private:
-    VulkanDevice                                         *m_device = nullptr;
-    const void                                           *m_pNext;
-    std::vector<VulkanImageView *>                        m_attachments;
-    std::unordered_map<VulkanRenderPass *, VkFramebuffer> m_cache;
-    SpinLock                                              m_spinLock;
+    VulkanDevice                                         *_device = nullptr;
+    std::vector<VulkanImageView *>                        _attachments;
+    std::unordered_map<VulkanRenderPass *, VkFramebuffer> _cache;
+    SpinLock                                              _spinLock;
 };
 } // namespace vkl
 

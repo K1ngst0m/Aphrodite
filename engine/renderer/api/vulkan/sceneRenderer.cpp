@@ -25,12 +25,15 @@ void VulkanSceneRenderer::loadResources() {
 
 void VulkanSceneRenderer::cleanupResources() {
     vkDestroyDescriptorPool(_device->getLogicalDevice(), _descriptorPool, nullptr);
+
     for (auto &renderObject : _renderList) {
         renderObject->cleanupResources();
     }
+
     for (auto &ubo : _uniformList) {
         ubo->cleanupResources();
     }
+
     _unlitEffect->destroy(_device->getLogicalDevice());
     _unlitPass->destroy(_device->getLogicalDevice());
     _defaultLitEffect->destroy(_device->getLogicalDevice());

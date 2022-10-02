@@ -6,8 +6,7 @@ VulkanBuffer *VulkanBuffer::createFromHandle(VulkanDevice *pDevice, BufferCreate
     VulkanBuffer *instance = new VulkanBuffer;
     memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
     instance->device = pDevice->getLogicalDevice();
-
-    instance->buffer = buffer;
+    instance->_handle = buffer;
     instance->memory = memory;
 
     return instance;
@@ -44,7 +43,7 @@ void VulkanBuffer::unmap() {
  * @return VkResult of the bindBufferMemory call
  */
 VkResult VulkanBuffer::bind(VkDeviceSize offset) const {
-    return vkBindBufferMemory(device, buffer, memory, offset);
+    return vkBindBufferMemory(device, _handle, memory, offset);
 }
 
 /**
@@ -56,7 +55,7 @@ VkResult VulkanBuffer::bind(VkDeviceSize offset) const {
  */
 void VulkanBuffer::setupDescriptor(VkDeviceSize size, VkDeviceSize offset) {
     descriptorInfo.offset = offset;
-    descriptorInfo.buffer = buffer;
+    descriptorInfo.buffer = _handle;
     descriptorInfo.range  = size;
 }
 
