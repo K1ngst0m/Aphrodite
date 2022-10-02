@@ -2,6 +2,16 @@
 #include "device.h"
 
 namespace vkl {
+VulkanBuffer *VulkanBuffer::createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
+    VulkanBuffer *instance = new VulkanBuffer;
+    memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
+    instance->device = pDevice->getLogicalDevice();
+
+    instance->buffer = buffer;
+    instance->memory = memory;
+
+    return instance;
+}
 /**
  * Map a memory range of this buffer. If successful, mapped points to the specified buffer range.
  *
@@ -113,16 +123,6 @@ void VulkanBuffer::destroy() const {
 }
 VkDescriptorBufferInfo &VulkanBuffer::getBufferInfo() {
     return descriptorInfo;
-}
-VulkanBuffer *VulkanBuffer::createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
-    VulkanBuffer *instance = new VulkanBuffer;
-    memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
-    instance->device = pDevice->getLogicalDevice();
-
-    instance->buffer = buffer;
-    instance->memory = memory;
-
-    return instance;
 }
 VkDeviceMemory VulkanBuffer::getMemory() {
     return memory;

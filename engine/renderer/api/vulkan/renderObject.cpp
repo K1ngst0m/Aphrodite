@@ -55,7 +55,7 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
         uint32_t       height        = image.height;
 
         // staging buffer
-        VulkanBuffer * stagingBuffer;
+        VulkanBuffer *stagingBuffer;
         {
             BufferCreateInfo createInfo{};
             createInfo.size     = imageDataSize;
@@ -90,11 +90,10 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
             _device->transitionImageLayout(queue, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
-
         // texture image view
         {
             ImageViewCreateInfo createInfo{};
-            createInfo.format = FORMAT_R8G8B8A8_SRGB;
+            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             _device->createImageView(&createInfo, &texture.imageView, texture.image);
         }
@@ -199,7 +198,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         auto         vSize      = vertices.size();
         VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertexBuffer.vertices[0]) * _vertexBuffer.vertices.size() : vSize;
         // using staging buffer
-        vkl::VulkanBuffer * stagingBuffer;
+        vkl::VulkanBuffer *stagingBuffer;
         {
             BufferCreateInfo createInfo{};
             createInfo.size     = bufferSize;
@@ -230,7 +229,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
         auto         iSize      = indices.size();
         VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indexBuffer.indices[0]) * _indexBuffer.indices.size() : iSize;
         // using staging buffer
-        vkl::VulkanBuffer * stagingBuffer;
+        vkl::VulkanBuffer *stagingBuffer;
 
         {
             BufferCreateInfo createInfo{};
@@ -269,8 +268,8 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
     uint32_t imageDataSize = width * height * 4;
 
     // Load texture from image buffer
-    vkl::VulkanBuffer * stagingBuffer;
-    BufferCreateInfo  createInfo{};
+    vkl::VulkanBuffer *stagingBuffer;
+    BufferCreateInfo   createInfo{};
     createInfo.size     = imageDataSize;
     createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
     createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -283,10 +282,10 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
     {
         ImageCreateInfo createInfo{};
-        createInfo.extent = {width, height, 1};
-        createInfo.format = FORMAT_R8G8B8A8_SRGB;
-        createInfo.tiling = IMAGE_TILING_OPTIMAL;
-        createInfo.usage = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+        createInfo.extent   = {width, height, 1};
+        createInfo.format   = FORMAT_R8G8B8A8_SRGB;
+        createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+        createInfo.usage    = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
         createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
         _device->createImage(&createInfo, &_emptyTexture.image);
@@ -298,7 +297,7 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
     {
         ImageViewCreateInfo createInfo{};
-        createInfo.format = FORMAT_R8G8B8A8_SRGB;
+        createInfo.format   = FORMAT_R8G8B8A8_SRGB;
         createInfo.viewType = IMAGE_VIEW_TYPE_2D;
         VK_CHECK_RESULT(_device->createImageView(&createInfo, &_emptyTexture.imageView, _emptyTexture.image));
     }

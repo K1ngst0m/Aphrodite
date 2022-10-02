@@ -1,5 +1,6 @@
 #include "sceneRenderer.h"
 #include "device.h"
+#include "framebuffer.h"
 #include "pipeline.h"
 #include "renderObject.h"
 #include "uniformObject.h"

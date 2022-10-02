@@ -1,11 +1,12 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
 #include "device.h"
-#include "image.h"
 #include "framebuffer.h"
+#include "image.h"
 #include "imageView.h"
 #include "renderObject.h"
 #include "renderer/sceneRenderer.h"
+#include "renderpass.h"
 #include "sceneRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
@@ -66,33 +67,22 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
-    m_defaultColorAttachments.resize(m_swapChain.getImageCount());
     m_defaultFramebuffers.resize(m_swapChain.getImageCount());
-
-    for (size_t i = 0; i < m_defaultFramebuffers.size(); i++) {
+    _createDefaultColorAttachments();
+    _createDefaultDepthAttachments();
+    for (auto &fb : m_defaultFramebuffers) {
         {
-            ImageViewCreateInfo createInfo{};
-            createInfo.format                  = FORMAT_R8G8B8A8_SRGB;
-            createInfo.viewType                = IMAGE_VIEW_TYPE_2D;
-            m_defaultColorAttachments[i].image = m_swapChain.getImage(i);
-            m_device->createImageView(&createInfo, &m_defaultColorAttachments[i].imageView, m_defaultColorAttachments[i].image);
-        }
-
-        std::vector<VkImageView> attachments = {m_defaultColorAttachments[i].imageView->getHandle(), m_defaultDepthAttachment.imageView->getHandle()};
-        {
-            FramebufferCreateInfo createInfo{};
-            createInfo.width = m_swapChain.getExtent().width;
+            std::vector<VulkanImageView *> attachments{fb.colorImageView, fb.depthImageView};
+            FramebufferCreateInfo          createInfo{};
+            createInfo.width  = m_swapChain.getExtent().width;
             createInfo.height = m_swapChain.getExtent().height;
-            VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &m_defaultFramebuffers[i], attachments.size(), &attachments.data()));
-
+            VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &fb.framebuffer, attachments.size(), attachments.data()));
         }
+
+        m_deletionQueue.push_function([=]() {
+            vkDestroyFramebuffer(m_device->getLogicalDevice(), fb.framebuffer->getHandle(m_defaultRenderPass), nullptr);
+        });
     }
-
-    m_deletionQueue.push_function([=]() {
-        for (auto &framebuffer : m_defaultFramebuffers) {
-            vkDestroyFramebuffer(m_device->getLogicalDevice(), framebuffer, nullptr);
-        }
-    });
 }
 
 std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
@@ -238,10 +228,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
         colorAttachment,
     };
 
-    m_defaultRenderPass = m_device->createRenderPass(colorAttachments, depthAttachment);
+    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_defaultRenderPass, colorAttachments, depthAttachment));
 
     m_deletionQueue.push_function([=]() {
-        vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass, nullptr);
+        vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass->getHandle(), nullptr);
     });
 }
 
@@ -265,7 +255,6 @@ void VulkanRenderer::_recreateSwapChain() {
     m_swapChain.cleanup();
     m_swapChain.create(m_device, m_surface, _windowData->window);
 
-    _createDefaultDepthResources();
     _createDefaultFramebuffers();
 }
 
@@ -429,7 +418,7 @@ void VulkanRenderer::initImGui() {
         .MSAASamples    = VK_SAMPLE_COUNT_1_BIT,
     };
 
-    ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass);
+    ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass->getHandle());
 
     // execute a gpu command to upload imgui font textures
     immediateSubmit(graphicsQueue, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
@@ -459,7 +448,6 @@ void VulkanRenderer::initDefaultResource() {
     _setupPipelineBuilder();
     _createCommandBuffers();
     _createDefaultRenderPass();
-    _createDefaultDepthResources();
     _createDefaultFramebuffers();
     _createSyncObjects();
 }
@@ -488,7 +476,7 @@ void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, 
     commands();
 }
 VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
-    return m_defaultRenderPass;
+    return m_defaultRenderPass->getHandle();
 }
 VkCommandBuffer VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
     return m_defaultCommandBuffers[idx];
@@ -504,32 +492,54 @@ std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
     return m_device;
 }
 
-void VulkanRenderer::_createDefaultDepthResources() {
-    {
-        VkFormat        depthFormat = m_device->findDepthFormat();
-        ImageCreateInfo createInfo{};
-        createInfo.extent   = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
-        createInfo.format   = static_cast<Format>(depthFormat);
-        createInfo.tiling   = IMAGE_TILING_OPTIMAL;
-        createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        VK_CHECK_RESULT(m_device->createImage(&createInfo, &m_defaultDepthAttachment.image));
-        m_device->transitionImageLayout(transferQueue, m_defaultDepthAttachment.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    }
+void VulkanRenderer::_createDefaultDepthAttachments() {
+    for (auto &fb : m_defaultFramebuffers) {
+        {
+            VkFormat        depthFormat = m_device->findDepthFormat();
+            ImageCreateInfo createInfo{};
+            createInfo.extent   = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
+            createInfo.format   = static_cast<Format>(depthFormat);
+            createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+            createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
+            m_device->transitionImageLayout(transferQueue, fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        }
 
-    {
-        ImageViewCreateInfo createInfo{};
-        createInfo.format   = FORMAT_D32_SFLOAT;
-        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-        VK_CHECK_RESULT(m_device->createImageView(&createInfo, &m_defaultDepthAttachment.imageView, m_defaultDepthAttachment.image));
-    }
+        {
+            ImageViewCreateInfo createInfo{};
+            createInfo.format   = FORMAT_D32_SFLOAT;
+            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            VK_CHECK_RESULT(m_device->createImageView(&createInfo, &fb.depthImageView, fb.depthImage));
+        }
 
-    m_deletionQueue.push_function([&]() {
-        m_defaultDepthAttachment.image->destroy();
-        m_defaultDepthAttachment.imageView->destroy();
-    });
+        m_deletionQueue.push_function([&]() {
+            fb.depthImage->destroy();
+            fb.depthImageView->destroy();
+        });
+    }
 }
-VulkanFramebuffer* VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
-    return m_defaultFramebuffers[idx];
+VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
+    return m_defaultFramebuffers[idx].framebuffer->getHandle(m_defaultRenderPass);
+}
+void VulkanRenderer::_createDefaultColorAttachments() {
+    for (auto &fb : m_defaultFramebuffers) {
+        {
+            ImageCreateInfo createInfo{};
+            createInfo.imageType = IMAGE_TYPE_2D;
+            createInfo.extent    = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
+            createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            createInfo.format    = FORMAT_R8G8B8A8_SRGB;
+            m_device->createImage(&createInfo, &fb.colorImage);
+        }
+
+        {
+            ImageViewCreateInfo createInfo{};
+            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
+            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            m_device->createImageView(&createInfo, &fb.colorImageView, fb.colorImage);
+        }
+    }
 }
 } // namespace vkl
