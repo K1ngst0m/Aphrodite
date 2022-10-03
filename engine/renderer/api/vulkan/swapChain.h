@@ -23,7 +23,7 @@ public:
     void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, WindowData *window);
     void cleanup();
 
-    VkResult acqureNextImage(uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
+    VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
 
     VkFormat         getFormat() const;
     VkExtent2D       getExtent() const;

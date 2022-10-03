@@ -6,14 +6,6 @@
 #include "vkUtils.h"
 
 namespace vkl {
-
-enum class DeviceQueueType {
-    COMPUTE,
-    GRAPHICS,
-    TRANSFER,
-    PRESENT,
-};
-
 class VulkanBuffer;
 class VulkanBufferView;
 class VulkanImage;
@@ -23,14 +15,21 @@ class VulkanFramebuffer;
 class VulkanRenderPass;
 struct RenderPassCreateInfo;
 
+enum class DeviceQueueType {
+    COMPUTE,
+    GRAPHICS,
+    TRANSFER,
+    PRESENT,
+};
+
 class VulkanDevice : public GraphicsDevice {
 public:
     explicit VulkanDevice(VkPhysicalDevice physicalDevice);
     ~VulkanDevice() = default;
 
     void init(VkSurfaceKHR                     surface,
-                VkPhysicalDeviceFeatures         features,
-                const std::vector<const char *> &extension);
+              VkPhysicalDeviceFeatures         features,
+              const std::vector<const char *> &extension);
 
     void destroy() const;
 
@@ -78,6 +77,10 @@ public:
                            VulkanBuffer *buffer,
                            VulkanImage  *image);
 
+    void copyImage(VkQueue      queue,
+                   VulkanImage *srcImage,
+                   VulkanImage *dstImage);
+
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
                                 uint32_t         count);
@@ -116,24 +119,25 @@ private:
 
 private:
     struct {
+        VkDevice                             logicalDevice  = VK_NULL_HANDLE;
+        VkPhysicalDevice                     physicalDevice = VK_NULL_HANDLE;
+        VkPhysicalDeviceProperties           properties;
+        VkPhysicalDeviceFeatures             features;
+        VkPhysicalDeviceFeatures             enabledFeatures;
+        VkPhysicalDeviceMemoryProperties     memoryProperties;
+        std::vector<std::string>             supportedExtensions;
+        std::vector<VkQueueFamilyProperties> queueFamilyProperties;
+    } _deviceInfo;
+
+    struct {
         uint32_t graphics;
         uint32_t compute;
         uint32_t transfer;
         uint32_t present;
-    } queueFamilyIndices;
+    } _queueFamilyIndices;
 
-    VkPhysicalDevice                     physicalDevice;
-    VkPhysicalDeviceProperties           properties;
-    VkPhysicalDeviceFeatures             features;
-    VkPhysicalDeviceFeatures             enabledFeatures;
-    VkPhysicalDeviceMemoryProperties     memoryProperties;
-    std::vector<std::string>             supportedExtensions;
-    std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-
-    VkDevice logicalDevice;
-
-    VkCommandPool commandPool        = VK_NULL_HANDLE;
-    bool          enableDebugMarkers = true;
+    VkCommandPool _commandPool        = VK_NULL_HANDLE;
+    bool          _enableDebugMarkers = true;
 };
 
 } // namespace vkl

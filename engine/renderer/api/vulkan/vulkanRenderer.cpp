@@ -299,7 +299,7 @@ void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommand
 void VulkanRenderer::prepareFrame() {
     vkWaitForFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
-    VkResult result = m_swapChain.acqureNextImage(INT64_MAX, m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
+    VkResult result = m_swapChain.acqureNextImage(m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         assert("swapchain recreation current not support.");
@@ -314,6 +314,10 @@ void VulkanRenderer::prepareFrame() {
     vkResetFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence);
 }
 void VulkanRenderer::submitFrame() {
+    auto presentImage = m_swapChain.getImage(m_imageIdx);
+    auto colorAttachment = m_defaultFramebuffers[m_imageIdx].colorImage;
+    m_device->copyImage(getDeviceQueue(DeviceQueueType::TRANSFER), colorAttachment, presentImage);
+
     VkSemaphore          waitSemaphores[]   = {m_defaultSyncObjects[m_currentFrame].renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore          signalSemaphores[] = {m_defaultSyncObjects[m_currentFrame].presentSemaphore};
@@ -516,7 +520,7 @@ void VulkanRenderer::_createDefaultColorAttachments() {
             createInfo.imageType = IMAGE_TYPE_2D;
             createInfo.extent    = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
             createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             createInfo.format    = FORMAT_B8G8R8A8_SRGB;
             m_device->createImage(&createInfo, &fb.colorImage);
         }
