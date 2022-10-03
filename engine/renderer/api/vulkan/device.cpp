@@ -9,39 +9,6 @@
 
 namespace vkl {
 /**
- * Default constructor
- *
- * @param physicalDevice Physical device that is to be used
- */
-VulkanDevice::VulkanDevice(VkPhysicalDevice physicalDevice) {
-    assert(physicalDevice);
-    this->_deviceInfo.physicalDevice = physicalDevice;
-
-    vkGetPhysicalDeviceProperties(physicalDevice, &_deviceInfo.properties);
-    vkGetPhysicalDeviceFeatures(physicalDevice, &_deviceInfo.features);
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &_deviceInfo.memoryProperties);
-
-    uint32_t queueFamilyCount;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-    assert(queueFamilyCount > 0);
-    _deviceInfo.queueFamilyProperties.resize(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, _deviceInfo.queueFamilyProperties.data());
-
-    // Get list of supported extensions
-    uint32_t extCount = 0;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);
-    if (extCount > 0) {
-        std::vector<VkExtensionProperties> extensions(extCount);
-        if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, &extensions.front()) ==
-            VK_SUCCESS) {
-            for (auto ext : extensions) {
-                _deviceInfo.supportedExtensions.emplace_back(ext.extensionName);
-            }
-        }
-    }
-}
-
-/**
  * Get the index of a memory type that has all the requested property bits set
  *
  * @param typeBits Bit mask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
@@ -554,7 +521,34 @@ uint32_t &VulkanDevice::GetQueueFamilyIndices(DeviceQueueType type) {
     }
     return _queueFamilyIndices.graphics;
 }
-void VulkanDevice::init(VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
+
+void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
+    assert(physicalDevice);
+    this->_deviceInfo.physicalDevice = physicalDevice;
+
+    vkGetPhysicalDeviceProperties(physicalDevice, &_deviceInfo.properties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &_deviceInfo.features);
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &_deviceInfo.memoryProperties);
+
+    uint32_t queueFamilyCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
+    assert(queueFamilyCount > 0);
+    _deviceInfo.queueFamilyProperties.resize(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, _deviceInfo.queueFamilyProperties.data());
+
+    // Get list of supported extensions
+    uint32_t extCount = 0;
+    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, nullptr);
+    if (extCount > 0) {
+        std::vector<VkExtensionProperties> extensions(extCount);
+        if (vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extCount, &extensions.front()) ==
+            VK_SUCCESS) {
+            for (auto ext : extensions) {
+                _deviceInfo.supportedExtensions.emplace_back(ext.extensionName);
+            }
+        }
+    }
+
     createLogicalDevice(features, extension, nullptr);
     VkBool32                presentSupport = false;
     std::optional<uint32_t> presentQueueFamilyIndices;
@@ -573,6 +567,7 @@ void VulkanDevice::init(VkSurfaceKHR surface, VkPhysicalDeviceFeatures features,
 
     _queueFamilyIndices.present = presentQueueFamilyIndices.value();
 }
+
 VkDevice VulkanDevice::getLogicalDevice() {
     return _deviceInfo.logicalDevice;
 }

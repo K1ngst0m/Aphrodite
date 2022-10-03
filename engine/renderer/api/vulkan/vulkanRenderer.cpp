@@ -188,9 +188,9 @@ void VulkanRenderer::_createDevice() {
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-    m_device = std::make_shared<VulkanDevice>(devices[0]);
+    m_device = std::make_shared<VulkanDevice>();
 
-    m_device->init(m_surface, m_enabledFeatures, deviceExtensions);
+    m_device->init(devices[0], m_surface, m_enabledFeatures, deviceExtensions);
 
     vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &graphicsQueue);
     vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT), 0, &presentQueue);

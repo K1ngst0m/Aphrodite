@@ -24,10 +24,8 @@ enum class DeviceQueueType {
 
 class VulkanDevice : public GraphicsDevice {
 public:
-    explicit VulkanDevice(VkPhysicalDevice physicalDevice);
-    ~VulkanDevice() = default;
-
-    void init(VkSurfaceKHR                     surface,
+    void init(VkPhysicalDevice                 physicalDevice,
+              VkSurfaceKHR                     surface,
               VkPhysicalDeviceFeatures         features,
               const std::vector<const char *> &extension);
 
