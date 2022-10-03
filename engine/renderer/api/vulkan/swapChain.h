@@ -20,7 +20,7 @@ struct SwapChainCreateInfo {
 
 class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR> {
 public:
-    void create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, WindowData *window);
+    void create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data);
     void cleanup();
 
     VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
@@ -37,8 +37,8 @@ private:
 private:
     void allocate(WindowData *windowData);
 
-    std::shared_ptr<VulkanDevice> _device;
-    std::vector<VulkanImage *>    _images;
+    VulkanDevice              *_device;
+    std::vector<VulkanImage *> _images;
 
     VkFormat     _imageFormat;
     VkExtent2D   _extent;

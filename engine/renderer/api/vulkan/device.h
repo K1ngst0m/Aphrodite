@@ -13,13 +13,18 @@ class VulkanImageView;
 class VulkanSampler;
 class VulkanFramebuffer;
 class VulkanRenderPass;
+class VulkanSwapChain;
+class WindowData;
 struct RenderPassCreateInfo;
 
-enum class DeviceQueueType {
-    COMPUTE,
-    GRAPHICS,
-    TRANSFER,
-    PRESENT,
+using QueueFamily = std::vector<VkQueue>;
+
+enum QueueFlags {
+    QUEUE_TYPE_COMPUTE,
+    QUEUE_TYPE_GRAPHICS,
+    QUEUE_TYPE_TRANSFER,
+    QUEUE_TYPE_PRESENT,
+    QUEUE_TYPE_COUNT,
 };
 
 class VulkanDevice : public GraphicsDevice {
@@ -53,12 +58,15 @@ public:
                               const std::vector<VkAttachmentDescription> &colorAttachments,
                               const VkAttachmentDescription              &depthAttachment);
 
+    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data);
+
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
     void destroyImage(VulkanImage *pImage);
     void destroyImageView(VulkanImageView *pImageView);
     void destroyFramebuffers(VulkanFramebuffer *pFramebuffer);
     void destoryRenderPass(VulkanRenderPass *pRenderpass);
+    void destroySwapchain(VulkanSwapChain *pSwapchain);
 
 public:
     void transitionImageLayout(VkQueue       queue,
@@ -105,12 +113,14 @@ public:
     VkDevice                    getLogicalDevice();
     VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
     VkPhysicalDeviceProperties &getDeviceProperties();
-    uint32_t                   &GetQueueFamilyIndices(DeviceQueueType type);
-    VkFormat                    findDepthFormat() const;
+    uint32_t                   &GetQueueFamilyIndices(QueueFlags type);
+    VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex);
+
+    VkFormat findDepthFormat() const;
 
 private:
     bool     extensionSupported(std::string_view extension) const;
-    VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain = true, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain = true, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
     uint32_t findQueueFamilies(VkQueueFlags queueFlags) const;
     uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr) const;
     VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
@@ -133,6 +143,8 @@ private:
         uint32_t transfer;
         uint32_t present;
     } _queueFamilyIndices;
+
+    std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
 
     VkCommandPool _commandPool        = VK_NULL_HANDLE;
     bool          _enableDebugMarkers = true;

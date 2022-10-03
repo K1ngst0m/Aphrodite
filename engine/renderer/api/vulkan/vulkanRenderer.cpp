@@ -68,15 +68,15 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
-    m_defaultFramebuffers.resize(m_swapChain.getImageCount());
+    m_defaultFramebuffers.resize(m_swapChain->getImageCount());
     _createDefaultColorAttachments();
     _createDefaultDepthAttachments();
     for (auto &fb : m_defaultFramebuffers) {
         {
             std::vector<VulkanImageView *> attachments{fb.colorImageView, fb.depthImageView};
             FramebufferCreateInfo          createInfo{};
-            createInfo.width  = m_swapChain.getExtent().width;
-            createInfo.height = m_swapChain.getExtent().height;
+            createInfo.width  = m_swapChain->getExtent().width;
+            createInfo.height = m_swapChain->getExtent().height;
             VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &fb.framebuffer, attachments.size(), attachments.data()));
         }
 
@@ -192,11 +192,6 @@ void VulkanRenderer::_createDevice() {
 
     m_device->init(devices[0], m_surface, m_enabledFeatures, deviceExtensions);
 
-    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &graphicsQueue);
-    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::PRESENT), 0, &presentQueue);
-    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::TRANSFER), 0, &transferQueue);
-    vkGetDeviceQueue(m_device->getLogicalDevice(), m_device->GetQueueFamilyIndices(DeviceQueueType::COMPUTE), 0, &computeQueue);
-
     m_deletionQueue.push_function([&]() {
         m_device->destroy();
     });
@@ -204,7 +199,7 @@ void VulkanRenderer::_createDevice() {
 
 void VulkanRenderer::_createDefaultRenderPass() {
     VkAttachmentDescription colorAttachment{
-        .format         = m_swapChain.getFormat(),
+        .format         = m_swapChain->getFormat(),
         .samples        = VK_SAMPLE_COUNT_1_BIT,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
@@ -237,14 +232,14 @@ void VulkanRenderer::_createDefaultRenderPass() {
 }
 
 void VulkanRenderer::_setupSwapChain() {
-    m_swapChain.create(m_device, m_surface, _windowData.get());
+    m_device->createSwapchain(m_surface, &m_swapChain, _windowData.get());
     m_deletionQueue.push_function([&]() {
-        m_swapChain.cleanup();
+        m_device->destroySwapchain(m_swapChain);
     });
 }
 
 void VulkanRenderer::_createCommandBuffers() {
-    m_defaultCommandBuffers.resize(m_swapChain.getImageCount());
+    m_defaultCommandBuffers.resize(m_swapChain->getImageCount());
     m_device->allocateCommandBuffers(m_defaultCommandBuffers.data(), m_defaultCommandBuffers.size());
 }
 
@@ -268,7 +263,7 @@ void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugU
 }
 
 void VulkanRenderer::_setupPipelineBuilder() {
-    m_pipelineBuilder.reset(m_swapChain.getExtent());
+    m_pipelineBuilder.reset(m_swapChain->getExtent());
 }
 
 void VulkanRenderer::_createSyncObjects() {
@@ -299,7 +294,7 @@ void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommand
 void VulkanRenderer::prepareFrame() {
     vkWaitForFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
-    VkResult result = m_swapChain.acqureNextImage(m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
+    VkResult result = m_swapChain->acqureNextImage(m_defaultSyncObjects[m_currentFrame].renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         assert("swapchain recreation current not support.");
@@ -314,9 +309,9 @@ void VulkanRenderer::prepareFrame() {
     vkResetFences(m_device->getLogicalDevice(), 1, &m_defaultSyncObjects[m_currentFrame].inFlightFence);
 }
 void VulkanRenderer::submitFrame() {
-    auto presentImage = m_swapChain.getImage(m_imageIdx);
+    auto presentImage    = m_swapChain->getImage(m_imageIdx);
     auto colorAttachment = m_defaultFramebuffers[m_imageIdx].colorImage;
-    m_device->copyImage(getDeviceQueue(DeviceQueueType::TRANSFER), colorAttachment, presentImage);
+    m_device->copyImage(getDefaultDeviceQueue(QUEUE_TYPE_TRANSFER), colorAttachment, presentImage);
 
     VkSemaphore          waitSemaphores[]   = {m_defaultSyncObjects[m_currentFrame].renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -332,11 +327,11 @@ void VulkanRenderer::submitFrame() {
                 .pSignalSemaphores    = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(graphicsQueue, 1, &submitInfo, m_defaultSyncObjects[m_currentFrame].inFlightFence));
+    VK_CHECK_RESULT(vkQueueSubmit(getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS), 1, &submitInfo, m_defaultSyncObjects[m_currentFrame].inFlightFence));
 
-    VkPresentInfoKHR presentInfo = m_swapChain.getPresentInfo(signalSemaphores, &m_imageIdx);
+    VkPresentInfoKHR presentInfo = m_swapChain->getPresentInfo(signalSemaphores, &m_imageIdx);
 
-    VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(QUEUE_TYPE_PRESENT), &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _windowData->resized) {
         assert("recreate swapchain currently not support.");
@@ -402,7 +397,7 @@ void VulkanRenderer::initImGui() {
         .Instance       = m_instance,
         .PhysicalDevice = m_device->getPhysicalDevice(),
         .Device         = m_device->getLogicalDevice(),
-        .Queue          = graphicsQueue,
+        .Queue          = getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
         .DescriptorPool = imguiPool,
         .MinImageCount  = 3,
         .ImageCount     = 3,
@@ -412,7 +407,7 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass->getHandle());
 
     // execute a gpu command to upload imgui font textures
-    immediateSubmit(graphicsQueue, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+    immediateSubmit(getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS), [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -449,18 +444,8 @@ std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
     }
     return _sceneRenderer;
 }
-VkQueue VulkanRenderer::getDeviceQueue(DeviceQueueType type) const {
-    switch (type) {
-    case DeviceQueueType::COMPUTE:
-        return computeQueue;
-    case DeviceQueueType::GRAPHICS:
-        return graphicsQueue;
-    case DeviceQueueType::TRANSFER:
-        return transferQueue;
-    case DeviceQueueType::PRESENT:
-        return presentQueue;
-    }
-    return graphicsQueue;
+VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
+    return m_device->getQueueByFlags(type, 0);
 }
 void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
 
@@ -488,13 +473,13 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
         {
             VkFormat        depthFormat = m_device->findDepthFormat();
             ImageCreateInfo createInfo{};
-            createInfo.extent   = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
+            createInfo.extent   = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
             createInfo.format   = static_cast<Format>(depthFormat);
             createInfo.tiling   = IMAGE_TILING_OPTIMAL;
             createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
-            m_device->transitionImageLayout(transferQueue, fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            m_device->transitionImageLayout(getDefaultDeviceQueue(QUEUE_TYPE_TRANSFER), fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         }
 
         {
@@ -518,7 +503,7 @@ void VulkanRenderer::_createDefaultColorAttachments() {
         {
             ImageCreateInfo createInfo{};
             createInfo.imageType = IMAGE_TYPE_2D;
-            createInfo.extent    = {m_swapChain.getExtent().width, m_swapChain.getExtent().height, 1};
+            createInfo.extent    = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
             createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             createInfo.format    = FORMAT_B8G8R8A8_SRGB;

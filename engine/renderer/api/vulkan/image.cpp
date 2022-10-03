@@ -7,7 +7,7 @@ VkResult VulkanImage::bind(VkDeviceSize offset) const {
     return vkBindImageMemory(_device->getLogicalDevice(), _handle, _memory, offset);
 }
 VulkanImage *VulkanImage::createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImageLayout defaultLayout, VkImage image, VkDeviceMemory memory) {
-    assert(image == VK_NULL_HANDLE);
+    assert(image != VK_NULL_HANDLE);
 
     VulkanImage *instance = new VulkanImage;
     memcpy(&instance->_createInfo, pCreateInfo, sizeof(ImageCreateInfo));

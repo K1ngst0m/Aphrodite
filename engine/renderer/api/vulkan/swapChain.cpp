@@ -28,7 +28,7 @@ SwapChainSupportDetails VulkanSwapChain::querySwapChainSupport(VkPhysicalDevice 
     return details;
 }
 
-void VulkanSwapChain::create(const std::shared_ptr<VulkanDevice> &device, VkSurfaceKHR surface, WindowData *data) {
+void VulkanSwapChain::create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data) {
     _device  = device;
     _surface = surface;
     allocate(data);
@@ -83,10 +83,10 @@ void VulkanSwapChain::allocate(WindowData *data) {
         .oldSwapchain     = VK_NULL_HANDLE,
     };
 
-    std::array<uint32_t, 2> queueFamilyIndices = {_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS),
-                                                  _device->GetQueueFamilyIndices(DeviceQueueType::PRESENT)};
+    std::array<uint32_t, 2> queueFamilyIndices = {_device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS),
+                                                  _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
 
-    if (_device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS) != _device->GetQueueFamilyIndices(DeviceQueueType::PRESENT)) {
+    if (_device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
         createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
         createInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
@@ -114,11 +114,11 @@ void VulkanSwapChain::allocate(WindowData *data) {
         imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
         imageCreateInfo.usage           = IMAGE_USAGE_TRANSFER_DST_BIT;
 
-        auto image = VulkanImage::createFromHandle(_device.get(), &imageCreateInfo, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, handle);
+        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, handle);
 
         // Transition image to default layout.
         VkQueue queue;
-        vkGetDeviceQueue(_device->getLogicalDevice(), _device->GetQueueFamilyIndices(DeviceQueueType::GRAPHICS), 0, &queue);
+        vkGetDeviceQueue(_device->getLogicalDevice(), _device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS), 0, &queue);
         _device->transitionImageLayout(queue, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         _images.push_back(image);

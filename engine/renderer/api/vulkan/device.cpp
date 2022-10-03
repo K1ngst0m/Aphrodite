@@ -4,6 +4,7 @@
 #include "image.h"
 #include "imageView.h"
 #include "renderpass.h"
+#include "swapChain.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
@@ -95,8 +96,16 @@ uint32_t VulkanDevice::findQueueFamilies(VkQueueFlags queueFlags) const {
  * @return VkResult of the device creation call
  */
 VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeatures,
-                                           std::vector<const char *> enabledExtensions, void *pNextChain,
-                                           bool useSwapChain, VkQueueFlags requestedQueueTypes) {
+                                           std::vector<const char *> enabledExtensions,
+                                           void                     *pNextChain,
+                                           bool                      useSwapChain,
+                                           VkQueueFlags              requestedQueueTypes) {
+    uint32_t queueFamilyCount;
+    vkGetPhysicalDeviceQueueFamilyProperties(_deviceInfo.physicalDevice, &queueFamilyCount, nullptr);
+    assert(queueFamilyCount > 0);
+    _deviceInfo.queueFamilyProperties.resize(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(_deviceInfo.physicalDevice, &queueFamilyCount, _deviceInfo.queueFamilyProperties.data());
+
     // Desired queues need to be requested upon logical device creation
     // Due to differing queue family configurations of Vulkan implementations this can be a bit tricky, especially if the application
     // requests different queue types
@@ -202,8 +211,28 @@ VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeat
         return result;
     }
 
-    // Create a default command pool for graphics command buffers
-    _commandPool = createCommandPool(_queueFamilyIndices.graphics);
+    for (auto i = 0; i < queueCreateInfos.size(); i++) {
+        QueueFamily * qf = nullptr;
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.graphics){
+            qf = &_queues[QUEUE_TYPE_GRAPHICS];
+        }
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.transfer){
+            qf = &_queues[QUEUE_TYPE_TRANSFER];
+        }
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.compute){
+            qf = &_queues[QUEUE_TYPE_COMPUTE];
+        }
+
+        assert(qf);
+
+        for (auto j = 0; j < queueCreateInfos[i].queueCount; j++) {
+            VkQueue queue = VK_NULL_HANDLE;
+            vkGetDeviceQueue(getLogicalDevice(), i, j, &queue);
+            if (queue) {
+                qf->push_back(queue);
+            }
+        }
+    }
 
     return result;
 }
@@ -508,15 +537,15 @@ void VulkanDevice::destroy() const {
     }
 }
 
-uint32_t &VulkanDevice::GetQueueFamilyIndices(DeviceQueueType type) {
+uint32_t &VulkanDevice::GetQueueFamilyIndices(QueueFlags type) {
     switch (type) {
-    case DeviceQueueType::COMPUTE:
+    case QUEUE_TYPE_COMPUTE:
         return _queueFamilyIndices.compute;
-    case DeviceQueueType::GRAPHICS:
+    case QUEUE_TYPE_GRAPHICS:
         return _queueFamilyIndices.graphics;
-    case DeviceQueueType::TRANSFER:
+    case QUEUE_TYPE_TRANSFER:
         return _queueFamilyIndices.transfer;
-    case DeviceQueueType::PRESENT:
+    case QUEUE_TYPE_PRESENT:
         return _queueFamilyIndices.present;
     }
     return _queueFamilyIndices.graphics;
@@ -529,12 +558,6 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, V
     vkGetPhysicalDeviceProperties(physicalDevice, &_deviceInfo.properties);
     vkGetPhysicalDeviceFeatures(physicalDevice, &_deviceInfo.features);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &_deviceInfo.memoryProperties);
-
-    uint32_t queueFamilyCount;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
-    assert(queueFamilyCount > 0);
-    _deviceInfo.queueFamilyProperties.resize(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, _deviceInfo.queueFamilyProperties.data());
 
     // Get list of supported extensions
     uint32_t extCount = 0;
@@ -550,22 +573,8 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, V
     }
 
     createLogicalDevice(features, extension, nullptr);
-    VkBool32                presentSupport = false;
-    std::optional<uint32_t> presentQueueFamilyIndices;
-    uint32_t                i = 0;
 
-    for (const auto &queueFamily : _deviceInfo.queueFamilyProperties) {
-        VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(_deviceInfo.physicalDevice, i, surface, &presentSupport);
-        if (presentSupport) {
-            presentQueueFamilyIndices = i;
-            break;
-        }
-        i++;
-    }
-    assert(presentQueueFamilyIndices.has_value());
-
-    _queueFamilyIndices.present = presentQueueFamilyIndices.value();
+    _commandPool = createCommandPool(_queueFamilyIndices.graphics);
 }
 
 VkDevice VulkanDevice::getLogicalDevice() {
@@ -713,5 +722,41 @@ void VulkanDevice::copyImage(VkQueue      queue,
     vkCmdCopyImage(command, srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, 1, &region);
 
     endSingleTimeCommands(command, queue);
+}
+VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
+    VulkanSwapChain *instance = new VulkanSwapChain;
+    instance->create(this, surface, data);
+
+    // get present queue family
+    {
+        VkBool32                presentSupport = false;
+        std::optional<uint32_t> presentQueueFamilyIndices;
+        uint32_t                i = 0;
+
+        for (const auto &queueFamily : _deviceInfo.queueFamilyProperties) {
+            VkBool32 presentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(_deviceInfo.physicalDevice, i, surface, &presentSupport);
+            if (presentSupport) {
+                presentQueueFamilyIndices = i;
+                break;
+            }
+            i++;
+        }
+        assert(presentQueueFamilyIndices.has_value());
+
+        _queueFamilyIndices.present = presentQueueFamilyIndices.value();
+    }
+
+    *ppSwapchain = instance;
+
+    // TODO
+    return VK_SUCCESS;
+}
+void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
+    vkDestroySwapchainKHR(getLogicalDevice(), pSwapchain->getHandle(), nullptr);
+    delete pSwapchain;
+}
+VkQueue VulkanDevice::getQueueByFlags(QueueFlags queueFlags, uint32_t queueIndex) {
+    return _queues[queueFlags][queueIndex];
 }
 } // namespace vkl

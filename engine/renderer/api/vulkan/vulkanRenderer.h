@@ -35,7 +35,7 @@ public:
     void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 public:
-    VkQueue          getDeviceQueue(DeviceQueueType type) const;
+    VkQueue          getDefaultDeviceQueue(QueueFlags type) const;
     VkRenderPass     getDefaultRenderPass() const;
     uint32_t         getCommandBufferCount() const;
     VkCommandBuffer  getDefaultCommandBuffer(uint32_t idx) const;
@@ -74,15 +74,9 @@ private:
                                                             const VkAllocationCallbacks *pAllocator);
 
 private:
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-    VkQueue transferQueue;
-    VkQueue computeQueue;
-
-private:
     VkInstance                    m_instance;
     std::shared_ptr<VulkanDevice> m_device;
-    VulkanSwapChain               m_swapChain;
+    VulkanSwapChain              *m_swapChain;
     std::vector<const char *>     m_supportedInstanceExtensions;
     VkPhysicalDeviceFeatures      m_enabledFeatures{};
     VkDebugUtilsMessengerEXT      m_debugMessenger;
