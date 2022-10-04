@@ -285,10 +285,10 @@ void VulkanRenderer::_createSyncObjects() {
     }
 }
 
-void VulkanRenderer::immediateSubmit(VkQueue queue, std::function<void(VkCommandBuffer cmd)> &&function) const {
+void VulkanRenderer::immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) const {
     VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
     function(cmd);
-    m_device->endSingleTimeCommands(cmd, queue);
+    m_device->endSingleTimeCommands(cmd, flags);
 }
 
 void VulkanRenderer::prepareFrame() {
@@ -409,7 +409,7 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass->getHandle());
 
     // execute a gpu command to upload imgui font textures
-    immediateSubmit(getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS), [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+    immediateSubmit(QUEUE_TYPE_GRAPHICS, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();

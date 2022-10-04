@@ -94,7 +94,7 @@ public:
     VkCommandBuffer beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer,
-                               VkQueue         queue) const;
+                               QueueFlags         flags);
 
     void flushCommandBuffer(VkCommandBuffer commandBuffer,
                             VkQueue         queue,
@@ -109,8 +109,8 @@ public:
 
 public:
     VkCommandPool              &getCommandPoolWithQueue(QueueFlags type);
-    VkPhysicalDevice            getPhysicalDevice();
-    VkDevice                    getLogicalDevice();
+    VkPhysicalDevice            getPhysicalDevice() const;
+    VkDevice                    getLogicalDevice() const;
     VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
     VkPhysicalDeviceProperties &getDeviceProperties();
     uint32_t                   &GetQueueFamilyIndices(QueueFlags type);

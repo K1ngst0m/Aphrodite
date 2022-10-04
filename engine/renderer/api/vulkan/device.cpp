@@ -378,15 +378,15 @@ void VulkanDevice::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image) {
         vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     });
 }
-void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const {
+void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, QueueFlags flags) {
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer);
 
-    vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(queue);
+    vkQueueSubmit(getQueueByFlags(flags), 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(getQueueByFlags(flags));
 
-    vkFreeCommandBuffers(_deviceInfo.logicalDevice, _drawCommandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(_deviceInfo.logicalDevice, getCommandPoolWithQueue(flags), 1, &commandBuffer);
 }
 VkCommandBuffer VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
     VkCommandBufferAllocateInfo allocInfo{
@@ -533,7 +533,13 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
 
 void VulkanDevice::destroy() const {
     if (_drawCommandPool) {
-        vkDestroyCommandPool(_deviceInfo.logicalDevice, _drawCommandPool, nullptr);
+        vkDestroyCommandPool(getLogicalDevice(), _drawCommandPool, nullptr);
+    }
+    if (_transferCommandPool) {
+        vkDestroyCommandPool(getLogicalDevice(), _transferCommandPool, nullptr);
+    }
+    if (_computeCommandPool) {
+        vkDestroyCommandPool(getLogicalDevice(), _computeCommandPool, nullptr);
     }
     if (_deviceInfo.logicalDevice) {
         vkDestroyDevice(_deviceInfo.logicalDevice, nullptr);
@@ -583,10 +589,10 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeature
     _computeCommandPool  = createCommandPool(_queueFamilyIndices.compute);
 }
 
-VkDevice VulkanDevice::getLogicalDevice() {
+VkDevice VulkanDevice::getLogicalDevice() const {
     return _deviceInfo.logicalDevice;
 }
-VkPhysicalDevice VulkanDevice::getPhysicalDevice() {
+VkPhysicalDevice VulkanDevice::getPhysicalDevice() const {
     return _deviceInfo.physicalDevice;
 }
 void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count) {
@@ -792,6 +798,6 @@ VkCommandPool &VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
 void VulkanDevice::immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) {
     VkCommandBuffer cmd = beginSingleTimeCommands(flags);
     function(cmd);
-    endSingleTimeCommands(cmd, getQueueByFlags(flags));
+    endSingleTimeCommands(cmd, flags);
 }
 } // namespace vkl

@@ -276,9 +276,9 @@ void VulkanRenderObject::createEmptyTexture() {
     createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
     _device->createBuffer(&createInfo, &stagingBuffer);
 
-    uint8_t *data;
+    uint8_t data {};
     stagingBuffer->map();
-    stagingBuffer->copyTo(data, imageDataSize);
+    stagingBuffer->copyTo(&data, imageDataSize);
     stagingBuffer->unmap();
 
     {
