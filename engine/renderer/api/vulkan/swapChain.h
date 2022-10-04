@@ -5,11 +5,6 @@
 #include "window.h"
 
 namespace vkl {
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
-};
 
 struct SwapChainCreateInfo {
     const void        *pNext;
@@ -25,14 +20,12 @@ public:
 
     VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
 
+public:
     VkFormat         getFormat() const;
     VkExtent2D       getExtent() const;
     uint32_t         getImageCount() const;
     VkPresentInfoKHR getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
     VulkanImage     *getImage(uint32_t idx) const;
-
-private:
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 private:
     void allocate(WindowData *windowData);

@@ -85,9 +85,11 @@ void VulkanRenderObject::loadTextures() {
 
             _device->createImage(&createInfo, &texture.image);
 
-            _device->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            _device->copyBufferToImage(stagingBuffer, texture.image);
-            _device->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
+                _device->transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+                _device->copyBufferToImage(cmd, stagingBuffer, texture.image);
+                _device->transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            });
         }
 
         // texture image view
@@ -108,7 +110,7 @@ void VulkanRenderObject::loadTextures() {
             VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &texture.sampler));
         }
 
-        texture.descriptorInfo = vkl::init::descriptorImageInfo(texture.sampler, texture.imageView->getHandle(), texture.image->getImageLayout());
+        texture.descriptorInfo = vkl::init::descriptorImageInfo(texture.sampler, texture.imageView->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
         _textures.push_back(texture);
 
@@ -162,7 +164,7 @@ void VulkanRenderObject::cleanupResources() {
     _device->destroyBuffer(_vertexBuffer.buffer);
     _device->destroyBuffer(_indexBuffer.buffer);
 
-    for (TextureGpuData& texture : _textures) {
+    for (TextureGpuData &texture : _textures) {
         _device->destroyImage(texture.image);
         _device->destroyImageView(texture.imageView);
         vkDestroySampler(_device->getLogicalDevice(), texture.sampler, nullptr);
@@ -220,7 +222,9 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_vertexBuffer.buffer);
         }
 
-        _device->copyBuffer(stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
+            _device->copyBuffer(cmd, stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        });
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -252,7 +256,9 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_indexBuffer.buffer);
         }
 
-        _device->copyBuffer(stagingBuffer, _indexBuffer.buffer, bufferSize);
+        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
+            _device->copyBuffer(cmd, stagingBuffer, _indexBuffer.buffer, bufferSize);
+        });
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -276,7 +282,7 @@ void VulkanRenderObject::createEmptyTexture() {
     createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
     _device->createBuffer(&createInfo, &stagingBuffer);
 
-    uint8_t data {};
+    uint8_t data{};
     stagingBuffer->map();
     stagingBuffer->copyTo(&data, imageDataSize);
     stagingBuffer->unmap();
@@ -291,9 +297,11 @@ void VulkanRenderObject::createEmptyTexture() {
 
         _device->createImage(&createInfo, &_emptyTexture.image);
 
-        _device->transitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        _device->copyBufferToImage(stagingBuffer, _emptyTexture.image);
-        _device->transitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
+            _device->transitionImageLayout(cmd, _emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            _device->copyBufferToImage(cmd, stagingBuffer, _emptyTexture.image);
+            _device->transitionImageLayout(cmd, _emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
     }
 
     {
@@ -311,7 +319,7 @@ void VulkanRenderObject::createEmptyTexture() {
         VK_CHECK_RESULT(vkCreateSampler(_device->getLogicalDevice(), &samplerInfo, nullptr, &_emptyTexture.sampler));
     }
 
-    _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler, _emptyTexture.imageView->getHandle(), _emptyTexture.image->getImageLayout());
+    _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler, _emptyTexture.imageView->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     _device->destroyBuffer(stagingBuffer);
 }

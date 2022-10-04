@@ -4,7 +4,13 @@
 #include "imageView.h"
 
 namespace vkl {
-SwapChainSupportDetails VulkanSwapChain::querySwapChainSupport(VkPhysicalDevice device) const {
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR        capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR>   presentModes;
+};
+
+SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalDevice device) {
     SwapChainSupportDetails details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &details.capabilities);
@@ -41,6 +47,7 @@ void VulkanSwapChain::cleanup() {
 VkResult VulkanSwapChain::acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const {
     return vkAcquireNextImageKHR(_device->getLogicalDevice(), _handle, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
 }
+
 VkPresentInfoKHR VulkanSwapChain::getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex) {
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -55,7 +62,7 @@ VkPresentInfoKHR VulkanSwapChain::getPresentInfo(VkSemaphore *waitSemaphores, co
 }
 
 void VulkanSwapChain::allocate(WindowData *data) {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_device->getPhysicalDevice());
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice());
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = vkl::utils::chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -75,7 +82,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
         .imageColorSpace  = surfaceFormat.colorSpace,
         .imageExtent      = extent,
         .imageArrayLayers = 1,
-        .imageUsage       = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .preTransform     = swapChainSupport.capabilities.currentTransform,
         .compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         .presentMode      = presentMode,
@@ -114,9 +121,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
         imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
         imageCreateInfo.usage           = swapChainCreateInfo.imageUsage;
 
-        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, handle);
-
-        _device->transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, handle);
 
         _images.push_back(image);
     }

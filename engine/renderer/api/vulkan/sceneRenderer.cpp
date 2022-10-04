@@ -222,7 +222,10 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     _unlitEffect->buildPipelineLayout(_device->getLogicalDevice());
 
     _unlitPass = std::make_unique<ShaderPass>();
-    _unlitPass->buildEffect(_device->getLogicalDevice(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _unlitEffect.get());
+    _unlitPass->buildEffect(_device->getLogicalDevice(),
+                            _renderer->getDefaultRenderPass(),
+                            _renderer->getPipelineBuilder(),
+                            _unlitEffect.get());
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {

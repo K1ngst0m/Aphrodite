@@ -68,19 +68,25 @@ public:
     void destroySwapchain(VulkanSwapChain *pSwapchain);
 
 public:
-    void transitionImageLayout(VulkanImage  *image,
-                               VkImageLayout oldLayout,
-                               VkImageLayout newLayout);
+    void transitionImageLayout(VkCommandBuffer      commandBuffer,
+                               VulkanImage         *image,
+                               VkImageLayout        oldLayout,
+                               VkImageLayout        newLayout,
+                               VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                               VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
-    void copyBuffer(VulkanBuffer *srcBuffer,
-                    VulkanBuffer *dstBuffer,
-                    VkDeviceSize  size);
+    void copyBuffer(VkCommandBuffer commandBuffer,
+                    VulkanBuffer   *srcBuffer,
+                    VulkanBuffer   *dstBuffer,
+                    VkDeviceSize    size);
 
-    void copyBufferToImage(VulkanBuffer *buffer,
-                           VulkanImage  *image);
+    void copyBufferToImage(VkCommandBuffer commandBuffer,
+                           VulkanBuffer   *buffer,
+                           VulkanImage    *image);
 
-    void copyImage(VulkanImage *srcImage,
-                   VulkanImage *dstImage);
+    void copyImage(VkCommandBuffer commandBuffer,
+                   VulkanImage    *srcImage,
+                   VulkanImage    *dstImage);
 
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
@@ -89,12 +95,12 @@ public:
     VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
                                     VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
 
-    void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) ;
+    void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function);
 
     VkCommandBuffer beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer,
-                               QueueFlags         flags);
+                               QueueFlags      flags);
 
     void flushCommandBuffer(VkCommandBuffer commandBuffer,
                             VkQueue         queue,
@@ -115,8 +121,7 @@ public:
     VkPhysicalDeviceProperties &getDeviceProperties();
     uint32_t                   &GetQueueFamilyIndices(QueueFlags type);
     VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
-
-    VkFormat findDepthFormat() const;
+    VkFormat                    getDepthFormat() const;
 
 private:
     bool     extensionSupported(std::string_view extension) const;
