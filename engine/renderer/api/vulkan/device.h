@@ -89,6 +89,8 @@ public:
     VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
                                     VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
 
+    void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) ;
+
     VkCommandBuffer beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer,

@@ -358,26 +358,25 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
     return VK_SUCCESS;
 }
 void VulkanDevice::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image) {
-    VkCommandBuffer   commandBuffer = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-    VkBufferImageCopy region{
-        .bufferOffset      = 0,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-    };
+    immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer commandBuffer) {
+        VkBufferImageCopy region{
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+        };
 
-    region.imageSubresource = {
-        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel       = 0,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
+        region.imageSubresource = {
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = 0,
+            .baseArrayLayer = 0,
+            .layerCount     = 1,
+        };
 
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {image->getWidth(), image->getHeight(), 1};
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {image->getWidth(), image->getHeight(), 1};
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_TRANSFER));
+        vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    });
 }
 void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const {
     vkEndCommandBuffer(commandBuffer);
@@ -410,40 +409,41 @@ VkCommandBuffer VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
     return commandBuffer;
 }
 void VulkanDevice::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
-
-    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_TRANSFER));
+    immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer commandBuffer) {
+        VkBufferCopy copyRegion{};
+        copyRegion.size = size;
+        vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
+    });
 }
 void VulkanDevice::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout) {
-    VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
-    VkImageMemoryBarrier barrier{
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .srcAccessMask       = 0,
-        .dstAccessMask       = 0,
-        .oldLayout           = oldLayout,
-        .newLayout           = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = image->getHandle(),
-    };
+    immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer commandBuffer) {
+        VkImageMemoryBarrier barrier{
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            .srcAccessMask       = 0,
+            .dstAccessMask       = 0,
+            .oldLayout           = oldLayout,
+            .newLayout           = newLayout,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = image->getHandle(),
+        };
 
-    const auto &imageCreateInfo = image->getCreateInfo();
-    barrier.subresourceRange    = {
-           .aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
-           .baseMipLevel   = 0,
-           .levelCount     = imageCreateInfo.mipLevels,
-           .baseArrayLayer = 0,
-           .layerCount     = imageCreateInfo.arrayLayers,
-    };
+        const auto &imageCreateInfo = image->getCreateInfo();
+        barrier.subresourceRange    = {
+               .aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+               .baseMipLevel   = 0,
+               .levelCount     = imageCreateInfo.mipLevels,
+               .baseArrayLayer = 0,
+               .layerCount     = imageCreateInfo.arrayLayers,
+        };
 
-    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
+        vkCmdPipelineBarrier(commandBuffer,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                             0, 0, nullptr, 0, nullptr, 1, &barrier);
+    });
 }
+
 VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data) {
     VkBuffer       buffer;
     VkDeviceMemory memory;
@@ -707,29 +707,27 @@ void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
 }
 void VulkanDevice::copyImage(VulkanImage *srcImage,
                              VulkanImage *dstImage) {
-    auto command = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+    immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer command) {
+        VkImageSubresourceLayers subresourceLayers{};
+        subresourceLayers.layerCount     = 1;
+        subresourceLayers.mipLevel       = 0;
+        subresourceLayers.baseArrayLayer = 0;
+        subresourceLayers.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
 
-    VkImageSubresourceLayers subresourceLayers{};
-    subresourceLayers.layerCount     = 1;
-    subresourceLayers.mipLevel       = 0;
-    subresourceLayers.baseArrayLayer = 0;
-    subresourceLayers.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        VkImageCopy region{};
+        region.dstOffset      = {0, 0, 0};
+        region.srcOffset      = {0, 0, 0};
+        region.dstSubresource = subresourceLayers;
+        region.srcSubresource = subresourceLayers;
+        region.extent         = {srcImage->getExtent().width, srcImage->getExtent().height, srcImage->getExtent().depth};
 
-    VkImageCopy region{};
-    region.dstOffset      = {0, 0, 0};
-    region.srcOffset      = {0, 0, 0};
-    region.dstSubresource = subresourceLayers;
-    region.srcSubresource = subresourceLayers;
-    region.extent         = {srcImage->getExtent().width, srcImage->getExtent().height, srcImage->getExtent().depth};
-
-    vkCmdCopyImage(command,
-                   srcImage->getHandle(),
-                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                   dstImage->getHandle(),
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                   1, &region);
-
-    endSingleTimeCommands(command, getQueueByFlags(QUEUE_TYPE_TRANSFER));
+        vkCmdCopyImage(command,
+                       srcImage->getHandle(),
+                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                       dstImage->getHandle(),
+                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                       1, &region);
+    });
 }
 VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
     VulkanSwapChain *instance = new VulkanSwapChain;
@@ -789,5 +787,11 @@ VkCommandPool &VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
     default:
         return _drawCommandPool;
     }
+}
+
+void VulkanDevice::immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) {
+    VkCommandBuffer cmd = beginSingleTimeCommands(flags);
+    function(cmd);
+    endSingleTimeCommands(cmd, getQueueByFlags(flags));
 }
 } // namespace vkl
