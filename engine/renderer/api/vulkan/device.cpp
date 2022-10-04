@@ -190,7 +190,6 @@ VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeat
     // Enable the debug marker extension if it is present (likely meaning a debugging tool is present)
     if (extensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME)) {
         deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-        _enableDebugMarkers = true;
     }
 
     if (!deviceExtensions.empty()) {
@@ -292,7 +291,7 @@ void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue que
 }
 
 void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free) const {
-    return flushCommandBuffer(commandBuffer, queue, _commandPool, free);
+    return flushCommandBuffer(commandBuffer, queue, _drawCommandPool, free);
 }
 
 /**
@@ -359,7 +358,7 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
     return VK_SUCCESS;
 }
 void VulkanDevice::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image) {
-    VkCommandBuffer   commandBuffer = beginSingleTimeCommands();
+    VkCommandBuffer   commandBuffer = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
     VkBufferImageCopy region{
         .bufferOffset      = 0,
         .bufferRowLength   = 0,
@@ -378,7 +377,7 @@ void VulkanDevice::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image) {
 
     vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
+    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_TRANSFER));
 }
 void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const {
     vkEndCommandBuffer(commandBuffer);
@@ -388,12 +387,12 @@ void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue 
     vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(queue);
 
-    vkFreeCommandBuffers(_deviceInfo.logicalDevice, _commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(_deviceInfo.logicalDevice, _drawCommandPool, 1, &commandBuffer);
 }
-VkCommandBuffer VulkanDevice::beginSingleTimeCommands() {
+VkCommandBuffer VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = _commandPool,
+        .commandPool        = getCommandPoolWithQueue(flags),
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };
@@ -411,13 +410,13 @@ VkCommandBuffer VulkanDevice::beginSingleTimeCommands() {
     return commandBuffer;
 }
 void VulkanDevice::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+    VkCommandBuffer commandBuffer = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 
-    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
+    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_TRANSFER));
 }
 void VulkanDevice::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
@@ -533,8 +532,8 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
 }
 
 void VulkanDevice::destroy() const {
-    if (_commandPool) {
-        vkDestroyCommandPool(_deviceInfo.logicalDevice, _commandPool, nullptr);
+    if (_drawCommandPool) {
+        vkDestroyCommandPool(_deviceInfo.logicalDevice, _drawCommandPool, nullptr);
     }
     if (_deviceInfo.logicalDevice) {
         vkDestroyDevice(_deviceInfo.logicalDevice, nullptr);
@@ -551,11 +550,12 @@ uint32_t &VulkanDevice::GetQueueFamilyIndices(QueueFlags type) {
         return _queueFamilyIndices.transfer;
     case QUEUE_TYPE_PRESENT:
         return _queueFamilyIndices.present;
+    default:
+        return _queueFamilyIndices.graphics;
     }
-    return _queueFamilyIndices.graphics;
 }
 
-void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
+void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeatures features, const std::vector<const char *> &extension) {
     assert(physicalDevice);
     this->_deviceInfo.physicalDevice = physicalDevice;
 
@@ -578,7 +578,9 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, V
 
     createLogicalDevice(features, extension, nullptr);
 
-    _commandPool = createCommandPool(_queueFamilyIndices.graphics);
+    _drawCommandPool     = createCommandPool(_queueFamilyIndices.graphics);
+    _transferCommandPool = createCommandPool(_queueFamilyIndices.transfer);
+    _computeCommandPool  = createCommandPool(_queueFamilyIndices.compute);
 }
 
 VkDevice VulkanDevice::getLogicalDevice() {
@@ -590,7 +592,7 @@ VkPhysicalDevice VulkanDevice::getPhysicalDevice() {
 void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count) {
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = _commandPool,
+        .commandPool        = _drawCommandPool,
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = count,
     };
@@ -705,7 +707,8 @@ void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
 }
 void VulkanDevice::copyImage(VulkanImage *srcImage,
                              VulkanImage *dstImage) {
-    auto          command   = beginSingleTimeCommands();
+    auto command = beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+
     VkImageSubresourceLayers subresourceLayers{};
     subresourceLayers.layerCount     = 1;
     subresourceLayers.mipLevel       = 0;
@@ -726,7 +729,7 @@ void VulkanDevice::copyImage(VulkanImage *srcImage,
                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                    1, &region);
 
-    endSingleTimeCommands(command, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
+    endSingleTimeCommands(command, getQueueByFlags(QUEUE_TYPE_TRANSFER));
 }
 VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
     VulkanSwapChain *instance = new VulkanSwapChain;
@@ -754,8 +757,7 @@ VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **p
         // TODO if present queue familiy not the same as graphics
         if (_queueFamilyIndices.present == _queueFamilyIndices.graphics) {
             _queues[QUEUE_TYPE_PRESENT] = _queues[QUEUE_TYPE_GRAPHICS];
-        }
-        else{
+        } else {
             assert("present queue familiy not the same as graphics!");
         }
     }
@@ -774,5 +776,18 @@ VkQueue VulkanDevice::getQueueByFlags(QueueFlags queueFlags, uint32_t queueIndex
 }
 void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getLogicalDevice());
+}
+VkCommandPool &VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
+    switch (type) {
+    case QUEUE_TYPE_COMPUTE:
+        return _computeCommandPool;
+    case QUEUE_TYPE_GRAPHICS:
+    case QUEUE_TYPE_PRESENT:
+        return _drawCommandPool;
+    case QUEUE_TYPE_TRANSFER:
+        return _transferCommandPool;
+    default:
+        return _drawCommandPool;
+    }
 }
 } // namespace vkl

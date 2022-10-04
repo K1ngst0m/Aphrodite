@@ -30,7 +30,6 @@ enum QueueFlags {
 class VulkanDevice : public GraphicsDevice {
 public:
     void init(VkPhysicalDevice                 physicalDevice,
-              VkSurfaceKHR                     surface,
               VkPhysicalDeviceFeatures         features,
               const std::vector<const char *> &extension);
 
@@ -90,7 +89,7 @@ public:
     VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
                                     VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
 
-    VkCommandBuffer beginSingleTimeCommands();
+    VkCommandBuffer beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer,
                                VkQueue         queue) const;
@@ -107,6 +106,7 @@ public:
     void waitIdle();
 
 public:
+    VkCommandPool              &getCommandPoolWithQueue(QueueFlags type);
     VkPhysicalDevice            getPhysicalDevice();
     VkDevice                    getLogicalDevice();
     VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
@@ -144,8 +144,9 @@ private:
 
     std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
 
-    VkCommandPool _commandPool        = VK_NULL_HANDLE;
-    bool          _enableDebugMarkers = true;
+    VkCommandPool _drawCommandPool     = VK_NULL_HANDLE;
+    VkCommandPool _transferCommandPool = VK_NULL_HANDLE;
+    VkCommandPool _computeCommandPool  = VK_NULL_HANDLE;
 };
 
 } // namespace vkl

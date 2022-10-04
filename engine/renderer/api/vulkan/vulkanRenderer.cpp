@@ -190,7 +190,7 @@ void VulkanRenderer::_createDevice() {
 
     m_device = std::make_shared<VulkanDevice>();
 
-    m_device->init(devices[0], m_surface, m_enabledFeatures, deviceExtensions);
+    m_device->init(devices[0], m_enabledFeatures, deviceExtensions);
 
     m_deletionQueue.push_function([&]() {
         m_device->destroy();
