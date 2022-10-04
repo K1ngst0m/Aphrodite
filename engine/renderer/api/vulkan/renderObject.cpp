@@ -59,8 +59,8 @@ void VulkanRenderObject::loadTextures() {
         {
             BufferCreateInfo createInfo{};
             createInfo.size     = imageDataSize;
-            createInfo.property = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            createInfo.usage    = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             _device->createBuffer(&createInfo, &stagingBuffer);
         }
 
