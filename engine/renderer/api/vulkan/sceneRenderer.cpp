@@ -102,7 +102,7 @@ void VulkanSceneRenderer::update() {
 }
 void VulkanSceneRenderer::_initRenderList() {
     for (auto &renderable : _renderList) {
-        renderable->loadResouces(_renderer->getDefaultDeviceQueue(QUEUE_TYPE_TRANSFER));
+        renderable->loadResouces();
     }
 }
 void VulkanSceneRenderer::_initUniformList() {

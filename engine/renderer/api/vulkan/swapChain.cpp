@@ -67,7 +67,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
-    VkSwapchainCreateInfoKHR createInfo{
+    VkSwapchainCreateInfoKHR swapChainCreateInfo{
         .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface          = _surface,
         .minImageCount    = imageCount,
@@ -87,16 +87,16 @@ void VulkanSwapChain::allocate(WindowData *data) {
                                                   _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
 
     if (_device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
-        createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
-        createInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
-        createInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
+        swapChainCreateInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
+        swapChainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+        swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
     } else {
-        createInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
-        createInfo.queueFamilyIndexCount = 0; // Optional
-        createInfo.pQueueFamilyIndices   = nullptr; // Optional
+        swapChainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
+        swapChainCreateInfo.queueFamilyIndexCount = 0; // Optional
+        swapChainCreateInfo.pQueueFamilyIndices   = nullptr; // Optional
     }
 
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getLogicalDevice(), &createInfo, nullptr, &_handle));
+    VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getLogicalDevice(), &swapChainCreateInfo, nullptr, &_handle));
 
     vkGetSwapchainImagesKHR(_device->getLogicalDevice(), _handle, &imageCount, nullptr);
     std::vector<VkImage> images(imageCount);
@@ -112,14 +112,11 @@ void VulkanSwapChain::allocate(WindowData *data) {
         imageCreateInfo.arrayLayers     = 1;
         imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
         imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.usage           = IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCreateInfo.usage           = swapChainCreateInfo.imageUsage;
 
-        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, handle);
+        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, handle);
 
-        // Transition image to default layout.
-        VkQueue queue;
-        vkGetDeviceQueue(_device->getLogicalDevice(), _device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS), 0, &queue);
-        _device->transitionImageLayout(queue, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        _device->transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         _images.push_back(image);
     }

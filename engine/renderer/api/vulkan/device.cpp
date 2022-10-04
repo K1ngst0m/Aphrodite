@@ -212,14 +212,14 @@ VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeat
     }
 
     for (auto i = 0; i < queueCreateInfos.size(); i++) {
-        QueueFamily * qf = nullptr;
-        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.graphics){
+        QueueFamily *qf = nullptr;
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.graphics) {
             qf = &_queues[QUEUE_TYPE_GRAPHICS];
         }
-        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.transfer){
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.transfer) {
             qf = &_queues[QUEUE_TYPE_TRANSFER];
         }
-        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.compute){
+        if (queueCreateInfos[i].queueFamilyIndex == _queueFamilyIndices.compute) {
             qf = &_queues[QUEUE_TYPE_COMPUTE];
         }
 
@@ -358,7 +358,7 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
 
     return VK_SUCCESS;
 }
-void VulkanDevice::copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, VulkanImage *image) {
+void VulkanDevice::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image) {
     VkCommandBuffer   commandBuffer = beginSingleTimeCommands();
     VkBufferImageCopy region{
         .bufferOffset      = 0,
@@ -378,7 +378,7 @@ void VulkanDevice::copyBufferToImage(VkQueue queue, VulkanBuffer *buffer, Vulkan
 
     vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    endSingleTimeCommands(commandBuffer, queue);
+    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
 }
 void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, VkQueue queue) const {
     vkEndCommandBuffer(commandBuffer);
@@ -410,16 +410,16 @@ VkCommandBuffer VulkanDevice::beginSingleTimeCommands() {
 
     return commandBuffer;
 }
-void VulkanDevice::copyBuffer(VkQueue queue, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
+void VulkanDevice::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 
-    endSingleTimeCommands(commandBuffer, queue);
+    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
 }
-void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VulkanDevice::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer      commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -443,7 +443,7 @@ void VulkanDevice::transitionImageLayout(VkQueue queue, VulkanImage *image, VkIm
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    endSingleTimeCommands(commandBuffer, queue);
+    endSingleTimeCommands(commandBuffer, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
 }
 VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data) {
     VkBuffer       buffer;
@@ -522,9 +522,13 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     VkImageLayout defaultLayout = utils::getDefaultImageLayoutFromUsage(pCreateInfo->usage);
 
     *ppImage = VulkanImage::createFromHandle(this, pCreateInfo, defaultLayout, image, memory);
+
     if ((*ppImage)->getMemory() != VK_NULL_HANDLE) {
-        return (*ppImage)->bind();
+        auto result = (*ppImage)->bind();
+        transitionImageLayout(*ppImage, VK_IMAGE_LAYOUT_UNDEFINED, defaultLayout);
+        return result;
     }
+
     return VK_SUCCESS;
 }
 
@@ -699,13 +703,9 @@ void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass) {
 void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
     delete pFramebuffer;
 }
-void VulkanDevice::copyImage(VkQueue      queue,
-                             VulkanImage *srcImage,
+void VulkanDevice::copyImage(VulkanImage *srcImage,
                              VulkanImage *dstImage) {
     auto          command   = beginSingleTimeCommands();
-    VkImageLayout srcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    VkImageLayout dstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-
     VkImageSubresourceLayers subresourceLayers{};
     subresourceLayers.layerCount     = 1;
     subresourceLayers.mipLevel       = 0;
@@ -719,9 +719,14 @@ void VulkanDevice::copyImage(VkQueue      queue,
     region.srcSubresource = subresourceLayers;
     region.extent         = {srcImage->getExtent().width, srcImage->getExtent().height, srcImage->getExtent().depth};
 
-    vkCmdCopyImage(command, srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, 1, &region);
+    vkCmdCopyImage(command,
+                   srcImage->getHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   dstImage->getHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1, &region);
 
-    endSingleTimeCommands(command, queue);
+    endSingleTimeCommands(command, getQueueByFlags(QUEUE_TYPE_GRAPHICS));
 }
 VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
     VulkanSwapChain *instance = new VulkanSwapChain;
@@ -745,6 +750,14 @@ VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **p
         assert(presentQueueFamilyIndices.has_value());
 
         _queueFamilyIndices.present = presentQueueFamilyIndices.value();
+
+        // TODO if present queue familiy not the same as graphics
+        if (_queueFamilyIndices.present == _queueFamilyIndices.graphics) {
+            _queues[QUEUE_TYPE_PRESENT] = _queues[QUEUE_TYPE_GRAPHICS];
+        }
+        else{
+            assert("present queue familiy not the same as graphics!");
+        }
     }
 
     *ppSwapchain = instance;
@@ -758,5 +771,8 @@ void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
 }
 VkQueue VulkanDevice::getQueueByFlags(QueueFlags queueFlags, uint32_t queueIndex) {
     return _queues[queueFlags][queueIndex];
+}
+void VulkanDevice::waitIdle() {
+    vkDeviceWaitIdle(getLogicalDevice());
 }
 } // namespace vkl

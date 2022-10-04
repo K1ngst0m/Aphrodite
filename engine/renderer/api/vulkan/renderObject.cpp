@@ -46,7 +46,7 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, Vk
         _materialGpuDataList.push_back(materialData);
     }
 }
-void VulkanRenderObject::loadTextures(VkQueue queue) {
+void VulkanRenderObject::loadTextures() {
     for (auto &image : _entity->_textures) {
         // raw image data
         unsigned char *imageData     = image.data.data();
@@ -85,9 +85,9 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
 
             _device->createImage(&createInfo, &texture.image);
 
-            _device->transitionImageLayout(queue, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            _device->copyBufferToImage(queue, stagingBuffer, texture.image);
-            _device->transitionImageLayout(queue, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            _device->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            _device->copyBufferToImage(stagingBuffer, texture.image);
+            _device->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
 
         // texture image view
@@ -115,14 +115,14 @@ void VulkanRenderObject::loadTextures(VkQueue queue) {
         _device->destroyBuffer(stagingBuffer);
     }
 }
-void VulkanRenderObject::loadResouces(VkQueue queue) {
+void VulkanRenderObject::loadResouces() {
     // Create and upload vertex and index buffer
     size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
     size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
 
-    createEmptyTexture(queue);
-    loadTextures(queue);
-    loadBuffer(queue);
+    createEmptyTexture();
+    loadTextures();
+    loadBuffer();
 }
 void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity> &node) {
     if (!node->isVisible) {
@@ -175,7 +175,7 @@ void VulkanRenderObject::cleanupResources() {
 uint32_t VulkanRenderObject::getSetCount() {
     return _entity->_materials.size();
 }
-void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
+void VulkanRenderObject::loadBuffer() {
     auto &vertices = _entity->_vertices;
     auto &indices  = _entity->_indices;
 
@@ -220,7 +220,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             _device->createBuffer(&createInfo, &_vertexBuffer.buffer);
         }
 
-        _device->copyBuffer(transferQueue, stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        _device->copyBuffer(stagingBuffer, _vertexBuffer.buffer, bufferSize);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -252,7 +252,7 @@ void VulkanRenderObject::loadBuffer(VkQueue transferQueue) {
             _device->createBuffer(&createInfo, &_indexBuffer.buffer);
         }
 
-        _device->copyBuffer(transferQueue, stagingBuffer, _indexBuffer.buffer, bufferSize);
+        _device->copyBuffer(stagingBuffer, _indexBuffer.buffer, bufferSize);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -263,7 +263,7 @@ glm::mat4 VulkanRenderObject::getTransform() const {
 void VulkanRenderObject::setTransform(glm::mat4 transform) {
     _transform = transform;
 }
-void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
+void VulkanRenderObject::createEmptyTexture() {
     uint32_t width         = 1;
     uint32_t height        = 1;
     uint32_t imageDataSize = width * height * 4;
@@ -291,9 +291,9 @@ void VulkanRenderObject::createEmptyTexture(VkQueue queue) {
 
         _device->createImage(&createInfo, &_emptyTexture.image);
 
-        _device->transitionImageLayout(queue, _emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        _device->copyBufferToImage(queue, stagingBuffer, _emptyTexture.image);
-        _device->transitionImageLayout(queue, _emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        _device->transitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        _device->copyBufferToImage(stagingBuffer, _emptyTexture.image);
+        _device->transitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
     {

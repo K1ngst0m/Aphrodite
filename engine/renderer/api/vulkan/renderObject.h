@@ -36,7 +36,7 @@ public:
     VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice> &device, Entity *entity);
     ~VulkanRenderObject() = default;
 
-    void loadResouces(VkQueue queue);
+    void loadResouces();
     void cleanupResources();
 
     void draw(VkPipelineLayout layout, VkCommandBuffer drawCmd);
@@ -49,9 +49,9 @@ public:
 
 private:
     void drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity> &node);
-    void loadTextures(VkQueue queue);
-    void loadBuffer(VkQueue transferQueue);
-    void createEmptyTexture(VkQueue queue);
+    void loadTextures();
+    void loadBuffer();
+    void createEmptyTexture();
 
     std::shared_ptr<VulkanDevice> _device = nullptr;
 

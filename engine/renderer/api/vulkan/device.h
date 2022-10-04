@@ -69,22 +69,18 @@ public:
     void destroySwapchain(VulkanSwapChain *pSwapchain);
 
 public:
-    void transitionImageLayout(VkQueue       queue,
-                               VulkanImage  *image,
+    void transitionImageLayout(VulkanImage  *image,
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
 
-    void copyBuffer(VkQueue       queue,
-                    VulkanBuffer *srcBuffer,
+    void copyBuffer(VulkanBuffer *srcBuffer,
                     VulkanBuffer *dstBuffer,
                     VkDeviceSize  size);
 
-    void copyBufferToImage(VkQueue       queue,
-                           VulkanBuffer *buffer,
+    void copyBufferToImage(VulkanBuffer *buffer,
                            VulkanImage  *image);
 
-    void copyImage(VkQueue      queue,
-                   VulkanImage *srcImage,
+    void copyImage(VulkanImage *srcImage,
                    VulkanImage *dstImage);
 
 public:
@@ -108,13 +104,15 @@ public:
                             VkQueue         queue,
                             bool            free = true) const;
 
+    void waitIdle();
+
 public:
     VkPhysicalDevice            getPhysicalDevice();
     VkDevice                    getLogicalDevice();
     VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
     VkPhysicalDeviceProperties &getDeviceProperties();
     uint32_t                   &GetQueueFamilyIndices(QueueFlags type);
-    VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex);
+    VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
 
     VkFormat findDepthFormat() const;
 

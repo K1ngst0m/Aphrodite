@@ -206,7 +206,7 @@ void VulkanRenderer::_createDefaultRenderPass() {
         .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .finalLayout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 
     };
     VkAttachmentDescription depthAttachment{
@@ -311,7 +311,9 @@ void VulkanRenderer::prepareFrame() {
 void VulkanRenderer::submitFrame() {
     auto presentImage    = m_swapChain->getImage(m_imageIdx);
     auto colorAttachment = m_defaultFramebuffers[m_imageIdx].colorImage;
-    m_device->copyImage(getDefaultDeviceQueue(QUEUE_TYPE_TRANSFER), colorAttachment, presentImage);
+    m_device->transitionImageLayout(colorAttachment, colorAttachment->getImageLayout(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+    m_device->copyImage(colorAttachment, presentImage);
+    m_device->transitionImageLayout(presentImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     VkSemaphore          waitSemaphores[]   = {m_defaultSyncObjects[m_currentFrame].renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -356,7 +358,7 @@ void VulkanRenderer::destroyDevice() {
     m_deletionQueue.flush();
 }
 void VulkanRenderer::idleDevice() {
-    vkDeviceWaitIdle(m_device->getLogicalDevice());
+    m_device->waitIdle();
 }
 
 void VulkanRenderer::initImGui() {
@@ -479,7 +481,9 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
             createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
-            m_device->transitionImageLayout(getDefaultDeviceQueue(QUEUE_TYPE_TRANSFER), fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            m_device->transitionImageLayout(fb.depthImage,
+                                            VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         }
 
         {
