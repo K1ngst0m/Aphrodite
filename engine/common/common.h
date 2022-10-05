@@ -29,8 +29,6 @@
 #include <stb_image.h>
 
 namespace vkl {
-using ColorValue = glm::vec4;
-
 struct DeletionQueue {
     std::deque<std::function<void()>> deletors;
 

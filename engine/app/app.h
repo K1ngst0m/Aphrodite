@@ -1,7 +1,7 @@
 #ifndef VULKANBASE_H_
 #define VULKANBASE_H_
 
-#include "vkl.hpp"
+#include <string>
 
 namespace vkl {
 class BaseApp {

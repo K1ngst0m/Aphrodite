@@ -17,6 +17,10 @@ file(GLOB base_src
   scene/*.h
   scene/*.hpp
 
+  app/*.cpp
+  app/*.h
+  app/*.hpp
+
   ../external/spirv_reflect/*.cpp
   ../external/spirv_reflect/*.h
   ../external/imgui/*.cpp

@@ -22,7 +22,8 @@
 #include "common/window.h"
 #include "common/assetManager.h"
 #include "common/timer.h"
-#include "common/app.h"
+
+#include "app/app.h"
 
 #include "scene/camera.h"
 #include "scene/entity.h"
