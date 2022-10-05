@@ -26,11 +26,6 @@ void scene_manager::finish() {
     cleanup();
 }
 
-void scene_manager::updateUniformBuffer() {
-    m_sceneManager->update();
-    m_sceneRenderer->update();
-}
-
 void scene_manager::loadScene() {
     // scene global argument setup
     {
@@ -221,9 +216,8 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn) {
 }
 
 void scene_manager::update() {
-    m_renderer->prepareFrame();
-    m_renderer->submitFrame();
-    updateUniformBuffer();
+    m_sceneManager->update();
+    m_sceneRenderer->update();
 }
 
 int main() {

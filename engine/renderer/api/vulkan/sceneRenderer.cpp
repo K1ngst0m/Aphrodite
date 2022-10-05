@@ -95,6 +95,8 @@ void VulkanSceneRenderer::update() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
 
+    _renderer->prepareFrame();
+    _renderer->submitFrame();
     // TODO update light data
     // for (auto & ubo : _uboList){
     //     if (ubo->_ubo->isUpdated()){

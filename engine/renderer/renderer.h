@@ -28,8 +28,6 @@ public:
     virtual void init()          = 0;
     virtual void destroyDevice() = 0;
     virtual void idleDevice()    = 0;
-    virtual void prepareFrame()  = 0;
-    virtual void submitFrame()   = 0;
 
     virtual std::shared_ptr<SceneRenderer> getSceneRenderer() = 0;
 

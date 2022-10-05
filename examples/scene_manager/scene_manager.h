@@ -23,7 +23,6 @@ private:
     void keyboardHandleDerive(int key, int scancode, int action, int mods);
     void mouseHandleDerive(double xposIn, double yposIn);
 
-    void updateUniformBuffer();
     void loadScene();
     void buildCommands();
 

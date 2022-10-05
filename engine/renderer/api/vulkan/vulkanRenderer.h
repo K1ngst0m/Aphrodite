@@ -19,10 +19,10 @@ public:
     void init() override;
     void destroyDevice() override;
     void idleDevice() override;
-    void prepareFrame() override;
-    void submitFrame() override;
 
 public:
+    void prepareFrame();
+    void submitFrame();
     void initDefaultResource();
     void initImGui();
     void prepareUIDraw();
