@@ -22,13 +22,6 @@ protected:
     const std::filesystem::path modelDir      = assetDir / "models";
 
 protected:
-    struct {
-        bool           enableValidationLayers = true;
-        bool           enableUI               = false;
-        const uint32_t max_frames             = 2;
-    } m_settings;
-
-protected:
     void initWindow();
     void initRenderer();
     void cleanup();
@@ -50,7 +43,6 @@ protected:
     std::shared_ptr<Camera>   m_defaultCamera = nullptr;
     std::unique_ptr<Renderer> m_renderer;
 
-    bool               m_framebufferResized = false;
     vkl::DeletionQueue m_deletionQueue;
 
     CursorPosFunc func;

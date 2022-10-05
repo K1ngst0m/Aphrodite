@@ -105,7 +105,7 @@ std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
 
     std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-    if (m_settings.enableDebug) {
+    if (_config.enableDebug) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -146,7 +146,7 @@ void VulkanRenderer::_createSurface() {
 }
 
 void VulkanRenderer::_createInstance() {
-    if (m_settings.enableDebug && !_checkValidationLayerSupport()) {
+    if (_config.enableDebug && !_checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -169,7 +169,7 @@ void VulkanRenderer::_createInstance() {
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     populateDebugMessengerCreateInfo(debugCreateInfo);
-    if (m_settings.enableDebug) {
+    if (_config.enableDebug) {
         createInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
         createInfo.pNext               = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
@@ -244,7 +244,7 @@ void VulkanRenderer::_createCommandBuffers() {
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
-    if (!m_settings.enableDebug)
+    if (!_config.enableDebug)
         return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
@@ -267,7 +267,7 @@ void VulkanRenderer::_setupPipelineBuilder() {
 }
 
 void VulkanRenderer::_createSyncObjects() {
-    m_defaultSyncObjects.resize(m_settings.maxFrames);
+    m_defaultSyncObjects.resize(_config.maxFrames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
@@ -350,7 +350,7 @@ void VulkanRenderer::submitFrame() {
         VK_CHECK_RESULT(result);
     }
 
-    m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
+    m_currentFrame = (m_currentFrame + 1) % _config.maxFrames;
 }
 
 void VulkanRenderer::init() {
@@ -430,7 +430,7 @@ void VulkanRenderer::initImGui() {
     });
 }
 void VulkanRenderer::prepareUIDraw() {
-    if (m_settings.enableUI) {
+    if (_config.enableUI) {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();

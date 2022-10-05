@@ -32,7 +32,12 @@ void vklApp::cleanup() {
 }
 
 void vklApp::initRenderer() {
-    m_renderer = Renderer::Create(RenderBackend::VULKAN);
+    RenderConfig config {
+        .enableDebug = true,
+        .enableUI = false,
+        .maxFrames = 2,
+    };
+    m_renderer = Renderer::Create(RenderBackend::VULKAN, &config);
     m_renderer->setWindowData(m_window->getWindowData());
     m_renderer->init();
 

@@ -13,7 +13,7 @@ void Window::init(uint32_t width, uint32_t height) {
     _windowData = std::make_shared<WindowData>(width, height);
     _cursorData = std::make_shared<CursorData>(width / 2.0f, height / 2.0f);
 
-    _windowData->window = glfwCreateWindow(_windowData->width, _windowData->height, "Demo", nullptr, nullptr);
+    _windowData->window = glfwCreateWindow(_windowData->width, _windowData->height, "Centimani Engine", nullptr, nullptr);
     assert(_windowData->window);
     glfwSetWindowUserPointer(getHandle(), this);
 }
