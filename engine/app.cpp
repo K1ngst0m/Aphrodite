@@ -98,7 +98,7 @@ void vklApp::keyboardHandleDerive(int key, int scancode, int action, int mods) {
 }
 
 void vklApp::run() {
-    auto loop_start_point = std::chrono::steady_clock::now();
+    auto timer = Timer(m_deltaTime);
 
     while (!m_window->shouldClose()) {
         m_window->pollEvents();
@@ -106,9 +106,6 @@ void vklApp::run() {
     }
 
     m_renderer->idleDevice();
-
-    auto loop_end_point = std::chrono::steady_clock::now();
-    m_deltaTime         = (loop_end_point - loop_start_point).count();
 }
 
 void vklApp::finish() {

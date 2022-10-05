@@ -3,23 +3,35 @@
 
 #include "vkl.hpp"
 
+#include <chrono>
 namespace vkl {
+
+class Timer{
+public:
+    Timer(float& interval)
+        :_interval(interval)
+    {
+        start = std::chrono::steady_clock::now();
+    }
+    ~Timer(){
+        auto end = std::chrono::steady_clock::now();
+        _interval = (start - end).count();
+    }
+
+private:
+    std::chrono::steady_clock::time_point start;
+    float& _interval;
+};
 
 class vklApp {
 public:
-    vklApp(std::string sessionName = "");
+    vklApp(std::string sessionName = "Untitled");
     virtual ~vklApp() = default;
 
 public:
     void init();
     void run();
     void finish();
-
-protected:
-    const std::filesystem::path assetDir      = "assets";
-    const std::filesystem::path glslShaderDir = assetDir / "shaders/glsl";
-    const std::filesystem::path textureDir    = assetDir / "textures";
-    const std::filesystem::path modelDir      = assetDir / "models";
 
 protected:
     void initWindow();
@@ -44,8 +56,6 @@ protected:
     std::unique_ptr<Renderer> m_renderer;
 
     vkl::DeletionQueue m_deletionQueue;
-
-    CursorPosFunc func;
 };
 } // namespace vkl
 
