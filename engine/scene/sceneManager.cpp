@@ -1,5 +1,6 @@
 #include "sceneManager.h"
 #include "resourceManager.h"
+#include "assetManager.h"
 
 namespace vkl {
 SceneManager::SceneManager()
@@ -63,7 +64,7 @@ std::shared_ptr<Entity> SceneManager::getEntityWithId(IdType id) {
     return _entityMapList[id];
 }
 void SceneManager::_createPrefabEntity() {
-    std::filesystem::path modelPath = "assets/models";
+    std::filesystem::path modelPath = AssetManager::GetModelDir();
     // plane
     auto planeEntity = createEntity(modelPath / "Plane/glTF/Plane.gltf");
     // cube

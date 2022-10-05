@@ -20,6 +20,7 @@
 
 #include "common.h"
 #include "window.h"
+#include "assetManager.h"
 
 #include "scene/camera.h"
 #include "scene/entity.h"
