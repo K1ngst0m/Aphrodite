@@ -22,6 +22,7 @@
 #include "common/window.h"
 #include "common/assetManager.h"
 #include "common/timer.h"
+#include "common/logger.h"
 
 #include "app/app.h"
 
