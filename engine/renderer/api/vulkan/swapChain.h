@@ -2,7 +2,7 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "device.h"
-#include "window.h"
+#include "common/window.h"
 
 namespace vkl {
 

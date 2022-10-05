@@ -2,7 +2,7 @@
 #define VULKAN_BUFFER_H_
 
 #include "renderer/gpuResource.h"
-#include <vulkan/vulkan.h>
+#include "device.h"
 
 namespace vkl {
 class VulkanDevice;

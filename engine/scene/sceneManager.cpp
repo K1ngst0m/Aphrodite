@@ -1,6 +1,10 @@
 #include "sceneManager.h"
 #include "resourceManager.h"
-#include "assetManager.h"
+#include "entity.h"
+#include "light.h"
+#include "camera.h"
+#include "common/assetManager.h"
+#include "sceneNode.h"
 
 namespace vkl {
 SceneManager::SceneManager()

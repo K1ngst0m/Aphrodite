@@ -1,13 +1,15 @@
 #ifndef ENTITYGLTFLOADER_H_
 #define ENTITYGLTFLOADER_H_
 
-#include "common.h"
-#include "entity.h"
+#include "common/common.h"
 
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #include <tinygltf/tiny_gltf.h>
 
 namespace vkl {
+class Entity;
+class SubEntity;
+
 class ResourceManager{
 public:
     void loadTextureFromFile(const std::string& path){

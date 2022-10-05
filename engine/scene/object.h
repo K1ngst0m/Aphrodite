@@ -1,8 +1,7 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
-#include "common.h"
-#include "idObject.h"
+#include "sceneManager.h"
 
 namespace vkl {
 

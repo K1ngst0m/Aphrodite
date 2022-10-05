@@ -1,9 +1,9 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
-#include "common.h"
+#include "common/common.h"
+#include "common/window.h"
 #include "device.h"
-#include "window.h"
 
 class GLFWwindow;
 
@@ -24,6 +24,7 @@ struct RenderConfig {
 class Renderer {
 public:
     static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config);
+
     virtual void init()          = 0;
     virtual void destroyDevice() = 0;
     virtual void idleDevice()    = 0;

@@ -1,9 +1,20 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "sceneNode.h"
+#include "idObject.h"
 
 namespace vkl {
+class SceneNode;
+class Object;
+class Entity;
+class Light;
+class Camera;
+
+enum class ShadingModel {
+    UNLIT,
+    DEFAULTLIT,
+};
+
 struct AABB {
     glm::vec3 min;
     glm::vec3 max;

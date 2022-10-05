@@ -29,11 +29,6 @@ struct Vertex {
     glm::vec4 tangent;
 };
 
-enum class ShadingModel {
-    UNLIT,
-    DEFAULTLIT,
-};
-
 struct Primitive {
     ResourceIndex firstIndex    = -1;
     ResourceIndex indexCount    = -1;

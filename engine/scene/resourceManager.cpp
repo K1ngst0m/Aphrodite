@@ -2,6 +2,7 @@
 #include "resourceManager.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include "entity.h"
 
 namespace vkl {
 void GLTFLoader::load(Entity *entity, const std::string &path) {

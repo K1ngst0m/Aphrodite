@@ -2,8 +2,7 @@
 #define RENDERPASS_H_
 
 #include "device.h"
-#include "spinlock.h"
-#include <map>
+#include "common/spinlock.h"
 
 namespace vkl {
 using RenderPassHash = std::vector<uint64_t>;
@@ -13,7 +12,7 @@ struct RenderPassCreateInfo {
 
 class VulkanRenderPass {
 public:
-    static VulkanRenderPass *create(VulkanDevice *pDevice, const RenderPassCreateInfo *pCreateInfo);
+    static VulkanRenderPass *Create(VulkanDevice *pDevice, const RenderPassCreateInfo *pCreateInfo);
 
     VulkanRenderPass(VkRenderPass handle, uint32_t colorAtachmentCount)
         : m_handle(handle), m_colorAttachmentCount(colorAtachmentCount) {

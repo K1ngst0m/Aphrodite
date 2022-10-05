@@ -1,9 +1,7 @@
 #ifndef VULKAN_IMAGE_H_
 #define VULKAN_IMAGE_H_
 
-#include "common.h"
-#include "renderer/gpuResource.h"
-#include "vkUtils.h"
+#include "device.h"
 
 namespace vkl {
 class VulkanDevice;

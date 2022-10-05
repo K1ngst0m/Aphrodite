@@ -2,7 +2,7 @@
 #define FRAMEBUFFER_H_
 
 #include "device.h"
-#include "spinlock.h"
+#include "common/spinlock.h"
 
 namespace vkl {
 

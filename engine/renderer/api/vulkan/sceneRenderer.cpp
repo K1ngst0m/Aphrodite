@@ -1,4 +1,8 @@
 #include "sceneRenderer.h"
+#include "scene/sceneNode.h"
+#include "scene/entity.h"
+#include "scene/light.h"
+#include "scene/camera.h"
 #include "device.h"
 #include "framebuffer.h"
 #include "pipeline.h"

@@ -1,14 +1,29 @@
 #include "scene_manager.h"
 
-void scene_manager::initDerive() {
+scene_manager::scene_manager()
+    : vkl::BaseApp("scene_manager") {
+}
+
+void scene_manager::init() {
+    setupWindow();
+    setupRenderer();
     loadScene();
     buildCommands();
 }
 
-void scene_manager::drawFrame() {
-    m_renderer->prepareFrame();
-    m_renderer->submitFrame();
-    updateUniformBuffer();
+void scene_manager::run() {
+    auto timer = vkl::Timer(m_deltaTime);
+
+    while (!m_window->shouldClose()) {
+        m_window->pollEvents();
+        update();
+    }
+
+    m_renderer->idleDevice();
+}
+
+void scene_manager::finish() {
+    cleanup();
 }
 
 void scene_manager::updateUniformBuffer() {
@@ -112,6 +127,103 @@ void scene_manager::loadScene() {
 
 void scene_manager::buildCommands() {
     m_sceneRenderer->drawScene();
+}
+
+void scene_manager::setupWindow() {
+    m_window = vkl::Window::Create();
+    m_window->init(1366, 768);
+
+    m_window->setCursorPosCallback([=](double xposIn, double yposIn) {
+        this->mouseHandleDerive(xposIn, yposIn);
+    });
+
+    m_window->setFramebufferSizeCallback([=](int width, int height) {
+        // this->m_framebufferResized = true;
+    });
+
+    m_window->setKeyCallback([=](int key, int scancode, int action, int mods) {
+        this->keyboardHandleDerive(key, scancode, action, mods);
+    });
+
+    m_deletionQueue.push_function([=]() {
+        m_window->cleanup();
+    });
+}
+
+void scene_manager::setupRenderer() {
+    vkl::RenderConfig config{
+        .enableDebug = true,
+        .enableUI    = false,
+        .maxFrames   = 2,
+    };
+    m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config);
+    m_renderer->setWindowData(m_window->getWindowData());
+    m_renderer->init();
+
+    m_deletionQueue.push_function([&]() {
+        m_renderer->destroyDevice();
+    });
+}
+
+void scene_manager::cleanup() {
+    m_deletionQueue.flush();
+}
+
+void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
+    if (action == VKL_PRESS) {
+        switch (key) {
+        case VKL_KEY_ESCAPE:
+            m_window->close();
+            break;
+        case VKL_KEY_1:
+            m_window->toggleCurosrVisibility();
+            break;
+        case VKL_KEY_W:
+            m_defaultCamera->setMovement(vkl::CameraDirection::UP, true);
+            break;
+        case VKL_KEY_A:
+            m_defaultCamera->setMovement(vkl::CameraDirection::LEFT, true);
+            break;
+        case VKL_KEY_S:
+            m_defaultCamera->setMovement(vkl::CameraDirection::DOWN, true);
+            break;
+        case VKL_KEY_D:
+            m_defaultCamera->setMovement(vkl::CameraDirection::RIGHT, true);
+            break;
+        }
+    }
+
+    if (action == VKL_RELEASE) {
+        switch (key) {
+        case VKL_KEY_W:
+            m_defaultCamera->setMovement(vkl::CameraDirection::UP, false);
+            break;
+        case VKL_KEY_A:
+            m_defaultCamera->setMovement(vkl::CameraDirection::LEFT, false);
+            break;
+        case VKL_KEY_S:
+            m_defaultCamera->setMovement(vkl::CameraDirection::DOWN, false);
+            break;
+        case VKL_KEY_D:
+            m_defaultCamera->setMovement(vkl::CameraDirection::RIGHT, false);
+            break;
+        }
+    }
+
+    m_defaultCamera->processMovement(m_deltaTime);
+}
+
+void scene_manager::mouseHandleDerive(double xposIn, double yposIn) {
+    float dx = m_window->getCursorXpos() - xposIn;
+    float dy = m_window->getCursorYpos() - yposIn;
+
+    m_defaultCamera->rotate(glm::vec3(dy * m_defaultCamera->getRotationSpeed(), -dx * m_defaultCamera->getRotationSpeed(), 0.0f));
+}
+
+void scene_manager::update() {
+    m_renderer->prepareFrame();
+    m_renderer->submitFrame();
+    updateUniformBuffer();
 }
 
 int main() {

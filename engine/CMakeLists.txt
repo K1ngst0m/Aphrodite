@@ -1,7 +1,9 @@
 file(GLOB base_src
-  *.cpp
-  *.h
-  *.hpp
+  common/*.cpp
+  common/*.h
+  common/*.hpp
+
+  vkl.hpp
 
   renderer/*.cpp
   renderer/*.h
@@ -23,8 +25,7 @@ file(GLOB base_src
 
 
 file(GLOB BASE_HEADERS
-  *.h
-  *.hpp
+  vkl.hpp
 
   renderer/*.h
   renderer/*.hpp

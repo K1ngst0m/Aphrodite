@@ -7,10 +7,11 @@
 #include "renderObject.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
+#include "scene/entity.h"
 #include "sceneRenderer.h"
+#include "swapChain.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
-#include <GLFW/glfw3.h>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>

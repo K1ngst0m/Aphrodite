@@ -1,14 +1,8 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include "common.h"
-
 #include "renderer/renderer.h"
-
-#include "device.h"
-#include "pipeline.h"
 #include "sceneRenderer.h"
-#include "swapChain.h"
 
 namespace vkl {
 struct PerFrameSyncObject {

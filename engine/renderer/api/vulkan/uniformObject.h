@@ -2,7 +2,6 @@
 #define VULKAN_UNIFORMOBJECT_H_
 
 #include "buffer.h"
-#include "common.h"
 
 namespace vkl {
 class SceneRenderer;

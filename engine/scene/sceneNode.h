@@ -1,10 +1,7 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
-#include "camera.h"
-#include "common.h"
-#include "entity.h"
-#include "light.h"
+#include "sceneManager.h"
 
 namespace vkl {
 

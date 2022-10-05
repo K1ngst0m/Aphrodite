@@ -1,7 +1,7 @@
 #ifndef GPU_RESOURCE_H_
 #define GPU_RESOURCE_H_
 
-#include "common.h"
+#include "common/common.h"
 
 namespace vkl {
 enum BufferUsageFlagBits {

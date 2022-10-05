@@ -1,7 +1,7 @@
 #ifndef IDOBJECT_H_
 #define IDOBJECT_H_
 
-#include "common.h"
+#include "common/common.h"
 
 namespace vkl {
 

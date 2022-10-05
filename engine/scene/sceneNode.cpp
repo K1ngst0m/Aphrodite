@@ -1,4 +1,8 @@
 #include "sceneNode.h"
+#include "object.h"
+#include "light.h"
+#include "camera.h"
+#include "entity.h"
 
 namespace vkl {
 

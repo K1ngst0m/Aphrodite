@@ -2,7 +2,7 @@
 #define COMMANDPOOL_H_
 
 #include "device.h"
-#include "spinlock.h"
+#include "common/spinlock.h"
 
 namespace vkl {
 class VulkanCommandPool : public ResourceHandle<VkCommandPool> {
