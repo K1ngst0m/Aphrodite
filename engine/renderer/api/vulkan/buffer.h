@@ -8,7 +8,7 @@ namespace vkl {
 class VulkanDevice;
 class VulkanBuffer : public Buffer, public ResourceHandle<VkBuffer> {
 public:
-    static VulkanBuffer *createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory);
+    static VulkanBuffer *CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory);
 
     VkDeviceMemory getMemory();
 

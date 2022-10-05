@@ -90,7 +90,8 @@ public:
 
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
-                                uint32_t         count);
+                                uint32_t         count,
+                                QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
     VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
                                     VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;

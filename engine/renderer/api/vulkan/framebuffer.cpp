@@ -3,7 +3,7 @@
 #include "renderpass.h"
 
 namespace vkl {
-VkResult VulkanFramebuffer::create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments) {
+VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments) {
     // Iterate over attachments and make sure each ImageView exists in ObjectLookup.
     std::vector<VulkanImageView *> attachments;
     for (auto i = 0U; i < attachmentCount; ++i) {

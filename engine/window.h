@@ -21,20 +21,38 @@ struct WindowData {
     }
 };
 
+struct CursorData {
+    float lastX;
+    float lastY;
+    bool  firstMouse      = true;
+    bool  isCursorDisable = false;
+    CursorData(float lastXin, float lastYin)
+        : lastX(lastXin), lastY(lastYin) {
+    }
+};
+
 using FramebufferSizeFunc = std::function<void(int width, int height)>;
 using CursorPosFunc       = std::function<void(double xposIn, double yposIn)>;
 using KeyFunc             = std::function<void(int key, int scancode, int action, int mods)>;
 
 class Window {
 public:
-    void init(uint32_t width, uint32_t height);
+    static std::shared_ptr<Window> Create() {
+        return std::make_shared<Window>();
+    }
+
+    void init(uint32_t width = 800, uint32_t height = 600);
     void cleanup();
 
     std::shared_ptr<WindowData> getWindowData();
-    GLFWwindow                 *getHandle();
-    uint32_t                    getWidth();
-    uint32_t                    getHeight();
-    float                       getAspectRatio();
+    std::shared_ptr<CursorData> getMouseData();
+
+    GLFWwindow *getHandle();
+    uint32_t    getWidth();
+    uint32_t    getHeight();
+    float       getAspectRatio();
+    float       getCursorXpos();
+    float       getCursorYpos();
 
 public:
     void setFramebufferSizeCallback(const FramebufferSizeFunc &cbFunc);
@@ -49,8 +67,9 @@ public:
     void pollEvents();
 
 private:
-    bool                        isCursorVisible = false;
-    std::shared_ptr<WindowData> _data           = nullptr;
+    bool                        _isCursorVisible = false;
+    std::shared_ptr<WindowData> _windowData      = nullptr;
+    std::shared_ptr<CursorData> _cursorData      = nullptr;
     FramebufferSizeFunc         _framebufferResizeCB;
     CursorPosFunc               _cursorPosCB;
     KeyFunc                     _keyCB;

@@ -42,9 +42,10 @@ void VulkanSceneRenderer::cleanupResources() {
 }
 
 void VulkanSceneRenderer::drawScene() {
-    VkExtent2D extent{};
-    extent.width        = _renderer->getWindowWidth();
-    extent.height       = _renderer->getWindowHeight();
+    VkExtent2D extent{
+        .width  = _renderer->getWindowWidth(),
+        .height = _renderer->getWindowHeight(),
+    };
     VkViewport viewport = vkl::init::viewport(extent);
     VkRect2D   scissor  = vkl::init::rect2D(extent);
 
@@ -52,14 +53,12 @@ void VulkanSceneRenderer::drawScene() {
     clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
 
-    VkRenderPassBeginInfo renderPassBeginInfo    = vkl::init::renderPassBeginInfo();
-    renderPassBeginInfo.renderPass               = _renderer->getDefaultRenderPass();
-    renderPassBeginInfo.renderArea.offset.x      = 0;
-    renderPassBeginInfo.renderArea.offset.y      = 0;
-    renderPassBeginInfo.renderArea.extent.width  = _renderer->getWindowWidth();
-    renderPassBeginInfo.renderArea.extent.height = _renderer->getWindowHeight();
-    renderPassBeginInfo.clearValueCount          = 2;
-    renderPassBeginInfo.pClearValues             = clearValues.data();
+    VkRenderPassBeginInfo renderPassBeginInfo = vkl::init::renderPassBeginInfo();
+    renderPassBeginInfo.renderPass            = _renderer->getDefaultRenderPass();
+    renderPassBeginInfo.renderArea.offset     = {0, 0};
+    renderPassBeginInfo.renderArea.extent     = extent;
+    renderPassBeginInfo.clearValueCount       = clearValues.size();
+    renderPassBeginInfo.pClearValues          = clearValues.data();
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -69,12 +68,11 @@ void VulkanSceneRenderer::drawScene() {
 
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
+        // render pass
+        renderPassBeginInfo.framebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
         // dynamic state
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        // render pass
-        renderPassBeginInfo.framebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex], 0, nullptr);
@@ -83,6 +81,7 @@ void VulkanSceneRenderer::drawScene() {
         for (auto &renderable : _renderList) {
             renderable->draw(_getShaderPass()->layout, commandBuffer);
         }
+
         vkCmdEndRenderPass(commandBuffer);
 
         VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
@@ -227,7 +226,6 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
                             _renderer->getPipelineBuilder(),
                             _unlitEffect.get());
 }
-
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -255,11 +253,9 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     _defaultLitPass = std::make_unique<ShaderPass>();
     _defaultLitPass->buildEffect(_device->getLogicalDevice(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _defaultLitEffect.get());
 }
-
 void VulkanSceneRenderer::_initRenderResource() {
     _renderer->initDefaultResource();
 }
-
 std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
     switch (_shadingModel) {
     case ShadingModel::UNLIT:

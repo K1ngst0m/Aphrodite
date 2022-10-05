@@ -2,7 +2,7 @@
 #include "device.h"
 
 namespace vkl {
-VulkanBuffer *VulkanBuffer::createFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
+VulkanBuffer *VulkanBuffer::CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
     VulkanBuffer *instance = new VulkanBuffer;
     memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
     instance->device = pDevice->getLogicalDevice();

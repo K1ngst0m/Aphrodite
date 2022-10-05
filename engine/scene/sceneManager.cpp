@@ -71,4 +71,13 @@ void SceneManager::_createPrefabEntity() {
     // sphere
     auto sphereEntity = createEntity(modelPath / "Sphere/glTF/Sphere.gltf");
 };
+std::unique_ptr<SceneManager> SceneManager::Create(SceneManagerType type) {
+    switch (type) {
+    case SceneManagerType::DEFAULT:
+        return std::make_unique<SceneManager>();
+        break;
+    }
+    assert("scene manager type not support.");
+    return {};
+}
 } // namespace vkl

@@ -553,7 +553,7 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     };
     VK_CHECK_RESULT(vkAllocateMemory(_deviceInfo.logicalDevice, &allocInfo, nullptr, &memory));
 
-    *ppBuffer = VulkanBuffer::createFromHandle(this, pCreateInfo, buffer, memory);
+    *ppBuffer = VulkanBuffer::CreateFromHandle(this, pCreateInfo, buffer, memory);
 
     // bind buffer and memory
     VkResult result = (*ppBuffer)->bind();
@@ -605,7 +605,7 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
         throw std::runtime_error("failed to allocate image memory!");
     }
 
-    *ppImage = VulkanImage::createFromHandle(this, pCreateInfo, image, memory);
+    *ppImage = VulkanImage::CreateFromHandle(this, pCreateInfo, image, memory);
 
     if ((*ppImage)->getMemory() != VK_NULL_HANDLE) {
         auto result = (*ppImage)->bind();
@@ -679,10 +679,10 @@ VkDevice VulkanDevice::getLogicalDevice() const {
 VkPhysicalDevice VulkanDevice::getPhysicalDevice() const {
     return _deviceInfo.physicalDevice;
 }
-void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count) {
+void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count, QueueFlags flags) {
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = _drawCommandPool,
+        .commandPool        = getCommandPoolWithQueue(flags),
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = count,
     };
@@ -767,7 +767,7 @@ VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo,
                                           VulkanFramebuffer    **ppFramebuffer,
                                           uint32_t               attachmentCount,
                                           VulkanImageView      **pAttachments) {
-    return VulkanFramebuffer::create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
+    return VulkanFramebuffer::Create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
 }
 
 void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer) {

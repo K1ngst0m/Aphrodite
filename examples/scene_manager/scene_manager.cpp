@@ -19,16 +19,16 @@ void scene_manager::updateUniformBuffer() {
 void scene_manager::loadScene() {
     // scene global argument setup
     {
-        m_sceneManager = std::make_shared<vkl::SceneManager>();
+        m_sceneManager = vkl::SceneManager::Create(vkl::SceneManagerType::DEFAULT);
         m_sceneManager->setAmbient(glm::vec4(0.2f));
     }
 
     // scene camera
-   {
-        m_defaultCamera = m_sceneManager->createCamera(m_window.getAspectRatio());
+    {
+        m_defaultCamera = m_sceneManager->createCamera(m_window->getAspectRatio());
         m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
-        m_defaultCamera->setPosition({0.0f, 1.0f, 3.0f, 1.0f});
-        m_defaultCamera->setPerspective(60.0f, m_window.getAspectRatio(), 0.1f, 256.0f);
+        m_defaultCamera->setPosition({0.0f, 0.0f, -3.0f, 1.0f});
+        m_defaultCamera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
         m_defaultCamera->setMovementSpeed(2.5f);
         m_defaultCamera->setRotationSpeed(0.1f);
 
@@ -64,20 +64,20 @@ void scene_manager::loadScene() {
 
     // load from gltf file
     {
-        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
-        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        // m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
-        // auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(m_model);
+        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
+        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        m_model                  = m_sceneManager->createEntity(modelDir / "Sponza/glTF/Sponza.gltf");
+        auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        node->attachObject(m_model);
     }
 
     // box prefab
     {
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        auto &node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(prefab_cube_model);
+        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
+        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        // auto prefab_cube_model        = m_sceneManager->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
+        // auto &node = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(prefab_cube_model);
     }
 
     // plane prefab
@@ -117,7 +117,7 @@ void scene_manager::buildCommands() {
 int main() {
     scene_manager app;
 
-    app.vkl::vklApp::init();
-    app.vkl::vklApp::run();
-    app.vkl::vklApp::finish();
+    app.init();
+    app.run();
+    app.finish();
 }

@@ -10,34 +10,35 @@ void Window::init(uint32_t width, uint32_t height) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    _data = std::make_shared<WindowData>(width, height);
+    _windowData = std::make_shared<WindowData>(width, height);
+    _cursorData = std::make_shared<CursorData>(width / 2.0f, height / 2.0f);
 
-    _data->window = glfwCreateWindow(_data->width, _data->height, "Demo", nullptr, nullptr);
-    assert(_data->window);
+    _windowData->window = glfwCreateWindow(_windowData->width, _windowData->height, "Demo", nullptr, nullptr);
+    assert(_windowData->window);
     glfwSetWindowUserPointer(getHandle(), this);
 }
 
 GLFWwindow *Window::getHandle() {
-    return _data->window;
+    return _windowData->window;
 }
 void Window::setHeight(uint32_t h) {
-    _data->height = h;
+    _windowData->height = h;
 }
 void Window::setWidth(uint32_t w) {
-    _data->width = w;
+    _windowData->width = w;
 }
 std::shared_ptr<WindowData> Window::getWindowData() {
-    return _data;
+    return _windowData;
 }
 void Window::cleanup() {
-    glfwDestroyWindow(_data->window);
+    glfwDestroyWindow(_windowData->window);
     glfwTerminate();
 }
 uint32_t Window::getWidth() {
-    return _data->width;
+    return _windowData->width;
 }
 uint32_t Window::getHeight() {
-    return _data->height;
+    return _windowData->height;
 }
 
 void Window::setFramebufferSizeCallback(const FramebufferSizeFunc &cbFunc) {
@@ -55,12 +56,25 @@ void Window::setCursorPosCallback(const CursorPosFunc &cbFunc) {
 
     glfwSetCursorPosCallback(getHandle(), [](GLFWwindow *window, double xposIn, double yposIn) {
         Window *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+
+        auto xpos = static_cast<float>(xposIn);
+        auto ypos = static_cast<float>(yposIn);
+
+        if (ptr->_cursorData->firstMouse) {
+            ptr->_cursorData->lastX      = xpos;
+            ptr->_cursorData->lastY      = ypos;
+            ptr->_cursorData->firstMouse = false;
+        }
+
         ptr->_cursorPosCB(xposIn, yposIn);
+
+        ptr->_cursorData->lastX = xpos;
+        ptr->_cursorData->lastY = ypos;
     });
 }
 
 float Window::getAspectRatio() {
-    return _data->getAspectRatio();
+    return _windowData->getAspectRatio();
 }
 
 void Window::setKeyCallback(const KeyFunc &cbFunc) {
@@ -73,11 +87,11 @@ void Window::setKeyCallback(const KeyFunc &cbFunc) {
 
 void Window::setCursorVisibility(bool flag) {
     glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-    isCursorVisible = flag;
+    _isCursorVisible = flag;
 }
 
 void Window::toggleCurosrVisibility() {
-    setCursorVisibility(!isCursorVisible);
+    setCursorVisibility(!_isCursorVisible);
 }
 
 void Window::close() {
@@ -89,5 +103,14 @@ bool Window::shouldClose() {
 }
 void Window::pollEvents() {
     glfwPollEvents();
+}
+std::shared_ptr<CursorData> Window::getMouseData() {
+    return _cursorData;
+}
+float Window::getCursorYpos() {
+    return _cursorData->lastY;
+}
+float Window::getCursorXpos() {
+    return _cursorData->lastX;
 }
 } // namespace vkl

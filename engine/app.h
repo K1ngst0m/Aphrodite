@@ -5,19 +5,9 @@
 
 namespace vkl {
 
-struct MouseData {
-    float lastX;
-    float lastY;
-    bool  firstMouse      = true;
-    bool  isCursorDisable = false;
-    MouseData(float lastXin, float lastYin)
-        : lastX(lastXin), lastY(lastYin) {
-    }
-};
-
 class vklApp {
 public:
-    vklApp(std::string sessionName = "", uint32_t winWidth = 800, uint32_t winHeight = 600);
+    vklApp(std::string sessionName = "");
     virtual ~vklApp() = default;
 
 public:
@@ -54,11 +44,9 @@ protected:
 protected:
     const std::string m_sessionName;
 
-    Window m_window;
+    float m_deltaTime;
 
-    MouseData m_mouseData;
-    float     m_deltaTime;
-
+    std::shared_ptr<Window>   m_window;
     std::shared_ptr<Camera>   m_defaultCamera = nullptr;
     std::unique_ptr<Renderer> m_renderer;
 

@@ -227,7 +227,7 @@ void VulkanRenderer::_createDefaultRenderPass() {
     VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_defaultRenderPass, colorAttachments, depthAttachment));
 
     m_deletionQueue.push_function([=]() {
-        vkDestroyRenderPass(m_device->getLogicalDevice(), m_defaultRenderPass->getHandle(), nullptr);
+        m_device->destoryRenderPass(m_defaultRenderPass);
     });
 }
 
@@ -240,7 +240,7 @@ void VulkanRenderer::_setupSwapChain() {
 
 void VulkanRenderer::_createCommandBuffers() {
     m_defaultCommandBuffers.resize(m_swapChain->getImageCount());
-    m_device->allocateCommandBuffers(m_defaultCommandBuffers.data(), m_defaultCommandBuffers.size());
+    m_device->allocateCommandBuffers(m_defaultCommandBuffers.data(), m_defaultCommandBuffers.size(), QUEUE_TYPE_GRAPHICS);
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -327,11 +327,22 @@ void VulkanRenderer::submitFrame() {
                                   1, &submitInfo,
                                   getCurrentFrameSyncObject().inFlightFence));
 
-    VkPresentInfoKHR presentInfo = m_swapChain->getPresentInfo(signalSemaphores, &m_imageIdx);
+    VkPresentInfoKHR presentInfo = {
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores    = signalSemaphores,
+        .swapchainCount     = 1,
+        .pSwapchains        = &m_swapChain->getHandle(),
+        .pImageIndices      = &m_imageIdx,
+        .pResults           = nullptr, // Optional
+    };
 
     VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(QUEUE_TYPE_PRESENT), &presentInfo);
+    VK_CHECK_RESULT(result);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _windowData->resized) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR ||
+        result == VK_SUBOPTIMAL_KHR ||
+        _windowData->resized) {
         assert("recreate swapchain currently not support.");
         _windowData->resized = false;
         // _recreateSwapChain();
@@ -342,7 +353,7 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % m_settings.maxFrames;
 }
 
-void VulkanRenderer::initDevice() {
+void VulkanRenderer::init() {
     _createInstance();
     _setupDebugMessenger();
     _createSurface();
@@ -502,7 +513,7 @@ VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto & fb = m_defaultFramebuffers[idx];
+        auto &fb = m_defaultFramebuffers[idx];
         // {
         //     ImageCreateInfo createInfo{};
         //     createInfo.imageType = IMAGE_TYPE_2D;

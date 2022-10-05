@@ -48,19 +48,6 @@ VkResult VulkanSwapChain::acqureNextImage(VkSemaphore semaphore, VkFence fence, 
     return vkAcquireNextImageKHR(_device->getLogicalDevice(), _handle, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
 }
 
-VkPresentInfoKHR VulkanSwapChain::getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex) {
-    VkPresentInfoKHR presentInfo = {
-        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores    = waitSemaphores,
-        .swapchainCount     = 1,
-        .pSwapchains        = &_handle,
-        .pImageIndices      = imageIndex,
-        .pResults           = nullptr, // Optional
-    };
-    return presentInfo;
-}
-
 void VulkanSwapChain::allocate(WindowData *data) {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice());
 
@@ -121,7 +108,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
         imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
         imageCreateInfo.usage           = swapChainCreateInfo.imageUsage;
 
-        auto image = VulkanImage::createFromHandle(_device, &imageCreateInfo, handle);
+        auto image = VulkanImage::CreateFromHandle(_device, &imageCreateInfo, handle);
 
         _images.push_back(image);
     }

@@ -8,7 +8,7 @@ namespace vkl {
 
 class VulkanFramebuffer : public FrameBuffer {
 public:
-    static VkResult create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments);
+    static VkResult Create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments);
 
     ~VulkanFramebuffer() = default;
 

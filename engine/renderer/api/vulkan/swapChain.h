@@ -24,7 +24,6 @@ public:
     VkFormat         getFormat() const;
     VkExtent2D       getExtent() const;
     uint32_t         getImageCount() const;
-    VkPresentInfoKHR getPresentInfo(VkSemaphore *waitSemaphores, const uint32_t *imageIndex);
     VulkanImage     *getImage(uint32_t idx) const;
 
 private:

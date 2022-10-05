@@ -22,7 +22,7 @@ public:
     VulkanRenderer()  = default;
     ~VulkanRenderer() = default;
 
-    void initDevice() override;
+    void init() override;
     void destroyDevice() override;
     void idleDevice() override;
     void prepareFrame() override;

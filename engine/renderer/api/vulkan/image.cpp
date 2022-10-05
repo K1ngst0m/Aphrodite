@@ -6,7 +6,7 @@ namespace vkl {
 VkResult VulkanImage::bind(VkDeviceSize offset) const {
     return vkBindImageMemory(_device->getLogicalDevice(), _handle, _memory, offset);
 }
-VulkanImage *VulkanImage::createFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImage image, VkDeviceMemory memory) {
+VulkanImage *VulkanImage::CreateFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImage image, VkDeviceMemory memory) {
     assert(image != VK_NULL_HANDLE);
 
     VulkanImage *instance = new VulkanImage;

@@ -15,7 +15,7 @@ void VulkanUniformObject::setupBuffer(uint32_t bufferSize, void *data) {
     BufferCreateInfo createInfo{};
     createInfo.size = bufferSize;
     createInfo.usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    createInfo.property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
     VK_CHECK_RESULT(_device->createBuffer(&createInfo, &buffer, data));
     buffer->setupDescriptor();
     buffer->map();

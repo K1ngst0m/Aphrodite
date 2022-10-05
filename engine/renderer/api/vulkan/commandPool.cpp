@@ -2,7 +2,7 @@
 
 namespace vkl {
 
-VkResult VulkanCommandPool::create(VulkanDevice *device, uint32_t queueFamilyIndex, VulkanCommandPool **ppCommandPool) {
+VkResult VulkanCommandPool::Create(VulkanDevice *device, uint32_t queueFamilyIndex, VulkanCommandPool **ppCommandPool) {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.queueFamilyIndex        = queueFamilyIndex;

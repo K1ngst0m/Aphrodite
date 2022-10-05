@@ -2,7 +2,7 @@
 #include "renderer/api/vulkan/vulkanRenderer.h"
 
 namespace vkl {
-    std::unique_ptr<Renderer> Renderer::CreateRenderer(RenderBackend backend){
+    std::unique_ptr<Renderer> Renderer::Create(RenderBackend backend){
         switch (backend) {
             case RenderBackend::VULKAN:
                 return std::make_unique<VulkanRenderer>();

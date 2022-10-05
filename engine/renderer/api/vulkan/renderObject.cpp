@@ -81,7 +81,7 @@ void VulkanRenderObject::loadTextures() {
             createInfo.format   = FORMAT_R8G8B8A8_SRGB;
             createInfo.tiling   = IMAGE_TILING_OPTIMAL;
             createInfo.usage    = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
-            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
             _device->createImage(&createInfo, &texture.image);
 

@@ -24,9 +24,9 @@ public:
     } m_settings;
 
 public:
-    static std::unique_ptr<Renderer> CreateRenderer(RenderBackend backend);
+    static std::unique_ptr<Renderer> Create(RenderBackend backend);
 
-    virtual void initDevice()    = 0;
+    virtual void init()    = 0;
     virtual void destroyDevice() = 0;
     virtual void idleDevice()    = 0;
     virtual void prepareFrame()  = 0;
