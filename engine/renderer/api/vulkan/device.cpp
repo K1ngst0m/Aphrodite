@@ -1,5 +1,7 @@
 #include "device.h"
 #include "buffer.h"
+#include "commandPool.h"
+#include "commandBuffer.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
@@ -9,17 +11,6 @@
 #include "vkUtils.h"
 
 namespace vkl {
-/**
- * Get the index of a memory type that has all the requested property bits set
- *
- * @param typeBits Bit mask with bits set for each memory type supported by the resource to request for (from VkMemoryRequirements)
- * @param properties Bit mask of properties for the memory type to request
- * @param (Optional) memTypeFound Pointer to a bool that is set to true if a matching memory type has been found
- *
- * @return Index of the requested memory type
- *
- * @throw Throws an exception if memTypeFound is null and no memory type could be found that supports the requested properties
- */
 uint32_t VulkanDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound) const {
     for (uint32_t i = 0; i < _deviceInfo.memoryProperties.memoryTypeCount; i++) {
         if ((typeBits & 1) == 1) {
@@ -41,16 +32,6 @@ uint32_t VulkanDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags p
     throw std::runtime_error("Could not find a matching memory type");
 }
 
-/**
- * Get the index of a queue family that supports the requested queue flags
- * SRS - support VkQueueFlags parameter for requesting multiple flags vs. VkQueueFlagBits for a single flag only
- *
- * @param queueFlags Queue flags to find a queue family index for
- *
- * @return Index of the queue family index that matches the flags
- *
- * @throw Throws an exception if no queue family index could be found that supports the requested flags
- */
 uint32_t VulkanDevice::findQueueFamilies(VkQueueFlags queueFlags) const {
     // Dedicated queue for compute
     // Try to find a queue family index that supports compute but not graphics
@@ -85,16 +66,6 @@ uint32_t VulkanDevice::findQueueFamilies(VkQueueFlags queueFlags) const {
     throw std::runtime_error("Could not find a matching queue family index");
 }
 
-/**
- * Create the logical device based on the assigned physical device, also gets default queue family indices
- *
- * @param enabledFeatures Can be used to enable certain features upon device creation
- * @param pNextChain Optional chain of pointer to extension structures
- * @param useSwapChain Set to false for headless rendering to omit the swapchain device extensions
- * @param requestedQueueTypes Bit flags specifying the queue types to be requested from the device
- *
- * @return VkResult of the device creation call
- */
 VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeatures,
                                            std::vector<const char *> enabledExtensions,
                                            void                     *pNextChain,
@@ -236,81 +207,26 @@ VkResult VulkanDevice::createLogicalDevice(VkPhysicalDeviceFeatures  enabledFeat
     return result;
 }
 
-/**
- * Create a command pool for allocation command buffers from
- *
- * @param queueFamilyIndex Family index of the queue to create the command pool for
- * @param createFlags (Optional) Command pool creation flags (Defaults to VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)
- *
- * @note Command buffers allocated from the created pool can only be submitted to a queue with the same family index
- *
- * @return A handle to the created command buffer
- */
-VkCommandPool VulkanDevice::createCommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) const {
+VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) {
     VkCommandPoolCreateInfo cmdPoolInfo = {};
     cmdPoolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     cmdPoolInfo.queueFamilyIndex        = queueFamilyIndex;
     cmdPoolInfo.flags                   = createFlags;
-    VkCommandPool cmdPool;
-    VK_CHECK_RESULT(vkCreateCommandPool(_deviceInfo.logicalDevice, &cmdPoolInfo, nullptr, &cmdPool));
-    return cmdPool;
-}
 
-/**
- * Finish command buffer recording and submit it to a queue
- *
- * @param commandBuffer Command buffer to flush
- * @param queue Queue to submit the command buffer to
- * @param pool Command pool on which the command buffer has been created
- * @param free (Optional) Free the command buffer once it has been submitted (Defaults to true)
- *
- * @note The queue that the command buffer is submitted to must be from the same family index as the pool it was allocated from
- * @note Uses a fence to ensure command buffer has finished executing
- */
-void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, VkCommandPool pool, bool free) const {
-    if (commandBuffer == VK_NULL_HANDLE) {
-        return;
+    VkCommandPool cmdPool = VK_NULL_HANDLE;
+    auto result = vkCreateCommandPool(_deviceInfo.logicalDevice, &cmdPoolInfo, nullptr, &cmdPool);
+    if (result != VK_SUCCESS){
+        return result;
     }
 
-    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
-
-    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer);
-
-    // Create fence to ensure that the command buffer has finished executing
-    VkFenceCreateInfo fenceInfo = vkl::init::fenceCreateInfo(VK_FLAGS_NONE);
-    VkFence           fence;
-    VK_CHECK_RESULT(vkCreateFence(_deviceInfo.logicalDevice, &fenceInfo, nullptr, &fence));
-    // Submit to the queue
-    VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, fence));
-    // Wait for the fence to signal that command buffer has finished executing
-    VK_CHECK_RESULT(vkWaitForFences(_deviceInfo.logicalDevice, 1, &fence, VK_TRUE, DEFAULT_FENCE_TIMEOUT));
-    vkDestroyFence(_deviceInfo.logicalDevice, fence, nullptr);
-    if (free) {
-        vkFreeCommandBuffers(_deviceInfo.logicalDevice, pool, 1, &commandBuffer);
-    }
+    *ppPool = VulkanCommandPool::Create(this, queueFamilyIndex, cmdPool);
+    return VK_SUCCESS;
 }
 
-void VulkanDevice::flushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool free) const {
-    return flushCommandBuffer(commandBuffer, queue, _drawCommandPool, free);
-}
-
-/**
- * Check if an extension is supported by the (physical device)
- *
- * @param extension Name of the extension to check
- *
- * @return True if the extension is supported (present in the list read at device creation time)
- */
 bool VulkanDevice::extensionSupported(std::string_view extension) const {
     return (std::find(_deviceInfo.supportedExtensions.begin(), _deviceInfo.supportedExtensions.end(), extension) != _deviceInfo.supportedExtensions.end());
 }
 
-/**
- * Select the best-fit depth format for this device from a list of possible depth (and stencil) formats
- * @return The depth format that best fits for the current device
- *
- * @throw Throws an exception if no depth format fits the requirements
- */
 VkFormat VulkanDevice::getDepthFormat() const {
     return findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
                                VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -384,12 +300,12 @@ void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, QueueFla
     vkQueueSubmit(getQueueByFlags(flags), 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(getQueueByFlags(flags));
 
-    vkFreeCommandBuffers(_deviceInfo.logicalDevice, getCommandPoolWithQueue(flags), 1, &commandBuffer);
+    vkFreeCommandBuffers(_deviceInfo.logicalDevice, getCommandPoolWithQueue(flags)->getHandle(), 1, &commandBuffer);
 }
 VkCommandBuffer VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = getCommandPoolWithQueue(flags),
+        .commandPool        = getCommandPoolWithQueue(flags)->getHandle(),
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };
@@ -615,22 +531,23 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroy() const {
+void VulkanDevice::destroy() {
     if (_drawCommandPool) {
-        vkDestroyCommandPool(getLogicalDevice(), _drawCommandPool, nullptr);
+        destroyCommandPool(_drawCommandPool);
     }
     if (_transferCommandPool) {
-        vkDestroyCommandPool(getLogicalDevice(), _transferCommandPool, nullptr);
+        destroyCommandPool(_transferCommandPool);
     }
     if (_computeCommandPool) {
-        vkDestroyCommandPool(getLogicalDevice(), _computeCommandPool, nullptr);
+        destroyCommandPool(_computeCommandPool);
     }
+
     if (_deviceInfo.logicalDevice) {
         vkDestroyDevice(_deviceInfo.logicalDevice, nullptr);
     }
 }
 
-uint32_t &VulkanDevice::GetQueueFamilyIndices(QueueFlags type) {
+uint32_t &VulkanDevice::getQueueFamilyIndices(QueueFlags type) {
     switch (type) {
     case QUEUE_TYPE_COMPUTE:
         return _queueFamilyIndices.compute;
@@ -668,9 +585,9 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeature
 
     createLogicalDevice(features, extension, nullptr);
 
-    _drawCommandPool     = createCommandPool(_queueFamilyIndices.graphics);
-    _transferCommandPool = createCommandPool(_queueFamilyIndices.transfer);
-    _computeCommandPool  = createCommandPool(_queueFamilyIndices.compute);
+    createCommandPool(&_drawCommandPool, _queueFamilyIndices.graphics);
+    createCommandPool(&_transferCommandPool, _queueFamilyIndices.transfer);
+    createCommandPool(&_computeCommandPool, _queueFamilyIndices.compute);
 }
 
 VkDevice VulkanDevice::getLogicalDevice() const {
@@ -682,7 +599,7 @@ VkPhysicalDevice VulkanDevice::getPhysicalDevice() const {
 void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count, QueueFlags flags) {
     VkCommandBufferAllocateInfo allocInfo{
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = getCommandPoolWithQueue(flags),
+        .commandPool        = getCommandPoolWithQueue(flags)->getHandle(),
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = count,
     };
@@ -869,7 +786,8 @@ VkQueue VulkanDevice::getQueueByFlags(QueueFlags queueFlags, uint32_t queueIndex
 void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getLogicalDevice());
 }
-VkCommandPool &VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
+
+VulkanCommandPool* VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
     switch (type) {
     case QUEUE_TYPE_COMPUTE:
         return _computeCommandPool;
@@ -887,5 +805,9 @@ void VulkanDevice::immediateSubmit(QueueFlags flags, std::function<void(VkComman
     VkCommandBuffer cmd = beginSingleTimeCommands(flags);
     function(cmd);
     endSingleTimeCommands(cmd, flags);
+}
+void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
+    vkDestroyCommandPool(getLogicalDevice(), pPool->getHandle(), nullptr);
+    delete pPool;
 }
 } // namespace vkl

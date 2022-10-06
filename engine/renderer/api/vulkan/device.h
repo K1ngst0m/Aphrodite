@@ -14,6 +14,9 @@ class VulkanSampler;
 class VulkanFramebuffer;
 class VulkanRenderPass;
 class VulkanSwapChain;
+class VulkanCommandBuffer;
+class VulkanCommandPool;
+class VulkanShaderModule;
 class WindowData;
 struct RenderPassCreateInfo;
 
@@ -33,7 +36,7 @@ public:
               VkPhysicalDeviceFeatures         features,
               const std::vector<const char *> &extension);
 
-    void destroy() const;
+    void destroy() ;
 
 public:
     VkResult createBuffer(BufferCreateInfo *pCreateInfo,
@@ -57,7 +60,13 @@ public:
                               const std::vector<VkAttachmentDescription> &colorAttachments,
                               const VkAttachmentDescription              &depthAttachment);
 
-    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data);
+    VkResult createSwapchain(VkSurfaceKHR      surface,
+                             VulkanSwapChain **ppSwapchain,
+                             WindowData       *data);
+
+    VkResult createCommandPool(VulkanCommandPool      **ppPool,
+                               uint32_t                 queueFamilyIndex,
+                               VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
@@ -66,6 +75,7 @@ public:
     void destroyFramebuffers(VulkanFramebuffer *pFramebuffer);
     void destoryRenderPass(VulkanRenderPass *pRenderpass);
     void destroySwapchain(VulkanSwapChain *pSwapchain);
+    void destroyCommandPool(VulkanCommandPool *pPool);
 
 public:
     void transitionImageLayout(VkCommandBuffer      commandBuffer,
@@ -91,10 +101,7 @@ public:
 public:
     void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
                                 uint32_t         count,
-                                QueueFlags flags = QUEUE_TYPE_GRAPHICS);
-
-    VkCommandPool createCommandPool(uint32_t                 queueFamilyIndex,
-                                    VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT) const;
+                                QueueFlags       flags = QUEUE_TYPE_GRAPHICS);
 
     void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function);
 
@@ -103,24 +110,15 @@ public:
     void endSingleTimeCommands(VkCommandBuffer commandBuffer,
                                QueueFlags      flags);
 
-    void flushCommandBuffer(VkCommandBuffer commandBuffer,
-                            VkQueue         queue,
-                            VkCommandPool   pool,
-                            bool            free = true) const;
-
-    void flushCommandBuffer(VkCommandBuffer commandBuffer,
-                            VkQueue         queue,
-                            bool            free = true) const;
-
     void waitIdle();
 
 public:
-    VkCommandPool              &getCommandPoolWithQueue(QueueFlags type);
+    VulkanCommandPool          *getCommandPoolWithQueue(QueueFlags type);
     VkPhysicalDevice            getPhysicalDevice() const;
     VkDevice                    getLogicalDevice() const;
     VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
     VkPhysicalDeviceProperties &getDeviceProperties();
-    uint32_t                   &GetQueueFamilyIndices(QueueFlags type);
+    uint32_t                   &getQueueFamilyIndices(QueueFlags type);
     VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
     VkFormat                    getDepthFormat() const;
 
@@ -152,9 +150,9 @@ private:
 
     std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
 
-    VkCommandPool _drawCommandPool     = VK_NULL_HANDLE;
-    VkCommandPool _transferCommandPool = VK_NULL_HANDLE;
-    VkCommandPool _computeCommandPool  = VK_NULL_HANDLE;
+    VulkanCommandPool *_drawCommandPool     = nullptr;
+    VulkanCommandPool *_transferCommandPool = nullptr;
+    VulkanCommandPool *_computeCommandPool  = nullptr;
 };
 
 } // namespace vkl
