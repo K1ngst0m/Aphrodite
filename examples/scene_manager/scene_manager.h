@@ -1,8 +1,6 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
-#define VKL_SESSION_USING_SCENE_MANAGER
-
 #include "vkl.hpp"
 
 class scene_manager : public vkl::BaseApp {

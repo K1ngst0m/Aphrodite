@@ -160,4 +160,27 @@ void Logger::time_since_snap(const std::string &s) {
     }
 }
 
+void Logger::add_snapshot(const std::string &n, bool quiet) {
+    time_t now;
+    time(&now);
+    _snaps.push_back(now);
+    _snap_ns.push_back(n);
+    if (_loglevel() >= LOG_TIME && !quiet)
+        _fac << VKL_LOG_TIME << prep_time(*this) << prep_name(*this)
+             << ": Added snap '" << n << "'\n";
+}
+
+unsigned &Logger::_loglevel() {
+    static unsigned _ll_internal = LOG_DEFAULT;
+    return _ll_internal;
+};
+
+void Logger::set_log_level(unsigned ll) {
+    _loglevel() = ll;
+}
+
+void Logger::flush() {
+    _fac.flush();
+}
+
 } // namespace vkl

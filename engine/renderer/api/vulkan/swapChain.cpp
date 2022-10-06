@@ -77,10 +77,10 @@ void VulkanSwapChain::allocate(WindowData *data) {
         .oldSwapchain     = VK_NULL_HANDLE,
     };
 
-    std::array<uint32_t, 2> queueFamilyIndices = {_device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS),
-                                                  _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
+    std::array<uint32_t, 2> queueFamilyIndices = {_device->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS),
+                                                  _device->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
 
-    if (_device->GetQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->GetQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
+    if (_device->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
         swapChainCreateInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         swapChainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
         swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices.data();

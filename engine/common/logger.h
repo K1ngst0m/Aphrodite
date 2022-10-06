@@ -24,9 +24,9 @@ namespace vkl {
 #define LOG_DEBUG 5
 #define LOG_DEFAULT 4
 
-#define LOG_INIT_COUT(obj_name) Logger obj_name (std::cout, __PRETTY_FUNCTION__)
-#define LOG_INIT_CERR(obj_name) Logger obj_name (std::cerr, __PRETTY_FUNCTION__)
-#define LOG_INIT_CLOG(obj_name) Logger obj_name (std::clog, __PRETTY_FUNCTION__)
+#define LOG_INIT_COUT(obj_name) Logger obj_name(std::cout, __PRETTY_FUNCTION__)
+#define LOG_INIT_CERR(obj_name) Logger obj_name(std::cerr, __PRETTY_FUNCTION__)
+#define LOG_INIT_CLOG(obj_name) Logger obj_name(std::clog, __PRETTY_FUNCTION__)
 #define LOG_INIT_CUSTOM(X) Logger log((X), __PRETTY_FUNCTION__)
 
 #ifdef VKL_LOG_NO_COLORS
@@ -49,36 +49,25 @@ namespace vkl {
 
 class Logger {
 public:
-    inline Logger(std::ostream & /*f*/, unsigned /*ll*/, std::string /*n*/);
-    inline Logger(std::ostream & /*f*/, std::string n);
+    Logger(std::ostream & /*f*/, unsigned /*ll*/, std::string /*n*/);
+    Logger(std::ostream & /*f*/, std::string n);
+
+    Logger &operator()(unsigned ll);
+    void    add_snapshot(const std::string &n, bool quiet = true);
+    void    time_since_start();
+    void    time_since_last_snap();
+    void    time_since_snap(const std::string    &/*s*/);
+    void    flush();
+    void    set_log_level(unsigned ll);
+
+    static unsigned &_loglevel();
+
+public:
     template <typename T>
-    friend Logger &operator<<(Logger &l, const T &s);
-    inline Logger &operator()(unsigned ll);
-    inline void    add_snapshot(const std::string &n, bool quiet = true) {
-           time_t now;
-           time(&now);
-           _snaps.push_back(now);
-           _snap_ns.push_back(n);
-           if (_loglevel() >= LOG_TIME && !quiet)
-            _fac << VKL_LOG_TIME << prep_time(*this) << prep_name(*this)
-                 << ": Added snap '" << n << "'\n";
-    }
-    inline void time_since_start();
-    inline void time_since_last_snap();
-    inline void time_since_snap(const std::string & /*s*/);
-    inline void flush() {
-        _fac.flush();
-    }
+    friend Logger     &operator<<(Logger &l, const T &s);
     friend std::string prep_level(Logger &l);
     friend std::string prep_time(Logger &l);
     friend std::string prep_name(Logger &l);
-    static unsigned   &_loglevel() {
-          static unsigned _ll_internal = LOG_DEFAULT;
-          return _ll_internal;
-    };
-    inline void set_log_level(unsigned ll) {
-        _loglevel() = ll;
-    }
 
 private:
     time_t                   _now;

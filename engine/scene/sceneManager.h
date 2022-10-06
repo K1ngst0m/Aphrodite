@@ -30,7 +30,7 @@ using CameraMapList = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using EntityMapList = std::unordered_map<IdType, std::shared_ptr<Entity>>;
 using LightMapList  = std::unordered_map<IdType, std::shared_ptr<Light>>;
 
-enum class SceneManagerType{
+enum class SceneManagerType {
     DEFAULT,
 };
 
@@ -40,6 +40,7 @@ public:
 
     SceneManager();
     ~SceneManager();
+
     void update();
 
 public:
