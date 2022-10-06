@@ -5,6 +5,8 @@
 #include "scene/camera.h"
 #include "device.h"
 #include "framebuffer.h"
+#include "commandBuffer.h"
+#include "commandPool.h"
 #include "pipeline.h"
 #include "renderObject.h"
 #include "uniformObject.h"
@@ -68,27 +70,26 @@ void VulkanSceneRenderer::drawScene() {
 
     // record command
     for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-        VkCommandBuffer commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
+        auto commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
 
-        VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        commandBuffer->begin(0);
 
         // render pass
         renderPassBeginInfo.framebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
-        // dynamic state
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
-        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex], 0, nullptr);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
+        // dynamic state
+        commandBuffer->cmdSetViewport(&viewport);
+        commandBuffer->cmdSetSissor(&scissor);
+        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex]);
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
 
         for (auto &renderable : _renderList) {
             renderable->draw(_getShaderPass()->layout, commandBuffer);
         }
+        commandBuffer->cmdEndRenderPass();
 
-        vkCmdEndRenderPass(commandBuffer);
-
-        VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+        commandBuffer->end();
     }
 }
 void VulkanSceneRenderer::update() {

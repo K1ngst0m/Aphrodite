@@ -1,5 +1,6 @@
 #include "renderObject.h"
 #include "buffer.h"
+#include "commandBuffer.h"
 #include "device.h"
 #include "image.h"
 #include "imageView.h"
@@ -126,7 +127,7 @@ void VulkanRenderObject::loadResouces() {
     loadTextures();
     loadBuffer();
 }
-void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawCmd, const std::shared_ptr<SubEntity> &node) {
+void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<SubEntity> &node) {
     if (!node->isVisible) {
         return;
     }
@@ -138,12 +139,12 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawC
             currentParent = currentParent->parent;
         }
         nodeMatrix = _transform * nodeMatrix;
-        vkCmdPushConstants(drawCmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+        drawCmd->cmdPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
         for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
                 MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
-                vkCmdBindDescriptorSets(drawCmd, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &materialData.set, 0, nullptr);
-                vkCmdDrawIndexed(drawCmd, primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                drawCmd->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &materialData.set);
+                drawCmd->cmdDrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
@@ -152,10 +153,10 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VkCommandBuffer drawC
         drawNode(layout, drawCmd, child);
     }
 }
-void VulkanRenderObject::draw(VkPipelineLayout layout, VkCommandBuffer drawCmd) {
+void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    vkCmdBindVertexBuffers(drawCmd, 0, 1, &_vertexBuffer.buffer->getHandle(), offsets);
-    vkCmdBindIndexBuffer(drawCmd, _indexBuffer.buffer->getHandle(), 0, VK_INDEX_TYPE_UINT32);
+    drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer.buffer, offsets);
+    drawCmd->cmdBindIndexBuffers(_indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
     for (auto &subEntity : _entity->_subEntityList) {
         drawNode(layout, drawCmd, subEntity);
     }

@@ -8,7 +8,7 @@ namespace vkl {
 class VulkanCommandPool : public ResourceHandle<VkCommandPool> {
 public:
     static VulkanCommandPool* Create(VulkanDevice *device, uint32_t queueFamilyIndex, VkCommandPool pool);
-    VkResult        allocateCommandBuffers(const void *pNext, uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers);
+    VkResult        allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers);
     void            freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer *pCommandBuffers);
     uint32_t        getQueueFamilyIndex() const;
 

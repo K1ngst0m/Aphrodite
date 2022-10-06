@@ -36,7 +36,7 @@ public:
               VkPhysicalDeviceFeatures         features,
               const std::vector<const char *> &extension);
 
-    void destroy() ;
+    void destroy();
 
 public:
     VkResult createBuffer(BufferCreateInfo *pCreateInfo,
@@ -99,9 +99,9 @@ public:
                    VulkanImage    *dstImage);
 
 public:
-    void allocateCommandBuffers(VkCommandBuffer *cmdbuffer,
-                                uint32_t         count,
-                                QueueFlags       flags = QUEUE_TYPE_GRAPHICS);
+    VkResult allocateCommandBuffers(QueueFlags flags, uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
+    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers);
+    void     freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
 
     void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function);
 

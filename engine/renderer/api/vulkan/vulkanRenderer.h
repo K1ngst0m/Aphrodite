@@ -26,15 +26,14 @@ public:
     void initDefaultResource();
     void initImGui();
     void prepareUIDraw();
-    void recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx);
 
 public:
-    VkQueue          getDefaultDeviceQueue(QueueFlags type) const;
-    VkRenderPass     getDefaultRenderPass() const;
-    uint32_t         getCommandBufferCount() const;
-    VkCommandBuffer  getDefaultCommandBuffer(uint32_t idx) const;
-    VkFramebuffer    getDefaultFrameBuffer(uint32_t idx) const;
-    PipelineBuilder &getPipelineBuilder();
+    VkQueue              getDefaultDeviceQueue(QueueFlags type) const;
+    VkRenderPass         getDefaultRenderPass() const;
+    uint32_t             getCommandBufferCount() const;
+    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
+    VkFramebuffer        getDefaultFrameBuffer(uint32_t idx) const;
+    PipelineBuilder     &getPipelineBuilder();
 
     std::shared_ptr<VulkanDevice>  getDevice();
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
@@ -45,16 +44,15 @@ private:
     void _createSurface();
     void _setupDebugMessenger();
     void _setupSwapChain();
-    bool _checkValidationLayerSupport();
+    void _setupPipelineBuilder();
 
 private:
     void _createDefaultDepthAttachments();
     void _createDefaultColorAttachments();
     void _createDefaultRenderPass();
     void _createDefaultFramebuffers();
-    void _setupPipelineBuilder();
-    void _createSyncObjects();
-    void _createCommandBuffers();
+    void _createDefaultSyncObjects();
+    void _createDefaultCommandBuffers();
 
 private:
     // TODO
@@ -82,8 +80,8 @@ private:
     uint32_t m_imageIdx     = 0;
 
 private:
-    std::vector<VkCommandBuffer>    m_defaultCommandBuffers;
-    std::vector<PerFrameSyncObject> m_defaultSyncObjects;
+    std::vector<VulkanCommandBuffer *> m_defaultCommandBuffers;
+    std::vector<PerFrameSyncObject>    m_defaultSyncObjects;
 
     struct FrameBufferData {
         VulkanImage       *colorImage;

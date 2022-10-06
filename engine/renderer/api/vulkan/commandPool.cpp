@@ -1,4 +1,5 @@
 #include "commandPool.h"
+#include "commandBuffer.h"
 
 namespace vkl {
 
@@ -9,8 +10,7 @@ VulkanCommandPool *VulkanCommandPool::Create(VulkanDevice *device, uint32_t queu
     instance->_handle           = pool;
     return instance;
 }
-VkResult VulkanCommandPool::allocateCommandBuffers(const void      *pNext,
-                                                   uint32_t         commandBufferCount,
+VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBufferCount,
                                                    VkCommandBuffer *pCommandBuffers) {
     // Safe guard access to internal resources across threads.
     _spinLock.Lock();
@@ -18,7 +18,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(const void      *pNext,
     // Allocate a new command buffer.
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.pNext                       = pNext;
+    allocInfo.pNext                       = nullptr;
     allocInfo.commandPool                 = _handle;
     allocInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount          = commandBufferCount;

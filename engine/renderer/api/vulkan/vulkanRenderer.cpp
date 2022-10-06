@@ -1,6 +1,8 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
 #include "device.h"
+#include "commandBuffer.h"
+#include "commandPool.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
@@ -20,6 +22,31 @@
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+static bool _checkValidationLayerSupport() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char *layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto &layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
                                                     VkDebugUtilsMessageTypeFlagsEXT             messageType,
@@ -111,31 +138,6 @@ std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
     }
 
     return extensions;
-}
-
-bool VulkanRenderer::_checkValidationLayerSupport() {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for (const char *layerName : validationLayers) {
-        bool layerFound = false;
-
-        for (const auto &layerProperties : availableLayers) {
-            if (strcmp(layerName, layerProperties.layerName) == 0) {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if (!layerFound) {
-            return false;
-        }
-    }
-
-    return true;
 }
 
 void VulkanRenderer::_createSurface() {
@@ -239,9 +241,9 @@ void VulkanRenderer::_setupSwapChain() {
     });
 }
 
-void VulkanRenderer::_createCommandBuffers() {
+void VulkanRenderer::_createDefaultCommandBuffers() {
     m_defaultCommandBuffers.resize(m_swapChain->getImageCount());
-    m_device->allocateCommandBuffers(m_defaultCommandBuffers.data(), m_defaultCommandBuffers.size(), QUEUE_TYPE_GRAPHICS);
+    m_device->allocateCommandBuffers(QUEUE_TYPE_GRAPHICS, m_defaultCommandBuffers.size(), m_defaultCommandBuffers.data());
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -267,7 +269,7 @@ void VulkanRenderer::_setupPipelineBuilder() {
     m_pipelineBuilder.reset(m_swapChain->getExtent());
 }
 
-void VulkanRenderer::_createSyncObjects() {
+void VulkanRenderer::_createDefaultSyncObjects() {
     m_defaultSyncObjects.resize(_config.maxFrames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
@@ -319,7 +321,7 @@ void VulkanRenderer::submitFrame() {
                 .pWaitSemaphores      = waitSemaphores,
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
-                .pCommandBuffers      = &m_defaultCommandBuffers[m_imageIdx],
+                .pCommandBuffers      = &m_defaultCommandBuffers[m_imageIdx]->getHandle(),
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores    = signalSemaphores,
     };
@@ -442,10 +444,10 @@ void VulkanRenderer::prepareUIDraw() {
 
 void VulkanRenderer::initDefaultResource() {
     _setupPipelineBuilder();
-    _createCommandBuffers();
+    _createDefaultCommandBuffers();
     _createDefaultRenderPass();
     _createDefaultFramebuffers();
-    _createSyncObjects();
+    _createDefaultSyncObjects();
 }
 
 std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
@@ -457,14 +459,11 @@ std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
 VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
     return m_device->getQueueByFlags(type, 0);
 }
-void VulkanRenderer::recordCommandBuffer(const std::function<void()> &commands, uint32_t commandIdx) {
-
-    commands();
-}
 VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
     return m_defaultRenderPass->getHandle();
 }
-VkCommandBuffer VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
+
+VulkanCommandBuffer* VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
     return m_defaultCommandBuffers[idx];
 }
 PipelineBuilder &VulkanRenderer::getPipelineBuilder() {

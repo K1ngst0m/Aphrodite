@@ -22,6 +22,18 @@ public:
     void cmdBeginRenderPass(const VkRenderPassBeginInfo *pBeginInfo);
     void cmdNextSubpass();
     void cmdEndRenderPass();
+    void cmdSetViewport(VkViewport *viewport);
+    void cmdSetSissor(VkRect2D *scissor);
+    void cmdBindDescriptorSet(VkPipelineBindPoint    bindPoint,
+                              VkPipelineLayout       layout,
+                              uint32_t               firstSet,
+                              uint32_t               descriptorSetCount,
+                              const VkDescriptorSet *pDescriptorSets);
+    void cmdBindPipeline(VkPipelineBindPoint bindPoint, VkPipeline pipeline);
+    void cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets);
+    void cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset, VkIndexType indexType);
+    void cmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stage, uint32_t offset, uint32_t size, const void *pValues);
+    void cmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset, uint32_t firstInstance);
 
     // void CmdBindPipeline(VkPipeline pipeline);
     // void CmdPushConstants(uint32_t offset, uint32_t size, const void *pValues);

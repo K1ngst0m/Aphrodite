@@ -583,11 +583,11 @@ void VulkanDevice::init(VkPhysicalDevice physicalDevice, VkPhysicalDeviceFeature
         }
     }
 
-    createLogicalDevice(features, extension, nullptr);
+    VK_CHECK_RESULT(createLogicalDevice(features, extension, nullptr));
 
-    createCommandPool(&_drawCommandPool, _queueFamilyIndices.graphics);
-    createCommandPool(&_transferCommandPool, _queueFamilyIndices.transfer);
-    createCommandPool(&_computeCommandPool, _queueFamilyIndices.compute);
+    VK_CHECK_RESULT(createCommandPool(&_drawCommandPool, _queueFamilyIndices.graphics));
+    VK_CHECK_RESULT(createCommandPool(&_transferCommandPool, _queueFamilyIndices.transfer));
+    VK_CHECK_RESULT(createCommandPool(&_computeCommandPool, _queueFamilyIndices.graphics));
 }
 
 VkDevice VulkanDevice::getLogicalDevice() const {
@@ -595,16 +595,6 @@ VkDevice VulkanDevice::getLogicalDevice() const {
 }
 VkPhysicalDevice VulkanDevice::getPhysicalDevice() const {
     return _deviceInfo.physicalDevice;
-}
-void VulkanDevice::allocateCommandBuffers(VkCommandBuffer *cmdbuffer, uint32_t count, QueueFlags flags) {
-    VkCommandBufferAllocateInfo allocInfo{
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = getCommandPoolWithQueue(flags)->getHandle(),
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = count,
-    };
-
-    VK_CHECK_RESULT(vkAllocateCommandBuffers(getLogicalDevice(), &allocInfo, cmdbuffer));
 }
 VkPhysicalDeviceFeatures &VulkanDevice::getDeviceEnabledFeatures() {
     return _deviceInfo.enabledFeatures;
@@ -809,5 +799,29 @@ void VulkanDevice::immediateSubmit(QueueFlags flags, std::function<void(VkComman
 void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
     vkDestroyCommandPool(getLogicalDevice(), pPool->getHandle(), nullptr);
     delete pPool;
+}
+
+VkResult VulkanDevice::allocateCommandBuffers(QueueFlags flags, uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers) {
+    return allocateCommandBuffers(commandBufferCount, getCommandPoolWithQueue(flags), ppCommandBuffers);
+}
+
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers) {
+    std::vector<VkCommandBuffer> handles(commandBufferCount);
+    auto result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
+    if (result != VK_SUCCESS){
+        return result;
+    }
+
+    for (auto i = 0; i < commandBufferCount; i++){
+        ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i]);
+    }
+    return VK_SUCCESS;
+}
+
+void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers) {
+    // Destroy all of the command buffers.
+    for (auto i = 0U; i < commandBufferCount; ++i) {
+        delete ppCommandBuffers[i];
+    }
 }
 } // namespace vkl
