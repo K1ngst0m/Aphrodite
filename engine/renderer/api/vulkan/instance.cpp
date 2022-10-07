@@ -31,7 +31,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
         return result;
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto instance      = new VulkanInstance();
+    auto instance     = new VulkanInstance();
     instance->_handle = handle;
 
     // Get the number of attached physical devices.
@@ -65,6 +65,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
     // Return success.
     return VK_SUCCESS;
 }
+
 ThreadPool *VulkanInstance::GetThreadPool() {
     return _threadPool;
 }

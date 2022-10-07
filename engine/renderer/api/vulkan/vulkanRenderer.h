@@ -1,9 +1,9 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
+#include "instance.h"
 #include "renderer/renderer.h"
 #include "sceneRenderer.h"
-#include "instance.h"
 
 namespace vkl {
 struct PerFrameSyncObject {
@@ -36,7 +36,7 @@ public:
     VkFramebuffer        getDefaultFrameBuffer(uint32_t idx) const;
     PipelineBuilder     &getPipelineBuilder();
 
-    std::shared_ptr<VulkanDevice>  getDevice();
+    VulkanDevice                  *getDevice();
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
 
 private:
@@ -66,15 +66,15 @@ private:
     const PerFrameSyncObject &getCurrentFrameSyncObject();
 
 private:
-    VulkanInstance               *m_instance;
-    std::shared_ptr<VulkanDevice> m_device;
-    VulkanSwapChain              *m_swapChain;
-    std::vector<const char *>     m_supportedInstanceExtensions;
-    VkPhysicalDeviceFeatures      m_enabledFeatures{};
-    VkDebugUtilsMessengerEXT      m_debugMessenger;
-    VkSurfaceKHR                  m_surface;
-    PipelineBuilder               m_pipelineBuilder;
-    DeletionQueue                 m_deletionQueue;
+    VulkanInstance           *m_instance;
+    VulkanDevice             *m_device;
+    VulkanSwapChain          *m_swapChain;
+    std::vector<const char *> m_supportedInstanceExtensions;
+    VkPhysicalDeviceFeatures  m_enabledFeatures{};
+    VkDebugUtilsMessengerEXT  m_debugMessenger;
+    VkSurfaceKHR              m_surface;
+    PipelineBuilder           m_pipelineBuilder;
+    DeletionQueue             m_deletionQueue;
 
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIdx     = 0;

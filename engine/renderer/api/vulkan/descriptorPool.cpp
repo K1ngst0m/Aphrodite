@@ -27,12 +27,12 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout)
 VulkanDescriptorPool::~VulkanDescriptorPool() {
     // Destroy all allocated descriptor sets.
     for (auto it : _allocatedDescriptorSets) {
-        vkFreeDescriptorSets(_layout->getDevice()->getLogicalDevice(), _pools[it.second], 1, &it.first);
+        vkFreeDescriptorSets(_layout->getDevice()->getHandle(), _pools[it.second], 1, &it.first);
     }
 
     // Destroy all created pools.
     for (auto pool : _pools) {
-        vkDestroyDescriptorPool(_layout->getDevice()->getLogicalDevice(), pool, nullptr);
+        vkDestroyDescriptorPool(_layout->getDevice()->getHandle(), pool, nullptr);
     }
 }
 
@@ -52,7 +52,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateDescriptorSet() {
             createInfo.pPoolSizes                 = _poolSizes.data();
             createInfo.maxSets                    = _maxSetsPerPool;
             VkDescriptorPool handle               = VK_NULL_HANDLE;
-            auto             result               = vkCreateDescriptorPool(_layout->getDevice()->getLogicalDevice(), &createInfo, nullptr, &handle);
+            auto             result               = vkCreateDescriptorPool(_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
             if (result != VK_SUCCESS) {
                 return VK_NULL_HANDLE;
             }
@@ -82,7 +82,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateDescriptorSet() {
     allocInfo.descriptorSetCount          = 1;
     allocInfo.pSetLayouts                 = &setLayout;
     VkDescriptorSet handle                = VK_NULL_HANDLE;
-    auto            result                = vkAllocateDescriptorSets(_layout->getDevice()->getLogicalDevice(), &allocInfo, &handle);
+    auto            result                = vkAllocateDescriptorSets(_layout->getDevice()->getHandle(), &allocInfo, &handle);
     if (result != VK_SUCCESS)
         return VK_NULL_HANDLE;
 
@@ -108,7 +108,7 @@ VkResult VulkanDescriptorPool::freeDescriptorSet(VkDescriptorSet descriptorSet) 
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
-    vkFreeDescriptorSets(_layout->getDevice()->getLogicalDevice(), _pools[poolIndex], 1, &descriptorSet);
+    vkFreeDescriptorSets(_layout->getDevice()->getHandle(), _pools[poolIndex], 1, &descriptorSet);
 
     // Remove descriptor set from allocatedDescriptorSets map.
     _allocatedDescriptorSets.erase(descriptorSet);

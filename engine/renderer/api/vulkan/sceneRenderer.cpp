@@ -30,7 +30,7 @@ void VulkanSceneRenderer::loadResources() {
 }
 
 void VulkanSceneRenderer::cleanupResources() {
-    vkDestroyDescriptorPool(_device->getLogicalDevice(), _descriptorPool, nullptr);
+    vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
 
     for (auto &renderObject : _renderList) {
         renderObject->cleanupResources();
@@ -40,11 +40,11 @@ void VulkanSceneRenderer::cleanupResources() {
         ubo->cleanupResources();
     }
 
-    _unlitEffect->destroy(_device->getLogicalDevice());
-    _unlitPass->destroy(_device->getLogicalDevice());
-    _defaultLitEffect->destroy(_device->getLogicalDevice());
-    _defaultLitPass->destroy(_device->getLogicalDevice());
-    _shaderCache.destory(_device->getLogicalDevice());
+    _unlitEffect->destroy(_device->getHandle());
+    _unlitPass->destroy(_device->getHandle());
+    _defaultLitEffect->destroy(_device->getHandle());
+    _defaultLitPass->destroy(_device->getHandle());
+    _shaderCache.destory(_device->getHandle());
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -148,11 +148,11 @@ void VulkanSceneRenderer::_initUniformList() {
     }
 
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getLogicalDevice(), &poolInfo, nullptr, &_descriptorPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &poolInfo, nullptr, &_descriptorPool));
 
     const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _getDescriptorSetLayout(SET_BINDING_SCENE), 1);
     for (auto &set : _globalDescriptorSets) {
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getLogicalDevice(), &allocInfo, &set));
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &set));
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for (auto &uniformObj : _uniformList) {
             VkWriteDescriptorSet write = {};
@@ -166,7 +166,7 @@ void VulkanSceneRenderer::_initUniformList() {
             descriptorWrites.push_back(write);
         }
 
-        vkUpdateDescriptorSets(_device->getLogicalDevice(), writeCount, descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(_device->getHandle(), writeCount, descriptorWrites.data(), 0, nullptr);
     }
 
     for (auto &renderable : _renderList) {
@@ -225,15 +225,15 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
     _unlitEffect = std::make_unique<ShaderEffect>();
-    _unlitEffect->pushSetLayout(_device->getLogicalDevice(), perSceneBindings);
-    _unlitEffect->pushSetLayout(_device->getLogicalDevice(), perMaterialBindings);
+    _unlitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
+    _unlitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _unlitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
     _unlitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "unlit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
     _unlitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "unlit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    _unlitEffect->buildPipelineLayout(_device->getLogicalDevice());
+    _unlitEffect->buildPipelineLayout(_device->getHandle());
 
     _unlitPass = std::make_unique<ShaderPass>();
-    _unlitPass->buildEffect(_device->getLogicalDevice(),
+    _unlitPass->buildEffect(_device->getHandle(),
                             _renderer->getDefaultRenderPass(),
                             _renderer->getPipelineBuilder(),
                             _unlitEffect.get());
@@ -256,15 +256,15 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
     _defaultLitEffect = std::make_unique<ShaderEffect>();
-    _defaultLitEffect->pushSetLayout(_device->getLogicalDevice(), perSceneBindings);
-    _defaultLitEffect->pushSetLayout(_device->getLogicalDevice(), perMaterialBindings);
+    _defaultLitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
+    _defaultLitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _defaultLitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
     _defaultLitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "default_lit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
     _defaultLitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "default_lit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    _defaultLitEffect->buildPipelineLayout(_device->getLogicalDevice());
+    _defaultLitEffect->buildPipelineLayout(_device->getHandle());
 
     _defaultLitPass = std::make_unique<ShaderPass>();
-    _defaultLitPass->buildEffect(_device->getLogicalDevice(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _defaultLitEffect.get());
+    _defaultLitPass->buildEffect(_device->getHandle(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _defaultLitEffect.get());
 }
 
 void VulkanSceneRenderer::_initRenderResource() {

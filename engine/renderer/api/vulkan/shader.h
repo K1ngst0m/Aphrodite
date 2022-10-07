@@ -40,8 +40,8 @@ struct ShaderEffect {
 
 struct ShaderCache {
     std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
-    ShaderModule *getShaders(const std::shared_ptr<VulkanDevice> &device, const std::string &path);
-    void          destory(VkDevice device);
+    ShaderModule                                 *getShaders(VulkanDevice *device, const std::string &path);
+    void                                          destory(VkDevice device);
 };
 
 struct ShaderPass {

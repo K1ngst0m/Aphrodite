@@ -9,19 +9,19 @@ class VulkanDevice;
 class UniformObject;
 
 struct VulkanUniformObject {
-    VulkanUniformObject(SceneRenderer *renderer, const std::shared_ptr<VulkanDevice>& device, UniformObject *ubo);
+    VulkanUniformObject(SceneRenderer *renderer, VulkanDevice* device, UniformObject *ubo);
     ~VulkanUniformObject() = default;
 
     void cleanupResources() const;
 
-    vkl::VulkanBuffer * buffer;
+    vkl::VulkanBuffer *buffer;
 
     void setupBuffer(uint32_t bufferSize, void *data = nullptr);
     void updateBuffer(void *data) const;
 
-    std::shared_ptr<VulkanDevice> _device   = nullptr;
-    SceneRenderer                *_renderer = nullptr;
-    UniformObject                *_ubo      = nullptr;
+    VulkanDevice  *_device   = nullptr;
+    SceneRenderer *_renderer = nullptr;
+    UniformObject *_ubo      = nullptr;
 };
 } // namespace vkl
 

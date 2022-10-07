@@ -22,7 +22,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBuffe
     allocInfo.commandPool                 = _handle;
     allocInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount          = commandBufferCount;
-    auto result                           = vkAllocateCommandBuffers(_device->getLogicalDevice(), &allocInfo, pCommandBuffers);
+    auto result                           = vkAllocateCommandBuffers(_device->getHandle(), &allocInfo, pCommandBuffers);
 
     // Unlock access to internal resources.
     _spinLock.Unlock();
@@ -33,7 +33,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBuffe
 void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer *pCommandBuffers) {
     // Safe guard access to internal resources across threads.
     _spinLock.Lock();
-    vkFreeCommandBuffers(_device->getLogicalDevice(), _handle, commandBufferCount, pCommandBuffers);
+    vkFreeCommandBuffers(_device->getHandle(), _handle, commandBufferCount, pCommandBuffers);
     _spinLock.Unlock();
 }
 uint32_t VulkanCommandPool::getQueueFamilyIndex() const {

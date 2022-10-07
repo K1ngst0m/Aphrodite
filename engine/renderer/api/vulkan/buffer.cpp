@@ -5,7 +5,7 @@ namespace vkl {
 VulkanBuffer *VulkanBuffer::CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
     VulkanBuffer *instance = new VulkanBuffer;
     memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
-    instance->device = pDevice->getLogicalDevice();
+    instance->device = pDevice->getHandle();
     instance->_handle = buffer;
     instance->memory = memory;
 

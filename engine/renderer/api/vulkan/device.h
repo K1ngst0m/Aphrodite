@@ -1,6 +1,7 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
+#include "physicalDevice.h"
 #include "renderer/device.h"
 #include "renderer/gpuResource.h"
 #include "vkUtils.h"
@@ -24,19 +25,20 @@ struct RenderPassCreateInfo;
 
 using QueueFamily = std::vector<VkQueue>;
 
-enum QueueFlags {
-    QUEUE_TYPE_COMPUTE,
-    QUEUE_TYPE_GRAPHICS,
-    QUEUE_TYPE_TRANSFER,
-    QUEUE_TYPE_PRESENT,
-    QUEUE_TYPE_COUNT,
+struct DeviceCreateInfo {
+    const void        *pNext = nullptr;
+    uint32_t           enabledLayerCount;
+    const char *const *ppEnabledLayerNames;
+    uint32_t           enabledExtensionCount;
+    const char *const *ppEnabledExtensionNames;
+    VkQueueFlags       requestQueueTypes = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
 };
 
-class VulkanDevice : public GraphicsDevice {
+class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice> {
 public:
-    void init(VkPhysicalDevice                 physicalDevice,
-              VkPhysicalDeviceFeatures         features,
-              const std::vector<const char *> &extension);
+    static VkResult Create(VulkanPhysicalDevice   *pPhysicalDevice,
+                           const DeviceCreateInfo *pCreateInfo,
+                           VulkanDevice          **ppDevice);
 
     void destroy();
 
@@ -96,45 +98,21 @@ public:
 
 public:
     VulkanCommandPool          *getCommandPoolWithQueue(QueueFlags type);
-    VkPhysicalDevice            getPhysicalDevice() const;
-    VkDevice                    getLogicalDevice() const;
-    VkPhysicalDeviceFeatures   &getDeviceEnabledFeatures();
-    VkPhysicalDeviceProperties &getDeviceProperties();
-    uint32_t                   &getQueueFamilyIndices(QueueFlags type);
+    VulkanPhysicalDevice       *getPhysicalDevice() const;
     VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
     VkFormat                    getDepthFormat() const;
 
 private:
-    bool     extensionSupported(std::string_view extension) const;
-    VkResult createLogicalDevice(VkPhysicalDeviceFeatures enabledFeatures, std::vector<const char *> enabledExtensions, void *pNextChain, bool useSwapChain = true, VkQueueFlags requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT);
-    uint32_t findQueueFamilies(VkQueueFlags queueFlags) const;
-    uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr) const;
-    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
-
-private:
-    struct {
-        VkDevice                             logicalDevice  = VK_NULL_HANDLE;
-        VkPhysicalDevice                     physicalDevice = VK_NULL_HANDLE;
-        VkPhysicalDeviceProperties           properties;
-        VkPhysicalDeviceFeatures             features;
-        VkPhysicalDeviceFeatures             enabledFeatures;
-        VkPhysicalDeviceMemoryProperties     memoryProperties;
-        std::vector<std::string>             supportedExtensions;
-        std::vector<VkQueueFamilyProperties> queueFamilyProperties;
-    } _deviceInfo;
-
-    struct {
-        uint32_t graphics;
-        uint32_t compute;
-        uint32_t transfer;
-        uint32_t present;
-    } _queueFamilyIndices;
+    VulkanPhysicalDevice    *_physicalDevice;
+    VkPhysicalDeviceFeatures _enabledFeatures;
 
     std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
 
     VulkanCommandPool *_drawCommandPool     = nullptr;
     VulkanCommandPool *_transferCommandPool = nullptr;
     VulkanCommandPool *_computeCommandPool  = nullptr;
+
+    DeviceCreateInfo _createInfo;
 };
 
 } // namespace vkl

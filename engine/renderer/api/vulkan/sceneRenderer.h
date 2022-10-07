@@ -53,8 +53,8 @@ private:
     std::deque<std::unique_ptr<VulkanUniformObject>> _uniformList;
 
 private:
-    std::shared_ptr<VulkanDevice> _device;
-    VulkanRenderer               *_renderer;
+    VulkanDevice   *_device;
+    VulkanRenderer *_renderer;
 };
 } // namespace vkl
 

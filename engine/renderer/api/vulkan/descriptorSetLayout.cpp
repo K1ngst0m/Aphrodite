@@ -59,7 +59,7 @@ VkResult VulkanDescriptorSetLayout::Create(VulkanDevice                        *
     layoutCreateInfo.sType                           = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutCreateInfo.bindingCount                    = static_cast<uint32_t>(instance->_bindings.size());
     layoutCreateInfo.pBindings                       = instance->_bindings.data();
-    auto result                                      = vkCreateDescriptorSetLayout(instance->_device->getLogicalDevice(), &layoutCreateInfo, nullptr, &instance->_handle);
+    auto result                                      = vkCreateDescriptorSetLayout(instance->_device->getHandle(), &layoutCreateInfo, nullptr, &instance->_handle);
     if (result != VK_SUCCESS) {
         delete instance;
         return result;
@@ -76,7 +76,7 @@ VkResult VulkanDescriptorSetLayout::Create(VulkanDevice                        *
 }
 
 VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(_device->getLogicalDevice(), _handle, nullptr);
+    vkDestroyDescriptorSetLayout(_device->getHandle(), _handle, nullptr);
     delete _descriptorPool;
 };
 

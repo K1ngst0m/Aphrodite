@@ -67,7 +67,7 @@ VkFramebuffer VulkanFramebuffer::getHandle(VulkanRenderPass *pRenderPass) {
         createInfo.height                  = _createInfo.height;
         createInfo.layers                  = _createInfo.layers;
 
-        auto result = vkCreateFramebuffer(_device->getLogicalDevice(), &createInfo, nullptr, &handle);
+        auto result = vkCreateFramebuffer(_device->getHandle(), &createInfo, nullptr, &handle);
         if (result == VK_SUCCESS)
             _cache.emplace(pRenderPass, handle);
     }

@@ -1,8 +1,8 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
-#include "device.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
+#include "device.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
@@ -109,7 +109,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
         }
 
         m_deletionQueue.push_function([=]() {
-            vkDestroyFramebuffer(m_device->getLogicalDevice(), fb.framebuffer->getHandle(m_defaultRenderPass), nullptr);
+            vkDestroyFramebuffer(m_device->getHandle(), fb.framebuffer->getHandle(m_defaultRenderPass), nullptr);
         });
     }
 }
@@ -164,8 +164,8 @@ void VulkanRenderer::_createInstance() {
     };
 
     InstanceCreateInfo instanceCreateInfo{
-        .pNext = nullptr,
-        .pApplicationInfo = &appInfo,
+        .pNext                   = nullptr,
+        .pApplicationInfo        = &appInfo,
         .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
         .ppEnabledExtensionNames = extensions.data(),
     };
@@ -187,15 +187,13 @@ void VulkanRenderer::_createInstance() {
 }
 
 void VulkanRenderer::_createDevice() {
-    uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(m_instance->getHandle(), &deviceCount, nullptr);
-    assert(deviceCount > 0 && "failed to find GPUs with Vulkan support!");
-    std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(m_instance->getHandle(), &deviceCount, devices.data());
+    DeviceCreateInfo createInfo{};
+    createInfo.enabledLayerCount = validationLayers.size();
+    createInfo.ppEnabledLayerNames = validationLayers.data();
+    createInfo.enabledExtensionCount = deviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    m_device = std::make_shared<VulkanDevice>();
-
-    m_device->init(devices[0], m_enabledFeatures, deviceExtensions);
+    VulkanDevice::Create(m_instance->getPhysicalDevices()[0], &createInfo, &m_device);
 
     m_deletionQueue.push_function([&]() {
         m_device->destroy();
@@ -278,20 +276,20 @@ void VulkanRenderer::_createDefaultSyncObjects() {
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
     for (auto &frameSyncObject : m_defaultSyncObjects) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getLogicalDevice(), &semaphoreInfo, nullptr, &frameSyncObject.renderSemaphore));
-        VK_CHECK_RESULT(vkCreateFence(m_device->getLogicalDevice(), &fenceInfo, nullptr, &frameSyncObject.inFlightFence));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.presentSemaphore));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.renderSemaphore));
+        VK_CHECK_RESULT(vkCreateFence(m_device->getHandle(), &fenceInfo, nullptr, &frameSyncObject.inFlightFence));
 
         m_deletionQueue.push_function([=]() {
-            vkDestroyFence(m_device->getLogicalDevice(), frameSyncObject.inFlightFence, nullptr);
-            vkDestroySemaphore(m_device->getLogicalDevice(), frameSyncObject.renderSemaphore, nullptr);
-            vkDestroySemaphore(m_device->getLogicalDevice(), frameSyncObject.presentSemaphore, nullptr);
+            vkDestroyFence(m_device->getHandle(), frameSyncObject.inFlightFence, nullptr);
+            vkDestroySemaphore(m_device->getHandle(), frameSyncObject.renderSemaphore, nullptr);
+            vkDestroySemaphore(m_device->getHandle(), frameSyncObject.presentSemaphore, nullptr);
         });
     }
 }
 
 void VulkanRenderer::prepareFrame() {
-    vkWaitForFences(m_device->getLogicalDevice(), 1, &getCurrentFrameSyncObject().inFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence, VK_TRUE, UINT64_MAX);
 
     VkResult result = m_swapChain->acqureNextImage(getCurrentFrameSyncObject().renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
 
@@ -305,7 +303,7 @@ void VulkanRenderer::prepareFrame() {
         VK_CHECK_RESULT(result);
     }
 
-    vkResetFences(m_device->getLogicalDevice(), 1, &getCurrentFrameSyncObject().inFlightFence);
+    vkResetFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence);
 }
 void VulkanRenderer::submitFrame() {
     VkSemaphore          waitSemaphores[]   = {getCurrentFrameSyncObject().renderSemaphore};
@@ -391,7 +389,7 @@ void VulkanRenderer::initImGui() {
     };
 
     VkDescriptorPool imguiPool;
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getLogicalDevice(), &poolInfo, nullptr, &imguiPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getHandle(), &poolInfo, nullptr, &imguiPool));
 
     // 2: initialize imgui library
 
@@ -403,8 +401,8 @@ void VulkanRenderer::initImGui() {
     // this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo initInfo = {
         .Instance       = m_instance->getHandle(),
-        .PhysicalDevice = m_device->getPhysicalDevice(),
-        .Device         = m_device->getLogicalDevice(),
+        .PhysicalDevice = m_device->getPhysicalDevice()->getHandle(),
+        .Device         = m_device->getHandle(),
         .Queue          = getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
         .DescriptorPool = imguiPool,
         .MinImageCount  = 3,
@@ -415,7 +413,7 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass->getHandle());
 
     // execute a gpu command to upload imgui font textures
-    VulkanCommandBuffer * cmd = m_device->beginSingleTimeCommands();
+    VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands();
     ImGui_ImplVulkan_CreateFontsTexture(cmd->getHandle());
     m_device->endSingleTimeCommands(cmd);
 
@@ -426,7 +424,7 @@ void VulkanRenderer::initImGui() {
     glfwSetMouseButtonCallback(_windowData->window, ImGui_ImplGlfw_MouseButtonCallback);
 
     m_deletionQueue.push_function([=]() {
-        vkDestroyDescriptorPool(m_device->getLogicalDevice(), imguiPool, nullptr);
+        vkDestroyDescriptorPool(m_device->getHandle(), imguiPool, nullptr);
         ImGui_ImplVulkan_Shutdown();
     });
 }
@@ -461,7 +459,7 @@ VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
     return m_defaultRenderPass->getHandle();
 }
 
-VulkanCommandBuffer* VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
+VulkanCommandBuffer *VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
     return m_defaultCommandBuffers[idx];
 }
 PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
@@ -471,7 +469,7 @@ uint32_t VulkanRenderer::getCommandBufferCount() const {
     return m_defaultCommandBuffers.size();
 }
 
-std::shared_ptr<VulkanDevice> VulkanRenderer::getDevice() {
+VulkanDevice *VulkanRenderer::getDevice() {
     return m_device;
 }
 
@@ -487,7 +485,7 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
 
-            VulkanCommandBuffer* cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+            VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
             cmd->cmdTransitionImageLayout(fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
             m_device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
         }

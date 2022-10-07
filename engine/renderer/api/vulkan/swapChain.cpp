@@ -41,15 +41,15 @@ void VulkanSwapChain::create(VulkanDevice *device, VkSurfaceKHR surface, WindowD
 }
 
 void VulkanSwapChain::cleanup() {
-    vkDestroySwapchainKHR(_device->getLogicalDevice(), _handle, nullptr);
+    vkDestroySwapchainKHR(_device->getHandle(), _handle, nullptr);
 }
 
 VkResult VulkanSwapChain::acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const {
-    return vkAcquireNextImageKHR(_device->getLogicalDevice(), _handle, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
+    return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
 }
 
 void VulkanSwapChain::allocate(WindowData *data) {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice());
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice()->getHandle());
 
     VkSurfaceFormatKHR surfaceFormat = vkl::utils::chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = vkl::utils::chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -77,10 +77,10 @@ void VulkanSwapChain::allocate(WindowData *data) {
         .oldSwapchain     = VK_NULL_HANDLE,
     };
 
-    std::array<uint32_t, 2> queueFamilyIndices = {_device->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS),
-                                                  _device->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
+    std::array<uint32_t, 2> queueFamilyIndices = {_device->getPhysicalDevice()->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS),
+                                                  _device->getPhysicalDevice()->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)};
 
-    if (_device->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
+    if (_device->getPhysicalDevice()->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS) != _device->getPhysicalDevice()->getQueueFamilyIndices(QUEUE_TYPE_PRESENT)) {
         swapChainCreateInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         swapChainCreateInfo.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
         swapChainCreateInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
@@ -90,11 +90,11 @@ void VulkanSwapChain::allocate(WindowData *data) {
         swapChainCreateInfo.pQueueFamilyIndices   = nullptr; // Optional
     }
 
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getLogicalDevice(), &swapChainCreateInfo, nullptr, &_handle));
+    VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getHandle(), &swapChainCreateInfo, nullptr, &_handle));
 
-    vkGetSwapchainImagesKHR(_device->getLogicalDevice(), _handle, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &imageCount, nullptr);
     std::vector<VkImage> images(imageCount);
-    vkGetSwapchainImagesKHR(_device->getLogicalDevice(), _handle, &imageCount, images.data());
+    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.
     for (auto handle : images) {
