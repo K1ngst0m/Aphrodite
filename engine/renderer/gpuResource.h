@@ -4,6 +4,33 @@
 #include "common/common.h"
 
 namespace vkl {
+enum BaseType {
+    BASE_TYPE_BOOL   = 0,
+    BASE_TYPE_CHAR   = 1,
+    BASE_TYPE_INT    = 2,
+    BASE_TYPE_UINT   = 3,
+    BASE_TYPE_UINT64 = 4,
+    BASE_TYPE_HALF   = 5,
+    BASE_TYPE_FLOAT  = 6,
+    BASE_TYPE_DOUBLE = 7,
+    BASE_TYPE_STRUCT = 8,
+};
+
+enum PipelineResourceType {
+    PIPELINE_RESOURCE_TYPE_INPUT                  = 0,
+    PIPELINE_RESOURCE_TYPE_OUTPUT                 = 1,
+    PIPELINE_RESOURCE_TYPE_SAMPLER                = 2,
+    PIPELINE_RESOURCE_TYPE_COMBINED_IMAGE_SAMPLER = 3,
+    PIPELINE_RESOURCE_TYPE_SAMPLED_IMAGE          = 4,
+    PIPELINE_RESOURCE_TYPE_STORAGE_IMAGE          = 5,
+    PIPELINE_RESOURCE_TYPE_UNIFORM_TEXEL_BUFFER   = 6,
+    PIPELINE_RESOURCE_TYPE_STORAGE_TEXEL_BUFFER   = 7,
+    PIPELINE_RESOURCE_TYPE_UNIFORM_BUFFER         = 8,
+    PIPELINE_RESOURCE_TYPE_STORAGE_BUFFER         = 9,
+    PIPELINE_RESOURCE_TYPE_INPUT_ATTACHMENT       = 10,
+    PIPELINE_RESOURCE_TYPE_PUSH_CONSTANT_BUFFER   = 11,
+};
+
 enum BufferUsageFlagBits {
     BUFFER_USAGE_TRANSFER_SRC_BIT          = 0x00000001,
     BUFFER_USAGE_TRANSFER_DST_BIT          = 0x00000002,
@@ -492,7 +519,7 @@ enum Result {
 template <typename T_Handle>
 class ResourceHandle {
 public:
-    T_Handle &getHandle(){
+    T_Handle &getHandle() {
         return _handle;
     }
 
