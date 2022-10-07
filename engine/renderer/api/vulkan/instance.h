@@ -15,7 +15,7 @@ struct InstanceCreateInfo {
     const char *const       *ppEnabledExtensionNames;
 };
 
-class PhysicalDevice;
+class VulkanPhysicalDevice;
 
 class VulkanInstance : public ResourceHandle<VkInstance> {
 public:
@@ -24,13 +24,13 @@ public:
 
     static void Destroy(VulkanInstance *pInstance);
 
-    const std::vector<PhysicalDevice *> &getPhysicalDevices();
+    const std::vector<VulkanPhysicalDevice *> &getPhysicalDevices();
 
     ThreadPool *GetThreadPool();
 
 private:
     std::vector<std::string>      _validationLayers;
-    std::vector<PhysicalDevice *> _physicalDevices;
+    std::vector<VulkanPhysicalDevice *> _physicalDevices;
     ThreadPool                   *_threadPool = nullptr;
 };
 } // namespace vkl

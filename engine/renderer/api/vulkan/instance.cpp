@@ -49,10 +49,10 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
             return result;
 
         // Wrap native Vulkan handles in PhysicalDevice class.
-        // for (auto &pd : physicalDevices) {
-        //     auto pdImpl = new PhysicalDevice(instance, pd);
-        //     instance->m_physicalDevices.push_back(pdImpl);
-        // }
+        for (auto &pd : physicalDevices) {
+            auto pdImpl = new VulkanPhysicalDevice(instance, pd);
+            instance->_physicalDevices.push_back(pdImpl);
+        }
     }
 
     // Initialize the Instance's thread pool with a single worker thread for now.
@@ -68,7 +68,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
 ThreadPool *VulkanInstance::GetThreadPool() {
     return _threadPool;
 }
-const std::vector<PhysicalDevice *> &VulkanInstance::getPhysicalDevices() {
+const std::vector<VulkanPhysicalDevice *> &VulkanInstance::getPhysicalDevices() {
     return _physicalDevices;
 }
 void VulkanInstance::Destroy(VulkanInstance *pInstance) {
