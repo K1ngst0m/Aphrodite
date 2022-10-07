@@ -492,6 +492,10 @@ enum Result {
 template <typename T_Handle>
 class ResourceHandle {
 public:
+    T_Handle &getHandle(){
+        return _handle;
+    }
+
     const T_Handle &getHandle() const {
         return _handle;
     }

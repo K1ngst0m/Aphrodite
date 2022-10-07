@@ -70,7 +70,7 @@ private:
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:
-    VulkanSceneRenderer *_renderer;
+    VulkanSceneRenderer *_sceneRenderer;
     glm::mat4            _transform;
     Entity              *_entity;
 };

@@ -288,12 +288,6 @@ void VulkanRenderer::_createDefaultSyncObjects() {
     }
 }
 
-void VulkanRenderer::immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) const {
-    VkCommandBuffer cmd = m_device->beginSingleTimeCommands();
-    function(cmd);
-    m_device->endSingleTimeCommands(cmd, flags);
-}
-
 void VulkanRenderer::prepareFrame() {
     vkWaitForFences(m_device->getLogicalDevice(), 1, &getCurrentFrameSyncObject().inFlightFence, VK_TRUE, UINT64_MAX);
 
@@ -419,7 +413,9 @@ void VulkanRenderer::initImGui() {
     ImGui_ImplVulkan_Init(&initInfo, m_defaultRenderPass->getHandle());
 
     // execute a gpu command to upload imgui font textures
-    immediateSubmit(QUEUE_TYPE_GRAPHICS, [&](VkCommandBuffer cmd) { ImGui_ImplVulkan_CreateFontsTexture(cmd); });
+    VulkanCommandBuffer * cmd = m_device->beginSingleTimeCommands();
+    ImGui_ImplVulkan_CreateFontsTexture(cmd->getHandle());
+    m_device->endSingleTimeCommands(cmd);
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -488,11 +484,10 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
             createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
-            m_device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-                m_device->transitionImageLayout(cmd, fb.depthImage,
-                                                VK_IMAGE_LAYOUT_UNDEFINED,
-                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-            });
+
+            VulkanCommandBuffer* cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+            cmd->cmdTransitionImageLayout(fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            m_device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
         }
 
         {
@@ -513,33 +508,23 @@ VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto &fb = m_defaultFramebuffers[idx];
-        // {
-        //     ImageCreateInfo createInfo{};
-        //     createInfo.imageType = IMAGE_TYPE_2D;
-        //     createInfo.extent    = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
-        //     createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        //     createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        //     createInfo.format    = FORMAT_B8G8R8A8_SRGB;
-        //     m_device->createImage(&createInfo, &fb.colorImage);
-        //     m_device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-        //         m_device->transitionImageLayout(cmd, fb.colorImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        //     });
-        // }
+        auto &framebuffer = m_defaultFramebuffers[idx];
 
+        // get swapchain image
         {
-            fb.colorImage = m_swapChain->getImage(idx);
+            framebuffer.colorImage = m_swapChain->getImage(idx);
         }
 
+        // get image view
         {
             ImageViewCreateInfo createInfo{};
             createInfo.format   = FORMAT_B8G8R8A8_SRGB;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            m_device->createImageView(&createInfo, &fb.colorImageView, fb.colorImage);
+            m_device->createImageView(&createInfo, &framebuffer.colorImageView, framebuffer.colorImage);
         }
 
         m_deletionQueue.push_function([=]() {
-            m_device->destroyImageView(fb.colorImageView);
+            m_device->destroyImageView(framebuffer.colorImageView);
         });
     }
 }

@@ -61,7 +61,6 @@ private:
 
 private:
     std::vector<const char *> getRequiredInstanceExtensions();
-    void                      immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) const;
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator);
     const PerFrameSyncObject &getCurrentFrameSyncObject();
 

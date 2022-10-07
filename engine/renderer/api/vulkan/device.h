@@ -78,37 +78,14 @@ public:
     void destroyCommandPool(VulkanCommandPool *pPool);
 
 public:
-    void transitionImageLayout(VkCommandBuffer      commandBuffer,
-                               VulkanImage         *image,
-                               VkImageLayout        oldLayout,
-                               VkImageLayout        newLayout,
-                               VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-
-    void copyBuffer(VkCommandBuffer commandBuffer,
-                    VulkanBuffer   *srcBuffer,
-                    VulkanBuffer   *dstBuffer,
-                    VkDeviceSize    size);
-
-    void copyBufferToImage(VkCommandBuffer commandBuffer,
-                           VulkanBuffer   *buffer,
-                           VulkanImage    *image);
-
-    void copyImage(VkCommandBuffer commandBuffer,
-                   VulkanImage    *srcImage,
-                   VulkanImage    *dstImage);
-
-public:
     VkResult allocateCommandBuffers(QueueFlags flags, uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
     VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers);
     void     freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
 
-    void immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function);
+    VulkanCommandBuffer *beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 
-    VkCommandBuffer beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer,
-                               QueueFlags      flags);
+    void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer,
+                               QueueFlags           flags = QUEUE_TYPE_GRAPHICS);
 
     void waitIdle();
 

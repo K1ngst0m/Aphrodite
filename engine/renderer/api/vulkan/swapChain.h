@@ -1,8 +1,8 @@
 #ifndef VULKAN_SWAPCHAIN_H_
 #define VULKAN_SWAPCHAIN_H_
 
-#include "device.h"
 #include "common/window.h"
+#include "device.h"
 
 namespace vkl {
 
@@ -21,10 +21,10 @@ public:
     VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
 
 public:
-    VkFormat         getFormat() const;
-    VkExtent2D       getExtent() const;
-    uint32_t         getImageCount() const;
-    VulkanImage     *getImage(uint32_t idx) const;
+    VkFormat     getFormat() const;
+    VkExtent2D   getExtent() const;
+    uint32_t     getImageCount() const;
+    VulkanImage *getImage(uint32_t idx) const;
 
 private:
     void allocate(WindowData *windowData);

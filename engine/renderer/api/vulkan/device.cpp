@@ -1,7 +1,7 @@
 #include "device.h"
 #include "buffer.h"
-#include "commandPool.h"
 #include "commandBuffer.h"
+#include "commandPool.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
@@ -214,8 +214,8 @@ VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t qu
     cmdPoolInfo.flags                   = createFlags;
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
-    auto result = vkCreateCommandPool(_deviceInfo.logicalDevice, &cmdPoolInfo, nullptr, &cmdPool);
-    if (result != VK_SUCCESS){
+    auto          result  = vkCreateCommandPool(_deviceInfo.logicalDevice, &cmdPoolInfo, nullptr, &cmdPool);
+    if (result != VK_SUCCESS) {
         return result;
     }
 
@@ -273,178 +273,23 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
 
     return VK_SUCCESS;
 }
-void VulkanDevice::copyBufferToImage(VkCommandBuffer commandBuffer, VulkanBuffer *buffer, VulkanImage *image) {
-    VkBufferImageCopy region{
-        .bufferOffset      = 0,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-    };
 
-    region.imageSubresource = {
-        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel       = 0,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
+void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer, QueueFlags flags) {
+    commandBuffer->end();
 
-    region.imageOffset = {0, 0, 0};
-    region.imageExtent = {image->getWidth(), image->getHeight(), 1};
-
-    vkCmdCopyBufferToImage(commandBuffer, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-}
-void VulkanDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer, QueueFlags flags) {
-    vkEndCommandBuffer(commandBuffer);
-
-    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer);
+    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer->getHandle());
 
     vkQueueSubmit(getQueueByFlags(flags), 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(getQueueByFlags(flags));
 
-    vkFreeCommandBuffers(_deviceInfo.logicalDevice, getCommandPoolWithQueue(flags)->getHandle(), 1, &commandBuffer);
+    freeCommandBuffers(1, &commandBuffer);
 }
-VkCommandBuffer VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
-    VkCommandBufferAllocateInfo allocInfo{
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .commandPool        = getCommandPoolWithQueue(flags)->getHandle(),
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = 1,
-    };
 
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(_deviceInfo.logicalDevice, &allocInfo, &commandBuffer);
-
-    VkCommandBufferBeginInfo beginInfo{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-    return commandBuffer;
-}
-void VulkanDevice::copyBuffer(VkCommandBuffer commandBuffer, VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size) {
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
-}
-void VulkanDevice::transitionImageLayout(VkCommandBuffer commandBuffer, VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
-    VkImageMemoryBarrier imageMemoryBarrier{
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .oldLayout           = oldLayout,
-        .newLayout           = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = image->getHandle(),
-    };
-
-    const auto &imageCreateInfo         = image->getCreateInfo();
-    imageMemoryBarrier.subresourceRange = {
-        .aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
-        .baseMipLevel   = 0,
-        .levelCount     = imageCreateInfo.mipLevels,
-        .baseArrayLayer = 0,
-        .layerCount     = imageCreateInfo.arrayLayers,
-    };
-
-    // Source layouts (old)
-    // Source access mask controls actions that have to be finished on the old layout
-    // before it will be transitioned to the new layout
-    switch (oldLayout) {
-    case VK_IMAGE_LAYOUT_UNDEFINED:
-        // Image layout is undefined (or does not matter)
-        // Only valid as initial layout
-        // No flags required, listed only for completeness
-        imageMemoryBarrier.srcAccessMask = 0;
-        break;
-
-    case VK_IMAGE_LAYOUT_PREINITIALIZED:
-        // Image is preinitialized
-        // Only valid as initial layout for linear images, preserves memory contents
-        // Make sure host writes have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        // Image is a color attachment
-        // Make sure any writes to the color buffer have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        // Image is a depth/stencil attachment
-        // Make sure any writes to the depth/stencil buffer have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        // Image is a transfer source
-        // Make sure any reads from the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        // Image is a transfer destination
-        // Make sure any writes to the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        // Image is read by a shader
-        // Make sure any shader reads from the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        break;
-    default:
-        // Other source layouts aren't handled (yet)
-        break;
-    }
-
-    // Target layouts (new)
-    // Destination access mask controls the dependency for the new image layout
-    switch (newLayout) {
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        // Image will be used as a transfer destination
-        // Make sure any writes to the image have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        // Image will be used as a transfer source
-        // Make sure any reads from the image have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        // Image will be used as a color attachment
-        // Make sure any writes to the color buffer have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        // Image layout will be used as a depth/stencil attachment
-        // Make sure any writes to depth/stencil buffer have been finished
-        imageMemoryBarrier.dstAccessMask = imageMemoryBarrier.dstAccessMask | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        // Image will be read in a shader (sampler, input attachment)
-        // Make sure any writes to the image have been finished
-        if (imageMemoryBarrier.srcAccessMask == 0) {
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
-        }
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-        break;
-    default:
-        // Other source layouts aren't handled (yet)
-        break;
-    }
-
-    vkCmdPipelineBarrier(commandBuffer,
-                         srcStageMask,
-                         dstStageMask,
-                         0,
-                         0, nullptr,
-                         0, nullptr,
-                         1, &imageMemoryBarrier);
+VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
+    VulkanCommandBuffer *instance;
+    allocateCommandBuffers(flags, 1, &instance);
+    instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    return instance;
 }
 
 VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data) {
@@ -702,34 +547,6 @@ void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass) {
 void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
     delete pFramebuffer;
 }
-void VulkanDevice::copyImage(VkCommandBuffer commandBuffer,
-                             VulkanImage    *srcImage,
-                             VulkanImage    *dstImage) {
-    // Copy region for transfer from framebuffer to cube face
-    VkImageCopy copyRegion = {};
-    copyRegion.srcOffset   = {0, 0, 0};
-    copyRegion.dstOffset   = {0, 0, 0};
-
-    VkImageSubresourceLayers subresourceLayers{
-        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel       = 0,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
-
-    copyRegion.srcSubresource = subresourceLayers;
-    copyRegion.dstSubresource = subresourceLayers;
-    copyRegion.extent.width   = srcImage->getWidth();
-    copyRegion.extent.height  = srcImage->getHeight();
-    copyRegion.extent.depth   = 1;
-
-    vkCmdCopyImage(commandBuffer,
-                   srcImage->getHandle(),
-                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                   dstImage->getHandle(),
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                   1, &copyRegion);
-}
 VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
     VulkanSwapChain *instance = new VulkanSwapChain;
     instance->create(this, surface, data);
@@ -777,7 +594,7 @@ void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getLogicalDevice());
 }
 
-VulkanCommandPool* VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
+VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
     switch (type) {
     case QUEUE_TYPE_COMPUTE:
         return _computeCommandPool;
@@ -791,11 +608,6 @@ VulkanCommandPool* VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
     }
 }
 
-void VulkanDevice::immediateSubmit(QueueFlags flags, std::function<void(VkCommandBuffer cmd)> &&function) {
-    VkCommandBuffer cmd = beginSingleTimeCommands(flags);
-    function(cmd);
-    endSingleTimeCommands(cmd, flags);
-}
 void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
     vkDestroyCommandPool(getLogicalDevice(), pPool->getHandle(), nullptr);
     delete pPool;
@@ -807,12 +619,12 @@ VkResult VulkanDevice::allocateCommandBuffers(QueueFlags flags, uint32_t command
 
 VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers) {
     std::vector<VkCommandBuffer> handles(commandBufferCount);
-    auto result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
-    if (result != VK_SUCCESS){
+    auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
+    if (result != VK_SUCCESS) {
         return result;
     }
 
-    for (auto i = 0; i < commandBufferCount; i++){
+    for (auto i = 0; i < commandBufferCount; i++) {
         ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i]);
     }
     return VK_SUCCESS;

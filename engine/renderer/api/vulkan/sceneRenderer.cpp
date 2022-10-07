@@ -92,6 +92,7 @@ void VulkanSceneRenderer::drawScene() {
         commandBuffer->end();
     }
 }
+
 void VulkanSceneRenderer::update() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
@@ -106,11 +107,13 @@ void VulkanSceneRenderer::update() {
     //     }
     // }
 }
+
 void VulkanSceneRenderer::_initRenderList() {
     for (auto &renderable : _renderList) {
         renderable->loadResouces();
     }
 }
+
 void VulkanSceneRenderer::_initUniformList() {
     // big fucking pool !!!
     std::vector<VkDescriptorPoolSize> poolSizes{
@@ -170,6 +173,7 @@ void VulkanSceneRenderer::_initUniformList() {
         renderable->setupMaterial(_getDescriptorSetLayout(SET_BINDING_MATERIAL), _descriptorPool, mtlBindingBits);
     }
 }
+
 void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
     if (node->getChildNodeCount() == 0) {
         return;
@@ -206,6 +210,7 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
         _loadSceneNodes(subNode);
     }
 }
+
 void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -233,6 +238,7 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
                             _renderer->getPipelineBuilder(),
                             _unlitEffect.get());
 }
+
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -260,9 +266,11 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     _defaultLitPass = std::make_unique<ShaderPass>();
     _defaultLitPass->buildEffect(_device->getLogicalDevice(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _defaultLitEffect.get());
 }
+
 void VulkanSceneRenderer::_initRenderResource() {
     _renderer->initDefaultResource();
 }
+
 std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
     switch (_shadingModel) {
     case ShadingModel::UNLIT:
@@ -273,7 +281,9 @@ std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
     assert("unexpected behavior");
     return _unlitPass;
 }
+
 VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
     return &_getShaderPass()->effect->setLayouts[binding];
 }
+
 } // namespace vkl

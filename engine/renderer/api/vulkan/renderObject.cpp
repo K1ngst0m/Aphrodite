@@ -13,7 +13,7 @@
 namespace vkl {
 
 VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, const std::shared_ptr<VulkanDevice> &device, vkl::Entity *entity)
-    : _device(device), _renderer(renderer), _entity(entity) {
+    : _device(device), _sceneRenderer(renderer), _entity(entity) {
 }
 
 void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
@@ -86,11 +86,11 @@ void VulkanRenderObject::loadTextures() {
 
             _device->createImage(&createInfo, &texture.image);
 
-            _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-                _device->transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-                _device->copyBufferToImage(cmd, stagingBuffer, texture.image);
-                _device->transitionImageLayout(cmd, texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            });
+            VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
+            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
         }
 
         // texture image view
@@ -223,9 +223,9 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_vertexBuffer.buffer);
         }
 
-        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-            _device->copyBuffer(cmd, stagingBuffer, _vertexBuffer.buffer, bufferSize);
-        });
+        auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -257,9 +257,9 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_indexBuffer.buffer);
         }
 
-        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-            _device->copyBuffer(cmd, stagingBuffer, _indexBuffer.buffer, bufferSize);
-        });
+        auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer.buffer, bufferSize);
+        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -298,11 +298,11 @@ void VulkanRenderObject::createEmptyTexture() {
 
         _device->createImage(&createInfo, &_emptyTexture.image);
 
-        _device->immediateSubmit(QUEUE_TYPE_TRANSFER, [&](VkCommandBuffer cmd) {
-            _device->transitionImageLayout(cmd, _emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            _device->copyBufferToImage(cmd, stagingBuffer, _emptyTexture.image);
-            _device->transitionImageLayout(cmd, _emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        });
+        auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        cmd->cmdTransitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        cmd->cmdCopyBufferToImage(stagingBuffer, _emptyTexture.image);
+        cmd->cmdTransitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
     }
 
     {
