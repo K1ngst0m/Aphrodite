@@ -2,7 +2,6 @@
 #define COMMANDBUFFER_H_
 
 #include "device.h"
-#include "renderer/gpuResource.h"
 
 namespace vkl {
 class VulkanCommandBuffer : public ResourceHandle<VkCommandBuffer> {

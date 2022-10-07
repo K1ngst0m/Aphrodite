@@ -17,6 +17,8 @@ class VulkanSwapChain;
 class VulkanCommandBuffer;
 class VulkanCommandPool;
 class VulkanShaderModule;
+class VulkanDescriptorPool;
+class VulkanDescriptorSetLayout;
 class WindowData;
 struct RenderPassCreateInfo;
 
@@ -78,9 +80,12 @@ public:
     void destroyCommandPool(VulkanCommandPool *pPool);
 
 public:
-    VkResult allocateCommandBuffers(QueueFlags flags, uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
-    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers);
-    void     freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
+    VkResult allocateCommandBuffers(uint32_t              commandBufferCount,
+                                    VulkanCommandBuffer **ppCommandBuffers,
+                                    QueueFlags            flags = QUEUE_TYPE_GRAPHICS);
+
+    void freeCommandBuffers(uint32_t              commandBufferCount,
+                            VulkanCommandBuffer **ppCommandBuffers);
 
     VulkanCommandBuffer *beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
 

@@ -287,7 +287,7 @@ void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer, Que
 
 VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
     VulkanCommandBuffer *instance;
-    allocateCommandBuffers(flags, 1, &instance);
+    allocateCommandBuffers(1, &instance, flags);
     instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     return instance;
 }
@@ -613,11 +613,9 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
     delete pPool;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(QueueFlags flags, uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers) {
-    return allocateCommandBuffers(commandBufferCount, getCommandPoolWithQueue(flags), ppCommandBuffers);
-}
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, QueueFlags flags) {
+    auto pool = getCommandPoolWithQueue(flags);
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandPool *pool, VulkanCommandBuffer **ppCommandBuffers) {
     std::vector<VkCommandBuffer> handles(commandBufferCount);
     auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
     if (result != VK_SUCCESS) {

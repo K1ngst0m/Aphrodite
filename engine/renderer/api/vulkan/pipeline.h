@@ -2,8 +2,8 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "vkInit.hpp"
 #include "shader.h"
+#include "vkInit.hpp"
 
 namespace vkl {
 
@@ -23,6 +23,7 @@ struct VertexInputBuilder {
     static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
     static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
+
 
 /**
  * @brief built version of a Shader Effect, where it stores the built pipeline
@@ -48,6 +49,7 @@ public:
     void setShaders(ShaderEffect *shaders);
     void reset(VkExtent2D extent);
 };
+
 } // namespace vkl
 
 #endif // PIPELINE_H_
