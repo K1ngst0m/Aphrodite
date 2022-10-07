@@ -3,6 +3,7 @@
 
 #include "renderer/renderer.h"
 #include "sceneRenderer.h"
+#include "instance.h"
 
 namespace vkl {
 struct PerFrameSyncObject {
@@ -65,7 +66,7 @@ private:
     const PerFrameSyncObject &getCurrentFrameSyncObject();
 
 private:
-    VkInstance                    m_instance;
+    VulkanInstance               *m_instance;
     std::shared_ptr<VulkanDevice> m_device;
     VulkanSwapChain              *m_swapChain;
     std::vector<const char *>     m_supportedInstanceExtensions;

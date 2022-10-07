@@ -141,55 +141,57 @@ std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
 }
 
 void VulkanRenderer::_createSurface() {
-    if (glfwCreateWindowSurface(m_instance, _windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(m_instance->getHandle(), _windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 
-    m_deletionQueue.push_function([=]() { vkDestroySurfaceKHR(m_instance, m_surface, nullptr); });
+    m_deletionQueue.push_function([=]() { vkDestroySurfaceKHR(m_instance->getHandle(), m_surface, nullptr); });
 }
 
 void VulkanRenderer::_createInstance() {
     if (_config.enableDebug && !_checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
+    std::vector<const char *> extensions = getRequiredInstanceExtensions();
 
     VkApplicationInfo appInfo{
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName   = "Hello Triangle",
+        .pApplicationName   = "Centimani",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-        .pEngineName        = "No Engine",
+        .pEngineName        = "Centimani Engine",
         .engineVersion      = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion         = VK_API_VERSION_1_3,
     };
 
-    std::vector<const char *> extensions = getRequiredInstanceExtensions();
-    VkInstanceCreateInfo      createInfo{
-             .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-             .pApplicationInfo        = &appInfo,
-             .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
-             .ppEnabledExtensionNames = extensions.data(),
+    InstanceCreateInfo instanceCreateInfo{
+        .pNext = nullptr,
+        .pApplicationInfo = &appInfo,
+        .enabledExtensionCount   = static_cast<uint32_t>(extensions.size()),
+        .ppEnabledExtensionNames = extensions.data(),
     };
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     populateDebugMessengerCreateInfo(debugCreateInfo);
     if (_config.enableDebug) {
-        createInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
-        createInfo.ppEnabledLayerNames = validationLayers.data();
-        createInfo.pNext               = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+        instanceCreateInfo.enabledLayerCount   = static_cast<uint32_t>(validationLayers.size());
+        instanceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+        instanceCreateInfo.pNext               = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
     } else {
-        createInfo.enabledLayerCount = 0;
+        instanceCreateInfo.enabledLayerCount = 0;
     }
 
-    VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance));
-    m_deletionQueue.push_function([=]() { vkDestroyInstance(m_instance, nullptr); });
+    VulkanInstance::Create(&instanceCreateInfo, &m_instance);
+    m_deletionQueue.push_function([=]() {
+        VulkanInstance::Destroy(m_instance);
+    });
 }
 
 void VulkanRenderer::_createDevice() {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(m_instance->getHandle(), &deviceCount, nullptr);
     assert(deviceCount > 0 && "failed to find GPUs with Vulkan support!");
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(m_instance->getHandle(), &deviceCount, devices.data());
 
     m_device = std::make_shared<VulkanDevice>();
 
@@ -243,7 +245,7 @@ void VulkanRenderer::_setupSwapChain() {
 
 void VulkanRenderer::_createDefaultCommandBuffers() {
     m_defaultCommandBuffers.resize(m_swapChain->getImageCount());
-    m_device->allocateCommandBuffers(QUEUE_TYPE_GRAPHICS, m_defaultCommandBuffers.size(), m_defaultCommandBuffers.data());
+    m_device->allocateCommandBuffers(m_defaultCommandBuffers.size(), m_defaultCommandBuffers.data());
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -253,8 +255,8 @@ void VulkanRenderer::_setupDebugMessenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger));
-    m_deletionQueue.push_function([=]() { destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr); });
+    VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_instance->getHandle(), &createInfo, nullptr, &m_debugMessenger));
+    m_deletionQueue.push_function([=]() { destroyDebugUtilsMessengerEXT(m_instance->getHandle(), m_debugMessenger, nullptr); });
 }
 
 void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
@@ -400,7 +402,7 @@ void VulkanRenderer::initImGui() {
 
     // this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo initInfo = {
-        .Instance       = m_instance,
+        .Instance       = m_instance->getHandle(),
         .PhysicalDevice = m_device->getPhysicalDevice(),
         .Device         = m_device->getLogicalDevice(),
         .Queue          = getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
