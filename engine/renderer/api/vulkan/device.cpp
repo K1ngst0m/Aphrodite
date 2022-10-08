@@ -101,6 +101,23 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
     return VK_SUCCESS;
 }
 
+void VulkanDevice::Destroy(VulkanDevice *pDevice) {
+    if (pDevice->_drawCommandPool) {
+        pDevice->destroyCommandPool(pDevice->_drawCommandPool);
+    }
+    if (pDevice->_transferCommandPool) {
+        pDevice->destroyCommandPool(pDevice->_transferCommandPool);
+    }
+    if (pDevice->_computeCommandPool) {
+        pDevice->destroyCommandPool(pDevice->_computeCommandPool);
+    }
+
+    if (pDevice->_handle) {
+        vkDestroyDevice(pDevice->_handle, nullptr);
+    }
+    delete pDevice;
+}
+
 VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) {
     VkCommandPoolCreateInfo cmdPoolInfo = {};
     cmdPoolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -200,6 +217,7 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
 
     return result;
 }
+
 VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage) {
     VkImage        image;
     VkDeviceMemory memory;
@@ -246,22 +264,6 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     }
 
     return VK_SUCCESS;
-}
-
-void VulkanDevice::destroy() {
-    if (_drawCommandPool) {
-        destroyCommandPool(_drawCommandPool);
-    }
-    if (_transferCommandPool) {
-        destroyCommandPool(_transferCommandPool);
-    }
-    if (_computeCommandPool) {
-        destroyCommandPool(_computeCommandPool);
-    }
-
-    if (_handle) {
-        vkDestroyDevice(_handle, nullptr);
-    }
 }
 
 VulkanPhysicalDevice *VulkanDevice::getPhysicalDevice() const {
@@ -446,5 +448,4 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
         delete ppCommandBuffers[i];
     }
 }
-
 } // namespace vkl

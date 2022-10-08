@@ -2,20 +2,28 @@
 #include <GLFW/glfw3.h>
 
 namespace vkl {
+std::shared_ptr<Window> Window::Create(uint32_t width, uint32_t height) {
+    auto instance = std::make_shared<Window>(width, height);
+    return instance;
+}
 
-void Window::init(uint32_t width, uint32_t height) {
+Window::Window(uint32_t width, uint32_t height) {
+    _windowData = std::make_shared<WindowData>(width, height);
+    _cursorData = std::make_shared<CursorData>(width / 2.0f, height / 2.0f);
     assert(glfwInit());
     assert(glfwVulkanSupported());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    _windowData = std::make_shared<WindowData>(width, height);
-    _cursorData = std::make_shared<CursorData>(width / 2.0f, height / 2.0f);
-
     _windowData->window = glfwCreateWindow(_windowData->width, _windowData->height, "Centimani Engine", nullptr, nullptr);
     assert(_windowData->window);
     glfwSetWindowUserPointer(getHandle(), this);
+}
+
+Window::~Window() {
+    glfwDestroyWindow(_windowData->window);
+    glfwTerminate();
 }
 
 GLFWwindow *Window::getHandle() {
@@ -29,10 +37,6 @@ void Window::setWidth(uint32_t w) {
 }
 std::shared_ptr<WindowData> Window::getWindowData() {
     return _windowData;
-}
-void Window::cleanup() {
-    glfwDestroyWindow(_windowData->window);
-    glfwTerminate();
 }
 uint32_t Window::getWidth() {
     return _windowData->width;

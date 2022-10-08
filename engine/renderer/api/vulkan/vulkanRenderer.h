@@ -18,7 +18,7 @@ public:
     ~VulkanRenderer() = default;
 
     void init() override;
-    void destroyDevice() override;
+    void destroy() override;
     void idleDevice() override;
 
 public:

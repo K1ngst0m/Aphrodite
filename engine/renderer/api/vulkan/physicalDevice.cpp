@@ -86,9 +86,11 @@ uint32_t VulkanPhysicalDevice::findQueueFamilies(VkQueueFlags queueFlags) const 
 
     throw std::runtime_error("Could not find a matching queue family index");
 }
+
 bool VulkanPhysicalDevice::extensionSupported(std::string_view extension) const {
     return (std::find(_supportedExtensions.begin(), _supportedExtensions.end(), extension) != _supportedExtensions.end());
 }
+
 uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound) const {
     for (uint32_t i = 0; i < _memoryProperties.memoryTypeCount; i++) {
         if ((typeBits & 1) == 1) {

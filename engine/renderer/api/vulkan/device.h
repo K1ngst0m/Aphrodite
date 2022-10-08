@@ -40,7 +40,7 @@ public:
                            const DeviceCreateInfo *pCreateInfo,
                            VulkanDevice          **ppDevice);
 
-    void destroy();
+    static void Destroy(VulkanDevice *pDevice);
 
 public:
     VkResult createBuffer(BufferCreateInfo *pCreateInfo,
@@ -97,10 +97,10 @@ public:
     void waitIdle();
 
 public:
-    VulkanCommandPool          *getCommandPoolWithQueue(QueueFlags type);
-    VulkanPhysicalDevice       *getPhysicalDevice() const;
-    VkQueue                     getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
-    VkFormat                    getDepthFormat() const;
+    VulkanCommandPool    *getCommandPoolWithQueue(QueueFlags type);
+    VulkanPhysicalDevice *getPhysicalDevice() const;
+    VkQueue               getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
+    VkFormat              getDepthFormat() const;
 
 private:
     VulkanPhysicalDevice    *_physicalDevice;

@@ -23,11 +23,11 @@ struct RenderConfig {
 
 class Renderer {
 public:
-    static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config);
+    static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config, const std::shared_ptr<WindowData> &windowData);
 
-    virtual void init()          = 0;
-    virtual void destroyDevice() = 0;
-    virtual void idleDevice()    = 0;
+    virtual void init()       = 0;
+    virtual void destroy()    = 0;
+    virtual void idleDevice() = 0;
 
     virtual std::shared_ptr<SceneRenderer> getSceneRenderer() = 0;
 

@@ -6,7 +6,7 @@
 class scene_manager : public vkl::BaseApp {
 public:
     scene_manager();
-    ~scene_manager() override = default;
+    ~scene_manager() override;
 
     void init() override;
     void run() override;
@@ -15,7 +15,6 @@ public:
 private:
     void setupWindow();
     void setupRenderer();
-    void cleanup();
     void update();
 
     void keyboardHandleDerive(int key, int scancode, int action, int mods);

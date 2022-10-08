@@ -37,12 +37,10 @@ using KeyFunc             = std::function<void(int key, int scancode, int action
 
 class Window {
 public:
-    static std::shared_ptr<Window> Create() {
-        return std::make_shared<Window>();
-    }
+    static std::shared_ptr<Window> Create(uint32_t width = 800, uint32_t height = 600);
 
-    void init(uint32_t width = 800, uint32_t height = 600);
-    void cleanup();
+    Window(uint32_t width, uint32_t height);
+    ~Window();
 
     std::shared_ptr<WindowData> getWindowData();
     std::shared_ptr<CursorData> getMouseData();

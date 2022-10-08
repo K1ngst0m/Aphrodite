@@ -193,10 +193,10 @@ void VulkanRenderer::_createDevice() {
     createInfo.enabledExtensionCount = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    VulkanDevice::Create(m_instance->getPhysicalDevices()[0], &createInfo, &m_device);
+    VK_CHECK_RESULT(VulkanDevice::Create(m_instance->getPhysicalDevices()[0], &createInfo, &m_device));
 
     m_deletionQueue.push_function([&]() {
-        m_device->destroy();
+        VulkanDevice::Destroy(m_device);
     });
 }
 
@@ -247,8 +247,9 @@ void VulkanRenderer::_createDefaultCommandBuffers() {
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
-    if (!_config.enableDebug)
+    if (!_config.enableDebug){
         return;
+    }
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -359,9 +360,10 @@ void VulkanRenderer::init() {
     _setupSwapChain();
 }
 
-void VulkanRenderer::destroyDevice() {
+void VulkanRenderer::destroy() {
     m_deletionQueue.flush();
 }
+
 void VulkanRenderer::idleDevice() {
     m_device->waitIdle();
 }
@@ -429,6 +431,7 @@ void VulkanRenderer::initImGui() {
         ImGui_ImplVulkan_Shutdown();
     });
 }
+
 void VulkanRenderer::prepareUIDraw() {
     if (_config.enableUI) {
         ImGui_ImplVulkan_NewFrame();

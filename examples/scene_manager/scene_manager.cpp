@@ -4,6 +4,10 @@ scene_manager::scene_manager()
     : vkl::BaseApp("scene_manager") {
 }
 
+scene_manager::~scene_manager() {
+    m_deletionQueue.flush();
+}
+
 void scene_manager::init() {
     setupWindow();
     setupRenderer();
@@ -23,7 +27,6 @@ void scene_manager::run() {
 }
 
 void scene_manager::finish() {
-    cleanup();
 }
 
 void scene_manager::loadScene() {
@@ -125,8 +128,7 @@ void scene_manager::buildCommands() {
 }
 
 void scene_manager::setupWindow() {
-    m_window = vkl::Window::Create();
-    m_window->init(1366, 768);
+    m_window = vkl::Window::Create(1366, 768);
 
     m_window->setCursorPosCallback([=](double xposIn, double yposIn) {
         this->mouseHandleDerive(xposIn, yposIn);
@@ -139,10 +141,6 @@ void scene_manager::setupWindow() {
     m_window->setKeyCallback([=](int key, int scancode, int action, int mods) {
         this->keyboardHandleDerive(key, scancode, action, mods);
     });
-
-    m_deletionQueue.push_function([=]() {
-        m_window->cleanup();
-    });
 }
 
 void scene_manager::setupRenderer() {
@@ -151,17 +149,11 @@ void scene_manager::setupRenderer() {
         .enableUI    = false,
         .maxFrames   = 2,
     };
-    m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config);
-    m_renderer->setWindowData(m_window->getWindowData());
-    m_renderer->init();
+    m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config, m_window->getWindowData());
 
     m_deletionQueue.push_function([&]() {
-        m_renderer->destroyDevice();
+        m_renderer->destroy();
     });
-}
-
-void scene_manager::cleanup() {
-    m_deletionQueue.flush();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
