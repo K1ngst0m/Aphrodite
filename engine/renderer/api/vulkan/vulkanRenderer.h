@@ -30,10 +30,10 @@ public:
 
 public:
     VkQueue              getDefaultDeviceQueue(QueueFlags type) const;
-    VkRenderPass         getDefaultRenderPass() const;
+    VulkanRenderPass    *getDefaultRenderPass() const;
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
-    VkFramebuffer        getDefaultFrameBuffer(uint32_t idx) const;
+    VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
     PipelineBuilder     &getPipelineBuilder();
 
     VulkanDevice                  *getDevice();

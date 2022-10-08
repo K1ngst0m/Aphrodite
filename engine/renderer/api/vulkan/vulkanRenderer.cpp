@@ -305,6 +305,7 @@ void VulkanRenderer::prepareFrame() {
 
     vkResetFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence);
 }
+
 void VulkanRenderer::submitFrame() {
     VkSemaphore          waitSemaphores[]   = {getCurrentFrameSyncObject().renderSemaphore};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -455,8 +456,8 @@ std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
 VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
     return m_device->getQueueByFlags(type, 0);
 }
-VkRenderPass VulkanRenderer::getDefaultRenderPass() const {
-    return m_defaultRenderPass->getHandle();
+VulkanRenderPass* VulkanRenderer::getDefaultRenderPass() const {
+    return m_defaultRenderPass;
 }
 
 VulkanCommandBuffer *VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
@@ -503,8 +504,8 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
         });
     }
 }
-VkFramebuffer VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
-    return m_defaultFramebuffers[idx].framebuffer->getHandle(m_defaultRenderPass);
+VulkanFramebuffer* VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
+    return m_defaultFramebuffers[idx].framebuffer;
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {

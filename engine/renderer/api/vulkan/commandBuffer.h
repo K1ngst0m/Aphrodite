@@ -4,6 +4,15 @@
 #include "device.h"
 
 namespace vkl {
+
+struct RenderPassBeginInfo {
+    VulkanRenderPass  *pRenderPass;
+    VulkanFramebuffer *pFramebuffer;
+    VkRect2D                 renderArea;
+    uint32_t                 clearValueCount;
+    const VkClearValue      *pClearValues;
+};
+
 class VulkanCommandBuffer : public ResourceHandle<VkCommandBuffer> {
 public:
     VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle);
@@ -18,7 +27,7 @@ public:
     VkResult end();
     VkResult reset();
 
-    void cmdBeginRenderPass(const VkRenderPassBeginInfo *pBeginInfo);
+    void cmdBeginRenderPass(const RenderPassBeginInfo *pBeginInfo);
     void cmdNextSubpass();
     void cmdEndRenderPass();
     void cmdSetViewport(VkViewport *viewport);

@@ -1,7 +1,10 @@
 #include "commandBuffer.h"
 #include "buffer.h"
 #include "commandPool.h"
+#include "framebuffer.h"
 #include "image.h"
+#include "renderpass.h"
+#include "vkInit.hpp"
 
 namespace vkl {
 
@@ -46,8 +49,15 @@ VkResult VulkanCommandBuffer::reset() {
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::cmdBeginRenderPass(const VkRenderPassBeginInfo *pBeginInfo) {
-    vkCmdBeginRenderPass(_handle, pBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+void VulkanCommandBuffer::cmdBeginRenderPass(const RenderPassBeginInfo *pBeginInfo) {
+    VkRenderPassBeginInfo renderPassBeginInfo = vkl::init::renderPassBeginInfo();
+    renderPassBeginInfo.renderPass            = pBeginInfo->pRenderPass->getHandle();
+    renderPassBeginInfo.renderArea            = pBeginInfo->renderArea;
+    renderPassBeginInfo.clearValueCount       = pBeginInfo->clearValueCount;
+    renderPassBeginInfo.pClearValues          = pBeginInfo->pClearValues;
+    renderPassBeginInfo.framebuffer           = pBeginInfo->pFramebuffer->getHandle(pBeginInfo->pRenderPass);
+
+    vkCmdBeginRenderPass(_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 void VulkanCommandBuffer::cmdNextSubpass() {
 }

@@ -1,8 +1,8 @@
 #ifndef RENDERPASS_H_
 #define RENDERPASS_H_
 
-#include "device.h"
 #include "common/spinlock.h"
+#include "device.h"
 
 namespace vkl {
 using RenderPassHash = std::vector<uint64_t>;
@@ -32,8 +32,8 @@ public:
 
 private:
     // RenderPassHash        m_hash                 = {};
-    VkRenderPass          m_handle               = VK_NULL_HANDLE;
-    uint32_t              m_colorAttachmentCount = 0;
+    VkRenderPass m_handle               = VK_NULL_HANDLE;
+    uint32_t     m_colorAttachmentCount = 0;
 };
 
 } // namespace vkl

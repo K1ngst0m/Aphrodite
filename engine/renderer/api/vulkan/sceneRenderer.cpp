@@ -1,14 +1,15 @@
 #include "sceneRenderer.h"
-#include "scene/sceneNode.h"
-#include "scene/entity.h"
-#include "scene/light.h"
-#include "scene/camera.h"
-#include "device.h"
-#include "framebuffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
+#include "device.h"
+#include "framebuffer.h"
 #include "pipeline.h"
 #include "renderObject.h"
+#include "renderpass.h"
+#include "scene/camera.h"
+#include "scene/entity.h"
+#include "scene/light.h"
+#include "scene/sceneNode.h"
 #include "uniformObject.h"
 #include "vkInit.hpp"
 #include "vulkanRenderer.h"
@@ -59,12 +60,12 @@ void VulkanSceneRenderer::drawScene() {
     clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil = {1.0f, 0};
 
-    VkRenderPassBeginInfo renderPassBeginInfo = vkl::init::renderPassBeginInfo();
-    renderPassBeginInfo.renderPass            = _renderer->getDefaultRenderPass();
-    renderPassBeginInfo.renderArea.offset     = {0, 0};
-    renderPassBeginInfo.renderArea.extent     = extent;
-    renderPassBeginInfo.clearValueCount       = clearValues.size();
-    renderPassBeginInfo.pClearValues          = clearValues.data();
+    RenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.pRenderPass       = _renderer->getDefaultRenderPass();
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = extent;
+    renderPassBeginInfo.clearValueCount   = clearValues.size();
+    renderPassBeginInfo.pClearValues      = clearValues.data();
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -75,7 +76,7 @@ void VulkanSceneRenderer::drawScene() {
         commandBuffer->begin(0);
 
         // render pass
-        renderPassBeginInfo.framebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
+        renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
         commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
         // dynamic state
@@ -234,7 +235,7 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
 
     _unlitPass = std::make_unique<ShaderPass>();
     _unlitPass->buildEffect(_device->getHandle(),
-                            _renderer->getDefaultRenderPass(),
+                            _renderer->getDefaultRenderPass()->getHandle(),
                             _renderer->getPipelineBuilder(),
                             _unlitEffect.get());
 }
@@ -264,7 +265,10 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     _defaultLitEffect->buildPipelineLayout(_device->getHandle());
 
     _defaultLitPass = std::make_unique<ShaderPass>();
-    _defaultLitPass->buildEffect(_device->getHandle(), _renderer->getDefaultRenderPass(), _renderer->getPipelineBuilder(), _defaultLitEffect.get());
+    _defaultLitPass->buildEffect(_device->getHandle(),
+                                 _renderer->getDefaultRenderPass()->getHandle(),
+                                 _renderer->getPipelineBuilder(),
+                                 _defaultLitEffect.get());
 }
 
 void VulkanSceneRenderer::_initRenderResource() {
