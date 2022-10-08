@@ -28,54 +28,10 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalD
         }
     }
 
-    // Get queue family indices for the requested queue family types
-    // Note that the indices may overlap depending on the implementation
-
-    const float defaultQueuePriority(0.0f);
-
-    auto requestedQueueTypes = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT;
-
-    // Graphics queue
-    {
-        _queueFamilyIndices.graphics = findQueueFamilies(VK_QUEUE_GRAPHICS_BIT);
-        VkDeviceQueueCreateInfo queueInfo{};
-        queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo.queueFamilyIndex = _queueFamilyIndices.graphics;
-        queueInfo.queueCount       = 1;
-        queueInfo.pQueuePriorities = &defaultQueuePriority;
-        _queueCreateInfos[QUEUE_TYPE_GRAPHICS] = queueInfo;
-        _queueCreateInfos[QUEUE_TYPE_PRESENT] = queueInfo;
-    }
-
-    // Compute queue
-    {
-        _queueFamilyIndices.compute = findQueueFamilies(VK_QUEUE_COMPUTE_BIT);
-        if (_queueFamilyIndices.compute != _queueFamilyIndices.graphics) {
-            // If compute family index differs, we need an additional queue create info for the compute queue
-            VkDeviceQueueCreateInfo queueInfo{};
-            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueInfo.queueFamilyIndex = _queueFamilyIndices.compute;
-            queueInfo.queueCount       = 1;
-            queueInfo.pQueuePriorities = &defaultQueuePriority;
-            _queueCreateInfos[QUEUE_TYPE_COMPUTE] = queueInfo;
-        }
-    }
-
-    // Dedicated transfer queue
-    {
-        _queueFamilyIndices.transfer = findQueueFamilies(VK_QUEUE_TRANSFER_BIT);
-        if ((_queueFamilyIndices.transfer != _queueFamilyIndices.graphics) &&
-            (_queueFamilyIndices.transfer != _queueFamilyIndices.compute)) {
-            // If transfer family index differs, we need an additional queue create info for the transfer queue
-            VkDeviceQueueCreateInfo queueInfo{};
-            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueInfo.queueFamilyIndex = _queueFamilyIndices.transfer;
-            queueInfo.queueCount       = 1;
-            queueInfo.pQueuePriorities = &defaultQueuePriority;
-            _queueCreateInfos[QUEUE_TYPE_TRANSFER] = queueInfo;
-        }
-    }
-
+    _queueFamilyIndices.graphics = findQueueFamilies(VK_QUEUE_GRAPHICS_BIT);
+    _queueFamilyIndices.compute  = findQueueFamilies(VK_QUEUE_COMPUTE_BIT);
+    _queueFamilyIndices.transfer = findQueueFamilies(VK_QUEUE_TRANSFER_BIT);
+    _queueFamilyIndices.present = _queueFamilyIndices.graphics;
 }
 
 const VulkanInstance *VulkanPhysicalDevice::getInstance() const {
@@ -129,9 +85,6 @@ uint32_t VulkanPhysicalDevice::findQueueFamilies(VkQueueFlags queueFlags) const 
     }
 
     throw std::runtime_error("Could not find a matching queue family index");
-}
-VkDeviceQueueCreateInfo VulkanPhysicalDevice::getDeviceQueueCreateInfo(QueueFlags flags) {
-    return _queueCreateInfos[flags];
 }
 bool VulkanPhysicalDevice::extensionSupported(std::string_view extension) const {
     return (std::find(_supportedExtensions.begin(), _supportedExtensions.end(), extension) != _supportedExtensions.end());

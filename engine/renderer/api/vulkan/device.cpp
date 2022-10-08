@@ -13,14 +13,39 @@
 namespace vkl {
 VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo, VulkanDevice **ppDevice) {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+    const float                          defaultQueuePriority(0.0f);
+
     if (pCreateInfo->requestQueueTypes & VK_QUEUE_GRAPHICS_BIT) {
-        queueCreateInfos.push_back(pPhysicalDevice->getDeviceQueueCreateInfo(QUEUE_TYPE_GRAPHICS));
+        VkDeviceQueueCreateInfo queueInfo{};
+        queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS);
+        queueInfo.queueCount       = 1;
+        queueInfo.pQueuePriorities = &defaultQueuePriority;
+
+        queueCreateInfos.push_back(queueInfo);
     }
     if (pCreateInfo->requestQueueTypes & VK_QUEUE_COMPUTE_BIT) {
-        queueCreateInfos.push_back(pPhysicalDevice->getDeviceQueueCreateInfo(QUEUE_TYPE_COMPUTE));
+        if (pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) {
+            // If compute family index differs, we need an additional queue create info for the compute queue
+            VkDeviceQueueCreateInfo queueInfo{};
+            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE);
+            queueInfo.queueCount       = 1;
+            queueInfo.pQueuePriorities = &defaultQueuePriority;
+            queueCreateInfos.push_back(queueInfo);
+        }
     }
     if (pCreateInfo->requestQueueTypes & VK_QUEUE_TRANSFER_BIT) {
-        queueCreateInfos.push_back(pPhysicalDevice->getDeviceQueueCreateInfo(QUEUE_TYPE_TRANSFER));
+        if ((pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) &&
+            (pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE))) {
+            // If transfer family index differs, we need an additional queue create info for the transfer queue
+            VkDeviceQueueCreateInfo queueInfo{};
+            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER);
+            queueInfo.queueCount       = 1;
+            queueInfo.pQueuePriorities = &defaultQueuePriority;
+            queueCreateInfos.push_back(queueInfo);
+        }
     }
 
     // Create the Vulkan device.
@@ -41,7 +66,7 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
         return result;
 
     // Initialize Device class.
-    auto device = new VulkanDevice;
+    auto *device = new VulkanDevice;
     memcpy(&device->_createInfo, pCreateInfo, sizeof(DeviceCreateInfo));
     device->_physicalDevice = pPhysicalDevice;
     device->_handle         = handle;
@@ -51,24 +76,20 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
     VK_CHECK_RESULT(device->createCommandPool(&device->_computeCommandPool, pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE)));
 
     for (auto i = 0; i < queueCreateInfos.size(); i++) {
-        QueueFamily *qf = nullptr;
-        if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) {
-            qf = &device->_queues[QUEUE_TYPE_GRAPHICS];
-        }
-        if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER)) {
-            qf = &device->_queues[QUEUE_TYPE_TRANSFER];
-        }
-        if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE)) {
-            qf = &device->_queues[QUEUE_TYPE_COMPUTE];
-        }
-
-        assert(qf);
-
         for (auto j = 0; j < queueCreateInfos[i].queueCount; j++) {
             VkQueue queue = VK_NULL_HANDLE;
             vkGetDeviceQueue(device->getHandle(), i, j, &queue);
             if (queue) {
-                qf->push_back(queue);
+                QueueFamily *qf = nullptr;
+                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) {
+                    device->_queues[QUEUE_TYPE_GRAPHICS].push_back(queue);
+                }
+                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER)) {
+                    device->_queues[QUEUE_TYPE_TRANSFER].push_back(queue);
+                }
+                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE)) {
+                    device->_queues[QUEUE_TYPE_COMPUTE].push_back(queue);
+                }
             }
         }
     }
