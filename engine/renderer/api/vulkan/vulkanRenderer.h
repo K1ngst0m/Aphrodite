@@ -25,10 +25,10 @@ public:
     void prepareFrame();
     void submitFrame();
     void initDefaultResource();
-    void initImGui();
-    void prepareUIDraw();
 
 public:
+    VulkanInstance      *getInstance() const;
+    VulkanDevice        *getDevice() const;
     VkQueue              getDefaultDeviceQueue(QueueFlags type) const;
     VulkanRenderPass    *getDefaultRenderPass() const;
     uint32_t             getCommandBufferCount() const;
@@ -36,8 +36,8 @@ public:
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
     PipelineBuilder     &getPipelineBuilder();
 
-    VulkanDevice                  *getDevice();
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
+    std::shared_ptr<UIRenderer>    getUIRenderer() override;
 
 private:
     void _createInstance();
@@ -90,6 +90,7 @@ private:
         VulkanImageView   *depthImageView;
         VulkanFramebuffer *framebuffer;
     };
+
     std::vector<FrameBufferData> m_defaultFramebuffers;
     VulkanRenderPass            *m_defaultRenderPass;
 };
