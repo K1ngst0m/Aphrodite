@@ -14,15 +14,21 @@ struct RenderPassBeginInfo {
     const VkClearValue *pClearValues;
 };
 
+enum class CommandBufferState {
+    INITIAL,
+    RECORDING,
+    EXECUTABLE,
+    PENDING,
+    INVALID,
+};
+
 class VulkanCommandBuffer : public ResourceHandle<VkCommandBuffer> {
 public:
     VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle);
 
     ~VulkanCommandBuffer();
 
-    VulkanCommandPool *GetPool() {
-        return m_pool;
-    }
+    VulkanCommandPool *getPool();
 
     VkResult begin(VkCommandBufferUsageFlags flags);
     VkResult end();
@@ -50,9 +56,9 @@ public:
     void cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstImage);
 
 private:
-    VulkanCommandPool *m_pool;
-    bool               m_isRecording      = false;
-    bool               m_submittedToQueue = false;
+    VulkanCommandPool *_pool;
+    CommandBufferState _state;
+    bool               _submittedToQueue = false;
 };
 } // namespace vkl
 

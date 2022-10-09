@@ -9,16 +9,16 @@
 namespace vkl {
 
 VulkanCommandBuffer::~VulkanCommandBuffer() {
-    m_pool->freeCommandBuffers(1, &_handle);
+    _pool->freeCommandBuffers(1, &_handle);
 }
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle)
-    : m_pool(pool) {
+    : _pool(pool), _state(CommandBufferState::INITIAL) {
     _handle = handle;
 }
 
 VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags) {
-    if (m_isRecording) {
+    if (_state == CommandBufferState::RECORDING) {
         return VK_NOT_READY;
     }
 
@@ -32,20 +32,23 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags) {
     }
 
     // Mark CommandBuffer as recording and reset internal state.
-    m_isRecording = true;
+    _state = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
 }
 VkResult VulkanCommandBuffer::end() {
-    if (!m_isRecording) {
+    if (_state != CommandBufferState::RECORDING) {
         return VK_NOT_READY;
     }
+
+    _state = CommandBufferState::EXECUTABLE;
 
     return vkEndCommandBuffer(_handle);
 }
 VkResult VulkanCommandBuffer::reset() {
     if (_handle != VK_NULL_HANDLE)
         return vkResetCommandBuffer(_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    _state = CommandBufferState::INITIAL;
     return VK_SUCCESS;
 }
 
@@ -264,5 +267,8 @@ void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstIm
 }
 void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
     vkCmdDraw(_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+}
+VulkanCommandPool *VulkanCommandBuffer::getPool() {
+    return _pool;
 }
 } // namespace vkl
