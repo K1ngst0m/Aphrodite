@@ -87,7 +87,7 @@ uint32_t VulkanPhysicalDevice::findQueueFamilies(VkQueueFlags queueFlags) const 
     throw std::runtime_error("Could not find a matching queue family index");
 }
 
-bool VulkanPhysicalDevice::extensionSupported(std::string_view extension) const {
+bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) const {
     return (std::find(_supportedExtensions.begin(), _supportedExtensions.end(), extension) != _supportedExtensions.end());
 }
 

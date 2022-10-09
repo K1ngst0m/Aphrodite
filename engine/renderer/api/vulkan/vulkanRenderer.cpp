@@ -1,6 +1,8 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
 #include "commandBuffer.h"
+#include "renderer/api/vulkan/physicalDevice.h"
+#include "renderer/api/vulkan/shader.h"
 #include "uiRenderer.h"
 #include "commandPool.h"
 #include "device.h"
@@ -93,10 +95,10 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
-    m_defaultFramebuffers.resize(m_swapChain->getImageCount());
+    m_defaultResource.framebuffers.resize(m_swapChain->getImageCount());
     _createDefaultColorAttachments();
     _createDefaultDepthAttachments();
-    for (auto &fb : m_defaultFramebuffers) {
+    for (auto &fb : m_defaultResource.framebuffers) {
         {
             std::vector<VulkanImageView *> attachments{fb.colorImageView, fb.depthImageView};
             FramebufferCreateInfo          createInfo{};
@@ -106,7 +108,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
         }
 
         m_deletionQueue.push_function([=]() {
-            vkDestroyFramebuffer(m_device->getHandle(), fb.framebuffer->getHandle(m_defaultRenderPass), nullptr);
+            vkDestroyFramebuffer(m_device->getHandle(), fb.framebuffer->getHandle(m_defaultResource.renderPass), nullptr);
         });
     }
 }
@@ -199,7 +201,7 @@ void VulkanRenderer::_createDevice() {
 
 void VulkanRenderer::_createDefaultRenderPass() {
     VkAttachmentDescription colorAttachment{
-        .format         = m_swapChain->getFormat(),
+        .format         = m_swapChain->getImageFormat(),
         .samples        = VK_SAMPLE_COUNT_1_BIT,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
@@ -224,10 +226,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
         colorAttachment,
     };
 
-    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_defaultRenderPass, colorAttachments, depthAttachment));
+    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_defaultResource.renderPass, colorAttachments, depthAttachment));
 
     m_deletionQueue.push_function([=]() {
-        m_device->destoryRenderPass(m_defaultRenderPass);
+        m_device->destoryRenderPass(m_defaultResource.renderPass);
     });
 }
 
@@ -238,9 +240,9 @@ void VulkanRenderer::_setupSwapChain() {
     });
 }
 
-void VulkanRenderer::_createDefaultCommandBuffers() {
-    m_defaultCommandBuffers.resize(m_swapChain->getImageCount());
-    m_device->allocateCommandBuffers(m_defaultCommandBuffers.size(), m_defaultCommandBuffers.data());
+void VulkanRenderer::_allocateDefaultCommandBuffers() {
+    m_defaultResource.commandBuffers.resize(m_swapChain->getImageCount());
+    m_device->allocateCommandBuffers(m_defaultResource.commandBuffers.size(), m_defaultResource.commandBuffers.data());
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -263,17 +265,13 @@ void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugU
     }
 }
 
-void VulkanRenderer::_setupPipelineBuilder() {
-    m_pipelineBuilder.reset(m_swapChain->getExtent());
-}
-
 void VulkanRenderer::_createDefaultSyncObjects() {
-    m_defaultSyncObjects.resize(_config.maxFrames);
+    m_defaultResource.syncObjects.resize(_config.maxFrames);
 
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    for (auto &frameSyncObject : m_defaultSyncObjects) {
+    for (auto &frameSyncObject : m_defaultResource.syncObjects) {
         VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.presentSemaphore));
         VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.renderSemaphore));
         VK_CHECK_RESULT(vkCreateFence(m_device->getHandle(), &fenceInfo, nullptr, &frameSyncObject.inFlightFence));
@@ -289,7 +287,7 @@ void VulkanRenderer::_createDefaultSyncObjects() {
 void VulkanRenderer::prepareFrame() {
     vkWaitForFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence, VK_TRUE, UINT64_MAX);
 
-    VkResult result = m_swapChain->acqureNextImage(getCurrentFrameSyncObject().renderSemaphore, VK_NULL_HANDLE, &m_imageIdx);
+    VkResult result = m_swapChain->acqureNextImage(getCurrentFrameSyncObject().renderSemaphore, VK_NULL_HANDLE, &getCurrentFrameSyncObject().imageIdx);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         assert("swapchain recreation current not support.");
@@ -314,7 +312,7 @@ void VulkanRenderer::submitFrame() {
                 .pWaitSemaphores      = waitSemaphores,
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
-                .pCommandBuffers      = &m_defaultCommandBuffers[m_imageIdx]->getHandle(),
+                .pCommandBuffers      = &m_defaultResource.commandBuffers[getCurrentFrameSyncObject().imageIdx]->getHandle(),
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores    = signalSemaphores,
     };
@@ -329,7 +327,7 @@ void VulkanRenderer::submitFrame() {
         .pWaitSemaphores    = signalSemaphores,
         .swapchainCount     = 1,
         .pSwapchains        = &m_swapChain->getHandle(),
-        .pImageIndices      = &m_imageIdx,
+        .pImageIndices      = &getCurrentFrameSyncObject().imageIdx,
         .pResults           = nullptr, // Optional
     };
 
@@ -349,15 +347,8 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % _config.maxFrames;
 }
 
-void VulkanRenderer::init() {
-    _createInstance();
-    _setupDebugMessenger();
-    _createSurface();
-    _createDevice();
-    _setupSwapChain();
-}
-
 void VulkanRenderer::destroy() {
+    m_shaderCache.destory(m_device->getHandle());
     m_deletionQueue.flush();
 }
 
@@ -365,9 +356,8 @@ void VulkanRenderer::idleDevice() {
     m_device->waitIdle();
 }
 
-void VulkanRenderer::initDefaultResource() {
-    _setupPipelineBuilder();
-    _createDefaultCommandBuffers();
+void VulkanRenderer::_initDefaultResource() {
+    _allocateDefaultCommandBuffers();
     _createDefaultRenderPass();
     _createDefaultFramebuffers();
     _createDefaultSyncObjects();
@@ -391,17 +381,17 @@ VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
     return m_device->getQueueByFlags(type, 0);
 }
 VulkanRenderPass* VulkanRenderer::getDefaultRenderPass() const {
-    return m_defaultRenderPass;
+    return m_defaultResource.renderPass;
 }
 
 VulkanCommandBuffer *VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
-    return m_defaultCommandBuffers[idx];
+    return m_defaultResource.commandBuffers[idx];
 }
 PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
     return m_pipelineBuilder;
 }
 uint32_t VulkanRenderer::getCommandBufferCount() const {
-    return m_defaultCommandBuffers.size();
+    return m_defaultResource.commandBuffers.size();
 }
 
 VulkanDevice *VulkanRenderer::getDevice() const{
@@ -409,7 +399,7 @@ VulkanDevice *VulkanRenderer::getDevice() const{
 }
 
 void VulkanRenderer::_createDefaultDepthAttachments() {
-    for (auto &fb : m_defaultFramebuffers) {
+    for (auto &fb : m_defaultResource.framebuffers) {
         {
             VkFormat        depthFormat = m_device->getDepthFormat();
             ImageCreateInfo createInfo{};
@@ -439,11 +429,11 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
     }
 }
 VulkanFramebuffer* VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
-    return m_defaultFramebuffers[idx].framebuffer;
+    return m_defaultResource.framebuffers[idx].framebuffer;
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto &framebuffer = m_defaultFramebuffers[idx];
+        auto &framebuffer = m_defaultResource.framebuffers[idx];
 
         // get swapchain image
         {
@@ -463,10 +453,103 @@ void VulkanRenderer::_createDefaultColorAttachments() {
         });
     }
 }
-const PerFrameSyncObject &VulkanRenderer::getCurrentFrameSyncObject() {
-    return m_defaultSyncObjects[m_currentFrame];
+PerFrameSyncObject &VulkanRenderer::getCurrentFrameSyncObject() {
+    return m_defaultResource.syncObjects[m_currentFrame];
 }
 VulkanInstance *VulkanRenderer::getInstance() const {
     return m_instance;
+}
+void VulkanRenderer::resetPipelineBuilder() {
+    m_pipelineBuilder.reset(m_swapChain->getExtent());
+}
+void VulkanRenderer::drawDemo() {
+    ShaderEffect* demoEffect = nullptr;
+    ShaderPass*   demoPass   = nullptr;
+
+    resetPipelineBuilder();
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType                            = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount    = 0;
+    vertexInputInfo.vertexAttributeDescriptionCount  = 0;
+    getPipelineBuilder()._vertexInputInfo = vertexInputInfo;
+
+    // build Shader
+    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+
+    demoEffect = new ShaderEffect;
+    demoEffect->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    demoEffect->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    demoEffect->buildPipelineLayout(m_device->getHandle());
+
+    demoPass = new ShaderPass;
+    demoPass->buildEffect(m_device->getHandle(),
+                                 getDefaultRenderPass()->getHandle(),
+                                 getPipelineBuilder(),
+                                 demoEffect);
+
+    VkExtent2D extent{
+        .width  = getWindowWidth(),
+        .height = getWindowHeight(),
+    };
+    VkViewport viewport = vkl::init::viewport(extent);
+    VkRect2D   scissor  = vkl::init::rect2D(extent);
+
+    std::vector<VkClearValue> clearValues(2);
+    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[1].depthStencil = {1.0f, 0};
+
+    RenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = extent;
+    renderPassBeginInfo.clearValueCount   = clearValues.size();
+    renderPassBeginInfo.pClearValues      = clearValues.data();
+
+    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+
+    // record command
+    for (uint32_t commandIndex = 0; commandIndex < getCommandBufferCount(); commandIndex++) {
+        auto *commandBuffer = getDefaultCommandBuffer(commandIndex);
+
+        commandBuffer->begin(0);
+
+        // render pass
+        renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(commandIndex);
+        commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
+
+        // dynamic state
+        commandBuffer->cmdSetViewport(&viewport);
+        commandBuffer->cmdSetSissor(&scissor);
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, demoPass->builtPipeline);
+        commandBuffer->cmdDraw(3, 1, 0, 0);
+        commandBuffer->cmdEndRenderPass();
+
+        commandBuffer->end();
+    }
+
+    m_deletionQueue.push_function([=](){
+        demoPass->destroy(m_device->getHandle());
+        demoEffect->destroy(m_device->getHandle());
+        delete demoPass;
+        delete demoEffect;
+    });
+}
+ShaderCache &VulkanRenderer::getShaderCache() {
+    return m_shaderCache;
+}
+void VulkanRenderer::renderOneFrame() {
+    prepareFrame();
+    submitFrame();
+}
+VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config)
+    : Renderer(std::move(windowData), config) {
+    _createInstance();
+    _setupDebugMessenger();
+    _createSurface();
+    _createDevice();
+    _setupSwapChain();
+    if (_config.initDefaultResource) {
+        _initDefaultResource();
+    }
 }
 } // namespace vkl

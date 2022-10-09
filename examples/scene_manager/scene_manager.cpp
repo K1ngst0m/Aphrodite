@@ -77,11 +77,11 @@ void scene_manager::loadScene() {
 
     // load from gltf file
     {
-        glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
-        modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        m_model                  = m_sceneManager->createEntity(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
-        auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(m_model);
+        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(3.0f));
+        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
+        // m_model                  = m_sceneManager->createEntity(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
+        // auto &node               = m_sceneManager->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(m_model);
     }
 
     // box prefab

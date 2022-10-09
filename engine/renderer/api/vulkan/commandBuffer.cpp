@@ -262,4 +262,7 @@ void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstIm
                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                    1, &copyRegion);
 }
+void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+    vkCmdDraw(_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+}
 } // namespace vkl

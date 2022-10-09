@@ -322,7 +322,9 @@ void VulkanRenderObject::createEmptyTexture() {
         VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_emptyTexture.sampler));
     }
 
-    _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler, _emptyTexture.imageView->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    _emptyTexture.descriptorInfo = vkl::init::descriptorImageInfo(_emptyTexture.sampler,
+                                                                  _emptyTexture.imageView->getHandle(),
+                                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     _device->destroyBuffer(stagingBuffer);
 }

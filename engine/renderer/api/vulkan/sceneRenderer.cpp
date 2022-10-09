@@ -12,13 +12,13 @@
 #include "scene/sceneNode.h"
 #include "uniformObject.h"
 #include "vkInit.hpp"
+#include "vulkan/vulkan_core.h"
 #include "vulkanRenderer.h"
 
 namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
     : _device(renderer->getDevice()),
       _renderer(renderer) {
-    _initRenderResource();
 }
 
 void VulkanSceneRenderer::loadResources() {
@@ -45,7 +45,6 @@ void VulkanSceneRenderer::cleanupResources() {
     _unlitPass->destroy(_device->getHandle());
     _defaultLitEffect->destroy(_device->getHandle());
     _defaultLitPass->destroy(_device->getHandle());
-    _shaderCache.destory(_device->getHandle());
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -71,7 +70,7 @@ void VulkanSceneRenderer::drawScene() {
 
     // record command
     for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-        auto commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
+        auto *commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
 
         commandBuffer->begin(0);
 
@@ -82,12 +81,14 @@ void VulkanSceneRenderer::drawScene() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
+
         commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex]);
         commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
 
         for (auto &renderable : _renderList) {
             renderable->draw(_getShaderPass()->layout, commandBuffer);
         }
+
         commandBuffer->cmdEndRenderPass();
 
         commandBuffer->end();
@@ -97,9 +98,6 @@ void VulkanSceneRenderer::drawScene() {
 void VulkanSceneRenderer::update() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
-
-    _renderer->prepareFrame();
-    _renderer->submitFrame();
     // TODO update light data
     // for (auto & ubo : _uboList){
     //     if (ubo->_ubo->isUpdated()){
@@ -213,6 +211,7 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 }
 
 void VulkanSceneRenderer::_setupUnlitShaderEffect() {
+    _renderer->resetPipelineBuilder();
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
         vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0),
@@ -229,8 +228,8 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     _unlitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
     _unlitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _unlitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-    _unlitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "unlit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    _unlitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "unlit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    _unlitEffect->pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    _unlitEffect->pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
     _unlitEffect->buildPipelineLayout(_device->getHandle());
 
     _unlitPass = std::make_unique<ShaderPass>();
@@ -241,6 +240,7 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
+    _renderer->resetPipelineBuilder();
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
         vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
@@ -260,8 +260,8 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     _defaultLitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
     _defaultLitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _defaultLitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-    _defaultLitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "default_lit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    _defaultLitEffect->pushShaderStages(_shaderCache.getShaders(_device, shaderDir / "default_lit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    _defaultLitEffect->pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    _defaultLitEffect->pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
     _defaultLitEffect->buildPipelineLayout(_device->getHandle());
 
     _defaultLitPass = std::make_unique<ShaderPass>();
@@ -269,10 +269,6 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
                                  _renderer->getDefaultRenderPass()->getHandle(),
                                  _renderer->getPipelineBuilder(),
                                  _defaultLitEffect.get());
-}
-
-void VulkanSceneRenderer::_initRenderResource() {
-    _renderer->initDefaultResource();
 }
 
 std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
@@ -289,5 +285,4 @@ std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
 VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
     return &_getShaderPass()->effect->setLayouts[binding];
 }
-
 } // namespace vkl

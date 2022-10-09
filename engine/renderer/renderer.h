@@ -4,6 +4,8 @@
 #include "common/common.h"
 #include "common/window.h"
 #include "device.h"
+#include <cstring>
+#include <utility>
 
 class GLFWwindow;
 
@@ -17,18 +19,22 @@ enum class RenderBackend {
 };
 
 struct RenderConfig {
-    bool     enableDebug = true;
-    bool     enableUI    = false;
-    uint32_t maxFrames   = 2;
+    bool     enableDebug         = true;
+    bool     enableUI            = false;
+    bool     initDefaultResource = true;
+    uint32_t maxFrames           = 2;
 };
 
 class Renderer {
 public:
-    static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config, const std::shared_ptr<WindowData> &windowData);
+    static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config, std::shared_ptr<WindowData> windowData);
 
-    virtual void init()       = 0;
-    virtual void destroy()    = 0;
-    virtual void idleDevice() = 0;
+    Renderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
+
+    virtual void destroy()        = 0;
+    virtual void idleDevice()     = 0;
+    virtual void drawDemo()       = 0;
+    virtual void renderOneFrame() = 0;
 
     virtual std::shared_ptr<SceneRenderer> getSceneRenderer() = 0;
     virtual std::shared_ptr<UIRenderer>    getUIRenderer()    = 0;

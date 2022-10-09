@@ -117,7 +117,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
     _extent      = extent;
 }
 
-VkFormat VulkanSwapChain::getFormat() const {
+VkFormat VulkanSwapChain::getImageFormat() const {
     return _imageFormat;
 }
 VkExtent2D VulkanSwapChain::getExtent() const {

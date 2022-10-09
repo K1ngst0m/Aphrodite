@@ -21,7 +21,7 @@ public:
     VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
 
 public:
-    VkFormat     getFormat() const;
+    VkFormat     getImageFormat() const;
     VkExtent2D   getExtent() const;
     uint32_t     getImageCount() const;
     VulkanImage *getImage(uint32_t idx) const;

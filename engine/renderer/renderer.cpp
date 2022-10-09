@@ -2,13 +2,10 @@
 #include "renderer/api/vulkan/vulkanRenderer.h"
 
 namespace vkl {
-std::unique_ptr<Renderer> Renderer::Create(RenderBackend backend, RenderConfig *config, const std::shared_ptr<WindowData> &windowData) {
+std::unique_ptr<Renderer> Renderer::Create(RenderBackend backend, RenderConfig *config, std::shared_ptr<WindowData> windowData) {
     switch (backend) {
     case RenderBackend::VULKAN: {
-        auto instance = std::make_unique<VulkanRenderer>();
-        memcpy(&instance->_config, config, sizeof(RenderConfig));
-        instance->setWindowData(windowData);
-        instance->init();
+        auto instance = std::make_unique<VulkanRenderer>(std::move(windowData), config);
         return instance;
     }
     case RenderBackend::OPENGL:
@@ -31,5 +28,9 @@ uint32_t Renderer::getWindowWidth() {
 };
 uint32_t Renderer::getWindowAspectRation() {
     return _windowData->getAspectRatio();
+}
+Renderer::Renderer(std::shared_ptr<WindowData> windowData, RenderConfig *config)
+    : _windowData(std::move(windowData)) {
+    memcpy(&_config, config, sizeof(RenderConfig));
 }
 } // namespace vkl

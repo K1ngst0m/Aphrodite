@@ -29,9 +29,9 @@ public:
     ThreadPool *GetThreadPool();
 
 private:
-    std::vector<std::string>      _validationLayers;
+    std::vector<std::string>            _validationLayers;
     std::vector<VulkanPhysicalDevice *> _physicalDevices;
-    ThreadPool                   *_threadPool = nullptr;
+    ThreadPool                         *_threadPool = nullptr;
 };
 } // namespace vkl
 

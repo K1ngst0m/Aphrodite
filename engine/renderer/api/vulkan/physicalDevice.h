@@ -22,11 +22,17 @@ public:
     const VkPhysicalDeviceMemoryProperties     &getMemoryProperties();
     const std::vector<std::string>             &getDeviceSupportedExtensions();
     const std::vector<VkQueueFamilyProperties> &getQueueFamilyProperties();
-    bool                                        extensionSupported(std::string_view extension) const;
-    uint32_t                                    findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound = nullptr) const;
-    VkFormat                                    findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling                tiling,
-                                                                    VkFormatFeatureFlags         features) const;
     uint32_t                                    getQueueFamilyIndices(QueueFlags flags);
+
+    bool isExtensionSupported(std::string_view extension) const;
+
+    uint32_t findMemoryType(uint32_t              typeBits,
+                            VkMemoryPropertyFlags properties,
+                            VkBool32             *memTypeFound = nullptr) const;
+
+    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
+                                 VkImageTiling                tiling,
+                                 VkFormatFeatureFlags         features) const;
 
 private:
     uint32_t findQueueFamilies(VkQueueFlags queueFlags) const;
@@ -41,11 +47,11 @@ private:
 private:
     VulkanInstance *m_instance = nullptr;
 
-    VkPhysicalDeviceProperties                            _properties;
-    VkPhysicalDeviceFeatures                              _features;
-    VkPhysicalDeviceMemoryProperties                      _memoryProperties;
-    std::vector<std::string>                              _supportedExtensions;
-    std::vector<VkQueueFamilyProperties>                  _queueFamilyProperties;
+    VkPhysicalDeviceProperties           _properties;
+    VkPhysicalDeviceFeatures             _features;
+    VkPhysicalDeviceMemoryProperties     _memoryProperties;
+    std::vector<std::string>             _supportedExtensions;
+    std::vector<VkQueueFamilyProperties> _queueFamilyProperties;
 };
 } // namespace vkl
 
