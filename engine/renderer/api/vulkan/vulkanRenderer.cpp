@@ -17,6 +17,7 @@
 #include "swapChain.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
+#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -289,11 +290,11 @@ void VulkanRenderer::prepareFrame() {
 
     VkResult result = m_swapChain->acqureNextImage(getCurrentFrameSyncObject().renderSemaphore, VK_NULL_HANDLE, &getCurrentFrameSyncObject().imageIdx);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        assert("swapchain recreation current not support.");
-        // _recreateSwapChain();
-        return;
-    }
+    // if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    //     assert("swapchain recreation current not support.");
+    //     // _recreateSwapChain();
+    //     return;
+    // }
 
     if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         VK_CHECK_RESULT(result);
@@ -334,15 +335,15 @@ void VulkanRenderer::submitFrame() {
     VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(QUEUE_TYPE_PRESENT), &presentInfo);
     VK_CHECK_RESULT(result);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR ||
-        result == VK_SUBOPTIMAL_KHR ||
-        _windowData->resized) {
-        assert("recreate swapchain currently not support.");
-        _windowData->resized = false;
-        // _recreateSwapChain();
-    } else if (result != VK_SUCCESS) {
-        VK_CHECK_RESULT(result);
-    }
+    // if (result == VK_ERROR_OUT_OF_DATE_KHR ||
+    //     result == VK_SUBOPTIMAL_KHR ||
+    //     _windowData->resized) {
+    //     assert("recreate swapchain currently not support.");
+    //     _windowData->resized = false;
+    //     // _recreateSwapChain();
+    // } else if (result != VK_SUCCESS) {
+    //     VK_CHECK_RESULT(result);
+    // }
 
     m_currentFrame = (m_currentFrame + 1) % _config.maxFrames;
 }
@@ -463,29 +464,38 @@ void VulkanRenderer::resetPipelineBuilder() {
     m_pipelineBuilder.reset(m_swapChain->getExtent());
 }
 void VulkanRenderer::drawDemo() {
-    ShaderEffect* demoEffect = nullptr;
+    VulkanPipelineLayout* demoLayout = nullptr;
     ShaderPass*   demoPass   = nullptr;
+    {
 
-    resetPipelineBuilder();
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType                            = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount    = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount  = 0;
-    getPipelineBuilder()._vertexInputInfo = vertexInputInfo;
+        resetPipelineBuilder();
+        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+        vertexInputInfo.sType                            = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        vertexInputInfo.vertexBindingDescriptionCount    = 0;
+        vertexInputInfo.vertexAttributeDescriptionCount  = 0;
+        getPipelineBuilder()._createInfo._vertexInputInfo = vertexInputInfo;
 
-    // build Shader
-    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        // build Shader
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    demoEffect = new ShaderEffect;
-    demoEffect->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    demoEffect->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    demoEffect->buildPipelineLayout(m_device->getHandle());
+        demoLayout = new VulkanPipelineLayout;
+        demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+        demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+        demoLayout->buildPipelineLayout(m_device->getHandle());
 
-    demoPass = new ShaderPass;
-    demoPass->buildEffect(m_device->getHandle(),
-                                 getDefaultRenderPass()->getHandle(),
-                                 getPipelineBuilder(),
-                                 demoEffect);
+        demoPass = new ShaderPass;
+        demoPass->buildPipeline(m_device->getHandle(),
+                                    getDefaultRenderPass()->getHandle(),
+                                    getPipelineBuilder(),
+                                    demoLayout);
+
+        m_deletionQueue.push_function([=](){
+            demoPass->destroy(m_device->getHandle());
+            demoLayout->destroy(m_device->getHandle());
+            delete demoPass;
+            delete demoLayout;
+        });
+    }
 
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -494,16 +504,6 @@ void VulkanRenderer::drawDemo() {
     VkViewport viewport = vkl::init::viewport(extent);
     VkRect2D   scissor  = vkl::init::rect2D(extent);
 
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color        = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues[1].depthStencil = {1.0f, 0};
-
-    RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = extent;
-    renderPassBeginInfo.clearValueCount   = clearValues.size();
-    renderPassBeginInfo.pClearValues      = clearValues.data();
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -514,6 +514,16 @@ void VulkanRenderer::drawDemo() {
         commandBuffer->begin(0);
 
         // render pass
+        std::vector<VkClearValue> clearValues(2);
+        clearValues[0].color        = {{(commandIndex+1) * 0.1f, 0.1f, 0.1f, 1.0f}};
+        clearValues[1].depthStencil = {1.0f, 0};
+
+        RenderPassBeginInfo renderPassBeginInfo{};
+        renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
+        renderPassBeginInfo.renderArea.offset = {0, 0};
+        renderPassBeginInfo.renderArea.extent = extent;
+        renderPassBeginInfo.clearValueCount   = clearValues.size();
+        renderPassBeginInfo.pClearValues      = clearValues.data();
         renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(commandIndex);
         commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
@@ -527,12 +537,6 @@ void VulkanRenderer::drawDemo() {
         commandBuffer->end();
     }
 
-    m_deletionQueue.push_function([=](){
-        demoPass->destroy(m_device->getHandle());
-        demoEffect->destroy(m_device->getHandle());
-        delete demoPass;
-        delete demoEffect;
-    });
 }
 ShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;

@@ -19,7 +19,6 @@ std::unique_ptr<Renderer> Renderer::Create(RenderBackend backend, RenderConfig *
 void Renderer::setWindowData(const std::shared_ptr<WindowData> &windowData) {
     _windowData = windowData;
 }
-
 uint32_t Renderer::getWindowHeight() {
     return _windowData->height;
 };

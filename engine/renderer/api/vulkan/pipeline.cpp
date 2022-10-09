@@ -1,5 +1,7 @@
 #include "pipeline.h"
 #include "scene/entity.h"
+#include "shader.h"
+#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 VkVertexInputBindingDescription VertexInputBuilder::_vertexInputBindingDescription;
@@ -53,9 +55,9 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)
     viewportState.pNext = nullptr;
 
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &_viewport;
+    viewportState.pViewports = &_createInfo._viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &_scissor;
+    viewportState.pScissors = &_createInfo._scissor;
 
     //setup dummy color blending. We aren't using transparent objects yet
     //the blending is just "no blend", but we do write to the color attachment
@@ -66,7 +68,7 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
     colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &_colorBlendAttachment;
+    colorBlending.pAttachments = &_createInfo._colorBlendAttachment;
 
     //build the actual pipeline
     //we now use all of the info structs we have been writing into into this one to create the pipeline
@@ -74,17 +76,17 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.pNext = nullptr;
 
-    pipelineInfo.stageCount = _shaderStages.size();
-    pipelineInfo.pStages = _shaderStages.data();
-    pipelineInfo.pVertexInputState = &_vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &_inputAssembly;
+    pipelineInfo.stageCount = _createInfo._shaderStages.size();
+    pipelineInfo.pStages = _createInfo._shaderStages.data();
+    pipelineInfo.pVertexInputState = &_createInfo._vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &_createInfo._inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pDynamicState = &_dynamicState;
-    pipelineInfo.pRasterizationState = &_rasterizer;
-    pipelineInfo.pDepthStencilState = &_depthStencil;
-    pipelineInfo.pMultisampleState = &_multisampling;
+    pipelineInfo.pDynamicState = &_createInfo._dynamicState;
+    pipelineInfo.pRasterizationState = &_createInfo._rasterizer;
+    pipelineInfo.pDepthStencilState = &_createInfo._depthStencil;
+    pipelineInfo.pMultisampleState = &_createInfo._multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = _pipelineLayout;
+    pipelineInfo.layout = _createInfo._pipelineLayout;
     pipelineInfo.renderPass = pass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -96,28 +98,28 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass)
 
     return newPipeline;
 }
-void PipelineBuilder::setShaders(ShaderEffect *shaders)
+void PipelineBuilder::setShaders(VulkanPipelineLayout *shaders)
 {
-    _shaderStages.clear();
+    _createInfo._shaderStages.clear();
     for (const auto &stage : shaders->stages) {
-        _shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage.stage, stage.shaderModule->module));
+        _createInfo._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage.stage, stage.shaderModule->module));
     }
-    _pipelineLayout = shaders->builtLayout;
+    _createInfo._pipelineLayout = shaders->builtLayout;
 }
 void PipelineBuilder::reset(VkExtent2D extent) {
     VertexInputBuilder::setPipelineVertexInputState({VertexComponent::POSITION, VertexComponent::NORMAL,
                                                           VertexComponent::UV, VertexComponent::COLOR, VertexComponent::TANGENT});
-    _vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;
-    _inputAssembly   = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    _viewport        = vkl::init::viewport(extent);
-    _scissor         = vkl::init::rect2D(extent);
+    _createInfo._vertexInputInfo = vkl::VertexInputBuilder::_pipelineVertexInputStateCreateInfo;
+    _createInfo._inputAssembly   = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    _createInfo._viewport        = vkl::init::viewport(extent);
+    _createInfo._scissor         = vkl::init::rect2D(extent);
 
-    _dynamicStages = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-    _dynamicState  = vkl::init::pipelineDynamicStateCreateInfo(_dynamicStages.data(), static_cast<uint32_t>(_dynamicStages.size()));
+    _createInfo._dynamicStages = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    _createInfo._dynamicState  = vkl::init::pipelineDynamicStateCreateInfo(_createInfo._dynamicStages.data(), static_cast<uint32_t>(_createInfo._dynamicStages.size()));
 
-    _rasterizer           = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-    _multisampling        = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-    _colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-    _depthStencil         = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+    _createInfo._rasterizer           = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+    _createInfo._multisampling        = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+    _createInfo._colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
+    _createInfo._depthStencil         = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 } // namespace vkl

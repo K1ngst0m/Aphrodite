@@ -17,7 +17,7 @@ struct ShaderParameters {
 /**
  * @brief holds all of the shader related state that a pipeline needs to be built.
  */
-struct ShaderEffect {
+struct VulkanPipelineLayout {
     VkPipelineLayout                   builtLayout;
     std::vector<VkPushConstantRange>   constantRanges;
     std::vector<VkDescriptorSetLayout> setLayouts;
@@ -45,11 +45,11 @@ struct ShaderCache {
 };
 
 struct ShaderPass {
-    ShaderEffect    *effect        = nullptr;
+    VulkanPipelineLayout    *effect        = nullptr;
     VkPipeline       builtPipeline = VK_NULL_HANDLE;
     VkPipelineLayout layout        = VK_NULL_HANDLE;
 
-    void buildEffect(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::ShaderEffect *effect);
+    void buildPipeline(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::VulkanPipelineLayout *effect);
 
     void destroy(VkDevice device) const;
 };

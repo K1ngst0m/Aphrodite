@@ -2,8 +2,9 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "shader.h"
+#include "renderer/gpuResource.h"
 #include "vkInit.hpp"
+#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 
@@ -24,13 +25,13 @@ struct VertexInputBuilder {
     static void                                           setPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
-
 /**
  * @brief built version of a Shader Effect, where it stores the built pipeline
  */
 
-class PipelineBuilder {
-public:
+class VulkanPipelineLayout;
+
+struct PipelineCreateInfo {
     std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
     std::vector<VkDynamicState>                  _dynamicStages;
     VkPipelineVertexInputStateCreateInfo         _vertexInputInfo;
@@ -43,11 +44,35 @@ public:
     VkPipelineMultisampleStateCreateInfo         _multisampling;
     VkPipelineDepthStencilStateCreateInfo        _depthStencil;
     VkPipelineLayout                             _pipelineLayout;
+};
+
+class PipelineBuilder {
+public:
+    PipelineCreateInfo _createInfo;
 
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
-    void setShaders(ShaderEffect *shaders);
+    void setShaders(VulkanPipelineLayout *shaders);
     void reset(VkExtent2D extent);
+};
+
+class VulkanPipeline : ResourceHandle<VkPipeline> {
+public:
+    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice *pDevice, const PipelineCreateInfo * pCreateInfo){
+        auto * instance =  new VulkanPipeline;
+        return instance;
+    }
+    static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const PipelineCreateInfo * pCreateInfo){
+        auto * instance =  new VulkanPipeline;
+        return instance;
+    }
+
+    ~VulkanPipeline(){}
+
+private:
+    VulkanDevice* m_device = nullptr;
+    VkPipelineBindPoint m_bindPoint;
+    std::vector<std::string> m_entryPoints;
 };
 
 } // namespace vkl

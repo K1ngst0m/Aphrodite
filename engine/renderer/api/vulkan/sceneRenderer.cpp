@@ -224,7 +224,7 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    _unlitEffect = std::make_unique<ShaderEffect>();
+    _unlitEffect = std::make_unique<VulkanPipelineLayout>();
     _unlitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
     _unlitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _unlitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
@@ -233,7 +233,7 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     _unlitEffect->buildPipelineLayout(_device->getHandle());
 
     _unlitPass = std::make_unique<ShaderPass>();
-    _unlitPass->buildEffect(_device->getHandle(),
+    _unlitPass->buildPipeline(_device->getHandle(),
                             _renderer->getDefaultRenderPass()->getHandle(),
                             _renderer->getPipelineBuilder(),
                             _unlitEffect.get());
@@ -256,7 +256,7 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    _defaultLitEffect = std::make_unique<ShaderEffect>();
+    _defaultLitEffect = std::make_unique<VulkanPipelineLayout>();
     _defaultLitEffect->pushSetLayout(_device->getHandle(), perSceneBindings);
     _defaultLitEffect->pushSetLayout(_device->getHandle(), perMaterialBindings);
     _defaultLitEffect->pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
@@ -265,7 +265,7 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     _defaultLitEffect->buildPipelineLayout(_device->getHandle());
 
     _defaultLitPass = std::make_unique<ShaderPass>();
-    _defaultLitPass->buildEffect(_device->getHandle(),
+    _defaultLitPass->buildPipeline(_device->getHandle(),
                                  _renderer->getDefaultRenderPass()->getHandle(),
                                  _renderer->getPipelineBuilder(),
                                  _defaultLitEffect.get());

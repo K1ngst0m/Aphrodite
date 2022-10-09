@@ -2,9 +2,11 @@
 #define VKSCENERENDERER_H_
 
 #include "pipeline.h"
+#include "renderer/api/vulkan/shader.h"
 #include "renderer/sceneRenderer.h"
 
 namespace vkl {
+struct ShaderPass;
 class VulkanUniformObject;
 class VulkanRenderObject;
 class VulkanRenderer;
@@ -40,11 +42,11 @@ private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
     VkDescriptorPool             _descriptorPool;
 
-    std::unique_ptr<ShaderEffect> _unlitEffect = nullptr;
-    std::unique_ptr<ShaderPass>   _unlitPass   = nullptr;
+    std::unique_ptr<VulkanPipelineLayout> _unlitEffect = nullptr;
+    std::unique_ptr<ShaderPass>           _unlitPass   = nullptr;
 
-    std::unique_ptr<ShaderEffect> _defaultLitEffect = nullptr;
-    std::unique_ptr<ShaderPass>   _defaultLitPass   = nullptr;
+    std::unique_ptr<VulkanPipelineLayout> _defaultLitEffect = nullptr;
+    std::unique_ptr<ShaderPass>           _defaultLitPass   = nullptr;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;
