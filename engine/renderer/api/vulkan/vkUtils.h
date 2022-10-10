@@ -49,9 +49,6 @@
 namespace vkl::utils {
 std::string        errorString(VkResult errorCode);
 std::vector<char>  loadSpvFromFile(const std::string &filename);
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
-VkPresentModeKHR   chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-VkExtent2D         chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
 VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
 } // namespace vkl::utils
