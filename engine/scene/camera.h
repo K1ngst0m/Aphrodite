@@ -12,7 +12,7 @@ enum class CameraType {
     FIRSTPERSON,
 };
 
-enum class CameraDirection{
+enum class CameraDirection {
     LEFT,
     RIGHT,
     UP,
@@ -46,8 +46,8 @@ public:
     float getRotationSpeed() const;
     void  processMovement(float deltaTime);
 
-
     void setMovement(CameraDirection direction, bool flag);
+    void setFlipY(bool val);
 
 private:
     void updateViewMatrix();
@@ -58,19 +58,17 @@ private:
         {CameraDirection::LEFT, false},
         {CameraDirection::RIGHT, false},
         {CameraDirection::UP, false},
-        {CameraDirection::DOWN, false}
-    };
+        {CameraDirection::DOWN, false}};
 
     CameraType _cameraType;
 
     glm::vec3 _rotation = glm::vec3();
     glm::vec3 _position = glm::vec3();
-    glm::vec4 _viewPos  = glm::vec4();
 
     float _rotationSpeed = 1.0f;
     float _movementSpeed = 1.0f;
 
-    bool _flipY = true;
+    bool _flipY = false;
 
     struct
     {
@@ -79,8 +77,8 @@ private:
     } _matrices;
 
     float _fov;
-    float _znear = 0.1f;
-    float _zfar = 1000.0f;
+    float _znear;
+    float _zfar;
 };
 } // namespace vkl
 #endif

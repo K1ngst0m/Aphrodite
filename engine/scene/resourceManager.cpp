@@ -13,7 +13,7 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
     bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
 
     if (fileLoaded) {
-        _loadTextures(entity, glTFInput);
+        _loadImages(entity, glTFInput);
         _loadMaterials(entity, glTFInput);
 
         const tinygltf::Scene &scene = glTFInput.scenes[0];
@@ -27,7 +27,7 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
     }
 }
 
-void GLTFLoader::_loadTextures(Entity *entity, tinygltf::Model &input) {
+void GLTFLoader::_loadImages(Entity *entity, tinygltf::Model &input) {
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
         Texture newTexture;

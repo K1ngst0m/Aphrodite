@@ -1,20 +1,20 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
 #include "commandBuffer.h"
-#include "renderer/api/vulkan/physicalDevice.h"
-#include "renderer/api/vulkan/shader.h"
-#include "uiRenderer.h"
 #include "commandPool.h"
 #include "device.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
 #include "renderObject.h"
+#include "renderer/api/vulkan/physicalDevice.h"
+#include "renderer/api/vulkan/shader.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
 #include "scene/entity.h"
 #include "sceneRenderer.h"
 #include "swapChain.h"
+#include "uiRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
 #include "vulkan/vulkan_core.h"
@@ -188,9 +188,9 @@ void VulkanRenderer::_createInstance() {
 
 void VulkanRenderer::_createDevice() {
     DeviceCreateInfo createInfo{};
-    createInfo.enabledLayerCount = validationLayers.size();
-    createInfo.ppEnabledLayerNames = validationLayers.data();
-    createInfo.enabledExtensionCount = deviceExtensions.size();
+    createInfo.enabledLayerCount       = validationLayers.size();
+    createInfo.ppEnabledLayerNames     = validationLayers.data();
+    createInfo.enabledExtensionCount   = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     VK_CHECK_RESULT(VulkanDevice::Create(m_instance->getPhysicalDevices()[0], &createInfo, &m_device));
@@ -247,7 +247,7 @@ void VulkanRenderer::_allocateDefaultCommandBuffers() {
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
-    if (!_config.enableDebug){
+    if (!_config.enableDebug) {
         return;
     }
 
@@ -362,6 +362,7 @@ void VulkanRenderer::_initDefaultResource() {
     _createDefaultRenderPass();
     _createDefaultFramebuffers();
     _createDefaultSyncObjects();
+    _setupDemoPass();
 }
 
 std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
@@ -381,7 +382,7 @@ std::shared_ptr<UIRenderer> VulkanRenderer::getUIRenderer() {
 VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
     return m_device->getQueueByFlags(type, 0);
 }
-VulkanRenderPass* VulkanRenderer::getDefaultRenderPass() const {
+VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
     return m_defaultResource.renderPass;
 }
 
@@ -395,7 +396,7 @@ uint32_t VulkanRenderer::getCommandBufferCount() const {
     return m_defaultResource.commandBuffers.size();
 }
 
-VulkanDevice *VulkanRenderer::getDevice() const{
+VulkanDevice *VulkanRenderer::getDevice() const {
     return m_device;
 }
 
@@ -429,7 +430,7 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
         });
     }
 }
-VulkanFramebuffer* VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
+VulkanFramebuffer *VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
     return m_defaultResource.framebuffers[idx].framebuffer;
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
@@ -464,39 +465,6 @@ void VulkanRenderer::resetPipelineBuilder() {
     m_pipelineBuilder.reset(m_swapChain->getExtent());
 }
 void VulkanRenderer::drawDemo() {
-    VulkanPipelineLayout* demoLayout = nullptr;
-    ShaderPass*   demoPass   = nullptr;
-    {
-
-        resetPipelineBuilder();
-        VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-        vertexInputInfo.sType                            = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexBindingDescriptionCount    = 0;
-        vertexInputInfo.vertexAttributeDescriptionCount  = 0;
-        getPipelineBuilder()._createInfo._vertexInputInfo = vertexInputInfo;
-
-        // build Shader
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-
-        demoLayout = new VulkanPipelineLayout;
-        demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-        demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-        demoLayout->buildPipelineLayout(m_device->getHandle());
-
-        demoPass = new ShaderPass;
-        demoPass->buildPipeline(m_device->getHandle(),
-                                    getDefaultRenderPass()->getHandle(),
-                                    getPipelineBuilder(),
-                                    demoLayout);
-
-        m_deletionQueue.push_function([=](){
-            demoPass->destroy(m_device->getHandle());
-            demoLayout->destroy(m_device->getHandle());
-            delete demoPass;
-            delete demoLayout;
-        });
-    }
-
     VkExtent2D extent{
         .width  = getWindowWidth(),
         .height = getWindowHeight(),
@@ -504,6 +472,15 @@ void VulkanRenderer::drawDemo() {
     VkViewport viewport = vkl::init::viewport(extent);
     VkRect2D   scissor  = vkl::init::rect2D(extent);
 
+    RenderPassBeginInfo renderPassBeginInfo{};
+    renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
+    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.renderArea.extent = extent;
+    std::vector<VkClearValue> clearValues(2);
+    clearValues[0].color                = {{0.1f, 0.1f, 0.1f, 1.0f}};
+    clearValues[1].depthStencil         = {1.0f, 0};
+    renderPassBeginInfo.clearValueCount = clearValues.size();
+    renderPassBeginInfo.pClearValues    = clearValues.data();
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -514,29 +491,18 @@ void VulkanRenderer::drawDemo() {
         commandBuffer->begin(0);
 
         // render pass
-        std::vector<VkClearValue> clearValues(2);
-        clearValues[0].color        = {{(commandIndex+1) * 0.1f, 0.1f, 0.1f, 1.0f}};
-        clearValues[1].depthStencil = {1.0f, 0};
-
-        RenderPassBeginInfo renderPassBeginInfo{};
-        renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
-        renderPassBeginInfo.renderArea.offset = {0, 0};
-        renderPassBeginInfo.renderArea.extent = extent;
-        renderPassBeginInfo.clearValueCount   = clearValues.size();
-        renderPassBeginInfo.pClearValues      = clearValues.data();
         renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(commandIndex);
         commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, demoPass->builtPipeline);
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPass->builtPipeline);
         commandBuffer->cmdDraw(3, 1, 0, 0);
         commandBuffer->cmdEndRenderPass();
 
         commandBuffer->end();
     }
-
 }
 ShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;
@@ -555,5 +521,34 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     if (_config.initDefaultResource) {
         _initDefaultResource();
     }
+}
+void VulkanRenderer::_setupDemoPass() {
+    resetPipelineBuilder();
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+    vertexInputInfo.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount     = 0;
+    vertexInputInfo.vertexAttributeDescriptionCount   = 0;
+    getPipelineBuilder()._createInfo._vertexInputInfo = vertexInputInfo;
+
+    // build Shader
+    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+
+    m_defaultResource.demoLayout = new VulkanPipelineLayout;
+    m_defaultResource.demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
+    m_defaultResource.demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_defaultResource.demoLayout->buildPipelineLayout(m_device->getHandle());
+
+    m_defaultResource.demoPass = new ShaderPass;
+    m_defaultResource.demoPass->buildPipeline(m_device->getHandle(),
+                            getDefaultRenderPass()->getHandle(),
+                            getPipelineBuilder(),
+                            m_defaultResource.demoLayout);
+
+    m_deletionQueue.push_function([=]() {
+        m_defaultResource.demoPass->destroy(m_device->getHandle());
+        m_defaultResource.demoLayout->destroy(m_device->getHandle());
+        delete m_defaultResource.demoPass;
+        delete m_defaultResource.demoLayout;
+    });
 }
 } // namespace vkl

@@ -17,7 +17,7 @@ struct WindowData {
         : width(w), height(h) {
     }
     float getAspectRatio() const {
-        return static_cast<float>(width) * height;
+        return static_cast<float>(width) / height;
     }
 };
 

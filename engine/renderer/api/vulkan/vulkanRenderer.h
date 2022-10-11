@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "instance.h"
+#include "renderer/api/vulkan/shader.h"
 #include "renderer/renderer.h"
 #include "sceneRenderer.h"
 
@@ -53,6 +54,7 @@ private:
     void _createSurface();
     void _setupDebugMessenger();
     void _setupSwapChain();
+    void _setupDemoPass();
 
 private:
     void _createDefaultDepthAttachments();
@@ -99,6 +101,8 @@ private:
         std::vector<PerFrameSyncObject>    syncObjects;
         std::vector<FrameBufferData>       framebuffers;
         VulkanRenderPass                  *renderPass;
+        ShaderPass                        *demoPass;
+        VulkanPipelineLayout              *demoLayout;
     } m_defaultResource;
 
     ShaderCache m_shaderCache;

@@ -2,23 +2,28 @@
 #define VULKAN_UNIFORMOBJECT_H_
 
 #include "buffer.h"
+#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 class SceneRenderer;
 class VulkanDevice;
 class UniformObject;
 
-struct VulkanUniformObject {
-    VulkanUniformObject(SceneRenderer *renderer, VulkanDevice* device, UniformObject *ubo);
+class VulkanUniformObject {
+public:
+    VulkanUniformObject(SceneRenderer *renderer, VulkanDevice *device, UniformObject *ubo);
     ~VulkanUniformObject() = default;
 
     void cleanupResources() const;
 
-    vkl::VulkanBuffer *buffer;
+    void  setupBuffer(uint32_t bufferSize, void *data = nullptr);
+    void  updateBuffer(void *data) const;
+    void *getData();
 
-    void setupBuffer(uint32_t bufferSize, void *data = nullptr);
-    void updateBuffer(void *data) const;
+    VkDescriptorBufferInfo &getBufferInfo();
 
+private:
+    VulkanBuffer  *_buffer   = nullptr;
     VulkanDevice  *_device   = nullptr;
     SceneRenderer *_renderer = nullptr;
     UniformObject *_ubo      = nullptr;

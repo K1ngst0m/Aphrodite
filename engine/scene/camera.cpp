@@ -1,14 +1,15 @@
 #include "camera.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace vkl {
 
 struct CameraDataLayout {
     glm::mat4 view;
     glm::mat4 proj;
-    glm::mat4 viewProj;
     glm::vec4 position;
-    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::mat4 viewproj, glm::vec4 viewpos)
-        : view(view), proj(proj), viewProj(viewproj), position(viewpos) {
+    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::vec4 viewpos)
+        : view(view), proj(proj), position(viewpos) {
     }
 };
 
@@ -21,7 +22,6 @@ void Camera::load() {
     data     = std::make_shared<CameraDataLayout>(
         _matrices.view,
         _matrices.perspective,
-        _matrices.perspective * _matrices.view,
         glm::vec4(_position, 1.0f));
 }
 
@@ -30,7 +30,6 @@ void Camera::update() {
     auto pData      = std::static_pointer_cast<CameraDataLayout>(data);
     pData->view     = _matrices.view;
     pData->proj     = _matrices.perspective;
-    pData->viewProj = _matrices.perspective * _matrices.view;
     pData->position = glm::vec4(_position, 1.0f);
 }
 
@@ -76,7 +75,7 @@ void Camera::updateViewMatrix() {
     rotM = glm::rotate(rotM, glm::radians(_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
     rotM = glm::rotate(rotM, glm::radians(_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
-    glm::vec3 translation = _position;
+    glm::vec3 translation = -_position;
     if (_flipY) {
         translation.y *= -1.0f;
     }
@@ -87,8 +86,6 @@ void Camera::updateViewMatrix() {
     } else {
         _matrices.view = transM * rotM;
     }
-
-    _viewPos = glm::vec4(_position, 0.0f) * glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
 
     updated = true;
 };
@@ -157,5 +154,8 @@ float Camera::getRotationSpeed() const {
 
 void Camera::setMovement(CameraDirection direction, bool flag) {
     keys[direction] = flag;
+}
+void Camera::setFlipY(bool val) {
+    _flipY = val;
 }
 } // namespace vkl

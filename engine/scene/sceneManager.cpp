@@ -55,8 +55,9 @@ glm::vec4 SceneManager::getAmbient() {
     return glm::vec4(0.2f);
 }
 
-void SceneManager::update() {
+void SceneManager::update(float deltaTime) {
     _camera->update();
+    _camera->processMovement(deltaTime);
 }
 
 SceneManager::~SceneManager() = default;

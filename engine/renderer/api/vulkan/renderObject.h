@@ -15,6 +15,7 @@ class VulkanSampler;
 
 struct MaterialGpuData {
     VkDescriptorSet set;
+    VkPipeline pipeline;
 };
 
 struct TextureGpuData {
@@ -71,8 +72,8 @@ private:
 
 private:
     VulkanSceneRenderer *_sceneRenderer;
-    glm::mat4            _transform;
     Entity              *_entity;
+    glm::mat4            _transform = glm::mat4(1.0f);
 };
 } // namespace vkl
 

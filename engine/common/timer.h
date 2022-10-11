@@ -11,8 +11,9 @@ public:
         start = std::chrono::steady_clock::now();
     }
     ~Timer() {
+        using ms = std::chrono::duration<float, std::milli>;
         auto end  = std::chrono::steady_clock::now();
-        _interval = (start - end).count();
+        _interval = std::chrono::duration_cast<ms>(start - end).count() / 1000.0f;
     }
 
 private:

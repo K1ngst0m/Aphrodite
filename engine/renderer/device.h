@@ -2,9 +2,8 @@
 #define DEVICE_H_
 
 namespace vkl {
-    class GraphicsDevice{
-
-    };
+class GraphicsDevice{
+};
 }
 
 #endif // DEVICE_H_

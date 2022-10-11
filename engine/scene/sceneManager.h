@@ -41,7 +41,7 @@ public:
     SceneManager();
     ~SceneManager();
 
-    void update();
+    void update(float deltaTime);
 
 public:
     std::shared_ptr<Light>      createLight();

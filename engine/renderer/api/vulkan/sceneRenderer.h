@@ -22,7 +22,7 @@ public:
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;
-    void update() override;
+    void updateScene() override;
     void drawScene() override;
 
 private:

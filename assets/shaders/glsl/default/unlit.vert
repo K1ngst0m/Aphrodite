@@ -7,15 +7,12 @@ layout(location = 3) in vec3 inColor;
 layout(location = 4) in vec4 inTangent;
 
 layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec3 fragNormal;
-layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out vec3 fragColor;
-layout(location = 4) out vec4 fragTangent;
+layout(location = 1) out vec2 fragTexCoord;
+layout(location = 2) out vec3 fragColor;
 
 layout (set = 0, binding = 0) uniform SceneUB{
     mat4 view;
     mat4 proj;
-    mat4 viewProj;
     vec4 viewPos;
 } sceneData;
 
@@ -26,10 +23,8 @@ layout( push_constant ) uniform constants
 } objectData;
 
 void main() {
-    gl_Position = sceneData.viewProj * objectData.modelMatrix * vec4(inPosition, 1.0f);
     fragPosition = vec3(objectData.modelMatrix * vec4(inPosition, 1.0f));
     fragTexCoord = inTexCoord;
-    fragNormal = inNormal;
     fragColor = inColor;
-    fragTangent = inTangent;
+    gl_Position = sceneData.proj * sceneData.view * objectData.modelMatrix * vec4(inPosition.xyz, 1.0f);
 }

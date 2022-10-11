@@ -81,9 +81,8 @@ void VulkanSceneRenderer::drawScene() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-
-        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex]);
         commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->builtPipeline);
+        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->layout, 0, 1, &_globalDescriptorSets[commandIndex]);
 
         for (auto &renderable : _renderList) {
             renderable->draw(_getShaderPass()->layout, commandBuffer);
@@ -95,9 +94,10 @@ void VulkanSceneRenderer::drawScene() {
     }
 }
 
-void VulkanSceneRenderer::update() {
+void VulkanSceneRenderer::updateScene() {
     auto &cameraUBO = _uniformList[0];
-    cameraUBO->updateBuffer(cameraUBO->_ubo->getData());
+    cameraUBO->updateBuffer(cameraUBO->getData());
+
     // TODO update light data
     // for (auto & ubo : _uboList){
     //     if (ubo->_ubo->isUpdated()){
@@ -161,7 +161,7 @@ void VulkanSceneRenderer::_initUniformList() {
             write.dstArrayElement      = 0;
             write.descriptorCount      = 1;
             write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo          = &uniformObj->buffer->getBufferInfo();
+            write.pBufferInfo          = &uniformObj->getBufferInfo();
             descriptorWrites.push_back(write);
         }
 
@@ -234,9 +234,9 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
 
     _unlitPass = std::make_unique<ShaderPass>();
     _unlitPass->buildPipeline(_device->getHandle(),
-                            _renderer->getDefaultRenderPass()->getHandle(),
-                            _renderer->getPipelineBuilder(),
-                            _unlitEffect.get());
+                              _renderer->getDefaultRenderPass()->getHandle(),
+                              _renderer->getPipelineBuilder(),
+                              _unlitEffect.get());
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
@@ -266,9 +266,9 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
 
     _defaultLitPass = std::make_unique<ShaderPass>();
     _defaultLitPass->buildPipeline(_device->getHandle(),
-                                 _renderer->getDefaultRenderPass()->getHandle(),
-                                 _renderer->getPipelineBuilder(),
-                                 _defaultLitEffect.get());
+                                   _renderer->getDefaultRenderPass()->getHandle(),
+                                   _renderer->getPipelineBuilder(),
+                                   _defaultLitEffect.get());
 }
 
 std::unique_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
