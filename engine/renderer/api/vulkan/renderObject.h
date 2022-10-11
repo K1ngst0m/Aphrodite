@@ -19,9 +19,9 @@ struct MaterialGpuData {
 };
 
 struct TextureGpuData {
-    VulkanImage     *image;
-    VulkanImageView *imageView;
-    VkSampler        sampler;
+    VulkanImage     *image = nullptr;
+    VulkanImageView *imageView = nullptr;
+    VkSampler        sampler = VK_NULL_HANDLE;
 
     VkDescriptorImageInfo descriptorInfo;
 };

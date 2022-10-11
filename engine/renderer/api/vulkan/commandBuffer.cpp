@@ -271,4 +271,33 @@ void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, 
 VulkanCommandPool *VulkanCommandBuffer::getPool() {
     return _pool;
 }
+void VulkanCommandBuffer::cmdImageMemoryBarrier(
+    VulkanImage            *image,
+    VkAccessFlags           srcAccessMask,
+    VkAccessFlags           dstAccessMask,
+    VkImageLayout           oldImageLayout,
+    VkImageLayout           newImageLayout,
+    VkPipelineStageFlags    srcStageMask,
+    VkPipelineStageFlags    dstStageMask,
+    VkImageSubresourceRange subresourceRange) {
+    VkImageMemoryBarrier imageMemoryBarrier = vkl::init::imageMemoryBarrier();
+    imageMemoryBarrier.srcAccessMask        = srcAccessMask;
+    imageMemoryBarrier.dstAccessMask        = dstAccessMask;
+    imageMemoryBarrier.oldLayout            = oldImageLayout;
+    imageMemoryBarrier.newLayout            = newImageLayout;
+    imageMemoryBarrier.image                = image->getHandle();
+    imageMemoryBarrier.subresourceRange     = subresourceRange;
+
+    vkCmdPipelineBarrier(
+        _handle,
+        srcStageMask,
+        dstStageMask,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &imageMemoryBarrier);
+}
+void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage *dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter) {
+    vkCmdBlitImage(_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions, filter);
+}
 } // namespace vkl

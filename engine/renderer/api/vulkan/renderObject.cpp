@@ -12,7 +12,7 @@
 
 namespace vkl {
 
-VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice* device, vkl::Entity *entity)
+VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, vkl::Entity *entity)
     : _device(device), _sceneRenderer(renderer), _entity(entity) {
 }
 
@@ -54,6 +54,7 @@ void VulkanRenderObject::loadTextures() {
         uint32_t       imageDataSize = image.data.size();
         uint32_t       width         = image.width;
         uint32_t       height        = image.height;
+        uint32_t       texMipLevels  = calculateFullMipLevels(width, height);
 
         // staging buffer
         VulkanBuffer *stagingBuffer;
@@ -63,41 +64,108 @@ void VulkanRenderObject::loadTextures() {
             createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             _device->createBuffer(&createInfo, &stagingBuffer);
+            stagingBuffer->map();
+            stagingBuffer->copyTo(imageData, static_cast<size_t>(imageDataSize));
+            stagingBuffer->unmap();
         }
-
-        stagingBuffer->map();
-        stagingBuffer->copyTo(imageData, static_cast<size_t>(imageDataSize));
-        stagingBuffer->unmap();
 
         // texture
         TextureGpuData texture;
-        texture.image     = new VulkanImage;
-        texture.imageView = new VulkanImageView;
-        // texture.sampler   = new VulkanSampler;
 
         // texture image resource
         {
             ImageCreateInfo createInfo{};
-            createInfo.extent   = {width, height, 1};
-            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
-            createInfo.tiling   = IMAGE_TILING_OPTIMAL;
-            createInfo.usage    = IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
-            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.extent    = {width, height, 1};
+            createInfo.format    = FORMAT_R8G8B8A8_SRGB;
+            createInfo.tiling    = IMAGE_TILING_OPTIMAL;
+            createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+            createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.mipLevels = texMipLevels;
 
             _device->createImage(&createInfo, &texture.image);
 
             VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
             cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
-            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
             _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+
+            cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_GRAPHICS);
+
+            // generate mipmap chains
+            for (int32_t i = 1; i < texMipLevels; i++)
+            {
+                VkImageBlit imageBlit{};
+
+                // Source
+                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.srcSubresource.layerCount = 1;
+                imageBlit.srcSubresource.mipLevel = i-1;
+                imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+                imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+                imageBlit.srcOffsets[1].z = 1;
+
+                // Destination
+                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.dstSubresource.layerCount = 1;
+                imageBlit.dstSubresource.mipLevel = i;
+                imageBlit.dstOffsets[1].x = int32_t(width >> i);
+                imageBlit.dstOffsets[1].y = int32_t(height >> i);
+                imageBlit.dstOffsets[1].z = 1;
+
+                VkImageSubresourceRange mipSubRange = {};
+                mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                mipSubRange.baseMipLevel = i;
+                mipSubRange.levelCount = 1;
+                mipSubRange.layerCount = 1;
+
+                // Prepare current mip level as image blit destination
+                cmd->cmdImageMemoryBarrier(
+                    texture.image,
+                    0,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    mipSubRange);
+
+                // Blit from previous level
+                cmd->cmdBlitImage(
+                    texture.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    texture.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1,
+                    &imageBlit,
+                    VK_FILTER_LINEAR);
+
+                // Prepare current mip level as image blit source for next level
+                cmd->cmdImageMemoryBarrier(
+                    texture.image,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    mipSubRange);
+            }
+
+            cmd->cmdTransitionImageLayout(texture.image,
+                                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            _device->endSingleTimeCommands(cmd);
         }
+
 
         // texture image view
         {
             ImageViewCreateInfo createInfo{};
             createInfo.format   = FORMAT_R8G8B8A8_SRGB;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            createInfo.subresourceRange.levelCount = texMipLevels;
             _device->createImageView(&createInfo, &texture.imageView, texture.image);
         }
 
@@ -105,9 +173,10 @@ void VulkanRenderObject::loadTextures() {
         {
             // TODO
             VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+            samplerInfo.maxLod = texMipLevels;
             // samplerInfo.maxAnisotropy       = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
             // samplerInfo.anisotropyEnable    = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy;
-            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
             VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &texture.sampler));
         }
@@ -318,7 +387,7 @@ void VulkanRenderObject::createEmptyTexture() {
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
         // samplerInfo.maxAnisotropy       = _device->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
         // samplerInfo.anisotropyEnable    = _device->getDeviceEnabledFeatures().samplerAnisotropy;
-        samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_emptyTexture.sampler));
     }
 

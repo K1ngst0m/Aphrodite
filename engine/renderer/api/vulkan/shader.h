@@ -11,9 +11,6 @@ struct ShaderModule {
     VkShaderModule    module;
 };
 
-struct ShaderParameters {
-};
-
 /**
  * @brief holds all of the shader related state that a pipeline needs to be built.
  */
@@ -52,11 +49,6 @@ struct ShaderPass {
     void buildPipeline(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::VulkanPipelineLayout *effect);
 
     void destroy(VkDevice device) const;
-};
-
-struct EffectTemplate {
-    std::vector<std::shared_ptr<ShaderPass>> passShaders;
-    ShaderParameters                        *defaultParameters;
 };
 
 } // namespace vkl

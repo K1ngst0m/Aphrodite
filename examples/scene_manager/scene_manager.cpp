@@ -38,7 +38,7 @@ void scene_manager::loadScene() {
     {
         m_defaultCamera = m_scene->createCamera(m_window->getAspectRatio());
         m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
-        m_defaultCamera->setPosition({0.0f, 1.0f, 0.0f, 1.0f});
+        m_defaultCamera->setPosition({0.0f, -1.0f, 0.0f, 1.0f});
         m_defaultCamera->setFlipY(true);
         m_defaultCamera->setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
         m_defaultCamera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
@@ -84,29 +84,26 @@ void scene_manager::loadScene() {
 
     // box prefab
     {
-        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        // auto prefab_cube_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        // auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_cube_model);
+        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+        auto prefab_cube_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
+        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        node->attachObject(prefab_cube_model);
     }
 
     // plane prefab
     {
-        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        // auto prefab_plane_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
-        // auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_plane_model);
+        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
+        auto prefab_plane_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
+        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        node->attachObject(prefab_plane_model);
     }
 
     // sphere
     {
-        // glm::mat4 modelTransform = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f));
-        // modelTransform           = glm::rotate(modelTransform, 3.14f, glm::vec3(0.0f, 1.0f, 0.0f));
-        // auto prefab_sphere_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
-        // auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_sphere_model);
+        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
+        auto prefab_sphere_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
+        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        node->attachObject(prefab_sphere_model);
     }
 
     {

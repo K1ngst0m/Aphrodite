@@ -39,11 +39,7 @@ public:
     void cmdEndRenderPass();
     void cmdSetViewport(VkViewport *viewport);
     void cmdSetSissor(VkRect2D *scissor);
-    void cmdBindDescriptorSet(VkPipelineBindPoint    bindPoint,
-                              VkPipelineLayout       layout,
-                              uint32_t               firstSet,
-                              uint32_t               descriptorSetCount,
-                              const VkDescriptorSet *pDescriptorSets);
+    void cmdBindDescriptorSet(VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet *pDescriptorSets);
     void cmdBindPipeline(VkPipelineBindPoint bindPoint, VkPipeline pipeline);
     void cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets);
     void cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset, VkIndexType indexType);
@@ -54,6 +50,8 @@ public:
     void cmdTransitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     void cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage *image);
     void cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstImage);
+    void cmdImageMemoryBarrier(VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
+    void cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter = VK_FILTER_LINEAR);
 
 private:
     VulkanCommandPool *_pool;
