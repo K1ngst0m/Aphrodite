@@ -94,12 +94,12 @@ VkPipeline PipelineBuilder::buildPipeline(VkDevice device, VkRenderPass pass) {
 
     return newPipeline;
 }
-void PipelineBuilder::setShaders(VulkanPipelineLayout *shaders) {
+void PipelineBuilder::setShaders(ShaderEffect *effects) {
     _createInfo._shaderStages.clear();
-    for (const auto &stage : shaders->stages) {
-        _createInfo._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage.stage, stage.shaderModule->module));
+    for (const auto [stage, sModule] : effects->getStages()) {
+        _createInfo._shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
-    _createInfo._pipelineLayout = shaders->builtLayout;
+    _createInfo._pipelineLayout = effects->getPipelineLayout();
 }
 void PipelineBuilder::reset(VkExtent2D extent) {
     VertexInputBuilder::setPipelineVertexInputState({VertexComponent::POSITION,

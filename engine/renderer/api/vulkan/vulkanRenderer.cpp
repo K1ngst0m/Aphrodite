@@ -2,6 +2,8 @@
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
+#include "descriptorPool.h"
+#include "descriptorSetLayout.h"
 #include "device.h"
 #include "framebuffer.h"
 #include "image.h"
@@ -17,7 +19,6 @@
 #include "uiRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
-#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -389,9 +390,7 @@ VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
 VulkanCommandBuffer *VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
     return m_defaultResource.commandBuffers[idx];
 }
-PipelineBuilder &VulkanRenderer::getPipelineBuilder() {
-    return m_pipelineBuilder;
-}
+
 uint32_t VulkanRenderer::getCommandBufferCount() const {
     return m_defaultResource.commandBuffers.size();
 }
@@ -461,9 +460,7 @@ PerFrameSyncObject &VulkanRenderer::getCurrentFrameSyncObject() {
 VulkanInstance *VulkanRenderer::getInstance() const {
     return m_instance;
 }
-void VulkanRenderer::resetPipelineBuilder() {
-    m_pipelineBuilder.reset(m_swapChain->getExtent());
-}
+
 void VulkanRenderer::drawDemo() {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -497,14 +494,14 @@ void VulkanRenderer::drawDemo() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPass->builtPipeline);
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPass->getPipeline());
         commandBuffer->cmdDraw(3, 1, 0, 0);
         commandBuffer->cmdEndRenderPass();
 
         commandBuffer->end();
     }
 }
-ShaderCache &VulkanRenderer::getShaderCache() {
+VulkanShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;
 }
 void VulkanRenderer::renderOneFrame() {
@@ -523,32 +520,34 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     }
 }
 void VulkanRenderer::_setupDemoPass() {
-    resetPipelineBuilder();
+    PipelineBuilder pipelineBuilder(m_swapChain->getExtent(), m_device);
+    EffectBuilder   effectBuilder(m_device);
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount     = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount   = 0;
-    getPipelineBuilder()._createInfo._vertexInputInfo = vertexInputInfo;
+    vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputInfo.vertexBindingDescriptionCount   = 0;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    pipelineBuilder._createInfo._vertexInputInfo    = vertexInputInfo;
 
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    m_defaultResource.demoLayout = new VulkanPipelineLayout;
-    m_defaultResource.demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT);
-    m_defaultResource.demoLayout->pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT);
-    m_defaultResource.demoLayout->buildPipelineLayout(m_device->getHandle());
+    m_defaultResource.demoEffect = effectBuilder.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
+                                       .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
+                                       .build();
 
-    m_defaultResource.demoPass = new ShaderPass;
-    m_defaultResource.demoPass->buildPipeline(m_device->getHandle(),
-                            getDefaultRenderPass()->getHandle(),
-                            getPipelineBuilder(),
-                            m_defaultResource.demoLayout);
+    m_defaultResource.demoPass = std::make_shared<ShaderPass>(
+        m_device,
+        getDefaultRenderPass(),
+        pipelineBuilder,
+        m_defaultResource.demoEffect);
 
     m_deletionQueue.push_function([=]() {
-        m_defaultResource.demoPass->destroy(m_device->getHandle());
-        m_defaultResource.demoLayout->destroy(m_device->getHandle());
-        delete m_defaultResource.demoPass;
-        delete m_defaultResource.demoLayout;
+        m_defaultResource.demoPass->destroy();
+        m_defaultResource.demoEffect->destroy();
     });
+}
+VkExtent2D VulkanRenderer::getSwapChainExtent() const {
+    return m_swapChain->getExtent();
 }
 } // namespace vkl

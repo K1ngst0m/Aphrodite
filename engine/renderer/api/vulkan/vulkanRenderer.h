@@ -31,6 +31,7 @@ public:
     void _initDefaultResource();
 
 public:
+    VkExtent2D           getSwapChainExtent() const;
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
     VkQueue              getDefaultDeviceQueue(QueueFlags type) const;
@@ -38,9 +39,7 @@ public:
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
-    PipelineBuilder     &getPipelineBuilder();
-    ShaderCache         &getShaderCache();
-    void                 resetPipelineBuilder();
+    VulkanShaderCache   &getShaderCache();
 
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
     std::shared_ptr<UIRenderer>    getUIRenderer() override;
@@ -82,7 +81,6 @@ private:
     VkPhysicalDeviceFeatures  m_enabledFeatures{};
     VkDebugUtilsMessengerEXT  m_debugMessenger;
     VkSurfaceKHR              m_surface;
-    PipelineBuilder           m_pipelineBuilder;
     DeletionQueue             m_deletionQueue;
 
     uint32_t m_currentFrame = 0;
@@ -101,11 +99,11 @@ private:
         std::vector<PerFrameSyncObject>    syncObjects;
         std::vector<FrameBufferData>       framebuffers;
         VulkanRenderPass                  *renderPass;
-        ShaderPass                        *demoPass;
-        VulkanPipelineLayout              *demoLayout;
+        std::shared_ptr<ShaderPass>        demoPass;
+        std::shared_ptr<ShaderEffect>      demoEffect;
     } m_defaultResource;
 
-    ShaderCache m_shaderCache;
+    VulkanShaderCache m_shaderCache;
 };
 } // namespace vkl
 

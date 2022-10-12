@@ -6,7 +6,7 @@
 #include "renderer/sceneRenderer.h"
 
 namespace vkl {
-struct ShaderPass;
+class ShaderPass;
 class VulkanUniformObject;
 class VulkanRenderObject;
 class VulkanRenderer;
@@ -36,17 +36,17 @@ private:
 
 private:
     VkDescriptorSetLayout       *_getDescriptorSetLayout(DescriptorSetBinding binding);
-    std::unique_ptr<ShaderPass> &_getShaderPass();
+    std::shared_ptr<ShaderPass> &_getShaderPass();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
     VkDescriptorPool             _descriptorPool;
 
-    std::unique_ptr<VulkanPipelineLayout> _unlitEffect = nullptr;
-    std::unique_ptr<ShaderPass>           _unlitPass   = nullptr;
+    std::shared_ptr<ShaderEffect> _unlitEffect = nullptr;
+    std::shared_ptr<ShaderPass>   _unlitPass   = nullptr;
 
-    std::unique_ptr<VulkanPipelineLayout> _defaultLitEffect = nullptr;
-    std::unique_ptr<ShaderPass>           _defaultLitPass   = nullptr;
+    std::shared_ptr<ShaderEffect> _defaultLitEffect = nullptr;
+    std::shared_ptr<ShaderPass>   _defaultLitPass   = nullptr;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;

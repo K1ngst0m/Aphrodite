@@ -4,7 +4,6 @@
 #include "device.h"
 #include "renderer/gpuResource.h"
 #include "vkInit.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 
@@ -29,7 +28,7 @@ struct VertexInputBuilder {
  * @brief built version of a Shader Effect, where it stores the built pipeline
  */
 
-class VulkanPipelineLayout;
+class ShaderEffect;
 
 struct PipelineCreateInfo {
     std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
@@ -48,12 +47,21 @@ struct PipelineCreateInfo {
 
 class PipelineBuilder {
 public:
+    PipelineBuilder(VkExtent2D extent, VulkanDevice * device)
+        :_device(device)
+    {
+        reset(extent);
+    }
+
     PipelineCreateInfo _createInfo;
 
     VkPipeline buildPipeline(VkDevice device, VkRenderPass pass);
 
-    void setShaders(VulkanPipelineLayout *shaders);
+    void setShaders(ShaderEffect *effects);
     void reset(VkExtent2D extent);
+
+private:
+    VulkanDevice *_device;
 };
 
 class VulkanPipeline : ResourceHandle<VkPipeline> {

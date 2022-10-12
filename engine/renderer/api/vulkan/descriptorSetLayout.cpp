@@ -16,14 +16,10 @@ static std::unordered_map<PipelineResourceType, VkDescriptorType> ResourceTypeMa
     {PIPELINE_RESOURCE_TYPE_INPUT_ATTACHMENT, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT},
 };
 
-VkResult VulkanDescriptorSetLayout::Create(VulkanDevice                        *device,
-                                           const DescriptorSetLayoutHash       &hash,
-                                           const std::vector<PipelineResource> &setResources,
-                                           VulkanDescriptorSetLayout          **pLayout) {
+VkResult VulkanDescriptorSetLayout::Create(VulkanDevice *device, const std::vector<PipelineResource> &setResources, VulkanDescriptorSetLayout **ppLayout) {
     // Create a new DescriptorPool instance.
-    auto instance      = new VulkanDescriptorSetLayout;
+    auto instance     = new VulkanDescriptorSetLayout;
     instance->_device = device;
-    instance->_hash   = hash;
 
     // Extract all unique resource types and their counts as well as layout bindings.
     for (auto &resource : setResources) {
@@ -69,7 +65,7 @@ VkResult VulkanDescriptorSetLayout::Create(VulkanDevice                        *
     instance->_descriptorPool = new VulkanDescriptorPool(instance);
 
     // Save handle.
-    *pLayout = instance;
+    *ppLayout = instance;
 
     // Return success.
     return VK_SUCCESS;
@@ -87,9 +83,7 @@ const VulkanDevice *VulkanDescriptorSetLayout::getDevice() {
 std::vector<VkDescriptorSetLayoutBinding> VulkanDescriptorSetLayout::getBindings() {
     return _bindings;
 }
-const DescriptorSetLayoutHash &VulkanDescriptorSetLayout::getHash() const {
-    return _hash;
-}
+
 bool VulkanDescriptorSetLayout::getLayoutBinding(uint32_t bindingIndex, VkDescriptorSetLayoutBinding **pBinding) {
     auto it = _bindingsLookup.find(bindingIndex);
     if (it == _bindingsLookup.end())
@@ -98,12 +92,15 @@ bool VulkanDescriptorSetLayout::getLayoutBinding(uint32_t bindingIndex, VkDescri
     *pBinding = &it->second;
     return true;
 }
+
 VkResult VulkanDescriptorSetLayout::freeDescriptorSet(VkDescriptorSet descriptorSet) {
     // Free descriptor set handle.
     return _descriptorPool->freeDescriptorSet(descriptorSet);
 }
+
 VkDescriptorSet VulkanDescriptorSetLayout::allocateDescriptorSet() {
     // Return new descriptor set allocation.
     return _descriptorPool->allocateDescriptorSet();
 }
+
 } // namespace vkl

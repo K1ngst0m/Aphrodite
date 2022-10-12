@@ -20,6 +20,7 @@ class VulkanCommandPool;
 class VulkanShaderModule;
 class VulkanDescriptorPool;
 class VulkanDescriptorSetLayout;
+class VulkanShaderCache;
 class WindowData;
 struct RenderPassCreateInfo;
 

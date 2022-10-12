@@ -1,54 +1,115 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
+#include <utility>
+
 #include "device.h"
 
 namespace vkl {
 class PipelineBuilder;
 
-struct ShaderModule {
-    std::vector<char> code;
-    VkShaderModule    module;
+class VulkanShaderModule : public ResourceHandle<VkShaderModule> {
+public:
+    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule)
+        : _code(std::move(code)) {
+        _handle = shaderModule;
+    }
+
+    std::vector<char> getCode() {
+        return _code;
+    }
+
+private:
+    std::vector<char> _code;
 };
 
-/**
- * @brief holds all of the shader related state that a pipeline needs to be built.
- */
-struct VulkanPipelineLayout {
-    VkPipelineLayout                   builtLayout;
-    std::vector<VkPushConstantRange>   constantRanges;
-    std::vector<VkDescriptorSetLayout> setLayouts;
+using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
+class ShaderEffect {
+public:
+    ShaderEffect(VulkanDevice                      *device,
+                 VkPipelineLayout                   pipelineLayout,
+                 ShaderMapList                      shaderMapList,
+                 std::vector<VkPushConstantRange>   constantRanges,
+                 std::vector<VkDescriptorSetLayout> setLayouts)
+        : _device(device),
+          _builtLayout(pipelineLayout),
+          _stages(std::move(shaderMapList)),
+          _constantRanges(std::move(constantRanges)),
+          _setLayouts(std::move(setLayouts)) {
+    }
 
-    struct ShaderStage {
-        ShaderModule         *shaderModule;
-        VkShaderStageFlagBits stage;
-    };
+    void destroy() {
+        for (auto &setLayout : _setLayouts) {
+            vkDestroyDescriptorSetLayout(_device->getHandle(), setLayout, nullptr);
+        }
+        vkDestroyPipelineLayout(_device->getHandle(), _builtLayout, nullptr);
+    }
 
-    std::vector<ShaderStage> stages;
+    VkPipelineLayout getPipelineLayout() {
+        return _builtLayout;
+    }
 
-    void pushSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding> &bindings);
-    void pushShaderStages(ShaderModule *module, VkShaderStageFlagBits stageBits);
-    void pushConstantRanges(VkPushConstantRange constantRange);
+    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx) {
+        return &_setLayouts[idx];
+    }
 
-    void buildPipelineLayout(VkDevice device);
+    ShaderMapList& getStages(){
+        return _stages;
+    }
 
-    void destroy(VkDevice device);
+private:
+    VulkanDevice                      *_device;
+    VkPipelineLayout                   _builtLayout;
+    ShaderMapList                      _stages;
+    std::vector<VkPushConstantRange>   _constantRanges;
+    std::vector<VkDescriptorSetLayout> _setLayouts;
 };
 
-struct ShaderCache {
-    std::unordered_map<std::string, ShaderModule> shaderModuleCaches;
-    ShaderModule                                 *getShaders(VulkanDevice *device, const std::string &path);
-    void                                          destory(VkDevice device);
+class EffectBuilder {
+public:
+    EffectBuilder(VulkanDevice *device);
+    EffectBuilder                &pushSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings);
+    EffectBuilder                &pushShaderStages(VulkanShaderModule *pModule, VkShaderStageFlagBits stageBits);
+    EffectBuilder                &pushConstantRanges(VkPushConstantRange constantRange);
+    std::unique_ptr<ShaderEffect> build();
+
+    void reset();
+
+private:
+    VulkanDevice                      *_device;
+    VkPipelineLayout                   _builtLayout;
+    ShaderMapList                      _stages;
+    std::vector<VkPushConstantRange>   _constantRanges;
+    std::vector<VkDescriptorSetLayout> _setLayouts;
+    std::set<ShaderEffect *>           _effects;
 };
 
-struct ShaderPass {
-    VulkanPipelineLayout    *effect        = nullptr;
-    VkPipeline       builtPipeline = VK_NULL_HANDLE;
-    VkPipelineLayout layout        = VK_NULL_HANDLE;
+class VulkanShaderCache {
+public:
+    VulkanShaderModule *getShaders(VulkanDevice *device, const std::string &path);
+    void                destory(VkDevice device);
 
-    void buildPipeline(VkDevice device, VkRenderPass renderPass, PipelineBuilder &builder, vkl::VulkanPipelineLayout *effect);
+private:
+    std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
+};
 
-    void destroy(VkDevice device) const;
+class ShaderPass {
+public:
+    ShaderPass(VulkanDevice                 *device,
+               VulkanRenderPass             *renderPass,
+               PipelineBuilder              &builder,
+               std::shared_ptr<ShaderEffect> effect);
+
+    VkPipeline             getPipeline();
+    VkPipelineLayout       getPipelineLayout();
+    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
+
+    void destroy() const;
+
+private:
+    VulkanDevice                 *_device;
+    VkPipeline                    builtPipeline = VK_NULL_HANDLE;
+    std::shared_ptr<ShaderEffect> _effect       = nullptr;
 };
 
 } // namespace vkl

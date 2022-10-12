@@ -4,6 +4,8 @@
 #include "common/common.h"
 
 namespace vkl {
+#define MAX_DESCRIPTION_SIZE 256U
+
 enum BaseType {
     BASE_TYPE_BOOL   = 0,
     BASE_TYPE_CHAR   = 1,
@@ -514,6 +516,102 @@ enum Result {
     PIPELINE_COMPILE_REQUIRED_EXT                      = PIPELINE_COMPILE_REQUIRED,
     ERROR_PIPELINE_COMPILE_REQUIRED_EXT                = PIPELINE_COMPILE_REQUIRED,
     RESULT_MAX_ENUM                                    = 0x7FFFFFFF
+};
+
+enum ShaderStageFlagBits {
+    SHADER_STAGE_VERTEX_BIT                  = 0x00000001,
+    SHADER_STAGE_TESSELLATION_CONTROL_BIT    = 0x00000002,
+    SHADER_STAGE_TESSELLATION_EVALUATION_BIT = 0x00000004,
+    SHADER_STAGE_GEOMETRY_BIT                = 0x00000008,
+    SHADER_STAGE_FRAGMENT_BIT                = 0x00000010,
+    SHADER_STAGE_COMPUTE_BIT                 = 0x00000020,
+    SHADER_STAGE_ALL_GRAPHICS                = 0x0000001F,
+    SHADER_STAGE_ALL                         = 0x7FFFFFFF,
+    SHADER_STAGE_RAYGEN_BIT_KHR              = 0x00000100,
+    SHADER_STAGE_ANY_HIT_BIT_KHR             = 0x00000200,
+    SHADER_STAGE_CLOSEST_HIT_BIT_KHR         = 0x00000400,
+    SHADER_STAGE_MISS_BIT_KHR                = 0x00000800,
+    SHADER_STAGE_INTERSECTION_BIT_KHR        = 0x00001000,
+    SHADER_STAGE_CALLABLE_BIT_KHR            = 0x00002000,
+    SHADER_STAGE_TASK_BIT_NV                 = 0x00000040,
+    SHADER_STAGE_MESH_BIT_NV                 = 0x00000080,
+    SHADER_STAGE_SUBPASS_SHADING_BIT_HUAWEI  = 0x00004000,
+    SHADER_STAGE_RAYGEN_BIT_NV               = SHADER_STAGE_RAYGEN_BIT_KHR,
+    SHADER_STAGE_ANY_HIT_BIT_NV              = SHADER_STAGE_ANY_HIT_BIT_KHR,
+    SHADER_STAGE_CLOSEST_HIT_BIT_NV          = SHADER_STAGE_CLOSEST_HIT_BIT_KHR,
+    SHADER_STAGE_MISS_BIT_NV                 = SHADER_STAGE_MISS_BIT_KHR,
+    SHADER_STAGE_INTERSECTION_BIT_NV         = SHADER_STAGE_INTERSECTION_BIT_KHR,
+    SHADER_STAGE_CALLABLE_BIT_NV             = SHADER_STAGE_CALLABLE_BIT_KHR,
+    SHADER_STAGE_FLAG_BITS_MAX_ENUM          = 0x7FFFFFFF
+};
+using ShaderStageFlags = uint32_t;
+
+enum AccessFlagBits {
+    ACCESS_INDIRECT_COMMAND_READ_BIT                     = 0x00000001,
+    ACCESS_INDEX_READ_BIT                                = 0x00000002,
+    ACCESS_VERTEX_ATTRIBUTE_READ_BIT                     = 0x00000004,
+    ACCESS_UNIFORM_READ_BIT                              = 0x00000008,
+    ACCESS_INPUT_ATTACHMENT_READ_BIT                     = 0x00000010,
+    ACCESS_SHADER_READ_BIT                               = 0x00000020,
+    ACCESS_SHADER_WRITE_BIT                              = 0x00000040,
+    ACCESS_COLOR_ATTACHMENT_READ_BIT                     = 0x00000080,
+    ACCESS_COLOR_ATTACHMENT_WRITE_BIT                    = 0x00000100,
+    ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT             = 0x00000200,
+    ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT            = 0x00000400,
+    ACCESS_TRANSFER_READ_BIT                             = 0x00000800,
+    ACCESS_TRANSFER_WRITE_BIT                            = 0x00001000,
+    ACCESS_HOST_READ_BIT                                 = 0x00002000,
+    ACCESS_HOST_WRITE_BIT                                = 0x00004000,
+    ACCESS_MEMORY_READ_BIT                               = 0x00008000,
+    ACCESS_MEMORY_WRITE_BIT                              = 0x00010000,
+    ACCESS_NONE                                          = 0,
+    ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT              = 0x02000000,
+    ACCESS_TRANSFORM_FEEDBACK_COUNTER_READ_BIT_EXT       = 0x04000000,
+    ACCESS_TRANSFORM_FEEDBACK_COUNTER_WRITE_BIT_EXT      = 0x08000000,
+    ACCESS_CONDITIONAL_RENDERING_READ_BIT_EXT            = 0x00100000,
+    ACCESS_COLOR_ATTACHMENT_READ_NONCOHERENT_BIT_EXT     = 0x00080000,
+    ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR           = 0x00200000,
+    ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR          = 0x00400000,
+    ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT             = 0x01000000,
+    ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR = 0x00800000,
+    ACCESS_COMMAND_PREPROCESS_READ_BIT_NV                = 0x00020000,
+    ACCESS_COMMAND_PREPROCESS_WRITE_BIT_NV               = 0x00040000,
+    ACCESS_SHADING_RATE_IMAGE_READ_BIT_NV                = ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
+    ACCESS_ACCELERATION_STRUCTURE_READ_BIT_NV            = ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,
+    ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_NV           = ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR,
+    ACCESS_NONE_KHR                                      = ACCESS_NONE,
+    ACCESS_FLAG_BITS_MAX_ENUM                            = 0x7FFFFFFF
+};
+using AccessFlags = uint32_t;
+
+struct MemberInfo {
+    BaseType          baseType;
+    uint32_t          offset;
+    uint32_t          size;
+    uint32_t          vecSize;
+    uint32_t          columns;
+    uint32_t          arraySize;
+    char              name[MAX_DESCRIPTION_SIZE];
+    const MemberInfo *pNext;
+    const MemberInfo *pMembers;
+};
+
+struct PipelineResource {
+    ShaderStageFlags     stages;
+    PipelineResourceType resourceType;
+    BaseType             baseType;
+    AccessFlags          access;
+    uint32_t             set;
+    uint32_t             binding;
+    uint32_t             location;
+    uint32_t             inputAttachmentIndex;
+    uint32_t             vecSize;
+    uint32_t             columns;
+    uint32_t             arraySize;
+    uint32_t             offset;
+    uint32_t             size;
+    char                 name[MAX_DESCRIPTION_SIZE];
+    const MemberInfo    *pMembers;
 };
 
 template <typename T_Handle>
