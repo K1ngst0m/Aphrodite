@@ -43,8 +43,8 @@ void VulkanSceneRenderer::cleanupResources() {
 
     _unlitEffect->destroy();
     _defaultLitEffect->destroy();
-    delete _unlitPipeline;
-    delete _defaultLitPipeline;
+    _device->destroyPipeline(_unlitPipeline);
+    _device->destroyPipeline(_defaultLitPipeline);
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -211,7 +211,7 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 }
 
 void VulkanSceneRenderer::_setupUnlitShaderEffect() {
-    EffectBuilder   effectBuilder(_device);
+    EffectBuilder effectBuilder(_device);
 
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -225,20 +225,19 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    _unlitEffect = effectBuilder
-                       .pushSetLayout(perSceneBindings)
+    _unlitEffect = effectBuilder.pushSetLayout(perSceneBindings)
                        .pushSetLayout(perMaterialBindings)
                        .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
                        .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
                        .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                        .build();
 
-    PipelineCreateInfo createInfo;
-    _defaultLitPipeline = VulkanPipeline::CreateGraphicsPipeline(_device, &createInfo, _unlitEffect.get(), _renderer->getDefaultRenderPass());
+    PipelineCreateInfo pipelineCreateInfo;
+    VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, _unlitEffect.get(), _renderer->getDefaultRenderPass(), &_unlitPipeline));
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
-    EffectBuilder   effectBuilder(_device);
+    EffectBuilder effectBuilder(_device);
 
     // per-scene layout
     std::vector<VkDescriptorSetLayoutBinding> perSceneBindings = {
@@ -255,19 +254,18 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    _defaultLitEffect = effectBuilder
-                            .pushSetLayout(perSceneBindings)
+    _defaultLitEffect = effectBuilder.pushSetLayout(perSceneBindings)
                             .pushSetLayout(perMaterialBindings)
                             .pushConstantRanges(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0))
                             .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
                             .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                             .build();
 
-    PipelineCreateInfo createInfo;
-    _defaultLitPipeline = VulkanPipeline::CreateGraphicsPipeline(_device, &createInfo, _defaultLitEffect.get(), _renderer->getDefaultRenderPass());
+    PipelineCreateInfo pipelineCreateInfo;
+    VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, _defaultLitEffect.get(), _renderer->getDefaultRenderPass(), &_defaultLitPipeline));
 }
 
-VulkanPipeline* VulkanSceneRenderer::_getCurrentPipeline() {
+VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
     switch (_shadingModel) {
     case ShadingModel::UNLIT:
         return _unlitPipeline;

@@ -4,6 +4,7 @@
 #include "physicalDevice.h"
 #include "renderer/device.h"
 #include "renderer/gpuResource.h"
+#include "vkInit.hpp"
 #include "vkUtils.h"
 
 namespace vkl {
@@ -27,6 +28,7 @@ class ShaderEffect;
 class ShaderPass;
 class VulkanPipeline;
 struct RenderPassCreateInfo;
+struct PipelineCreateInfo;
 
 using QueueFamily = std::vector<VkQueue>;
 
@@ -77,6 +79,11 @@ public:
                                uint32_t                 queueFamilyIndex,
                                VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
+    VkResult createGraphicsPipeline(const PipelineCreateInfo *pCreateInfo,
+                                    ShaderEffect             *effect,
+                                    VulkanRenderPass         *pRenderPass,
+                                    VulkanPipeline ** ppPipeline);
+
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
     void destroyImage(VulkanImage *pImage);
@@ -85,6 +92,7 @@ public:
     void destoryRenderPass(VulkanRenderPass *pRenderpass);
     void destroySwapchain(VulkanSwapChain *pSwapchain);
     void destroyCommandPool(VulkanCommandPool *pPool);
+    void destroyPipeline(VulkanPipeline *pipeline);
 
 public:
     VkResult allocateCommandBuffers(uint32_t              commandBufferCount,

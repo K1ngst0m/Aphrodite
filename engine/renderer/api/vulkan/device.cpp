@@ -1,6 +1,8 @@
 #include "device.h"
 #include "buffer.h"
 #include "commandBuffer.h"
+#include "shader.h"
+#include "pipeline.h"
 #include "commandPool.h"
 #include "framebuffer.h"
 #include "image.h"
@@ -447,5 +449,74 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     for (auto i = 0U; i < commandBufferCount; ++i) {
         delete ppCommandBuffers[i];
     }
+}
+VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateInfo,
+                                              ShaderEffect             *pEffect,
+                                              VulkanRenderPass         *pRenderPass,
+                                              VulkanPipeline ** ppPipeline) {
+    // make viewport state from our stored viewport and scissor.
+    // at the moment we won't support multiple viewports or scissors
+    VkPipelineViewportStateCreateInfo viewportState = {};
+    viewportState.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.pNext                             = nullptr;
+
+    viewportState.viewportCount = 1;
+    viewportState.pViewports    = &pCreateInfo->_viewport;
+    viewportState.scissorCount  = 1;
+    viewportState.pScissors     = &pCreateInfo->_scissor;
+
+    // setup dummy color blending. We aren't using transparent objects yet
+    // the blending is just "no blend", but we do write to the color attachment
+    VkPipelineColorBlendStateCreateInfo colorBlending = {};
+    colorBlending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.pNext                               = nullptr;
+
+    colorBlending.logicOpEnable   = VK_FALSE;
+    colorBlending.logicOp         = VK_LOGIC_OP_COPY;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments    = &pCreateInfo->_colorBlendAttachment;
+
+    // build the actual pipeline
+    // we now use all of the info structs we have been writing into into this one to create the pipeline
+    VkGraphicsPipelineCreateInfo pipelineInfo = {};
+    pipelineInfo.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.pNext                        = nullptr;
+
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    for (const auto [stage, sModule] : pEffect->getStages()) {
+        shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
+    }
+    pipelineInfo.stageCount          = shaderStages.size();
+    pipelineInfo.pStages             = shaderStages.data();
+    pipelineInfo.pVertexInputState   = &pCreateInfo->_vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &pCreateInfo->_inputAssembly;
+    pipelineInfo.pViewportState      = &viewportState;
+    pipelineInfo.pDynamicState       = &pCreateInfo->_dynamicState;
+    pipelineInfo.pRasterizationState = &pCreateInfo->_rasterizer;
+    pipelineInfo.pDepthStencilState  = &pCreateInfo->_depthStencil;
+    pipelineInfo.pMultisampleState   = &pCreateInfo->_multisampling;
+    pipelineInfo.pColorBlendState    = &colorBlending;
+    pipelineInfo.layout              = pEffect->getPipelineLayout();
+    pipelineInfo.renderPass          = pRenderPass->getHandle();
+    pipelineInfo.subpass             = 0;
+    pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
+
+    // it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case
+    VkPipeline handle;
+
+    auto result = vkCreateGraphicsPipelines(getHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
+
+    if(result != VK_SUCCESS){
+        return result;
+    }
+
+    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, pCreateInfo, pEffect, pRenderPass, handle);
+
+    return VK_SUCCESS;
+}
+
+void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline) {
+    vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
+    delete pipeline;
 }
 } // namespace vkl

@@ -4,8 +4,6 @@
 #include "device.h"
 
 namespace vkl {
-class PipelineBuilder;
-
 class VulkanShaderModule : public ResourceHandle<VkShaderModule> {
 public:
     VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main")

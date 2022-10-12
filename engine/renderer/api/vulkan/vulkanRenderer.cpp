@@ -537,7 +537,7 @@ void VulkanRenderer::_setupDemoPass() {
                                        .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                                        .build();
 
-    m_defaultResource.demoPipeline = VulkanPipeline::CreateGraphicsPipeline(m_device, &createInfo, m_defaultResource.demoEffect.get(), getDefaultRenderPass());
+    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, m_defaultResource.demoEffect.get(), getDefaultRenderPass(), &m_defaultResource.demoPipeline));
 
     m_deletionQueue.push_function([=]() {
         m_defaultResource.demoEffect->destroy();

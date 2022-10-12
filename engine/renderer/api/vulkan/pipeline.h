@@ -2,8 +2,6 @@
 #define PIPELINE_H_
 
 #include "device.h"
-#include "renderer/gpuResource.h"
-#include "vkInit.hpp"
 
 namespace vkl {
 
@@ -25,17 +23,17 @@ struct VertexInputBuilder {
 };
 
 struct PipelineCreateInfo {
-    std::vector<VkDynamicState>                  _dynamicStages;
-    VkPipelineVertexInputStateCreateInfo         _vertexInputInfo;
-    VkPipelineInputAssemblyStateCreateInfo       _inputAssembly;
-    VkViewport                                   _viewport;
-    VkRect2D                                     _scissor;
-    VkPipelineDynamicStateCreateInfo             _dynamicState;
-    VkPipelineRasterizationStateCreateInfo       _rasterizer;
-    VkPipelineColorBlendAttachmentState          _colorBlendAttachment;
-    VkPipelineMultisampleStateCreateInfo         _multisampling;
-    VkPipelineDepthStencilStateCreateInfo        _depthStencil;
-    VertexInputBuilder                           _vertexInputBuilder;
+    std::vector<VkDynamicState>            _dynamicStages;
+    VkPipelineVertexInputStateCreateInfo   _vertexInputInfo;
+    VkPipelineInputAssemblyStateCreateInfo _inputAssembly;
+    VkViewport                             _viewport;
+    VkRect2D                               _scissor;
+    VkPipelineDynamicStateCreateInfo       _dynamicState;
+    VkPipelineRasterizationStateCreateInfo _rasterizer;
+    VkPipelineColorBlendAttachmentState    _colorBlendAttachment;
+    VkPipelineMultisampleStateCreateInfo   _multisampling;
+    VkPipelineDepthStencilStateCreateInfo  _depthStencil;
+    VertexInputBuilder                     _vertexInputBuilder;
 
     PipelineCreateInfo(VkExtent2D extent = {0, 0}) {
         _vertexInputInfo = _vertexInputBuilder.getPipelineVertexInputState({VertexComponent::POSITION,
@@ -59,24 +57,21 @@ struct PipelineCreateInfo {
 
 class VulkanPipeline : public ResourceHandle<VkPipeline> {
 public:
-    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice *pDevice,
+    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice             *pDevice,
                                                   const PipelineCreateInfo *pCreateInfo,
-                                                  ShaderEffect * effect,
-                                                  VulkanRenderPass * pRenderPass);
+                                                  ShaderEffect             *effect,
+                                                  VulkanRenderPass         *pRenderPass,
+                                                  VkPipeline                handle);
 
     static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const PipelineCreateInfo *pCreateInfo);
 
-    ~VulkanPipeline() {
-        vkDestroyPipeline(_device->getHandle(), _handle, nullptr);
-    }
-
-    VkPipelineLayout getPipelineLayout();
-    VkDescriptorSetLayout* getDescriptorSetLayout(uint32_t idx);
+    VkPipelineLayout       getPipelineLayout();
+    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
 
 private:
-    PipelineCreateInfo       _createInfo;
-    VulkanDevice            *_device = nullptr;
-    ShaderEffect            *_effect = nullptr;
+    PipelineCreateInfo _createInfo;
+    VulkanDevice      *_device = nullptr;
+    ShaderEffect      *_effect = nullptr;
 };
 
 } // namespace vkl
