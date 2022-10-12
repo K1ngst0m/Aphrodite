@@ -69,8 +69,8 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
 ThreadPool *VulkanInstance::GetThreadPool() {
     return _threadPool;
 }
-const std::vector<VulkanPhysicalDevice *> &VulkanInstance::getPhysicalDevices() {
-    return _physicalDevices;
+VulkanPhysicalDevice * VulkanInstance::getPhysicalDevices(uint32_t idx) {
+    return _physicalDevices[idx];
 }
 void VulkanInstance::Destroy(VulkanInstance *pInstance) {
     delete pInstance->_threadPool;

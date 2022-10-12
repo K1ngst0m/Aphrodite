@@ -194,7 +194,7 @@ void VulkanRenderer::_createDevice() {
     createInfo.enabledExtensionCount   = deviceExtensions.size();
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    VK_CHECK_RESULT(VulkanDevice::Create(m_instance->getPhysicalDevices()[0], &createInfo, &m_device));
+    VK_CHECK_RESULT(VulkanDevice::Create(m_instance->getPhysicalDevices(0), &createInfo, &m_device));
 
     m_deletionQueue.push_function([&]() {
         VulkanDevice::Destroy(m_device);

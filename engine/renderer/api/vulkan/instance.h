@@ -24,7 +24,7 @@ public:
 
     static void Destroy(VulkanInstance *pInstance);
 
-    const std::vector<VulkanPhysicalDevice *> &getPhysicalDevices();
+    VulkanPhysicalDevice* getPhysicalDevices(uint32_t idx);
 
     ThreadPool *GetThreadPool();
 
