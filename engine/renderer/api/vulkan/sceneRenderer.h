@@ -35,18 +35,18 @@ private:
     void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
 
 private:
-    VkDescriptorSetLayout       *_getDescriptorSetLayout(DescriptorSetBinding binding);
-    std::shared_ptr<ShaderPass> &_getShaderPass();
+    VkDescriptorSetLayout *_getDescriptorSetLayout(DescriptorSetBinding binding);
+    VulkanPipeline        *_getCurrentPipeline();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
     VkDescriptorPool             _descriptorPool;
 
-    std::shared_ptr<ShaderEffect> _unlitEffect = nullptr;
-    std::shared_ptr<ShaderPass>   _unlitPass   = nullptr;
+    std::shared_ptr<ShaderEffect> _unlitEffect   = nullptr;
+    VulkanPipeline               *_unlitPipeline = nullptr;
 
-    std::shared_ptr<ShaderEffect> _defaultLitEffect = nullptr;
-    std::shared_ptr<ShaderPass>   _defaultLitPass   = nullptr;
+    std::shared_ptr<ShaderEffect> _defaultLitEffect   = nullptr;
+    VulkanPipeline               *_defaultLitPipeline = nullptr;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;

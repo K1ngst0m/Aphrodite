@@ -494,7 +494,7 @@ void VulkanRenderer::drawDemo() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPass->getPipeline());
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPipeline);
         commandBuffer->cmdDraw(3, 1, 0, 0);
         commandBuffer->cmdEndRenderPass();
 
@@ -520,14 +520,15 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     }
 }
 void VulkanRenderer::_setupDemoPass() {
-    PipelineBuilder pipelineBuilder(m_swapChain->getExtent(), m_device);
     EffectBuilder   effectBuilder(m_device);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount   = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    pipelineBuilder._createInfo._vertexInputInfo    = vertexInputInfo;
+
+    PipelineCreateInfo createInfo{};
+    createInfo._vertexInputInfo = vertexInputInfo;
 
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
@@ -536,15 +537,11 @@ void VulkanRenderer::_setupDemoPass() {
                                        .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                                        .build();
 
-    m_defaultResource.demoPass = std::make_shared<ShaderPass>(
-        m_device,
-        getDefaultRenderPass(),
-        pipelineBuilder,
-        m_defaultResource.demoEffect);
+    m_defaultResource.demoPipeline = VulkanPipeline::CreateGraphicsPipeline(m_device, &createInfo, m_defaultResource.demoEffect.get(), getDefaultRenderPass());
 
     m_deletionQueue.push_function([=]() {
-        m_defaultResource.demoPass->destroy();
         m_defaultResource.demoEffect->destroy();
+        delete m_defaultResource.demoPipeline;
     });
 }
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {

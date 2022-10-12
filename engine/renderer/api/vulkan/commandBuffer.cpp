@@ -2,6 +2,7 @@
 #include "buffer.h"
 #include "commandPool.h"
 #include "framebuffer.h"
+#include "pipeline.h"
 #include "image.h"
 #include "renderpass.h"
 #include "vkInit.hpp"
@@ -73,8 +74,8 @@ void VulkanCommandBuffer::cmdSetViewport(VkViewport *viewport) {
 void VulkanCommandBuffer::cmdSetSissor(VkRect2D *scissor) {
     vkCmdSetScissor(_handle, 0, 1, scissor);
 }
-void VulkanCommandBuffer::cmdBindPipeline(VkPipelineBindPoint bindPoint, VkPipeline pipeline) {
-    vkCmdBindPipeline(_handle, bindPoint, pipeline);
+void VulkanCommandBuffer::cmdBindPipeline(VkPipelineBindPoint bindPoint, VulkanPipeline* pPipeline) {
+    vkCmdBindPipeline(_handle, bindPoint, pPipeline->getHandle());
 }
 void VulkanCommandBuffer::cmdBindDescriptorSet(VkPipelineBindPoint    bindPoint,
                                                VkPipelineLayout       layout,

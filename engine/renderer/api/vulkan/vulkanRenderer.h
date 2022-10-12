@@ -99,7 +99,7 @@ private:
         std::vector<PerFrameSyncObject>    syncObjects;
         std::vector<FrameBufferData>       framebuffers;
         VulkanRenderPass                  *renderPass;
-        std::shared_ptr<ShaderPass>        demoPass;
+        VulkanPipeline                    *demoPipeline;
         std::shared_ptr<ShaderEffect>      demoEffect;
     } m_defaultResource;
 

@@ -41,10 +41,10 @@ void VulkanSceneRenderer::cleanupResources() {
         ubo->cleanupResources();
     }
 
-    _unlitPass->destroy();
-    _defaultLitPass->destroy();
     _unlitEffect->destroy();
     _defaultLitEffect->destroy();
+    delete _unlitPipeline;
+    delete _defaultLitPipeline;
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -81,11 +81,11 @@ void VulkanSceneRenderer::drawScene() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->getPipeline());
-        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getShaderPass()->getPipelineLayout(), 0, 1, &_globalDescriptorSets[commandIndex]);
+        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getCurrentPipeline());
+        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getCurrentPipeline()->getPipelineLayout(), 0, 1, &_globalDescriptorSets[commandIndex]);
 
         for (auto &renderable : _renderList) {
-            renderable->draw(_getShaderPass()->getPipelineLayout(), commandBuffer);
+            renderable->draw(_getCurrentPipeline()->getPipelineLayout(), commandBuffer);
         }
 
         commandBuffer->cmdEndRenderPass();
@@ -211,7 +211,6 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 }
 
 void VulkanSceneRenderer::_setupUnlitShaderEffect() {
-    PipelineBuilder pipelineBuilder(_renderer->getSwapChainExtent(), _device);
     EffectBuilder   effectBuilder(_device);
 
     // per-scene layout
@@ -234,15 +233,11 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
                        .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                        .build();
 
-    _unlitPass = std::make_unique<ShaderPass>(
-        _device,
-        _renderer->getDefaultRenderPass(),
-        pipelineBuilder,
-        _unlitEffect);
+    PipelineCreateInfo createInfo;
+    _defaultLitPipeline = VulkanPipeline::CreateGraphicsPipeline(_device, &createInfo, _unlitEffect.get(), _renderer->getDefaultRenderPass());
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
-    PipelineBuilder pipelineBuilder(_renderer->getSwapChainExtent(), _device);
     EffectBuilder   effectBuilder(_device);
 
     // per-scene layout
@@ -268,25 +263,22 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
                             .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
                             .build();
 
-    _defaultLitPass = std::make_shared<ShaderPass>(
-        _device,
-        _renderer->getDefaultRenderPass(),
-        pipelineBuilder,
-        _defaultLitEffect);
+    PipelineCreateInfo createInfo;
+    _defaultLitPipeline = VulkanPipeline::CreateGraphicsPipeline(_device, &createInfo, _defaultLitEffect.get(), _renderer->getDefaultRenderPass());
 }
 
-std::shared_ptr<ShaderPass> &VulkanSceneRenderer::_getShaderPass() {
+VulkanPipeline* VulkanSceneRenderer::_getCurrentPipeline() {
     switch (_shadingModel) {
     case ShadingModel::UNLIT:
-        return _unlitPass;
+        return _unlitPipeline;
     case ShadingModel::DEFAULTLIT:
-        return _defaultLitPass;
+        return _defaultLitPipeline;
     }
     assert("unexpected behavior");
-    return _unlitPass;
+    return _unlitPipeline;
 }
 
 VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
-    return _getShaderPass()->getDescriptorSetLayout(binding);
+    return _getCurrentPipeline()->getDescriptorSetLayout(binding);
 }
 } // namespace vkl

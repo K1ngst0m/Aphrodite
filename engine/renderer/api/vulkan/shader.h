@@ -1,8 +1,6 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
-#include <utility>
-
 #include "device.h"
 
 namespace vkl {
@@ -10,8 +8,8 @@ class PipelineBuilder;
 
 class VulkanShaderModule : public ResourceHandle<VkShaderModule> {
 public:
-    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule)
-        : _code(std::move(code)) {
+    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main")
+        : _entrypoint(std::move(entrypoint)), _code(std::move(code)) {
         _handle = shaderModule;
     }
 
@@ -20,10 +18,21 @@ public:
     }
 
 private:
+    std::string _entrypoint;
     std::vector<char> _code;
 };
 
+class VulkanShaderCache {
+public:
+    VulkanShaderModule *getShaders(VulkanDevice *device, const std::string &path);
+    void                destory(VkDevice device);
+
+private:
+    std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
+};
+
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
+
 class ShaderEffect {
 public:
     ShaderEffect(VulkanDevice                      *device,
@@ -82,34 +91,6 @@ private:
     std::vector<VkPushConstantRange>   _constantRanges;
     std::vector<VkDescriptorSetLayout> _setLayouts;
     std::set<ShaderEffect *>           _effects;
-};
-
-class VulkanShaderCache {
-public:
-    VulkanShaderModule *getShaders(VulkanDevice *device, const std::string &path);
-    void                destory(VkDevice device);
-
-private:
-    std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
-};
-
-class ShaderPass {
-public:
-    ShaderPass(VulkanDevice                 *device,
-               VulkanRenderPass             *renderPass,
-               PipelineBuilder              &builder,
-               std::shared_ptr<ShaderEffect> effect);
-
-    VkPipeline             getPipeline();
-    VkPipelineLayout       getPipelineLayout();
-    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-
-    void destroy() const;
-
-private:
-    VulkanDevice                 *_device;
-    VkPipeline                    builtPipeline = VK_NULL_HANDLE;
-    std::shared_ptr<ShaderEffect> _effect       = nullptr;
 };
 
 } // namespace vkl

@@ -22,6 +22,10 @@ class VulkanDescriptorPool;
 class VulkanDescriptorSetLayout;
 class VulkanShaderCache;
 class WindowData;
+class PipelineBuilder;
+class ShaderEffect;
+class ShaderPass;
+class VulkanPipeline;
 struct RenderPassCreateInfo;
 
 using QueueFamily = std::vector<VkQueue>;

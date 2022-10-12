@@ -51,13 +51,6 @@ VulkanShaderModule *VulkanShaderCache::getShaders(VulkanDevice *device, const st
     return shaderModuleCaches[path];
 }
 
-void ShaderPass::destroy() const {
-    vkDestroyPipeline(_device->getHandle(), builtPipeline, nullptr);
-}
-
-VkPipelineLayout ShaderPass::getPipelineLayout() {
-    return _effect->getPipelineLayout();
-}
 std::unique_ptr<ShaderEffect> EffectBuilder::build() {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(_setLayouts, _constantRanges);
     VK_CHECK_RESULT(vkCreatePipelineLayout(_device->getHandle(), &pipelineLayoutInfo, nullptr, &_builtLayout));
@@ -72,20 +65,5 @@ void EffectBuilder::reset() {
 }
 EffectBuilder::EffectBuilder(VulkanDevice *device)
     : _device(device) {
-}
-ShaderPass::ShaderPass(VulkanDevice                 *device,
-                       VulkanRenderPass*                  renderPass,
-                       PipelineBuilder              &builder,
-                       std::shared_ptr<ShaderEffect> effect)
-    : _effect(std::move(effect)), _device(device) {
-    builder.setShaders(_effect.get());
-    builtPipeline = builder.buildPipeline(_device->getHandle(),
-                                          renderPass->getHandle());
-}
-VkPipeline ShaderPass::getPipeline() {
-    return builtPipeline;
-}
-VkDescriptorSetLayout *ShaderPass::getDescriptorSetLayout(uint32_t idx) {
-    return _effect->getDescriptorSetLayout(idx);
 }
 } // namespace vkl

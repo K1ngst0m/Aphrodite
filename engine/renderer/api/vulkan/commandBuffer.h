@@ -2,7 +2,6 @@
 #define COMMANDBUFFER_H_
 
 #include "device.h"
-#include <algorithm>
 
 namespace vkl {
 
@@ -40,7 +39,7 @@ public:
     void cmdSetViewport(VkViewport *viewport);
     void cmdSetSissor(VkRect2D *scissor);
     void cmdBindDescriptorSet(VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet *pDescriptorSets);
-    void cmdBindPipeline(VkPipelineBindPoint bindPoint, VkPipeline pipeline);
+    void cmdBindPipeline(VkPipelineBindPoint bindPoint, VulkanPipeline* pPipeline);
     void cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets);
     void cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset, VkIndexType indexType);
     void cmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stage, uint32_t offset, uint32_t size, const void *pValues);
