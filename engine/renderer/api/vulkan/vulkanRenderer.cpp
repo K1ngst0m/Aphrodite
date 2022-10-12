@@ -110,7 +110,7 @@ void VulkanRenderer::_createDefaultFramebuffers() {
         }
 
         m_deletionQueue.push_function([=]() {
-            vkDestroyFramebuffer(m_device->getHandle(), fb.framebuffer->getHandle(m_defaultResource.renderPass), nullptr);
+            m_device->destroyFramebuffers(fb.framebuffer);
         });
     }
 }
