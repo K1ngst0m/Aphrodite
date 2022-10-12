@@ -7,8 +7,8 @@ namespace vkl {
 class WindowData;
 class UIRenderer {
 public:
-    UIRenderer(const std::shared_ptr<WindowData>& windowData)
-        : _windowData(windowData) {
+    UIRenderer(std::shared_ptr<WindowData>  windowData)
+        : _windowData(std::move(windowData)) {
     }
     virtual void initUI() = 0;
     virtual void drawUI() = 0;

@@ -77,6 +77,7 @@ VkFramebuffer VulkanFramebuffer::getHandle(VulkanRenderPass *pRenderPass) {
 
     return handle;
 }
+
 VulkanFramebuffer::~VulkanFramebuffer() {
     for (auto &[_, handle] : _cache) {
         vkDestroyFramebuffer(_device->getHandle(), handle, nullptr);

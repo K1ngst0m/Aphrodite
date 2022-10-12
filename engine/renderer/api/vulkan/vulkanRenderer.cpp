@@ -2,8 +2,6 @@
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
-#include "descriptorPool.h"
-#include "descriptorSetLayout.h"
 #include "device.h"
 #include "framebuffer.h"
 #include "image.h"
