@@ -34,6 +34,7 @@ struct PipelineCreateInfo {
     VkPipelineMultisampleStateCreateInfo   _multisampling;
     VkPipelineDepthStencilStateCreateInfo  _depthStencil;
     VertexInputBuilder                     _vertexInputBuilder;
+    VkPipelineCache                        _pipelineCache = VK_NULL_HANDLE;
 
     PipelineCreateInfo(VkExtent2D extent = {0, 0}) {
         _vertexInputInfo = _vertexInputBuilder.getPipelineVertexInputState({VertexComponent::POSITION,
@@ -69,6 +70,7 @@ public:
     VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
 
 private:
+    VkPipelineCache    _cache;
     PipelineCreateInfo _createInfo;
     VulkanDevice      *_device = nullptr;
     ShaderEffect      *_effect = nullptr;

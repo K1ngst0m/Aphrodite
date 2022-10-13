@@ -115,4 +115,7 @@ VkDescriptorBufferInfo &VulkanBuffer::getBufferInfo() {
 VkDeviceMemory VulkanBuffer::getMemory() {
     return memory;
 }
+void *VulkanBuffer::getMapped() {
+    return mapped;
+};
 } // namespace vkl

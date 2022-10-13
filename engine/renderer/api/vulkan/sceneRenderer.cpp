@@ -5,6 +5,7 @@
 #include "framebuffer.h"
 #include "pipeline.h"
 #include "renderObject.h"
+#include "renderer/api/vulkan/uiRenderer.h"
 #include "renderpass.h"
 #include "scene/camera.h"
 #include "scene/entity.h"
@@ -14,6 +15,10 @@
 #include "vkInit.hpp"
 #include "vulkan/vulkan_core.h"
 #include "vulkanRenderer.h"
+
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui_impl_glfw.h>
 
 namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
@@ -88,6 +93,11 @@ void VulkanSceneRenderer::drawScene() {
             renderable->draw(_getCurrentPipeline()->getPipelineLayout(), commandBuffer);
         }
 
+        {
+            auto uiRenderer = std::static_pointer_cast<VulkanUIRenderer>(_renderer->getUIRenderer());
+            uiRenderer->drawUI(commandBuffer);
+        }
+
         commandBuffer->cmdEndRenderPass();
 
         commandBuffer->end();
@@ -97,6 +107,12 @@ void VulkanSceneRenderer::drawScene() {
 void VulkanSceneRenderer::updateScene() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->getData());
+
+    {
+        auto uiRenderer = std::static_pointer_cast<VulkanUIRenderer>(_renderer->getUIRenderer());
+        uiRenderer->update();
+    }
+
 
     // TODO update light data
     // for (auto & ubo : _uboList){

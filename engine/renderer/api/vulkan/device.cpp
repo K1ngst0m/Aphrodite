@@ -501,10 +501,8 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
     pipelineInfo.subpass             = 0;
     pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 
-    // it's easy to error out on create graphics pipeline, so we handle it a bit better than the common VK_CHECK case
     VkPipeline handle;
-
-    auto result = vkCreateGraphicsPipelines(getHandle(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &handle);
+    auto result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->_pipelineCache, 1, &pipelineInfo, nullptr, &handle);
 
     if(result != VK_SUCCESS){
         return result;

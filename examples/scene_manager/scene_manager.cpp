@@ -1,4 +1,7 @@
 #include "scene_manager.h"
+#include "renderer/api/vulkan/uiRenderer.h"
+#include "renderer/uiRenderer.h"
+#include <memory>
 
 scene_manager::scene_manager()
     : vkl::BaseApp("scene_manager") {
@@ -107,7 +110,6 @@ void scene_manager::loadScene() {
     }
 
     {
-        m_sceneRenderer = m_renderer->getSceneRenderer();
         m_sceneRenderer->setScene(m_scene);
         m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
         m_sceneRenderer->loadResources();
@@ -142,6 +144,8 @@ void scene_manager::setupRenderer() {
         .maxFrames   = 2,
     };
     m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config, m_window->getWindowData());
+    m_sceneRenderer = m_renderer->getSceneRenderer();
+    m_uiRenderer = m_renderer->getUIRenderer();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {

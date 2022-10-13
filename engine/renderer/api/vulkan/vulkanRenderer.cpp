@@ -18,6 +18,8 @@
 #include "uiRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
+#include "vulkan/vulkan_core.h"
+#include <memory>
 
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -362,6 +364,7 @@ void VulkanRenderer::_initDefaultResource() {
     _createDefaultRenderPass();
     _createDefaultFramebuffers();
     _createDefaultSyncObjects();
+    _createPipelineCache();
     _setupDemoPass();
 }
 
@@ -375,6 +378,9 @@ std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
 std::shared_ptr<UIRenderer> VulkanRenderer::getUIRenderer() {
     if (_uiRenderer == nullptr) {
         _uiRenderer = std::make_shared<VulkanUIRenderer>(this, _windowData);
+        auto vkUIRenderer = std::static_pointer_cast<VulkanUIRenderer>(_uiRenderer);
+        vkUIRenderer->initUI();
+        vkUIRenderer->initPipeline(getPipelineCache(), getDefaultRenderPass(), m_swapChain->getImageFormat(), m_device->getDepthFormat());
     }
     return _uiRenderer;
 }
@@ -546,4 +552,15 @@ void VulkanRenderer::_setupDemoPass() {
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {
     return m_swapChain->getExtent();
 }
+
+void VulkanRenderer::_createPipelineCache() {
+    VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
+    pipelineCacheCreateInfo.sType                     = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+    VK_CHECK_RESULT(vkCreatePipelineCache(m_device->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+}
+
+VkPipelineCache VulkanRenderer::getPipelineCache() {
+    return m_pipelineCache;
+}
+
 } // namespace vkl

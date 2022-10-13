@@ -1,8 +1,8 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include "renderer/renderer.h"
 #include "device.h"
+#include "renderer/renderer.h"
 #include "shader.h"
 
 namespace vkl {
@@ -37,6 +37,7 @@ public:
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
     VulkanShaderCache   &getShaderCache();
+    VkPipelineCache      getPipelineCache();
 
     std::shared_ptr<SceneRenderer> getSceneRenderer() override;
     std::shared_ptr<UIRenderer>    getUIRenderer() override;
@@ -58,6 +59,7 @@ private:
     void _createDefaultRenderPass();
     void _createDefaultFramebuffers();
     void _createDefaultSyncObjects();
+    void _createPipelineCache();
     void _allocateDefaultCommandBuffers();
 
 private:
@@ -78,7 +80,9 @@ private:
     VkPhysicalDeviceFeatures  m_enabledFeatures{};
     VkDebugUtilsMessengerEXT  m_debugMessenger;
     VkSurfaceKHR              m_surface;
-    DeletionQueue             m_deletionQueue;
+
+    VkPipelineCache m_pipelineCache;
+    DeletionQueue   m_deletionQueue;
 
     uint32_t m_currentFrame = 0;
 

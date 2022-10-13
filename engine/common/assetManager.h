@@ -16,6 +16,7 @@ public:
     static const std::filesystem::path &GetShaderDir(ShaderAssetType type);
     static const std::filesystem::path &GetTextureDir();
     static const std::filesystem::path &GetModelDir();
+    static const std::filesystem::path &GetFontDir();
 };
 } // namespace vkl
 

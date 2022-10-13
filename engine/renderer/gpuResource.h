@@ -666,7 +666,6 @@ class BufferView : public Resource<BufferViewCreateInfo> {
 struct ImageCreateInfo {
     Extent3D            extent;
     ImageType           imageType;
-    uint32_t            size        = 0;
     uint32_t            alignment   = 0;
     uint32_t            mipLevels   = 1;
     uint32_t            layerCount  = 1;
@@ -694,9 +693,6 @@ public:
     }
     uint32_t getLayerCount() const {
         return _createInfo.layerCount;
-    }
-    uint32_t getSize() const {
-        return _createInfo.size;
     }
     uint32_t getOffset() const {
         return _createInfo.alignment;

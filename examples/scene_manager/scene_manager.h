@@ -1,6 +1,7 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
+#include "renderer/uiRenderer.h"
 #include "vkl.hpp"
 
 class scene_manager : public vkl::BaseApp {
@@ -28,7 +29,9 @@ private:
     std::shared_ptr<vkl::Camera> m_defaultCamera    = nullptr;
 
     std::shared_ptr<vkl::SceneManager>  m_scene;
+
     std::shared_ptr<vkl::SceneRenderer> m_sceneRenderer;
+    std::shared_ptr<vkl::UIRenderer>    m_uiRenderer;
 
     std::shared_ptr<vkl::Window>   m_window;
     std::unique_ptr<vkl::Renderer> m_renderer;

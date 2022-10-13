@@ -1,11 +1,9 @@
 #ifndef VULKAN_BUFFER_H_
 #define VULKAN_BUFFER_H_
 
-#include "renderer/gpuResource.h"
 #include "device.h"
 
 namespace vkl {
-class VulkanDevice;
 class VulkanBuffer : public Buffer, public ResourceHandle<VkBuffer> {
 public:
     static VulkanBuffer *CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory);
@@ -24,6 +22,7 @@ public:
 
     void                    setupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     VkDescriptorBufferInfo &getBufferInfo();
+    void                   *getMapped();
 
 private:
     VkDevice               device;

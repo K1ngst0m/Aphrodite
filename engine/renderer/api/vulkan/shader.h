@@ -2,11 +2,22 @@
 #define VULKAN_SHADER_H_
 
 #include "device.h"
+#include "vulkan/vulkan_core.h"
+#include <unordered_map>
 
 namespace vkl {
+
+enum class ShaderStage{
+    VS,
+    FS,
+    CS,
+};
+
 class VulkanShaderModule : public ResourceHandle<VkShaderModule> {
 public:
-    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main")
+    VulkanShaderModule(std::vector<char> code,
+                       VkShaderModule shaderModule,
+                       std::string entrypoint = "main")
         : _entrypoint(std::move(entrypoint)), _code(std::move(code)) {
         _handle = shaderModule;
     }
@@ -18,6 +29,7 @@ public:
 private:
     std::string _entrypoint;
     std::vector<char> _code;
+    ShaderStage stage;
 };
 
 class VulkanShaderCache {
@@ -27,6 +39,11 @@ public:
 
 private:
     std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
+    std::unordered_map<ShaderStage, VkShaderStageFlags> stageMaps{
+        {ShaderStage::VS, VK_SHADER_STAGE_VERTEX_BIT},
+        {ShaderStage::FS, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {ShaderStage::CS, VK_SHADER_STAGE_COMPUTE_BIT},
+    };
 };
 
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
