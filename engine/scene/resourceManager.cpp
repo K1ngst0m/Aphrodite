@@ -46,7 +46,7 @@ void GLTFLoader::_loadImages(Entity *entity, tinygltf::Model &input) {
         } else {
             memcpy(newTexture.data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
-        entity->_textures.push_back(newTexture);
+        entity->_images.push_back(newTexture);
     }
 }
 void GLTFLoader::_loadMaterials(Entity *entity, tinygltf::Model &input) {

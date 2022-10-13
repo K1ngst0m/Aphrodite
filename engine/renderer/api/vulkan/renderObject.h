@@ -1,40 +1,12 @@
 #ifndef VULKAN_RENDERABLE_H_
 #define VULKAN_RENDERABLE_H_
 
-#include "device.h"
+#include "sceneRenderer.h"
 
 namespace vkl {
-class VulkanSceneRenderer;
-class Entity;
-class ShaderPass;
-struct Vertex;
-struct SubEntity;
-class VulkanImage;
-class VulkanImageView;
-class VulkanSampler;
-
-struct MaterialGpuData {
-    VkDescriptorSet set;
-    VkPipeline pipeline;
-};
-
-struct TextureGpuData {
-    VulkanImage     *image = nullptr;
-    VulkanImageView *imageView = nullptr;
-    VkSampler        sampler = VK_NULL_HANDLE;
-
-    VkDescriptorImageInfo descriptorInfo;
-};
-
-enum MaterialBindingBits {
-    MATERIAL_BINDING_NONE      = (1 << 0),
-    MATERIAL_BINDING_BASECOLOR = (1 << 1),
-    MATERIAL_BINDING_NORMAL    = (1 << 2),
-};
-
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice* device, Entity *entity);
+    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces();

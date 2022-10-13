@@ -6,6 +6,7 @@
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
+#include "pipeline.h"
 #include "renderObject.h"
 #include "renderer/api/vulkan/physicalDevice.h"
 #include "renderer/api/vulkan/shader.h"
@@ -518,7 +519,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     }
 }
 void VulkanRenderer::_setupDemoPass() {
-    EffectBuilder   effectBuilder(m_device);
+    EffectBuilder effectBuilder(m_device);
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

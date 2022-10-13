@@ -1,12 +1,9 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include <utility>
-
-#include "instance.h"
-#include "renderer/api/vulkan/shader.h"
 #include "renderer/renderer.h"
-#include "sceneRenderer.h"
+#include "device.h"
+#include "shader.h"
 
 namespace vkl {
 struct PerFrameSyncObject {

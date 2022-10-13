@@ -4,14 +4,6 @@
 #include "object.h"
 
 namespace vkl {
-class EntityLoader;
-class ShaderPass;
-struct Primitive;
-struct Texture;
-struct Material;
-struct SubEntity;
-struct Vertex;
-
 using ResourceIndex = int32_t;
 using SubEntityList = std::vector<std::shared_ptr<SubEntity>>;
 using PrimitiveList = std::vector<Primitive>;
@@ -89,7 +81,7 @@ public:
 public:
     VertexList    _vertices;
     IndexList     _indices;
-    TextureList   _textures;
+    TextureList   _images;
     SubEntityList _subEntityList;
     MaterialList  _materials;
 

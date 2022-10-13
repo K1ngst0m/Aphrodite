@@ -1,15 +1,35 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "pipeline.h"
-#include "renderer/api/vulkan/shader.h"
+#include "device.h"
 #include "renderer/sceneRenderer.h"
+#include "vulkanRenderer.h"
 
 namespace vkl {
 class ShaderPass;
 class VulkanUniformObject;
 class VulkanRenderObject;
 class VulkanRenderer;
+
+struct MaterialGpuData {
+    VkDescriptorSet set;
+    VkPipeline      pipeline;
+};
+
+struct TextureGpuData {
+    VulkanImage     *image     = nullptr;
+    VulkanImageView *imageView = nullptr;
+    VkSampler        sampler   = VK_NULL_HANDLE;
+
+    VkDescriptorImageInfo descriptorInfo;
+};
+
+enum MaterialBindingBits {
+    MATERIAL_BINDING_NONE      = (1 << 0),
+    MATERIAL_BINDING_BASECOLOR = (1 << 1),
+    MATERIAL_BINDING_NORMAL    = (1 << 2),
+};
+
 
 enum DescriptorSetBinding {
     SET_BINDING_SCENE    = 0,

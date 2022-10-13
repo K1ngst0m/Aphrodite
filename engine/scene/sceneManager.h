@@ -7,8 +7,15 @@ namespace vkl {
 class SceneNode;
 class Object;
 class Entity;
+class EntityLoader;
 class Light;
 class Camera;
+struct Primitive;
+struct Texture;
+struct Material;
+struct SubEntity;
+struct Vertex;
+
 
 enum class ShadingModel {
     UNLIT,
