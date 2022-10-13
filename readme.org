@@ -49,11 +49,11 @@ void triangle_demo::init() {
 }
 
 void triangle_demo::run() {
-    // get frame deltatime
-    auto timer = vkl::Timer(m_deltaTime);
-
     // loop
     while (!m_window->shouldClose()) {
+        // get frame deltatime
+        auto timer = vkl::Timer(m_deltaTime);
+
         m_window->pollEvents();
         m_renderer->renderOneFrame();
     }
