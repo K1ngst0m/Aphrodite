@@ -48,7 +48,7 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, Vk
     }
 }
 void VulkanRenderObject::loadTextures() {
-    for (auto &image : _entity->_textures) {
+    for (auto &image : _entity->_images) {
         // raw image data
         unsigned char *imageData     = image.data.data();
         uint32_t       imageDataSize = image.data.size();
@@ -225,15 +225,15 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *
 }
 void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer.buffer, offsets);
-    drawCmd->cmdBindIndexBuffers(_indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+    drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
+    drawCmd->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     for (auto &subEntity : _entity->_subEntityList) {
         drawNode(layout, drawCmd, subEntity);
     }
 }
 void VulkanRenderObject::cleanupResources() {
-    _device->destroyBuffer(_vertexBuffer.buffer);
-    _device->destroyBuffer(_indexBuffer.buffer);
+    _device->destroyBuffer(_vertexBuffer);
+    _device->destroyBuffer(_indexBuffer);
 
     for (TextureGpuData &texture : _textures) {
         _device->destroyImage(texture.image);
@@ -252,25 +252,17 @@ void VulkanRenderObject::loadBuffer() {
     auto &vertices = _entity->_vertices;
     auto &indices  = _entity->_indices;
 
-    if (!vertices.empty()) {
-        _vertexBuffer.vertices = std::move(vertices);
-    }
-    if (!indices.empty()) {
-        _indexBuffer.indices = std::move(indices);
-    }
+    assert(!vertices.empty());
 
-    assert(!_vertexBuffer.vertices.empty());
-
-    if (_indexBuffer.indices.empty()) {
-        for (size_t i = 0; i < _vertexBuffer.vertices.size(); i++) {
-            _indexBuffer.indices.push_back(i);
+    if (indices.empty()) {
+        for (size_t i = 0; i < vertices.size(); i++) {
+            indices.push_back(i);
         }
     }
 
     // setup vertex buffer
     {
-        auto         vSize      = vertices.size();
-        VkDeviceSize bufferSize = vSize == 0 ? sizeof(_vertexBuffer.vertices[0]) * _vertexBuffer.vertices.size() : vSize;
+        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
         // using staging buffer
         vkl::VulkanBuffer *stagingBuffer;
         {
@@ -282,7 +274,7 @@ void VulkanRenderObject::loadBuffer() {
         }
 
         stagingBuffer->map();
-        stagingBuffer->copyTo(_vertexBuffer.vertices.data(), static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer->copyTo(vertices.data(), static_cast<VkDeviceSize>(bufferSize));
         stagingBuffer->unmap();
 
         {
@@ -290,11 +282,11 @@ void VulkanRenderObject::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_vertexBuffer.buffer);
+            _device->createBuffer(&createInfo, &_vertexBuffer);
         }
 
         auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-        cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer.buffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
 
         _device->destroyBuffer(stagingBuffer);
@@ -302,8 +294,7 @@ void VulkanRenderObject::loadBuffer() {
 
     // setup index buffer
     {
-        auto         iSize      = indices.size();
-        VkDeviceSize bufferSize = iSize == 0 ? sizeof(_indexBuffer.indices[0]) * _indexBuffer.indices.size() : iSize;
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
         // using staging buffer
         vkl::VulkanBuffer *stagingBuffer;
 
@@ -316,7 +307,7 @@ void VulkanRenderObject::loadBuffer() {
         }
 
         stagingBuffer->map();
-        stagingBuffer->copyTo(_indexBuffer.indices.data(), static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer->copyTo(indices.data(), static_cast<VkDeviceSize>(bufferSize));
         stagingBuffer->unmap();
 
         {
@@ -324,11 +315,11 @@ void VulkanRenderObject::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_indexBuffer.buffer);
+            _device->createBuffer(&createInfo, &_indexBuffer);
         }
 
         auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-        cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer.buffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
 
         _device->destroyBuffer(stagingBuffer);

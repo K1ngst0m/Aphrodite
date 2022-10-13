@@ -54,23 +54,14 @@ private:
     void loadBuffer();
     void createEmptyTexture();
 
-    VulkanDevice* _device = nullptr;
-
-    struct {
-        std::vector<Vertex> vertices;
-        VulkanBuffer       *buffer;
-    } _vertexBuffer;
-
-    struct {
-        std::vector<uint32_t> indices;
-        VulkanBuffer         *buffer;
-    } _indexBuffer;
-
+    VulkanBuffer                *_vertexBuffer;
+    VulkanBuffer                *_indexBuffer;
     TextureGpuData               _emptyTexture;
     std::vector<TextureGpuData>  _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:
+    VulkanDevice        *_device = nullptr;
     VulkanSceneRenderer *_sceneRenderer;
     Entity              *_entity;
     glm::mat4            _transform = glm::mat4(1.0f);

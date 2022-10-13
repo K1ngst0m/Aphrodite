@@ -8,7 +8,7 @@
 
 namespace vkl {
 VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer *renderer, const std::shared_ptr<WindowData>& windowData)
-    : UIRenderer(windowData), _renderer(renderer), m_device(renderer->getDevice()) {
+    : UIRenderer(windowData), _renderer(renderer), _device(renderer->getDevice()) {
 }
 
 void VulkanUIRenderer::initUI() {
@@ -35,7 +35,7 @@ void VulkanUIRenderer::initUI() {
     };
 
     VkDescriptorPool imguiPool;
-    VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getHandle(), &poolInfo, nullptr, &imguiPool));
+    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &poolInfo, nullptr, &imguiPool));
 
     // 2: initialize imgui library
 
@@ -47,8 +47,8 @@ void VulkanUIRenderer::initUI() {
     // this initializes imgui for Vulkan
     ImGui_ImplVulkan_InitInfo initInfo = {
         .Instance       = _renderer->getInstance()->getHandle(),
-        .PhysicalDevice = m_device->getPhysicalDevice()->getHandle(),
-        .Device         = m_device->getHandle(),
+        .PhysicalDevice = _device->getPhysicalDevice()->getHandle(),
+        .Device         = _device->getHandle(),
         .Queue          = _renderer->getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
         .DescriptorPool = imguiPool,
         .MinImageCount  = 3,
@@ -59,9 +59,9 @@ void VulkanUIRenderer::initUI() {
     ImGui_ImplVulkan_Init(&initInfo, _renderer->getDefaultRenderPass()->getHandle());
 
     // execute a gpu command to upload imgui font textures
-    VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands();
+    VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands();
     ImGui_ImplVulkan_CreateFontsTexture(cmd->getHandle());
-    m_device->endSingleTimeCommands(cmd);
+    _device->endSingleTimeCommands(cmd);
 
     // clear font textures from cpu data
     ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -70,8 +70,8 @@ void VulkanUIRenderer::initUI() {
     // glfwSetKeyCallback(_windowData->window, ImGui_ImplGlfw_KeyCallback);
     // glfwSetMouseButtonCallback(_windowData->window, ImGui_ImplGlfw_MouseButtonCallback);
 
-    m_deletionQueue.push_function([=]() {
-        vkDestroyDescriptorPool(m_device->getHandle(), imguiPool, nullptr);
+    _deletionQueue.push_function([=]() {
+        vkDestroyDescriptorPool(_device->getHandle(), imguiPool, nullptr);
         ImGui_ImplVulkan_Shutdown();
     });
 }
