@@ -372,4 +372,8 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
         vertexOffset += cmd_list->VtxBuffer.Size;
     }
 }
+std::unique_ptr<VulkanUIRenderer> VulkanUIRenderer::Create(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData) {
+    auto instance = std::make_unique<VulkanUIRenderer>(renderer, windowData);
+    return instance;
+}
 } // namespace vkl

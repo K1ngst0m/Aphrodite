@@ -12,9 +12,9 @@ public:
     void finish() override;
 
 private:
-    std::shared_ptr<vkl::Window>   m_window;
-    std::unique_ptr<vkl::Renderer> m_renderer;
-    float                          m_deltaTime;
+    std::shared_ptr<vkl::Window>         m_window;
+    std::unique_ptr<vkl::VulkanRenderer> m_renderer;
+    float                                m_deltaTime;
 };
 
 #endif // SCENE_MANAGER_H_

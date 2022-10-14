@@ -99,11 +99,6 @@ void VulkanSceneRenderer::updateScene() {
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->getData());
 
-    {
-        _renderer->getUIRenderer()->update();
-    }
-
-
     // TODO update light data
     // for (auto & ubo : _uboList){
     //     if (ubo->_ubo->isUpdated()){
@@ -284,5 +279,9 @@ VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
 
 VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
     return _getCurrentPipeline()->getDescriptorSetLayout(binding);
+}
+std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(VulkanRenderer *renderer) {
+    auto instance = std::make_unique<VulkanSceneRenderer>(renderer);
+    return instance;
 }
 } // namespace vkl

@@ -28,14 +28,14 @@ private:
     std::shared_ptr<vkl::Entity> m_model            = nullptr;
     std::shared_ptr<vkl::Camera> m_defaultCamera    = nullptr;
 
-    std::shared_ptr<vkl::Scene>  m_scene;
+    std::shared_ptr<vkl::Scene> m_scene;
 
-    std::shared_ptr<vkl::VulkanSceneRenderer> m_sceneRenderer;
-    std::shared_ptr<vkl::VulkanUIRenderer>    m_uiRenderer;
-    std::unique_ptr<vkl::VulkanRenderer> m_renderer;
+    std::unique_ptr<vkl::VulkanSceneRenderer> m_sceneRenderer;
+    std::unique_ptr<vkl::VulkanUIRenderer>    m_uiRenderer;
+    std::unique_ptr<vkl::VulkanRenderer>      m_renderer;
 
-    std::shared_ptr<vkl::Window>   m_window;
-    float                          m_deltaTime;
+    std::shared_ptr<vkl::Window> m_window;
+    float                        m_deltaTime;
 };
 
 #endif // SCENE_MANAGER_H_

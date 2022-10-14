@@ -11,6 +11,7 @@
 namespace vkl {
 class VulkanUIRenderer : public UIRenderer {
 public:
+    static std::unique_ptr<VulkanUIRenderer> Create(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData);
     VulkanUIRenderer(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData);
     ~VulkanUIRenderer();
 

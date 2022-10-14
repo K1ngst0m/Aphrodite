@@ -19,7 +19,6 @@
 #include "uniformObject.h"
 #include "vkUtils.h"
 #include "vulkan/vulkan_core.h"
-#include <memory>
 
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -371,23 +370,6 @@ void VulkanRenderer::_initDefaultResource() {
     _createDefaultSyncObjects();
     _createPipelineCache();
     _setupDemoPass();
-}
-
-std::shared_ptr<VulkanSceneRenderer> VulkanRenderer::getSceneRenderer() {
-    if (_sceneRenderer == nullptr) {
-        _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
-    }
-    return _sceneRenderer;
-}
-
-std::shared_ptr<VulkanUIRenderer> VulkanRenderer::getUIRenderer() {
-    if (_uiRenderer == nullptr) {
-        _uiRenderer       = std::make_shared<VulkanUIRenderer>(this, _windowData);
-        auto vkUIRenderer = std::static_pointer_cast<VulkanUIRenderer>(_uiRenderer);
-        vkUIRenderer->initUI();
-        vkUIRenderer->initPipeline(getPipelineCache(), getDefaultRenderPass(), m_swapChain->getImageFormat(), m_device->getDepthFormat());
-    }
-    return _uiRenderer;
 }
 
 VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {

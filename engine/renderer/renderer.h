@@ -22,7 +22,7 @@ class Renderer {
 public:
     Renderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
 
-    virtual void destroy()        = 0;
+    virtual void cleanup()        = 0;
     virtual void idleDevice()     = 0;
     virtual void drawDemo()       = 0;
     virtual void renderOneFrame() = 0;
@@ -34,9 +34,6 @@ public:
     uint32_t getWindowAspectRation();
 
 protected:
-    std::shared_ptr<GraphicsDevice> _device        = nullptr;
-    std::shared_ptr<VulkanSceneRenderer>  _sceneRenderer = nullptr;
-    std::shared_ptr<VulkanUIRenderer>     _uiRenderer    = nullptr;
     std::shared_ptr<WindowData>     _windowData    = nullptr;
     RenderConfig                    _config;
 };

@@ -20,7 +20,7 @@ public:
 
     ~VulkanRenderer() = default;
 
-    void destroy() override;
+    void cleanup() override;
     void idleDevice() override;
     void drawDemo() override;
     void renderOneFrame() override;
@@ -39,9 +39,6 @@ public:
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
     VulkanShaderCache   &getShaderCache();
     VkPipelineCache      getPipelineCache();
-
-    std::shared_ptr<VulkanSceneRenderer> getSceneRenderer();
-    std::shared_ptr<VulkanUIRenderer>    getUIRenderer();
 
 private:
     void prepareFrame();

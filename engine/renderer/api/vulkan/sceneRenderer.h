@@ -38,6 +38,7 @@ enum DescriptorSetBinding {
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
+    static std::unique_ptr<VulkanSceneRenderer> Create(VulkanRenderer *renderer);
     VulkanSceneRenderer(VulkanRenderer *renderer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;

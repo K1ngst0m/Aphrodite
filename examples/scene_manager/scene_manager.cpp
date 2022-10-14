@@ -3,6 +3,12 @@
 #include "renderer/uiRenderer.h"
 #include <memory>
 
+vkl::RenderConfig config{
+    .enableDebug = true,
+    .enableUI    = false,
+    .maxFrames   = 2,
+};
+
 scene_manager::scene_manager()
     : vkl::BaseApp("scene_manager") {
 }
@@ -20,6 +26,7 @@ void scene_manager::run() {
         m_window->pollEvents();
         m_scene->update(m_deltaTime);
         m_sceneRenderer->updateScene();
+        m_uiRenderer->update();
         m_renderer->renderOneFrame();
     }
 }
@@ -27,7 +34,24 @@ void scene_manager::run() {
 void scene_manager::finish() {
     m_renderer->idleDevice();
     m_sceneRenderer->cleanupResources();
-    m_renderer->destroy();
+    m_renderer->cleanup();
+    m_uiRenderer->cleanup();
+}
+
+void scene_manager::setupWindow() {
+    m_window = vkl::Window::Create(1366, 768);
+
+    m_window->setCursorPosCallback([=](double xposIn, double yposIn) {
+        this->mouseHandleDerive(xposIn, yposIn);
+    });
+
+    m_window->setFramebufferSizeCallback([=](int width, int height) {
+        // this->m_framebufferResized = true;
+    });
+
+    m_window->setKeyCallback([=](int key, int scancode, int action, int mods) {
+        this->keyboardHandleDerive(key, scancode, action, mods);
+    });
 }
 
 void scene_manager::loadScene() {
@@ -108,44 +132,19 @@ void scene_manager::loadScene() {
         auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_sphere_model);
     }
-
-    {
-        m_sceneRenderer->setScene(m_scene);
-        m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
-        m_sceneRenderer->loadResources();
-    }
-
-}
-
-void scene_manager::buildCommands() {
-    m_sceneRenderer->drawScene();
-}
-
-void scene_manager::setupWindow() {
-    m_window = vkl::Window::Create(1366, 768);
-
-    m_window->setCursorPosCallback([=](double xposIn, double yposIn) {
-        this->mouseHandleDerive(xposIn, yposIn);
-    });
-
-    m_window->setFramebufferSizeCallback([=](int width, int height) {
-        // this->m_framebufferResized = true;
-    });
-
-    m_window->setKeyCallback([=](int key, int scancode, int action, int mods) {
-        this->keyboardHandleDerive(key, scancode, action, mods);
-    });
 }
 
 void scene_manager::setupRenderer() {
-    vkl::RenderConfig config{
-        .enableDebug = true,
-        .enableUI    = false,
-        .maxFrames   = 2,
-    };
     m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
-    m_sceneRenderer = m_renderer->getSceneRenderer();
-    m_uiRenderer = m_renderer->getUIRenderer();
+    m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer.get());
+    m_uiRenderer = vkl::VulkanUIRenderer::Create(m_renderer.get(), m_window->getWindowData());
+}
+
+void scene_manager::buildCommands() {
+    m_sceneRenderer->setScene(m_scene);
+    m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
+    m_sceneRenderer->loadResources();
+    m_sceneRenderer->drawScene();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
