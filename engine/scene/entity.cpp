@@ -2,8 +2,8 @@
 #include "resourceManager.h"
 
 namespace vkl {
-Entity::Entity(SceneManager *manager, IdType id)
-    : Object(manager, id) {
+Entity::Entity(IdType id)
+    : Object(id) {
 }
 Entity::~Entity() = default;
 void Entity::loadFromFile(const std::string &path) {

@@ -1,8 +1,8 @@
 #include "uniformObject.h"
 
 namespace vkl {
-UniformObject::UniformObject(SceneManager *manager, IdType id)
-    : Object(manager, id) {
+UniformObject::UniformObject(IdType id)
+    : Object(id) {
 }
 bool UniformObject::isUpdated() const {
     return updated;

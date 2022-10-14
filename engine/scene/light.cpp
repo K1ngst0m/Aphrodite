@@ -6,12 +6,10 @@ namespace vkl {
 // point light scene data
 struct DirectionalLightLayout {
     glm::vec4 direction;
-
-    glm::vec4 ambient;
     glm::vec4 diffuse;
     glm::vec4 specular;
-    DirectionalLightLayout(glm::vec4 direction, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular)
-        : direction(direction), ambient(ambient), diffuse(diffuse), specular(specular) {
+    DirectionalLightLayout(glm::vec4 direction, glm::vec4 diffuse, glm::vec4 specular)
+        : direction(direction), diffuse(diffuse), specular(specular) {
     }
 };
 
@@ -24,13 +22,16 @@ struct PointLightLayout {
 
     glm::vec4 attenuationFactor;
 
-    PointLightLayout(glm::vec4 position, glm::vec4 ambient, glm::vec4 diffuse, glm::vec4 specular)
-        : position(position), ambient(ambient), diffuse(diffuse), specular(specular) {
+    PointLightLayout(glm::vec4 position,
+                     glm::vec4 diffuse,
+                     glm::vec4 specular,
+                     glm::vec4 attenuationFactor)
+        : position(position), diffuse(diffuse), specular(specular), attenuationFactor(attenuationFactor) {
     }
 };
 
-Light::Light(SceneManager *manager, IdType id)
-    : UniformObject(manager, id),
+Light::Light(IdType id)
+    : UniformObject(id),
       _diffuse(0.5f, 0.5f, 0.5f, 1.0f),
       _specular(1.0f, 1.0f, 1.0f, 1.0f),
       _position(1.2f, 1.0f, 2.0f, 1.0f),
@@ -57,15 +58,14 @@ void Light::load() {
     switch (_type) {
     case LightType::DIRECTIONAL: {
         dataSize = sizeof(DirectionalLightLayout);
-        data = std::make_shared<DirectionalLightLayout>(
+        data     = std::make_shared<DirectionalLightLayout>(
             _direction,
-            _manager->getAmbient(),
             _diffuse,
             _specular);
     } break;
     case LightType::POINT: {
         dataSize = sizeof(PointLightLayout);
-        data = std::make_shared<PointLightLayout>(
+        data     = std::make_shared<PointLightLayout>(
             _position,
             _diffuse,
             _specular,
@@ -77,17 +77,15 @@ void Light::load() {
 void Light::update() {
     switch (_type) {
     case LightType::DIRECTIONAL: {
-        auto pData = std::static_pointer_cast<DirectionalLightLayout>(data);
-        pData->ambient = _manager->getAmbient();
+        auto pData       = std::static_pointer_cast<DirectionalLightLayout>(data);
         pData->direction = _direction;
-        pData->diffuse = _diffuse;
-        pData->specular = _specular;
+        pData->diffuse   = _diffuse;
+        pData->specular  = _specular;
     } break;
     case LightType::POINT: {
-        auto pData = std::static_pointer_cast<PointLightLayout>(data);
-        pData->ambient = _manager->getAmbient();
+        auto pData      = std::static_pointer_cast<PointLightLayout>(data);
         pData->position = _position;
-        pData->diffuse = _diffuse;
+        pData->diffuse  = _diffuse;
         pData->specular = _specular;
     } break;
     }

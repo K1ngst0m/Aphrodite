@@ -28,20 +28,20 @@ SceneManager::SceneManager()
 }
 
 std::shared_ptr<Camera> SceneManager::createCamera(float aspectRatio) {
-    auto camera = std::make_shared<Camera>(this, Id::generateNewId<Camera>());
+    auto camera = std::make_shared<Camera>(Id::generateNewId<Camera>());
     camera->setAspectRatio(aspectRatio);
     _cameraMapList[camera->getId()] = camera;
     return camera;
 }
 
 std::shared_ptr<Light> SceneManager::createLight() {
-    auto light                    = std::make_shared<Light>(this, Id::generateNewId<Light>());
+    auto light                    = std::make_shared<Light>(Id::generateNewId<Light>());
     _lightMapList[light->getId()] = light;
     return light;
 }
 
 std::shared_ptr<Entity> SceneManager::createEntity() {
-    auto entity                     = std::make_shared<Entity>(this, Id::generateNewId<Entity>());
+    auto entity                     = std::make_shared<Entity>(Id::generateNewId<Entity>());
     _entityMapList[entity->getId()] = entity;
     return entity;
 }

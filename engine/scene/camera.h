@@ -21,7 +21,7 @@ enum class CameraDirection {
 
 class Camera : public UniformObject {
 public:
-    Camera(SceneManager *manager, IdType id);
+    Camera(IdType id);
     ~Camera() override = default;
 
     void load() override;

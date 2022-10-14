@@ -9,11 +9,8 @@ class SceneManager;
 
 class Object : public IdObject {
 public:
-    Object(SceneManager *manager, IdType id);
+    Object(IdType id);
     virtual ~Object() = default;
-
-protected:
-    SceneManager *_manager;
 };
 
 } // namespace vkl

@@ -73,7 +73,7 @@ struct Material {
 
 class Entity : public Object {
 public:
-    Entity(SceneManager *manager, IdType id);
+    Entity(IdType id);
     ~Entity() override;
     void loadFromFile(const std::string &path);
     void cleanupResources();

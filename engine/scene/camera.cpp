@@ -13,8 +13,8 @@ struct CameraDataLayout {
     }
 };
 
-Camera::Camera(SceneManager *manager, IdType id)
-    : UniformObject(manager, id) {
+Camera::Camera(IdType id)
+    : UniformObject(id) {
 }
 
 void Camera::load() {
