@@ -100,8 +100,7 @@ void VulkanSceneRenderer::updateScene() {
     cameraUBO->updateBuffer(cameraUBO->getData());
 
     {
-        auto uiRenderer = std::static_pointer_cast<VulkanUIRenderer>(_renderer->getUIRenderer());
-        uiRenderer->update();
+        _renderer->getUIRenderer()->update();
     }
 
 

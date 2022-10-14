@@ -4,6 +4,12 @@
 #include "object.h"
 
 namespace vkl {
+struct Primitive;
+struct Texture;
+struct Material;
+struct SubEntity;
+struct Vertex;
+
 using ResourceIndex = int32_t;
 using SubEntityList = std::vector<std::shared_ptr<SubEntity>>;
 using PrimitiveList = std::vector<Primitive>;

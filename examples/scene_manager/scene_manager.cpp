@@ -33,7 +33,7 @@ void scene_manager::finish() {
 void scene_manager::loadScene() {
     // scene global argument setup
     {
-        m_scene = vkl::SceneManager::Create(vkl::SceneManagerType::DEFAULT);
+        m_scene = vkl::Scene::Create(vkl::SceneManagerType::DEFAULT);
         m_scene->setAmbient(glm::vec4(0.2f));
     }
 
@@ -143,7 +143,7 @@ void scene_manager::setupRenderer() {
         .enableUI    = false,
         .maxFrames   = 2,
     };
-    m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config, m_window->getWindowData());
+    m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
     m_sceneRenderer = m_renderer->getSceneRenderer();
     m_uiRenderer = m_renderer->getUIRenderer();
 }

@@ -1,4 +1,4 @@
-#include "sceneManager.h"
+#include "scene.h"
 
 #include <memory>
 #include "camera.h"
@@ -9,10 +9,10 @@
 #include "sceneNode.h"
 
 namespace vkl {
-std::unique_ptr<SceneManager> SceneManager::Create(SceneManagerType type) {
+std::unique_ptr<Scene> Scene::Create(SceneManagerType type) {
     switch (type) {
     case SceneManagerType::DEFAULT: {
-        return std::make_unique<SceneManager>();
+        return std::make_unique<Scene>();
     }
     default:{
         assert("scene manager type not support.");
@@ -21,68 +21,68 @@ std::unique_ptr<SceneManager> SceneManager::Create(SceneManagerType type) {
     }
 }
 
-SceneManager::SceneManager()
+Scene::Scene()
     : _ambient(glm::vec4(0.2f)) {
     _rootNode = std::make_unique<SceneNode>(nullptr);
     _createPrefabEntity();
 }
 
-std::shared_ptr<Camera> SceneManager::createCamera(float aspectRatio) {
+std::shared_ptr<Camera> Scene::createCamera(float aspectRatio) {
     auto camera = std::make_shared<Camera>(Id::generateNewId<Camera>());
     camera->setAspectRatio(aspectRatio);
     _cameraMapList[camera->getId()] = camera;
     return camera;
 }
 
-std::shared_ptr<Light> SceneManager::createLight() {
+std::shared_ptr<Light> Scene::createLight() {
     auto light                    = std::make_shared<Light>(Id::generateNewId<Light>());
     _lightMapList[light->getId()] = light;
     return light;
 }
 
-std::shared_ptr<Entity> SceneManager::createEntity() {
+std::shared_ptr<Entity> Scene::createEntity() {
     auto entity                     = std::make_shared<Entity>(Id::generateNewId<Entity>());
     _entityMapList[entity->getId()] = entity;
     return entity;
 }
 
-void SceneManager::setAmbient(glm::vec4 value) {
+void Scene::setAmbient(glm::vec4 value) {
     _ambient = value;
 }
 
-glm::vec4 SceneManager::getAmbient() {
+glm::vec4 Scene::getAmbient() {
     // TODO IDK why this return _ambient causes segment fault
     return glm::vec4(0.2f);
 }
 
-void SceneManager::update(float deltaTime) {
+void Scene::update(float deltaTime) {
     _camera->update();
     _camera->processMovement(deltaTime);
 }
 
-SceneManager::~SceneManager() = default;
+Scene::~Scene() = default;
 
-std::unique_ptr<SceneNode> &SceneManager::getRootNode() {
+std::unique_ptr<SceneNode> &Scene::getRootNode() {
     return _rootNode;
 }
-std::shared_ptr<Entity> SceneManager::createEntity(const std::string &path) {
+std::shared_ptr<Entity> Scene::createEntity(const std::string &path) {
     auto entity = createEntity();
     entity->loadFromFile(path);
     return entity;
 }
-void SceneManager::setMainCamera(const std::shared_ptr<Camera> &camera) {
+void Scene::setMainCamera(const std::shared_ptr<Camera> &camera) {
     _camera = camera;
 }
-std::shared_ptr<Light> SceneManager::getLightWithId(IdType id) {
+std::shared_ptr<Light> Scene::getLightWithId(IdType id) {
     return _lightMapList[id];
 }
-std::shared_ptr<Camera> SceneManager::getCameraWithId(IdType id) {
+std::shared_ptr<Camera> Scene::getCameraWithId(IdType id) {
     return _cameraMapList[id];
 }
-std::shared_ptr<Entity> SceneManager::getEntityWithId(IdType id) {
+std::shared_ptr<Entity> Scene::getEntityWithId(IdType id) {
     return _entityMapList[id];
 }
-void SceneManager::_createPrefabEntity() {
+void Scene::_createPrefabEntity() {
     std::filesystem::path modelPath = AssetManager::GetModelDir();
     // plane
     auto planeEntity = createEntity(modelPath / "Plane/glTF/Plane.gltf");

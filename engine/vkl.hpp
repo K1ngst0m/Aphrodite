@@ -17,6 +17,7 @@
 #include "renderer/api/vulkan/vkInit.hpp"
 #include "renderer/api/vulkan/vkUtils.h"
 #include "renderer/api/vulkan/vulkanRenderer.h"
+#include "renderer/api/vulkan/uiRenderer.h"
 
 #include "common/common.h"
 #include "common/window.h"
@@ -30,7 +31,7 @@
 #include "scene/entity.h"
 #include "scene/light.h"
 #include "scene/object.h"
-#include "scene/sceneManager.h"
+#include "scene/scene.h"
 #include "scene/sceneNode.h"
 
 #endif // VKL_H_

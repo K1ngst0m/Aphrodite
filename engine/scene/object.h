@@ -1,11 +1,11 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
-#include "sceneManager.h"
+#include "idObject.h"
 
 namespace vkl {
 
-class SceneManager;
+class Scene;
 
 class Object : public IdObject {
 public:

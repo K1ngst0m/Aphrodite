@@ -1,22 +1,9 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "idObject.h"
+#include "sceneNode.h"
 
 namespace vkl {
-class SceneNode;
-class Object;
-class Entity;
-class EntityLoader;
-class Light;
-class Camera;
-struct Primitive;
-struct Texture;
-struct Material;
-struct SubEntity;
-struct Vertex;
-
-
 enum class ShadingModel {
     UNLIT,
     DEFAULTLIT,
@@ -41,12 +28,12 @@ enum class SceneManagerType {
     DEFAULT,
 };
 
-class SceneManager {
+class Scene {
 public:
-    static std::unique_ptr<SceneManager> Create(SceneManagerType type);
+    static std::unique_ptr<Scene> Create(SceneManagerType type);
 
-    SceneManager();
-    ~SceneManager();
+    Scene();
+    ~Scene();
 
     void update(float deltaTime);
 

@@ -4,19 +4,12 @@
 #include "common/common.h"
 #include "common/window.h"
 #include "device.h"
-#include <cstring>
-#include <utility>
 
 class GLFWwindow;
 
 namespace vkl {
-class SceneRenderer;
-class UIRenderer;
-
-enum class RenderBackend {
-    VULKAN,
-    OPENGL,
-};
+class VulkanSceneRenderer;
+class VulkanUIRenderer;
 
 struct RenderConfig {
     bool     enableDebug         = true;
@@ -27,17 +20,12 @@ struct RenderConfig {
 
 class Renderer {
 public:
-    static std::unique_ptr<Renderer> Create(RenderBackend backend, RenderConfig *config, std::shared_ptr<WindowData> windowData);
-
     Renderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
 
     virtual void destroy()        = 0;
     virtual void idleDevice()     = 0;
     virtual void drawDemo()       = 0;
     virtual void renderOneFrame() = 0;
-
-    virtual std::shared_ptr<SceneRenderer> getSceneRenderer() = 0;
-    virtual std::shared_ptr<UIRenderer>    getUIRenderer()    = 0;
 
     void setWindowData(const std::shared_ptr<WindowData> &windowData);
 
@@ -47,8 +35,8 @@ public:
 
 protected:
     std::shared_ptr<GraphicsDevice> _device        = nullptr;
-    std::shared_ptr<SceneRenderer>  _sceneRenderer = nullptr;
-    std::shared_ptr<UIRenderer>     _uiRenderer    = nullptr;
+    std::shared_ptr<VulkanSceneRenderer>  _sceneRenderer = nullptr;
+    std::shared_ptr<VulkanUIRenderer>     _uiRenderer    = nullptr;
     std::shared_ptr<WindowData>     _windowData    = nullptr;
     RenderConfig                    _config;
 };

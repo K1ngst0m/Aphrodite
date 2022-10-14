@@ -97,6 +97,11 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
     createInfo.pfnUserCallback = debugCallback;
 }
 
+std::unique_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config, std::shared_ptr<WindowData> windowData) {
+    auto instance = std::make_unique<VulkanRenderer>(std::move(windowData), config);
+    return instance;
+}
+
 void VulkanRenderer::_createDefaultFramebuffers() {
     m_defaultResource.framebuffers.resize(m_swapChain->getImageCount());
     _createDefaultColorAttachments();
@@ -368,16 +373,16 @@ void VulkanRenderer::_initDefaultResource() {
     _setupDemoPass();
 }
 
-std::shared_ptr<SceneRenderer> VulkanRenderer::getSceneRenderer() {
+std::shared_ptr<VulkanSceneRenderer> VulkanRenderer::getSceneRenderer() {
     if (_sceneRenderer == nullptr) {
         _sceneRenderer = std::make_shared<VulkanSceneRenderer>(this);
     }
     return _sceneRenderer;
 }
 
-std::shared_ptr<UIRenderer> VulkanRenderer::getUIRenderer() {
+std::shared_ptr<VulkanUIRenderer> VulkanRenderer::getUIRenderer() {
     if (_uiRenderer == nullptr) {
-        _uiRenderer = std::make_shared<VulkanUIRenderer>(this, _windowData);
+        _uiRenderer       = std::make_shared<VulkanUIRenderer>(this, _windowData);
         auto vkUIRenderer = std::static_pointer_cast<VulkanUIRenderer>(_uiRenderer);
         vkUIRenderer->initUI();
         vkUIRenderer->initPipeline(getPipelineCache(), getDefaultRenderPass(), m_swapChain->getImageFormat(), m_device->getDepthFormat());
@@ -562,5 +567,4 @@ void VulkanRenderer::_createPipelineCache() {
 VkPipelineCache VulkanRenderer::getPipelineCache() {
     return m_pipelineCache;
 }
-
 } // namespace vkl

@@ -15,8 +15,9 @@ void triangle_demo::init() {
         .initDefaultResource = true,
         .maxFrames           = 2,
     };
+
     // setup renderer
-    m_renderer = vkl::Renderer::Create(vkl::RenderBackend::VULKAN, &config, m_window->getWindowData());
+    m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
 
     // build draw command
     m_renderer->drawDemo();

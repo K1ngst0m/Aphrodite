@@ -15,6 +15,7 @@ struct PerFrameSyncObject {
 
 class VulkanRenderer : public Renderer {
 public:
+    static std::unique_ptr<VulkanRenderer> Create(RenderConfig *config, std::shared_ptr<WindowData> windowData);
     VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
 
     ~VulkanRenderer() = default;
@@ -39,8 +40,8 @@ public:
     VulkanShaderCache   &getShaderCache();
     VkPipelineCache      getPipelineCache();
 
-    std::shared_ptr<SceneRenderer> getSceneRenderer() override;
-    std::shared_ptr<UIRenderer>    getUIRenderer() override;
+    std::shared_ptr<VulkanSceneRenderer> getSceneRenderer();
+    std::shared_ptr<VulkanUIRenderer>    getUIRenderer();
 
 private:
     void prepareFrame();

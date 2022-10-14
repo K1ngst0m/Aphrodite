@@ -2,7 +2,7 @@
 #define VKLSCENERENDERER_H_
 
 #include "renderer/renderer.h"
-#include "scene/sceneManager.h"
+#include "scene/scene.h"
 
 namespace vkl {
 class SceneRenderer {
@@ -16,12 +16,12 @@ public:
 
     virtual void cleanupResources() = 0;
 
-    void         setScene(const std::shared_ptr<SceneManager> &scene);
+    void         setScene(const std::shared_ptr<Scene> &scene);
     void         setShadingModel(ShadingModel model);
     ShadingModel getShadingModel() const;
 
 protected:
-    std::shared_ptr<SceneManager> _sceneManager;
+    std::shared_ptr<Scene> _sceneManager;
     ShadingModel                  _shadingModel = ShadingModel::UNLIT;
     bool                          isSceneLoaded = false;
 };

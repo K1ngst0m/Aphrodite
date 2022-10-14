@@ -1,5 +1,4 @@
 #include "light.h"
-#include "sceneManager.h"
 
 namespace vkl {
 
