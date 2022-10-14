@@ -10,8 +10,6 @@ public:
     UIRenderer(std::shared_ptr<WindowData>  windowData)
         : _windowData(std::move(windowData)) {
     }
-    virtual void initUI() = 0;
-    virtual void drawUI() = 0;
 
 protected:
     std::shared_ptr<WindowData> _windowData = nullptr;

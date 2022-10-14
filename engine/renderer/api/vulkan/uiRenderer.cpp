@@ -94,9 +94,9 @@ void VulkanUIRenderer::initUI() {
         VK_CHECK_RESULT(_device->createImageView(&viewInfo, &_fontData.view, _fontData.image));
     }
 
-    // Staging buffers for font data upload
-    VulkanBuffer *stagingBuffer = nullptr;
+    // font data upload
     {
+        VulkanBuffer *stagingBuffer = nullptr;
         BufferCreateInfo createInfo{};
         createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
         createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -105,39 +105,37 @@ void VulkanUIRenderer::initUI() {
         stagingBuffer->map();
         stagingBuffer->copyTo(fontData, uploadSize);
         stagingBuffer->unmap();
+
+        // Copy buffer data to font image
+        auto *copyCmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        copyCmd->cmdCopyBufferToImage(stagingBuffer, _fontData.image);
+        copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        _device->endSingleTimeCommands(copyCmd, QUEUE_TYPE_TRANSFER);
+        _device->destroyBuffer(stagingBuffer);
     }
 
-    // Copy buffer data to font image
-    auto *copyCmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-    copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    copyCmd->cmdCopyBufferToImage(stagingBuffer, _fontData.image);
-    copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    _device->endSingleTimeCommands(copyCmd, QUEUE_TYPE_TRANSFER);
-
-    _device->destroyBuffer(stagingBuffer);
-
     // Font texture Sampler
-    VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-    samplerInfo.magFilter           = VK_FILTER_LINEAR;
-    samplerInfo.minFilter           = VK_FILTER_LINEAR;
-    samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_fontData.sampler));
+    {
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.magFilter           = VK_FILTER_LINEAR;
+        samplerInfo.minFilter           = VK_FILTER_LINEAR;
+        samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_fontData.sampler));
+    }
 
+    // build effect
     {
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-
         EffectBuilder effectBuilder(_device);
-
         std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-
         VkPushConstantRange pushConstantRange = vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0);
-
         _effect = effectBuilder.pushSetLayout(setLayoutBindings)
                       .pushConstantRanges(pushConstantRange)
                       .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
@@ -146,69 +144,25 @@ void VulkanUIRenderer::initUI() {
     }
 
     // Descriptor pool
-    std::vector<VkDescriptorPoolSize> poolSizes = {
-        vkl::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            vkl::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
 
-    VkDescriptorPoolCreateInfo descriptorPoolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, 2);
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, 2);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
 
-    // Descriptor set
-    VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _effect->getDescriptorSetLayout(0), 1);
-    VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
-    VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
-        _fontData.sampler,
-        _fontData.view->getHandle(),
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-        vkl::init::writeDescriptorSet(_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-    vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-}
-
-void VulkanUIRenderer::drawUI() {
-    static bool updated = false;
-    if(!updated){
-        updated = update();
+        // Descriptor set
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _effect->getDescriptorSetLayout(0), 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
+        VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
+            _fontData.sampler,
+            _fontData.view->getHandle(),
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+            vkl::init::writeDescriptorSet(_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     }
 
-    ImDrawData *imDrawData   = ImGui::GetDrawData();
-    int32_t     vertexOffset = 0;
-    int32_t     indexOffset  = 0;
-
-    if ((!imDrawData) || (imDrawData->CmdListsCount == 0)) {
-        return;
-    }
-    ImGuiIO &io = ImGui::GetIO();
-
-    // record command
-    for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-        auto *command = _renderer->getDefaultCommandBuffer(commandIndex);
-
-        command->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-        command->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->getPipelineLayout(), 0, 1, &_descriptorSet);
-        _pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-        _pushConstBlock.translate = glm::vec2(-1.0f);
-        command->cmdPushConstants(_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_pushConstBlock), &_pushConstBlock);
-
-        VkDeviceSize offsets[1] = {0};
-        command->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
-        command->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-
-        for (int32_t i = 0; i < imDrawData->CmdListsCount; i++) {
-            const ImDrawList *cmd_list = imDrawData->CmdLists[i];
-            for (int32_t j = 0; j < cmd_list->CmdBuffer.Size; j++) {
-                const ImDrawCmd *pcmd = &cmd_list->CmdBuffer[j];
-                VkRect2D         scissorRect;
-                scissorRect.offset.x      = std::max((int32_t)(pcmd->ClipRect.x), 0);
-                scissorRect.offset.y      = std::max((int32_t)(pcmd->ClipRect.y), 0);
-                scissorRect.extent.width  = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
-                scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-                command->cmdSetSissor(&scissorRect);
-                command->cmdDrawIndexed(pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
-                indexOffset += pcmd->ElemCount;
-            }
-            vertexOffset += cmd_list->VtxBuffer.Size;
-        }
-    }
 }
 
 void VulkanUIRenderer::resize(uint32_t width, uint32_t height) {
@@ -313,7 +267,6 @@ bool VulkanUIRenderer::update() {
 }
 
 void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, const VkFormat colorFormat, const VkFormat depthFormat) {
-
     PipelineCreateInfo createInfo{};
     // Setup graphics pipeline for UI rendering
     createInfo._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
@@ -365,6 +318,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
 
 void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
     static bool updated = false;
+
     if (!updated){
         ImGuiIO& io = ImGui::GetIO();
 

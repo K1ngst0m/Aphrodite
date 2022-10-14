@@ -14,9 +14,8 @@ public:
     VulkanUIRenderer(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData);
     ~VulkanUIRenderer();
 
-    void initUI() override;
+    void initUI();
     void initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, const VkFormat colorFormat, const VkFormat depthFormat);
-    void drawUI() override;
     void drawUI(VulkanCommandBuffer *command);
     void resize(uint32_t width, uint32_t height);
     void cleanup();

@@ -16,10 +16,6 @@
 #include "vulkan/vulkan_core.h"
 #include "vulkanRenderer.h"
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
-
 namespace vkl {
 VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
     : _device(renderer->getDevice()),
@@ -91,11 +87,6 @@ void VulkanSceneRenderer::drawScene() {
 
         for (auto &renderable : _renderList) {
             renderable->draw(_getCurrentPipeline()->getPipelineLayout(), commandBuffer);
-        }
-
-        {
-            auto uiRenderer = std::static_pointer_cast<VulkanUIRenderer>(_renderer->getUIRenderer());
-            uiRenderer->drawUI(commandBuffer);
         }
 
         commandBuffer->cmdEndRenderPass();
