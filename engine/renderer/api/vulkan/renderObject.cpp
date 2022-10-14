@@ -12,8 +12,8 @@
 
 namespace vkl {
 
-VulkanRenderObject::VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, vkl::Entity *entity)
-    : _device(device), _sceneRenderer(renderer), _entity(entity) {
+VulkanRenderObject::VulkanRenderObject(VulkanDevice *device, vkl::Entity *entity)
+    : _device(device), _entity(entity) {
 }
 
 void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {

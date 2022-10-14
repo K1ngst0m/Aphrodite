@@ -185,21 +185,21 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 
         switch (subNode->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_unique<VulkanRenderObject>(this, _device, static_cast<Entity *>(subNode->getObject().get()));
+            auto renderable = std::make_unique<VulkanRenderObject>(_device, static_cast<Entity *>(subNode->getObject().get()));
             renderable->setTransform(subNode->getTransform());
             _renderList.push_back(std::move(renderable));
         } break;
         case AttachType::CAMERA: {
             Camera *camera = static_cast<Camera *>(subNode->getObject().get());
             camera->load();
-            auto cameraUBO = std::make_unique<VulkanUniformObject>(this, _device, camera);
+            auto cameraUBO = std::make_unique<VulkanUniformObject>(_device, camera);
             cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
             _uniformList.push_front(std::move(cameraUBO));
         } break;
         case AttachType::LIGHT: {
             Light *light = static_cast<Light *>(subNode->getObject().get());
             light->load();
-            auto ubo = std::make_unique<VulkanUniformObject>(this, _device, light);
+            auto ubo = std::make_unique<VulkanUniformObject>(_device, light);
             ubo->setupBuffer(light->getDataSize(), light->getData());
             _uniformList.push_back(std::move(ubo));
         } break;

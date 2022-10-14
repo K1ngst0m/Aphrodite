@@ -11,7 +11,7 @@ class UniformObject;
 
 class VulkanUniformObject {
 public:
-    VulkanUniformObject(SceneRenderer *renderer, VulkanDevice *device, UniformObject *ubo);
+    VulkanUniformObject(VulkanDevice *device, UniformObject *ubo);
     ~VulkanUniformObject() = default;
 
     void cleanupResources() const;
@@ -25,7 +25,6 @@ public:
 private:
     VulkanBuffer  *_buffer   = nullptr;
     VulkanDevice  *_device   = nullptr;
-    SceneRenderer *_renderer = nullptr;
     UniformObject *_ubo      = nullptr;
 };
 } // namespace vkl

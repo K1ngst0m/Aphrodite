@@ -6,7 +6,7 @@
 namespace vkl {
 class VulkanRenderObject {
 public:
-    VulkanRenderObject(VulkanSceneRenderer *renderer, VulkanDevice *device, Entity *entity);
+    VulkanRenderObject(VulkanDevice *device, Entity *entity);
     ~VulkanRenderObject() = default;
 
     void loadResouces();
@@ -34,7 +34,6 @@ private:
 
 private:
     VulkanDevice        *_device = nullptr;
-    VulkanSceneRenderer *_sceneRenderer;
     Entity              *_entity;
     glm::mat4            _transform = glm::mat4(1.0f);
 };

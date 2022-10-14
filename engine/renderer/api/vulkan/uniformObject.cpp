@@ -7,8 +7,8 @@ namespace vkl {
 void VulkanUniformObject::updateBuffer(void *data) const {
     _buffer->copyTo(data, _buffer->getSize());
 }
-VulkanUniformObject::VulkanUniformObject(SceneRenderer *renderer, VulkanDevice * device, vkl::UniformObject *ubo)
-    : _device(device), _renderer(renderer), _ubo(ubo) {
+VulkanUniformObject::VulkanUniformObject(VulkanDevice * device, vkl::UniformObject *ubo)
+    : _device(device), _ubo(ubo) {
 }
 
 void VulkanUniformObject::setupBuffer(uint32_t bufferSize, void *data) {
