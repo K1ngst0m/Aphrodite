@@ -63,7 +63,7 @@ void Light::load() {
     } break;
     }
 }
-void Light::update() {
+void Light::update(float deltaTime) {
     switch (_type) {
     case LightType::DIRECTIONAL: {
         auto pData       = std::static_pointer_cast<DirectionalLightLayout>(data);

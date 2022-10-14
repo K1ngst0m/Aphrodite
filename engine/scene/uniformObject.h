@@ -10,7 +10,7 @@ public:
     ~UniformObject() override = default;
 
     virtual void     load()   = 0;
-    virtual void     update() = 0;
+    virtual void     update(float deltaTime) = 0;
     virtual void    *getData();
     virtual uint32_t getDataSize();
 

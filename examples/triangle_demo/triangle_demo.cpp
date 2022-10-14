@@ -37,7 +37,7 @@ void triangle_demo::run() {
 void triangle_demo::finish() {
     // wait device idle before cleanup
     m_renderer->idleDevice();
-    m_renderer->destroy();
+    m_renderer->cleanup();
 }
 
 int main() {

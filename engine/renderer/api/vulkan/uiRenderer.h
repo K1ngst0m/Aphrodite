@@ -16,11 +16,11 @@ public:
     ~VulkanUIRenderer();
 
     void initUI();
-    void initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, const VkFormat colorFormat, const VkFormat depthFormat);
+    void initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat colorFormat, VkFormat depthFormat);
     void drawUI(VulkanCommandBuffer *command);
     void resize(uint32_t width, uint32_t height);
     void cleanup();
-    bool update();
+    bool update(float deltaTime);
 
 private:
     VulkanRenderer *_renderer;

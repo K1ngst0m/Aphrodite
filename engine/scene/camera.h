@@ -25,7 +25,7 @@ public:
     ~Camera() override = default;
 
     void load() override;
-    void update() override;
+    void update(float deltaTime) override;
 
     void setPosition(glm::vec4 position);
     void setAspectRatio(float aspectRatio);

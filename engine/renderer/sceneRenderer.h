@@ -11,7 +11,7 @@ public:
     virtual ~SceneRenderer() = default;
 
     virtual void loadResources() = 0;
-    virtual void updateScene()   = 0;
+    virtual void update(float deltaTime)   = 0;
     virtual void drawScene()     = 0;
 
     virtual void cleanupResources() = 0;

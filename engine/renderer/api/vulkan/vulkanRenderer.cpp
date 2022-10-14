@@ -354,7 +354,7 @@ void VulkanRenderer::submitFrame() {
     m_currentFrame = (m_currentFrame + 1) % _config.maxFrames;
 }
 
-void VulkanRenderer::destroy() {
+void VulkanRenderer::cleanup() {
     m_shaderCache.destory(m_device->getHandle());
     m_deletionQueue.flush();
 }

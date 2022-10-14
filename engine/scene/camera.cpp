@@ -23,7 +23,9 @@ void Camera::load() {
     pData->position = glm::vec4(_position, 1.0f);
 }
 
-void Camera::update() {
+void Camera::update(float deltaTime) {
+    processMovement(deltaTime);
+
     updated         = true;
     auto pData      = std::static_pointer_cast<CameraDataLayout>(data);
     pData->view     = _matrices.view;

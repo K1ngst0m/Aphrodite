@@ -183,7 +183,7 @@ void VulkanUIRenderer::cleanup() {
     vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
 }
 
-bool VulkanUIRenderer::update() {
+bool VulkanUIRenderer::update(float deltaTime) {
     ImDrawData *imDrawData       = ImGui::GetDrawData();
     bool        updateCmdBuffers = false;
 
@@ -266,7 +266,7 @@ bool VulkanUIRenderer::update() {
     return updateCmdBuffers;
 }
 
-void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, const VkFormat colorFormat, const VkFormat depthFormat) {
+void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat colorFormat, VkFormat depthFormat) {
     PipelineCreateInfo createInfo{};
     // Setup graphics pipeline for UI rendering
     createInfo._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
@@ -333,7 +333,8 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
         ImGui::PopStyleVar();
         ImGui::Render();
 
-        updated = update();
+        // TODO
+        updated = update(0.0f);
     }
 
     ImDrawData *imDrawData   = ImGui::GetDrawData();

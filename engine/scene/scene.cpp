@@ -56,8 +56,7 @@ glm::vec4 Scene::getAmbient() {
 }
 
 void Scene::update(float deltaTime) {
-    _camera->update();
-    _camera->processMovement(deltaTime);
+    _camera->update(deltaTime);
 }
 
 Scene::~Scene() = default;

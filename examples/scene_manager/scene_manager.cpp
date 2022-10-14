@@ -24,9 +24,12 @@ void scene_manager::run() {
     while (!m_window->shouldClose()) {
         auto timer = vkl::Timer(m_deltaTime);
         m_window->pollEvents();
-        m_scene->update(m_deltaTime);
-        m_sceneRenderer->updateScene();
-        m_uiRenderer->update();
+
+        // update resource data
+        m_sceneRenderer->update(m_deltaTime);
+        m_uiRenderer->update(m_deltaTime);
+
+        // draw and submit
         m_renderer->renderOneFrame();
     }
 }

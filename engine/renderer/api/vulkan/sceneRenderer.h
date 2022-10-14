@@ -43,7 +43,7 @@ public:
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;
-    void updateScene() override;
+    void update(float deltaTime) override;
     void drawScene() override;
 
 private:

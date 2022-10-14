@@ -23,7 +23,7 @@ namespace vkl {
         void setType(LightType type);
 
         void load() override;
-        void update() override;
+        void update(float deltaTime) override;
 
     private:
         // common
