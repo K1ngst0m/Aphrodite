@@ -19,8 +19,8 @@ private:
     void keyboardHandleDerive(int key, int scancode, int action, int mods);
     void mouseHandleDerive(double xposIn, double yposIn);
 
-    void loadScene();
-    void buildCommands();
+    void setupScene();
+    void setupDrawCommands();
 
 private:
     std::shared_ptr<vkl::Light>  m_pointLight       = nullptr;

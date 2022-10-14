@@ -16,8 +16,8 @@ scene_manager::scene_manager()
 void scene_manager::init() {
     setupWindow();
     setupRenderer();
-    loadScene();
-    buildCommands();
+    setupScene();
+    setupDrawCommands();
 }
 
 void scene_manager::run() {
@@ -57,7 +57,7 @@ void scene_manager::setupWindow() {
     });
 }
 
-void scene_manager::loadScene() {
+void scene_manager::setupScene() {
     // scene global argument setup
     {
         m_scene = vkl::Scene::Create(vkl::SceneManagerType::DEFAULT);
@@ -107,43 +107,43 @@ void scene_manager::loadScene() {
 
     // load from gltf file
     {
-        m_model                  = m_scene->createEntity(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
-        auto &node               = m_scene->getRootNode()->createChildNode();
+        m_model    = m_scene->createEntity(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
+        auto &node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_model);
     }
 
     // box prefab
     {
-        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-        auto prefab_cube_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        glm::mat4 modelTransform    = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+        auto      prefab_cube_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
+        auto     &node              = m_scene->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_cube_model);
     }
 
     // plane prefab
     {
-        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
-        auto prefab_plane_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
-        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        glm::mat4 modelTransform     = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
+        auto      prefab_plane_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
+        auto     &node               = m_scene->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_plane_model);
     }
 
     // sphere
     {
-        glm::mat4 modelTransform = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
-        auto prefab_sphere_model        = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
-        auto &node = m_scene->getRootNode()->createChildNode(modelTransform);
+        glm::mat4 modelTransform      = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
+        auto      prefab_sphere_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
+        auto     &node                = m_scene->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_sphere_model);
     }
 }
 
 void scene_manager::setupRenderer() {
-    m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
+    m_renderer      = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
     m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer.get());
-    m_uiRenderer = vkl::VulkanUIRenderer::Create(m_renderer.get(), m_window->getWindowData());
+    m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer.get(), m_window->getWindowData());
 }
 
-void scene_manager::buildCommands() {
+void scene_manager::setupDrawCommands() {
     m_sceneRenderer->setScene(m_scene);
     m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
     m_sceneRenderer->loadResources();
