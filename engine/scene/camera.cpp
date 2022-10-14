@@ -8,9 +8,6 @@ struct CameraDataLayout {
     glm::mat4 view;
     glm::mat4 proj;
     glm::vec4 position;
-    CameraDataLayout(glm::mat4 view, glm::mat4 proj, glm::vec4 viewpos)
-        : view(view), proj(proj), position(viewpos) {
-    }
 };
 
 Camera::Camera(IdType id)
@@ -19,10 +16,11 @@ Camera::Camera(IdType id)
 
 void Camera::load() {
     dataSize = sizeof(CameraDataLayout);
-    data     = std::make_shared<CameraDataLayout>(
-        _matrices.view,
-        _matrices.perspective,
-        glm::vec4(_position, 1.0f));
+    data     = std::make_shared<CameraDataLayout>();
+    auto pData      = std::static_pointer_cast<CameraDataLayout>(data);
+    pData->view     = _matrices.view;
+    pData->proj     = _matrices.perspective;
+    pData->position = glm::vec4(_position, 1.0f);
 }
 
 void Camera::update() {

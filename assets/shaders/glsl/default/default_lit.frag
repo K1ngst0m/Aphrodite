@@ -18,7 +18,6 @@ layout (set = 0, binding = 0) uniform SceneUB{
 
 layout (set = 0, binding = 1) uniform PointLightUB{
     vec3 position;
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 
@@ -27,7 +26,6 @@ layout (set = 0, binding = 1) uniform PointLightUB{
 
 layout (set = 0, binding = 2) uniform DirectionalLightUB{
     vec3 direction;
-    vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 } directionalLightData;
