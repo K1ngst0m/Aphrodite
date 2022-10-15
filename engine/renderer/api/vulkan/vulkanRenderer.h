@@ -99,7 +99,7 @@ private:
         std::vector<FrameBufferData>       framebuffers;
         VulkanRenderPass                  *renderPass;
         VulkanPipeline                    *demoPipeline;
-        std::shared_ptr<ShaderEffect>      demoEffect;
+        ShaderEffect                      *demoEffect;
     } m_defaultResource;
 
     VulkanShaderCache m_shaderCache;

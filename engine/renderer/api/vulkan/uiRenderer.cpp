@@ -131,16 +131,16 @@ void VulkanUIRenderer::initUI() {
     // build effect
     {
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-        EffectBuilder effectBuilder(_device);
-        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+        EffectInfo info;
+        ResourceSetDesc desc;
+        desc.bindings = {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        VkPushConstantRange pushConstantRange = vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0);
-        _effect = effectBuilder.pushSetLayout(setLayoutBindings)
-                      .pushConstantRanges(pushConstantRange)
-                      .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-                      .pushShaderStages(_renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-                      .build();
+        info.setLayouts.push_back(desc);
+        info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
+        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv");
+        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv");
+        _effect = ShaderEffect::Create(_device, &info);
     }
 
     // Descriptor pool
@@ -177,7 +177,7 @@ void VulkanUIRenderer::cleanup() {
     _device->destroyImage(_fontData.image);
     vkDestroySampler(_device->getHandle(), _fontData.sampler, nullptr);
 
-    _effect->destroy();
+    delete _effect;
     _device->destroyPipeline(_pipeline);
 
     vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
@@ -313,7 +313,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
     vertexInputState.vertexAttributeDescriptionCount       = static_cast<uint32_t>(vertexInputAttributes.size());
     vertexInputState.pVertexAttributeDescriptions          = vertexInputAttributes.data();
 
-    VK_CHECK_RESULT(_device->createGraphicsPipeline(&createInfo, _effect.get(), renderPass, &_pipeline));
+    VK_CHECK_RESULT(_device->createGraphicsPipeline(&createInfo, _effect, renderPass, &_pipeline));
 }
 
 void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {

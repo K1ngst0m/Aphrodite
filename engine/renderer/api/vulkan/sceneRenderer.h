@@ -30,7 +30,6 @@ enum MaterialBindingBits {
     MATERIAL_BINDING_NORMAL    = (1 << 2),
 };
 
-
 enum DescriptorSetBinding {
     SET_BINDING_SCENE    = 0,
     SET_BINDING_MATERIAL = 1,
@@ -63,11 +62,11 @@ private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
     VkDescriptorPool             _descriptorPool;
 
-    std::shared_ptr<ShaderEffect> _unlitEffect   = nullptr;
-    VulkanPipeline               *_unlitPipeline = nullptr;
+    ShaderEffect   *_unlitEffect   = nullptr;
+    VulkanPipeline *_unlitPipeline = nullptr;
 
-    std::shared_ptr<ShaderEffect> _defaultLitEffect   = nullptr;
-    VulkanPipeline               *_defaultLitPipeline = nullptr;
+    ShaderEffect   *_defaultLitEffect   = nullptr;
+    VulkanPipeline *_defaultLitPipeline = nullptr;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;

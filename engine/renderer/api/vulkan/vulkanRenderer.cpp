@@ -510,9 +510,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
         _initDefaultResource();
     }
 }
-void VulkanRenderer::_setupDemoPass() {
-    EffectBuilder effectBuilder(m_device);
 
+void VulkanRenderer::_setupDemoPass() {
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount   = 0;
@@ -524,17 +523,19 @@ void VulkanRenderer::_setupDemoPass() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    m_defaultResource.demoEffect = effectBuilder.pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv"), VK_SHADER_STAGE_VERTEX_BIT)
-                                       .pushShaderStages(m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv"), VK_SHADER_STAGE_FRAGMENT_BIT)
-                                       .build();
+    EffectInfo info{};
+    info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
+    info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
+    m_defaultResource.demoEffect = ShaderEffect::Create(m_device, &info);
 
-    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, m_defaultResource.demoEffect.get(), getDefaultRenderPass(), &m_defaultResource.demoPipeline));
+    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, m_defaultResource.demoEffect, getDefaultRenderPass(), &m_defaultResource.demoPipeline));
 
     m_deletionQueue.push_function([=]() {
-        m_defaultResource.demoEffect->destroy();
+        delete m_defaultResource.demoEffect;
         delete m_defaultResource.demoPipeline;
     });
 }
+
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {
     return m_swapChain->getExtent();
 }

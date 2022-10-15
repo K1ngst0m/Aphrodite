@@ -47,6 +47,17 @@ void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, Vk
         _materialGpuDataList.push_back(materialData);
     }
 }
+
+void VulkanRenderObject::loadResouces() {
+    // Create and upload vertex and index buffer
+    size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
+    size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
+
+    createEmptyTexture();
+    loadTextures();
+    loadBuffer();
+}
+
 void VulkanRenderObject::loadTextures() {
     for (auto &image : _entity->_images) {
         // raw image data
@@ -188,15 +199,22 @@ void VulkanRenderObject::loadTextures() {
         _device->destroyBuffer(stagingBuffer);
     }
 }
-void VulkanRenderObject::loadResouces() {
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
-    size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
 
-    createEmptyTexture();
-    loadTextures();
-    loadBuffer();
+void VulkanRenderObject::cleanupResources() {
+    _device->destroyBuffer(_vertexBuffer);
+    _device->destroyBuffer(_indexBuffer);
+
+    for (TextureGpuData &texture : _textures) {
+        _device->destroyImage(texture.image);
+        _device->destroyImageView(texture.imageView);
+        vkDestroySampler(_device->getHandle(), texture.sampler, nullptr);
+    }
+
+    _device->destroyImage(_emptyTexture.image);
+    _device->destroyImageView(_emptyTexture.imageView);
+    vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
 }
+
 void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
     if (!node->isVisible) {
         return;
@@ -231,23 +249,11 @@ void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *draw
         drawNode(layout, drawCmd, subNode);
     }
 }
-void VulkanRenderObject::cleanupResources() {
-    _device->destroyBuffer(_vertexBuffer);
-    _device->destroyBuffer(_indexBuffer);
 
-    for (TextureGpuData &texture : _textures) {
-        _device->destroyImage(texture.image);
-        _device->destroyImageView(texture.imageView);
-        vkDestroySampler(_device->getHandle(), texture.sampler, nullptr);
-    }
-
-    _device->destroyImage(_emptyTexture.image);
-    _device->destroyImageView(_emptyTexture.imageView);
-    vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
-}
 uint32_t VulkanRenderObject::getSetCount() {
     return _entity->_materials.size();
 }
+
 void VulkanRenderObject::loadBuffer() {
     auto &vertices = _entity->_vertices;
     auto &indices  = _entity->_indices;

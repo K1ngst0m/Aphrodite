@@ -28,13 +28,13 @@ private:
     DeletionQueue   _deletionQueue;
 
     VulkanBuffer *_vertexBuffer = nullptr;
-    VulkanBuffer *_indexBuffer = nullptr;
+    VulkanBuffer *_indexBuffer  = nullptr;
 
     uint32_t _vertexCount = 0;
     uint32_t _indexCount  = 0;
 
-    VulkanPipeline               *_pipeline;
-    std::unique_ptr<ShaderEffect> _effect;
+    VulkanPipeline *_pipeline;
+    ShaderEffect   *_effect;
 
     VkDescriptorPool _descriptorPool;
     VkDescriptorSet  _descriptorSet;

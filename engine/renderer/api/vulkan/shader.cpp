@@ -18,23 +18,6 @@ static VkShaderModule createShaderModule(VulkanDevice            *device,
     return shaderModule;
 }
 
-EffectBuilder& EffectBuilder::pushSetLayout(const std::vector<VkDescriptorSetLayoutBinding> &bindings) {
-
-    VkDescriptorSetLayout           setLayout;
-    VkDescriptorSetLayoutCreateInfo perSceneLayoutInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(_device->getHandle(), &perSceneLayoutInfo, nullptr, &setLayout));
-    _setLayouts.push_back(setLayout);
-    return *this;
-}
-EffectBuilder& EffectBuilder::pushConstantRanges(VkPushConstantRange constantRange) {
-    _constantRanges.push_back(constantRange);
-    return *this;
-}
-EffectBuilder& EffectBuilder::pushShaderStages(VulkanShaderModule *pModule, VkShaderStageFlagBits stageBits) {
-    _stages[stageBits] = pModule;
-    return *this;
-}
-
 void VulkanShaderCache::destory(VkDevice device) {
     for (auto &[key, shaderModule] : shaderModuleCaches) {
         vkDestroyShaderModule(device, shaderModule->getHandle(), nullptr);
@@ -50,20 +33,35 @@ VulkanShaderModule *VulkanShaderCache::getShaders(VulkanDevice *device, const st
     }
     return shaderModuleCaches[path];
 }
-
-std::unique_ptr<ShaderEffect> EffectBuilder::build() {
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(_setLayouts, _constantRanges);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(_device->getHandle(), &pipelineLayoutInfo, nullptr, &_builtLayout));
-    auto effect = std::make_unique<ShaderEffect>(_device, _builtLayout, _stages, _constantRanges, _setLayouts);
-    return effect;
-}
-void EffectBuilder::reset() {
-    _builtLayout = VK_NULL_HANDLE;
-    _stages.clear();
-    _constantRanges.clear();
-    _setLayouts.clear();
-}
-EffectBuilder::EffectBuilder(VulkanDevice *device)
+ShaderEffect::ShaderEffect(VulkanDevice *device)
     : _device(device) {
+}
+VkPipelineLayout ShaderEffect::getPipelineLayout() {
+    return _pipelineLayout;
+}
+VkDescriptorSetLayout *ShaderEffect::getDescriptorSetLayout(uint32_t idx) {
+    return &_setLayouts[idx];
+}
+ShaderEffect::~ShaderEffect() {
+    for (auto &setLayout : _setLayouts) {
+        vkDestroyDescriptorSetLayout(_device->getHandle(), setLayout, nullptr);
+    }
+    vkDestroyPipelineLayout(_device->getHandle(), _pipelineLayout, nullptr);
+}
+ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo) {
+    auto instance = new ShaderEffect(pDevice);
+    for (auto &layoutDesc : pInfo->setLayouts){
+        VkDescriptorSetLayout           setLayout;
+        VkDescriptorSetLayoutCreateInfo layoutInfo = vkl::init::descriptorSetLayoutCreateInfo(layoutDesc.bindings);
+        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(pDevice->getHandle(), &layoutInfo, nullptr, &setLayout));
+        instance->_setLayouts.push_back(setLayout);
+    }
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(instance->_setLayouts, pInfo->constants);
+    VK_CHECK_RESULT(vkCreatePipelineLayout(pDevice->getHandle(), &pipelineLayoutInfo, nullptr, &instance->_pipelineLayout));
+    memcpy(&instance->_info, pInfo, sizeof(EffectInfo));
+    return instance;
+}
+EffectInfo &ShaderEffect::getInfo() {
+    return _info;
 }
 } // namespace vkl
