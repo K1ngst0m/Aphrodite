@@ -62,7 +62,7 @@ VkPipelineLayout VulkanPipeline::getPipelineLayout() {
     return _effect->getPipelineLayout();
 }
 
-VkDescriptorSetLayout *VulkanPipeline::getDescriptorSetLayout(uint32_t idx) {
+VulkanDescriptorSetLayout *VulkanPipeline::getDescriptorSetLayout(uint32_t idx) {
     return _effect->getDescriptorSetLayout(idx);
 }
 

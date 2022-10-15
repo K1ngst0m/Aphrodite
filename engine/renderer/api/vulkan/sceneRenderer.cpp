@@ -1,4 +1,5 @@
 #include "sceneRenderer.h"
+#include "descriptor.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
 #include "device.h"
@@ -151,7 +152,7 @@ void VulkanSceneRenderer::_initUniformList() {
     VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
     VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &poolInfo, nullptr, &_descriptorPool));
 
-    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _getDescriptorSetLayout(SET_BINDING_SCENE), 1);
+    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_getDescriptorSetLayout(SET_BINDING_SCENE)->getHandle(), 1);
     for (auto &set : _globalDescriptorSets) {
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &set));
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -213,17 +214,31 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 }
 
 void VulkanSceneRenderer::_setupUnlitShaderEffect() {
-    ResourceSetDesc sceneResourceSet{}, materialResourceSet{};
-    sceneResourceSet.bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0));
-    materialResourceSet.bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
+    VulkanDescriptorSetLayout * sceneLayout = nullptr;
+    VulkanDescriptorSetLayout * materialLayout = nullptr;
 
-    // build Shader
-    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0));
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        _device->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    // material
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        _device->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
 
     {
+        // build Shader
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
         EffectInfo info{};
-        info.setLayouts.push_back(sceneResourceSet);
-        info.setLayouts.push_back(materialResourceSet);
+        info.setLayouts.push_back(sceneLayout);
+        info.setLayouts.push_back(materialLayout);
         info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.vert.spv");
         info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.frag.spv");
@@ -235,24 +250,35 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
 }
 
 void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
-    ResourceSetDesc sceneResourceSet{}, materialResourceSet{};
-    // per-scene layout
-    sceneResourceSet.bindings = {
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-    };
-    // per-material layout
-    materialResourceSet.bindings = {
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-    };
+    VulkanDescriptorSetLayout * sceneLayout = nullptr;
+    VulkanDescriptorSetLayout * materialLayout = nullptr;
+
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        _device->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    // material
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        _device->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
 
     {
         EffectInfo info{};
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        info.setLayouts.push_back(sceneResourceSet);
-        info.setLayouts.push_back(materialResourceSet);
+        info.setLayouts.push_back(sceneLayout);
+        info.setLayouts.push_back(materialLayout);
         info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.vert.spv");
         info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.frag.spv");
@@ -274,7 +300,7 @@ VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
     return _unlitPipeline;
 }
 
-VkDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
+VulkanDescriptorSetLayout *VulkanSceneRenderer::_getDescriptorSetLayout(DescriptorSetBinding binding) {
     return _getCurrentPipeline()->getDescriptorSetLayout(binding);
 }
 std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(VulkanRenderer *renderer) {

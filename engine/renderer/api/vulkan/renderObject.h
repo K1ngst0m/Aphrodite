@@ -14,7 +14,7 @@ public:
 
     void draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd);
 
-    void     setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits);
+    void     setupMaterial(VulkanDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits);
     uint32_t getSetCount();
 
     glm::mat4 getTransform() const;

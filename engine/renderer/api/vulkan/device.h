@@ -82,7 +82,10 @@ public:
     VkResult createGraphicsPipeline(const PipelineCreateInfo *pCreateInfo,
                                     ShaderEffect             *effect,
                                     VulkanRenderPass         *pRenderPass,
-                                    VulkanPipeline ** ppPipeline);
+                                    VulkanPipeline          **ppPipeline);
+
+    VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+                                       VulkanDescriptorSetLayout       **ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
@@ -93,11 +96,12 @@ public:
     void destroySwapchain(VulkanSwapChain *pSwapchain);
     void destroyCommandPool(VulkanCommandPool *pPool);
     void destroyPipeline(VulkanPipeline *pipeline);
+    void destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout);
 
 public:
     VkResult allocateCommandBuffers(uint32_t              commandBufferCount,
                                     VulkanCommandBuffer **ppCommandBuffers,
-                                    QueueFamilyType            flags = QUEUE_TYPE_GRAPHICS);
+                                    QueueFamilyType       flags = QUEUE_TYPE_GRAPHICS);
 
     void freeCommandBuffers(uint32_t              commandBufferCount,
                             VulkanCommandBuffer **ppCommandBuffers);

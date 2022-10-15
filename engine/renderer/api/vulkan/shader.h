@@ -36,14 +36,10 @@ private:
 
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
 
-struct ResourceSetDesc {
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-};
-
 struct EffectInfo {
-    std::vector<ResourceSetDesc>     setLayouts;
-    std::vector<VkPushConstantRange> constants;
-    ShaderMapList                    shaderMapList;
+    std::vector<VulkanDescriptorSetLayout *> setLayouts;
+    std::vector<VkPushConstantRange>         constants;
+    ShaderMapList                            shaderMapList;
 };
 
 class ShaderEffect {
@@ -52,15 +48,15 @@ public:
     ShaderEffect(VulkanDevice *device);
     ~ShaderEffect();
 
-    VkPipelineLayout       getPipelineLayout();
-    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-    EffectInfo            &getInfo();
+    VkPipelineLayout           getPipelineLayout();
+    VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
+    EffectInfo                &getInfo();
 
 private:
-    VulkanDevice                      *_device;
-    VkPipelineLayout                   _pipelineLayout;
-    std::vector<VkDescriptorSetLayout> _setLayouts;
-    EffectInfo                         _info;
+    VulkanDevice                            *_device;
+    std::vector<VulkanDescriptorSetLayout *> _setLayouts;
+    VkPipelineLayout                         _pipelineLayout;
+    EffectInfo                               _info;
 };
 } // namespace vkl
 

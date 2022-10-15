@@ -5,6 +5,7 @@
 #include "pipeline.h"
 #include "commandPool.h"
 #include "framebuffer.h"
+#include "descriptor.h"
 #include "image.h"
 #include "imageView.h"
 #include "renderpass.h"
@@ -517,5 +518,21 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
 void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline) {
     vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
+}
+
+VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+                                                 VulkanDescriptorSetLayout       **ppDescriptorSetLayout) {
+    VkDescriptorSetLayout setLayout;
+    auto result = vkCreateDescriptorSetLayout(_handle, pCreateInfo, nullptr, &setLayout);
+    if (result != VK_SUCCESS){
+        return result;
+    }
+    *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(pCreateInfo, setLayout);
+    return VK_SUCCESS;
+}
+
+void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout) {
+    vkDestroyDescriptorSetLayout(_handle, pLayout->getHandle(), nullptr);
+    delete pLayout;
 }
 } // namespace vkl

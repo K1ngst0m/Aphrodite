@@ -56,11 +56,11 @@ struct PipelineCreateInfo {
     }
 };
 
-class VulkanPipelineLayout{
+class VulkanPipelineLayout {
 public:
-    VulkanPipelineLayout(){
-
+    VulkanPipelineLayout() {
     }
+
 private:
 };
 
@@ -74,8 +74,8 @@ public:
 
     static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const PipelineCreateInfo *pCreateInfo);
 
-    VkPipelineLayout       getPipelineLayout();
-    VkDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
+    VkPipelineLayout           getPipelineLayout();
+    VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
 
 private:
     VkPipelineCache    _cache;

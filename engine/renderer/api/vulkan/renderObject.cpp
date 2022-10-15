@@ -1,5 +1,6 @@
 #include "renderObject.h"
 #include "buffer.h"
+#include "descriptor.h"
 #include "commandBuffer.h"
 #include "device.h"
 #include "image.h"
@@ -16,10 +17,10 @@ VulkanRenderObject::VulkanRenderObject(VulkanDevice *device, vkl::Entity *entity
     : _device(device), _entity(entity) {
 }
 
-void VulkanRenderObject::setupMaterial(VkDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
+void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
         MaterialGpuData             materialData{};
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, materialLayout, 1);
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &materialLayout->getHandle(), 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &materialData.set));
         std::vector<VkWriteDescriptorSet> descriptorWrites{};
 

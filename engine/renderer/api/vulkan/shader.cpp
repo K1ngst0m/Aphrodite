@@ -1,6 +1,7 @@
 #include "shader.h"
 #include "pipeline.h"
 #include "renderpass.h"
+#include "descriptor.h"
 
 namespace vkl {
 static VkShaderModule createShaderModule(VulkanDevice            *device,
@@ -39,24 +40,20 @@ ShaderEffect::ShaderEffect(VulkanDevice *device)
 VkPipelineLayout ShaderEffect::getPipelineLayout() {
     return _pipelineLayout;
 }
-VkDescriptorSetLayout *ShaderEffect::getDescriptorSetLayout(uint32_t idx) {
-    return &_setLayouts[idx];
+VulkanDescriptorSetLayout *ShaderEffect::getDescriptorSetLayout(uint32_t idx) {
+    return _setLayouts[idx];
 }
 ShaderEffect::~ShaderEffect() {
-    for (auto &setLayout : _setLayouts) {
-        vkDestroyDescriptorSetLayout(_device->getHandle(), setLayout, nullptr);
-    }
     vkDestroyPipelineLayout(_device->getHandle(), _pipelineLayout, nullptr);
 }
 ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo) {
     auto instance = new ShaderEffect(pDevice);
-    for (auto &layoutDesc : pInfo->setLayouts){
-        VkDescriptorSetLayout           setLayout;
-        VkDescriptorSetLayoutCreateInfo layoutInfo = vkl::init::descriptorSetLayoutCreateInfo(layoutDesc.bindings);
-        VK_CHECK_RESULT(vkCreateDescriptorSetLayout(pDevice->getHandle(), &layoutInfo, nullptr, &setLayout));
+    std::vector<VkDescriptorSetLayout> setLayouts;
+    for (auto setLayout : pInfo->setLayouts){
         instance->_setLayouts.push_back(setLayout);
+        setLayouts.push_back(setLayout->getHandle());
     }
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(instance->_setLayouts, pInfo->constants);
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pInfo->constants);
     VK_CHECK_RESULT(vkCreatePipelineLayout(pDevice->getHandle(), &pipelineLayoutInfo, nullptr, &instance->_pipelineLayout));
     memcpy(&instance->_info, pInfo, sizeof(EffectInfo));
     return instance;

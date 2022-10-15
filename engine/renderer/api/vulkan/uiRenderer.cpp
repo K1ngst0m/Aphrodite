@@ -1,6 +1,7 @@
 #include "uiRenderer.h"
 #include "commandBuffer.h"
 #include "common/assetManager.h"
+#include "descriptor.h"
 #include "image.h"
 #include "imageView.h"
 #include "pipeline.h"
@@ -130,13 +131,16 @@ void VulkanUIRenderer::initUI() {
 
     // build effect
     {
-        auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-        EffectInfo info;
-        ResourceSetDesc desc;
-        desc.bindings = {
+        VulkanDescriptorSetLayout * pLayout = nullptr;
+        std::vector<VkDescriptorSetLayoutBinding> bindings {
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
-        info.setLayouts.push_back(desc);
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        VK_CHECK_RESULT(_device->createDescriptorSetLayout(&createInfo, &pLayout));
+
+        auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
+        EffectInfo info;
+        info.setLayouts.push_back(pLayout);
         info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
         info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv");
         info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv");
@@ -152,7 +156,7 @@ void VulkanUIRenderer::initUI() {
         VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
 
         // Descriptor set
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, _effect->getDescriptorSetLayout(0), 1);
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_effect->getDescriptorSetLayout(0)->getHandle(), 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
         VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
             _fontData.sampler,

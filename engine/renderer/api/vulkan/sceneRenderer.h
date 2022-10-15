@@ -55,8 +55,8 @@ private:
     void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
 
 private:
-    VkDescriptorSetLayout *_getDescriptorSetLayout(DescriptorSetBinding binding);
-    VulkanPipeline        *_getCurrentPipeline();
+    VulkanDescriptorSetLayout *_getDescriptorSetLayout(DescriptorSetBinding binding);
+    VulkanPipeline            *_getCurrentPipeline();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
