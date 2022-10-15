@@ -7,11 +7,11 @@ namespace vkl {
 struct Primitive;
 struct Texture;
 struct Material;
-struct SubEntity;
 struct Vertex;
+struct Node;
 
 using ResourceIndex = int32_t;
-using SubEntityList = std::vector<std::shared_ptr<SubEntity>>;
+using SubNodeList   = std::vector<std::shared_ptr<Node>>;
 using PrimitiveList = std::vector<Primitive>;
 using TextureData   = std::vector<unsigned char>;
 using VertexList    = std::vector<Vertex>;
@@ -33,13 +33,13 @@ struct Primitive {
     ResourceIndex materialIndex = -1;
 };
 
-struct SubEntity {
+struct Node {
     std::string name;
-    glm::mat4   matrix = glm::mat4(1.0f);
+    glm::mat4   matrix    = glm::mat4(1.0f);
     bool        isVisible = true;
 
-    SubEntity    *parent;
-    SubEntityList children;
+    Node    *parent;
+    SubNodeList   children;
     PrimitiveList primitives;
 };
 
@@ -54,7 +54,7 @@ struct Texture {
 
 struct Material {
     uint32_t id;
-    bool doubleSided = false;
+    bool     doubleSided = false;
     enum AlphaMode { ALPHAMODE_OPAQUE,
                      ALPHAMODE_MASK,
                      ALPHAMODE_BLEND };
@@ -85,11 +85,11 @@ public:
     void cleanupResources();
 
 public:
-    VertexList    _vertices;
-    IndexList     _indices;
-    TextureList   _images;
-    SubEntityList _subEntityList;
-    MaterialList  _materials;
+    VertexList   _vertices;
+    IndexList    _indices;
+    TextureList  _images;
+    SubNodeList  _subNodeList;
+    MaterialList _materials;
 
 private:
     bool isLoaded = false;

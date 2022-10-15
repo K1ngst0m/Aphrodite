@@ -66,8 +66,8 @@ void GLTFLoader::_loadMaterials(Entity *entity, tinygltf::Model &input) {
         }
     }
 }
-void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent) {
-    auto node    = std::make_shared<SubEntity>();
+void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent) {
+    auto node    = std::make_shared<Node>();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
     node->name   = inputNode.name;
@@ -207,7 +207,7 @@ void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, con
     if (parent) {
         parent->children.push_back(node);
     } else {
-        entity->_subEntityList.push_back(node);
+        entity->_subNodeList.push_back(node);
     }
 }
 } // namespace vkl

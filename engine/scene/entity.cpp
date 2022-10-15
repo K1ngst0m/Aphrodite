@@ -17,7 +17,7 @@ void Entity::cleanupResources() {
     _vertices.clear();
     _indices.clear();
     _images.clear();
-    _subEntityList.clear();
+    _subNodeList.clear();
     _materials.clear();
 }
 } // namespace vkl

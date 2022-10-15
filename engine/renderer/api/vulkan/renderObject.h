@@ -21,7 +21,7 @@ public:
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<SubEntity> &node);
+    void drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node);
     void loadTextures();
     void loadBuffer();
     void createEmptyTexture();

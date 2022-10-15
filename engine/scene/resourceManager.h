@@ -8,7 +8,7 @@
 
 namespace vkl {
 class Entity;
-class SubEntity;
+class Node;
 
 class ResourceManager{
 public:
@@ -37,7 +37,7 @@ public:
 private:
     static void _loadImages(Entity* _entity, tinygltf::Model &input);
     static void _loadMaterials(Entity* _entity, tinygltf::Model &input);
-    static void _loadNodes(Entity* _entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, SubEntity *parent);
+    static void _loadNodes(Entity* _entity, const tinygltf::Node &inputNode, const tinygltf::Model &input, Node *parent);
 };
 } // namespace vkl
 

@@ -197,13 +197,13 @@ void VulkanRenderObject::loadResouces() {
     loadTextures();
     loadBuffer();
 }
-void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<SubEntity> &node) {
+void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
     if (!node->isVisible) {
         return;
     }
     if (!node->primitives.empty()) {
         glm::mat4  nodeMatrix    = node->matrix;
-        SubEntity *currentParent = node->parent;
+        Node *currentParent = node->parent;
         while (currentParent) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
@@ -227,8 +227,8 @@ void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *draw
     VkDeviceSize offsets[1] = {0};
     drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
     drawCmd->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    for (auto &subEntity : _entity->_subEntityList) {
-        drawNode(layout, drawCmd, subEntity);
+    for (auto &subNode : _entity->_subNodeList) {
+        drawNode(layout, drawCmd, subNode);
     }
 }
 void VulkanRenderObject::cleanupResources() {
