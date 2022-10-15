@@ -50,14 +50,18 @@ public:
 
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-    EffectInfo                &getInfo();
+    const ShaderMapList &getShaderMapList(){
+        return _shaderMapList;
+    }
 
 private:
     VulkanDevice                            *_device;
+    std::vector<VkPushConstantRange>         _constants;
     std::vector<VulkanDescriptorSetLayout *> _setLayouts;
+    ShaderMapList                            _shaderMapList;
     VkPipelineLayout                         _pipelineLayout;
-    EffectInfo                               _info;
 };
+
 } // namespace vkl
 
 #endif // SHADER_H_

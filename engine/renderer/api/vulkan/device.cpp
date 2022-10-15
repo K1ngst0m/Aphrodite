@@ -485,7 +485,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
     pipelineInfo.pNext                        = nullptr;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for (const auto& [stage, sModule] : pEffect->getInfo().shaderMapList) {
+    for (const auto& [stage, sModule] : pEffect->getShaderMapList()) {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     pipelineInfo.stageCount          = shaderStages.size();

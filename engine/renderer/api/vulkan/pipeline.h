@@ -63,7 +63,6 @@ public:
 
 private:
 };
-
 class VulkanPipeline : public ResourceHandle<VkPipeline> {
 public:
     static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice             *pDevice,

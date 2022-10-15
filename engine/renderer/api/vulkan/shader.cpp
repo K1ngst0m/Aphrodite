@@ -53,12 +53,10 @@ ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo) {
         instance->_setLayouts.push_back(setLayout);
         setLayouts.push_back(setLayout->getHandle());
     }
+    instance->_constants = pInfo->constants;
+    instance->_shaderMapList = pInfo->shaderMapList;
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pInfo->constants);
     VK_CHECK_RESULT(vkCreatePipelineLayout(pDevice->getHandle(), &pipelineLayoutInfo, nullptr, &instance->_pipelineLayout));
-    memcpy(&instance->_info, pInfo, sizeof(EffectInfo));
     return instance;
-}
-EffectInfo &ShaderEffect::getInfo() {
-    return _info;
 }
 } // namespace vkl

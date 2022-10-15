@@ -1,7 +1,7 @@
 #include "renderObject.h"
 #include "buffer.h"
-#include "descriptor.h"
 #include "commandBuffer.h"
+#include "descriptor.h"
 #include "device.h"
 #include "image.h"
 #include "imageView.h"
@@ -105,31 +105,30 @@ void VulkanRenderObject::loadTextures() {
             cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_GRAPHICS);
 
             // generate mipmap chains
-            for (int32_t i = 1; i < texMipLevels; i++)
-            {
+            for (int32_t i = 1; i < texMipLevels; i++) {
                 VkImageBlit imageBlit{};
 
                 // Source
                 imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.srcSubresource.layerCount = 1;
-                imageBlit.srcSubresource.mipLevel = i-1;
-                imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
-                imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
-                imageBlit.srcOffsets[1].z = 1;
+                imageBlit.srcSubresource.mipLevel   = i - 1;
+                imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+                imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+                imageBlit.srcOffsets[1].z           = 1;
 
                 // Destination
                 imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 imageBlit.dstSubresource.layerCount = 1;
-                imageBlit.dstSubresource.mipLevel = i;
-                imageBlit.dstOffsets[1].x = int32_t(width >> i);
-                imageBlit.dstOffsets[1].y = int32_t(height >> i);
-                imageBlit.dstOffsets[1].z = 1;
+                imageBlit.dstSubresource.mipLevel   = i;
+                imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+                imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+                imageBlit.dstOffsets[1].z           = 1;
 
                 VkImageSubresourceRange mipSubRange = {};
-                mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                mipSubRange.baseMipLevel = i;
-                mipSubRange.levelCount = 1;
-                mipSubRange.layerCount = 1;
+                mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+                mipSubRange.baseMipLevel            = i;
+                mipSubRange.levelCount              = 1;
+                mipSubRange.layerCount              = 1;
 
                 // Prepare current mip level as image blit destination
                 cmd->cmdImageMemoryBarrier(
@@ -171,12 +170,11 @@ void VulkanRenderObject::loadTextures() {
             _device->endSingleTimeCommands(cmd);
         }
 
-
         // texture image view
         {
             ImageViewCreateInfo createInfo{};
-            createInfo.format   = FORMAT_R8G8B8A8_SRGB;
-            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            createInfo.format                      = FORMAT_R8G8B8A8_SRGB;
+            createInfo.viewType                    = IMAGE_VIEW_TYPE_2D;
             createInfo.subresourceRange.levelCount = texMipLevels;
             _device->createImageView(&createInfo, &texture.imageView, texture.image);
         }
@@ -185,7 +183,7 @@ void VulkanRenderObject::loadTextures() {
         {
             // TODO
             VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-            samplerInfo.maxLod = texMipLevels;
+            samplerInfo.maxLod              = texMipLevels;
             // samplerInfo.maxAnisotropy       = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
             // samplerInfo.anisotropyEnable    = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy;
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
@@ -221,8 +219,8 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *
         return;
     }
     if (!node->primitives.empty()) {
-        glm::mat4  nodeMatrix    = node->matrix;
-        Node *currentParent = node->parent;
+        glm::mat4 nodeMatrix    = node->matrix;
+        Node     *currentParent = node->parent;
         while (currentParent) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
