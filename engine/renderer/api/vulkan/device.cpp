@@ -165,7 +165,8 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
     return VK_SUCCESS;
 }
 
-void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer, QueueFlags flags) {
+void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer) {
+    auto flags = commandBuffer->getQueueFamilyTypes();
     commandBuffer->end();
 
     VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer->getHandle());
@@ -176,7 +177,7 @@ void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer, Que
     freeCommandBuffers(1, &commandBuffer);
 }
 
-VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(QueueFlags flags) {
+VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(QueueFamilyType flags) {
     VulkanCommandBuffer *instance;
     allocateCommandBuffers(1, &instance, flags);
     instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
@@ -403,14 +404,14 @@ void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
 }
-VkQueue VulkanDevice::getQueueByFlags(QueueFlags queueFlags, uint32_t queueIndex) {
+VkQueue VulkanDevice::getQueueByFlags(QueueFamilyType queueFlags, uint32_t queueIndex) {
     return _queues[queueFlags][queueIndex];
 }
 void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getHandle());
 }
 
-VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(QueueFlags type) {
+VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(QueueFamilyType type) {
     switch (type) {
     case QUEUE_TYPE_COMPUTE:
         return _computeCommandPool;
@@ -429,7 +430,7 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
     delete pPool;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, QueueFlags flags) {
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, QueueFamilyType flags) {
     auto* pool = getCommandPoolWithQueue(flags);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
@@ -439,7 +440,7 @@ VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, Vulka
     }
 
     for (auto i = 0; i < commandBufferCount; i++) {
-        ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i]);
+        ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i], flags);
     }
     return VK_SUCCESS;
 }

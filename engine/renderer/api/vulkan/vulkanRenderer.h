@@ -32,7 +32,7 @@ public:
     VkExtent2D           getSwapChainExtent() const;
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
-    VkQueue              getDefaultDeviceQueue(QueueFlags type) const;
+    VkQueue              getDefaultDeviceQueue(QueueFamilyType type) const;
     VulkanRenderPass    *getDefaultRenderPass() const;
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;

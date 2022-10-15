@@ -88,7 +88,7 @@ void VulkanRenderObject::loadTextures() {
             cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
             cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-            _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+            _device->endSingleTimeCommands(cmd);
 
             cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_GRAPHICS);
 
@@ -287,7 +287,7 @@ void VulkanRenderObject::loadBuffer() {
 
         auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
         cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer, bufferSize);
-        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+        _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -320,7 +320,7 @@ void VulkanRenderObject::loadBuffer() {
 
         auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
         cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer, bufferSize);
-        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+        _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);
     }
@@ -363,7 +363,7 @@ void VulkanRenderObject::createEmptyTexture() {
         cmd->cmdTransitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         cmd->cmdCopyBufferToImage(stagingBuffer, _emptyTexture.image);
         cmd->cmdTransitionImageLayout(_emptyTexture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        _device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+        _device->endSingleTimeCommands(cmd);
     }
 
     {

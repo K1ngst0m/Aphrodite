@@ -23,7 +23,7 @@ enum class CommandBufferState {
 
 class VulkanCommandBuffer : public ResourceHandle<VkCommandBuffer> {
 public:
-    VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle);
+    VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle, QueueFamilyType flags);
 
     ~VulkanCommandBuffer();
 
@@ -39,7 +39,7 @@ public:
     void cmdSetViewport(VkViewport *viewport);
     void cmdSetSissor(VkRect2D *scissor);
     void cmdBindDescriptorSet(VkPipelineBindPoint bindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet *pDescriptorSets);
-    void cmdBindPipeline(VkPipelineBindPoint bindPoint, VulkanPipeline* pPipeline);
+    void cmdBindPipeline(VkPipelineBindPoint bindPoint, VulkanPipeline *pPipeline);
     void cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets);
     void cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset, VkIndexType indexType);
     void cmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stage, uint32_t offset, uint32_t size, const void *pValues);
@@ -50,12 +50,15 @@ public:
     void cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage *image);
     void cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstImage);
     void cmdImageMemoryBarrier(VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
-    void cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter = VK_FILTER_LINEAR);
+    void cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage *dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter = VK_FILTER_LINEAR);
+
+    QueueFamilyType getQueueFamilyTypes();
 
 private:
     VulkanCommandPool *_pool;
     CommandBufferState _state;
     bool               _submittedToQueue = false;
+    QueueFamilyType    _queueFamilyType;
 };
 } // namespace vkl
 

@@ -13,8 +13,8 @@ VulkanCommandBuffer::~VulkanCommandBuffer() {
     _pool->freeCommandBuffers(1, &_handle);
 }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle)
-    : _pool(pool), _state(CommandBufferState::INITIAL) {
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle, QueueFamilyType flags)
+    : _pool(pool), _state(CommandBufferState::INITIAL), _queueFamilyType(flags) {
     _handle = handle;
 }
 
@@ -301,4 +301,7 @@ void VulkanCommandBuffer::cmdImageMemoryBarrier(
 void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage *dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter) {
     vkCmdBlitImage(_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions, filter);
 }
+QueueFamilyType VulkanCommandBuffer::getQueueFamilyTypes() {
+    return _queueFamilyType;
+};
 } // namespace vkl

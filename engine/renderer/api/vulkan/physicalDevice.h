@@ -4,7 +4,7 @@
 #include "instance.h"
 
 namespace vkl {
-enum QueueFlags {
+enum QueueFamilyType {
     QUEUE_TYPE_COMPUTE,
     QUEUE_TYPE_GRAPHICS,
     QUEUE_TYPE_TRANSFER,
@@ -22,7 +22,7 @@ public:
     const VkPhysicalDeviceMemoryProperties     &getMemoryProperties();
     const std::vector<std::string>             &getDeviceSupportedExtensions();
     const std::vector<VkQueueFamilyProperties> &getQueueFamilyProperties();
-    uint32_t                                    getQueueFamilyIndices(QueueFlags flags);
+    uint32_t                                    getQueueFamilyIndices(QueueFamilyType flags);
 
     bool isExtensionSupported(std::string_view extension) const;
 

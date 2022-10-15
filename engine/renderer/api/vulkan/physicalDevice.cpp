@@ -129,7 +129,7 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &
     assert("failed to find supported format!");
     return {};
 }
-uint32_t VulkanPhysicalDevice::getQueueFamilyIndices(QueueFlags flags) {
+uint32_t VulkanPhysicalDevice::getQueueFamilyIndices(QueueFamilyType flags) {
     switch (flags) {
     case QUEUE_TYPE_COMPUTE:
         return _queueFamilyIndices.compute;

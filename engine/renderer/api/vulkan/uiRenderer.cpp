@@ -111,7 +111,7 @@ void VulkanUIRenderer::initUI() {
         copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         copyCmd->cmdCopyBufferToImage(stagingBuffer, _fontData.image);
         copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        _device->endSingleTimeCommands(copyCmd, QUEUE_TYPE_TRANSFER);
+        _device->endSingleTimeCommands(copyCmd);
         _device->destroyBuffer(stagingBuffer);
     }
 

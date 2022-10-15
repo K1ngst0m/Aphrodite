@@ -97,22 +97,21 @@ public:
 public:
     VkResult allocateCommandBuffers(uint32_t              commandBufferCount,
                                     VulkanCommandBuffer **ppCommandBuffers,
-                                    QueueFlags            flags = QUEUE_TYPE_GRAPHICS);
+                                    QueueFamilyType            flags = QUEUE_TYPE_GRAPHICS);
 
     void freeCommandBuffers(uint32_t              commandBufferCount,
                             VulkanCommandBuffer **ppCommandBuffers);
 
-    VulkanCommandBuffer *beginSingleTimeCommands(QueueFlags flags = QUEUE_TYPE_GRAPHICS);
+    VulkanCommandBuffer *beginSingleTimeCommands(QueueFamilyType flags = QUEUE_TYPE_GRAPHICS);
 
-    void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer,
-                               QueueFlags           flags = QUEUE_TYPE_GRAPHICS);
+    void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer);
 
     void waitIdle();
 
 public:
-    VulkanCommandPool    *getCommandPoolWithQueue(QueueFlags type);
+    VulkanCommandPool    *getCommandPoolWithQueue(QueueFamilyType type);
     VulkanPhysicalDevice *getPhysicalDevice() const;
-    VkQueue               getQueueByFlags(QueueFlags flags, uint32_t queueIndex = 0);
+    VkQueue               getQueueByFlags(QueueFamilyType flags, uint32_t queueIndex = 0);
     VkFormat              getDepthFormat() const;
 
 private:

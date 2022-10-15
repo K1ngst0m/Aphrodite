@@ -18,7 +18,6 @@
 #include "uiRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
-#include "vulkan/vulkan_core.h"
 
 namespace vkl {
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -372,7 +371,7 @@ void VulkanRenderer::_initDefaultResource() {
     _setupDemoPass();
 }
 
-VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFlags type) const {
+VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFamilyType type) const {
     return m_device->getQueueByFlags(type, 0);
 }
 VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
@@ -405,7 +404,7 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
 
             VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
             cmd->cmdTransitionImageLayout(fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-            m_device->endSingleTimeCommands(cmd, QUEUE_TYPE_TRANSFER);
+            m_device->endSingleTimeCommands(cmd);
         }
 
         {
