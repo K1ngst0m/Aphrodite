@@ -1,14 +1,14 @@
 #include "device.h"
 #include "buffer.h"
 #include "commandBuffer.h"
-#include "shader.h"
-#include "pipeline.h"
 #include "commandPool.h"
-#include "framebuffer.h"
 #include "descriptorSetLayout.h"
+#include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
+#include "pipeline.h"
 #include "renderpass.h"
+#include "shader.h"
 #include "swapChain.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
@@ -432,7 +432,7 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
 }
 
 VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, QueueFamilyType flags) {
-    auto* pool = getCommandPoolWithQueue(flags);
+    auto *pool = getCommandPoolWithQueue(flags);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
     auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
@@ -453,9 +453,9 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateInfo,
-                                              ShaderEffect             *pEffect,
+                                              EffectInfo               *pEffectInfo,
                                               VulkanRenderPass         *pRenderPass,
-                                              VulkanPipeline ** ppPipeline) {
+                                              VulkanPipeline          **ppPipeline) {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
     VkPipelineViewportStateCreateInfo viewportState = {};
@@ -484,8 +484,10 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
     pipelineInfo.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.pNext                        = nullptr;
 
+    ShaderEffect * effect = ShaderEffect::Create(this, pEffectInfo);
+
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for (const auto& [stage, sModule] : pEffect->getShaderMapList()) {
+    for (const auto &[stage, sModule] : pEffectInfo->shaderMapList) {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     pipelineInfo.stageCount          = shaderStages.size();
@@ -498,19 +500,19 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
     pipelineInfo.pDepthStencilState  = &pCreateInfo->_depthStencil;
     pipelineInfo.pMultisampleState   = &pCreateInfo->_multisampling;
     pipelineInfo.pColorBlendState    = &colorBlending;
-    pipelineInfo.layout              = pEffect->getPipelineLayout();
+    pipelineInfo.layout              = effect->getPipelineLayout();
     pipelineInfo.renderPass          = pRenderPass->getHandle();
     pipelineInfo.subpass             = 0;
     pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
 
     VkPipeline handle;
-    auto result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->_pipelineCache, 1, &pipelineInfo, nullptr, &handle);
+    auto       result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->_pipelineCache, 1, &pipelineInfo, nullptr, &handle);
 
-    if(result != VK_SUCCESS){
+    if (result != VK_SUCCESS) {
         return result;
     }
 
-    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, pCreateInfo, pEffect, pRenderPass, handle);
+    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, pCreateInfo, effect, pRenderPass, handle);
 
     return VK_SUCCESS;
 }
@@ -521,10 +523,10 @@ void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline) {
 }
 
 VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                                 VulkanDescriptorSetLayout       **ppDescriptorSetLayout) {
+                                                 VulkanDescriptorSetLayout      **ppDescriptorSetLayout) {
     VkDescriptorSetLayout setLayout;
-    auto result = vkCreateDescriptorSetLayout(_handle, pCreateInfo, nullptr, &setLayout);
-    if (result != VK_SUCCESS){
+    auto                  result = vkCreateDescriptorSetLayout(_handle, pCreateInfo, nullptr, &setLayout);
+    if (result != VK_SUCCESS) {
         return result;
     }
     *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(this, pCreateInfo, setLayout);

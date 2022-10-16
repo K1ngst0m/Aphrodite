@@ -66,4 +66,7 @@ VulkanDescriptorSetLayout *VulkanPipeline::getDescriptorSetLayout(uint32_t idx) 
     return _effect->getDescriptorSetLayout(idx);
 }
 
+ShaderEffect *VulkanPipeline::getEffect() {
+    return _effect;
+}
 } // namespace vkl

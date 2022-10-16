@@ -2,8 +2,6 @@
 #define VULKAN_SHADER_H_
 
 #include "device.h"
-#include "vulkan/vulkan_core.h"
-#include <unordered_map>
 
 namespace vkl {
 

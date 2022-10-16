@@ -55,16 +55,12 @@ private:
     void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
 
 private:
-    VulkanDescriptorSetLayout *_getDescriptorSetLayout(DescriptorSetBinding binding);
     VulkanPipeline            *_getCurrentPipeline();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
 
-    ShaderEffect   *_unlitEffect   = nullptr;
     VulkanPipeline *_unlitPipeline = nullptr;
-
-    ShaderEffect   *_defaultLitEffect   = nullptr;
     VulkanPipeline *_defaultLitPipeline = nullptr;
 
 private:

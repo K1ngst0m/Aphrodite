@@ -22,37 +22,34 @@ void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout
         MaterialGpuData materialData{};
         materialData.set = materialLayout->allocateSet();
 
-        std::vector<VkWriteDescriptorSet> descriptorWrites{};
-        if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
-            if (material.baseColorTextureIndex > -1) {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
-            } else {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
-                std::cerr << "base color texture not found, use default texture." << std::endl;
+        // write descriptor set
+        {
+            std::vector<VkWriteDescriptorSet> descriptorWrites{};
+            if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
+                if (material.baseColorTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));
+                } else {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_emptyTexture.descriptorInfo));
+                    std::cerr << "base color texture not found, use default texture." << std::endl;
+                }
             }
-        }
-
-        if (bindingBits & MATERIAL_BINDING_NORMAL) {
-            if (material.normalTextureIndex > -1) {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
-            } else {
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_emptyTexture.descriptorInfo));
-                std::cerr << "material id: [" << material.id << "] :";
-                std::cerr << "normal texture not found, use default texture." << std::endl;
+            if (bindingBits & MATERIAL_BINDING_NORMAL) {
+                if (material.normalTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.normalTextureIndex].descriptorInfo));
+                } else {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_emptyTexture.descriptorInfo));
+                    std::cerr << "material id: [" << material.id << "] :";
+                    std::cerr << "normal texture not found, use default texture." << std::endl;
+                }
             }
+            vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
-
-        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
         _materialGpuDataList.push_back(materialData);
     }
 }
 
 void VulkanRenderObject::loadResouces() {
-    // Create and upload vertex and index buffer
-    size_t vertexBufferSize = _entity->_vertices.size() * sizeof(_entity->_vertices[0]);
-    size_t indexBufferSize  = _entity->_indices.size() * sizeof(_entity->_indices[0]);
-
     loadTextures();
     loadBuffer();
 }
@@ -120,6 +117,7 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *
         drawNode(layout, drawCmd, child);
     }
 }
+
 void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
     drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
@@ -210,6 +208,7 @@ void VulkanRenderObject::loadBuffer() {
         _device->destroyBuffer(stagingBuffer);
     }
 }
+
 glm::mat4 VulkanRenderObject::getTransform() const {
     return _transform;
 }

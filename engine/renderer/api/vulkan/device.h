@@ -29,6 +29,7 @@ class ShaderPass;
 class VulkanPipeline;
 struct RenderPassCreateInfo;
 struct PipelineCreateInfo;
+struct EffectInfo;
 
 using QueueFamily = std::vector<VkQueue>;
 
@@ -80,12 +81,12 @@ public:
                                VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
     VkResult createGraphicsPipeline(const PipelineCreateInfo *pCreateInfo,
-                                    ShaderEffect             *effect,
+                                    EffectInfo               *pEffectInfo,
                                     VulkanRenderPass         *pRenderPass,
                                     VulkanPipeline          **ppPipeline);
 
     VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                       VulkanDescriptorSetLayout       **ppDescriptorSetLayout);
+                                       VulkanDescriptorSetLayout      **ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);

@@ -56,13 +56,6 @@ struct PipelineCreateInfo {
     }
 };
 
-class VulkanPipelineLayout {
-public:
-    VulkanPipelineLayout() {
-    }
-
-private:
-};
 class VulkanPipeline : public ResourceHandle<VkPipeline> {
 public:
     static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice             *pDevice,
@@ -75,6 +68,7 @@ public:
 
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
+    ShaderEffect              *getEffect();
 
 private:
     VkPipelineCache    _cache;

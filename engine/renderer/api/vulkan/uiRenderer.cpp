@@ -129,44 +129,6 @@ void VulkanUIRenderer::initUI() {
         VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_fontData.sampler));
     }
 
-    // build effect
-    {
-        VulkanDescriptorSetLayout * pLayout = nullptr;
-        std::vector<VkDescriptorSetLayoutBinding> bindings {
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        VK_CHECK_RESULT(_device->createDescriptorSetLayout(&createInfo, &pLayout));
-
-        auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-        EffectInfo info;
-        info.setLayouts.push_back(pLayout);
-        info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv");
-        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv");
-        _effect = ShaderEffect::Create(_device, &info);
-    }
-
-    // Descriptor pool
-    {
-        std::vector<VkDescriptorPoolSize> poolSizes = {
-            vkl::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
-
-        VkDescriptorPoolCreateInfo descriptorPoolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, 2);
-        VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
-
-        // Descriptor set
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_effect->getDescriptorSetLayout(0)->getHandle(), 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
-        VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
-            _fontData.sampler,
-            _fontData.view->getHandle(),
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-            vkl::init::writeDescriptorSet(_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
-    }
-
 }
 
 void VulkanUIRenderer::resize(uint32_t width, uint32_t height) {
@@ -271,10 +233,10 @@ bool VulkanUIRenderer::update(float deltaTime) {
 }
 
 void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat colorFormat, VkFormat depthFormat) {
-    PipelineCreateInfo createInfo{};
+    PipelineCreateInfo pipelineCI{};
     // Setup graphics pipeline for UI rendering
-    createInfo._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    createInfo._rasterizer    = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    pipelineCI._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    pipelineCI._rasterizer    = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
     // Enable blending
     VkPipelineColorBlendAttachmentState blendAttachmentState{};
@@ -287,10 +249,10 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
     blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
 
-    createInfo._colorBlendAttachment = blendAttachmentState;
+    pipelineCI._colorBlendAttachment = blendAttachmentState;
 
-    createInfo._depthStencil  = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS);
-    createInfo._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+    pipelineCI._depthStencil  = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS);
+    pipelineCI._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
 
     VkPipelineViewportStateCreateInfo viewportState =
         vkl::init::pipelineViewportStateCreateInfo(1, 1, 0);
@@ -298,7 +260,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
     std::vector<VkDynamicState> dynamicStateEnables = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR};
-    createInfo._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+    pipelineCI._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 
     // Vertex bindings an attributes based on ImGui vertex definition
     std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -310,14 +272,53 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         vkl::init::vertexInputAttributeDescription(0, 2, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)), // Location 0: Color
     };
 
-    VkPipelineVertexInputStateCreateInfo &vertexInputState = createInfo._vertexInputInfo;
+    VkPipelineVertexInputStateCreateInfo &vertexInputState = pipelineCI._vertexInputInfo;
     vertexInputState                                       = vkl::init::pipelineVertexInputStateCreateInfo();
     vertexInputState.vertexBindingDescriptionCount         = static_cast<uint32_t>(vertexInputBindings.size());
     vertexInputState.pVertexBindingDescriptions            = vertexInputBindings.data();
     vertexInputState.vertexAttributeDescriptionCount       = static_cast<uint32_t>(vertexInputAttributes.size());
     vertexInputState.pVertexAttributeDescriptions          = vertexInputAttributes.data();
 
-    VK_CHECK_RESULT(_device->createGraphicsPipeline(&createInfo, _effect, renderPass, &_pipeline));
+
+    // build effect
+    {
+        VulkanDescriptorSetLayout * pLayout = nullptr;
+        std::vector<VkDescriptorSetLayoutBinding> bindings {
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        };
+        VkDescriptorSetLayoutCreateInfo layoutCreateInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        VK_CHECK_RESULT(_device->createDescriptorSetLayout(&layoutCreateInfo, &pLayout));
+
+        auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
+        EffectInfo info;
+        info.setLayouts.push_back(pLayout);
+        info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
+        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv");
+        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv");
+
+        VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCI, &info, renderPass, &_pipeline));
+        _effect = _pipeline->getEffect();
+    }
+
+    // Descriptor pool
+    {
+        std::vector<VkDescriptorPoolSize> poolSizes = {
+            vkl::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
+
+        VkDescriptorPoolCreateInfo descriptorPoolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, 2);
+        VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
+
+        // Descriptor set
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_effect->getDescriptorSetLayout(0)->getHandle(), 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
+        VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
+            _fontData.sampler,
+            _fontData.view->getHandle(),
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+            vkl::init::writeDescriptorSet(_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+    }
 }
 
 void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {

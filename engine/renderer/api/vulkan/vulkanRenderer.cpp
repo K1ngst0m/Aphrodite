@@ -523,17 +523,10 @@ void VulkanRenderer::_setupDemoPass() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    EffectInfo info{};
-    info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
-    info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
-    m_defaultResource.demoEffect = ShaderEffect::Create(m_device, &info);
-
-    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, m_defaultResource.demoEffect, getDefaultRenderPass(), &m_defaultResource.demoPipeline));
-
-    m_deletionQueue.push_function([=]() {
-        delete m_defaultResource.demoEffect;
-        delete m_defaultResource.demoPipeline;
-    });
+    EffectInfo effectInfo{};
+    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
+    effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
+    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, getDefaultRenderPass(), &m_defaultResource.demoPipeline));
 }
 
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {
