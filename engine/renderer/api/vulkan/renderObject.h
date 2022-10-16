@@ -24,7 +24,7 @@ private:
     void drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node);
     void loadTextures();
     void loadBuffer();
-    void createEmptyTexture();
+    TextureGpuData createTexture(uint32_t width, uint32_t height, void * data, uint32_t dataSize);
 
     VulkanBuffer                *_vertexBuffer;
     VulkanBuffer                *_indexBuffer;
