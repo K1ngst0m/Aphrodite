@@ -79,11 +79,11 @@ void VulkanSceneRenderer::drawScene() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _getCurrentPipeline());
-        commandBuffer->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _getCurrentPipeline()->getPipelineLayout(), 0, 1, &_globalDescriptorSets[commandIndex]);
+        commandBuffer->cmdBindPipeline(_getCurrentPipeline());
+        commandBuffer->cmdBindDescriptorSet(_getCurrentPipeline(), 0, 1, &_globalDescriptorSets[commandIndex]);
 
         for (auto &renderable : _renderList) {
-            renderable->draw(_getCurrentPipeline()->getPipelineLayout(), commandBuffer);
+            renderable->draw(_getCurrentPipeline(), commandBuffer);
         }
 
         commandBuffer->cmdEndRenderPass();

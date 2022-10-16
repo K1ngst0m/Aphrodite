@@ -69,12 +69,14 @@ public:
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
     ShaderEffect              *getEffect();
+    VkPipelineBindPoint        getBindPoint();
 
 private:
     VkPipelineCache    _cache;
     PipelineCreateInfo _createInfo;
     VulkanDevice      *_device = nullptr;
     ShaderEffect      *_effect = nullptr;
+    VkPipelineBindPoint _bindPoint;
 };
 
 } // namespace vkl

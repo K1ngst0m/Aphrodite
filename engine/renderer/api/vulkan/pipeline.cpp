@@ -49,6 +49,7 @@ VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice, co
     instance->_handle = handle;
     instance->_effect = pEffect;
     instance->_device = pDevice;
+    instance->_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     memcpy(&instance->_createInfo, pCreateInfo, sizeof(PipelineCreateInfo));
     return instance;
 }
@@ -68,5 +69,8 @@ VulkanDescriptorSetLayout *VulkanPipeline::getDescriptorSetLayout(uint32_t idx) 
 
 ShaderEffect *VulkanPipeline::getEffect() {
     return _effect;
+}
+VkPipelineBindPoint VulkanPipeline::getBindPoint() {
+    return _bindPoint;
 }
 } // namespace vkl

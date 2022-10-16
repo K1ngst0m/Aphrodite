@@ -92,7 +92,7 @@ void VulkanRenderObject::cleanupResources() {
     vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
 }
 
-void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
+void VulkanRenderObject::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
     if (!node->isVisible) {
         return;
     }
@@ -104,26 +104,26 @@ void VulkanRenderObject::drawNode(VkPipelineLayout layout, VulkanCommandBuffer *
             currentParent = currentParent->parent;
         }
         nodeMatrix = _transform * nodeMatrix;
-        drawCmd->cmdPushConstants(layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
         for (const Primitive primitive : node->primitives) {
             if (primitive.indexCount > 0) {
                 MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
-                drawCmd->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 1, 1, &materialData.set);
+                drawCmd->cmdBindDescriptorSet(pipeline, 1, 1, &materialData.set);
                 drawCmd->cmdDrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
             }
         }
     }
     for (const auto &child : node->children) {
-        drawNode(layout, drawCmd, child);
+        drawNode(pipeline, drawCmd, child);
     }
 }
 
-void VulkanRenderObject::draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd) {
+void VulkanRenderObject::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
     drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
     drawCmd->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     for (auto &subNode : _entity->_subNodeList) {
-        drawNode(layout, drawCmd, subNode);
+        drawNode(pipeline, drawCmd, subNode);
     }
 }
 

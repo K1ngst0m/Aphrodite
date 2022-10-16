@@ -352,8 +352,8 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
 
     ImGuiIO &io = ImGui::GetIO();
 
-    command->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    command->cmdBindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->getPipelineLayout(), 0, 1, &_descriptorSet);
+    command->cmdBindPipeline(_pipeline);
+    command->cmdBindDescriptorSet(_pipeline, 0, 1, &_descriptorSet);
     _pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
     _pushConstBlock.translate = glm::vec2(-1.0f);
     command->cmdPushConstants(_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_pushConstBlock), &_pushConstBlock);

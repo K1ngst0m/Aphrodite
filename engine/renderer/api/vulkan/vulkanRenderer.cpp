@@ -8,8 +8,8 @@
 #include "imageView.h"
 #include "pipeline.h"
 #include "renderObject.h"
-#include "renderer/api/vulkan/physicalDevice.h"
-#include "renderer/api/vulkan/shader.h"
+#include "physicalDevice.h"
+#include "shader.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
 #include "scene/entity.h"
@@ -485,7 +485,7 @@ void VulkanRenderer::drawDemo() {
         // dynamic state
         commandBuffer->cmdSetViewport(&viewport);
         commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(VK_PIPELINE_BIND_POINT_GRAPHICS, m_defaultResource.demoPipeline);
+        commandBuffer->cmdBindPipeline(m_defaultResource.demoPipeline);
         commandBuffer->cmdDraw(3, 1, 0, 0);
         commandBuffer->cmdEndRenderPass();
 

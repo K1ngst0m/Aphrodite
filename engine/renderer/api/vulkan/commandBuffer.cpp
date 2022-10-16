@@ -2,8 +2,8 @@
 #include "buffer.h"
 #include "commandPool.h"
 #include "framebuffer.h"
-#include "pipeline.h"
 #include "image.h"
+#include "pipeline.h"
 #include "renderpass.h"
 #include "vkInit.hpp"
 
@@ -76,15 +76,14 @@ void VulkanCommandBuffer::cmdSetViewport(VkViewport *viewport) {
 void VulkanCommandBuffer::cmdSetSissor(VkRect2D *scissor) {
     vkCmdSetScissor(_handle, 0, 1, scissor);
 }
-void VulkanCommandBuffer::cmdBindPipeline(VkPipelineBindPoint bindPoint, VulkanPipeline* pPipeline) {
-    vkCmdBindPipeline(_handle, bindPoint, pPipeline->getHandle());
+void VulkanCommandBuffer::cmdBindPipeline(VulkanPipeline *pPipeline) {
+    vkCmdBindPipeline(_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
-void VulkanCommandBuffer::cmdBindDescriptorSet(VkPipelineBindPoint    bindPoint,
-                                               VkPipelineLayout       layout,
+void VulkanCommandBuffer::cmdBindDescriptorSet(VulkanPipeline        *pPipeline,
                                                uint32_t               firstSet,
                                                uint32_t               descriptorSetCount,
                                                const VkDescriptorSet *pDescriptorSets) {
-    vkCmdBindDescriptorSets(_handle, bindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, 0, nullptr);
+    vkCmdBindDescriptorSets(_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet, descriptorSetCount, pDescriptorSets, 0, nullptr);
 }
 void VulkanCommandBuffer::cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets) {
     vkCmdBindVertexBuffers(_handle, firstBinding, bindingCount, &pBuffer->getHandle(), pOffsets);

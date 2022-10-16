@@ -12,7 +12,7 @@ public:
     void loadResouces();
     void cleanupResources();
 
-    void draw(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd);
+    void draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd);
 
     void     setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits);
     uint32_t getSetCount();
@@ -21,7 +21,7 @@ public:
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(VkPipelineLayout layout, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node);
+    void drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node);
     void loadTextures();
     void loadBuffer();
     TextureGpuData createTexture(uint32_t width, uint32_t height, void * data, uint32_t dataSize);

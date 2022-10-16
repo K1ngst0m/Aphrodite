@@ -29,7 +29,6 @@ public:
     void _initDefaultResource();
 
 public:
-    VkExtent2D           getSwapChainExtent() const;
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
     VkQueue              getDefaultDeviceQueue(QueueFamilyType type) const;
@@ -66,6 +65,7 @@ private:
     }
 
 private:
+    VkExtent2D           getSwapChainExtent() const;
     std::vector<const char *> getRequiredInstanceExtensions();
     void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator);
     PerFrameSyncObject       &getCurrentFrameSyncObject();
