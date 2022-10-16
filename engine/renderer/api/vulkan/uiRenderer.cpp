@@ -1,7 +1,7 @@
 #include "uiRenderer.h"
 #include "commandBuffer.h"
 #include "common/assetManager.h"
-#include "descriptor.h"
+#include "descriptorSetLayout.h"
 #include "image.h"
 #include "imageView.h"
 #include "pipeline.h"

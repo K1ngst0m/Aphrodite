@@ -1,7 +1,7 @@
 #include "renderObject.h"
 #include "buffer.h"
 #include "commandBuffer.h"
-#include "descriptor.h"
+#include "descriptorSetLayout.h"
 #include "device.h"
 #include "image.h"
 #include "imageView.h"
@@ -17,13 +17,12 @@ VulkanRenderObject::VulkanRenderObject(VulkanDevice *device, vkl::Entity *entity
     : _device(device), _entity(entity) {
 }
 
-void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout, VkDescriptorPool descriptorPool, uint8_t bindingBits) {
+void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
         MaterialGpuData             materialData{};
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(descriptorPool, &materialLayout->getHandle(), 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &materialData.set));
-        std::vector<VkWriteDescriptorSet> descriptorWrites{};
+        materialData.set = materialLayout->allocateSet();
 
+        std::vector<VkWriteDescriptorSet> descriptorWrites{};
         if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
             if (material.baseColorTextureIndex > -1) {
                 descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &_textures[material.baseColorTextureIndex].descriptorInfo));

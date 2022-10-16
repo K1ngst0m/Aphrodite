@@ -60,7 +60,6 @@ private:
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
-    VkDescriptorPool             _descriptorPool;
 
     ShaderEffect   *_unlitEffect   = nullptr;
     VulkanPipeline *_unlitPipeline = nullptr;

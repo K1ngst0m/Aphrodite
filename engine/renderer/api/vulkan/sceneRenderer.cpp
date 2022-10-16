@@ -1,5 +1,5 @@
 #include "sceneRenderer.h"
-#include "descriptor.h"
+#include "descriptorSetLayout.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
 #include "device.h"
@@ -33,8 +33,6 @@ void VulkanSceneRenderer::loadResources() {
 }
 
 void VulkanSceneRenderer::cleanupResources() {
-    vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
-
     for (auto &renderObject : _renderList) {
         renderObject->cleanupResources();
     }
@@ -117,25 +115,7 @@ void VulkanSceneRenderer::_initRenderList() {
 }
 
 void VulkanSceneRenderer::_initUniformList() {
-    // big fucking pool !!!
-    std::vector<VkDescriptorPoolSize> poolSizes{
-        {VK_DESCRIPTOR_TYPE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000},
-        {VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000},
-        {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000}};
-
     _globalDescriptorSets.resize(_renderer->getCommandBufferCount());
-    uint32_t maxSetSize = _globalDescriptorSets.size();
-    for (auto &renderable : _renderList) {
-        maxSetSize += renderable->getSetCount();
-    }
 
     uint32_t writeCount     = 0;
     int      mtlBindingBits = MATERIAL_BINDING_NONE;
@@ -149,12 +129,9 @@ void VulkanSceneRenderer::_initUniformList() {
         writeCount = 3;
     }
 
-    VkDescriptorPoolCreateInfo poolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, maxSetSize);
-    VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &poolInfo, nullptr, &_descriptorPool));
-
-    const VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_getDescriptorSetLayout(SET_BINDING_SCENE)->getHandle(), 1);
     for (auto &set : _globalDescriptorSets) {
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &set));
+        set = _getDescriptorSetLayout(SET_BINDING_SCENE)->allocateSet();
+
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for (auto &uniformObj : _uniformList) {
             VkWriteDescriptorSet write = {};
@@ -172,7 +149,7 @@ void VulkanSceneRenderer::_initUniformList() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterial(_getDescriptorSetLayout(SET_BINDING_MATERIAL), _descriptorPool, mtlBindingBits);
+        renderable->setupMaterial(_getDescriptorSetLayout(SET_BINDING_MATERIAL), mtlBindingBits);
     }
 }
 

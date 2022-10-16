@@ -5,7 +5,7 @@
 #include "pipeline.h"
 #include "commandPool.h"
 #include "framebuffer.h"
-#include "descriptor.h"
+#include "descriptorSetLayout.h"
 #include "image.h"
 #include "imageView.h"
 #include "renderpass.h"
@@ -527,7 +527,7 @@ VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo
     if (result != VK_SUCCESS){
         return result;
     }
-    *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(pCreateInfo, setLayout);
+    *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(this, pCreateInfo, setLayout);
     return VK_SUCCESS;
 }
 

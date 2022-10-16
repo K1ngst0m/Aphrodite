@@ -37,6 +37,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags) {
 
     return VK_SUCCESS;
 }
+
 VkResult VulkanCommandBuffer::end() {
     if (_state != CommandBufferState::RECORDING) {
         return VK_NOT_READY;
@@ -46,6 +47,7 @@ VkResult VulkanCommandBuffer::end() {
 
     return vkEndCommandBuffer(_handle);
 }
+
 VkResult VulkanCommandBuffer::reset() {
     if (_handle != VK_NULL_HANDLE)
         return vkResetCommandBuffer(_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);

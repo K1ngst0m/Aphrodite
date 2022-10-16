@@ -1,7 +1,7 @@
 #include "shader.h"
 #include "pipeline.h"
 #include "renderpass.h"
-#include "descriptor.h"
+#include "descriptorSetLayout.h"
 
 namespace vkl {
 static VkShaderModule createShaderModule(VulkanDevice            *device,
