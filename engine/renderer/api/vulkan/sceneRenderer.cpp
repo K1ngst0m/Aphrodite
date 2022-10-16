@@ -46,6 +46,7 @@ void VulkanSceneRenderer::cleanupResources() {
 }
 
 void VulkanSceneRenderer::drawScene() {
+    _renderer->prepareFrame();
     VkExtent2D extent{
         .width  = _renderer->getWindowWidth(),
         .height = _renderer->getWindowHeight(),
@@ -66,30 +67,29 @@ void VulkanSceneRenderer::drawScene() {
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
-    // record command
-    for (uint32_t commandIndex = 0; commandIndex < _renderer->getCommandBufferCount(); commandIndex++) {
-        auto *commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
+    auto commandIndex = _renderer->getCurrentFrameIndex();
+    auto *commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
 
-        commandBuffer->begin(0);
+    commandBuffer->begin(0);
 
-        // render pass
-        renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(commandIndex);
-        commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
+    // render pass
+    renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentFrameImageIndex());
+    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
-        // dynamic state
-        commandBuffer->cmdSetViewport(&viewport);
-        commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(_getCurrentPipeline());
-        commandBuffer->cmdBindDescriptorSet(_getCurrentPipeline(), 0, 1, &_globalDescriptorSets[commandIndex]);
+    // dynamic state
+    commandBuffer->cmdSetViewport(&viewport);
+    commandBuffer->cmdSetSissor(&scissor);
+    commandBuffer->cmdBindPipeline(_getCurrentPipeline());
+    commandBuffer->cmdBindDescriptorSet(_getCurrentPipeline(), 0, 1, &_globalDescriptorSets[commandIndex]);
 
-        for (auto &renderable : _renderList) {
-            renderable->draw(_getCurrentPipeline(), commandBuffer);
-        }
-
-        commandBuffer->cmdEndRenderPass();
-
-        commandBuffer->end();
+    for (auto &renderable : _renderList) {
+        renderable->draw(_getCurrentPipeline(), commandBuffer);
     }
+
+    commandBuffer->cmdEndRenderPass();
+
+    commandBuffer->end();
+    _renderer->submitFrame();
 }
 
 void VulkanSceneRenderer::update(float deltaTime) {

@@ -24,6 +24,8 @@ public:
     void idleDevice() override;
     void drawDemo() override;
     void renderOneFrame() override;
+    void prepareFrame();
+    void submitFrame();
 
 public:
     void _initDefaultResource();
@@ -38,10 +40,12 @@ public:
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
     VulkanShaderCache   &getShaderCache();
     VkPipelineCache      getPipelineCache();
+    uint32_t             getCurrentFrameIndex() const;
+    uint32_t getCurrentFrameImageIndex() const{
+        return m_defaultResource.syncObjects[m_currentFrame].imageIdx;
+    }
 
 private:
-    void prepareFrame();
-    void submitFrame();
 
     void _createInstance();
     void _createDevice();

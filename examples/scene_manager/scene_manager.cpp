@@ -17,7 +17,6 @@ void scene_manager::init() {
     setupWindow();
     setupRenderer();
     setupScene();
-    setupDrawCommands();
 }
 
 void scene_manager::run() {
@@ -30,7 +29,7 @@ void scene_manager::run() {
         m_uiRenderer->update(m_deltaTime);
 
         // draw and submit
-        m_renderer->renderOneFrame();
+        m_sceneRenderer->drawScene();
     }
 }
 
@@ -135,19 +134,18 @@ void scene_manager::setupScene() {
         auto     &node                = m_scene->getRootNode()->createChildNode(modelTransform);
         node->attachObject(prefab_sphere_model);
     }
+
+    {
+        m_sceneRenderer->setScene(m_scene);
+        m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
+        m_sceneRenderer->loadResources();
+    }
 }
 
 void scene_manager::setupRenderer() {
     m_renderer      = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
     m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer.get());
     m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer.get(), m_window->getWindowData());
-}
-
-void scene_manager::setupDrawCommands() {
-    m_sceneRenderer->setScene(m_scene);
-    m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
-    m_sceneRenderer->loadResources();
-    m_sceneRenderer->drawScene();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {

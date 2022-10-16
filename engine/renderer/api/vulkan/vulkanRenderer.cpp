@@ -318,7 +318,7 @@ void VulkanRenderer::submitFrame() {
                 .pWaitSemaphores      = waitSemaphores,
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
-                .pCommandBuffers      = &m_defaultResource.commandBuffers[getCurrentFrameSyncObject().imageIdx]->getHandle(),
+                .pCommandBuffers      = &m_defaultResource.commandBuffers[m_currentFrame]->getHandle(),
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores    = signalSemaphores,
     };
@@ -453,6 +453,7 @@ VulkanInstance *VulkanRenderer::getInstance() const {
 }
 
 void VulkanRenderer::drawDemo() {
+    prepareFrame();
     VkExtent2D extent{
         .width  = getWindowWidth(),
         .height = getWindowHeight(),
@@ -473,24 +474,24 @@ void VulkanRenderer::drawDemo() {
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // record command
-    for (uint32_t commandIndex = 0; commandIndex < getCommandBufferCount(); commandIndex++) {
-        auto *commandBuffer = getDefaultCommandBuffer(commandIndex);
+    auto commandIndex = getCurrentFrameIndex();
+    auto *commandBuffer = getDefaultCommandBuffer(commandIndex);
 
-        commandBuffer->begin(0);
+    commandBuffer->begin(0);
 
-        // render pass
-        renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(commandIndex);
-        commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
+    // render pass
+    renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(getCurrentFrameImageIndex());
+    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
-        // dynamic state
-        commandBuffer->cmdSetViewport(&viewport);
-        commandBuffer->cmdSetSissor(&scissor);
-        commandBuffer->cmdBindPipeline(m_defaultResource.demoPipeline);
-        commandBuffer->cmdDraw(3, 1, 0, 0);
-        commandBuffer->cmdEndRenderPass();
+    // dynamic state
+    commandBuffer->cmdSetViewport(&viewport);
+    commandBuffer->cmdSetSissor(&scissor);
+    commandBuffer->cmdBindPipeline(m_defaultResource.demoPipeline);
+    commandBuffer->cmdDraw(3, 1, 0, 0);
+    commandBuffer->cmdEndRenderPass();
 
-        commandBuffer->end();
-    }
+    commandBuffer->end();
+    submitFrame();
 }
 VulkanShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;
@@ -527,6 +528,10 @@ void VulkanRenderer::_setupDemoPass() {
     effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
     effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, getDefaultRenderPass(), &m_defaultResource.demoPipeline));
+
+    m_deletionQueue.push_function([=](){
+        m_device->destroyPipeline(m_defaultResource.demoPipeline);
+    });
 }
 
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {
@@ -541,5 +546,8 @@ void VulkanRenderer::_createPipelineCache() {
 
 VkPipelineCache VulkanRenderer::getPipelineCache() {
     return m_pipelineCache;
+}
+uint32_t VulkanRenderer::getCurrentFrameIndex() const {
+    return m_currentFrame;
 }
 } // namespace vkl

@@ -20,7 +20,6 @@ private:
     void mouseHandleDerive(double xposIn, double yposIn);
 
     void setupScene();
-    void setupDrawCommands();
 
 private:
     std::shared_ptr<vkl::Light>  m_pointLight       = nullptr;

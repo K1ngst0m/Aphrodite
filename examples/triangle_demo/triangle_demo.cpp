@@ -19,8 +19,6 @@ void triangle_demo::init() {
     // setup renderer
     m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
 
-    // build draw command
-    m_renderer->drawDemo();
 }
 
 void triangle_demo::run() {
@@ -30,7 +28,7 @@ void triangle_demo::run() {
     // loop
     while (!m_window->shouldClose()) {
         m_window->pollEvents();
-        m_renderer->renderOneFrame();
+        m_renderer->drawDemo();
     }
 }
 
