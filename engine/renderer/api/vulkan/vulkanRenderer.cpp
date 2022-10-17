@@ -6,14 +6,14 @@
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
+#include "physicalDevice.h"
 #include "pipeline.h"
 #include "renderObject.h"
-#include "physicalDevice.h"
-#include "shader.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
 #include "scene/entity.h"
 #include "sceneRenderer.h"
+#include "shader.h"
 #include "swapChain.h"
 #include "uiRenderer.h"
 #include "uniformObject.h"
@@ -83,6 +83,14 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
+void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                   const VkAllocationCallbacks *pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
 void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
     createInfo                 = {};
     createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -101,37 +109,31 @@ std::unique_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config, std
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
-    m_defaultResource.framebuffers.resize(m_swapChain->getImageCount());
+    m_framebufferData.framebuffer.resize(m_swapChain->getImageCount());
+    m_framebufferData.colorImage.resize(m_swapChain->getImageCount());
+    m_framebufferData.colorImageView.resize(m_swapChain->getImageCount());
+
     _createDefaultColorAttachments();
     _createDefaultDepthAttachments();
-    for (auto &fb : m_defaultResource.framebuffers) {
+    for (uint32_t idx = 0; idx < m_swapChain->getImageCount(); idx++) {
+        auto &framebuffer     = m_framebufferData.framebuffer[idx];
+        auto &colorAttachment = m_framebufferData.colorImageView[idx];
+        auto &depthAttachment = m_framebufferData.depthImageView;
         {
-            std::vector<VulkanImageView *> attachments{fb.colorImageView, fb.depthImageView};
+            std::vector<VulkanImageView *> attachments{colorAttachment, depthAttachment};
             FramebufferCreateInfo          createInfo{};
             createInfo.width  = m_swapChain->getExtent().width;
             createInfo.height = m_swapChain->getExtent().height;
-            VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &fb.framebuffer, attachments.size(), attachments.data()));
+            VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
         }
 
         m_deletionQueue.push_function([=]() {
-            m_device->destroyFramebuffers(fb.framebuffer);
+            m_device->destroyFramebuffers(framebuffer);
         });
     }
 }
 
 std::vector<const char *> VulkanRenderer::getRequiredInstanceExtensions() {
-    // Get extensions supported by the instance and store for later use
-    uint32_t extCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
-    if (extCount > 0) {
-        std::vector<VkExtensionProperties> extensions(extCount);
-        if (vkEnumerateInstanceExtensionProperties(nullptr, &extCount, &extensions.front()) == VK_SUCCESS) {
-            for (VkExtensionProperties extension : extensions) {
-                m_supportedInstanceExtensions.push_back(extension.extensionName);
-            }
-        }
-    }
-
     uint32_t     glfwExtensionCount = 0;
     const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -232,10 +234,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
         colorAttachment,
     };
 
-    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_defaultResource.renderPass, colorAttachments, depthAttachment));
+    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_renderPass, colorAttachments, depthAttachment));
 
     m_deletionQueue.push_function([=]() {
-        m_device->destoryRenderPass(m_defaultResource.renderPass);
+        m_device->destoryRenderPass(m_renderPass);
     });
 }
 
@@ -247,8 +249,7 @@ void VulkanRenderer::_setupSwapChain() {
 }
 
 void VulkanRenderer::_allocateDefaultCommandBuffers() {
-    m_defaultResource.commandBuffers.resize(m_swapChain->getImageCount());
-    m_device->allocateCommandBuffers(m_defaultResource.commandBuffers.size(), m_defaultResource.commandBuffers.data());
+    m_device->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data());
 }
 
 void VulkanRenderer::_setupDebugMessenger() {
@@ -263,37 +264,27 @@ void VulkanRenderer::_setupDebugMessenger() {
     m_deletionQueue.push_function([=]() { destroyDebugUtilsMessengerEXT(m_instance->getHandle(), m_debugMessenger, nullptr); });
 }
 
-void VulkanRenderer::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                                   const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
 void VulkanRenderer::_createDefaultSyncObjects() {
-    m_defaultResource.syncObjects.resize(_config.maxFrames);
-
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    for (auto &frameSyncObject : m_defaultResource.syncObjects) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.presentSemaphore));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &frameSyncObject.renderSemaphore));
-        VK_CHECK_RESULT(vkCreateFence(m_device->getHandle(), &fenceInfo, nullptr, &frameSyncObject.inFlightFence));
+    for (uint32_t idx = 0; idx < _config.maxFrames; idx++) {
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &m_presentSemaphore[idx]));
+        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &m_renderSemaphore[idx]));
+        VK_CHECK_RESULT(vkCreateFence(m_device->getHandle(), &fenceInfo, nullptr, &m_inFlightFence[idx]));
 
         m_deletionQueue.push_function([=]() {
-            vkDestroyFence(m_device->getHandle(), frameSyncObject.inFlightFence, nullptr);
-            vkDestroySemaphore(m_device->getHandle(), frameSyncObject.renderSemaphore, nullptr);
-            vkDestroySemaphore(m_device->getHandle(), frameSyncObject.presentSemaphore, nullptr);
+            vkDestroyFence(m_device->getHandle(), m_inFlightFence[idx], nullptr);
+            vkDestroySemaphore(m_device->getHandle(), m_renderSemaphore[idx], nullptr);
+            vkDestroySemaphore(m_device->getHandle(), m_presentSemaphore[idx], nullptr);
         });
     }
 }
 
 void VulkanRenderer::prepareFrame() {
-    vkWaitForFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence, VK_TRUE, UINT64_MAX);
+    vkWaitForFences(m_device->getHandle(), 1, &m_inFlightFence[m_currentFrame], VK_TRUE, UINT64_MAX);
 
-    VkResult result = m_swapChain->acqureNextImage(getCurrentFrameSyncObject().renderSemaphore, VK_NULL_HANDLE, &getCurrentFrameSyncObject().imageIdx);
+    VkResult result = m_swapChain->acqureNextImage(m_renderSemaphore[m_currentFrame], VK_NULL_HANDLE, &m_imageIdx);
 
     // if (result == VK_ERROR_OUT_OF_DATE_KHR) {
     //     assert("swapchain recreation current not support.");
@@ -305,27 +296,27 @@ void VulkanRenderer::prepareFrame() {
         VK_CHECK_RESULT(result);
     }
 
-    vkResetFences(m_device->getHandle(), 1, &getCurrentFrameSyncObject().inFlightFence);
+    vkResetFences(m_device->getHandle(), 1, &m_inFlightFence[m_currentFrame]);
 }
 
 void VulkanRenderer::submitFrame() {
-    VkSemaphore          waitSemaphores[]   = {getCurrentFrameSyncObject().renderSemaphore};
+    VkSemaphore          waitSemaphores[]   = {m_renderSemaphore[m_currentFrame]};
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore          signalSemaphores[] = {getCurrentFrameSyncObject().presentSemaphore};
+    VkSemaphore          signalSemaphores[] = {m_presentSemaphore[m_currentFrame]};
     VkSubmitInfo         submitInfo{
                 .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .waitSemaphoreCount   = 1,
                 .pWaitSemaphores      = waitSemaphores,
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
-                .pCommandBuffers      = &m_defaultResource.commandBuffers[m_currentFrame]->getHandle(),
+                .pCommandBuffers      = &m_commandBuffers[m_currentFrame]->getHandle(),
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores    = signalSemaphores,
     };
 
     VK_CHECK_RESULT(vkQueueSubmit(getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
                                   1, &submitInfo,
-                                  getCurrentFrameSyncObject().inFlightFence));
+                                  m_inFlightFence[m_currentFrame]));
 
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -333,7 +324,7 @@ void VulkanRenderer::submitFrame() {
         .pWaitSemaphores    = signalSemaphores,
         .swapchainCount     = 1,
         .pSwapchains        = &m_swapChain->getHandle(),
-        .pImageIndices      = &getCurrentFrameSyncObject().imageIdx,
+        .pImageIndices      = &m_imageIdx,
         .pResults           = nullptr, // Optional
     };
 
@@ -363,10 +354,15 @@ void VulkanRenderer::idleDevice() {
 }
 
 void VulkanRenderer::_initDefaultResource() {
+    m_renderSemaphore.resize(_config.maxFrames);
+    m_presentSemaphore.resize(_config.maxFrames);
+    m_inFlightFence.resize(_config.maxFrames);
+    m_commandBuffers.resize(_config.maxFrames);
+
     _allocateDefaultCommandBuffers();
     _createDefaultRenderPass();
-    _createDefaultFramebuffers();
     _createDefaultSyncObjects();
+    _createDefaultFramebuffers();
     _createPipelineCache();
     _setupDemoPass();
 }
@@ -375,15 +371,15 @@ VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFamilyType type) const {
     return m_device->getQueueByFlags(type, 0);
 }
 VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
-    return m_defaultResource.renderPass;
+    return m_renderPass;
 }
 
 VulkanCommandBuffer *VulkanRenderer::getDefaultCommandBuffer(uint32_t idx) const {
-    return m_defaultResource.commandBuffers[idx];
+    return m_commandBuffers[idx];
 }
 
 uint32_t VulkanRenderer::getCommandBufferCount() const {
-    return m_defaultResource.commandBuffers.size();
+    return m_commandBuffers.size();
 }
 
 VulkanDevice *VulkanRenderer::getDevice() const {
@@ -391,45 +387,47 @@ VulkanDevice *VulkanRenderer::getDevice() const {
 }
 
 void VulkanRenderer::_createDefaultDepthAttachments() {
-    for (auto &fb : m_defaultResource.framebuffers) {
-        {
-            VkFormat        depthFormat = m_device->getDepthFormat();
-            ImageCreateInfo createInfo{};
-            createInfo.extent   = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
-            createInfo.format   = static_cast<Format>(depthFormat);
-            createInfo.tiling   = IMAGE_TILING_OPTIMAL;
-            createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            VK_CHECK_RESULT(m_device->createImage(&createInfo, &fb.depthImage));
+    auto &depthImage     = m_framebufferData.depthImage;
+    auto &depthImageView = m_framebufferData.depthImageView;
 
-            VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
-            cmd->cmdTransitionImageLayout(fb.depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-            m_device->endSingleTimeCommands(cmd);
-        }
+    {
+        VkFormat        depthFormat = m_device->getDepthFormat();
+        ImageCreateInfo createInfo{};
+        createInfo.extent   = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
+        createInfo.format   = static_cast<Format>(depthFormat);
+        createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+        createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        VK_CHECK_RESULT(m_device->createImage(&createInfo, &depthImage));
 
-        {
-            ImageViewCreateInfo createInfo{};
-            createInfo.format   = FORMAT_D32_SFLOAT;
-            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            VK_CHECK_RESULT(m_device->createImageView(&createInfo, &fb.depthImageView, fb.depthImage));
-        }
-
-        m_deletionQueue.push_function([=]() {
-            m_device->destroyImage(fb.depthImage);
-            m_device->destroyImageView(fb.depthImageView);
-        });
+        VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        m_device->endSingleTimeCommands(cmd);
     }
+
+    {
+        ImageViewCreateInfo createInfo{};
+        createInfo.format   = FORMAT_D32_SFLOAT;
+        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+        VK_CHECK_RESULT(m_device->createImageView(&createInfo, &depthImageView, depthImage));
+    }
+
+    m_deletionQueue.push_function([=]() {
+        m_device->destroyImage(depthImage);
+        m_device->destroyImageView(depthImageView);
+    });
 }
 VulkanFramebuffer *VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
-    return m_defaultResource.framebuffers[idx].framebuffer;
+    return m_framebufferData.framebuffer[idx];
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto &framebuffer = m_defaultResource.framebuffers[idx];
+        auto &colorImage     = m_framebufferData.colorImage[idx];
+        auto &colorImageView = m_framebufferData.colorImageView[idx];
 
         // get swapchain image
         {
-            framebuffer.colorImage = m_swapChain->getImage(idx);
+            colorImage = m_swapChain->getImage(idx);
         }
 
         // get image view
@@ -437,17 +435,15 @@ void VulkanRenderer::_createDefaultColorAttachments() {
             ImageViewCreateInfo createInfo{};
             createInfo.format   = FORMAT_B8G8R8A8_SRGB;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            m_device->createImageView(&createInfo, &framebuffer.colorImageView, framebuffer.colorImage);
+            m_device->createImageView(&createInfo, &colorImageView, colorImage);
         }
 
         m_deletionQueue.push_function([=]() {
-            m_device->destroyImageView(framebuffer.colorImageView);
+            m_device->destroyImageView(colorImageView);
         });
     }
 }
-PerFrameSyncObject &VulkanRenderer::getCurrentFrameSyncObject() {
-    return m_defaultResource.syncObjects[m_currentFrame];
-}
+
 VulkanInstance *VulkanRenderer::getInstance() const {
     return m_instance;
 }
@@ -474,19 +470,19 @@ void VulkanRenderer::drawDemo() {
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     // record command
-    auto commandIndex = getCurrentFrameIndex();
+    auto  commandIndex  = getCurrentFrameIndex();
     auto *commandBuffer = getDefaultCommandBuffer(commandIndex);
 
     commandBuffer->begin(0);
 
     // render pass
-    renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(getCurrentFrameImageIndex());
+    renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(getCurrentImageIndex());
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
     // dynamic state
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(m_defaultResource.demoPipeline);
+    commandBuffer->cmdBindPipeline(m_demoPipeline);
     commandBuffer->cmdDraw(3, 1, 0, 0);
     commandBuffer->cmdEndRenderPass();
 
@@ -495,10 +491,6 @@ void VulkanRenderer::drawDemo() {
 }
 VulkanShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;
-}
-void VulkanRenderer::renderOneFrame() {
-    prepareFrame();
-    submitFrame();
 }
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config)
     : Renderer(std::move(windowData), config) {
@@ -525,12 +517,12 @@ void VulkanRenderer::_setupDemoPass() {
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
     EffectInfo effectInfo{};
-    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
+    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
     effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
-    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, getDefaultRenderPass(), &m_defaultResource.demoPipeline));
+    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, getDefaultRenderPass(), &m_demoPipeline));
 
-    m_deletionQueue.push_function([=](){
-        m_device->destroyPipeline(m_defaultResource.demoPipeline);
+    m_deletionQueue.push_function([=]() {
+        m_device->destroyPipeline(m_demoPipeline);
     });
 }
 
@@ -549,5 +541,8 @@ VkPipelineCache VulkanRenderer::getPipelineCache() {
 }
 uint32_t VulkanRenderer::getCurrentFrameIndex() const {
     return m_currentFrame;
+}
+uint32_t VulkanRenderer::getCurrentImageIndex() const {
+    return m_imageIdx;
 }
 } // namespace vkl

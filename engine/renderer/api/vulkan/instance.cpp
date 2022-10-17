@@ -55,6 +55,19 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo,
         }
     }
 
+    // Get extensions supported by the instance and store for later use
+    uint32_t extCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
+    if (extCount > 0) {
+        std::vector<VkExtensionProperties> extensions(extCount);
+        if (vkEnumerateInstanceExtensionProperties(nullptr, &extCount, &extensions.front()) == VK_SUCCESS) {
+            for (VkExtensionProperties extension : extensions) {
+                instance->_supportedInstanceExtensions.push_back(extension.extensionName);
+            }
+        }
+    }
+
+
     // Initialize the Instance's thread pool with a single worker thread for now.
     // TODO: Assess background tasks and performance before increasing thread count.
     instance->_threadPool = new ThreadPool(1);

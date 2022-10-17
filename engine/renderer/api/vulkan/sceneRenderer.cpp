@@ -73,7 +73,7 @@ void VulkanSceneRenderer::drawScene() {
     commandBuffer->begin(0);
 
     // render pass
-    renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentFrameImageIndex());
+    renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
     // dynamic state

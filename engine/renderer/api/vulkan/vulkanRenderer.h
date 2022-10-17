@@ -6,13 +6,6 @@
 #include "shader.h"
 
 namespace vkl {
-struct PerFrameSyncObject {
-    VkSemaphore renderSemaphore;
-    VkSemaphore presentSemaphore;
-    VkFence     inFlightFence;
-    uint32_t    imageIdx = 0;
-};
-
 class VulkanRenderer : public Renderer {
 public:
     static std::unique_ptr<VulkanRenderer> Create(RenderConfig *config, std::shared_ptr<WindowData> windowData);
@@ -23,7 +16,6 @@ public:
     void cleanup() override;
     void idleDevice() override;
     void drawDemo() override;
-    void renderOneFrame() override;
     void prepareFrame();
     void submitFrame();
 
@@ -41,12 +33,9 @@ public:
     VulkanShaderCache   &getShaderCache();
     VkPipelineCache      getPipelineCache();
     uint32_t             getCurrentFrameIndex() const;
-    uint32_t getCurrentFrameImageIndex() const{
-        return m_defaultResource.syncObjects[m_currentFrame].imageIdx;
-    }
+    uint32_t             getCurrentImageIndex() const;
 
 private:
-
     void _createInstance();
     void _createDevice();
     void _createSurface();
@@ -69,43 +58,44 @@ private:
     }
 
 private:
-    VkExtent2D           getSwapChainExtent() const;
+    VkExtent2D                getSwapChainExtent() const;
     std::vector<const char *> getRequiredInstanceExtensions();
-    void                      destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator);
-    PerFrameSyncObject       &getCurrentFrameSyncObject();
 
 private:
-    VulkanInstance           *m_instance;
-    VulkanDevice             *m_device;
-    VulkanSwapChain          *m_swapChain;
-    std::vector<const char *> m_supportedInstanceExtensions;
-    VkPhysicalDeviceFeatures  m_enabledFeatures{};
-    VkDebugUtilsMessengerEXT  m_debugMessenger;
-    VkSurfaceKHR              m_surface;
+    VulkanInstance          *m_instance;
+    VulkanDevice            *m_device;
+    VulkanSwapChain         *m_swapChain;
+    VkPhysicalDeviceFeatures m_enabledFeatures{};
+    VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkSurfaceKHR             m_surface;
 
-    VkPipelineCache m_pipelineCache;
-    DeletionQueue   m_deletionQueue;
+    VkPipelineCache   m_pipelineCache;
+    VulkanShaderCache m_shaderCache;
+    DeletionQueue     m_deletionQueue;
 
     uint32_t m_currentFrame = 0;
+    uint32_t m_imageIdx     = 0;
 
+    // default resource
 private:
-    struct FrameBufferData {
-        VulkanImage       *colorImage;
-        VulkanImageView   *colorImageView;
-        VulkanImage       *depthImage;
-        VulkanImageView   *depthImageView;
-        VulkanFramebuffer *framebuffer;
-    };
+    VulkanRenderPass *m_renderPass;
+    VulkanPipeline   *m_demoPipeline;
 
     struct {
-        std::vector<VulkanCommandBuffer *> commandBuffers;
-        std::vector<PerFrameSyncObject>    syncObjects;
-        std::vector<FrameBufferData>       framebuffers;
-        VulkanRenderPass                  *renderPass;
-        VulkanPipeline                    *demoPipeline;
-    } m_defaultResource;
+        std::vector<VulkanFramebuffer *> framebuffer;
+        std::vector<VulkanImage *>       colorImage;
+        std::vector<VulkanImageView *>   colorImageView;
 
-    VulkanShaderCache m_shaderCache;
+        // TODO frames in flight depth attachment
+        VulkanImage                     *depthImage;
+        VulkanImageView                 *depthImageView;
+    } m_framebufferData;
+
+    std::vector<VkSemaphore>           m_renderSemaphore;
+    std::vector<VkSemaphore>           m_presentSemaphore;
+    std::vector<VkFence>               m_inFlightFence;
+
+    std::vector<VulkanCommandBuffer *> m_commandBuffers;
 };
 } // namespace vkl
 

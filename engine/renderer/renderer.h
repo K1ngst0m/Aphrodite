@@ -25,7 +25,6 @@ public:
     virtual void cleanup()        = 0;
     virtual void idleDevice()     = 0;
     virtual void drawDemo()       = 0;
-    virtual void renderOneFrame() = 0;
 
     void setWindowData(const std::shared_ptr<WindowData> &windowData);
 

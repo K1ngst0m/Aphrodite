@@ -29,6 +29,7 @@ public:
     ThreadPool *GetThreadPool();
 
 private:
+    std::vector<const char *> _supportedInstanceExtensions;
     std::vector<std::string>            _validationLayers;
     std::vector<VulkanPhysicalDevice *> _physicalDevices;
     ThreadPool                         *_threadPool = nullptr;
