@@ -114,10 +114,11 @@ public:
     void waitIdle();
 
 public:
-    VulkanCommandPool    *getCommandPoolWithQueue(QueueFamilyType type);
-    VulkanPhysicalDevice *getPhysicalDevice() const;
-    VkQueue               getQueueByFlags(QueueFamilyType flags, uint32_t queueIndex = 0);
-    VkFormat              getDepthFormat() const;
+    VulkanCommandPool        *getCommandPoolWithQueue(QueueFamilyType type);
+    VulkanPhysicalDevice     *getPhysicalDevice() const;
+    VkQueue                   getQueueByFlags(QueueFamilyType flags, uint32_t queueIndex = 0);
+    VkFormat                  getDepthFormat() const;
+    VulkanShaderCache        *getShaderCache();
 
 private:
     VulkanPhysicalDevice    *_physicalDevice;
@@ -125,9 +126,10 @@ private:
 
     std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
 
-    VulkanCommandPool *_drawCommandPool     = nullptr;
-    VulkanCommandPool *_transferCommandPool = nullptr;
-    VulkanCommandPool *_computeCommandPool  = nullptr;
+    VulkanCommandPool        *_drawCommandPool     = nullptr;
+    VulkanCommandPool        *_transferCommandPool = nullptr;
+    VulkanCommandPool        *_computeCommandPool  = nullptr;
+    VulkanShaderCache        *_shaderCache         = nullptr;
 
     DeviceCreateInfo _createInfo;
 };

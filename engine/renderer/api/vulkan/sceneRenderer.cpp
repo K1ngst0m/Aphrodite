@@ -215,8 +215,8 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
         effectInfo.setLayouts.push_back(sceneLayout);
         effectInfo.setLayouts.push_back(materialLayout);
         effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "unlit.frag.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.frag.spv");
 
         PipelineCreateInfo pipelineCreateInfo;
         VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_unlitPipeline));
@@ -254,8 +254,8 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
         effectInfo.setLayouts.push_back(sceneLayout);
         effectInfo.setLayouts.push_back(materialLayout);
         effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "default_lit.frag.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.frag.spv");
 
         PipelineCreateInfo pipelineCreateInfo;
         VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_defaultLitPipeline));

@@ -29,7 +29,6 @@ public:
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
-    VulkanShaderCache   &getShaderCache();
     VkPipelineCache      getPipelineCache();
     uint32_t             getCurrentFrameIndex() const;
     uint32_t             getCurrentImageIndex() const;
@@ -68,7 +67,6 @@ private:
     VkSurfaceKHR             m_surface;
 
     VkPipelineCache   m_pipelineCache;
-    VulkanShaderCache m_shaderCache;
     DeletionQueue     m_deletionQueue;
 
     uint32_t m_currentFrame = 0;

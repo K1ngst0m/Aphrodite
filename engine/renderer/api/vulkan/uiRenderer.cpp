@@ -293,8 +293,8 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         EffectInfo info;
         info.setLayouts.push_back(pLayout);
         info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.vert.spv");
-        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _renderer->getShaderCache().getShaders(_device, shaderDir / "uioverlay.frag.spv");
+        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
+        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
 
         VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCI, &info, renderPass, &_pipeline));
         _effect = _pipeline->getEffect();

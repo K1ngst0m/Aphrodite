@@ -19,16 +19,16 @@ static VkShaderModule createShaderModule(VulkanDevice            *device,
     return shaderModule;
 }
 
-void VulkanShaderCache::destory(VkDevice device) {
+void VulkanShaderCache::destory() {
     for (auto &[key, shaderModule] : shaderModuleCaches) {
-        vkDestroyShaderModule(device, shaderModule->getHandle(), nullptr);
+        vkDestroyShaderModule(_device->getHandle(), shaderModule->getHandle(), nullptr);
         delete shaderModule;
     }
 }
-VulkanShaderModule *VulkanShaderCache::getShaders(VulkanDevice *device, const std::string &path) {
+VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path) {
     if (!shaderModuleCaches.count(path)) {
         std::vector<char> spvCode      = vkl::utils::loadSpvFromFile(path);
-        VkShaderModule    shaderModule = createShaderModule(device, spvCode);
+        VkShaderModule    shaderModule = createShaderModule(_device, spvCode);
 
         shaderModuleCaches[path] = new VulkanShaderModule(spvCode, shaderModule);
     }
@@ -58,5 +58,8 @@ ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo) {
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, pInfo->constants);
     VK_CHECK_RESULT(vkCreatePipelineLayout(pDevice->getHandle(), &pipelineLayoutInfo, nullptr, &instance->_pipelineLayout));
     return instance;
+}
+VulkanShaderCache::VulkanShaderCache(VulkanDevice *device)
+    : _device(device) {
 }
 } // namespace vkl

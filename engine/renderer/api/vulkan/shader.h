@@ -25,10 +25,12 @@ private:
 
 class VulkanShaderCache {
 public:
-    VulkanShaderModule *getShaders(VulkanDevice *device, const std::string &path);
-    void                destory(VkDevice device);
+    VulkanShaderCache(VulkanDevice *device);
+    VulkanShaderModule *getShaders(const std::string &path);
+    void                destory();
 
 private:
+    VulkanDevice                                         *_device;
     std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
 };
 
@@ -48,7 +50,7 @@ public:
 
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-    const ShaderMapList &getShaderMapList(){
+    const ShaderMapList       &getShaderMapList() {
         return _shaderMapList;
     }
 

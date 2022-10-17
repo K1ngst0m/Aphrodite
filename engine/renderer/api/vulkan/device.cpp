@@ -97,6 +97,8 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
         }
     }
 
+    device->_shaderCache        = new VulkanShaderCache(device);
+
     // Copy address of object instance.
     *ppDevice = device;
 
@@ -484,7 +486,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const PipelineCreateInfo *pCreateI
     pipelineInfo.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.pNext                        = nullptr;
 
-    ShaderEffect * effect = ShaderEffect::Create(this, pEffectInfo);
+    ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for (const auto &[stage, sModule] : pEffectInfo->shaderMapList) {
@@ -536,5 +538,8 @@ VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo
 void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout) {
     vkDestroyDescriptorSetLayout(_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
+}
+VulkanShaderCache *VulkanDevice::getShaderCache() {
+    return _shaderCache;
 }
 } // namespace vkl

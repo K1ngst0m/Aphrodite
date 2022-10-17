@@ -63,8 +63,8 @@ void triangle_demo::setupPipeline() {
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
     vkl::EffectInfo effectInfo{};
-    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_renderer->getShaderCache().getShaders(m_device, shaderDir / "triangle.vert.spv");
-    effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache().getShaders(m_device, shaderDir / "triangle.frag.spv");
+    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_device->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
+    effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, m_renderer->getDefaultRenderPass(), &m_demoPipeline));
 }
 void triangle_demo::buildCommands() {
@@ -73,6 +73,7 @@ void triangle_demo::buildCommands() {
 
     vkl::RenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.pRenderPass       = m_renderer->getDefaultRenderPass();
+    renderPassBeginInfo.pFramebuffer = m_renderer->getDefaultFrameBuffer(m_renderer->getCurrentImageIndex());
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = m_renderer->getSwapChainExtent();
     std::vector<VkClearValue> clearValues(2);
@@ -90,7 +91,6 @@ void triangle_demo::buildCommands() {
     commandBuffer->begin(0);
 
     // render pass
-    renderPassBeginInfo.pFramebuffer = m_renderer->getDefaultFrameBuffer(m_renderer->getCurrentImageIndex());
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
 
     // dynamic state

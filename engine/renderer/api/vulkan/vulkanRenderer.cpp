@@ -345,7 +345,6 @@ void VulkanRenderer::submitFrame() {
 }
 
 void VulkanRenderer::cleanup() {
-    m_shaderCache.destory(m_device->getHandle());
     m_deletionQueue.flush();
 }
 
@@ -447,9 +446,6 @@ VulkanInstance *VulkanRenderer::getInstance() const {
     return m_instance;
 }
 
-VulkanShaderCache &VulkanRenderer::getShaderCache() {
-    return m_shaderCache;
-}
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config)
     : Renderer(std::move(windowData), config) {
     _createInstance();
