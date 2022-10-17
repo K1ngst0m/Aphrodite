@@ -27,6 +27,7 @@ class PipelineBuilder;
 class ShaderEffect;
 class ShaderPass;
 class VulkanPipeline;
+class VulkanSyncPrimitivesPool;
 struct RenderPassCreateInfo;
 struct PipelineCreateInfo;
 struct EffectInfo;
@@ -118,6 +119,7 @@ public:
     VulkanPhysicalDevice     *getPhysicalDevice() const;
     VkQueue                   getQueueByFlags(QueueFamilyType flags, uint32_t queueIndex = 0);
     VkFormat                  getDepthFormat() const;
+    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool();
     VulkanShaderCache        *getShaderCache();
 
 private:
@@ -129,6 +131,7 @@ private:
     VulkanCommandPool        *_drawCommandPool     = nullptr;
     VulkanCommandPool        *_transferCommandPool = nullptr;
     VulkanCommandPool        *_computeCommandPool  = nullptr;
+    VulkanSyncPrimitivesPool *_syncPrimitivesPool  = nullptr;
     VulkanShaderCache        *_shaderCache         = nullptr;
 
     DeviceCreateInfo _createInfo;

@@ -10,6 +10,7 @@
 #include "renderpass.h"
 #include "shader.h"
 #include "swapChain.h"
+#include "syncPrimitivesPool.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
@@ -97,6 +98,7 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
         }
     }
 
+    device->_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
     device->_shaderCache        = new VulkanShaderCache(device);
 
     // Copy address of object instance.
@@ -538,6 +540,9 @@ VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo
 void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout) {
     vkDestroyDescriptorSetLayout(_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
+}
+VulkanSyncPrimitivesPool *VulkanDevice::getSyncPrimitiviesPool() {
+    return _syncPrimitivesPool;
 }
 VulkanShaderCache *VulkanDevice::getShaderCache() {
     return _shaderCache;
