@@ -12,9 +12,17 @@ public:
     void finish() override;
 
 private:
+    void setupPipeline();
+
+    void buildCommands();
+
+private:
     std::shared_ptr<vkl::Window>         m_window;
     std::unique_ptr<vkl::VulkanRenderer> m_renderer;
+    vkl::VulkanDevice                   *m_device = nullptr;
     float                                m_deltaTime;
+
+    vkl::VulkanPipeline   *m_demoPipeline;
 };
 
 #endif // SCENE_MANAGER_H_

@@ -15,7 +15,6 @@ public:
 
     void cleanup() override;
     void idleDevice() override;
-    void drawDemo() override;
     void prepareFrame();
     void submitFrame();
 
@@ -34,6 +33,7 @@ public:
     VkPipelineCache      getPipelineCache();
     uint32_t             getCurrentFrameIndex() const;
     uint32_t             getCurrentImageIndex() const;
+    VkExtent2D           getSwapChainExtent() const;
 
 private:
     void _createInstance();
@@ -41,7 +41,6 @@ private:
     void _createSurface();
     void _setupDebugMessenger();
     void _setupSwapChain();
-    void _setupDemoPass();
 
 private:
     void _createDefaultDepthAttachments();
@@ -58,7 +57,6 @@ private:
     }
 
 private:
-    VkExtent2D                getSwapChainExtent() const;
     std::vector<const char *> getRequiredInstanceExtensions();
 
 private:
@@ -78,8 +76,7 @@ private:
 
     // default resource
 private:
-    VulkanRenderPass *m_renderPass;
-    VulkanPipeline   *m_demoPipeline;
+    vkl::VulkanRenderPass *m_renderPass;
 
     struct {
         std::vector<VulkanFramebuffer *> framebuffer;
@@ -87,13 +84,13 @@ private:
         std::vector<VulkanImageView *>   colorImageView;
 
         // TODO frames in flight depth attachment
-        VulkanImage                     *depthImage;
-        VulkanImageView                 *depthImageView;
+        VulkanImage     *depthImage;
+        VulkanImageView *depthImageView;
     } m_framebufferData;
 
-    std::vector<VkSemaphore>           m_renderSemaphore;
-    std::vector<VkSemaphore>           m_presentSemaphore;
-    std::vector<VkFence>               m_inFlightFence;
+    std::vector<VkSemaphore> m_renderSemaphore;
+    std::vector<VkSemaphore> m_presentSemaphore;
+    std::vector<VkFence>     m_inFlightFence;
 
     std::vector<VulkanCommandBuffer *> m_commandBuffers;
 };

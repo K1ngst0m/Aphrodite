@@ -364,7 +364,6 @@ void VulkanRenderer::_initDefaultResource() {
     _createDefaultSyncObjects();
     _createDefaultFramebuffers();
     _createPipelineCache();
-    _setupDemoPass();
 }
 
 VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFamilyType type) const {
@@ -448,47 +447,6 @@ VulkanInstance *VulkanRenderer::getInstance() const {
     return m_instance;
 }
 
-void VulkanRenderer::drawDemo() {
-    prepareFrame();
-    VkExtent2D extent{
-        .width  = getWindowWidth(),
-        .height = getWindowHeight(),
-    };
-    VkViewport viewport = vkl::init::viewport(extent);
-    VkRect2D   scissor  = vkl::init::rect2D(extent);
-
-    RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass       = getDefaultRenderPass();
-    renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = extent;
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color                = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues[1].depthStencil         = {1.0f, 0};
-    renderPassBeginInfo.clearValueCount = clearValues.size();
-    renderPassBeginInfo.pClearValues    = clearValues.data();
-
-    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
-
-    // record command
-    auto  commandIndex  = getCurrentFrameIndex();
-    auto *commandBuffer = getDefaultCommandBuffer(commandIndex);
-
-    commandBuffer->begin(0);
-
-    // render pass
-    renderPassBeginInfo.pFramebuffer = getDefaultFrameBuffer(getCurrentImageIndex());
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-
-    // dynamic state
-    commandBuffer->cmdSetViewport(&viewport);
-    commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(m_demoPipeline);
-    commandBuffer->cmdDraw(3, 1, 0, 0);
-    commandBuffer->cmdEndRenderPass();
-
-    commandBuffer->end();
-    submitFrame();
-}
 VulkanShaderCache &VulkanRenderer::getShaderCache() {
     return m_shaderCache;
 }
@@ -502,28 +460,6 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     if (_config.initDefaultResource) {
         _initDefaultResource();
     }
-}
-
-void VulkanRenderer::_setupDemoPass() {
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount   = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-
-    PipelineCreateInfo createInfo{};
-    createInfo._vertexInputInfo = vertexInputInfo;
-
-    // build Shader
-    std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-
-    EffectInfo effectInfo{};
-    effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_shaderCache.getShaders(m_device, shaderDir / "triangle.vert.spv");
-    effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_shaderCache.getShaders(m_device, shaderDir / "triangle.frag.spv");
-    VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, getDefaultRenderPass(), &m_demoPipeline));
-
-    m_deletionQueue.push_function([=]() {
-        m_device->destroyPipeline(m_demoPipeline);
-    });
 }
 
 VkExtent2D VulkanRenderer::getSwapChainExtent() const {
