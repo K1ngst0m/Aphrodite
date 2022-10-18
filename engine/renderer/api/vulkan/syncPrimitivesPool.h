@@ -11,7 +11,7 @@ public:
 
     ~VulkanSyncPrimitivesPool();
 
-    VkResult AcquireFence(VkFence *pFence);
+    VkResult AcquireFence(VkFence *pFence, bool isSignaled = true);
     void     ReleaseFence(VkFence fence);
     bool     Exists(VkFence fence);
 

@@ -84,8 +84,8 @@ void VulkanSwapChain::cleanup() {
     vkDestroySwapchainKHR(_device->getHandle(), _handle, nullptr);
 }
 
-VkResult VulkanSwapChain::acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const {
-    return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, VK_NULL_HANDLE, pImageIndex);
+VkResult VulkanSwapChain::acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore, VkFence fence) const {
+    return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, fence, pImageIndex);
 }
 
 void VulkanSwapChain::allocate(WindowData *data) {

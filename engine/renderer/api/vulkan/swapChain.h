@@ -18,7 +18,7 @@ public:
     void create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data);
     void cleanup();
 
-    VkResult acqureNextImage(VkSemaphore semaphore, VkFence fence, uint32_t *pImageIndex) const;
+    VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE) const;
 
 public:
     VkFormat     getImageFormat() const;

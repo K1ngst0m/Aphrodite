@@ -15,7 +15,7 @@ VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool() {
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 
-VkResult VulkanSyncPrimitivesPool::AcquireFence(VkFence *pFence) {
+VkResult VulkanSyncPrimitivesPool::AcquireFence(VkFence *pFence, bool isSignaled) {
     VkResult result = VK_SUCCESS;
 
     // See if there's a free fence available.
@@ -28,6 +28,9 @@ VkResult VulkanSyncPrimitivesPool::AcquireFence(VkFence *pFence) {
     else {
         VkFenceCreateInfo createInfo = {};
         createInfo.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        if (isSignaled){
+            createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        }
         result                       = vkCreateFence(m_device->getHandle(), &createInfo, nullptr, pFence);
         if (result == VK_SUCCESS)
             m_allFences.emplace(*pFence);

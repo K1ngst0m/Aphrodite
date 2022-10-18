@@ -1,5 +1,6 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
+#include "syncPrimitivesPool.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
 #include "device.h"
@@ -268,35 +269,18 @@ void VulkanRenderer::_createDefaultSyncObjects() {
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    for (uint32_t idx = 0; idx < _config.maxFrames; idx++) {
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &m_presentSemaphore[idx]));
-        VK_CHECK_RESULT(vkCreateSemaphore(m_device->getHandle(), &semaphoreInfo, nullptr, &m_renderSemaphore[idx]));
-        VK_CHECK_RESULT(vkCreateFence(m_device->getHandle(), &fenceInfo, nullptr, &m_inFlightFence[idx]));
+    m_device->getSyncPrimitiviesPool()->AcquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
+    m_device->getSyncPrimitiviesPool()->AcquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
 
-        m_deletionQueue.push_function([=]() {
-            vkDestroyFence(m_device->getHandle(), m_inFlightFence[idx], nullptr);
-            vkDestroySemaphore(m_device->getHandle(), m_renderSemaphore[idx], nullptr);
-            vkDestroySemaphore(m_device->getHandle(), m_presentSemaphore[idx], nullptr);
-        });
+    for (uint32_t idx = 0; idx < _config.maxFrames; idx++) {
+        m_device->getSyncPrimitiviesPool()->AcquireFence(&m_inFlightFence[idx]);
     }
 }
 
 void VulkanRenderer::prepareFrame() {
     vkWaitForFences(m_device->getHandle(), 1, &m_inFlightFence[m_currentFrame], VK_TRUE, UINT64_MAX);
-
-    VkResult result = m_swapChain->acqureNextImage(m_renderSemaphore[m_currentFrame], VK_NULL_HANDLE, &m_imageIdx);
-
-    // if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-    //     assert("swapchain recreation current not support.");
-    //     // _recreateSwapChain();
-    //     return;
-    // }
-
-    if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        VK_CHECK_RESULT(result);
-    }
-
-    vkResetFences(m_device->getHandle(), 1, &m_inFlightFence[m_currentFrame]);
+    VkResult result = m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_currentFrame]);
+    m_device->getSyncPrimitiviesPool()->ReleaseFence(m_inFlightFence[m_currentFrame]);
 }
 
 void VulkanRenderer::submitFrame() {
