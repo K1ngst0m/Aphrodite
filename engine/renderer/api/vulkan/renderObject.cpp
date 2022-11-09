@@ -13,11 +13,11 @@
 
 namespace vkl {
 
-VulkanRenderObject::VulkanRenderObject(VulkanDevice *device, vkl::Entity *entity)
+VulkanRenderData::VulkanRenderData(VulkanDevice *device, vkl::Entity *entity)
     : _device(device), _entity(entity) {
 }
 
-void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
+void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
     for (auto &material : _entity->_materials) {
         MaterialGpuData materialData{};
         materialData.set = materialLayout->allocateSet();
@@ -49,12 +49,12 @@ void VulkanRenderObject::setupMaterial(VulkanDescriptorSetLayout *materialLayout
     }
 }
 
-void VulkanRenderObject::loadResouces() {
+void VulkanRenderData::loadResouces() {
     loadTextures();
     loadBuffer();
 }
 
-void VulkanRenderObject::loadTextures() {
+void VulkanRenderData::loadTextures() {
     // create empty texture
     {
         uint32_t width         = 1;
@@ -77,7 +77,7 @@ void VulkanRenderObject::loadTextures() {
     }
 }
 
-void VulkanRenderObject::cleanupResources() {
+void VulkanRenderData::cleanupResources() {
     _device->destroyBuffer(_vertexBuffer);
     _device->destroyBuffer(_indexBuffer);
 
@@ -92,7 +92,7 @@ void VulkanRenderObject::cleanupResources() {
     vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
 }
 
-void VulkanRenderObject::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
+void VulkanRenderData::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
     if (!node->isVisible) {
         return;
     }
@@ -118,7 +118,7 @@ void VulkanRenderObject::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer
     }
 }
 
-void VulkanRenderObject::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
+void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
     drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
     drawCmd->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
@@ -127,11 +127,11 @@ void VulkanRenderObject::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *dr
     }
 }
 
-uint32_t VulkanRenderObject::getSetCount() {
+uint32_t VulkanRenderData::getSetCount() {
     return _entity->_materials.size();
 }
 
-void VulkanRenderObject::loadBuffer() {
+void VulkanRenderData::loadBuffer() {
     auto &vertices = _entity->_vertices;
     auto &indices  = _entity->_indices;
 
@@ -209,15 +209,15 @@ void VulkanRenderObject::loadBuffer() {
     }
 }
 
-glm::mat4 VulkanRenderObject::getTransform() const {
+glm::mat4 VulkanRenderData::getTransform() const {
     return _transform;
 }
 
-void VulkanRenderObject::setTransform(glm::mat4 transform) {
+void VulkanRenderData::setTransform(glm::mat4 transform) {
     _transform = transform;
 }
 
-TextureGpuData VulkanRenderObject::createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize) {
+TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize) {
     uint32_t texMipLevels = calculateFullMipLevels(width, height);
 
     // Load texture from image buffer

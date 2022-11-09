@@ -7,8 +7,8 @@
 
 namespace vkl {
 class ShaderPass;
-class VulkanUniformObject;
-class VulkanRenderObject;
+class VulkanUniformData;
+class VulkanRenderData;
 class VulkanRenderer;
 
 struct MaterialGpuData {
@@ -64,8 +64,8 @@ private:
     VulkanPipeline *_defaultLitPipeline = nullptr;
 
 private:
-    std::vector<std::unique_ptr<VulkanRenderObject>> _renderList;
-    std::deque<std::unique_ptr<VulkanUniformObject>> _uniformList;
+    std::vector<std::unique_ptr<VulkanRenderData>> _renderList;
+    std::deque<std::unique_ptr<VulkanUniformData>> _uniformList;
 
 private:
     VulkanDevice   *_device;

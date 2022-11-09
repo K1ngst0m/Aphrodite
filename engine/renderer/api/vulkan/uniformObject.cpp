@@ -4,14 +4,14 @@
 
 namespace vkl {
 
-void VulkanUniformObject::updateBuffer(void *data) const {
+void VulkanUniformData::updateBuffer(void *data) const {
     _buffer->copyTo(data, _buffer->getSize());
 }
-VulkanUniformObject::VulkanUniformObject(VulkanDevice * device, vkl::UniformObject *ubo)
+VulkanUniformData::VulkanUniformData(VulkanDevice * device, vkl::UniformObject *ubo)
     : _device(device), _ubo(ubo) {
 }
 
-void VulkanUniformObject::setupBuffer(uint32_t bufferSize, void *data) {
+void VulkanUniformData::setupBuffer(uint32_t bufferSize, void *data) {
     BufferCreateInfo createInfo{};
     createInfo.size = bufferSize;
     createInfo.usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT;
@@ -21,14 +21,14 @@ void VulkanUniformObject::setupBuffer(uint32_t bufferSize, void *data) {
     _buffer->map();
 }
 
-void VulkanUniformObject::cleanupResources() const {
+void VulkanUniformData::cleanupResources() const {
     _device->destroyBuffer(_buffer);
 }
 
-void *VulkanUniformObject::getData() {
+void *VulkanUniformData::getData() {
     return _ubo->getData();
 }
-VkDescriptorBufferInfo &VulkanUniformObject::getBufferInfo() {
+VkDescriptorBufferInfo &VulkanUniformData::getBufferInfo() {
     return _buffer->getBufferInfo();
 }
 } // namespace vkl

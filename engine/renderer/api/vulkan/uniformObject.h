@@ -9,10 +9,10 @@ class SceneRenderer;
 class VulkanDevice;
 class UniformObject;
 
-class VulkanUniformObject {
+class VulkanUniformData {
 public:
-    VulkanUniformObject(VulkanDevice *device, UniformObject *ubo);
-    ~VulkanUniformObject() = default;
+    VulkanUniformData(VulkanDevice *device, UniformObject *ubo);
+    ~VulkanUniformData() = default;
 
     void cleanupResources() const;
 

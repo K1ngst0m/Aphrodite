@@ -4,10 +4,10 @@
 #include "sceneRenderer.h"
 
 namespace vkl {
-class VulkanRenderObject {
+class VulkanRenderData {
 public:
-    VulkanRenderObject(VulkanDevice *device, Entity *entity);
-    ~VulkanRenderObject() = default;
+    VulkanRenderData(VulkanDevice *device, Entity *entity);
+    ~VulkanRenderData() = default;
 
     void loadResouces();
     void cleanupResources();
@@ -26,15 +26,15 @@ private:
     void loadBuffer();
     TextureGpuData createTexture(uint32_t width, uint32_t height, void * data, uint32_t dataSize);
 
-    VulkanBuffer                *_vertexBuffer;
-    VulkanBuffer                *_indexBuffer;
+    VulkanBuffer                *_vertexBuffer = nullptr;
+    VulkanBuffer                *_indexBuffer = nullptr;
     TextureGpuData               _emptyTexture;
     std::vector<TextureGpuData>  _textures;
     std::vector<MaterialGpuData> _materialGpuDataList;
 
 private:
     VulkanDevice        *_device = nullptr;
-    Entity              *_entity;
+    Entity              *_entity = nullptr;
     glm::mat4            _transform = glm::mat4(1.0f);
 };
 } // namespace vkl
