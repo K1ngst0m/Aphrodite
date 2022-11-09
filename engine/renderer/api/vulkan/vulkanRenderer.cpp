@@ -111,15 +111,15 @@ std::unique_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config, std
 }
 
 void VulkanRenderer::_createDefaultFramebuffers() {
-    m_framebufferData.framebuffer.resize(m_swapChain->getImageCount());
-    m_framebufferData.colorImage.resize(m_swapChain->getImageCount());
-    m_framebufferData.colorImageView.resize(m_swapChain->getImageCount());
+    m_framebufferData.framebuffers.resize(m_swapChain->getImageCount());
+    m_framebufferData.colorImages.resize(m_swapChain->getImageCount());
+    m_framebufferData.colorImageViews.resize(m_swapChain->getImageCount());
 
     _createDefaultColorAttachments();
     _createDefaultDepthAttachments();
     for (uint32_t idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto &framebuffer     = m_framebufferData.framebuffer[idx];
-        auto &colorAttachment = m_framebufferData.colorImageView[idx];
+        auto &framebuffer     = m_framebufferData.framebuffers[idx];
+        auto &colorAttachment = m_framebufferData.colorImageViews[idx];
         auto &depthAttachment = m_framebufferData.depthImageView;
         {
             std::vector<VulkanImageView *> attachments{colorAttachment, depthAttachment};
@@ -128,10 +128,6 @@ void VulkanRenderer::_createDefaultFramebuffers() {
             createInfo.height = m_swapChain->getExtent().height;
             VK_CHECK_RESULT(m_device->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
         }
-
-        m_deletionQueue.push_function([=]() {
-            m_device->destroyFramebuffers(framebuffer);
-        });
     }
 }
 
@@ -153,8 +149,6 @@ void VulkanRenderer::_createSurface() {
     if (glfwCreateWindowSurface(m_instance->getHandle(), _windowData->window, nullptr, &m_surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
-
-    m_deletionQueue.push_function([=]() { vkDestroySurfaceKHR(m_instance->getHandle(), m_surface, nullptr); });
 }
 
 void VulkanRenderer::_createInstance() {
@@ -190,9 +184,6 @@ void VulkanRenderer::_createInstance() {
     }
 
     VulkanInstance::Create(&instanceCreateInfo, &m_instance);
-    m_deletionQueue.push_function([=]() {
-        VulkanInstance::Destroy(m_instance);
-    });
 }
 
 void VulkanRenderer::_createDevice() {
@@ -203,10 +194,6 @@ void VulkanRenderer::_createDevice() {
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     VK_CHECK_RESULT(VulkanDevice::Create(m_instance->getPhysicalDevices(0), &createInfo, &m_device));
-
-    m_deletionQueue.push_function([&]() {
-        VulkanDevice::Destroy(m_device);
-    });
 }
 
 void VulkanRenderer::_createDefaultRenderPass() {
@@ -237,17 +224,10 @@ void VulkanRenderer::_createDefaultRenderPass() {
     };
 
     VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_renderPass, colorAttachments, depthAttachment));
-
-    m_deletionQueue.push_function([=]() {
-        m_device->destoryRenderPass(m_renderPass);
-    });
 }
 
 void VulkanRenderer::_setupSwapChain() {
     m_device->createSwapchain(m_surface, &m_swapChain, _windowData.get());
-    m_deletionQueue.push_function([&]() {
-        m_device->destroySwapchain(m_swapChain);
-    });
 }
 
 void VulkanRenderer::_allocateDefaultCommandBuffers() {
@@ -263,7 +243,6 @@ void VulkanRenderer::_setupDebugMessenger() {
     populateDebugMessengerCreateInfo(createInfo);
 
     VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(m_instance->getHandle(), &createInfo, nullptr, &m_debugMessenger));
-    m_deletionQueue.push_function([=]() { destroyDebugUtilsMessengerEXT(m_instance->getHandle(), m_debugMessenger, nullptr); });
 }
 
 void VulkanRenderer::_createDefaultSyncObjects() {
@@ -330,7 +309,25 @@ void VulkanRenderer::submitFrame() {
 }
 
 void VulkanRenderer::cleanup() {
-    m_deletionQueue.flush();
+    if (_config.initDefaultResource) {
+        for (auto * fb : m_framebufferData.framebuffers){
+            m_device->destroyFramebuffers(fb);
+        }
+
+        for (auto * imageView : m_framebufferData.colorImageViews){
+            m_device->destroyImageView(imageView);
+        }
+
+        m_device->destroyImageView(m_framebufferData.depthImageView);
+        m_device->destroyImage(m_framebufferData.depthImage);
+        m_device->destoryRenderPass(m_renderPass);
+    }
+
+    m_device->destroySwapchain(m_swapChain);
+    VulkanDevice::Destroy(m_device);
+    vkDestroySurfaceKHR(m_instance->getHandle(), m_surface, nullptr);
+    destroyDebugUtilsMessengerEXT(m_instance->getHandle(), m_debugMessenger, nullptr);
+    VulkanInstance::Destroy(m_instance);
 }
 
 void VulkanRenderer::idleDevice() {
@@ -350,9 +347,10 @@ void VulkanRenderer::_initDefaultResource() {
     _createPipelineCache();
 }
 
-VkQueue VulkanRenderer::getDefaultDeviceQueue(VkQueueFlags type) const {
-    return m_device->getQueueByFlags(type)->getHandle();
+VkQueue VulkanRenderer::getDefaultDeviceQueue(VkQueueFlags flags) const {
+    return m_device->getQueueByFlags(flags)->getHandle();
 }
+
 VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
     return m_renderPass;
 }
@@ -395,19 +393,14 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
         createInfo.viewType = IMAGE_VIEW_TYPE_2D;
         VK_CHECK_RESULT(m_device->createImageView(&createInfo, &depthImageView, depthImage));
     }
-
-    m_deletionQueue.push_function([=]() {
-        m_device->destroyImage(depthImage);
-        m_device->destroyImageView(depthImageView);
-    });
 }
 VulkanFramebuffer *VulkanRenderer::getDefaultFrameBuffer(uint32_t idx) const {
-    return m_framebufferData.framebuffer[idx];
+    return m_framebufferData.framebuffers[idx];
 }
 void VulkanRenderer::_createDefaultColorAttachments() {
     for (auto idx = 0; idx < m_swapChain->getImageCount(); idx++) {
-        auto &colorImage     = m_framebufferData.colorImage[idx];
-        auto &colorImageView = m_framebufferData.colorImageView[idx];
+        auto &colorImage     = m_framebufferData.colorImages[idx];
+        auto &colorImageView = m_framebufferData.colorImageViews[idx];
 
         // get swapchain image
         {
@@ -421,10 +414,6 @@ void VulkanRenderer::_createDefaultColorAttachments() {
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             m_device->createImageView(&createInfo, &colorImageView, colorImage);
         }
-
-        m_deletionQueue.push_function([=]() {
-            m_device->destroyImageView(colorImageView);
-        });
     }
 }
 

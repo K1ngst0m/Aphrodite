@@ -132,10 +132,6 @@ private:
 
     QueueFamilyCommandPools _commandPools;
 
-    // VulkanCommandPool        *_drawCommandPool     = nullptr;
-    // VulkanCommandPool        *_transferCommandPool = nullptr;
-    // VulkanCommandPool        *_computeCommandPool  = nullptr;
-
     VulkanSyncPrimitivesPool *_syncPrimitivesPool = nullptr;
     VulkanShaderCache        *_shaderCache        = nullptr;
 

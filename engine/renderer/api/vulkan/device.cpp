@@ -82,6 +82,10 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
 }
 
 void VulkanDevice::Destroy(VulkanDevice *pDevice) {
+    for (auto & [_, commandpool] : pDevice->_commandPools){
+        pDevice->destroyCommandPool(commandpool);
+    }
+
     if (pDevice->_syncPrimitivesPool) {
         delete pDevice->_syncPrimitivesPool;
     }
@@ -341,12 +345,10 @@ void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
     delete pFramebuffer;
 }
 VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
-    VulkanSwapChain *instance = new VulkanSwapChain;
-    instance->create(this, surface, data);
+    VulkanSwapChain *instance = VulkanSwapChain::Create(this, surface, data);
 
     *ppSwapchain = instance;
 
-    // TODO
     return VK_SUCCESS;
 }
 

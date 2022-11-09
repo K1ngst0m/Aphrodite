@@ -25,7 +25,6 @@ public:
 private:
     VulkanRenderer *_renderer;
     VulkanDevice   *_device;
-    DeletionQueue   _deletionQueue;
 
     VulkanBuffer *_vertexBuffer = nullptr;
     VulkanBuffer *_indexBuffer  = nullptr;

@@ -59,31 +59,31 @@ private:
     std::vector<const char *> getRequiredInstanceExtensions();
 
 private:
-    VulkanInstance          *m_instance;
-    VulkanDevice            *m_device;
-    VulkanSwapChain         *m_swapChain;
+    VulkanInstance          *m_instance = nullptr;
+    VulkanDevice            *m_device = nullptr;
+    VulkanSwapChain         *m_swapChain = nullptr;
+
     VkPhysicalDeviceFeatures m_enabledFeatures{};
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkSurfaceKHR             m_surface;
 
-    VkPipelineCache   m_pipelineCache;
-    DeletionQueue     m_deletionQueue;
+    VkPipelineCache   m_pipelineCache = VK_NULL_HANDLE;
 
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIdx     = 0;
 
     // default resource
 private:
-    vkl::VulkanRenderPass *m_renderPass;
+    vkl::VulkanRenderPass *m_renderPass = nullptr;
 
     struct {
-        std::vector<VulkanFramebuffer *> framebuffer;
-        std::vector<VulkanImage *>       colorImage;
-        std::vector<VulkanImageView *>   colorImageView;
+        std::vector<VulkanFramebuffer *> framebuffers;
+        std::vector<VulkanImage *>       colorImages;
+        std::vector<VulkanImageView *>   colorImageViews;
 
         // TODO frames in flight depth attachment
-        VulkanImage     *depthImage;
-        VulkanImageView *depthImageView;
+        VulkanImage     *depthImage = nullptr;
+        VulkanImageView *depthImageView = nullptr;
     } m_framebufferData;
 
     std::vector<VkSemaphore> m_renderSemaphore;

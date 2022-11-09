@@ -74,40 +74,51 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     return details;
 }
 
-void VulkanSwapChain::create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data) {
-    _device  = device;
-    _surface = surface;
-    allocate(data);
-}
-
-void VulkanSwapChain::cleanup() {
-    vkDestroySwapchainKHR(_device->getHandle(), _handle, nullptr);
+VulkanSwapChain* VulkanSwapChain::Create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data) {
+    auto instance = new VulkanSwapChain;
+    instance->_device  = device;
+    instance->_surface = surface;
+    instance->allocateImages(data);
+    return instance;
 }
 
 VkResult VulkanSwapChain::acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore, VkFence fence) const {
     return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, fence, pImageIndex);
 }
 
-void VulkanSwapChain::allocate(WindowData *data) {
+VkFormat VulkanSwapChain::getImageFormat() const {
+    return _imageFormat;
+}
+VkExtent2D VulkanSwapChain::getExtent() const {
+    return _extent;
+}
+uint32_t VulkanSwapChain::getImageCount() const {
+    return _images.size();
+}
+VulkanImage *VulkanSwapChain::getImage(uint32_t idx) const {
+    return _images[idx];
+}
+void VulkanSwapChain::allocateImages(WindowData *data) {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice()->getHandle());
-
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkPresentModeKHR   presentMode   = chooseSwapPresentMode(swapChainSupport.presentModes);
     VkExtent2D         extent        = chooseSwapExtent(swapChainSupport.capabilities, data->window);
 
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
+    _imageColorSpace = surfaceFormat.colorSpace;
+    _imageFormat = surfaceFormat.format;
+    _extent      = extent;
+    _imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    if (swapChainSupport.capabilities.maxImageCount > 0 && _imageCount > swapChainSupport.capabilities.maxImageCount) {
+        _imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR swapChainCreateInfo{
         .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .surface          = _surface,
-        .minImageCount    = imageCount,
-        .imageFormat      = surfaceFormat.format,
-        .imageColorSpace  = surfaceFormat.colorSpace,
-        .imageExtent      = extent,
+        .minImageCount    = _imageCount,
+        .imageFormat      = _imageFormat,
+        .imageColorSpace  = _imageColorSpace,
+        .imageExtent      = _extent,
         .imageArrayLayers = 1,
         .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .preTransform     = swapChainSupport.capabilities.currentTransform,
@@ -123,16 +134,16 @@ void VulkanSwapChain::allocate(WindowData *data) {
 
     VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getHandle(), &swapChainCreateInfo, nullptr, &_handle));
 
-    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &imageCount, nullptr);
-    std::vector<VkImage> images(imageCount);
-    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &imageCount, images.data());
+    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &_imageCount, nullptr);
+    std::vector<VkImage> images(_imageCount);
+    vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &_imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.
     for (auto handle : images) {
         ImageCreateInfo imageCreateInfo = {};
         imageCreateInfo.imageType       = IMAGE_TYPE_2D;
         imageCreateInfo.format          = static_cast<Format>(_imageFormat);
-        imageCreateInfo.extent          = {extent.width, extent.height, 1};
+        imageCreateInfo.extent          = {_extent.width, _extent.height, 1};
         imageCreateInfo.mipLevels       = 1;
         imageCreateInfo.arrayLayers     = 1;
         imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
@@ -143,21 +154,7 @@ void VulkanSwapChain::allocate(WindowData *data) {
 
         _images.push_back(image);
     }
-
-    _imageFormat = surfaceFormat.format;
-    _extent      = extent;
 }
-
-VkFormat VulkanSwapChain::getImageFormat() const {
-    return _imageFormat;
-}
-VkExtent2D VulkanSwapChain::getExtent() const {
-    return _extent;
-}
-uint32_t VulkanSwapChain::getImageCount() const {
-    return _images.size();
-}
-VulkanImage *VulkanSwapChain::getImage(uint32_t idx) const {
-    return _images[idx];
+void VulkanSwapChain::cleanupImages() {
 }
 } // namespace vkl

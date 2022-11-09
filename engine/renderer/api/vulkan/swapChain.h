@@ -15,8 +15,9 @@ struct SwapChainCreateInfo {
 
 class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR> {
 public:
-    void create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data);
-    void cleanup();
+    static VulkanSwapChain *Create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data);
+    void                    allocateImages(WindowData *data);
+    void                    cleanupImages();
 
     VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE) const;
 
@@ -27,16 +28,14 @@ public:
     VulkanImage *getImage(uint32_t idx) const;
 
 private:
-    void allocate(WindowData *windowData);
-
     VulkanDevice              *_device;
     std::vector<VulkanImage *> _images;
 
-    VkFormat     _imageFormat;
-    VkExtent2D   _extent;
-    VkSurfaceKHR _surface;
-
-    DeletionQueue _deletionQueue;
+    uint32_t        _imageCount;
+    VkColorSpaceKHR _imageColorSpace;
+    VkFormat        _imageFormat;
+    VkExtent2D      _extent;
+    VkSurfaceKHR    _surface;
 };
 } // namespace vkl
 

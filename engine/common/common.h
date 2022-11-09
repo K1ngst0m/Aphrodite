@@ -36,22 +36,6 @@
 #include <stb_image.h>
 
 namespace vkl {
-struct DeletionQueue {
-    std::deque<std::function<void()>> deletors;
-
-    void push_function(std::function<void()> &&function) {
-        deletors.push_back(function);
-    }
-
-    void flush() {
-        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
-            (*it)();
-        }
-
-        deletors.clear();
-    }
-};
-
 inline uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1) {
     return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
