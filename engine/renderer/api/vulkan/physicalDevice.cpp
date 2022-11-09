@@ -27,11 +27,6 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalD
             }
         }
     }
-
-    _queueFamilyIndices.graphics = findQueueFamilies(VK_QUEUE_GRAPHICS_BIT);
-    _queueFamilyIndices.compute  = findQueueFamilies(VK_QUEUE_COMPUTE_BIT);
-    _queueFamilyIndices.transfer = findQueueFamilies(VK_QUEUE_TRANSFER_BIT);
-    _queueFamilyIndices.present = _queueFamilyIndices.graphics;
 }
 
 const VulkanInstance *VulkanPhysicalDevice::getInstance() const {
@@ -51,40 +46,6 @@ const std::vector<std::string> &VulkanPhysicalDevice::getDeviceSupportedExtensio
 }
 const std::vector<VkQueueFamilyProperties> &VulkanPhysicalDevice::getQueueFamilyProperties() {
     return _queueFamilyProperties;
-}
-
-uint32_t VulkanPhysicalDevice::findQueueFamilies(VkQueueFlags queueFlags) const {
-    // Dedicated queue for compute
-    // Try to find a queue family index that supports compute but not graphics
-    if ((queueFlags & VK_QUEUE_COMPUTE_BIT) == queueFlags) {
-        for (uint32_t i = 0; i < static_cast<uint32_t>(_queueFamilyProperties.size()); i++) {
-            if ((_queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) &&
-                ((_queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)) {
-                return i;
-            }
-        }
-    }
-
-    // Dedicated queue for transfer
-    // Try to find a queue family index that supports transfer but not graphics and compute
-    if ((queueFlags & VK_QUEUE_TRANSFER_BIT) == queueFlags) {
-        for (uint32_t i = 0; i < static_cast<uint32_t>(_queueFamilyProperties.size()); i++) {
-            if ((_queueFamilyProperties[i].queueFlags & VK_QUEUE_TRANSFER_BIT) &&
-                ((_queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0) &&
-                ((_queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0)) {
-                return i;
-            }
-        }
-    }
-
-    // For other queue types or if no separate compute queue is present, return the first one to support the requested flags
-    for (uint32_t i = 0; i < static_cast<uint32_t>(_queueFamilyProperties.size()); i++) {
-        if ((_queueFamilyProperties[i].queueFlags & queueFlags) == queueFlags) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("Could not find a matching queue family index");
 }
 
 bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) const {
@@ -128,19 +89,5 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &
 
     assert("failed to find supported format!");
     return {};
-}
-uint32_t VulkanPhysicalDevice::getQueueFamilyIndices(QueueFamilyType flags) {
-    switch (flags) {
-    case QUEUE_TYPE_COMPUTE:
-        return _queueFamilyIndices.compute;
-    case QUEUE_TYPE_GRAPHICS:
-        return _queueFamilyIndices.graphics;
-    case QUEUE_TYPE_TRANSFER:
-        return _queueFamilyIndices.transfer;
-    case QUEUE_TYPE_PRESENT:
-        return _queueFamilyIndices.present;
-    default:
-        return _queueFamilyIndices.graphics;
-    }
 }
 } // namespace vkl

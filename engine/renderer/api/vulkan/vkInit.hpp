@@ -7,10 +7,12 @@
 namespace vkl::init
 {
 
-inline VkMemoryAllocateInfo memoryAllocateInfo()
+inline VkMemoryAllocateInfo memoryAllocateInfo(uint32_t size, uint32_t memTypeIndex)
 {
     VkMemoryAllocateInfo memAllocInfo{};
     memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    memAllocInfo.allocationSize = size;
+    memAllocInfo.memoryTypeIndex = memTypeIndex;
     return memAllocInfo;
 }
 

@@ -168,7 +168,7 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_vertexBuffer);
         }
 
-        auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
@@ -201,7 +201,7 @@ void VulkanRenderObject::loadBuffer() {
             _device->createBuffer(&createInfo, &_indexBuffer);
         }
 
-        auto cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
@@ -245,13 +245,13 @@ TextureGpuData VulkanRenderObject::createTexture(uint32_t width, uint32_t height
 
         _device->createImage(&createInfo, &texture.image);
 
-        VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         _device->endSingleTimeCommands(cmd);
 
-        cmd = _device->beginSingleTimeCommands(QUEUE_TYPE_GRAPHICS);
+        cmd = _device->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
 
         // generate mipmap chains
         for (int32_t i = 1; i < texMipLevels; i++) {

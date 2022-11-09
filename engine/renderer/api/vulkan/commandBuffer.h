@@ -23,7 +23,7 @@ enum class CommandBufferState {
 
 class VulkanCommandBuffer : public ResourceHandle<VkCommandBuffer> {
 public:
-    VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle, QueueFamilyType flags);
+    VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle, uint32_t queueFamilyIndices);
 
     ~VulkanCommandBuffer();
 
@@ -52,13 +52,13 @@ public:
     void cmdImageMemoryBarrier(VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
     void cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout, VulkanImage *dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit *pRegions, VkFilter filter = VK_FILTER_LINEAR);
 
-    QueueFamilyType getQueueFamilyTypes();
+    uint32_t getQueueFamilyIndices();
 
 private:
     VulkanCommandPool *_pool;
     CommandBufferState _state;
     bool               _submittedToQueue = false;
-    QueueFamilyType    _queueFamilyType;
+    uint32_t           _queueFamilyType;
 };
 } // namespace vkl
 

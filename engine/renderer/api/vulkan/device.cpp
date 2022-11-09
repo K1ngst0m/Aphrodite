@@ -7,6 +7,7 @@
 #include "image.h"
 #include "imageView.h"
 #include "pipeline.h"
+#include "queue.h"
 #include "renderpass.h"
 #include "shader.h"
 #include "swapChain.h"
@@ -16,53 +17,37 @@
 
 namespace vkl {
 VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo, VulkanDevice **ppDevice) {
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
-    const float                          defaultQueuePriority(0.0f);
+    auto &queueFamilyProperties = pPhysicalDevice->getQueueFamilyProperties();
+    auto queueFamilyCount = queueFamilyProperties.size();
 
-    if (pCreateInfo->requestQueueTypes & VK_QUEUE_GRAPHICS_BIT) {
-        VkDeviceQueueCreateInfo queueInfo{};
-        queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS);
-        queueInfo.queueCount       = 1;
-        queueInfo.pQueuePriorities = &defaultQueuePriority;
+    // Allocate handles for all available queues.
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
+    std::vector<std::vector<float>>      priorities(queueFamilyCount);
+    for (auto i = 0U; i < queueFamilyCount; ++i) {
+        const float defaultPriority = 1.0f;
+        priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
+        queueCreateInfos[i].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfos[i].queueFamilyIndex = i;
+        queueCreateInfos[i].queueCount       = queueFamilyProperties[i].queueCount;
+        queueCreateInfos[i].pQueuePriorities = priorities[i].data();
+    }
 
-        queueCreateInfos.push_back(queueInfo);
-    }
-    if (pCreateInfo->requestQueueTypes & VK_QUEUE_COMPUTE_BIT) {
-        if (pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) {
-            // If compute family index differs, we need an additional queue create info for the compute queue
-            VkDeviceQueueCreateInfo queueInfo{};
-            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE);
-            queueInfo.queueCount       = 1;
-            queueInfo.pQueuePriorities = &defaultQueuePriority;
-            queueCreateInfos.push_back(queueInfo);
-        }
-    }
-    if (pCreateInfo->requestQueueTypes & VK_QUEUE_TRANSFER_BIT) {
-        if ((pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) &&
-            (pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER) != pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE))) {
-            // If transfer family index differs, we need an additional queue create info for the transfer queue
-            VkDeviceQueueCreateInfo queueInfo{};
-            queueInfo.sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-            queueInfo.queueFamilyIndex = pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER);
-            queueInfo.queueCount       = 1;
-            queueInfo.pQueuePriorities = &defaultQueuePriority;
-            queueCreateInfos.push_back(queueInfo);
-        }
-    }
+    // Enable all physical device available features.
+    VkPhysicalDeviceFeatures enabledFeatures = {};
+    vkGetPhysicalDeviceFeatures(pPhysicalDevice->getHandle(), &enabledFeatures);
 
     // Create the Vulkan device.
-    VkDeviceCreateInfo deviceCreateInfo      = {};
-    deviceCreateInfo.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceCreateInfo.pNext                   = pCreateInfo->pNext;
-    deviceCreateInfo.pQueueCreateInfos       = queueCreateInfos.data();
-    deviceCreateInfo.queueCreateInfoCount    = (uint32_t)queueCreateInfos.size();
-    deviceCreateInfo.pEnabledFeatures        = &pPhysicalDevice->getDeviceFeatures();
-    deviceCreateInfo.enabledLayerCount       = pCreateInfo->enabledLayerCount;
-    deviceCreateInfo.ppEnabledLayerNames     = pCreateInfo->ppEnabledLayerNames;
-    deviceCreateInfo.enabledExtensionCount   = pCreateInfo->enabledExtensionCount;
-    deviceCreateInfo.ppEnabledExtensionNames = pCreateInfo->ppEnabledExtensionNames;
+    VkDeviceCreateInfo deviceCreateInfo = {
+        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext                   = pCreateInfo->pNext,
+        .queueCreateInfoCount    = (uint32_t)queueCreateInfos.size(),
+        .pQueueCreateInfos       = queueCreateInfos.data(),
+        .enabledLayerCount       = pCreateInfo->enabledLayerCount,
+        .ppEnabledLayerNames     = pCreateInfo->ppEnabledLayerNames,
+        .enabledExtensionCount   = pCreateInfo->enabledExtensionCount,
+        .ppEnabledExtensionNames = pCreateInfo->ppEnabledExtensionNames,
+        .pEnabledFeatures        = &pPhysicalDevice->getDeviceFeatures(),
+    };
 
     VkDevice handle = VK_NULL_HANDLE;
     auto     result = vkCreateDevice(pPhysicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle);
@@ -72,34 +57,22 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
     // Initialize Device class.
     auto *device = new VulkanDevice;
     memcpy(&device->_createInfo, pCreateInfo, sizeof(DeviceCreateInfo));
-    device->_physicalDevice = pPhysicalDevice;
-    device->_handle         = handle;
+    device->_handle             = handle;
+    device->_physicalDevice     = pPhysicalDevice;
+    device->_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
+    device->_shaderCache        = new VulkanShaderCache(device);
 
-    VK_CHECK_RESULT(device->createCommandPool(&device->_drawCommandPool, pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)));
-    VK_CHECK_RESULT(device->createCommandPool(&device->_transferCommandPool, pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER)));
-    VK_CHECK_RESULT(device->createCommandPool(&device->_computeCommandPool, pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE)));
-
-    for (auto i = 0; i < queueCreateInfos.size(); i++) {
-        for (auto j = 0; j < queueCreateInfos[i].queueCount; j++) {
+    // Get handles to all of the previously enumerated and created queues.
+    device->_queues.resize(queueFamilyCount);
+    for (auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex) {
+        for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex) {
             VkQueue queue = VK_NULL_HANDLE;
-            vkGetDeviceQueue(device->getHandle(), i, j, &queue);
-            if (queue) {
-                QueueFamily *qf = nullptr;
-                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_GRAPHICS)) {
-                    device->_queues[QUEUE_TYPE_GRAPHICS].push_back(queue);
-                }
-                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_TRANSFER)) {
-                    device->_queues[QUEUE_TYPE_TRANSFER].push_back(queue);
-                }
-                if (queueCreateInfos[i].queueFamilyIndex == pPhysicalDevice->getQueueFamilyIndices(QUEUE_TYPE_COMPUTE)) {
-                    device->_queues[QUEUE_TYPE_COMPUTE].push_back(queue);
-                }
+            vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
+            if (queue){
+                device->_queues[queueFamilyIndex].push_back(new VulkanQueue(device, queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]));
             }
         }
     }
-
-    device->_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
-    device->_shaderCache        = new VulkanShaderCache(device);
 
     // Copy address of object instance.
     *ppDevice = device;
@@ -109,14 +82,8 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
 }
 
 void VulkanDevice::Destroy(VulkanDevice *pDevice) {
-    if (pDevice->_drawCommandPool) {
-        pDevice->destroyCommandPool(pDevice->_drawCommandPool);
-    }
-    if (pDevice->_transferCommandPool) {
-        pDevice->destroyCommandPool(pDevice->_transferCommandPool);
-    }
-    if (pDevice->_computeCommandPool) {
-        pDevice->destroyCommandPool(pDevice->_computeCommandPool);
+    if (pDevice->_syncPrimitivesPool) {
+        delete pDevice->_syncPrimitivesPool;
     }
 
     if (pDevice->_handle) {
@@ -171,19 +138,20 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
 }
 
 void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer) {
-    auto flags = commandBuffer->getQueueFamilyTypes();
+    uint32_t queueFamilyIndex = commandBuffer->getQueueFamilyIndices();
+    auto queue = _queues[queueFamilyIndex][0];
+
     commandBuffer->end();
 
     VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer->getHandle());
-
-    vkQueueSubmit(getQueueByFlags(flags), 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(getQueueByFlags(flags));
+    queue->submit(1, &submitInfo, VK_NULL_HANDLE);
+    queue->waitIdle();
 
     freeCommandBuffers(1, &commandBuffer);
 }
 
-VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(QueueFamilyType flags) {
-    VulkanCommandBuffer *instance;
+VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(VkQueueFlags flags) {
+    VulkanCommandBuffer *instance = nullptr;
     allocateCommandBuffers(1, &instance, flags);
     instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     return instance;
@@ -204,11 +172,7 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     // create memory
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(_handle, buffer, &memRequirements);
-    VkMemoryAllocateInfo allocInfo{
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize  = memRequirements.size,
-        .memoryTypeIndex = _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
-    };
+    VkMemoryAllocateInfo allocInfo = vkl::init::memoryAllocateInfo(memRequirements.size, _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property));
     VK_CHECK_RESULT(vkAllocateMemory(_handle, &allocInfo, nullptr, &memory));
 
     *ppBuffer = VulkanBuffer::CreateFromHandle(this, pCreateInfo, buffer, memory);
@@ -282,7 +246,6 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
                                         VulkanRenderPass                          **ppRenderPass,
                                         const std::vector<VkAttachmentDescription> &colorAttachments,
                                         const VkAttachmentDescription              &depthAttachment) {
-
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentReference>   colorAttachmentRefs;
 
@@ -381,53 +344,55 @@ VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **p
     VulkanSwapChain *instance = new VulkanSwapChain;
     instance->create(this, surface, data);
 
-    // get present queue family
-    {
-        VkBool32                presentSupport = false;
-        std::optional<uint32_t> presentQueueFamilyIndices;
-        uint32_t                i = 0;
-
-        for (const auto &queueFamily : _physicalDevice->getQueueFamilyProperties()) {
-            VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice->getHandle(), i, surface, &presentSupport);
-            if (presentSupport) {
-                presentQueueFamilyIndices = i;
-                break;
-            }
-            i++;
-        }
-        assert(presentQueueFamilyIndices.has_value());
-        _queues[QUEUE_TYPE_PRESENT] = _queues[QUEUE_TYPE_GRAPHICS];
-    }
-
     *ppSwapchain = instance;
 
     // TODO
     return VK_SUCCESS;
 }
+
 void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
 }
-VkQueue VulkanDevice::getQueueByFlags(QueueFamilyType queueFlags, uint32_t queueIndex) {
-    return _queues[queueFlags][queueIndex];
+
+VulkanQueue* VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex) {
+    const std::vector<VkQueueFamilyProperties>& queueFamilyProperties = _physicalDevice->getQueueFamilyProperties();
+
+    // Iterate over queues in order to find one matching requested flags.
+    // Favor queue families matching only what's specified in queueFlags over
+    // families having other bits set as well.
+    VkQueueFlags minFlags  = ~0;
+    VulkanQueue *bestQueue = nullptr;
+    for (auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyProperties.size();
+         ++queueFamilyIndex) {
+        if (((queueFamilyProperties[queueFamilyIndex].queueFlags & flags) ==
+             flags) &&
+            queueIndex < queueFamilyProperties[queueFamilyIndex].queueCount) {
+            if (queueFamilyProperties[queueFamilyIndex].queueFlags < minFlags) {
+                minFlags  = queueFamilyProperties[queueFamilyIndex].queueFlags;
+                bestQueue = _queues[queueFamilyIndex][queueIndex];
+            }
+        }
+    }
+
+    // Return the queue for the given flags.
+    return bestQueue;
 }
 void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getHandle());
 }
 
-VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(QueueFamilyType type) {
-    switch (type) {
-    case QUEUE_TYPE_COMPUTE:
-        return _computeCommandPool;
-    case QUEUE_TYPE_GRAPHICS:
-    case QUEUE_TYPE_PRESENT:
-        return _drawCommandPool;
-    case QUEUE_TYPE_TRANSFER:
-        return _transferCommandPool;
-    default:
-        return _drawCommandPool;
+VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue * queue) {
+    auto indices = queue->getFamilyIndex();
+
+    if (_commandPools.count(indices)){
+        return _commandPools.at(indices);
     }
+
+    VulkanCommandPool * pool = nullptr;
+    createCommandPool(&pool, indices);
+    _commandPools[indices] = pool;
+    return pool;
 }
 
 void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
@@ -435,8 +400,9 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
     delete pPool;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, QueueFamilyType flags) {
-    auto *pool = getCommandPoolWithQueue(flags);
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VkQueueFlags flags) {
+    auto *queue = getQueueByFlags(flags);
+    auto *pool = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
     auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
@@ -445,7 +411,7 @@ VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, Vulka
     }
 
     for (auto i = 0; i < commandBufferCount; i++) {
-        ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i], flags);
+        ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i], pool->getQueueFamilyIndex());
     }
     return VK_SUCCESS;
 }

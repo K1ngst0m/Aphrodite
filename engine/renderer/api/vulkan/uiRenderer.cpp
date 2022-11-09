@@ -108,7 +108,7 @@ void VulkanUIRenderer::initUI() {
         stagingBuffer->unmap();
 
         // Copy buffer data to font image
-        auto *copyCmd = _device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        auto *copyCmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         copyCmd->cmdCopyBufferToImage(stagingBuffer, _fontData.image);
         copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);

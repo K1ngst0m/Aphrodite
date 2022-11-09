@@ -27,12 +27,14 @@ class PipelineBuilder;
 class ShaderEffect;
 class ShaderPass;
 class VulkanPipeline;
+class VulkanQueue;
 class VulkanSyncPrimitivesPool;
 struct RenderPassCreateInfo;
 struct PipelineCreateInfo;
 struct EffectInfo;
 
-using QueueFamily = std::vector<VkQueue>;
+using QueueFamily             = std::vector<VulkanQueue *>;
+using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool *>;
 
 struct DeviceCreateInfo {
     const void        *pNext = nullptr;
@@ -103,21 +105,21 @@ public:
 public:
     VkResult allocateCommandBuffers(uint32_t              commandBufferCount,
                                     VulkanCommandBuffer **ppCommandBuffers,
-                                    QueueFamilyType       flags = QUEUE_TYPE_GRAPHICS);
+                                    VkQueueFlags          flags = VK_QUEUE_GRAPHICS_BIT);
 
     void freeCommandBuffers(uint32_t              commandBufferCount,
                             VulkanCommandBuffer **ppCommandBuffers);
 
-    VulkanCommandBuffer *beginSingleTimeCommands(QueueFamilyType flags = QUEUE_TYPE_GRAPHICS);
+    VulkanCommandBuffer *beginSingleTimeCommands(VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT);
 
     void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer);
 
     void waitIdle();
 
 public:
-    VulkanCommandPool        *getCommandPoolWithQueue(QueueFamilyType type);
+    VulkanCommandPool        *getCommandPoolWithQueue(VulkanQueue *queue);
     VulkanPhysicalDevice     *getPhysicalDevice() const;
-    VkQueue                   getQueueByFlags(QueueFamilyType flags, uint32_t queueIndex = 0);
+    VulkanQueue              *getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex = 0);
     VkFormat                  getDepthFormat() const;
     VulkanSyncPrimitivesPool *getSyncPrimitiviesPool();
     VulkanShaderCache        *getShaderCache();
@@ -126,13 +128,16 @@ private:
     VulkanPhysicalDevice    *_physicalDevice;
     VkPhysicalDeviceFeatures _enabledFeatures;
 
-    std::array<QueueFamily, QUEUE_TYPE_COUNT> _queues = {};
+    std::vector<QueueFamily> _queues = {};
 
-    VulkanCommandPool        *_drawCommandPool     = nullptr;
-    VulkanCommandPool        *_transferCommandPool = nullptr;
-    VulkanCommandPool        *_computeCommandPool  = nullptr;
-    VulkanSyncPrimitivesPool *_syncPrimitivesPool  = nullptr;
-    VulkanShaderCache        *_shaderCache         = nullptr;
+    QueueFamilyCommandPools _commandPools;
+
+    // VulkanCommandPool        *_drawCommandPool     = nullptr;
+    // VulkanCommandPool        *_transferCommandPool = nullptr;
+    // VulkanCommandPool        *_computeCommandPool  = nullptr;
+
+    VulkanSyncPrimitivesPool *_syncPrimitivesPool = nullptr;
+    VulkanShaderCache        *_shaderCache        = nullptr;
 
     DeviceCreateInfo _createInfo;
 };

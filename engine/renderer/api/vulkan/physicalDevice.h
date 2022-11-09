@@ -4,14 +4,6 @@
 #include "instance.h"
 
 namespace vkl {
-enum QueueFamilyType {
-    QUEUE_TYPE_COMPUTE,
-    QUEUE_TYPE_GRAPHICS,
-    QUEUE_TYPE_TRANSFER,
-    QUEUE_TYPE_PRESENT,
-    QUEUE_TYPE_COUNT,
-};
-
 class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice> {
 public:
     VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle);
@@ -22,7 +14,6 @@ public:
     const VkPhysicalDeviceMemoryProperties     &getMemoryProperties();
     const std::vector<std::string>             &getDeviceSupportedExtensions();
     const std::vector<VkQueueFamilyProperties> &getQueueFamilyProperties();
-    uint32_t                                    getQueueFamilyIndices(QueueFamilyType flags);
 
     bool isExtensionSupported(std::string_view extension) const;
 
@@ -33,16 +24,6 @@ public:
     VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
                                  VkImageTiling                tiling,
                                  VkFormatFeatureFlags         features) const;
-
-private:
-    uint32_t findQueueFamilies(VkQueueFlags queueFlags) const;
-
-    struct {
-        uint32_t graphics;
-        uint32_t compute;
-        uint32_t transfer;
-        uint32_t present;
-    } _queueFamilyIndices;
 
 private:
     VulkanInstance *m_instance = nullptr;

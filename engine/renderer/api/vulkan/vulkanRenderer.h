@@ -24,7 +24,7 @@ public:
 public:
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
-    VkQueue              getDefaultDeviceQueue(QueueFamilyType type) const;
+    VkQueue              getDefaultDeviceQueue(VkQueueFlags flags) const;
     VulkanRenderPass    *getDefaultRenderPass() const;
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;

@@ -626,7 +626,7 @@ public:
     }
 
 protected:
-    T_Handle _handle;
+    T_Handle _handle = nullptr;
 };
 
 template <typename T_CreateInfo>

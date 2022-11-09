@@ -1,6 +1,5 @@
 #include "vulkanRenderer.h"
 #include "buffer.h"
-#include "syncPrimitivesPool.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
 #include "device.h"
@@ -9,6 +8,7 @@
 #include "imageView.h"
 #include "physicalDevice.h"
 #include "pipeline.h"
+#include "queue.h"
 #include "renderObject.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
@@ -16,6 +16,7 @@
 #include "sceneRenderer.h"
 #include "shader.h"
 #include "swapChain.h"
+#include "syncPrimitivesPool.h"
 #include "uiRenderer.h"
 #include "uniformObject.h"
 #include "vkUtils.h"
@@ -298,7 +299,7 @@ void VulkanRenderer::submitFrame() {
                 .pSignalSemaphores    = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(getDefaultDeviceQueue(QUEUE_TYPE_GRAPHICS),
+    VK_CHECK_RESULT(vkQueueSubmit(getDefaultDeviceQueue(VK_QUEUE_GRAPHICS_BIT),
                                   1, &submitInfo,
                                   m_inFlightFence[m_currentFrame]));
 
@@ -312,7 +313,7 @@ void VulkanRenderer::submitFrame() {
         .pResults           = nullptr, // Optional
     };
 
-    VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(QUEUE_TYPE_PRESENT), &presentInfo);
+    VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(VK_QUEUE_GRAPHICS_BIT), &presentInfo);
     VK_CHECK_RESULT(result);
 
     // if (result == VK_ERROR_OUT_OF_DATE_KHR ||
@@ -349,8 +350,8 @@ void VulkanRenderer::_initDefaultResource() {
     _createPipelineCache();
 }
 
-VkQueue VulkanRenderer::getDefaultDeviceQueue(QueueFamilyType type) const {
-    return m_device->getQueueByFlags(type, 0);
+VkQueue VulkanRenderer::getDefaultDeviceQueue(VkQueueFlags type) const {
+    return m_device->getQueueByFlags(type)->getHandle();
 }
 VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {
     return m_renderPass;
@@ -375,14 +376,15 @@ void VulkanRenderer::_createDefaultDepthAttachments() {
     {
         VkFormat        depthFormat = m_device->getDepthFormat();
         ImageCreateInfo createInfo{};
-        createInfo.extent   = {m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1};
+        createInfo.extent   = {m_swapChain->getExtent().width,
+                               m_swapChain->getExtent().height, 1};
         createInfo.format   = static_cast<Format>(depthFormat);
         createInfo.tiling   = IMAGE_TILING_OPTIMAL;
         createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         VK_CHECK_RESULT(m_device->createImage(&createInfo, &depthImage));
 
-        VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(QUEUE_TYPE_TRANSFER);
+        VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         m_device->endSingleTimeCommands(cmd);
     }
