@@ -14,12 +14,10 @@ enum class VertexComponent {
 };
 
 struct VertexInputBuilder {
-    VkVertexInputBindingDescription                _vertexInputBindingDescription;
+    std::vector<VkVertexInputBindingDescription>   _vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
     VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
-    VkVertexInputAttributeDescription              inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component);
-    std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components);
-    VkPipelineVertexInputStateCreateInfo           getPipelineVertexInputState(const std::vector<VertexComponent> &components);
+    VkPipelineVertexInputStateCreateInfo&           getPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
 struct PipelineCreateInfo {
@@ -32,8 +30,8 @@ struct PipelineCreateInfo {
     VkPipelineRasterizationStateCreateInfo _rasterizer;
     VkPipelineColorBlendAttachmentState    _colorBlendAttachment;
     VkPipelineMultisampleStateCreateInfo   _multisampling;
-    VkPipelineDepthStencilStateCreateInfo  _depthStencil;
     VertexInputBuilder                     _vertexInputBuilder;
+    VkPipelineDepthStencilStateCreateInfo  _depthStencil;
     VkPipelineCache                        _pipelineCache = VK_NULL_HANDLE;
 
     PipelineCreateInfo(VkExtent2D extent = {0, 0}) {
@@ -42,7 +40,6 @@ struct PipelineCreateInfo {
                                                                             VertexComponent::UV,
                                                                             VertexComponent::COLOR,
                                                                             VertexComponent::TANGENT});
-        _vertexInputInfo = _vertexInputBuilder._pipelineVertexInputStateCreateInfo;
 
         _inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 

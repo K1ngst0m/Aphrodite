@@ -4,51 +4,34 @@
 #include "shader.h"
 
 namespace vkl {
-VkVertexInputAttributeDescription VertexInputBuilder::inputAttributeDescription(uint32_t binding, uint32_t location, VertexComponent component) {
-    switch (component) {
-    case VertexComponent::POSITION:
-        return VkVertexInputAttributeDescription({location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)});
-    case VertexComponent::NORMAL:
-        return VkVertexInputAttributeDescription({location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)});
-    case VertexComponent::UV:
-        return VkVertexInputAttributeDescription({location, binding, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)});
-    case VertexComponent::COLOR:
-        return VkVertexInputAttributeDescription({location, binding, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
-    case VertexComponent::TANGENT:
-        return VkVertexInputAttributeDescription({location, binding, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)});
-    default:
-        return VkVertexInputAttributeDescription({});
-    }
+namespace {
+std::unordered_map<VertexComponent, VkVertexInputAttributeDescription> vertexComponmentMap{
+    {VertexComponent::POSITION, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)}},
+    {VertexComponent::NORMAL, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)}},
+    {VertexComponent::UV, {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}},
+    {VertexComponent::COLOR, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}},
+    {VertexComponent::TANGENT, {0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)}},
+};
 }
 
-std::vector<VkVertexInputAttributeDescription> VertexInputBuilder::inputAttributeDescriptions(uint32_t binding, const std::vector<VertexComponent> &components) {
-    std::vector<VkVertexInputAttributeDescription> result;
-    uint32_t                                       location = 0;
+VkPipelineVertexInputStateCreateInfo &VertexInputBuilder::getPipelineVertexInputState(const std::vector<VertexComponent> &components) {
+    uint32_t location = 0;
     for (VertexComponent component : components) {
-        result.push_back(VertexInputBuilder::inputAttributeDescription(binding, location, component));
+        VkVertexInputAttributeDescription desc = vertexComponmentMap[component];
+        desc.location                          = location;
+        _vertexInputAttributeDescriptions.push_back(desc);
         location++;
     }
-    return result;
-}
-
-VkPipelineVertexInputStateCreateInfo VertexInputBuilder::getPipelineVertexInputState(const std::vector<VertexComponent> &components) {
-    _vertexInputBindingDescription      = VkVertexInputBindingDescription({0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX});
-    _vertexInputAttributeDescriptions   = VertexInputBuilder::inputAttributeDescriptions(0, components);
-    _pipelineVertexInputStateCreateInfo = {
-        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount   = 1,
-        .pVertexBindingDescriptions      = &_vertexInputBindingDescription,
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(VertexInputBuilder::_vertexInputAttributeDescriptions.size()),
-        .pVertexAttributeDescriptions    = VertexInputBuilder::_vertexInputAttributeDescriptions.data(),
-    };
+    _vertexInputBindingDescriptions     = {{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}};
+    _pipelineVertexInputStateCreateInfo = vkl::init::pipelineVertexInputStateCreateInfo(_vertexInputBindingDescriptions, _vertexInputAttributeDescriptions);
     return _pipelineVertexInputStateCreateInfo;
 }
 
 VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice, const PipelineCreateInfo *pCreateInfo, ShaderEffect *pEffect, VulkanRenderPass *pRenderPass, VkPipeline handle) {
-    auto *instance    = new VulkanPipeline();
-    instance->_handle = handle;
-    instance->_effect = pEffect;
-    instance->_device = pDevice;
+    auto *instance       = new VulkanPipeline();
+    instance->_handle    = handle;
+    instance->_effect    = pEffect;
+    instance->_device    = pDevice;
     instance->_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     memcpy(&instance->_createInfo, pCreateInfo, sizeof(PipelineCreateInfo));
     return instance;
