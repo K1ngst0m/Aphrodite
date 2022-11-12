@@ -25,8 +25,8 @@ enum DescriptorSetBinding {
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
-    static std::unique_ptr<VulkanSceneRenderer> Create(VulkanRenderer *renderer);
-    VulkanSceneRenderer(VulkanRenderer *renderer);
+    static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer>& renderer);
+    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;
@@ -57,7 +57,7 @@ private:
 
 private:
     VulkanDevice   *_device;
-    VulkanRenderer *_renderer;
+    std::shared_ptr<VulkanRenderer> _renderer;
 };
 } // namespace vkl
 

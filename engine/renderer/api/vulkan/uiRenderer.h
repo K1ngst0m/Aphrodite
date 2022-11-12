@@ -11,8 +11,8 @@
 namespace vkl {
 class VulkanUIRenderer : public UIRenderer {
 public:
-    static std::unique_ptr<VulkanUIRenderer> Create(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData);
-    VulkanUIRenderer(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData);
+    static std::unique_ptr<VulkanUIRenderer> Create(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData);
+    VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData);
     ~VulkanUIRenderer();
 
     void initUI();
@@ -23,7 +23,8 @@ public:
     bool update(float deltaTime);
 
 private:
-    VulkanRenderer *_renderer;
+    std::shared_ptr<VulkanRenderer> _renderer;
+
     VulkanDevice   *_device;
 
     VulkanBuffer *_vertexBuffer = nullptr;

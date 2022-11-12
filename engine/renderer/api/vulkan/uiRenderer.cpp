@@ -20,7 +20,7 @@
 #include <type_traits>
 
 namespace vkl {
-VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData)
+VulkanUIRenderer::VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData)
     : UIRenderer(windowData), _renderer(renderer), _device(renderer->getDevice()) {
     // Init ImGui
     ImGui::CreateContext();
@@ -378,7 +378,7 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
         vertexOffset += cmd_list->VtxBuffer.Size;
     }
 }
-std::unique_ptr<VulkanUIRenderer> VulkanUIRenderer::Create(VulkanRenderer *renderer, const std::shared_ptr<WindowData> &windowData) {
+std::unique_ptr<VulkanUIRenderer> VulkanUIRenderer::Create(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData) {
     auto instance = std::make_unique<VulkanUIRenderer>(renderer, windowData);
     return instance;
 }

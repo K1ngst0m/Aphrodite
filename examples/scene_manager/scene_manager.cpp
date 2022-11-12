@@ -145,8 +145,8 @@ void scene_manager::setupScene() {
 
 void scene_manager::setupRenderer() {
     m_renderer      = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
-    m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer.get());
-    m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer.get(), m_window->getWindowData());
+    m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer);
+    m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {

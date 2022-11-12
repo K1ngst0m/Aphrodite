@@ -105,8 +105,8 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &create
     createInfo.pfnUserCallback = debugCallback;
 }
 
-std::unique_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config, std::shared_ptr<WindowData> windowData) {
-    auto instance = std::make_unique<VulkanRenderer>(std::move(windowData), config);
+std::shared_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config, std::shared_ptr<WindowData> windowData) {
+    auto instance = std::make_shared<VulkanRenderer>(std::move(windowData), config);
     return instance;
 }
 

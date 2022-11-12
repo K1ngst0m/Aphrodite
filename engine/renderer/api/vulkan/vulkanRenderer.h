@@ -8,7 +8,7 @@
 namespace vkl {
 class VulkanRenderer : public Renderer {
 public:
-    static std::unique_ptr<VulkanRenderer> Create(RenderConfig *config, std::shared_ptr<WindowData> windowData);
+    static std::shared_ptr<VulkanRenderer> Create(RenderConfig *config, std::shared_ptr<WindowData> windowData);
     VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
 
     ~VulkanRenderer() = default;

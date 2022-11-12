@@ -18,7 +18,7 @@ private:
 
 private:
     std::shared_ptr<vkl::Window>         m_window;
-    std::unique_ptr<vkl::VulkanRenderer> m_renderer;
+    std::shared_ptr<vkl::VulkanRenderer> m_renderer;
     vkl::VulkanDevice                   *m_device = nullptr;
     float                                m_deltaTime;
 

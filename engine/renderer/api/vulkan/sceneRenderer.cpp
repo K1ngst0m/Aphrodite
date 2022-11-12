@@ -18,7 +18,7 @@
 #include "vulkanRenderer.h"
 
 namespace vkl {
-VulkanSceneRenderer::VulkanSceneRenderer(VulkanRenderer *renderer)
+VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer)
     : _device(renderer->getDevice()),
       _renderer(renderer) {
 }
@@ -273,7 +273,7 @@ VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
     return _unlitPipeline;
 }
 
-std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(VulkanRenderer *renderer) {
+std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(const std::shared_ptr<VulkanRenderer>& renderer) {
     auto instance = std::make_unique<VulkanSceneRenderer>(renderer);
     return instance;
 }
