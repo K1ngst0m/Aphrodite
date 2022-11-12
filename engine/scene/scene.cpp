@@ -55,10 +55,6 @@ glm::vec4 Scene::getAmbient() {
     return glm::vec4(0.2f);
 }
 
-void Scene::update(float deltaTime) {
-    _camera->update(deltaTime);
-}
-
 Scene::~Scene() = default;
 
 std::unique_ptr<SceneNode> &Scene::getRootNode() {

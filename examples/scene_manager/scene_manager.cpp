@@ -25,6 +25,7 @@ void scene_manager::run() {
         m_window->pollEvents();
 
         // update resource data
+        m_defaultCamera->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
         m_uiRenderer->update(m_deltaTime);
 

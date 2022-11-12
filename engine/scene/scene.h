@@ -35,8 +35,6 @@ public:
     Scene();
     ~Scene();
 
-    void update(float deltaTime);
-
 public:
     std::shared_ptr<Light>      createLight();
     std::shared_ptr<Entity>     createEntity();

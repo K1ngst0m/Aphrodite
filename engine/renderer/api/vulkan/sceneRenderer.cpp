@@ -97,17 +97,9 @@ void VulkanSceneRenderer::drawScene() {
 }
 
 void VulkanSceneRenderer::update(float deltaTime) {
-    _scene->update(deltaTime);
-    auto &cameraUBO = _uniformList[0];
-    cameraUBO->updateBuffer(cameraUBO->getData());
-
-    // TODO update light data
-    // for (auto & ubo : _uboList){
-    //     if (ubo->_ubo->isUpdated()){
-    //         ubo->updateBuffer(ubo->_ubo->getData());
-    //         ubo->_ubo->setUpdated(false);
-    //     }
-    // }
+    for (auto & ubo : _uniformList){
+        ubo->updateBuffer(ubo->getData());
+    }
 }
 
 void VulkanSceneRenderer::_initRenderList() {
