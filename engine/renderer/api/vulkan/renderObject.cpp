@@ -78,8 +78,8 @@ void VulkanRenderData::loadTextures() {
 }
 
 void VulkanRenderData::cleanupResources() {
-    _device->destroyBuffer(_vertexBuffer);
-    _device->destroyBuffer(_indexBuffer);
+    _device->destroyBuffer(_meshData._vertexBuffer);
+    _device->destroyBuffer(_meshData._indexBuffer);
 
     for (TextureGpuData &texture : _textures) {
         _device->destroyImage(texture.image);
@@ -120,8 +120,8 @@ void VulkanRenderData::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *
 
 void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    drawCmd->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
-    drawCmd->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    drawCmd->cmdBindVertexBuffers(0, 1, _meshData._vertexBuffer, offsets);
+    drawCmd->cmdBindIndexBuffers(_meshData._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
     for (auto &subNode : _entity->_subNodeList) {
         drawNode(pipeline, drawCmd, subNode);
     }
@@ -165,11 +165,11 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_vertexBuffer);
+            _device->createBuffer(&createInfo, &_meshData._vertexBuffer);
         }
 
         auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, _vertexBuffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _meshData._vertexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);
@@ -198,11 +198,11 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_indexBuffer);
+            _device->createBuffer(&createInfo, &_meshData._indexBuffer);
         }
 
         auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, _indexBuffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _meshData._indexBuffer, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);

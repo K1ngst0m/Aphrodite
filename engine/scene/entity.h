@@ -78,20 +78,21 @@ struct Material {
 };
 
 class Entity : public Object {
+    friend class GLTFLoader;
+    friend class VulkanRenderData;
 public:
     Entity(IdType id);
     ~Entity() override;
     void loadFromFile(const std::string &path);
     void cleanupResources();
 
-public:
+private:
     VertexList   _vertices;
     IndexList    _indices;
     TextureList  _images;
     SubNodeList  _subNodeList;
     MaterialList _materials;
 
-private:
     bool isLoaded = false;
 };
 } // namespace vkl

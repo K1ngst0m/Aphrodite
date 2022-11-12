@@ -11,18 +11,6 @@ class VulkanUniformData;
 class VulkanRenderData;
 class VulkanRenderer;
 
-struct MaterialGpuData {
-    VkDescriptorSet set;
-    VkPipeline      pipeline;
-};
-
-struct TextureGpuData {
-    VulkanImage     *image     = nullptr;
-    VulkanImageView *imageView = nullptr;
-    VkSampler        sampler   = VK_NULL_HANDLE;
-
-    VkDescriptorImageInfo descriptorInfo;
-};
 
 enum MaterialBindingBits {
     MATERIAL_BINDING_NONE      = (1 << 0),
