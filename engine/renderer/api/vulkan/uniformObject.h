@@ -11,7 +11,7 @@ class UniformObject;
 
 class VulkanUniformData {
 public:
-    VulkanUniformData(VulkanDevice *device, UniformObject *ubo);
+    VulkanUniformData(VulkanDevice *device, std::shared_ptr<UniformObject> ubo);
     ~VulkanUniformData() = default;
 
     void cleanupResources() const;
@@ -25,7 +25,7 @@ public:
 private:
     VulkanBuffer  *_buffer   = nullptr;
     VulkanDevice  *_device   = nullptr;
-    UniformObject *_ubo      = nullptr;
+    std::shared_ptr<UniformObject> _ubo      = nullptr;
 };
 } // namespace vkl
 

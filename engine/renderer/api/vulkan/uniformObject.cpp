@@ -7,8 +7,10 @@ namespace vkl {
 void VulkanUniformData::updateBuffer(void *data) const {
     _buffer->copyTo(data, _buffer->getSize());
 }
-VulkanUniformData::VulkanUniformData(VulkanDevice * device, vkl::UniformObject *ubo)
-    : _device(device), _ubo(ubo) {
+VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<UniformObject> ubo)
+    : _device(device), _ubo(std::move(ubo)) {
+    _ubo->load();
+    setupBuffer(_ubo->getDataSize(), _ubo->getData());
 }
 
 void VulkanUniformData::setupBuffer(uint32_t bufferSize, void *data) {

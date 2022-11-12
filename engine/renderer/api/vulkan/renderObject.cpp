@@ -13,8 +13,8 @@
 
 namespace vkl {
 
-VulkanRenderData::VulkanRenderData(VulkanDevice *device, vkl::Entity *entity)
-    : _device(device), _entity(entity) {
+VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<Entity> entity)
+    : _device(device), _entity(std::move(entity)) {
 }
 
 void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {

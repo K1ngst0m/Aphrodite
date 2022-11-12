@@ -18,13 +18,17 @@
 #include "vulkanRenderer.h"
 
 namespace vkl {
+namespace {
+
+}
+
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer)
     : _device(renderer->getDevice()),
       _renderer(renderer) {
 }
 
 void VulkanSceneRenderer::loadResources() {
-    _loadSceneNodes(_sceneManager->getRootNode());
+    _loadSceneNodes(_scene->getRootNode());
     _setupUnlitShaderEffect();
     _setupDefaultLitShaderEffect();
     _initRenderList();
@@ -93,7 +97,7 @@ void VulkanSceneRenderer::drawScene() {
 }
 
 void VulkanSceneRenderer::update(float deltaTime) {
-    _sceneManager->update(deltaTime);
+    _scene->update(deltaTime);
     auto &cameraUBO = _uniformList[0];
     cameraUBO->updateBuffer(cameraUBO->getData());
 
@@ -129,7 +133,6 @@ void VulkanSceneRenderer::_initUniformList() {
 
     for (auto &set : _globalDescriptorSets) {
         set = _getCurrentPipeline()->getDescriptorSetLayout(SET_BINDING_SCENE)->allocateSet();
-
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for (auto &uniformObj : _uniformList) {
             VkWriteDescriptorSet write = {};
@@ -142,7 +145,6 @@ void VulkanSceneRenderer::_initUniformList() {
             write.pBufferInfo          = &uniformObj->getBufferInfo();
             descriptorWrites.push_back(write);
         }
-
         vkUpdateDescriptorSets(_device->getHandle(), writeCount, descriptorWrites.data(), 0, nullptr);
     }
 
@@ -151,7 +153,7 @@ void VulkanSceneRenderer::_initUniformList() {
     }
 }
 
-void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
+void VulkanSceneRenderer::_loadSceneNodes(const std::unique_ptr<SceneNode> &node) {
     if (node->getChildNodeCount() == 0) {
         return;
     }
@@ -161,22 +163,16 @@ void VulkanSceneRenderer::_loadSceneNodes(std::unique_ptr<SceneNode> &node) {
 
         switch (subNode->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_unique<VulkanRenderData>(_device, static_cast<Entity *>(subNode->getObject().get()));
+            auto renderable = std::make_unique<VulkanRenderData>(_device, std::static_pointer_cast<Entity>(subNode->getObject()));
             renderable->setTransform(subNode->getTransform());
             _renderList.push_back(std::move(renderable));
         } break;
         case AttachType::CAMERA: {
-            Camera *camera = static_cast<Camera *>(subNode->getObject().get());
-            camera->load();
-            auto cameraUBO = std::make_unique<VulkanUniformData>(_device, camera);
-            cameraUBO->setupBuffer(camera->getDataSize(), camera->getData());
-            _uniformList.push_front(std::move(cameraUBO));
+            auto ubo = std::make_unique<VulkanUniformData>(_device, std::static_pointer_cast<Camera>(subNode->getObject()));
+            _uniformList.push_front(std::move(ubo));
         } break;
         case AttachType::LIGHT: {
-            Light *light = static_cast<Light *>(subNode->getObject().get());
-            light->load();
-            auto ubo = std::make_unique<VulkanUniformData>(_device, light);
-            ubo->setupBuffer(light->getDataSize(), light->getData());
+            auto ubo = std::make_unique<VulkanUniformData>(_device, std::static_pointer_cast<Light>(subNode->getObject()));
             _uniformList.push_back(std::move(ubo));
         } break;
         default:

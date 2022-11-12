@@ -56,9 +56,6 @@ private:
     }
 
 private:
-    std::vector<const char *> getRequiredInstanceExtensions();
-
-private:
     VulkanInstance          *m_instance = nullptr;
     VulkanDevice            *m_device = nullptr;
     VulkanSwapChain         *m_swapChain = nullptr;

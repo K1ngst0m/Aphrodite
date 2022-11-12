@@ -11,7 +11,6 @@ class VulkanUniformData;
 class VulkanRenderData;
 class VulkanRenderer;
 
-
 enum MaterialBindingBits {
     MATERIAL_BINDING_NONE      = (1 << 0),
     MATERIAL_BINDING_BASECOLOR = (1 << 1),
@@ -40,7 +39,7 @@ private:
     void _setupUnlitShaderEffect();
     void _setupDefaultLitShaderEffect();
 
-    void _loadSceneNodes(std::unique_ptr<SceneNode> &node);
+    void _loadSceneNodes(const std::unique_ptr<SceneNode> &node);
 
 private:
     VulkanPipeline            *_getCurrentPipeline();

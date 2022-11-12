@@ -10,9 +10,9 @@ public:
     SceneRenderer()          = default;
     virtual ~SceneRenderer() = default;
 
-    virtual void loadResources() = 0;
-    virtual void update(float deltaTime)   = 0;
-    virtual void drawScene()     = 0;
+    virtual void loadResources()         = 0;
+    virtual void update(float deltaTime) = 0;
+    virtual void drawScene()             = 0;
 
     virtual void cleanupResources() = 0;
 
@@ -21,9 +21,9 @@ public:
     ShadingModel getShadingModel() const;
 
 protected:
-    std::shared_ptr<Scene> _sceneManager;
-    ShadingModel                  _shadingModel = ShadingModel::UNLIT;
-    bool                          isSceneLoaded = false;
+    std::shared_ptr<Scene> _scene = nullptr;
+    ShadingModel           _shadingModel = ShadingModel::UNLIT;
+    bool                   isSceneLoaded = false;
 };
 
 } // namespace vkl

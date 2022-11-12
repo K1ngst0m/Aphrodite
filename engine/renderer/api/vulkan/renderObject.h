@@ -25,7 +25,7 @@ struct VulkanMeshData {
 
 class VulkanRenderData {
 public:
-    VulkanRenderData(VulkanDevice *device, Entity *entity);
+    VulkanRenderData(VulkanDevice *device, std::shared_ptr<Entity> entity);
     ~VulkanRenderData() = default;
 
     void loadResouces();
@@ -52,9 +52,9 @@ private:
     TextureGpuData createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize);
 
 private:
-    VulkanDevice *_device    = nullptr;
-    Entity       *_entity    = nullptr;
-    glm::mat4     _transform = glm::mat4(1.0f);
+    VulkanDevice           *_device    = nullptr;
+    std::shared_ptr<Entity> _entity    = nullptr;
+    glm::mat4               _transform = glm::mat4(1.0f);
 };
 } // namespace vkl
 

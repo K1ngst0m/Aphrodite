@@ -2,7 +2,7 @@
 
 namespace vkl {
 void SceneRenderer::setScene(const std::shared_ptr<Scene>& scene) {
-    _sceneManager = scene;
+    _scene = scene;
     if (isSceneLoaded){
         cleanupResources();
         isSceneLoaded = false;
