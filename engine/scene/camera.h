@@ -21,6 +21,7 @@ enum class CameraDirection {
 
 class Camera : public UniformObject {
 public:
+    static std::shared_ptr<Camera> Create();
     Camera(IdType id);
     ~Camera() override = default;
 

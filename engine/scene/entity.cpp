@@ -20,4 +20,8 @@ void Entity::cleanupResources() {
     _subNodeList.clear();
     _materials.clear();
 }
+std::shared_ptr<Entity> Entity::Create() {
+    auto instance = std::make_shared<Entity>(Id::generateNewId<Entity>());
+    return instance;
+}
 } // namespace vkl

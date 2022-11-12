@@ -158,4 +158,8 @@ void Camera::setMovement(CameraDirection direction, bool flag) {
 void Camera::setFlipY(bool val) {
     _flipY = val;
 }
+std::shared_ptr<Camera> Camera::Create() {
+    auto instance = std::make_shared<Camera>(Id::generateNewId<Camera>());
+    return instance;
+}
 } // namespace vkl

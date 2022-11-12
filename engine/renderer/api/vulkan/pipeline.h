@@ -17,7 +17,7 @@ struct VertexInputBuilder {
     std::vector<VkVertexInputBindingDescription>   _vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
     VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
-    VkPipelineVertexInputStateCreateInfo&           getPipelineVertexInputState(const std::vector<VertexComponent> &components);
+    VkPipelineVertexInputStateCreateInfo&          getPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
 struct PipelineCreateInfo {

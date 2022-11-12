@@ -79,4 +79,8 @@ void Light::update(float deltaTime) {
     } break;
     }
 }
+std::shared_ptr<Light> Light::Create() {
+    auto instance = std::make_shared<Light>(Id::generateNewId<Light>());
+    return instance;
+}
 } // namespace vkl

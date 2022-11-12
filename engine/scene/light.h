@@ -12,6 +12,7 @@ namespace vkl {
 
     class Light : public UniformObject {
     public:
+        static std::shared_ptr<Light> Create();
         Light(IdType id);
         ~Light() override;
 

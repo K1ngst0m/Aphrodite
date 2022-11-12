@@ -81,6 +81,7 @@ class Entity : public Object {
     friend class GLTFLoader;
     friend class VulkanRenderData;
 public:
+    static std::shared_ptr<Entity> Create();
     Entity(IdType id);
     ~Entity() override;
     void loadFromFile(const std::string &path);

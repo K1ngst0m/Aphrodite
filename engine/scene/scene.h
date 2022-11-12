@@ -40,7 +40,7 @@ public:
 public:
     std::shared_ptr<Light>      createLight();
     std::shared_ptr<Entity>     createEntity();
-    std::shared_ptr<Entity>     createEntity(const std::string &path);
+    std::shared_ptr<Entity>     createEntityFromGLTF(const std::string &path);
     std::shared_ptr<Camera>     createCamera(float aspectRatio);
     std::unique_ptr<SceneNode> &getRootNode();
 
