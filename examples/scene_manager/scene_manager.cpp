@@ -106,7 +106,8 @@ void scene_manager::setupScene() {
 
     // load from gltf file
     {
-        m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
+        // m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
+        m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         auto &node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_model);
     }

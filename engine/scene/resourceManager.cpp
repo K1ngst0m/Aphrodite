@@ -10,7 +10,13 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
     tinygltf::TinyGLTF gltfContext;
     std::string        error, warning;
 
-    bool fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+    bool fileLoaded = false;
+    if (path.find(".glb") != std::string::npos){
+        fileLoaded = gltfContext.LoadBinaryFromFile(&glTFInput, &error, &warning, path);
+    }
+    else {
+        fileLoaded = gltfContext.LoadASCIIFromFile(&glTFInput, &error, &warning, path);
+    }
 
     if (fileLoaded) {
         _loadImages(entity, glTFInput);
@@ -22,6 +28,7 @@ void GLTFLoader::load(Entity *entity, const std::string &path) {
             _loadNodes(entity, node, glTFInput, nullptr);
         }
     } else {
+        std::cout << error << std::endl;
         assert("Could not open the glTF file.");
         return;
     }
