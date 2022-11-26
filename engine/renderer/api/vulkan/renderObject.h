@@ -40,7 +40,6 @@ public:
     void      setTransform(glm::mat4 transform);
 
 private:
-    void drawNode(VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node);
     void loadTextures();
     void loadBuffer();
 

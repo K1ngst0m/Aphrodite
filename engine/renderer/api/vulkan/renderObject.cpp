@@ -92,38 +92,45 @@ void VulkanRenderData::cleanupResources() {
     vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
 }
 
-void VulkanRenderData::drawNode(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd, const std::shared_ptr<Node> &node) {
-    if (!node->isVisible) {
-        return;
-    }
-    if (!node->primitives.empty()) {
-        glm::mat4 nodeMatrix    = node->matrix;
-        Node     *currentParent = node->parent;
-        while (currentParent) {
-            nodeMatrix    = currentParent->matrix * nodeMatrix;
-            currentParent = currentParent->parent;
-        }
-        nodeMatrix = _transform * nodeMatrix;
-        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
-        for (const Primitive primitive : node->primitives) {
-            if (primitive.indexCount > 0) {
-                MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
-                drawCmd->cmdBindDescriptorSet(pipeline, 1, 1, &materialData.set);
-                drawCmd->cmdDrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
-            }
-        }
-    }
-    for (const auto &child : node->children) {
-        drawNode(pipeline, drawCmd, child);
-    }
-}
-
 void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
     drawCmd->cmdBindVertexBuffers(0, 1, _meshData._vertexBuffer, offsets);
     drawCmd->cmdBindIndexBuffers(_meshData._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-    for (auto &subNode : _entity->_subNodeList) {
-        drawNode(pipeline, drawCmd, subNode);
+    for (auto &node : _entity->_subNodeList) {
+        if (!node->isVisible) {
+            return;
+        }
+
+        std::queue<std::shared_ptr<Node>> q;
+        q.push(node);
+
+        while(!q.empty()){
+            auto subNode = q.front();
+            q.pop();
+
+            {
+                glm::mat4 nodeMatrix    = node->matrix;
+                Node     *currentParent = node->parent;
+                while (currentParent) {
+                    nodeMatrix    = currentParent->matrix * nodeMatrix;
+                    currentParent = currentParent->parent;
+                }
+                nodeMatrix = _transform * nodeMatrix;
+                drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+            }
+
+            for (const auto primitive : subNode->primitives) {
+                if (primitive.indexCount > 0) {
+                    MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
+                    drawCmd->cmdBindDescriptorSet(pipeline, 1, 1, &materialData.set);
+                    drawCmd->cmdDrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                }
+            }
+
+            for (const auto &child : subNode->children){
+                q.push(child);
+            }
+        }
     }
 }
 
