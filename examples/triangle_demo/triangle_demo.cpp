@@ -56,8 +56,8 @@ void triangle_demo::setupPipeline() {
     vertexInputInfo.vertexBindingDescriptionCount   = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
-    vkl::PipelineCreateInfo createInfo{};
-    createInfo._vertexInputInfo = vertexInputInfo;
+    vkl::GraphicsPipelineCreateInfo createInfo{};
+    createInfo.vertexInputInfo = vertexInputInfo;
 
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";

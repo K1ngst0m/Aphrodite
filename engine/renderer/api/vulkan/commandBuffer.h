@@ -29,7 +29,7 @@ public:
 
     VulkanCommandPool *getPool();
 
-    VkResult begin(VkCommandBufferUsageFlags flags);
+    VkResult begin(VkCommandBufferUsageFlags flags = 0);
     VkResult end();
     VkResult reset();
 

@@ -24,7 +24,6 @@ public:
 public:
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
-    VkQueue              getDefaultDeviceQueue(VkQueueFlags flags) const;
     VulkanRenderPass    *getDefaultRenderPass() const;
     uint32_t             getCommandBufferCount() const;
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
@@ -33,6 +32,7 @@ public:
     uint32_t             getCurrentFrameIndex() const;
     uint32_t             getCurrentImageIndex() const;
     VkExtent2D           getSwapChainExtent() const;
+    VulkanSwapChain * getSwapChain() {return m_swapChain;}
 
 private:
     void _createInstance();

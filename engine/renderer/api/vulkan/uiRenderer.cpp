@@ -233,10 +233,10 @@ bool VulkanUIRenderer::update(float deltaTime) {
 }
 
 void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat colorFormat, VkFormat depthFormat) {
-    PipelineCreateInfo pipelineCI{};
+    GraphicsPipelineCreateInfo pipelineCI{};
     // Setup graphics pipeline for UI rendering
-    pipelineCI._inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-    pipelineCI._rasterizer    = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    pipelineCI.inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    pipelineCI.rasterizer    = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
     // Enable blending
     VkPipelineColorBlendAttachmentState blendAttachmentState{};
@@ -249,10 +249,10 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
     blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
     blendAttachmentState.alphaBlendOp        = VK_BLEND_OP_ADD;
 
-    pipelineCI._colorBlendAttachment = blendAttachmentState;
+    pipelineCI.colorBlendAttachment = blendAttachmentState;
 
-    pipelineCI._depthStencil  = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS);
-    pipelineCI._multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+    pipelineCI.depthStencil  = vkl::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS);
+    pipelineCI.multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
 
     VkPipelineViewportStateCreateInfo viewportState =
         vkl::init::pipelineViewportStateCreateInfo(1, 1, 0);
@@ -260,7 +260,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
     std::vector<VkDynamicState> dynamicStateEnables = {
         VK_DYNAMIC_STATE_VIEWPORT,
         VK_DYNAMIC_STATE_SCISSOR};
-    pipelineCI._dynamicState = vkl::init::pipelineDynamicStateCreateInfo(dynamicStateEnables);
+    pipelineCI.dynamicState = vkl::init::pipelineDynamicStateCreateInfo(dynamicStateEnables);
 
     // Vertex bindings an attributes based on ImGui vertex definition
     std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -272,7 +272,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         vkl::init::vertexInputAttributeDescription(0, 2, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)), // Location 0: Color
     };
 
-    VkPipelineVertexInputStateCreateInfo &vertexInputState = pipelineCI._vertexInputInfo;
+    VkPipelineVertexInputStateCreateInfo &vertexInputState = pipelineCI.vertexInputInfo;
     vertexInputState                                       = vkl::init::pipelineVertexInputStateCreateInfo();
     vertexInputState.vertexBindingDescriptionCount         = static_cast<uint32_t>(vertexInputBindings.size());
     vertexInputState.pVertexBindingDescriptions            = vertexInputBindings.data();

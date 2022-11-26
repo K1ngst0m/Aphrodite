@@ -282,9 +282,7 @@ void VulkanRenderer::submitFrame() {
                 .pSignalSemaphores    = signalSemaphores,
     };
 
-    VK_CHECK_RESULT(vkQueueSubmit(getDefaultDeviceQueue(VK_QUEUE_GRAPHICS_BIT),
-                                  1, &submitInfo,
-                                  m_inFlightFence[m_currentFrame]));
+    m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->submit(1, &submitInfo, m_inFlightFence[m_currentFrame]);
 
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -296,8 +294,7 @@ void VulkanRenderer::submitFrame() {
         .pResults           = nullptr, // Optional
     };
 
-    VkResult result = vkQueuePresentKHR(getDefaultDeviceQueue(VK_QUEUE_GRAPHICS_BIT), &presentInfo);
-    VK_CHECK_RESULT(result);
+    VK_CHECK_RESULT(m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->present(presentInfo));
 
     // if (result == VK_ERROR_OUT_OF_DATE_KHR ||
     //     result == VK_SUBOPTIMAL_KHR ||
@@ -349,10 +346,6 @@ void VulkanRenderer::_initDefaultResource() {
     _createDefaultSyncObjects();
     _createDefaultFramebuffers();
     _createPipelineCache();
-}
-
-VkQueue VulkanRenderer::getDefaultDeviceQueue(VkQueueFlags flags) const {
-    return m_device->getQueueByFlags(flags)->getHandle();
 }
 
 VulkanRenderPass *VulkanRenderer::getDefaultRenderPass() const {

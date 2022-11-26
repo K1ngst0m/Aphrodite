@@ -24,8 +24,8 @@ enum DescriptorSetBinding {
 
 class VulkanSceneRenderer : public SceneRenderer {
 public:
-    static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer>& renderer);
-    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer);
+    static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer> &renderer);
+    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
     void cleanupResources() override;
@@ -36,27 +36,37 @@ private:
     void _initRenderList();
     void _initUniformList();
 
-    void _setupUnlitShaderEffect();
-    void _setupDefaultLitShaderEffect();
+    void _setupUnlitPipeline();
+    void _setupDefaultLitPipeline();
+    void _initPostFxResource();
 
     void _loadSceneNodes(const std::unique_ptr<SceneNode> &node);
 
 private:
-    VulkanPipeline            *_getCurrentPipeline();
+    VulkanPipeline *_getCurrentPipeline();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
 
-    VulkanPipeline *_unlitPipeline = nullptr;
+    VulkanPipeline *_unlitPipeline      = nullptr;
     VulkanPipeline *_defaultLitPipeline = nullptr;
+
+    struct {
+        VkSemaphore                semaphore      = VK_NULL_HANDLE;
+        VulkanQueue               *queue          = nullptr;
+        VulkanImage               *colorImage     = nullptr;
+        VulkanImageView           *colorImageView = nullptr;
+        VulkanPipeline            *pipeline       = nullptr;
+        VulkanFramebuffer         *framebuffer    = nullptr;
+    } _postFxResource;
 
 private:
     std::vector<std::unique_ptr<VulkanRenderData>> _renderList;
     std::deque<std::unique_ptr<VulkanUniformData>> _uniformList;
 
 private:
-    VulkanDevice   *_device;
-    std::shared_ptr<VulkanRenderer> _renderer;
+    VulkanDevice                   *_device;
+    std::shared_ptr<VulkanRenderer> _renderer = nullptr;
 };
 } // namespace vkl
 

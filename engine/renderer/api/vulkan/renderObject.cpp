@@ -179,7 +179,7 @@ void VulkanRenderData::loadBuffer() {
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
         // using staging buffer
-        vkl::VulkanBuffer *stagingBuffer;
+        vkl::VulkanBuffer *stagingBuffer = nullptr;
 
         {
             BufferCreateInfo createInfo{};

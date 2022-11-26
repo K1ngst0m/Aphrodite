@@ -62,4 +62,7 @@ ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo) {
 VulkanShaderCache::VulkanShaderCache(VulkanDevice *device)
     : _device(device) {
 }
+const ShaderMapList &ShaderEffect::getShaderMapList() {
+    return _shaderMapList;
+}
 } // namespace vkl

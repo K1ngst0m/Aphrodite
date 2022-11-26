@@ -33,8 +33,9 @@ VkResult VulkanQueue::submit(uint32_t submitCount, const VkSubmitInfo *pSubmits,
     return result;
 }
 
-VkResult VulkanQueue::present(const PresentInfo *pPresentInfo) {
-    return VK_NOT_READY;
+VkResult VulkanQueue::present(const VkPresentInfoKHR &presentInfo) {
+    VkResult result = vkQueuePresentKHR(m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->getHandle(), &presentInfo);
+    return result;
 }
 
 } // namespace vkl

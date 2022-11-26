@@ -50,9 +50,7 @@ public:
 
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-    const ShaderMapList       &getShaderMapList() {
-        return _shaderMapList;
-    }
+    const ShaderMapList       &getShaderMapList();
 
 private:
     VulkanDevice                            *_device;

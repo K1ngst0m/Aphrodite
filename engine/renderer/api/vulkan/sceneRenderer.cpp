@@ -28,9 +28,10 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& 
 }
 
 void VulkanSceneRenderer::loadResources() {
+    // _initPostFxResource();
     _loadSceneNodes(_scene->getRootNode());
-    _setupUnlitShaderEffect();
-    _setupDefaultLitShaderEffect();
+    _setupUnlitPipeline();
+    _setupDefaultLitPipeline();
     _initRenderList();
     _initUniformList();
     isSceneLoaded = true;
@@ -74,7 +75,7 @@ void VulkanSceneRenderer::drawScene() {
     auto commandIndex = _renderer->getCurrentFrameIndex();
     auto *commandBuffer = _renderer->getDefaultCommandBuffer(commandIndex);
 
-    commandBuffer->begin(0);
+    commandBuffer->begin();
 
     // render pass
     renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
@@ -176,7 +177,7 @@ void VulkanSceneRenderer::_loadSceneNodes(const std::unique_ptr<SceneNode> &node
     }
 }
 
-void VulkanSceneRenderer::_setupUnlitShaderEffect() {
+void VulkanSceneRenderer::_setupUnlitPipeline() {
     VulkanDescriptorSetLayout * sceneLayout = nullptr;
     VulkanDescriptorSetLayout * materialLayout = nullptr;
 
@@ -206,12 +207,12 @@ void VulkanSceneRenderer::_setupUnlitShaderEffect() {
         effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.vert.spv");
         effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.frag.spv");
 
-        PipelineCreateInfo pipelineCreateInfo;
+        GraphicsPipelineCreateInfo pipelineCreateInfo;
         VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_unlitPipeline));
     }
 }
 
-void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
+void VulkanSceneRenderer::_setupDefaultLitPipeline() {
     VulkanDescriptorSetLayout * sceneLayout = nullptr;
     VulkanDescriptorSetLayout * materialLayout = nullptr;
 
@@ -245,7 +246,7 @@ void VulkanSceneRenderer::_setupDefaultLitShaderEffect() {
         effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.vert.spv");
         effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.frag.spv");
 
-        PipelineCreateInfo pipelineCreateInfo;
+        GraphicsPipelineCreateInfo pipelineCreateInfo;
         VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_defaultLitPipeline));
     }
 }
@@ -257,7 +258,7 @@ VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
     case ShadingModel::DEFAULTLIT:
         return _defaultLitPipeline;
     }
-    assert("unexpected behavior");
+    assert("unexpected behavior.");
     return _unlitPipeline;
 }
 
@@ -265,4 +266,31 @@ std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(const std::shar
     auto instance = std::make_unique<VulkanSceneRenderer>(renderer);
     return instance;
 }
+
+void VulkanSceneRenderer::_initPostFxResource() {
+    VulkanDescriptorSetLayout * pSetLayout = nullptr;
+
+    // shader resource
+    {
+        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
+            // Binding 0: Input image (read-only)
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 0),
+            // Binding 1: Output image (write)
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 1),
+        };
+
+        VkDescriptorSetLayoutCreateInfo setLayoutCI = vkl::init::descriptorSetLayoutCreateInfo(setLayoutBindings);
+        _device->createDescriptorSetLayout(&setLayoutCI, &pSetLayout);
+    }
+
+    // pipeline
+    {
+        EffectInfo info{};
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        info.shaderMapList[VK_SHADER_STAGE_COMPUTE_BIT] = _device->getShaderCache()->getShaders(shaderDir / "postFx.comp");
+        info.setLayouts.push_back(pSetLayout);
+        _device->createComputePipeline(&info, &_postFxResource.pipeline);
+    }
+}
+
 } // namespace vkl

@@ -27,18 +27,21 @@ VkPipelineVertexInputStateCreateInfo &VertexInputBuilder::getPipelineVertexInput
     return _pipelineVertexInputStateCreateInfo;
 }
 
-VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice, const PipelineCreateInfo *pCreateInfo, ShaderEffect *pEffect, VulkanRenderPass *pRenderPass, VkPipeline handle) {
+VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice, const GraphicsPipelineCreateInfo *pCreateInfo, ShaderEffect *pEffect, VulkanRenderPass *pRenderPass, VkPipeline handle) {
     auto *instance       = new VulkanPipeline();
     instance->_handle    = handle;
     instance->_effect    = pEffect;
     instance->_device    = pDevice;
     instance->_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    memcpy(&instance->_createInfo, pCreateInfo, sizeof(PipelineCreateInfo));
     return instance;
 }
 
-VulkanPipeline *VulkanPipeline::CreateComputePipeline(VulkanDevice *pDevice, const PipelineCreateInfo *pCreateInfo) {
+VulkanPipeline *VulkanPipeline::CreateComputePipeline(VulkanDevice *pDevice, ShaderEffect * pEffect, VkPipeline handle) {
     auto *instance = new VulkanPipeline();
+    instance->_effect = pEffect;
+    instance->_handle = handle;
+    instance->_device = pDevice;
+    instance->_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
     return instance;
 }
 
