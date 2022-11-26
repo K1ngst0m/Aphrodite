@@ -40,9 +40,6 @@ AttachType SceneNode::getAttachType() {
     return _attachType;
 }
 
-std::shared_ptr<Object> SceneNode::getObject() {
-    return _object;
-}
 
 glm::mat4 SceneNode::getTransform() {
     return _matrix;

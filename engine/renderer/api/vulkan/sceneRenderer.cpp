@@ -250,16 +250,15 @@ void VulkanSceneRenderer::_loadSceneNodes() {
 
         switch (node->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_shared<VulkanRenderData>(_device, std::static_pointer_cast<Entity>(node->getObject()));
-            renderable->setTransform(node->getTransform());
+            auto renderable = std::make_shared<VulkanRenderData>(_device, node);
             _renderList.push_back(renderable);
         } break;
         case AttachType::CAMERA: {
-            auto ubo = std::make_shared<VulkanUniformData>(_device, std::static_pointer_cast<Camera>(node->getObject()));
+            auto ubo = std::make_shared<VulkanUniformData>(_device, node->getObject<Camera>());
             _uniformList.push_front(ubo);
         } break;
         case AttachType::LIGHT: {
-            auto ubo = std::make_shared<VulkanUniformData>(_device, std::static_pointer_cast<Light>(node->getObject()));
+            auto ubo = std::make_shared<VulkanUniformData>(_device, node->getObject<Light>());
             _uniformList.push_back(ubo);
         } break;
         default:

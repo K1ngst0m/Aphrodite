@@ -203,13 +203,13 @@ void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, con
                 }
             }
 
-            Primitive primitive{
+            Subset primitive{
                 .firstIndex    = firstIndex,
                 .indexCount    = indexCount,
                 .materialIndex = glTFPrimitive.material,
             };
 
-            node->primitives.push_back(primitive);
+            node->subsets.push_back(primitive);
         }
     }
 

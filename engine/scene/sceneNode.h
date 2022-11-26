@@ -22,7 +22,9 @@ public:
     void attachObject(const std::shared_ptr<Light> &object);
     void attachObject(const std::shared_ptr<Camera> &object);
 
-    std::shared_ptr<Object> getObject();
+    template<typename TObject>
+    std::shared_ptr<TObject> getObject();
+
     bool                    isAttached();
     AttachType              getAttachType();
     IdType                  getAttachObjectId();
@@ -42,6 +44,12 @@ private:
 
     std::vector<std::shared_ptr<SceneNode>> _children;
 };
+
+template<typename TObject>
+std::shared_ptr<TObject> SceneNode::getObject() {
+    return std::static_pointer_cast<TObject>(_object);
+}
+
 } // namespace vkl
 
 #endif // SCENENODE_H_

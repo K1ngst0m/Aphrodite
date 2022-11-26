@@ -1,4 +1,6 @@
 #include "renderObject.h"
+
+#include <utility>
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "descriptorSetLayout.h"
@@ -13,12 +15,12 @@
 
 namespace vkl {
 
-VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<Entity> entity)
-    : _device(device), _entity(std::move(entity)) {
+VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
+    : _device(device), _node(std::move(sceneNode)) {
 }
 
 void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
-    for (auto &material : _entity->_materials) {
+    for (auto &material : _node->getObject<Entity>()->_materials) {
         MaterialGpuData materialData{};
         materialData.set = materialLayout->allocateSet();
 
@@ -65,7 +67,7 @@ void VulkanRenderData::loadTextures() {
         _emptyTexture = createTexture(width, height, &data, imageDataSize);
     }
 
-    for (auto &image : _entity->_images) {
+    for (auto &image : _node->getObject<Entity>()->_images) {
         // raw image data
         unsigned char *imageData     = image.data.data();
         uint32_t       imageDataSize = image.data.size();
@@ -98,7 +100,7 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
     drawCmd->cmdBindIndexBuffers(_meshData._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     std::queue<std::shared_ptr<Node>> q;
-    for (auto &node : _entity->_subNodeList) {
+    for (auto &node : _node->getObject<Entity>()->_subNodeList) {
         if (node->isVisible){
             q.push(node);
         }
@@ -114,14 +116,13 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
-        nodeMatrix = _transform * nodeMatrix;
         drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 
-        for (const auto primitive : subNode->primitives) {
-            if (primitive.indexCount > 0) {
-                MaterialGpuData &materialData = _materialGpuDataList[primitive.materialIndex];
+        for (const auto& subset : subNode->subsets) {
+            if (subset.indexCount > 0) {
+                auto &materialData = _materialGpuDataList[subset.materialIndex];
                 drawCmd->cmdBindDescriptorSet(pipeline, 1, 1, &materialData.set);
-                drawCmd->cmdDrawIndexed(primitive.indexCount, 1, primitive.firstIndex, 0, 0);
+                drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
             }
         }
 
@@ -132,12 +133,12 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
 }
 
 uint32_t VulkanRenderData::getSetCount() {
-    return _entity->_materials.size();
+    return _node->getObject<Entity>()->_materials.size();
 }
 
 void VulkanRenderData::loadBuffer() {
-    auto &vertices = _entity->_vertices;
-    auto &indices  = _entity->_indices;
+    auto &vertices = _node->getObject<Entity>()->_vertices;
+    auto &indices  = _node->getObject<Entity>()->_indices;
 
     assert(!vertices.empty());
 
@@ -211,14 +212,6 @@ void VulkanRenderData::loadBuffer() {
 
         _device->destroyBuffer(stagingBuffer);
     }
-}
-
-glm::mat4 VulkanRenderData::getTransform() const {
-    return _transform;
-}
-
-void VulkanRenderData::setTransform(glm::mat4 transform) {
-    _transform = transform;
 }
 
 TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize) {
@@ -347,4 +340,5 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
 
     return texture;
 }
+
 } // namespace vkl

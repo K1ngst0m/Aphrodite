@@ -4,7 +4,7 @@
 #include "object.h"
 
 namespace vkl {
-struct Primitive;
+struct Subset;
 struct Texture;
 struct Material;
 struct Vertex;
@@ -12,7 +12,7 @@ struct Node;
 
 using ResourceIndex = int32_t;
 using SubNodeList   = std::vector<std::shared_ptr<Node>>;
-using PrimitiveList = std::vector<Primitive>;
+using SubsetList    = std::vector<Subset>;
 using TextureData   = std::vector<unsigned char>;
 using VertexList    = std::vector<Vertex>;
 using IndexList     = std::vector<uint32_t>;
@@ -27,7 +27,7 @@ struct Vertex {
     glm::vec4 tangent;
 };
 
-struct Primitive {
+struct Subset {
     ResourceIndex firstIndex    = -1;
     ResourceIndex indexCount    = -1;
     ResourceIndex materialIndex = -1;
@@ -38,9 +38,9 @@ struct Node {
     glm::mat4   matrix    = glm::mat4(1.0f);
     bool        isVisible = true;
 
-    Node    *parent;
-    SubNodeList   children;
-    PrimitiveList primitives;
+    Node       *parent;
+    SubNodeList children;
+    SubsetList  subsets;
 };
 
 struct Texture {
@@ -80,6 +80,7 @@ struct Material {
 class Entity : public Object {
     friend class GLTFLoader;
     friend class VulkanRenderData;
+
 public:
     static std::shared_ptr<Entity> Create();
     Entity(IdType id);
