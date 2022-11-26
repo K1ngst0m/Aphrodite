@@ -18,8 +18,8 @@ enum MaterialBindingBits {
 };
 
 enum DescriptorSetBinding {
-    SET_BINDING_SCENE    = 0,
-    SET_BINDING_MATERIAL = 1,
+    SET_SCENE    = 0,
+    SET_MATERIAL = 1,
 };
 
 class VulkanSceneRenderer : public SceneRenderer {
@@ -41,17 +41,17 @@ private:
     void _loadSceneNodes();
 
 private:
-    std::vector<VkDescriptorSet> _globalDescriptorSets;
+    std::vector<VkDescriptorSet> _descriptorSets;
 
     VulkanPipeline *_forwardPipeline = nullptr;
 
     struct {
-        VkSemaphore                semaphore      = VK_NULL_HANDLE;
-        VulkanQueue               *queue          = nullptr;
-        VulkanImage               *colorImage     = nullptr;
-        VulkanImageView           *colorImageView = nullptr;
-        VulkanPipeline            *pipeline       = nullptr;
-        VulkanFramebuffer         *framebuffer    = nullptr;
+        VkSemaphore        semaphore      = VK_NULL_HANDLE;
+        VulkanQueue       *queue          = nullptr;
+        VulkanImage       *colorImage     = nullptr;
+        VulkanImageView   *colorImageView = nullptr;
+        VulkanPipeline    *pipeline       = nullptr;
+        VulkanFramebuffer *framebuffer    = nullptr;
     } _postFxResource;
 
 private:
@@ -59,7 +59,7 @@ private:
     std::deque<std::shared_ptr<VulkanUniformData>> _uniformList;
 
 private:
-    VulkanDevice                   *_device;
+    VulkanDevice                   *_device   = nullptr;
     std::shared_ptr<VulkanRenderer> _renderer = nullptr;
 };
 } // namespace vkl

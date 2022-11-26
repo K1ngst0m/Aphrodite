@@ -28,7 +28,7 @@ void scene_manager::run() {
         m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
 
         // update resource data
-        m_defaultCamera->update(m_deltaTime);
+        m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
         m_uiRenderer->update(m_deltaTime);
 
@@ -69,31 +69,34 @@ void scene_manager::setupScene() {
 
     // scene camera
     {
-        m_defaultCamera = m_scene->createCamera(m_window->getAspectRatio());
-        m_defaultCamera->setType(vkl::CameraType::FIRSTPERSON);
-        m_defaultCamera->setPosition({0.0f, -1.0f, 0.0f, 1.0f});
-        m_defaultCamera->setFlipY(true);
-        m_defaultCamera->setRotation(glm::vec3(0.0f, -90.0f, 0.0f));
-        m_defaultCamera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
-        m_defaultCamera->setMovementSpeed(2.5f);
-        m_defaultCamera->setRotationSpeed(0.1f);
+        m_camera = m_scene->createCamera(m_window->getAspectRatio());
+        m_camera->setType(vkl::CameraType::FIRSTPERSON);
+        m_camera->setPosition({0.0f, -1.0f, -3.0f, 1.0f});
+        m_camera->setFlipY(true);
+        m_camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+        m_camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
+        m_camera->setMovementSpeed(2.5f);
+        m_camera->setRotationSpeed(0.1f);
+
+        m_cameraNode = m_scene->getRootNode()->createChildNode();
+        m_cameraNode->attachObject(m_camera);
 
         auto node = m_scene->getRootNode()->createChildNode();
-        node->attachObject(m_defaultCamera);
+        node->attachObject(m_camera);
 
-        m_scene->setMainCamera(m_defaultCamera);
+        m_scene->setMainCamera(m_camera);
     }
 
     // point light
     {
-        auto pointLight = m_scene->createLight();
-        pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
-        pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
-        pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
-        pointLight->setType(vkl::LightType::POINT);
+        // auto pointLight = m_scene->createLight();
+        // pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
+        // pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        // pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        // pointLight->setType(vkl::LightType::POINT);
 
-        m_pointLightNode = m_scene->getRootNode()->createChildNode();
-        m_pointLightNode->attachObject(pointLight);
+        // m_pointLightNode = m_scene->getRootNode()->createChildNode();
+        // m_pointLightNode->attachObject(pointLight);
     }
 
     // direction light
@@ -119,7 +122,7 @@ void scene_manager::setupScene() {
     {
         // glm::mat4 modelTransform    = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
         // auto      prefab_cube_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        // auto     &node              = m_scene->getRootNode()->createChildNode(modelTransform);
+        // auto      node              = m_scene->getRootNode()->createChildNode(modelTransform);
         // node->attachObject(prefab_cube_model);
     }
 
@@ -127,7 +130,7 @@ void scene_manager::setupScene() {
     {
         // glm::mat4 modelTransform     = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
         // auto      prefab_plane_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
-        // auto     &node               = m_scene->getRootNode()->createChildNode(modelTransform);
+        // auto      node               = m_scene->getRootNode()->createChildNode(modelTransform);
         // node->attachObject(prefab_plane_model);
     }
 
@@ -135,7 +138,7 @@ void scene_manager::setupScene() {
     {
         // glm::mat4 modelTransform      = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
         // auto      prefab_sphere_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
-        // auto     &node                = m_scene->getRootNode()->createChildNode(modelTransform);
+        // auto      node                = m_scene->getRootNode()->createChildNode(modelTransform);
         // node->attachObject(prefab_sphere_model);
     }
 
@@ -162,16 +165,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
             m_window->toggleCurosrVisibility();
             break;
         case VKL_KEY_W:
-            m_defaultCamera->setMovement(vkl::CameraDirection::UP, true);
+            m_camera->setMovement(vkl::CameraDirection::UP, true);
             break;
         case VKL_KEY_A:
-            m_defaultCamera->setMovement(vkl::CameraDirection::LEFT, true);
+            m_camera->setMovement(vkl::CameraDirection::LEFT, true);
             break;
         case VKL_KEY_S:
-            m_defaultCamera->setMovement(vkl::CameraDirection::DOWN, true);
+            m_camera->setMovement(vkl::CameraDirection::DOWN, true);
             break;
         case VKL_KEY_D:
-            m_defaultCamera->setMovement(vkl::CameraDirection::RIGHT, true);
+            m_camera->setMovement(vkl::CameraDirection::RIGHT, true);
             break;
         }
     }
@@ -179,16 +182,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     if (action == VKL_RELEASE) {
         switch (key) {
         case VKL_KEY_W:
-            m_defaultCamera->setMovement(vkl::CameraDirection::UP, false);
+            m_camera->setMovement(vkl::CameraDirection::UP, false);
             break;
         case VKL_KEY_A:
-            m_defaultCamera->setMovement(vkl::CameraDirection::LEFT, false);
+            m_camera->setMovement(vkl::CameraDirection::LEFT, false);
             break;
         case VKL_KEY_S:
-            m_defaultCamera->setMovement(vkl::CameraDirection::DOWN, false);
+            m_camera->setMovement(vkl::CameraDirection::DOWN, false);
             break;
         case VKL_KEY_D:
-            m_defaultCamera->setMovement(vkl::CameraDirection::RIGHT, false);
+            m_camera->setMovement(vkl::CameraDirection::RIGHT, false);
             break;
         }
     }
@@ -198,7 +201,7 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn) {
     float dx = m_window->getCursorXpos() - xposIn;
     float dy = m_window->getCursorYpos() - yposIn;
 
-    m_defaultCamera->rotate(glm::vec3(dy * m_defaultCamera->getRotationSpeed(), -dx * m_defaultCamera->getRotationSpeed(), 0.0f));
+    m_camera->rotate(glm::vec3(dy * m_camera->getRotationSpeed(), -dx * m_camera->getRotationSpeed(), 0.0f));
 }
 
 int main() {

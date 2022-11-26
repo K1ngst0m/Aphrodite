@@ -9,22 +9,14 @@ layout(location = 4) in vec4 fragTangent;
 layout(location = 0) out vec4 outColor;
 
 // set 0: per scene binding
-layout (set = 0, binding = 0) uniform SceneUB{
+layout (set = 0, binding = 0) uniform CameraUB{
     mat4 view;
     mat4 proj;
     mat4 viewProj;
     vec3 viewPos;
-} sceneData;
+} sceneData[];
 
-layout (set = 0, binding = 1) uniform PointLightUB{
-    vec3 position;
-    vec3 diffuse;
-    vec3 specular;
-
-    vec3 attenuationFactor;
-} pointLightData;
-
-layout (set = 0, binding = 2) uniform DirectionalLightUB{
+layout (set = 0, binding = 1) uniform DirectionalLightUB{
     vec3 direction;
     vec3 diffuse;
     vec3 specular;
@@ -43,11 +35,10 @@ void main() {
     N = TBN * normalize(texture(samplerNormal, fragTexCoord).xyz * 2.0 - vec3(1.0));
 
     vec3 L = normalize(directionalLightData.direction);
-    vec3 V = normalize(sceneData.viewPos - fragPosition);
+    vec3 V = normalize(sceneData[0].viewPos - fragPosition);
     vec3 R = reflect(L, N);
     vec3 diffuse = max(dot(N, L), 0.15) * fragColor;
     vec3 specular = pow(max(dot(R, V), 0.0), 64.0) * vec3(0.75);
-
 
     outColor = vec4(diffuse * color.rgb + specular, 1.0f);
 }

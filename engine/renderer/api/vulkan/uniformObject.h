@@ -2,6 +2,7 @@
 #define VULKAN_UNIFORMOBJECT_H_
 
 #include "buffer.h"
+#include "scene/sceneNode.h"
 #include "vulkan/vulkan_core.h"
 
 namespace vkl {
@@ -11,7 +12,7 @@ class UniformObject;
 
 class VulkanUniformData {
 public:
-    VulkanUniformData(VulkanDevice *device, std::shared_ptr<UniformObject> ubo);
+    VulkanUniformData(VulkanDevice *device, std::shared_ptr<SceneNode> node);
     ~VulkanUniformData() = default;
 
     void cleanupResources() const;
@@ -20,12 +21,17 @@ public:
     void  updateBuffer(void *data) const;
     void *getData();
 
-    VkDescriptorBufferInfo &getBufferInfo();
+    VkDescriptorBufferInfo    &getBufferInfo();
+    std::shared_ptr<SceneNode> getNode() {
+        return _node;
+    }
 
 private:
-    VulkanBuffer  *_buffer   = nullptr;
-    VulkanDevice  *_device   = nullptr;
-    std::shared_ptr<UniformObject> _ubo      = nullptr;
+    VulkanBuffer *_buffer = nullptr;
+    VulkanDevice *_device = nullptr;
+
+    std::shared_ptr<SceneNode>     _node = nullptr;
+    std::shared_ptr<UniformObject> _ubo  = nullptr;
 };
 } // namespace vkl
 

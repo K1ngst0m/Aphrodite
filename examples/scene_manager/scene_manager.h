@@ -25,7 +25,8 @@ private:
     std::shared_ptr<vkl::SceneNode> m_modelNode            = nullptr;
     std::shared_ptr<vkl::SceneNode> m_pointLightNode       = nullptr;
     std::shared_ptr<vkl::SceneNode> m_directionalLightNode = nullptr;
-    std::shared_ptr<vkl::Camera>    m_defaultCamera        = nullptr;
+    std::shared_ptr<vkl::SceneNode> m_cameraNode           = nullptr;
+    std::shared_ptr<vkl::Camera>    m_camera               = nullptr;
 
     std::shared_ptr<vkl::Scene> m_scene;
 

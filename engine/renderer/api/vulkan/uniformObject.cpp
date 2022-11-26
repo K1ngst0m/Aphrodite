@@ -7,8 +7,16 @@ namespace vkl {
 void VulkanUniformData::updateBuffer(void *data) const {
     _buffer->copyTo(data, _buffer->getSize());
 }
-VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<UniformObject> ubo)
-    : _device(device), _ubo(std::move(ubo)) {
+VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<SceneNode> node)
+    : _device(device), _node(std::move(node)) {
+    switch (_node->getAttachType()) {
+    case AttachType::LIGHT:
+        _ubo = _node->getObject<Light>();
+    case AttachType::CAMERA:
+        _ubo = _node->getObject<Camera>();
+    default:
+        assert("invalid object type");
+    }
     _ubo->load();
     setupBuffer(_ubo->getDataSize(), _ubo->getData());
 }

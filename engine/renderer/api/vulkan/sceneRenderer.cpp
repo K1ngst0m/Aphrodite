@@ -20,18 +20,16 @@
 namespace vkl {
 namespace {
 
-bool GetShadingInfo(ShadingModel shadingModel, uint32_t& writeCount, int32_t& mtlBindingBits){
+void GetShadingInfo(ShadingModel shadingModel, uint32_t& writeCount, int32_t& mtlBindingBits){
     switch (shadingModel) {
     case ShadingModel::UNLIT:
         writeCount = 1;
         mtlBindingBits |= MATERIAL_BINDING_BASECOLOR;
-        return true;
     case ShadingModel::DEFAULTLIT:
         mtlBindingBits |= MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL;
-        writeCount = 3;
-        return true;
+        writeCount = 2;
     }
-    return false;
+    assert("invalid shading model");
 }
 
 VulkanPipeline * CreateUnlitPipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass) {
@@ -80,9 +78,9 @@ VulkanPipeline* CreateDefaultLitPipeline(VulkanDevice * pDevice, VulkanRenderPas
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            // vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
@@ -184,7 +182,7 @@ void VulkanSceneRenderer::drawScene() {
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
     commandBuffer->cmdBindPipeline(_forwardPipeline);
-    commandBuffer->cmdBindDescriptorSet(_forwardPipeline, 0, 1, &_globalDescriptorSets[commandIndex]);
+    commandBuffer->cmdBindDescriptorSet(_forwardPipeline, 0, 1, &_descriptorSets[commandIndex]);
 
     // forward pass
     renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
@@ -212,31 +210,54 @@ void VulkanSceneRenderer::_initRenderList() {
 }
 
 void VulkanSceneRenderer::_initUniformList() {
-    _globalDescriptorSets.resize(_renderer->getCommandBufferCount());
+    _descriptorSets.resize(_renderer->getCommandBufferCount());
 
     uint32_t writeCount     = 0;
     int32_t  mtlBindingBits = MATERIAL_BINDING_NONE;
     GetShadingInfo(getShadingModel(), writeCount, mtlBindingBits);
 
-    for (auto &set : _globalDescriptorSets) {
-        set = _forwardPipeline->getDescriptorSetLayout(SET_BINDING_SCENE)->allocateSet();
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        for (auto &uniformObj : _uniformList) {
-            VkWriteDescriptorSet write = {};
-            write.sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            write.dstSet               = set;
-            write.dstBinding           = static_cast<uint32_t>(descriptorWrites.size());
-            write.dstArrayElement      = 0;
-            write.descriptorCount      = 1;
-            write.descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            write.pBufferInfo          = &uniformObj->getBufferInfo();
-            descriptorWrites.push_back(write);
+    for (auto &set : _descriptorSets) {
+        set = _forwardPipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
+        std::vector<VkDescriptorBufferInfo> cameraInfos;
+        std::vector<VkDescriptorBufferInfo> lightInfos;
+
+        for (auto &uniformData : _uniformList) {
+            switch(uniformData->getNode()->getAttachType()){
+            case AttachType::LIGHT:
+                lightInfos.push_back(uniformData->getBufferInfo());
+            case AttachType::CAMERA:
+                cameraInfos.push_back(uniformData->getBufferInfo());
+            default:
+                assert("invalid object type.");
+            }
         }
-        vkUpdateDescriptorSets(_device->getHandle(), writeCount, descriptorWrites.data(), 0, nullptr);
+
+        VkWriteDescriptorSet cameraWrite = {
+            .sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet               = set,
+            .dstBinding           = 0,
+            .dstArrayElement      = 0,
+            .descriptorCount      = static_cast<uint32_t>(cameraInfos.size()),
+            .descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo          = cameraInfos.data(),
+        };
+
+        VkWriteDescriptorSet lightWrite = {
+            .sType                = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet               = set,
+            .dstBinding           = 1,
+            .dstArrayElement      = 0,
+            .descriptorCount      = static_cast<uint32_t>(lightInfos.size()),
+            .descriptorType       = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pBufferInfo          = lightInfos.data(),
+        };
+
+        vkUpdateDescriptorSets(_device->getHandle(), 1, &lightWrite, 0, nullptr);
+        vkUpdateDescriptorSets(_device->getHandle(), 1, &cameraWrite, 0, nullptr);
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterial(_forwardPipeline->getDescriptorSetLayout(SET_BINDING_MATERIAL), mtlBindingBits);
+        renderable->setupMaterial(_forwardPipeline->getDescriptorSetLayout(SET_MATERIAL), mtlBindingBits);
     }
 }
 
@@ -254,11 +275,11 @@ void VulkanSceneRenderer::_loadSceneNodes() {
             _renderList.push_back(renderable);
         } break;
         case AttachType::CAMERA: {
-            auto ubo = std::make_shared<VulkanUniformData>(_device, node->getObject<Camera>());
+            auto ubo = std::make_shared<VulkanUniformData>(_device, node);
             _uniformList.push_front(ubo);
         } break;
         case AttachType::LIGHT: {
-            auto ubo = std::make_shared<VulkanUniformData>(_device, node->getObject<Light>());
+            auto ubo = std::make_shared<VulkanUniformData>(_device, node);
             _uniformList.push_back(ubo);
         } break;
         default:

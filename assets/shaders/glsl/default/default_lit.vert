@@ -16,7 +16,7 @@ layout (set = 0, binding = 0) uniform SceneUB{
     mat4 view;
     mat4 proj;
     vec4 viewPos;
-} sceneData;
+} sceneData[];
 
 //push constants block
 layout( push_constant ) uniform constants
@@ -25,7 +25,7 @@ layout( push_constant ) uniform constants
 } objectData;
 
 void main() {
-    gl_Position = sceneData.proj * sceneData.view * objectData.modelMatrix * vec4(inPosition, 1.0f);
+    gl_Position = sceneData[0].proj * sceneData[0].view * objectData.modelMatrix * vec4(inPosition, 1.0f);
     fragPosition = vec3(objectData.modelMatrix * vec4(inPosition, 1.0f));
     fragTexCoord = inTexCoord;
     fragNormal = inNormal;
