@@ -25,7 +25,7 @@ void scene_manager::run() {
         m_window->pollEvents();
 
         // update scene object
-        m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
+        // m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
 
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
@@ -115,7 +115,8 @@ void scene_manager::setupScene() {
 
     // load from gltf file
     {
-        auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
         m_modelNode = m_scene->getRootNode()->createChildNode();
         m_modelNode->attachObject(model);
     }
@@ -146,7 +147,7 @@ void scene_manager::setupScene() {
 
     {
         m_sceneRenderer->setScene(m_scene);
-        m_sceneRenderer->setShadingModel(vkl::ShadingModel::DEFAULTLIT);
+        m_sceneRenderer->setShadingModel(vkl::ShadingModel::PBR);
         m_sceneRenderer->loadResources();
     }
 }

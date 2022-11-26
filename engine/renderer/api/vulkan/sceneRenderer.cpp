@@ -85,9 +85,6 @@ VulkanPipeline* CreateDefaultLitPipeline(VulkanDevice * pDevice, VulkanRenderPas
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
@@ -108,12 +105,58 @@ VulkanPipeline* CreateDefaultLitPipeline(VulkanDevice * pDevice, VulkanRenderPas
     return pipeline;
 }
 
+VulkanPipeline* CreatePBRPipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass) {
+    VulkanPipeline * pipeline = nullptr;
+    VulkanDescriptorSetLayout * sceneLayout = nullptr;
+    VulkanDescriptorSetLayout * materialLayout = nullptr;
+
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2),
+            // vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    // material
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
+
+    {
+        EffectInfo effectInfo{};
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        effectInfo.setLayouts.push_back(sceneLayout);
+        effectInfo.setLayouts.push_back(materialLayout);
+        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv");
+
+        GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
+    }
+    return pipeline;
+}
+
 VulkanPipeline* CreatePipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass, ShadingModel model){
     switch(model){
     case ShadingModel::UNLIT:
         return CreateUnlitPipeline(pDevice, pRenderPass);
     case ShadingModel::DEFAULTLIT:
         return CreateDefaultLitPipeline(pDevice, pRenderPass);
+    case ShadingModel::PBR:
+        return CreatePBRPipeline(pDevice, pRenderPass);
     }
     return nullptr;
 }

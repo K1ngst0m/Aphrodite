@@ -24,9 +24,6 @@ layout (set = 0, binding = 1) uniform DirectionalLightUB{
 
 layout(set = 1, binding = 0) uniform sampler2D colorMap;
 layout(set = 1, binding = 1) uniform sampler2D normalMap;
-layout(set = 1, binding = 2) uniform sampler2D physicalDescMap;
-layout(set = 1, binding = 3) uniform sampler2D aoMap;
-layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
 
 void main() {
     vec4 color = texture(colorMap, fragTexCoord) * vec4(fragColor, 1.0);
