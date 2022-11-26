@@ -6,8 +6,8 @@
 
 namespace vkl {
 
-SceneNode::SceneNode(SceneNode *parent, glm::mat4 matrix)
-    : _parent(parent), _matrix(matrix) {
+SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix)
+    : _matrix(matrix), _parent(std::move(parent)) {
 }
 void SceneNode::attachObject(const std::shared_ptr<Entity>& object) {
     _attachType = AttachType::ENTITY;
@@ -23,8 +23,8 @@ void SceneNode::attachObject(const std::shared_ptr<Camera>& object) {
 }
 
 std::shared_ptr<SceneNode> SceneNode::createChildNode(glm::mat4 matrix) {
-    auto childNode = std::make_unique<SceneNode>(this, matrix);
-    _children.push_back(std::move(childNode));
+    auto childNode = std::make_shared<SceneNode>(shared_from_this(), matrix);
+    _children.push_back(childNode);
     return _children.back();
 }
 
