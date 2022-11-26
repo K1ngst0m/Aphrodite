@@ -76,9 +76,6 @@ struct Material {
 };
 
 class Entity : public Object {
-    friend class GLTFLoader;
-    friend class VulkanRenderData;
-
 public:
     static std::shared_ptr<Entity> Create();
     Entity(IdType id);
@@ -86,7 +83,6 @@ public:
     void loadFromFile(const std::string &path);
     void cleanupResources();
 
-private:
     VertexList   _vertices;
     IndexList    _indices;
     TextureList  _images;

@@ -5,7 +5,6 @@
 #include "common/assetManager.h"
 #include "entity.h"
 #include "light.h"
-#include "resourceManager.h"
 #include "sceneNode.h"
 
 namespace vkl {
