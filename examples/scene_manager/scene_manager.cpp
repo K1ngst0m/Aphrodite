@@ -75,7 +75,7 @@ void scene_manager::setupScene() {
         m_defaultCamera->setMovementSpeed(2.5f);
         m_defaultCamera->setRotationSpeed(0.1f);
 
-        auto &node = m_scene->getRootNode()->createChildNode();
+        auto node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_defaultCamera);
 
         m_scene->setMainCamera(m_defaultCamera);
@@ -89,7 +89,7 @@ void scene_manager::setupScene() {
         m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_pointLight->setType(vkl::LightType::POINT);
 
-        auto &node = m_scene->getRootNode()->createChildNode();
+        auto node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_pointLight);
     }
 
@@ -101,7 +101,7 @@ void scene_manager::setupScene() {
         m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         m_directionalLight->setType(vkl::LightType::DIRECTIONAL);
 
-        auto &node = m_scene->getRootNode()->createChildNode();
+        auto node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_directionalLight);
     }
 
@@ -109,32 +109,32 @@ void scene_manager::setupScene() {
     {
         // m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
         m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        auto &node = m_scene->getRootNode()->createChildNode();
+        auto node = m_scene->getRootNode()->createChildNode();
         node->attachObject(m_model);
     }
 
     // box prefab
     {
-        glm::mat4 modelTransform    = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-        auto      prefab_cube_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        auto     &node              = m_scene->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(prefab_cube_model);
+        // glm::mat4 modelTransform    = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+        // auto      prefab_cube_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
+        // auto     &node              = m_scene->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(prefab_cube_model);
     }
 
     // plane prefab
     {
-        glm::mat4 modelTransform     = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
-        auto      prefab_plane_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
-        auto     &node               = m_scene->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(prefab_plane_model);
+        // glm::mat4 modelTransform     = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
+        // auto      prefab_plane_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
+        // auto     &node               = m_scene->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(prefab_plane_model);
     }
 
     // sphere
     {
-        glm::mat4 modelTransform      = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
-        auto      prefab_sphere_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
-        auto     &node                = m_scene->getRootNode()->createChildNode(modelTransform);
-        node->attachObject(prefab_sphere_model);
+        // glm::mat4 modelTransform      = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
+        // auto      prefab_sphere_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
+        // auto     &node                = m_scene->getRootNode()->createChildNode(modelTransform);
+        // node->attachObject(prefab_sphere_model);
     }
 
     {

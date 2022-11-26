@@ -20,6 +20,109 @@
 namespace vkl {
 namespace {
 
+bool GetShadingInfo(ShadingModel shadingModel, uint32_t& writeCount, int32_t& mtlBindingBits){
+    switch (shadingModel) {
+    case ShadingModel::UNLIT:
+        writeCount = 1;
+        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR;
+        return true;
+    case ShadingModel::DEFAULTLIT:
+        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL;
+        writeCount = 3;
+        return true;
+    }
+    return false;
+}
+
+VulkanPipeline * CreateUnlitPipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass) {
+    VulkanPipeline * pipeline;
+    VulkanDescriptorSetLayout * sceneLayout = nullptr;
+    VulkanDescriptorSetLayout * materialLayout = nullptr;
+
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0));
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    // material
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
+
+    {
+        // build Shader
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        EffectInfo effectInfo{};
+        effectInfo.setLayouts.push_back(sceneLayout);
+        effectInfo.setLayouts.push_back(materialLayout);
+        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "unlit.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "unlit.frag.spv");
+
+        GraphicsPipelineCreateInfo pipelineCreateInfo;
+        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
+    }
+
+    return pipeline;
+}
+
+VulkanPipeline* CreateDefaultLitPipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass) {
+    VulkanPipeline * pipeline = nullptr;
+    VulkanDescriptorSetLayout * sceneLayout = nullptr;
+    VulkanDescriptorSetLayout * materialLayout = nullptr;
+
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    // material
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
+
+    {
+        EffectInfo effectInfo{};
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        effectInfo.setLayouts.push_back(sceneLayout);
+        effectInfo.setLayouts.push_back(materialLayout);
+        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "default_lit.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "default_lit.frag.spv");
+
+        GraphicsPipelineCreateInfo pipelineCreateInfo;
+        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
+    }
+    return pipeline;
+}
+
+VulkanPipeline* CreatePipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass, ShadingModel model){
+    switch(model){
+    case ShadingModel::UNLIT:
+        return CreateUnlitPipeline(pDevice, pRenderPass);
+    case ShadingModel::DEFAULTLIT:
+        return CreateDefaultLitPipeline(pDevice, pRenderPass);
+    }
+    return nullptr;
+}
+
 }
 
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer)
@@ -29,9 +132,8 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& 
 
 void VulkanSceneRenderer::loadResources() {
     // _initPostFxResource();
-    _loadSceneNodes(_scene->getRootNode());
-    _setupUnlitPipeline();
-    _setupDefaultLitPipeline();
+    _loadSceneNodes();
+    _forwardPipeline = CreatePipeline(_device, _renderer->getDefaultRenderPass(), getShadingModel());
     _initRenderList();
     _initUniformList();
     isSceneLoaded = true;
@@ -46,8 +148,9 @@ void VulkanSceneRenderer::cleanupResources() {
         ubo->cleanupResources();
     }
 
-    _device->destroyPipeline(_unlitPipeline);
-    _device->destroyPipeline(_defaultLitPipeline);
+    if (_forwardPipeline != nullptr){
+        _device->destroyPipeline(_forwardPipeline);
+    }
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -77,18 +180,17 @@ void VulkanSceneRenderer::drawScene() {
 
     commandBuffer->begin();
 
-    // render pass
-    renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-
     // dynamic state
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(_getCurrentPipeline());
-    commandBuffer->cmdBindDescriptorSet(_getCurrentPipeline(), 0, 1, &_globalDescriptorSets[commandIndex]);
+    commandBuffer->cmdBindPipeline(_forwardPipeline);
+    commandBuffer->cmdBindDescriptorSet(_forwardPipeline, 0, 1, &_globalDescriptorSets[commandIndex]);
 
+    // forward pass
+    renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
+    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for (auto &renderable : _renderList) {
-        renderable->draw(_getCurrentPipeline(), commandBuffer);
+        renderable->draw(_forwardPipeline, commandBuffer);
     }
 
     commandBuffer->cmdEndRenderPass();
@@ -113,19 +215,11 @@ void VulkanSceneRenderer::_initUniformList() {
     _globalDescriptorSets.resize(_renderer->getCommandBufferCount());
 
     uint32_t writeCount     = 0;
-    int      mtlBindingBits = MATERIAL_BINDING_NONE;
-    switch (getShadingModel()) {
-    case ShadingModel::UNLIT:
-        writeCount = 1;
-        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR;
-        break;
-    case ShadingModel::DEFAULTLIT:
-        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL;
-        writeCount = 3;
-    }
+    int32_t  mtlBindingBits = MATERIAL_BINDING_NONE;
+    GetShadingInfo(getShadingModel(), writeCount, mtlBindingBits);
 
     for (auto &set : _globalDescriptorSets) {
-        set = _getCurrentPipeline()->getDescriptorSetLayout(SET_BINDING_SCENE)->allocateSet();
+        set = _forwardPipeline->getDescriptorSetLayout(SET_BINDING_SCENE)->allocateSet();
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         for (auto &uniformObj : _uniformList) {
             VkWriteDescriptorSet write = {};
@@ -142,124 +236,42 @@ void VulkanSceneRenderer::_initUniformList() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterial(_getCurrentPipeline()->getDescriptorSetLayout(SET_BINDING_MATERIAL), mtlBindingBits);
+        renderable->setupMaterial(_forwardPipeline->getDescriptorSetLayout(SET_BINDING_MATERIAL), mtlBindingBits);
     }
 }
 
-void VulkanSceneRenderer::_loadSceneNodes(const std::unique_ptr<SceneNode> &node) {
-    if (node->getChildNodeCount() == 0) {
-        return;
-    }
+void VulkanSceneRenderer::_loadSceneNodes() {
+    std::queue<std::shared_ptr<SceneNode>> q;
+    q.push(_scene->getRootNode());
 
-    for (uint32_t idx = 0; idx < node->getChildNodeCount(); idx++) {
-        auto &subNode = node->getChildNode(idx);
+    while (!q.empty()){
+        auto node = q.front();
+        q.pop();
 
-        switch (subNode->getAttachType()) {
+        switch (node->getAttachType()) {
         case AttachType::ENTITY: {
-            auto renderable = std::make_unique<VulkanRenderData>(_device, std::static_pointer_cast<Entity>(subNode->getObject()));
-            renderable->setTransform(subNode->getTransform());
-            _renderList.push_back(std::move(renderable));
+            auto renderable = std::make_shared<VulkanRenderData>(_device, std::static_pointer_cast<Entity>(node->getObject()));
+            renderable->setTransform(node->getTransform());
+            _renderList.push_back(renderable);
         } break;
         case AttachType::CAMERA: {
-            auto ubo = std::make_unique<VulkanUniformData>(_device, std::static_pointer_cast<Camera>(subNode->getObject()));
-            _uniformList.push_front(std::move(ubo));
+            auto ubo = std::make_shared<VulkanUniformData>(_device, std::static_pointer_cast<Camera>(node->getObject()));
+            _uniformList.push_front(ubo);
         } break;
         case AttachType::LIGHT: {
-            auto ubo = std::make_unique<VulkanUniformData>(_device, std::static_pointer_cast<Light>(subNode->getObject()));
-            _uniformList.push_back(std::move(ubo));
+            auto ubo = std::make_shared<VulkanUniformData>(_device, std::static_pointer_cast<Light>(node->getObject()));
+            _uniformList.push_back(ubo);
         } break;
         default:
             assert("unattached scene node.");
             break;
         }
 
-        _loadSceneNodes(subNode);
-    }
-}
-
-void VulkanSceneRenderer::_setupUnlitPipeline() {
-    VulkanDescriptorSetLayout * sceneLayout = nullptr;
-    VulkanDescriptorSetLayout * materialLayout = nullptr;
-
-    // scene
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0));
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        _device->createDescriptorSetLayout(&createInfo, &sceneLayout);
+        for (const auto& subNode : node->getChildNode()){
+            q.push(subNode);
+        }
     }
 
-    // material
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        _device->createDescriptorSetLayout(&createInfo, &materialLayout);
-    }
-
-    {
-        // build Shader
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        EffectInfo effectInfo{};
-        effectInfo.setLayouts.push_back(sceneLayout);
-        effectInfo.setLayouts.push_back(materialLayout);
-        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "unlit.frag.spv");
-
-        GraphicsPipelineCreateInfo pipelineCreateInfo;
-        VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_unlitPipeline));
-    }
-}
-
-void VulkanSceneRenderer::_setupDefaultLitPipeline() {
-    VulkanDescriptorSetLayout * sceneLayout = nullptr;
-    VulkanDescriptorSetLayout * materialLayout = nullptr;
-
-    // scene
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        _device->createDescriptorSetLayout(&createInfo, &sceneLayout);
-    }
-
-    // material
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        _device->createDescriptorSetLayout(&createInfo, &materialLayout);
-    }
-
-    {
-        EffectInfo effectInfo{};
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        effectInfo.setLayouts.push_back(sceneLayout);
-        effectInfo.setLayouts.push_back(materialLayout);
-        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "default_lit.frag.spv");
-
-        GraphicsPipelineCreateInfo pipelineCreateInfo;
-        VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, _renderer->getDefaultRenderPass(), &_defaultLitPipeline));
-    }
-}
-
-VulkanPipeline *VulkanSceneRenderer::_getCurrentPipeline() {
-    switch (_shadingModel) {
-    case ShadingModel::UNLIT:
-        return _unlitPipeline;
-    case ShadingModel::DEFAULTLIT:
-        return _defaultLitPipeline;
-    }
-    assert("unexpected behavior.");
-    return _unlitPipeline;
 }
 
 std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(const std::shared_ptr<VulkanRenderer>& renderer) {

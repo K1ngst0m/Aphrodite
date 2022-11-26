@@ -57,7 +57,7 @@ glm::vec4 Scene::getAmbient() {
 
 Scene::~Scene() = default;
 
-std::unique_ptr<SceneNode> &Scene::getRootNode() {
+std::shared_ptr<SceneNode> Scene::getRootNode() {
     return _rootNode;
 }
 std::shared_ptr<Entity> Scene::createEntityFromGLTF(const std::string &path) {

@@ -27,9 +27,8 @@ public:
     AttachType              getAttachType();
     IdType                  getAttachObjectId();
 
-    std::unique_ptr<SceneNode> &createChildNode(glm::mat4 matrix = glm::mat4(1.0f));
-    std::unique_ptr<SceneNode> &getChildNode(uint32_t idx);
-    uint32_t                    getChildNodeCount();
+    std::shared_ptr<SceneNode> createChildNode(glm::mat4 matrix = glm::mat4(1.0f));
+    std::vector<std::shared_ptr<SceneNode>>& getChildNode();
 
     void      setTransform(glm::mat4 matrix);
     glm::mat4 getTransform();
@@ -41,7 +40,7 @@ private:
     glm::mat4  _matrix;
     AttachType _attachType = AttachType::UNATTACHED;
 
-    std::vector<std::unique_ptr<SceneNode>> _children;
+    std::vector<std::shared_ptr<SceneNode>> _children;
 };
 } // namespace vkl
 

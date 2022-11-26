@@ -36,20 +36,14 @@ private:
     void _initRenderList();
     void _initUniformList();
 
-    void _setupUnlitPipeline();
-    void _setupDefaultLitPipeline();
     void _initPostFxResource();
 
-    void _loadSceneNodes(const std::unique_ptr<SceneNode> &node);
-
-private:
-    VulkanPipeline *_getCurrentPipeline();
+    void _loadSceneNodes();
 
 private:
     std::vector<VkDescriptorSet> _globalDescriptorSets;
 
-    VulkanPipeline *_unlitPipeline      = nullptr;
-    VulkanPipeline *_defaultLitPipeline = nullptr;
+    VulkanPipeline *_forwardPipeline = nullptr;
 
     struct {
         VkSemaphore                semaphore      = VK_NULL_HANDLE;
@@ -61,8 +55,8 @@ private:
     } _postFxResource;
 
 private:
-    std::vector<std::unique_ptr<VulkanRenderData>> _renderList;
-    std::deque<std::unique_ptr<VulkanUniformData>> _uniformList;
+    std::vector<std::shared_ptr<VulkanRenderData>> _renderList;
+    std::deque<std::shared_ptr<VulkanUniformData>> _uniformList;
 
 private:
     VulkanDevice                   *_device;

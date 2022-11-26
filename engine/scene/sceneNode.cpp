@@ -22,7 +22,7 @@ void SceneNode::attachObject(const std::shared_ptr<Camera>& object) {
     _object     = object;
 }
 
-std::unique_ptr<SceneNode>& SceneNode::createChildNode(glm::mat4 matrix) {
+std::shared_ptr<SceneNode> SceneNode::createChildNode(glm::mat4 matrix) {
     auto childNode = std::make_unique<SceneNode>(this, matrix);
     _children.push_back(std::move(childNode));
     return _children.back();
@@ -32,12 +32,8 @@ void SceneNode::setTransform(glm::mat4 matrix) {
     _matrix = matrix;
 }
 
-uint32_t SceneNode::getChildNodeCount() {
-    return _children.size();
-}
-
-std::unique_ptr<SceneNode>& SceneNode::getChildNode(uint32_t idx) {
-    return _children[idx];
+std::vector<std::shared_ptr<SceneNode>>& SceneNode::getChildNode(){
+    return _children;
 }
 
 AttachType SceneNode::getAttachType() {

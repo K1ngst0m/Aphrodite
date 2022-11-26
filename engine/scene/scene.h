@@ -40,7 +40,7 @@ public:
     std::shared_ptr<Entity>     createEntity();
     std::shared_ptr<Entity>     createEntityFromGLTF(const std::string &path);
     std::shared_ptr<Camera>     createCamera(float aspectRatio);
-    std::unique_ptr<SceneNode> &getRootNode();
+    std::shared_ptr<SceneNode>  getRootNode();
 
     std::shared_ptr<Entity> getEntityWithId(IdType id);
     std::shared_ptr<Camera> getCameraWithId(IdType id);
@@ -57,7 +57,7 @@ private:
     AABB      aabb;
     glm::vec4 _ambient;
 
-    std::unique_ptr<SceneNode> _rootNode;
+    std::shared_ptr<SceneNode> _rootNode;
     std::shared_ptr<Camera>    _camera = nullptr;
 
     CameraMapList _cameraMapList;
