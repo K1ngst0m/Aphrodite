@@ -24,6 +24,9 @@ void scene_manager::run() {
         auto timer = vkl::Timer(m_deltaTime);
         m_window->pollEvents();
 
+        // update scene object
+        m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
+
         // update resource data
         m_defaultCamera->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
@@ -83,34 +86,33 @@ void scene_manager::setupScene() {
 
     // point light
     {
-        m_pointLight = m_scene->createLight();
-        m_pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
-        m_pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
-        m_pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
-        m_pointLight->setType(vkl::LightType::POINT);
+        auto pointLight = m_scene->createLight();
+        pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
+        pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        pointLight->setType(vkl::LightType::POINT);
 
-        auto node = m_scene->getRootNode()->createChildNode();
-        node->attachObject(m_pointLight);
+        m_pointLightNode = m_scene->getRootNode()->createChildNode();
+        m_pointLightNode->attachObject(pointLight);
     }
 
     // direction light
     {
-        m_directionalLight = m_scene->createLight();
-        m_directionalLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
-        m_directionalLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
-        m_directionalLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
-        m_directionalLight->setType(vkl::LightType::DIRECTIONAL);
+        auto dirLight = m_scene->createLight();
+        dirLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
+        dirLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
+        dirLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        dirLight->setType(vkl::LightType::DIRECTIONAL);
 
-        auto node = m_scene->getRootNode()->createChildNode();
-        node->attachObject(m_directionalLight);
+        m_directionalLightNode = m_scene->getRootNode()->createChildNode();
+        m_directionalLightNode->attachObject(dirLight);
     }
 
     // load from gltf file
     {
-        // m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
-        m_model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        auto node = m_scene->getRootNode()->createChildNode();
-        node->attachObject(m_model);
+        auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        m_modelNode = m_scene->getRootNode()->createChildNode();
+        m_modelNode->attachObject(model);
     }
 
     // box prefab

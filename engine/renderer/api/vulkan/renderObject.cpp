@@ -116,6 +116,7 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
+        nodeMatrix = _node->getTransform() * nodeMatrix;
         drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 
         for (const auto& subset : subNode->subsets) {

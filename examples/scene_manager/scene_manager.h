@@ -22,10 +22,10 @@ private:
     void setupScene();
 
 private:
-    std::shared_ptr<vkl::Light>  m_pointLight       = nullptr;
-    std::shared_ptr<vkl::Light>  m_directionalLight = nullptr;
-    std::shared_ptr<vkl::Entity> m_model            = nullptr;
-    std::shared_ptr<vkl::Camera> m_defaultCamera    = nullptr;
+    std::shared_ptr<vkl::SceneNode> m_modelNode            = nullptr;
+    std::shared_ptr<vkl::SceneNode> m_pointLightNode       = nullptr;
+    std::shared_ptr<vkl::SceneNode> m_directionalLightNode = nullptr;
+    std::shared_ptr<vkl::Camera>    m_defaultCamera        = nullptr;
 
     std::shared_ptr<vkl::Scene> m_scene;
 

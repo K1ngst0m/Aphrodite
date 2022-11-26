@@ -40,7 +40,6 @@ AttachType SceneNode::getAttachType() {
     return _attachType;
 }
 
-
 glm::mat4 SceneNode::getTransform() {
     return _matrix;
 }
