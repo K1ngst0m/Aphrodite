@@ -22,17 +22,20 @@ layout (set = 0, binding = 1) uniform DirectionalLightUB{
     vec3 specular;
 } directionalLightData[];
 
-layout(set = 1, binding = 0) uniform sampler2D samplerBaseColor;
-layout(set = 1, binding = 1) uniform sampler2D samplerNormal;
+layout(set = 1, binding = 0) uniform sampler2D colorMap;
+layout(set = 1, binding = 1) uniform sampler2D normalMap;
+layout(set = 1, binding = 2) uniform sampler2D physicalDescMap;
+layout(set = 1, binding = 3) uniform sampler2D aoMap;
+layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
 
 void main() {
-    vec4 color = texture(samplerBaseColor, fragTexCoord) * vec4(fragColor, 1.0);
+    vec4 color = texture(colorMap, fragTexCoord) * vec4(fragColor, 1.0);
 
     vec3 N = normalize(fragNormal);
     vec3 T = normalize(fragTangent.xyz);
     vec3 B = cross(fragNormal, fragTangent.xyz) * fragTangent.w;
     mat3 TBN = mat3(T, B, N);
-    N = TBN * normalize(texture(samplerNormal, fragTexCoord).xyz * 2.0 - vec3(1.0));
+    N = TBN * normalize(texture(normalMap, fragTexCoord).xyz * 2.0 - vec3(1.0));
 
     vec3 L = normalize(directionalLightData[0].direction);
     vec3 V = normalize(sceneData[0].viewPos - fragPosition);

@@ -20,17 +20,11 @@
 namespace vkl {
 namespace {
 
-void GetShadingInfo(ShadingModel shadingModel, uint32_t& writeCount, int32_t& mtlBindingBits){
-    switch (shadingModel) {
-    case ShadingModel::UNLIT:
-        writeCount = 1;
-        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR;
-    case ShadingModel::DEFAULTLIT:
-        mtlBindingBits |= MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL;
-        writeCount = 2;
-    }
-    assert("invalid shading model");
-}
+std::unordered_map<ShadingModel, MaterialBindingBits> materialBindingMap{
+    {ShadingModel::UNLIT, MATERIAL_BINDING_UNLIT},
+    {ShadingModel::DEFAULTLIT, MATERIAL_BINDING_DEFAULTLIT},
+    {ShadingModel::PBR, MATERIAL_BINDING_PBR},
+};
 
 VulkanPipeline * CreateUnlitPipeline(VulkanDevice * pDevice, VulkanRenderPass * pRenderPass) {
     VulkanPipeline * pipeline;
@@ -90,6 +84,9 @@ VulkanPipeline* CreateDefaultLitPipeline(VulkanDevice * pDevice, VulkanRenderPas
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
@@ -212,10 +209,6 @@ void VulkanSceneRenderer::_initRenderList() {
 void VulkanSceneRenderer::_initUniformList() {
     _descriptorSets.resize(_renderer->getCommandBufferCount());
 
-    uint32_t writeCount     = 0;
-    int32_t  mtlBindingBits = MATERIAL_BINDING_NONE;
-    GetShadingInfo(getShadingModel(), writeCount, mtlBindingBits);
-
     for (auto &set : _descriptorSets) {
         set = _forwardPipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
         std::vector<VkDescriptorBufferInfo> cameraInfos;
@@ -257,7 +250,7 @@ void VulkanSceneRenderer::_initUniformList() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupMaterial(_forwardPipeline->getDescriptorSetLayout(SET_MATERIAL), mtlBindingBits);
+        renderable->setupMaterial(_forwardPipeline->getDescriptorSetLayout(SET_MATERIAL), materialBindingMap[getShadingModel()]);
     }
 }
 

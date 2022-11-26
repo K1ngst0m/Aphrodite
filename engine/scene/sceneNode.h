@@ -36,12 +36,12 @@ public:
     glm::mat4 getTransform();
 
 private:
-    std::shared_ptr<Object>    _object;
+    std::shared_ptr<Object>    _object = nullptr;
 
     glm::mat4  _matrix;
     AttachType _attachType = AttachType::UNATTACHED;
 
-    std::shared_ptr<SceneNode> _parent;
+    std::shared_ptr<SceneNode> _parent = nullptr;
     std::vector<std::shared_ptr<SceneNode>> _children;
 };
 

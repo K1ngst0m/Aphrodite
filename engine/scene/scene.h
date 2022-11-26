@@ -7,6 +7,7 @@ namespace vkl {
 enum class ShadingModel {
     UNLIT,
     DEFAULTLIT,
+    PBR,
 };
 
 struct AABB {
