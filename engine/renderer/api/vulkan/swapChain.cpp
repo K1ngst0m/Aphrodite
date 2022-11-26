@@ -135,6 +135,7 @@ void VulkanSwapChain::allocateImages(WindowData *data) {
     VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getHandle(), &swapChainCreateInfo, nullptr, &_handle));
 
     vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &_imageCount, nullptr);
+    _imageCount = std::max(_imageCount, MAX_SWAPCHAIN_IMAGE_COUNT);
     std::vector<VkImage> images(_imageCount);
     vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &_imageCount, images.data());
 

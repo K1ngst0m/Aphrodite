@@ -36,6 +36,8 @@ private:
     VkFormat        _imageFormat;
     VkExtent2D      _extent;
     VkSurfaceKHR    _surface;
+
+    constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };
 } // namespace vkl
 
