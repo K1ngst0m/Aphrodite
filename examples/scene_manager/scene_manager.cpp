@@ -109,6 +109,8 @@ void scene_manager::setupScene() {
 
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
         m_directionalLightNode->attachObject(dirLight);
+
+        m_scene->getRootNode()->createChildNode()->attachObject(dirLight);
     }
 
     // load from gltf file

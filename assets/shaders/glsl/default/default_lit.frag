@@ -20,7 +20,7 @@ layout (set = 0, binding = 1) uniform DirectionalLightUB{
     vec3 direction;
     vec3 diffuse;
     vec3 specular;
-} directionalLightData;
+} directionalLightData[];
 
 layout(set = 1, binding = 0) uniform sampler2D samplerBaseColor;
 layout(set = 1, binding = 1) uniform sampler2D samplerNormal;
@@ -34,7 +34,7 @@ void main() {
     mat3 TBN = mat3(T, B, N);
     N = TBN * normalize(texture(samplerNormal, fragTexCoord).xyz * 2.0 - vec3(1.0));
 
-    vec3 L = normalize(directionalLightData.direction);
+    vec3 L = normalize(directionalLightData[0].direction);
     vec3 V = normalize(sceneData[0].viewPos - fragPosition);
     vec3 R = reflect(L, N);
     vec3 diffuse = max(dot(N, L), 0.15) * fragColor;
