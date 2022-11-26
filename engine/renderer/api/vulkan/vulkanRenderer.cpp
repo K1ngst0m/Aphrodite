@@ -253,11 +253,11 @@ void VulkanRenderer::_createDefaultSyncObjects() {
     VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
     VkFenceCreateInfo     fenceInfo     = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-    m_device->getSyncPrimitiviesPool()->AcquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
-    m_device->getSyncPrimitiviesPool()->AcquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
+    m_device->getSyncPrimitiviesPool()->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
+    m_device->getSyncPrimitiviesPool()->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
 
     for (uint32_t idx = 0; idx < _config.maxFrames; idx++) {
-        m_device->getSyncPrimitiviesPool()->AcquireFence(&m_inFlightFence[idx]);
+        m_device->getSyncPrimitiviesPool()->acquireFence(&m_inFlightFence[idx]);
     }
 }
 
@@ -267,34 +267,33 @@ void VulkanRenderer::prepareFrame() {
     m_device->getSyncPrimitiviesPool()->ReleaseFence(m_inFlightFence[m_currentFrame]);
 }
 
-void VulkanRenderer::submitFrame() {
-    VkSemaphore          waitSemaphores[]   = {m_renderSemaphore[m_currentFrame]};
+void VulkanRenderer::submitAndPresent() {
+    auto queue = m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT);
     VkPipelineStageFlags waitStages[]       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore          signalSemaphores[] = {m_presentSemaphore[m_currentFrame]};
     VkSubmitInfo         submitInfo{
                 .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .waitSemaphoreCount   = 1,
-                .pWaitSemaphores      = waitSemaphores,
+                .pWaitSemaphores      = &m_renderSemaphore[m_currentFrame],
                 .pWaitDstStageMask    = waitStages,
                 .commandBufferCount   = 1,
                 .pCommandBuffers      = &m_commandBuffers[m_currentFrame]->getHandle(),
                 .signalSemaphoreCount = 1,
-                .pSignalSemaphores    = signalSemaphores,
+                .pSignalSemaphores    = &m_presentSemaphore[m_currentFrame],
     };
 
-    m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->submit(1, &submitInfo, m_inFlightFence[m_currentFrame]);
+    VK_CHECK_RESULT(queue->submit(1, &submitInfo, m_inFlightFence[m_currentFrame]));
 
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores    = signalSemaphores,
+        .pWaitSemaphores    = &m_presentSemaphore[m_currentFrame],
         .swapchainCount     = 1,
         .pSwapchains        = &m_swapChain->getHandle(),
         .pImageIndices      = &m_imageIdx,
         .pResults           = nullptr, // Optional
     };
 
-    VK_CHECK_RESULT(m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->present(presentInfo));
+    VK_CHECK_RESULT(queue->present(presentInfo));
 
     // if (result == VK_ERROR_OUT_OF_DATE_KHR ||
     //     result == VK_SUBOPTIMAL_KHR ||

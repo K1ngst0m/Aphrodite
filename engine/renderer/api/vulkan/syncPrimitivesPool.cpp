@@ -15,7 +15,7 @@ VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool() {
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 
-VkResult VulkanSyncPrimitivesPool::AcquireFence(VkFence *pFence, bool isSignaled) {
+VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence *pFence, bool isSignaled) {
     VkResult result = VK_SUCCESS;
 
     // See if there's a free fence available.
@@ -56,7 +56,7 @@ bool VulkanSyncPrimitivesPool::Exists(VkFence fence) {
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::AcquireSemaphore(uint32_t semaphoreCount, VkSemaphore *pSemaphores) {
+VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemaphore *pSemaphores) {
     VkResult result = VK_SUCCESS;
 
     // See if there are free semaphores available.

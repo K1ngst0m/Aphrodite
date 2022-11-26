@@ -16,7 +16,7 @@ public:
     void cleanup() override;
     void idleDevice() override;
     void prepareFrame();
-    void submitFrame();
+    void submitAndPresent();
 
 public:
     void _initDefaultResource();

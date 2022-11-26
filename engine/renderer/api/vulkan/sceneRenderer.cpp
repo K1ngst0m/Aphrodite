@@ -94,7 +94,7 @@ void VulkanSceneRenderer::drawScene() {
     commandBuffer->cmdEndRenderPass();
 
     commandBuffer->end();
-    _renderer->submitFrame();
+    _renderer->submitAndPresent();
 }
 
 void VulkanSceneRenderer::update(float deltaTime) {

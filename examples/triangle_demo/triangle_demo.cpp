@@ -32,7 +32,7 @@ void triangle_demo::run() {
 
         m_renderer->prepareFrame();
         buildCommands();
-        m_renderer->submitFrame();
+        m_renderer->submitAndPresent();
     }
 }
 
