@@ -63,14 +63,27 @@ void GLTFLoader::_loadMaterials(Entity *entity, tinygltf::Model &input) {
         auto &material                  = entity->_materials[i];
         material.id                     = i;
         tinygltf::Material glTFMaterial = input.materials[i];
-        if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()) {
+
+        // common
+        if (glTFMaterial.normalTexture.index > -1) {
+            material.normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
+        }
+        if (glTFMaterial.emissiveTexture.index > -1) {
+            material.emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source;
+        }
+        if (glTFMaterial.occlusionTexture.index > -1) {
+            material.occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source;
+        }
+
+        // pbr
+        if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()){
             material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
         }
         if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1) {
             material.baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
         }
-        if (glTFMaterial.normalTexture.index > -1) {
-            material.normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
+        if (glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1) {
+            material.metallicRoughnessTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
         }
     }
 }
@@ -203,13 +216,9 @@ void GLTFLoader::_loadNodes(Entity *entity, const tinygltf::Node &inputNode, con
                 }
             }
 
-            Subset primitive{
-                .firstIndex    = firstIndex,
-                .indexCount    = indexCount,
-                .materialIndex = glTFPrimitive.material,
-            };
+            Subset subset{firstIndex, indexCount, glTFPrimitive.material};
 
-            node->subsets.push_back(primitive);
+            node->subsets.push_back(subset);
         }
     }
 

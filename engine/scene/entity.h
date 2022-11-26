@@ -13,7 +13,7 @@ struct Node;
 using ResourceIndex = int32_t;
 using SubNodeList   = std::vector<std::shared_ptr<Node>>;
 using SubsetList    = std::vector<Subset>;
-using TextureData   = std::vector<unsigned char>;
+using TextureData   = std::vector<uint8_t>;
 using VertexList    = std::vector<Vertex>;
 using IndexList     = std::vector<uint32_t>;
 using TextureList   = std::vector<Texture>;
@@ -65,8 +65,6 @@ struct Material {
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
     ResourceIndex baseColorTextureIndex = -1;
-    ResourceIndex diffuseTextureIndex   = -1;
-    ResourceIndex specularTextureIndex  = -1;
 
     ResourceIndex normalTextureIndex    = -1;
     ResourceIndex occlusionTextureIndex = -1;
