@@ -20,13 +20,18 @@
 namespace vkl {
 namespace {
 
+struct SceneInfo{
+    size_t cameraCount;
+    size_t lightCount;
+};
+
 std::unordered_map<ShadingModel, MaterialBindingBits> materialBindingMap{
     {ShadingModel::UNLIT, MATERIAL_BINDING_UNLIT},
     {ShadingModel::DEFAULTLIT, MATERIAL_BINDING_DEFAULTLIT},
     {ShadingModel::PBR, MATERIAL_BINDING_PBR},
 };
 
-VulkanPipeline *CreateUnlitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
+VulkanPipeline *CreateUnlitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo & sceneInfo) {
     VulkanPipeline            *pipeline;
     VulkanDescriptorSetLayout *sceneLayout    = nullptr;
     VulkanDescriptorSetLayout *materialLayout = nullptr;
@@ -34,7 +39,7 @@ VulkanPipeline *CreateUnlitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRe
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0));
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, sceneInfo.cameraCount));
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
     }
@@ -64,7 +69,7 @@ VulkanPipeline *CreateUnlitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRe
     return pipeline;
 }
 
-VulkanPipeline *CreateDefaultLitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
+VulkanPipeline *CreateDefaultLitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo & sceneInfo) {
     VulkanPipeline            *pipeline       = nullptr;
     VulkanDescriptorSetLayout *sceneLayout    = nullptr;
     VulkanDescriptorSetLayout *materialLayout = nullptr;
@@ -72,9 +77,8 @@ VulkanPipeline *CreateDefaultLitPipeline(VulkanDevice *pDevice, VulkanRenderPass
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2),
-            // vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sceneInfo.cameraCount),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, sceneInfo.lightCount),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
@@ -105,7 +109,7 @@ VulkanPipeline *CreateDefaultLitPipeline(VulkanDevice *pDevice, VulkanRenderPass
     return pipeline;
 }
 
-VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
+VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo& sceneInfo) {
     VulkanPipeline            *pipeline       = nullptr;
     VulkanDescriptorSetLayout *sceneLayout    = nullptr;
     VulkanDescriptorSetLayout *materialLayout = nullptr;
@@ -113,8 +117,8 @@ VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRend
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 2),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 2),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sceneInfo.cameraCount),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, sceneInfo.lightCount),
             // vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
@@ -149,14 +153,14 @@ VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRend
     return pipeline;
 }
 
-VulkanPipeline *CreatePipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, ShadingModel model) {
+VulkanPipeline *CreatePipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, ShadingModel model, SceneInfo & sceneInfo) {
     switch (model) {
     case ShadingModel::UNLIT:
-        return CreateUnlitPipeline(pDevice, pRenderPass);
+        return CreateUnlitPipeline(pDevice, pRenderPass, sceneInfo);
     case ShadingModel::DEFAULTLIT:
-        return CreateDefaultLitPipeline(pDevice, pRenderPass);
+        return CreateDefaultLitPipeline(pDevice, pRenderPass, sceneInfo);
     case ShadingModel::PBR:
-        return CreatePBRPipeline(pDevice, pRenderPass);
+        return CreatePBRPipeline(pDevice, pRenderPass, sceneInfo);
     }
     return nullptr;
 }
@@ -171,7 +175,6 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &
 void VulkanSceneRenderer::loadResources() {
     // _initPostFxResource();
     _loadSceneNodes();
-    _forwardPipeline = CreatePipeline(_device, _renderer->getDefaultRenderPass(), getShadingModel());
     _initRenderList();
     _initUniformList();
     isSceneLoaded = true;
@@ -253,7 +256,6 @@ void VulkanSceneRenderer::_initUniformList() {
     _descriptorSets.resize(_renderer->getCommandBufferCount());
 
     for (auto &set : _descriptorSets) {
-        set = _forwardPipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
         std::vector<VkDescriptorBufferInfo> cameraInfos{};
         std::vector<VkDescriptorBufferInfo> lightInfos{};
 
@@ -270,28 +272,18 @@ void VulkanSceneRenderer::_initUniformList() {
             }
         }
 
-        VkWriteDescriptorSet cameraWrite = {
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet          = set,
-            .dstBinding      = 0,
-            .dstArrayElement = 0,
-            .descriptorCount = static_cast<uint32_t>(cameraInfos.size()),
-            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo     = cameraInfos.data(),
+        SceneInfo sceneInfo{
+            .cameraCount = cameraInfos.size(),
+            .lightCount = lightInfos.size(),
+        };
+        _forwardPipeline = CreatePipeline(_device, _renderer->getDefaultRenderPass(), getShadingModel(), sceneInfo);
+        set = _forwardPipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
+        std::vector<VkWriteDescriptorSet> writes{
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, cameraInfos.data(), cameraInfos.size()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, lightInfos.data(), lightInfos.size()),
         };
 
-        VkWriteDescriptorSet lightWrite = {
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet          = set,
-            .dstBinding      = 1,
-            .dstArrayElement = 0,
-            .descriptorCount = static_cast<uint32_t>(lightInfos.size()),
-            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pBufferInfo     = lightInfos.data(),
-        };
-
-        vkUpdateDescriptorSets(_device->getHandle(), 1, &cameraWrite, 0, nullptr);
-        vkUpdateDescriptorSets(_device->getHandle(), 1, &lightWrite, 0, nullptr);
+        vkUpdateDescriptorSets(_device->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
     for (auto &renderable : _renderList) {
