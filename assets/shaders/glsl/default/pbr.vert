@@ -6,11 +6,11 @@ layout(location = 2) in vec2 inTexCoord;
 layout(location = 3) in vec3 inColor;
 layout(location = 4) in vec4 inTangent;
 
-layout(location = 0) out vec3 fragPosition;
-layout(location = 1) out vec3 fragNormal;
-layout(location = 2) out vec2 fragTexCoord;
-layout(location = 3) out vec3 fragColor;
-layout(location = 4) out vec4 fragTangent;
+layout(location = 0) out vec3 outWorldPos;
+layout(location = 1) out vec3 outNormal;
+layout(location = 2) out vec2 outUV;
+layout(location = 3) out vec3 outColor;
+layout(location = 4) out vec4 outTangent;
 
 layout (set = 0, binding = 0) uniform SceneUB{
     mat4 view;
@@ -22,13 +22,13 @@ layout (set = 0, binding = 0) uniform SceneUB{
 layout( push_constant ) uniform constants
 {
     mat4 modelMatrix;
-} objectData;
+};
 
 void main() {
-    gl_Position = sceneData[0].proj * sceneData[0].view * objectData.modelMatrix * vec4(inPosition, 1.0f);
-    fragPosition = vec3(objectData.modelMatrix * vec4(inPosition, 1.0f));
-    fragTexCoord = inTexCoord;
-    fragNormal = inNormal;
-    fragColor = inColor;
-    fragTangent = inTangent;
+    gl_Position = sceneData[0].proj * sceneData[0].view * modelMatrix * vec4(inPosition, 1.0f);
+    outWorldPos = vec3(modelMatrix * vec4(inPosition, 1.0f));
+    outUV = inTexCoord;
+    outNormal = mat3(modelMatrix) * inNormal;
+    outColor = inColor;
+    outTangent = inTangent;
 }

@@ -25,7 +25,7 @@ void scene_manager::run() {
         m_window->pollEvents();
 
         // update scene object
-        // m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
+        m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
 
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
@@ -69,22 +69,22 @@ void scene_manager::setupScene() {
 
     // scene camera
     {
-        m_camera = m_scene->createCamera(m_window->getAspectRatio());
-        m_camera->setType(vkl::CameraType::FIRSTPERSON);
-        m_camera->setPosition({0.0f, -1.0f, -3.0f, 1.0f});
-        m_camera->setFlipY(true);
-        m_camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-        m_camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
-        m_camera->setMovementSpeed(2.5f);
-        m_camera->setRotationSpeed(0.1f);
+        auto camera = m_scene->createCamera(m_window->getAspectRatio());
+        camera->setType(vkl::CameraType::FIRSTPERSON);
+        camera->setPosition({0.0f, -1.0f, -3.0f, 1.0f});
+        camera->setFlipY(true);
+        camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
+        camera->setMovementSpeed(2.5f);
+        camera->setRotationSpeed(0.1f);
 
+        // camera 1 (main)
         m_cameraNode = m_scene->getRootNode()->createChildNode();
-        m_cameraNode->attachObject(m_camera);
+        m_cameraNode->attachObject(camera);
+        m_scene->setMainCamera(camera);
 
-        auto node = m_scene->getRootNode()->createChildNode();
-        node->attachObject(m_camera);
-
-        m_scene->setMainCamera(m_camera);
+        // camera 2
+        m_scene->getRootNode()->createChildNode()->attachObject(camera);
     }
 
     // point light
@@ -107,16 +107,18 @@ void scene_manager::setupScene() {
         dirLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
         dirLight->setType(vkl::LightType::DIRECTIONAL);
 
+        // light1
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
         m_directionalLightNode->attachObject(dirLight);
 
+        // #light 2
         m_scene->getRootNode()->createChildNode()->attachObject(dirLight);
     }
 
     // load from gltf file
     {
-        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
+        auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
         m_modelNode = m_scene->getRootNode()->createChildNode();
         m_modelNode->attachObject(model);
     }
@@ -159,6 +161,7 @@ void scene_manager::setupRenderer() {
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
+    auto camera = m_cameraNode->getObject<vkl::Camera>();
     if (action == VKL_PRESS) {
         switch (key) {
         case VKL_KEY_ESCAPE:
@@ -168,16 +171,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
             m_window->toggleCurosrVisibility();
             break;
         case VKL_KEY_W:
-            m_camera->setMovement(vkl::CameraDirection::UP, true);
+            camera->setMovement(vkl::CameraDirection::UP, true);
             break;
         case VKL_KEY_A:
-            m_camera->setMovement(vkl::CameraDirection::LEFT, true);
+            camera->setMovement(vkl::CameraDirection::LEFT, true);
             break;
         case VKL_KEY_S:
-            m_camera->setMovement(vkl::CameraDirection::DOWN, true);
+            camera->setMovement(vkl::CameraDirection::DOWN, true);
             break;
         case VKL_KEY_D:
-            m_camera->setMovement(vkl::CameraDirection::RIGHT, true);
+            camera->setMovement(vkl::CameraDirection::RIGHT, true);
             break;
         }
     }
@@ -185,16 +188,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     if (action == VKL_RELEASE) {
         switch (key) {
         case VKL_KEY_W:
-            m_camera->setMovement(vkl::CameraDirection::UP, false);
+            camera->setMovement(vkl::CameraDirection::UP, false);
             break;
         case VKL_KEY_A:
-            m_camera->setMovement(vkl::CameraDirection::LEFT, false);
+            camera->setMovement(vkl::CameraDirection::LEFT, false);
             break;
         case VKL_KEY_S:
-            m_camera->setMovement(vkl::CameraDirection::DOWN, false);
+            camera->setMovement(vkl::CameraDirection::DOWN, false);
             break;
         case VKL_KEY_D:
-            m_camera->setMovement(vkl::CameraDirection::RIGHT, false);
+            camera->setMovement(vkl::CameraDirection::RIGHT, false);
             break;
         }
     }
@@ -204,7 +207,9 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn) {
     float dx = m_window->getCursorXpos() - xposIn;
     float dy = m_window->getCursorYpos() - yposIn;
 
-    m_camera->rotate(glm::vec3(dy * m_camera->getRotationSpeed(), -dx * m_camera->getRotationSpeed(), 0.0f));
+
+    auto camera = m_cameraNode->getObject<vkl::Camera>();
+    camera->rotate(glm::vec3(dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f));
 }
 
 int main() {

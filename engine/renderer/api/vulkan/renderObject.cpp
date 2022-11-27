@@ -44,6 +44,33 @@ void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, 
                     std::cerr << "normal texture not found, use default texture." << std::endl;
                 }
             }
+            if (bindingBits & MATERIAL_BINDING_PHYSICAL){
+                if (material.metallicFactor > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &_textures[material.metallicRoughnessTextureIndex].descriptorInfo));
+                } else {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &_emptyTexture.descriptorInfo));
+                    std::cerr << "material id: [" << material.id << "] :";
+                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_AO){
+                if (material.occlusionTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &_textures[material.occlusionTextureIndex].descriptorInfo));
+                } else {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &_emptyTexture.descriptorInfo));
+                    std::cerr << "material id: [" << material.id << "] :";
+                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_EMISSIVE){
+                if (material.emissiveTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &_textures[material.emissiveTextureIndex].descriptorInfo));
+                } else {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &_emptyTexture.descriptorInfo));
+                    std::cerr << "material id: [" << material.id << "] :";
+                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                }
+            }
             vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
 
