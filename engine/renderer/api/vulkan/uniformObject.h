@@ -22,9 +22,7 @@ public:
     void *getData();
 
     VkDescriptorBufferInfo    &getBufferInfo();
-    std::shared_ptr<SceneNode> getNode() {
-        return _node;
-    }
+    std::shared_ptr<SceneNode> getNode();
 
 private:
     VulkanBuffer *_buffer = nullptr;

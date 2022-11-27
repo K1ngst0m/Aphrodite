@@ -41,4 +41,7 @@ void *VulkanUniformData::getData() {
 VkDescriptorBufferInfo &VulkanUniformData::getBufferInfo() {
     return _buffer->getBufferInfo();
 }
+std::shared_ptr<SceneNode> VulkanUniformData::getNode() {
+    return _node;
+}
 } // namespace vkl

@@ -408,7 +408,7 @@ void VulkanRenderer::_createDefaultColorAttachments() {
         // get image view
         {
             ImageViewCreateInfo createInfo{};
-            createInfo.format   = FORMAT_B8G8R8A8_SRGB;
+            createInfo.format   = FORMAT_B8G8R8A8_UNORM;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             m_device->createImageView(&createInfo, &colorImageView, colorImage);
         }

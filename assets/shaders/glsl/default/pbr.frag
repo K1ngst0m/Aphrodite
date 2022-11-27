@@ -118,7 +118,7 @@ void main() {
     vec3 Lo = vec3(0.0f);
 
     {
-        vec3 L = normalize(lightData[0].direction);
+        vec3 L = normalize(-lightData[0].direction);
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
         vec3 radiance = vec3(1.0f).xyz;
@@ -142,5 +142,5 @@ void main() {
     }
 
     vec3 ambient = vec3(0.03) * albedo * ao;
-    outColor = vec4(emissive + Lo + ambient, 1.0f);
+    outColor = tonemap(vec4(emissive + Lo + ambient, 1.0f));
 }

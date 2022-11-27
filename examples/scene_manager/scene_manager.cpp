@@ -30,7 +30,7 @@ void scene_manager::run() {
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
-        m_uiRenderer->update(m_deltaTime);
+        // m_uiRenderer->update(m_deltaTime);
 
         // draw and submit
         m_sceneRenderer->drawScene();
@@ -157,7 +157,7 @@ void scene_manager::setupScene() {
 void scene_manager::setupRenderer() {
     m_renderer      = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
     m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer);
-    m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
+    // m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
