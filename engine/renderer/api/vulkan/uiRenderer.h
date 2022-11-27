@@ -23,9 +23,9 @@ public:
     bool update(float deltaTime);
 
 private:
-    std::shared_ptr<VulkanRenderer> _renderer;
+    std::shared_ptr<VulkanRenderer> _renderer = nullptr;
 
-    VulkanDevice   *_device;
+    VulkanDevice   *_device = nullptr;
 
     VulkanBuffer *_vertexBuffer = nullptr;
     VulkanBuffer *_indexBuffer  = nullptr;
@@ -33,16 +33,16 @@ private:
     uint32_t _vertexCount = 0;
     uint32_t _indexCount  = 0;
 
-    VulkanPipeline *_pipeline;
-    ShaderEffect   *_effect;
+    VulkanPipeline *_pipeline = nullptr;
+    ShaderEffect   *_effect = nullptr;
 
-    VkDescriptorPool _descriptorPool;
-    VkDescriptorSet  _descriptorSet;
+    VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSet  _descriptorSet = VK_NULL_HANDLE;
 
     struct {
-        VulkanImage     *image;
-        VulkanImageView *view;
-        VkSampler        sampler;
+        VulkanImage     *image = nullptr;
+        VulkanImageView *view = nullptr;
+        VkSampler        sampler = VK_NULL_HANDLE;
         float            scale = 1.0f;
     } _fontData;
 

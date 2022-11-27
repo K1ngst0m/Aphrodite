@@ -336,10 +336,12 @@ void VulkanDevice::destroyImage(VulkanImage *pImage) {
     }
     vkDestroyImage(_handle, pImage->getHandle(), nullptr);
     delete pImage;
+    pImage = nullptr;
 }
 void VulkanDevice::destroyImageView(VulkanImageView *pImageView) {
     vkDestroyImageView(_handle, pImageView->getHandle(), nullptr);
     delete pImageView;
+    pImageView = nullptr;
 }
 void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass) {
     vkDestroyRenderPass(_handle, pRenderpass->getHandle(), nullptr);

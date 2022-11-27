@@ -40,7 +40,7 @@ void scene_manager::run() {
 void scene_manager::finish() {
     m_renderer->idleDevice();
     m_sceneRenderer->cleanupResources();
-    m_uiRenderer->cleanup();
+    // m_uiRenderer->cleanup();
     m_renderer->cleanup();
 }
 
