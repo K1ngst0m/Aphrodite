@@ -19,7 +19,7 @@ static VkShaderModule createShaderModule(VulkanDevice            *device,
     return shaderModule;
 }
 
-void VulkanShaderCache::destory() {
+void VulkanShaderCache::destroy() {
     for (auto &[key, shaderModule] : shaderModuleCaches) {
         vkDestroyShaderModule(_device->getHandle(), shaderModule->getHandle(), nullptr);
         delete shaderModule;

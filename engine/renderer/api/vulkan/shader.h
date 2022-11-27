@@ -27,7 +27,7 @@ class VulkanShaderCache {
 public:
     VulkanShaderCache(VulkanDevice *device);
     VulkanShaderModule *getShaders(const std::string &path);
-    void                destory();
+    void                destroy();
 
 private:
     VulkanDevice                                         *_device;

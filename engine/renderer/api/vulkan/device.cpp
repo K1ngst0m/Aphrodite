@@ -86,6 +86,10 @@ void VulkanDevice::Destroy(VulkanDevice *pDevice) {
         pDevice->destroyCommandPool(commandpool);
     }
 
+    if (pDevice->_shaderCache){
+        pDevice->_shaderCache->destroy();
+    }
+
     if (pDevice->_syncPrimitivesPool) {
         delete pDevice->_syncPrimitivesPool;
     }

@@ -16,7 +16,7 @@ layout (set = 0, binding = 0) uniform CameraUB{
     vec3 viewPos;
 } cameraData[];
 
-layout (set = 0, binding = 1) uniform DirectionalLightUB{
+layout (set = 0, binding = 1) uniform LightUB{
     vec3 direction;
     vec3 diffuse;
     vec3 specular;
@@ -116,13 +116,12 @@ void main() {
     vec4 color = texture(colorMap, inUV) * vec4(inColor, 1.0);
 
     vec3 Lo = vec3(0.0f);
+
     {
         vec3 L = normalize(lightData[0].direction);
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
         vec3 radiance = vec3(1.0f).xyz;
-        // vec3 diffuse = max(dot(N, L), 0.15) * inColor;
-        // vec3 specular = pow(max(dot(R, V), 0.0), 64.0) * vec3(0.75);
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);

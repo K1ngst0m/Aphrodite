@@ -40,8 +40,8 @@ void scene_manager::run() {
 void scene_manager::finish() {
     m_renderer->idleDevice();
     m_sceneRenderer->cleanupResources();
-    m_renderer->cleanup();
     m_uiRenderer->cleanup();
+    m_renderer->cleanup();
 }
 
 void scene_manager::setupWindow() {
@@ -83,8 +83,8 @@ void scene_manager::setupScene() {
         m_cameraNode->attachObject(camera);
         m_scene->setMainCamera(camera);
 
-        // camera 2
-        m_scene->getRootNode()->createChildNode()->attachObject(camera);
+        // // camera 2
+        // m_scene->getRootNode()->createChildNode()->attachObject(camera);
     }
 
     // point light
@@ -111,8 +111,8 @@ void scene_manager::setupScene() {
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
         m_directionalLightNode->attachObject(dirLight);
 
-        // #light 2
-        m_scene->getRootNode()->createChildNode()->attachObject(dirLight);
+        // // #light 2
+        // m_scene->getRootNode()->createChildNode()->attachObject(dirLight);
     }
 
     // load from gltf file

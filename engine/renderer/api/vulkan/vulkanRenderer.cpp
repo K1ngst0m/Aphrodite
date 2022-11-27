@@ -323,6 +323,8 @@ void VulkanRenderer::cleanup() {
         m_device->destoryRenderPass(m_renderPass);
     }
 
+    vkDestroyPipelineCache(m_device->getHandle(), m_pipelineCache, nullptr);
+
     m_device->destroySwapchain(m_swapChain);
     VulkanDevice::Destroy(m_device);
     vkDestroySurfaceKHR(m_instance->getHandle(), m_surface, nullptr);
