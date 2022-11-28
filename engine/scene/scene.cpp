@@ -23,7 +23,6 @@ std::unique_ptr<Scene> Scene::Create(SceneManagerType type) {
 Scene::Scene()
     : _ambient(glm::vec4(0.2f)) {
     _rootNode = std::make_unique<SceneNode>(nullptr);
-    _createPrefabEntity();
 }
 
 std::shared_ptr<Camera> Scene::createCamera(float aspectRatio) {
@@ -76,13 +75,4 @@ std::shared_ptr<Camera> Scene::getCameraWithId(IdType id) {
 std::shared_ptr<Entity> Scene::getEntityWithId(IdType id) {
     return _entityMapList[id];
 }
-void Scene::_createPrefabEntity() {
-    std::filesystem::path modelPath = AssetManager::GetModelDir();
-    // plane
-    auto planeEntity = createEntityFromGLTF(modelPath / "Plane/glTF/Plane.gltf");
-    // cube
-    auto boxEntity = createEntityFromGLTF(modelPath / "Box/glTF/Box.gltf");
-    // sphere
-    auto sphereEntity = createEntityFromGLTF(modelPath / "Sphere/glTF/Sphere.gltf");
-};
 } // namespace vkl
