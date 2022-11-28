@@ -19,8 +19,8 @@ struct TextureGpuData {
 };
 
 struct VulkanMeshData {
-    VulkanBuffer *_vertexBuffer = nullptr;
-    VulkanBuffer *_indexBuffer  = nullptr;
+    VulkanBuffer *vb = nullptr;
+    VulkanBuffer *ib  = nullptr;
 };
 
 class VulkanRenderData {
@@ -49,6 +49,7 @@ private:
 
 private:
     VulkanDevice           *_device    = nullptr;
+    public:
     std::shared_ptr<SceneNode> _node = nullptr;
 };
 } // namespace vkl

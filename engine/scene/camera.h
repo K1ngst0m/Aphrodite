@@ -28,7 +28,7 @@ public:
     void load() override;
     void update(float deltaTime) override;
 
-    void setPosition(glm::vec4 position);
+    void setPosition(glm::vec3 position);
     void setAspectRatio(float aspectRatio);
     void setPerspective(float fov, float aspect, float znear, float zfar);
     void rotate(glm::vec3 delta);

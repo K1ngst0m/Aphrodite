@@ -12,7 +12,7 @@ namespace gltf{
 void _loadImages(Entity* entity, tinygltf::Model &input){
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        Texture newTexture;
+        Texture newTexture{};
         newTexture.width  = glTFImage.width;
         newTexture.height = glTFImage.height;
         newTexture.data.resize(glTFImage.width * glTFImage.height * 4);

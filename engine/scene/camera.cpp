@@ -33,7 +33,7 @@ void Camera::update(float deltaTime) {
     pData->position = glm::vec4(_position, 1.0f);
 }
 
-void Camera::setPosition(glm::vec4 position) {
+void Camera::setPosition(glm::vec3 position) {
     _position = position;
     updateViewMatrix();
 }

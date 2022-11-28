@@ -59,7 +59,7 @@ void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, 
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &_emptyTexture.descriptorInfo));
                     std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                    std::cerr << "ao texture not found, use default texture." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_EMISSIVE){
@@ -68,7 +68,7 @@ void VulkanRenderData::setupMaterial(VulkanDescriptorSetLayout *materialLayout, 
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(materialData.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &_emptyTexture.descriptorInfo));
                     std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                    std::cerr << "emissive texture not found, use default texture." << std::endl;
                 }
             }
             vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -90,7 +90,7 @@ void VulkanRenderData::loadTextures() {
         uint32_t height        = 1;
         uint32_t imageDataSize = width * height * 4;
 
-        uint8_t data{};
+        uint8_t data{0};
         _emptyTexture = createTexture(width, height, &data, imageDataSize);
     }
 
@@ -107,8 +107,8 @@ void VulkanRenderData::loadTextures() {
 }
 
 void VulkanRenderData::cleanupResources() {
-    _device->destroyBuffer(_meshData._vertexBuffer);
-    _device->destroyBuffer(_meshData._indexBuffer);
+    _device->destroyBuffer(_meshData.vb);
+    _device->destroyBuffer(_meshData.ib);
 
     for (TextureGpuData &texture : _textures) {
         _device->destroyImage(texture.image);
@@ -123,8 +123,8 @@ void VulkanRenderData::cleanupResources() {
 
 void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
     VkDeviceSize offsets[1] = {0};
-    drawCmd->cmdBindVertexBuffers(0, 1, _meshData._vertexBuffer, offsets);
-    drawCmd->cmdBindIndexBuffers(_meshData._indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+    drawCmd->cmdBindVertexBuffers(0, 1, _meshData.vb, offsets);
+    drawCmd->cmdBindIndexBuffers(_meshData.ib, 0, VK_INDEX_TYPE_UINT32);
 
     std::queue<std::shared_ptr<Node>> q;
     for (auto &node : _node->getObject<Entity>()->_subNodeList) {
@@ -198,11 +198,11 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_meshData._vertexBuffer);
+            _device->createBuffer(&createInfo, &_meshData.vb);
         }
 
         auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, _meshData._vertexBuffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _meshData.vb, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);
@@ -231,11 +231,11 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_meshData._indexBuffer);
+            _device->createBuffer(&createInfo, &_meshData.ib);
         }
 
         auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, _meshData._indexBuffer, bufferSize);
+        cmd->cmdCopyBuffer(stagingBuffer, _meshData.ib, bufferSize);
         _device->endSingleTimeCommands(cmd);
 
         _device->destroyBuffer(stagingBuffer);
