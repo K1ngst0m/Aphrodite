@@ -2,85 +2,49 @@
 
 namespace vkl {
 
-// point light scene data
-struct DirectionalLightLayout {
-    glm::vec4 direction;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-};
-
-// point light scene data
-struct PointLightLayout {
+struct LightData {
+    glm::vec4 color;
     glm::vec4 position;
-    glm::vec4 ambient;
-    glm::vec4 diffuse;
-    glm::vec4 specular;
-    glm::vec4 attenuationFactor;
+    glm::vec4 direction;
 };
 
 Light::Light(IdType id)
     : UniformObject(id),
-      _diffuse(0.5f, 0.5f, 0.5f, 1.0f),
-      _specular(1.0f, 1.0f, 1.0f, 1.0f),
-      _position(1.2f, 1.0f, 2.0f, 1.0f),
-      _attenuationFactor(1.0f, 0.09f, 0.032f, 0.0f),
-      _direction(-0.2f, -1.0f, -0.3f, 1.0f) {
+      _color(1.0f),
+      _position(1.2f, 1.0f, 2.0f),
+      _direction(-0.2f, -1.0f, -0.3f),
+      _type(LightType::DIRECTIONAL) {
 }
+
 Light::~Light() = default;
-void Light::setDiffuse(glm::vec4 value) {
-    _diffuse = value;
-}
-void Light::setSpecular(glm::vec4 value) {
-    _specular = value;
-}
-void Light::setPosition(glm::vec4 value) {
+
+void Light::setPosition(glm::vec3 value) {
     _position = value;
 }
-void Light::setDirection(glm::vec4 value) {
+
+void Light::setDirection(glm::vec3 value) {
     _direction = value;
 }
 void Light::setType(LightType type) {
     _type = type;
 }
 void Light::load() {
-    switch (_type) {
-    case LightType::DIRECTIONAL: {
-        dataSize         = sizeof(DirectionalLightLayout);
-        data             = std::make_shared<DirectionalLightLayout>();
-        auto pData       = std::static_pointer_cast<DirectionalLightLayout>(data);
-        pData->direction = _direction;
-        pData->diffuse   = _diffuse;
-        pData->specular  = _specular;
-    } break;
-    case LightType::POINT: {
-        dataSize        = sizeof(PointLightLayout);
-        data            = std::make_shared<PointLightLayout>();
-        auto pData      = std::static_pointer_cast<PointLightLayout>(data);
-        pData->position = _position;
-        pData->diffuse  = _diffuse;
-        pData->specular = _specular;
-
-    } break;
-    }
+    data             = std::make_shared<LightData>();
+    dataSize         = sizeof(LightData);
+    auto pData       = std::static_pointer_cast<LightData>(data);
+    pData->direction = glm::vec4(_direction, 1.0f);
+    pData->position  = glm::vec4(_position, 1.0f);
 }
 void Light::update(float deltaTime) {
-    switch (_type) {
-    case LightType::DIRECTIONAL: {
-        auto pData       = std::static_pointer_cast<DirectionalLightLayout>(data);
-        pData->direction = _direction;
-        pData->diffuse   = _diffuse;
-        pData->specular  = _specular;
-    } break;
-    case LightType::POINT: {
-        auto pData      = std::static_pointer_cast<PointLightLayout>(data);
-        pData->position = _position;
-        pData->diffuse  = _diffuse;
-        pData->specular = _specular;
-    } break;
-    }
+    auto pData       = std::static_pointer_cast<LightData>(data);
+    pData->direction = glm::vec4(_direction, 1.0f);
+    pData->position  = glm::vec4(_position, 1.0f);
 }
 std::shared_ptr<Light> Light::Create() {
     auto instance = std::make_shared<Light>(Id::generateNewId<Light>());
     return instance;
+}
+void Light::setColor(glm::vec3 value) {
+    _color = value;
 }
 } // namespace vkl

@@ -17,9 +17,9 @@ layout (set = 0, binding = 0) uniform CameraUB{
 } cameraData[];
 
 layout (set = 0, binding = 1) uniform LightUB{
+    vec3 color;
+    vec3 position;
     vec3 direction;
-    vec3 diffuse;
-    vec3 specular;
 } lightData[];
 
 const float PI = 3.14159265359;
@@ -101,19 +101,17 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 
 void main() {
-    vec3 N = getNormal();
-    vec3 V = normalize(cameraData[0].viewPos - inWorldPos);
-
     vec3 albedo = texture(colorMap, inUV).rgb;
     float metallic = texture(physicalDescMap, inUV).r;
     float roughness = texture(physicalDescMap, inUV).g;
     vec3 ao = texture(aoMap, inUV).rgb;
     vec3 emissive = texture(emissiveMap, inUV).rgb;
 
+    vec3 N = getNormal();
+    vec3 V = normalize(cameraData[0].viewPos - inWorldPos);
+
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
-
-    vec4 color = texture(colorMap, inUV) * vec4(inColor, 1.0);
 
     vec3 Lo = vec3(0.0f);
 
@@ -121,7 +119,7 @@ void main() {
         vec3 L = normalize(-lightData[0].direction);
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
-        vec3 radiance = vec3(1.0f).xyz;
+        vec3 radiance = vec3(3.0f).xyz;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -142,5 +140,7 @@ void main() {
     }
 
     vec3 ambient = vec3(0.03) * albedo * ao;
-    outColor = tonemap(vec4(emissive + Lo + ambient, 1.0f));
+    vec3 color = emissive + Lo + ambient;
+
+    outColor = tonemap(vec4(color, 1.0f));
 }

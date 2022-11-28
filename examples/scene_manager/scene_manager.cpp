@@ -25,7 +25,7 @@ void scene_manager::run() {
         m_window->pollEvents();
 
         // update scene object
-        m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
+        // m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
 
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
@@ -71,10 +71,11 @@ void scene_manager::setupScene() {
     {
         auto camera = m_scene->createCamera(m_window->getAspectRatio());
         camera->setType(vkl::CameraType::FIRSTPERSON);
-        camera->setPosition({0.0f, -1.0f, -3.0f, 1.0f});
+        camera->setPosition({0.0f, 0.0f, -3.0f});
         camera->setFlipY(true);
-        camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 256.0f);
+        // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+        camera->rotate({0.0f, 180.0f, 0.0f});
+        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 96.0f);
         camera->setMovementSpeed(2.5f);
         camera->setRotationSpeed(0.1f);
 
@@ -87,24 +88,11 @@ void scene_manager::setupScene() {
         // m_scene->getRootNode()->createChildNode()->attachObject(camera);
     }
 
-    // point light
-    {
-        // auto pointLight = m_scene->createLight();
-        // pointLight->setPosition({1.2f, 1.0f, 2.0f, 1.0f});
-        // pointLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
-        // pointLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
-        // pointLight->setType(vkl::LightType::POINT);
-
-        // m_pointLightNode = m_scene->getRootNode()->createChildNode();
-        // m_pointLightNode->attachObject(pointLight);
-    }
-
     // direction light
     {
         auto dirLight = m_scene->createLight();
-        dirLight->setDirection({-0.2f, -1.0f, -0.3f, 1.0f});
-        dirLight->setDiffuse({0.5f, 0.5f, 0.5f, 1.0f});
-        dirLight->setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+        dirLight->setColor(glm::vec3{1.0f});
+        dirLight->setDirection({-0.2f, -1.0f, -0.3f});
         dirLight->setType(vkl::LightType::DIRECTIONAL);
 
         // light1
@@ -119,32 +107,14 @@ void scene_manager::setupScene() {
     {
         auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
-        m_modelNode = m_scene->getRootNode()->createChildNode();
+        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "FlightHelmet/glTF/FlightHelmet.gltf");
+        m_modelNode = m_scene->getRootNode()->createChildNode(glm::translate(glm::mat4(1.0f), {3.0f, 0.0f, 0.0f}));
         m_modelNode->attachObject(model);
     }
 
-    // box prefab
     {
-        // glm::mat4 modelTransform    = glm::translate(glm::mat4(1.0f), glm::vec3(1.0f, 1.0f, 0.0f));
-        // auto      prefab_cube_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_BOX);
-        // auto      node              = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_cube_model);
-    }
-
-    // plane prefab
-    {
-        // glm::mat4 modelTransform     = glm::translate(glm::mat4(1.0f), glm::vec3(4.0f, 0.0f, 0.0f));
-        // auto      prefab_plane_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_PLANE);
-        // auto      node               = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_plane_model);
-    }
-
-    // sphere
-    {
-        // glm::mat4 modelTransform      = glm::translate(glm::mat4(1.0f), glm::vec3(6.0f, 1.0f, 0.0f));
-        // auto      prefab_sphere_model = m_scene->getEntityWithId(vkl::PREFAB_ENTITY_SPHERE);
-        // auto      node                = m_scene->getRootNode()->createChildNode(modelTransform);
-        // node->attachObject(prefab_sphere_model);
+        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "prefab/Box.glb");
+        // m_scene->getRootNode()->createChildNode()->attachObject(model);
     }
 
     {
