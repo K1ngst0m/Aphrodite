@@ -243,16 +243,6 @@ void VulkanSceneRenderer::drawScene() {
     renderPassBeginInfo.pFramebuffer = _renderer->getDefaultFrameBuffer(_renderer->getCurrentImageIndex());
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for (auto &renderable : _renderList) {
-        auto &node = renderable->_node;
-        node->setTransform(glm::mat4(1.0f));
-        renderable->draw(_forwardPipeline, commandBuffer);
-    }
-    commandBuffer->cmdEndRenderPass();
-
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-    for (auto &renderable : _renderList) {
-        auto &node = renderable->_node;
-        node->setTransform(glm::translate(node->getTransform(), {1.0f, 1.0f, 0.0f}));
         renderable->draw(_forwardPipeline, commandBuffer);
     }
     commandBuffer->cmdEndRenderPass();

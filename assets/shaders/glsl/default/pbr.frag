@@ -12,7 +12,6 @@ layout(location = 0) out vec4 outColor;
 layout (set = 0, binding = 0) uniform CameraUB{
     mat4 view;
     mat4 proj;
-    mat4 viewProj;
     vec3 viewPos;
 } cameraData[];
 
@@ -121,7 +120,15 @@ void main() {
     vec3 albedo = baseColorTextureIndex > -1 ? texture(colorMap, inUV).rgb : baseColorFactor.xyz;
     float metallic = metallicRoughnessTextureIndex > -1 ? texture(physicalDescMap, inUV).r : metallicFactor;
     float roughness = metallicRoughnessTextureIndex > -1 ? texture(physicalDescMap, inUV).g : roughnessFactor;
-    vec3 ao = occlusionTextureIndex > -1 ? texture(aoMap, inUV).rgb : vec3(1.0f);
+    vec3 ao = vec3(1.0f);
+    if (occlusionTextureIndex > -1){
+        if (occlusionTextureIndex == metallicRoughnessTextureIndex){
+            ao = texture(aoMap, inUV).aaa;
+        }
+        else{
+            ao = texture(aoMap, inUV).rgb;
+        }
+    }
     vec3 emissive = emissiveTextureIndex > -1 ? texture(emissiveMap, inUV).rgb : emissiveFactor.xyz;
 
     vec3 N = getNormal();

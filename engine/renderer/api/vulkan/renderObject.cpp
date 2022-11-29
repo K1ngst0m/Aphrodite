@@ -60,8 +60,8 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
     for (auto &material : _node->getObject<Entity>()->_materials) {
         // write descriptor set
         auto set = materialLayout->allocateSet();
+        VulkanBuffer * matInfoUB = nullptr;
         {
-            VulkanBuffer * matInfoUB = nullptr;
             {
                 MaterialInfo matInfo{
                     .emissiveFactor = material.emissiveFactor,
@@ -73,6 +73,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     .normalTextureIndex = material.normalTextureIndex,
                     .occlusionTextureIndex = material.occlusionTextureIndex,
                     .emissiveTextureIndex = material.emissiveTextureIndex,
+                    .metallicRoughnessTextureIndex = material.metallicRoughnessTextureIndex,
                     .specularGlossinessTextureIndex = material.specularGlossinessTextureIndex,
                 };
                 BufferCreateInfo bufferCI{
@@ -89,53 +90,60 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
             descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &matInfoUB->getBufferInfo()));
 
             if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
+                std::cerr << "material id: [" << material.id << "] [base color]: ";
                 if (material.baseColorTextureIndex > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_textures[material.baseColorTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &_emptyTexture.descriptorInfo));
-                    std::cerr << "base color texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found, use default texture." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_NORMAL) {
+                std::cerr << "material id: [" << material.id << "] [normal]: ";
                 if (material.normalTextureIndex > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &_textures[material.normalTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &_emptyTexture.descriptorInfo));
-                    std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "normal texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found, use default texture." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_PHYSICAL){
+                std::cerr << "material id: [" << material.id << "] [physical desc]: ";
                 if (material.metallicFactor > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &_textures[material.metallicRoughnessTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &_emptyTexture.descriptorInfo));
-                    std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "physical desc texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found, use default texture." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_AO){
+                std::cerr << "material id: [" << material.id << "] [ao]: ";
                 if (material.occlusionTextureIndex > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &_textures[material.occlusionTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &_emptyTexture.descriptorInfo));
-                    std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "ao texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found, use default texture." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_EMISSIVE){
+                std::cerr << "material id: [" << material.id << "] [emissive]: ";
                 if (material.emissiveTextureIndex > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &_textures[material.emissiveTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &_emptyTexture.descriptorInfo));
-                    std::cerr << "material id: [" << material.id << "] :";
-                    std::cerr << "emissive texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found, use default texture." << std::endl;
                 }
             }
+
             vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
 
-        _materialSets.push_back(set);
+        _materialGpuDataList.push_back({matInfoUB, set});
     }
 }
 
@@ -147,12 +155,12 @@ void VulkanRenderData::loadResouces() {
 void VulkanRenderData::loadTextures() {
     // create empty texture
     {
-        uint32_t width         = 1;
-        uint32_t height        = 1;
+        uint32_t width         = 1024;
+        uint32_t height        = 1024;
         uint32_t imageDataSize = width * height * 4;
 
-        uint8_t data{0};
-        _emptyTexture = createTexture(width, height, &data, imageDataSize);
+        std::vector<uint8_t> data(imageDataSize, 0);
+        _emptyTexture = createTexture(width, height, data.data(), imageDataSize);
     }
 
     for (auto &image : _node->getObject<Entity>()->_images) {
@@ -162,7 +170,7 @@ void VulkanRenderData::loadTextures() {
         uint32_t       width         = image.width;
         uint32_t       height        = image.height;
 
-        auto texture = createTexture(width, height, imageData, imageDataSize);
+        auto texture = createTexture(width, height, imageData, imageDataSize, true);
         _textures.push_back(texture);
     }
 }
@@ -170,8 +178,13 @@ void VulkanRenderData::loadTextures() {
 void VulkanRenderData::cleanupResources() {
     _device->destroyBuffer(_meshData.vb);
     _device->destroyBuffer(_meshData.ib);
+    _device->destroyBuffer(_objectUB);
 
-    for (TextureGpuData &texture : _textures) {
+    for (auto & matData : _materialGpuDataList){
+        _device->destroyBuffer(matData.buffer);
+    }
+
+    for (auto &texture : _textures) {
         _device->destroyImage(texture.image);
         _device->destroyImageView(texture.imageView);
         vkDestroySampler(_device->getHandle(), texture.sampler, nullptr);
@@ -209,8 +222,8 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
 
         for (const auto& subset : subNode->subsets) {
             if (subset.indexCount > 0) {
-                auto &materialSet = _materialSets[subset.materialIndex];
-                drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet);
+                auto &materialSet = _materialGpuDataList[subset.materialIndex];
+                drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
                 drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
             }
         }
@@ -303,8 +316,8 @@ void VulkanRenderData::loadBuffer() {
     }
 }
 
-TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize) {
-    uint32_t texMipLevels = calculateFullMipLevels(width, height);
+TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize, bool genMipmap) {
+    uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
 
     // Load texture from image buffer
     vkl::VulkanBuffer *stagingBuffer;
@@ -340,69 +353,78 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         cmd = _device->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
 
         // generate mipmap chains
-        for (int32_t i = 1; i < texMipLevels; i++) {
-            VkImageBlit imageBlit{};
+        if (genMipmap){
+            for (int32_t i = 1; i < texMipLevels; i++) {
+                VkImageBlit imageBlit{};
 
-            // Source
-            imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageBlit.srcSubresource.layerCount = 1;
-            imageBlit.srcSubresource.mipLevel   = i - 1;
-            imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-            imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-            imageBlit.srcOffsets[1].z           = 1;
+                // Source
+                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.srcSubresource.layerCount = 1;
+                imageBlit.srcSubresource.mipLevel   = i - 1;
+                imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+                imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+                imageBlit.srcOffsets[1].z           = 1;
 
-            // Destination
-            imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageBlit.dstSubresource.layerCount = 1;
-            imageBlit.dstSubresource.mipLevel   = i;
-            imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-            imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-            imageBlit.dstOffsets[1].z           = 1;
+                // Destination
+                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.dstSubresource.layerCount = 1;
+                imageBlit.dstSubresource.mipLevel   = i;
+                imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+                imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+                imageBlit.dstOffsets[1].z           = 1;
 
-            VkImageSubresourceRange mipSubRange = {};
-            mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-            mipSubRange.baseMipLevel            = i;
-            mipSubRange.levelCount              = 1;
-            mipSubRange.layerCount              = 1;
+                VkImageSubresourceRange mipSubRange = {};
+                mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+                mipSubRange.baseMipLevel            = i;
+                mipSubRange.levelCount              = 1;
+                mipSubRange.layerCount              = 1;
 
-            // Prepare current mip level as image blit destination
-            cmd->cmdImageMemoryBarrier(
-                texture.image,
-                0,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                mipSubRange);
+                // Prepare current mip level as image blit destination
+                cmd->cmdImageMemoryBarrier(
+                    texture.image,
+                    0,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    mipSubRange);
 
-            // Blit from previous level
-            cmd->cmdBlitImage(
-                texture.image,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                texture.image,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &imageBlit,
-                VK_FILTER_LINEAR);
+                // Blit from previous level
+                cmd->cmdBlitImage(
+                    texture.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    texture.image,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    1,
+                    &imageBlit,
+                    VK_FILTER_LINEAR);
 
-            // Prepare current mip level as image blit source for next level
-            cmd->cmdImageMemoryBarrier(
-                texture.image,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_ACCESS_TRANSFER_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                mipSubRange);
+                // Prepare current mip level as image blit source for next level
+                cmd->cmdImageMemoryBarrier(
+                    texture.image,
+                    VK_ACCESS_TRANSFER_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    mipSubRange);
+            }
+
+            cmd->cmdTransitionImageLayout(texture.image,
+                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+            _device->endSingleTimeCommands(cmd);
         }
+        else{
+            cmd->cmdTransitionImageLayout(texture.image,
+                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        cmd->cmdTransitionImageLayout(texture.image,
-                                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        _device->endSingleTimeCommands(cmd);
+            _device->endSingleTimeCommands(cmd);
+        }
     }
 
     {

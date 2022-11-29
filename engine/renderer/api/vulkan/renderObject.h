@@ -18,6 +18,11 @@ struct VulkanMeshData {
     VulkanBuffer *ib  = nullptr;
 };
 
+struct MaterialGpuData{
+    VulkanBuffer * buffer = nullptr;
+    VkDescriptorSet set = VK_NULL_HANDLE;
+};
+
 class VulkanRenderData {
 public:
     VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode);
@@ -38,16 +43,15 @@ private:
     VulkanMeshData               _meshData;
     TextureGpuData               _emptyTexture;
     std::vector<TextureGpuData>  _textures;
-    std::vector<VkDescriptorSet> _materialSets;
+    std::vector<MaterialGpuData> _materialGpuDataList;
 
     VulkanBuffer *               _objectUB = nullptr;
     VkDescriptorSet              _objectSet = VK_NULL_HANDLE;
 
-    TextureGpuData createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize);
+    TextureGpuData createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize, bool genMipMap = false);
 
 private:
     VulkanDevice           *_device    = nullptr;
-    public:
     std::shared_ptr<SceneNode> _node = nullptr;
 };
 } // namespace vkl
