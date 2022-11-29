@@ -5,11 +5,6 @@
 
 namespace vkl {
 
-struct MaterialGpuData {
-    VkDescriptorSet set;
-    VkPipeline      pipeline;
-};
-
 struct TextureGpuData {
     VulkanImage     *image     = nullptr;
     VulkanImageView *imageView = nullptr;
@@ -33,7 +28,7 @@ public:
 
     void draw(VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
 
-    void     setupMaterial(VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits);
+    void     setupDescriptor(VulkanDescriptorSetLayout* objectLayout, VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits);
     uint32_t getSetCount();
 
 private:
@@ -43,7 +38,10 @@ private:
     VulkanMeshData               _meshData;
     TextureGpuData               _emptyTexture;
     std::vector<TextureGpuData>  _textures;
-    std::vector<MaterialGpuData> _materialGpuDataList;
+    std::vector<VkDescriptorSet> _materialSets;
+
+    VulkanBuffer *               _objectUB = nullptr;
+    VkDescriptorSet              _objectSet = VK_NULL_HANDLE;
 
     TextureGpuData createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize);
 

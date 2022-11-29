@@ -24,11 +24,28 @@ layout (set = 0, binding = 1) uniform LightUB{
 
 const float PI = 3.14159265359;
 
-layout(set = 1, binding = 0) uniform sampler2D colorMap;
-layout(set = 1, binding = 1) uniform sampler2D normalMap;
-layout(set = 1, binding = 2) uniform sampler2D physicalDescMap;
-layout(set = 1, binding = 3) uniform sampler2D aoMap;
-layout(set = 1, binding = 4) uniform sampler2D emissiveMap;
+layout(set = 1, binding = 0) uniform ObjectUB{
+    mat4 matrix;
+};
+
+layout(set = 2, binding = 0) uniform MatInfoUB{
+    vec4 emissiveFactor;
+    vec4 baseColorFactor;
+    float     alphaCutoff;
+    float     metallicFactor;
+    float     roughnessFactor;
+    int baseColorTextureIndex;
+    int normalTextureIndex;
+    int occlusionTextureIndex;
+    int emissiveTextureIndex;
+    int metallicRoughnessTextureIndex;
+    int specularGlossinessTextureIndex;
+} ;
+layout(set = 2, binding = 1) uniform sampler2D colorMap;
+layout(set = 2, binding = 2) uniform sampler2D normalMap;
+layout(set = 2, binding = 3) uniform sampler2D physicalDescMap;
+layout(set = 2, binding = 4) uniform sampler2D aoMap;
+layout(set = 2, binding = 5) uniform sampler2D emissiveMap;
 
 vec3 getNormal()
 {
@@ -101,11 +118,11 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 
 void main() {
-    vec3 albedo = texture(colorMap, inUV).rgb;
-    float metallic = texture(physicalDescMap, inUV).r;
-    float roughness = texture(physicalDescMap, inUV).g;
-    vec3 ao = texture(aoMap, inUV).rgb;
-    vec3 emissive = texture(emissiveMap, inUV).rgb;
+    vec3 albedo = baseColorTextureIndex > -1 ? texture(colorMap, inUV).rgb : baseColorFactor.xyz;
+    float metallic = metallicRoughnessTextureIndex > -1 ? texture(physicalDescMap, inUV).r : metallicFactor;
+    float roughness = metallicRoughnessTextureIndex > -1 ? texture(physicalDescMap, inUV).g : roughnessFactor;
+    vec3 ao = occlusionTextureIndex > -1 ? texture(aoMap, inUV).rgb : vec3(1.0f);
+    vec3 emissive = emissiveTextureIndex > -1 ? texture(emissiveMap, inUV).rgb : emissiveFactor.xyz;
 
     vec3 N = getNormal();
     vec3 V = normalize(cameraData[0].viewPos - inWorldPos);

@@ -62,6 +62,7 @@ struct Material {
     float     alphaCutoff     = 1.0f;
     float     metallicFactor  = 1.0f;
     float     roughnessFactor = 1.0f;
+    glm::vec4 emissiveFactor = glm::vec4(1.0f);
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
     ResourceIndex baseColorTextureIndex = -1;

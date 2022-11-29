@@ -25,7 +25,8 @@ enum MaterialBindingBits {
 
 enum DescriptorSetBinding {
     SET_SCENE    = 0,
-    SET_MATERIAL = 1,
+    SET_OBJECT   = 1,
+    SET_MATERIAL = 2,
 };
 
 class VulkanSceneRenderer : public SceneRenderer {
@@ -53,6 +54,10 @@ private:
     std::vector<VkDescriptorSet> _descriptorSets;
 
     VulkanPipeline *_forwardPipeline = nullptr;
+
+    struct {
+
+    } _skyboxResource;
 
     struct {
         VulkanImage       *depthImage     = nullptr;

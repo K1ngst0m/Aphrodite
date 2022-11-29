@@ -2,9 +2,9 @@
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <tinygltf/tiny_gltf.h>
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include <tinygltf/tiny_gltf.h>
+// #include "stb_image.h"
 
 namespace vkl {
 
@@ -38,7 +38,23 @@ void _loadMaterials(Entity* entity, tinygltf::Model &input){
         material.id                     = i;
         tinygltf::Material glTFMaterial = input.materials[i];
 
-        // common
+        // factor
+        material.emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
+        material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
+        material.metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
+        material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
+
+        material.doubleSided = glTFMaterial.doubleSided;
+        if (glTFMaterial.alphaMode == "BLEND"){
+            material.alphaMode = Material::ALPHAMODE_BLEND;
+        }
+        if (glTFMaterial.alphaMode == "MASK"){
+            material.alphaCutoff = 0.5f;
+            material.alphaMode = Material::ALPHAMODE_MASK;
+        }
+        material.alphaCutoff = glTFMaterial.alphaCutoff;
+
+        // common texture
         if (glTFMaterial.normalTexture.index > -1) {
             material.normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
         }
@@ -49,10 +65,7 @@ void _loadMaterials(Entity* entity, tinygltf::Model &input){
             material.occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source;
         }
 
-        // pbr
-        if (glTFMaterial.values.find("baseColorFactor") != glTFMaterial.values.end()){
-            material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
-        }
+        // pbr texture
         if (glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1) {
             material.baseColorTextureIndex = input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
         }
