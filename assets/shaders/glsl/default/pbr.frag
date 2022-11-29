@@ -9,13 +9,19 @@ layout(location = 4) in vec4 inTangent;
 layout(location = 0) out vec4 outColor;
 
 // set 0: per scene binding
-layout (set = 0, binding = 0) uniform CameraUB{
+layout (std140, set = 0, binding = 0) uniform SceneInfoUB{
+    vec4 ambientColor;
+    int cameraCount;
+    int lightCount;
+};
+
+layout (set = 0, binding = 1) uniform CameraUB{
     mat4 view;
     mat4 proj;
     vec3 viewPos;
 } cameraData[];
 
-layout (set = 0, binding = 1) uniform LightUB{
+layout (set = 0, binding = 2) uniform LightUB{
     vec3 color;
     vec3 position;
     vec3 direction;
@@ -139,6 +145,7 @@ void main() {
 
     vec3 Lo = vec3(0.0f);
 
+    for (int i = 0; i < lightCount; i++)
     {
         vec3 L = normalize(-lightData[0].direction);
         vec3 H = normalize(V + L);
@@ -163,7 +170,7 @@ void main() {
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = ambientColor.xyz * albedo * ao;
     vec3 color = emissive + Lo + ambient;
 
     outColor = tonemap(vec4(color, 1.0f));

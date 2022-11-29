@@ -12,7 +12,7 @@ layout(location = 2) out vec2 outUV;
 layout(location = 3) out vec3 outColor;
 layout(location = 4) out vec4 outTangent;
 
-layout (set = 0, binding = 0) uniform SceneUB{
+layout (set = 0, binding = 1) uniform SceneUB{
     mat4 view;
     mat4 proj;
     vec4 viewPos;

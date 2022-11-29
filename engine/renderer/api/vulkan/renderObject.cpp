@@ -12,6 +12,13 @@
 #include "vkInit.hpp"
 
 namespace vkl {
+
+void TextureGpuData::setupDescriptor() {
+    descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    descriptorInfo.imageView   = imageView->getHandle();
+    descriptorInfo.sampler     = sampler;
+}
+
 struct ObjectInfo{
     glm::mat4 matrix = glm::mat4(1.0f);
 };
@@ -161,6 +168,7 @@ void VulkanRenderData::loadTextures() {
 
         std::vector<uint8_t> data(imageDataSize, 0);
         _emptyTexture = createTexture(width, height, data.data(), imageDataSize);
+        _emptyTexture.setupDescriptor();
     }
 
     for (auto &image : _node->getObject<Entity>()->_images) {
@@ -172,6 +180,7 @@ void VulkanRenderData::loadTextures() {
 
         auto texture = createTexture(width, height, imageData, imageDataSize, true);
         _textures.push_back(texture);
+        _textures.back().setupDescriptor();
     }
 }
 
@@ -339,12 +348,13 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         createInfo.extent    = {width, height, 1};
         createInfo.format    = FORMAT_R8G8B8A8_SRGB;
         createInfo.tiling    = IMAGE_TILING_OPTIMAL;
-        createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT; createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+        createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         createInfo.mipLevels = texMipLevels;
 
         _device->createImage(&createInfo, &texture.image);
 
-        VulkanCommandBuffer *cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        auto *cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -353,78 +363,69 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         cmd = _device->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
 
         // generate mipmap chains
-        if (genMipmap){
-            for (int32_t i = 1; i < texMipLevels; i++) {
-                VkImageBlit imageBlit{};
+        for (int32_t i = 1; i < texMipLevels; i++) {
+            VkImageBlit imageBlit{};
 
-                // Source
-                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.srcSubresource.layerCount = 1;
-                imageBlit.srcSubresource.mipLevel   = i - 1;
-                imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-                imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-                imageBlit.srcOffsets[1].z           = 1;
+            // Source
+            imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.srcSubresource.layerCount = 1;
+            imageBlit.srcSubresource.mipLevel   = i - 1;
+            imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+            imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+            imageBlit.srcOffsets[1].z           = 1;
 
-                // Destination
-                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.dstSubresource.layerCount = 1;
-                imageBlit.dstSubresource.mipLevel   = i;
-                imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-                imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-                imageBlit.dstOffsets[1].z           = 1;
+            // Destination
+            imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.dstSubresource.layerCount = 1;
+            imageBlit.dstSubresource.mipLevel   = i;
+            imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+            imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+            imageBlit.dstOffsets[1].z           = 1;
 
-                VkImageSubresourceRange mipSubRange = {};
-                mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-                mipSubRange.baseMipLevel            = i;
-                mipSubRange.levelCount              = 1;
-                mipSubRange.layerCount              = 1;
+            VkImageSubresourceRange mipSubRange = {};
+            mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+            mipSubRange.baseMipLevel            = i;
+            mipSubRange.levelCount              = 1;
+            mipSubRange.layerCount              = 1;
 
-                // Prepare current mip level as image blit destination
-                cmd->cmdImageMemoryBarrier(
-                    texture.image,
-                    0,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    mipSubRange);
+            // Prepare current mip level as image blit destination
+            cmd->cmdImageMemoryBarrier(
+                texture.image,
+                0,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                mipSubRange);
 
-                // Blit from previous level
-                cmd->cmdBlitImage(
-                    texture.image,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    texture.image,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    1,
-                    &imageBlit,
-                    VK_FILTER_LINEAR);
+            // Blit from previous level
+            cmd->cmdBlitImage(
+                texture.image,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                texture.image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1,
+                &imageBlit,
+                VK_FILTER_LINEAR);
 
-                // Prepare current mip level as image blit source for next level
-                cmd->cmdImageMemoryBarrier(
-                    texture.image,
-                    VK_ACCESS_TRANSFER_WRITE_BIT,
-                    VK_ACCESS_TRANSFER_READ_BIT,
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    mipSubRange);
-            }
-
-            cmd->cmdTransitionImageLayout(texture.image,
-                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-            _device->endSingleTimeCommands(cmd);
+            // Prepare current mip level as image blit source for next level
+            cmd->cmdImageMemoryBarrier(
+                texture.image,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_ACCESS_TRANSFER_READ_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                mipSubRange);
         }
-        else{
-            cmd->cmdTransitionImageLayout(texture.image,
-                                        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-            _device->endSingleTimeCommands(cmd);
-        }
+        cmd->cmdTransitionImageLayout(texture.image,
+                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        _device->endSingleTimeCommands(cmd);
     }
 
     {
@@ -446,7 +447,6 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &texture.sampler));
     }
 
-    texture.descriptorInfo = vkl::init::descriptorImageInfo(texture.sampler, texture.imageView->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     _device->destroyBuffer(stagingBuffer);
 
     return texture;

@@ -44,13 +44,13 @@ std::shared_ptr<Entity> Scene::createEntity() {
     return entity;
 }
 
-void Scene::setAmbient(glm::vec4 value) {
+void Scene::setAmbient(glm::vec3 value) {
     _ambient = value;
 }
 
-glm::vec4 Scene::getAmbient() {
+glm::vec3 Scene::getAmbient() {
     // TODO IDK why this return _ambient causes segment fault
-    return glm::vec4(0.2f);
+    return glm::vec3(0.2f);
 }
 
 Scene::~Scene() = default;

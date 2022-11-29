@@ -29,6 +29,12 @@ enum DescriptorSetBinding {
     SET_MATERIAL = 2,
 };
 
+struct SceneInfo {
+    glm::vec4 ambient {0.04f};
+    uint32_t cameraCount = 0;
+    uint32_t lightCount = 0;
+};
+
 class VulkanSceneRenderer : public SceneRenderer {
     constexpr static uint32_t SHADOWMAP_DIM    = 2048;
     constexpr static VkFilter SHADOWMAP_FILTER = VK_FILTER_LINEAR;
@@ -51,7 +57,9 @@ private:
     void _loadSceneNodes();
 
 private:
+    SceneInfo _sceneInfo{};
     std::vector<VkDescriptorSet> _descriptorSets;
+    std::vector<VulkanBuffer*> _sceneInfoUBs;
 
     VulkanPipeline *_forwardPipeline = nullptr;
 

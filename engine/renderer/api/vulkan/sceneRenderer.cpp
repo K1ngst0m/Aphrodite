@@ -21,11 +21,6 @@
 namespace vkl {
 namespace {
 
-struct SceneInfo {
-    size_t cameraCount;
-    size_t lightCount;
-};
-
 std::unordered_map<ShadingModel, MaterialBindingBits> materialBindingMap{
     {ShadingModel::UNLIT, MATERIAL_BINDING_UNLIT},
     {ShadingModel::DEFAULTLIT, MATERIAL_BINDING_DEFAULTLIT},
@@ -119,8 +114,9 @@ VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRend
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sceneInfo.cameraCount),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, sceneInfo.lightCount),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, sceneInfo.cameraCount),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2, sceneInfo.lightCount),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
@@ -283,18 +279,26 @@ void VulkanSceneRenderer::_initUniformList() {
             }
         }
 
-        SceneInfo sceneInfo{
-            .cameraCount = cameraInfos.size(),
-            .lightCount  = lightInfos.size(),
+        BufferCreateInfo bufferCI{
+            .size = sizeof(SceneInfo),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        _forwardPipeline = CreatePipeline(_device, _renderer->getDefaultRenderPass(), getShadingModel(), sceneInfo);
+
+        VulkanBuffer * sceneInfoUB = nullptr;
+        VK_CHECK_RESULT(_device->createBuffer(&bufferCI, &sceneInfoUB, &_sceneInfo));
+        sceneInfoUB->setupDescriptor();
+
+        _forwardPipeline = CreatePipeline(_device, _renderer->getDefaultRenderPass(), getShadingModel(), _sceneInfo);
         set              = _forwardPipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, cameraInfos.data(), cameraInfos.size()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneInfoUB->getBufferInfo()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, cameraInfos.data(), cameraInfos.size()),
         };
 
         if (getShadingModel() != ShadingModel::UNLIT) {
-            writes.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, lightInfos.data(), lightInfos.size()));
+            writes.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, lightInfos.data(), lightInfos.size()));
         }
 
         vkUpdateDescriptorSets(_device->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -308,6 +312,7 @@ void VulkanSceneRenderer::_initUniformList() {
 }
 
 void VulkanSceneRenderer::_loadSceneNodes() {
+    _sceneInfo.ambient = glm::vec4(_scene->getAmbient(), 1.0f);
     std::queue<std::shared_ptr<SceneNode>> q;
     q.push(_scene->getRootNode());
 
@@ -323,10 +328,12 @@ void VulkanSceneRenderer::_loadSceneNodes() {
         case AttachType::CAMERA: {
             auto ubo = std::make_shared<VulkanUniformData>(_device, node);
             _uniformList.push_front(ubo);
+            _sceneInfo.cameraCount++;
         } break;
         case AttachType::LIGHT: {
             auto ubo = std::make_shared<VulkanUniformData>(_device, node);
             _uniformList.push_back(ubo);
+            _sceneInfo.lightCount++;
         } break;
         default:
             assert("unattached scene node.");

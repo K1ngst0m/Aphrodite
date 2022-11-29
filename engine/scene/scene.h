@@ -43,12 +43,12 @@ public:
 
 public:
     void      setMainCamera(const std::shared_ptr<Camera> &camera);
-    void      setAmbient(glm::vec4 value);
-    glm::vec4 getAmbient();
+    void      setAmbient(glm::vec3 value);
+    glm::vec3 getAmbient();
 
 private:
     AABB      aabb;
-    glm::vec4 _ambient;
+    glm::vec3 _ambient;
 
     std::shared_ptr<SceneNode> _rootNode;
     std::shared_ptr<Camera>    _camera = nullptr;
