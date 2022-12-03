@@ -584,4 +584,52 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
     return VK_SUCCESS;
 
 }
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo          *createInfo,
+                                        VulkanRenderPass             **ppRenderPass,
+                                        const VkAttachmentDescription &depthAttachment) {
+    std::vector<VkAttachmentDescription> attachments;
+
+    attachments.push_back(depthAttachment);
+    VkAttachmentReference depthAttachmentRef{};
+    depthAttachmentRef.attachment = 0;
+    depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpassDescription{};
+    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount    = 0;
+    subpassDescription.pColorAttachments       = nullptr;
+    subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
+
+    std::array<VkSubpassDependency, 1> dependencies;
+
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = 0;
+
+    VkRenderPassCreateInfo renderPassInfo{
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
+        .subpassCount    = 1,
+        .pSubpasses      = &subpassDescription,
+        .dependencyCount = dependencies.size(),
+        .pDependencies   = dependencies.data(),
+    };
+
+    VkRenderPass renderpass;
+    auto         result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
+
+    if (result != VK_SUCCESS) {
+        return result;
+    }
+
+    *ppRenderPass = new VulkanRenderPass(renderpass, 0);
+
+    return VK_SUCCESS;
+
+}
 } // namespace vkl

@@ -79,6 +79,10 @@ public:
                               const std::vector<VkAttachmentDescription> &colorAttachments,
                               const VkAttachmentDescription              &depthAttachment);
 
+    VkResult createRenderPass(RenderPassCreateInfo          *createInfo,
+                              VulkanRenderPass             **ppRenderPass,
+                              const VkAttachmentDescription &depthAttachment);
+
     VkResult createSwapchain(VkSurfaceKHR      surface,
                              VulkanSwapChain **ppSwapchain,
                              WindowData       *data);

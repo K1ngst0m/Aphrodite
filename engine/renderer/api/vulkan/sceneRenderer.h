@@ -54,6 +54,7 @@ private:
     void _initSkyboxResource();
     void _initForwardResource();
     void _initPostFxResource();
+    void _initShadowPassResource();
     void _loadSceneNodes();
 
 private:
@@ -70,20 +71,10 @@ private:
     } _forwardPass;
 
     struct {
-        VkDescriptorSet       set            = VK_NULL_HANDLE;
-        VulkanPipeline       *pipeline       = nullptr;
-        VulkanImage          *cubeMap        = nullptr;
-        VulkanImageView      *cubeMapView    = nullptr;
-        VkSampler             cubeMapSampler = nullptr;
-        VkDescriptorImageInfo cubeMapDescInfo{};
-    } _skyboxResource;
-
-    struct {
-        VulkanImage       *depthImage     = nullptr;
-        VulkanImageView   *depthImageView = nullptr;
         VulkanRenderPass  *renderPass     = nullptr;
-        VulkanFramebuffer *framebuffer    = nullptr;
-        VkSampler          depthSampler   = VK_NULL_HANDLE;
+        std::vector<VulkanImage*>     depthImages;
+        std::vector<VulkanImageView *> depthImageViews;
+        std::vector<VulkanFramebuffer*> framebuffers;
     } _shadowPass;
 
     struct {
@@ -98,6 +89,15 @@ private:
     } _postFxPass;
 
 private:
+    struct {
+        VkDescriptorSet       set            = VK_NULL_HANDLE;
+        VulkanPipeline       *pipeline       = nullptr;
+        VulkanImage          *cubeMap        = nullptr;
+        VulkanImageView      *cubeMapView    = nullptr;
+        VkSampler             cubeMapSampler = nullptr;
+        VkDescriptorImageInfo cubeMapDescInfo{};
+    } _skyboxResource;
+
     std::vector<VkDescriptorSet> _sceneSets;
     SceneInfo                    _sceneInfo{};
     VulkanBuffer                *_sceneInfoUB = nullptr;

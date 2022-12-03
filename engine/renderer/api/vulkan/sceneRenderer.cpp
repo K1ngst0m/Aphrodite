@@ -50,20 +50,19 @@ VulkanPipeline *CreatePostFxPipeline(VulkanDevice *pDevice, VulkanRenderPass *pR
         effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv");
         effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv");
 
-        GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        GraphicsPipelineCreateInfo                   pipelineCreateInfo{};
         std::vector<VkVertexInputBindingDescription> bindingDescs{
             {0, 4 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX},
         };
         std::vector<VkVertexInputAttributeDescription> attrDescs{
             {0, 0, VK_FORMAT_R32G32_SFLOAT, 0},
-            {1, 0, VK_FORMAT_R32G32_SFLOAT, 2 * sizeof(float)}
-        };
+            {1, 0, VK_FORMAT_R32G32_SFLOAT, 2 * sizeof(float)}};
         pipelineCreateInfo.vertexInputInfo = {
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            .vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescs.size()),
-            .pVertexBindingDescriptions = bindingDescs.data(),
+            .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount   = static_cast<uint32_t>(bindingDescs.size()),
+            .pVertexBindingDescriptions      = bindingDescs.data(),
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDescs.size()),
-            .pVertexAttributeDescriptions = attrDescs.data(),
+            .pVertexAttributeDescriptions    = attrDescs.data(),
         };
         VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
     }
@@ -319,7 +318,7 @@ void VulkanSceneRenderer::cleanupResources() {
         m_pDevice->destroyPipeline(_postFxPass.pipeline);
     }
 
-    for (uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++){
+    for (uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++) {
         m_pDevice->destroyFramebuffers(_postFxPass.framebuffers[idx]);
         m_pDevice->destroyFramebuffers(_forwardPass.framebuffers[idx]);
         m_pDevice->destroyImage(_forwardPass.colorImages[idx]);
@@ -376,8 +375,8 @@ void VulkanSceneRenderer::drawScene() {
     }
     commandBuffer->cmdEndRenderPass();
 
-    renderPassBeginInfo.pFramebuffer = _postFxPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
-    renderPassBeginInfo.pRenderPass = _postFxPass.renderPass;
+    renderPassBeginInfo.pFramebuffer    = _postFxPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
+    renderPassBeginInfo.pRenderPass     = _postFxPass.renderPass;
     renderPassBeginInfo.clearValueCount = 1;
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     VkDeviceSize offsets[1] = {0};
@@ -560,25 +559,23 @@ void VulkanSceneRenderer::_initPostFxResource() {
     _postFxPass.sets.resize(imageCount);
     _postFxPass.samplers.resize(imageCount);
 
-
     // buffer
     {
         float quadVertices[] = {
             // positions   // texCoords
-            -1.0f,  1.0f,  0.0f, 1.0f,
-            -1.0f, -1.0f,  0.0f, 0.0f,
-            1.0f, -1.0f,  1.0f, 0.0f,
+            -1.0f, 1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f, 0.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
 
-            -1.0f,  1.0f,  0.0f, 1.0f,
-            1.0f, -1.0f,  1.0f, 0.0f,
-            1.0f,  1.0f,  1.0f, 1.0f
-        };
+            -1.0f, 1.0f, 0.0f, 1.0f,
+            1.0f, -1.0f, 1.0f, 0.0f,
+            1.0f, 1.0f, 1.0f, 1.0f};
 
         BufferCreateInfo bufferCI{
-            .size = sizeof(quadVertices),
+            .size      = sizeof(quadVertices),
             .alignment = 0,
-            .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage     = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
 
         VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_postFxPass.quadVB, quadVertices));
@@ -588,7 +585,7 @@ void VulkanSceneRenderer::_initPostFxResource() {
     for (auto idx = 0; idx < imageCount; idx++) {
         auto &colorImage     = _postFxPass.colorImages[idx];
         auto &colorImageView = _postFxPass.colorImageViews[idx];
-        auto &framebuffer     = _postFxPass.framebuffers[idx];
+        auto &framebuffer    = _postFxPass.framebuffers[idx];
 
         // get swapchain image
         {
@@ -639,13 +636,13 @@ void VulkanSceneRenderer::_initPostFxResource() {
     }
 
     _postFxPass.pipeline = CreatePostFxPipeline(m_pDevice, _postFxPass.renderPass);
-    for (uint32_t idx = 0; idx < imageCount; idx++){
+    for (uint32_t idx = 0; idx < imageCount; idx++) {
         VkDescriptorSet &set = _postFxPass.sets[idx];
-        set = _postFxPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
+        set                  = _postFxPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
 
         VkDescriptorImageInfo imageInfo{
-            .sampler = _postFxPass.samplers[idx],
-            .imageView = _forwardPass.colorImageViews[idx]->getHandle(),
+            .sampler     = _postFxPass.samplers[idx],
+            .imageView   = _forwardPass.colorImageViews[idx]->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
@@ -654,8 +651,8 @@ void VulkanSceneRenderer::_initPostFxResource() {
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(),
-                            static_cast<uint32_t>(writes.size()),
-                            writes.data(), 0, nullptr);
+                               static_cast<uint32_t>(writes.size()),
+                               writes.data(), 0, nullptr);
     }
 }
 
@@ -675,11 +672,11 @@ void VulkanSceneRenderer::_initForwardResource() {
         auto &colorImageView = _forwardPass.colorImageViews[idx];
         auto &depthImage     = _forwardPass.depthImages[idx];
         auto &depthImageView = _forwardPass.depthImageViews[idx];
-        auto &framebuffer     = _forwardPass.framebuffers[idx];
+        auto &framebuffer    = _forwardPass.framebuffers[idx];
 
         {
             ImageCreateInfo createInfo{
-                .extent = {imageExtent.width, imageExtent.height, 1},
+                .extent    = {imageExtent.width, imageExtent.height, 1},
                 .imageType = IMAGE_TYPE_2D,
                 .usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_SAMPLED_BIT,
                 .property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -700,7 +697,7 @@ void VulkanSceneRenderer::_initForwardResource() {
         }
 
         {
-            VkFormat depthFormat = m_pDevice->getDepthFormat();
+            VkFormat        depthFormat = m_pDevice->getDepthFormat();
             ImageCreateInfo createInfo{};
             createInfo.extent   = {imageExtent.width, imageExtent.height, 1};
             createInfo.format   = static_cast<Format>(depthFormat);
@@ -758,6 +755,67 @@ void VulkanSceneRenderer::_initForwardResource() {
         };
 
         VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_forwardPass.renderPass, colorAttachments, depthAttachment));
+    }
+
+    _forwardPass.pipeline = CreatePipeline(m_pDevice, _forwardPass.renderPass, getShadingModel(), _sceneInfo);
+}
+void VulkanSceneRenderer::_initShadowPassResource() {
+    uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
+    VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
+
+    _shadowPass.framebuffers.resize(imageCount);
+    _shadowPass.depthImageViews.resize(imageCount);
+    _shadowPass.depthImages.resize(imageCount);
+
+    for (uint32_t idx = 0; idx < imageCount; idx++) {
+        auto &framebuffer    = _shadowPass.framebuffers[idx];
+        auto &depthImage     = _shadowPass.depthImages[idx];
+        auto &depthImageView = _shadowPass.depthImageViews[idx];
+
+        {
+            VkFormat        depthFormat = m_pDevice->getDepthFormat();
+            ImageCreateInfo createInfo{};
+            createInfo.extent   = {imageExtent.width, imageExtent.height, 1};
+            createInfo.format   = static_cast<Format>(depthFormat);
+            createInfo.tiling   = IMAGE_TILING_OPTIMAL;
+            createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            VK_CHECK_RESULT(m_pDevice->createImage(&createInfo, &depthImage));
+        }
+
+        VulkanCommandBuffer *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        m_pDevice->endSingleTimeCommands(cmd);
+
+        {
+            ImageViewCreateInfo createInfo{};
+            createInfo.format   = FORMAT_D32_SFLOAT;
+            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            VK_CHECK_RESULT(m_pDevice->createImageView(&createInfo, &depthImageView, depthImage));
+        }
+
+        {
+            std::vector<VulkanImageView *> attachments{depthImageView};
+            FramebufferCreateInfo          createInfo{};
+            createInfo.width  = imageExtent.width;
+            createInfo.height = imageExtent.height;
+            VK_CHECK_RESULT(m_pDevice->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
+        }
+    }
+
+    {
+        VkAttachmentDescription depthAttachment{
+            .format         = m_pDevice->getDepthFormat(),
+            .samples        = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_forwardPass.renderPass, depthAttachment));
     }
 
     _forwardPass.pipeline = CreatePipeline(m_pDevice, _forwardPass.renderPass, getShadingModel(), _sceneInfo);
