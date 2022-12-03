@@ -6,7 +6,6 @@
 #include "image.h"
 #include "imageView.h"
 #include "pipeline.h"
-#include "sampler.h"
 #include "scene/entity.h"
 #include "sceneRenderer.h"
 #include "vkInit.hpp"
@@ -38,7 +37,7 @@ struct MaterialInfo{
 };
 
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
-    : _device(device), _node(std::move(sceneNode)) {
+    : m_pDevice(device), _node(std::move(sceneNode)) {
 }
 
 void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout, VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
@@ -50,7 +49,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(&bufferCI, &_objectUB, &objInfo));
+        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_objectUB, &objInfo));
         _objectUB->setupDescriptor();
     }
 
@@ -61,7 +60,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
             vkl::init::writeDescriptorSet(_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &_objectUB->getBufferInfo())
         };
 
-        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }
 
     for (auto &material : _node->getObject<Entity>()->_materials) {
@@ -89,7 +88,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
-                _device->createBuffer(&bufferCI, &matInfoUB, &matInfo);
+                m_pDevice->createBuffer(&bufferCI, &matInfoUB, &matInfo);
                 matInfoUB->setupDescriptor();
             }
             std::vector<VkWriteDescriptorSet> descriptorWrites{};
@@ -147,7 +146,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                 }
             }
 
-            vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
 
         _materialGpuDataList.push_back({matInfoUB, set});
@@ -173,10 +172,10 @@ void VulkanRenderData::loadTextures() {
 
     for (auto &image : _node->getObject<Entity>()->_images) {
         // raw image data
-        unsigned char *imageData     = image.data.data();
-        uint32_t       imageDataSize = image.data.size();
-        uint32_t       width         = image.width;
-        uint32_t       height        = image.height;
+        unsigned char *imageData     = image->data.data();
+        uint32_t       imageDataSize = image->data.size();
+        uint32_t       width         = image->width;
+        uint32_t       height        = image->height;
 
         auto texture = createTexture(width, height, imageData, imageDataSize, true);
         _textures.push_back(texture);
@@ -185,23 +184,23 @@ void VulkanRenderData::loadTextures() {
 }
 
 void VulkanRenderData::cleanupResources() {
-    _device->destroyBuffer(_meshData.vb);
-    _device->destroyBuffer(_meshData.ib);
-    _device->destroyBuffer(_objectUB);
+    m_pDevice->destroyBuffer(_meshData.vb);
+    m_pDevice->destroyBuffer(_meshData.ib);
+    m_pDevice->destroyBuffer(_objectUB);
 
     for (auto & matData : _materialGpuDataList){
-        _device->destroyBuffer(matData.buffer);
+        m_pDevice->destroyBuffer(matData.buffer);
     }
 
     for (auto &texture : _textures) {
-        _device->destroyImage(texture.image);
-        _device->destroyImageView(texture.imageView);
-        vkDestroySampler(_device->getHandle(), texture.sampler, nullptr);
+        m_pDevice->destroyImage(texture.image);
+        m_pDevice->destroyImageView(texture.imageView);
+        vkDestroySampler(m_pDevice->getHandle(), texture.sampler, nullptr);
     }
 
-    _device->destroyImage(_emptyTexture.image);
-    _device->destroyImageView(_emptyTexture.imageView);
-    vkDestroySampler(_device->getHandle(), _emptyTexture.sampler, nullptr);
+    m_pDevice->destroyImage(_emptyTexture.image);
+    m_pDevice->destroyImageView(_emptyTexture.imageView);
+    vkDestroySampler(m_pDevice->getHandle(), _emptyTexture.sampler, nullptr);
 }
 
 void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *drawCmd) {
@@ -269,7 +268,7 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            _device->createBuffer(&createInfo, &stagingBuffer);
+            m_pDevice->createBuffer(&createInfo, &stagingBuffer);
         }
 
         stagingBuffer->map();
@@ -281,14 +280,14 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_meshData.vb);
+            m_pDevice->createBuffer(&createInfo, &_meshData.vb);
         }
 
-        auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        auto cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdCopyBuffer(stagingBuffer, _meshData.vb, bufferSize);
-        _device->endSingleTimeCommands(cmd);
+        m_pDevice->endSingleTimeCommands(cmd);
 
-        _device->destroyBuffer(stagingBuffer);
+        m_pDevice->destroyBuffer(stagingBuffer);
     }
 
     // setup index buffer
@@ -302,7 +301,7 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            _device->createBuffer(&createInfo, &stagingBuffer);
+            m_pDevice->createBuffer(&createInfo, &stagingBuffer);
         }
 
         stagingBuffer->map();
@@ -314,14 +313,14 @@ void VulkanRenderData::loadBuffer() {
             createInfo.size     = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            _device->createBuffer(&createInfo, &_meshData.ib);
+            m_pDevice->createBuffer(&createInfo, &_meshData.ib);
         }
 
-        auto cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        auto cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdCopyBuffer(stagingBuffer, _meshData.ib, bufferSize);
-        _device->endSingleTimeCommands(cmd);
+        m_pDevice->endSingleTimeCommands(cmd);
 
-        _device->destroyBuffer(stagingBuffer);
+        m_pDevice->destroyBuffer(stagingBuffer);
     }
 }
 
@@ -335,7 +334,7 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         createInfo.size     = dataSize;
         createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
         createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        _device->createBuffer(&createInfo, &stagingBuffer);
+        m_pDevice->createBuffer(&createInfo, &stagingBuffer);
 
         stagingBuffer->map();
         stagingBuffer->copyTo(data, dataSize);
@@ -352,15 +351,15 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         createInfo.mipLevels = texMipLevels;
 
-        _device->createImage(&createInfo, &texture.image);
+        m_pDevice->createImage(&createInfo, &texture.image);
 
-        auto *cmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        auto *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        _device->endSingleTimeCommands(cmd);
+        m_pDevice->endSingleTimeCommands(cmd);
 
-        cmd = _device->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
+        cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
 
         // generate mipmap chains
         for (int32_t i = 1; i < texMipLevels; i++) {
@@ -425,7 +424,7 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
                                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-        _device->endSingleTimeCommands(cmd);
+        m_pDevice->endSingleTimeCommands(cmd);
     }
 
     {
@@ -433,7 +432,7 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         createInfo.format                      = FORMAT_R8G8B8A8_SRGB;
         createInfo.viewType                    = IMAGE_VIEW_TYPE_2D;
         createInfo.subresourceRange.levelCount = texMipLevels;
-        _device->createImageView(&createInfo, &texture.imageView, texture.image);
+        m_pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
     }
 
     {
@@ -444,10 +443,10 @@ TextureGpuData VulkanRenderData::createTexture(uint32_t width, uint32_t height, 
         // samplerInfo.anisotropyEnable    = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-        VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &texture.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &texture.sampler));
     }
 
-    _device->destroyBuffer(stagingBuffer);
+    m_pDevice->destroyBuffer(stagingBuffer);
 
     return texture;
 }

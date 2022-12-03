@@ -16,7 +16,7 @@ using SubsetList    = std::vector<Subset>;
 using TextureData   = std::vector<uint8_t>;
 using VertexList    = std::vector<Vertex>;
 using IndexList     = std::vector<uint32_t>;
-using TextureList   = std::vector<Texture>;
+using TextureList   = std::vector<std::shared_ptr<Texture>>;
 using MaterialList  = std::vector<Material>;
 
 struct Vertex {
@@ -52,13 +52,9 @@ struct Texture {
     TextureData data;
 };
 
+enum class AlphaMode : uint32_t{ OPAQUE = 0, MASK = 1, BLEND = 2 };
+
 struct Material {
-    uint32_t id;
-    bool     doubleSided = false;
-    enum AlphaMode { ALPHAMODE_OPAQUE,
-                     ALPHAMODE_MASK,
-                     ALPHAMODE_BLEND };
-    AlphaMode alphaMode       = ALPHAMODE_OPAQUE;
     float     alphaCutoff     = 1.0f;
     float     metallicFactor  = 1.0f;
     float     roughnessFactor = 1.0f;
@@ -66,14 +62,15 @@ struct Material {
     glm::vec4 baseColorFactor = glm::vec4(1.0f);
 
     ResourceIndex baseColorTextureIndex = -1;
-
     ResourceIndex normalTextureIndex    = -1;
     ResourceIndex occlusionTextureIndex = -1;
     ResourceIndex emissiveTextureIndex  = -1;
-
     ResourceIndex metallicRoughnessTextureIndex = -1;
-
     ResourceIndex specularGlossinessTextureIndex = -1;
+
+    bool      doubleSided = false;
+    AlphaMode alphaMode       = AlphaMode::OPAQUE;
+    uint32_t id;
 };
 
 class Entity : public Object {

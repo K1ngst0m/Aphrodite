@@ -18,7 +18,7 @@
 namespace vkl {
 VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo, VulkanDevice **ppDevice) {
     auto &queueFamilyProperties = pPhysicalDevice->getQueueFamilyProperties();
-    auto queueFamilyCount = queueFamilyProperties.size();
+    auto  queueFamilyCount      = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
@@ -68,7 +68,7 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
         for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex) {
             VkQueue queue = VK_NULL_HANDLE;
             vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            if (queue){
+            if (queue) {
                 device->_queues[queueFamilyIndex].push_back(new VulkanQueue(device, queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]));
             }
         }
@@ -82,11 +82,11 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
 }
 
 void VulkanDevice::Destroy(VulkanDevice *pDevice) {
-    for (auto & [_, commandpool] : pDevice->_commandPools){
+    for (auto &[_, commandpool] : pDevice->_commandPools) {
         pDevice->destroyCommandPool(commandpool);
     }
 
-    if (pDevice->_shaderCache){
+    if (pDevice->_shaderCache) {
         pDevice->_shaderCache->destroy();
     }
 
@@ -147,7 +147,7 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
 
 void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer) {
     uint32_t queueFamilyIndex = commandBuffer->getQueueFamilyIndices();
-    auto queue = _queues[queueFamilyIndex][0];
+    auto     queue            = _queues[queueFamilyIndex][0];
 
     commandBuffer->end();
 
@@ -204,6 +204,7 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
 
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags         = pCreateInfo->flags,
         .imageType     = VK_IMAGE_TYPE_2D,
         .format        = static_cast<VkFormat>(pCreateInfo->format),
         .mipLevels     = pCreateInfo->mipLevels,
@@ -276,7 +277,7 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
     subpassDescription.pColorAttachments       = colorAttachmentRefs.data();
     subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
 
-    std::array<VkSubpassDependency, 2> dependencies;
+    std::array<VkSubpassDependency, 1> dependencies;
 
     dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
     dependencies[0].dstSubpass      = 0;
@@ -285,14 +286,6 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
     dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
     dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = 0;
-
-    dependencies[1].srcSubpass      = 0;
-    dependencies[1].dstSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[1].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[1].srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[1].dstAccessMask   = VK_ACCESS_NONE_KHR;
-    dependencies[1].dependencyFlags = 0;
 
     VkRenderPassCreateInfo renderPassInfo{
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -363,8 +356,8 @@ void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
     delete pSwapchain;
 }
 
-VulkanQueue* VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex) {
-    const std::vector<VkQueueFamilyProperties>& queueFamilyProperties = _physicalDevice->getQueueFamilyProperties();
+VulkanQueue *VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex) {
+    const std::vector<VkQueueFamilyProperties> &queueFamilyProperties = _physicalDevice->getQueueFamilyProperties();
 
     // Iterate over queues in order to find one matching requested flags.
     // Favor queue families matching only what's specified in queueFlags over
@@ -390,14 +383,14 @@ void VulkanDevice::waitIdle() {
     vkDeviceWaitIdle(getHandle());
 }
 
-VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue * queue) {
+VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue) {
     auto indices = queue->getFamilyIndex();
 
-    if (_commandPools.count(indices)){
+    if (_commandPools.count(indices)) {
         return _commandPools.at(indices);
     }
 
-    VulkanCommandPool * pool = nullptr;
+    VulkanCommandPool *pool = nullptr;
     createCommandPool(&pool, indices);
     _commandPools[indices] = pool;
     return pool;
@@ -410,7 +403,7 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
 
 VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VkQueueFlags flags) {
     auto *queue = getQueueByFlags(flags);
-    auto *pool = getCommandPoolWithQueue(queue);
+    auto *pool  = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
     auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
@@ -431,9 +424,9 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *pCreateInfo,
-                                              EffectInfo               *pEffectInfo,
-                                              VulkanRenderPass         *pRenderPass,
-                                              VulkanPipeline          **ppPipeline) {
+                                              EffectInfo                       *pEffectInfo,
+                                              VulkanRenderPass                 *pRenderPass,
+                                              VulkanPipeline                  **ppPipeline) {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
     VkPipelineViewportStateCreateInfo viewportState = {};
@@ -523,19 +516,72 @@ VulkanShaderCache *VulkanDevice::getShaderCache() {
 }
 VkResult VulkanDevice::createComputePipeline(EffectInfo      *pEffectInfo,
                                              VulkanPipeline **ppPipeline) {
-    ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
+    ShaderEffect                                *effect = ShaderEffect::Create(this, pEffectInfo);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
     for (const auto &[stage, sModule] : pEffectInfo->shaderMapList) {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(effect->getPipelineLayout());
-    ci.stage = shaderStages[0];
-    VkPipeline handle = VK_NULL_HANDLE;
-    auto result = vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle);
-    if (result != VK_SUCCESS){
+    ci.stage                       = shaderStages[0];
+    VkPipeline handle              = VK_NULL_HANDLE;
+    auto       result              = vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle);
+    if (result != VK_SUCCESS) {
         return result;
     }
     *ppPipeline = VulkanPipeline::CreateComputePipeline(this, effect, handle);
     return VK_SUCCESS;
+}
+
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                       *createInfo,
+                                        VulkanRenderPass                          **ppRenderPass,
+                                        const std::vector<VkAttachmentDescription> &colorAttachments) {
+    std::vector<VkAttachmentDescription> attachments;
+    std::vector<VkAttachmentReference>   colorAttachmentRefs;
+
+    for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
+        attachments.push_back(colorAttachments[idx]);
+        VkAttachmentReference ref{};
+        ref.attachment = idx;
+        ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachmentRefs.push_back(ref);
+    }
+
+    VkSubpassDescription subpassDescription{};
+    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size());
+    subpassDescription.pColorAttachments       = colorAttachmentRefs.data();
+    subpassDescription.pDepthStencilAttachment = nullptr;
+
+    std::array<VkSubpassDependency, 1> dependencies;
+
+    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass      = 0;
+    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
+    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].dependencyFlags = 0;
+
+    VkRenderPassCreateInfo renderPassInfo{
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
+        .subpassCount    = 1,
+        .pSubpasses      = &subpassDescription,
+        .dependencyCount = dependencies.size(),
+        .pDependencies   = dependencies.data(),
+    };
+
+    VkRenderPass renderpass;
+    auto         result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
+
+    if (result != VK_SUCCESS) {
+        return result;
+    }
+
+    *ppRenderPass = new VulkanRenderPass(renderpass, colorAttachmentRefs.size());
+
+    return VK_SUCCESS;
+
 }
 } // namespace vkl

@@ -52,7 +52,7 @@ private:
     TextureGpuData createTexture(uint32_t width, uint32_t height, void *data, uint32_t dataSize, bool genMipMap = false);
 
 private:
-    VulkanDevice           *_device    = nullptr;
+    VulkanDevice           *m_pDevice    = nullptr;
     std::shared_ptr<SceneNode> _node = nullptr;
 };
 } // namespace vkl

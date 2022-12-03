@@ -31,11 +31,11 @@ public:
     ~Scene();
 
 public:
-    std::shared_ptr<Light>      createLight();
-    std::shared_ptr<Entity>     createEntity();
-    std::shared_ptr<Entity>     createEntityFromGLTF(const std::string &path);
-    std::shared_ptr<Camera>     createCamera(float aspectRatio);
-    std::shared_ptr<SceneNode>  getRootNode();
+    std::shared_ptr<Light>     createLight();
+    std::shared_ptr<Entity>    createEntity();
+    std::shared_ptr<Entity>    createEntityFromGLTF(const std::string &path);
+    std::shared_ptr<Camera>    createCamera(float aspectRatio);
+    std::shared_ptr<SceneNode> getRootNode();
 
     std::shared_ptr<Entity> getEntityWithId(IdType id);
     std::shared_ptr<Camera> getCameraWithId(IdType id);

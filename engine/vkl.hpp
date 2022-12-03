@@ -8,7 +8,6 @@
 #include "renderer/api/vulkan/buffer.h"
 #include "renderer/api/vulkan/image.h"
 #include "renderer/api/vulkan/imageView.h"
-#include "renderer/api/vulkan/sampler.h"
 #include "renderer/api/vulkan/device.h"
 #include "renderer/api/vulkan/pipeline.h"
 #include "renderer/api/vulkan/renderObject.h"

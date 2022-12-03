@@ -665,6 +665,7 @@ class BufferView : public Resource<BufferViewCreateInfo> {
 
 struct ImageCreateInfo {
     Extent3D            extent;
+    uint32_t            flags = 0;
     ImageType           imageType;
     uint32_t            alignment   = 0;
     uint32_t            mipLevels   = 1;

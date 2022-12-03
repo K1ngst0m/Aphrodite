@@ -30,9 +30,9 @@ enum DescriptorSetBinding {
 };
 
 struct SceneInfo {
-    glm::vec4 ambient {0.04f};
-    uint32_t cameraCount = 0;
-    uint32_t lightCount = 0;
+    glm::vec4 ambient{0.04f};
+    uint32_t  cameraCount = 0;
+    uint32_t  lightCount  = 0;
 };
 
 class VulkanSceneRenderer : public SceneRenderer {
@@ -51,20 +51,35 @@ public:
 private:
     void _initRenderList();
     void _initUniformList();
-
+    void _initSkyboxResource();
+    void _initForwardResource();
     void _initPostFxResource();
-
     void _loadSceneNodes();
 
 private:
-    SceneInfo _sceneInfo{};
+    SceneInfo                    _sceneInfo{};
     std::vector<VkDescriptorSet> _descriptorSets;
-    std::vector<VulkanBuffer*> _sceneInfoUBs;
-
-    VulkanPipeline *_forwardPipeline = nullptr;
+    std::vector<VulkanBuffer *>  _sceneInfoUBs;
 
     struct {
+        vkl::VulkanRenderPass           *renderPass = nullptr;
+        std::vector<VulkanFramebuffer *> framebuffers;
+        std::vector<VulkanImage *>       colorImages;
+        std::vector<VulkanImageView *>   colorImageViews;
 
+        VulkanImage     *depthImage     = nullptr;
+        VulkanImageView *depthImageView = nullptr;
+
+        VulkanPipeline *pipeline = nullptr;
+    } _forwardPass;
+
+    struct {
+        VkDescriptorSet       set            = VK_NULL_HANDLE;
+        VulkanPipeline       *pipeline       = nullptr;
+        VulkanImage          *cubeMap        = nullptr;
+        VulkanImageView      *cubeMapView    = nullptr;
+        VkSampler             cubeMapSampler = nullptr;
+        VkDescriptorImageInfo cubeMapDescInfo{};
     } _skyboxResource;
 
     struct {
@@ -73,24 +88,29 @@ private:
         VulkanRenderPass  *renderPass     = nullptr;
         VulkanFramebuffer *framebuffer    = nullptr;
         VkSampler          depthSampler   = VK_NULL_HANDLE;
-    } _shaderPassResource;
+    } _shaderPass;
 
     struct {
-        VkSemaphore        semaphore      = VK_NULL_HANDLE;
-        VulkanQueue       *queue          = nullptr;
-        VulkanImage       *colorImage     = nullptr;
-        VulkanImageView   *colorImageView = nullptr;
-        VulkanPipeline    *pipeline       = nullptr;
-        VulkanFramebuffer *framebuffer    = nullptr;
-    } _postFxResource;
+        VulkanBuffer                    *quadVB     = nullptr;
+        VulkanRenderPass                *renderPass = nullptr;
+        VulkanPipeline                  *pipeline   = nullptr;
+        std::vector<VulkanImage *>       colorImages;
+        std::vector<VulkanImageView *>   colorImageViews;
+        std::vector<VulkanFramebuffer *> framebuffers;
+        std::vector<VkSampler>           samplers;
+        std::vector<VkDescriptorSet>     sets;
+    } _postFxPass;
 
 private:
     std::vector<std::shared_ptr<VulkanRenderData>> _renderList;
     std::deque<std::shared_ptr<VulkanUniformData>> _uniformList;
 
+    std::vector<VkDescriptorBufferInfo> _cameraInfos{};
+    std::vector<VkDescriptorBufferInfo> _lightInfos{};
+
 private:
-    VulkanDevice                   *_device   = nullptr;
-    std::shared_ptr<VulkanRenderer> _renderer = nullptr;
+    VulkanDevice                   *m_pDevice   = nullptr;
+    std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
 };
 } // namespace vkl
 

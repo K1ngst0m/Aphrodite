@@ -72,6 +72,10 @@ public:
 
     VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
                               VulkanRenderPass                          **ppRenderPass,
+                              const std::vector<VkAttachmentDescription> &colorAttachments);
+
+    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
+                              VulkanRenderPass                          **ppRenderPass,
                               const std::vector<VkAttachmentDescription> &colorAttachments,
                               const VkAttachmentDescription              &depthAttachment);
 

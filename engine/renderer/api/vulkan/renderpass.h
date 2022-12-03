@@ -18,10 +18,6 @@ public:
         : m_handle(handle), m_colorAttachmentCount(colorAtachmentCount) {
     }
 
-    // const RenderPassHash &getHash() const {
-    //     return m_hash;
-    // }
-
     VkRenderPass getHandle() const {
         return m_handle;
     }
@@ -31,7 +27,6 @@ public:
     }
 
 private:
-    // RenderPassHash        m_hash                 = {};
     VkRenderPass m_handle               = VK_NULL_HANDLE;
     uint32_t     m_colorAttachmentCount = 0;
 };

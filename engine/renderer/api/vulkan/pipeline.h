@@ -17,7 +17,7 @@ struct VertexInputBuilder {
     std::vector<VkVertexInputBindingDescription>   _vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
     VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
-    VkPipelineVertexInputStateCreateInfo&          getPipelineVertexInputState(const std::vector<VertexComponent> &components);
+    VkPipelineVertexInputStateCreateInfo          &getPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 
 struct GraphicsPipelineCreateInfo {
@@ -34,12 +34,8 @@ struct GraphicsPipelineCreateInfo {
     VkPipelineDepthStencilStateCreateInfo  depthStencil;
     VkPipelineCache                        pipelineCache = VK_NULL_HANDLE;
 
-    GraphicsPipelineCreateInfo(VkExtent2D extent = {0, 0}) {
-        vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState({VertexComponent::POSITION,
-                                                                            VertexComponent::NORMAL,
-                                                                            VertexComponent::UV,
-                                                                            VertexComponent::COLOR,
-                                                                            VertexComponent::TANGENT});
+    GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component, VkExtent2D extent = {0, 0}) {
+        vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState(component);
 
         inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
@@ -51,19 +47,28 @@ struct GraphicsPipelineCreateInfo {
         colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
         depthStencil         = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     }
+
+    GraphicsPipelineCreateInfo()
+        : GraphicsPipelineCreateInfo(
+              {VertexComponent::POSITION,
+               VertexComponent::NORMAL,
+               VertexComponent::UV,
+               VertexComponent::COLOR,
+               VertexComponent::TANGENT}) {
+    }
 };
 
 class VulkanPipeline : public ResourceHandle<VkPipeline> {
 public:
-    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice             *pDevice,
+    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice                     *pDevice,
                                                   const GraphicsPipelineCreateInfo *pCreateInfo,
-                                                  ShaderEffect             *effect,
-                                                  VulkanRenderPass         *pRenderPass,
-                                                  VkPipeline                handle);
+                                                  ShaderEffect                     *effect,
+                                                  VulkanRenderPass                 *pRenderPass,
+                                                  VkPipeline                        handle);
 
     static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice,
-                                                 ShaderEffect * pEffect,
-                                                 VkPipeline handle);
+                                                 ShaderEffect *pEffect,
+                                                 VkPipeline    handle);
 
     VkPipelineLayout           getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
@@ -71,9 +76,9 @@ public:
     VkPipelineBindPoint        getBindPoint();
 
 protected:
-    VkPipelineCache    _cache;
-    VulkanDevice      *_device = nullptr;
-    ShaderEffect      *_effect = nullptr;
+    VkPipelineCache     _cache;
+    VulkanDevice       *_device = nullptr;
+    ShaderEffect       *_effect = nullptr;
     VkPipelineBindPoint _bindPoint;
 };
 

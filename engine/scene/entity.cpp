@@ -12,21 +12,22 @@ namespace gltf{
 void _loadImages(Entity* entity, tinygltf::Model &input){
     for (auto &glTFImage : input.images) {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        Texture newTexture{};
-        newTexture.width  = glTFImage.width;
-        newTexture.height = glTFImage.height;
-        newTexture.data.resize(glTFImage.width * glTFImage.height * 4);
+        auto newTexture = std::make_shared<Texture>();
+        newTexture->width  = glTFImage.width;
+        newTexture->height = glTFImage.height;
+        newTexture->data.resize(glTFImage.width * glTFImage.height * 4);
         if (glTFImage.component == 3) {
-            unsigned char *rgba = new unsigned char[newTexture.data.size()];
+            unsigned char *rgba = new unsigned char[newTexture->data.size()];
             unsigned char *rgb  = glTFImage.image.data();
             for (size_t i = 0; i < glTFImage.width * glTFImage.height; ++i) {
                 memcpy(rgba, rgb, sizeof(unsigned char) * 3);
                 rgba += 4;
                 rgb += 3;
             }
-            memcpy(newTexture.data.data(), rgba, glTFImage.image.size());
-        } else {
-            memcpy(newTexture.data.data(), glTFImage.image.data(), glTFImage.image.size());
+            memcpy(newTexture->data.data(), rgba, glTFImage.image.size());
+        }
+        else {
+            memcpy(newTexture->data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
         entity->_images.push_back(newTexture);
     }
@@ -46,11 +47,11 @@ void _loadMaterials(Entity* entity, tinygltf::Model &input){
 
         material.doubleSided = glTFMaterial.doubleSided;
         if (glTFMaterial.alphaMode == "BLEND"){
-            material.alphaMode = Material::ALPHAMODE_BLEND;
+            material.alphaMode = AlphaMode::BLEND;
         }
         if (glTFMaterial.alphaMode == "MASK"){
             material.alphaCutoff = 0.5f;
-            material.alphaMode = Material::ALPHAMODE_MASK;
+            material.alphaMode = AlphaMode::MASK;
         }
         material.alphaCutoff = glTFMaterial.alphaCutoff;
 
@@ -93,13 +94,6 @@ void _loadNodes(Entity* entity, const tinygltf::Node &inputNode, const tinygltf:
     if (inputNode.matrix.size() == 16) {
         node->matrix = glm::make_mat4x4(inputNode.matrix.data());
     };
-
-    // Load node's children
-    if (!inputNode.children.empty()) {
-        for (int nodeIdx : inputNode.children) {
-            _loadNodes(entity, input.nodes[nodeIdx], input, node.get());
-        }
-    }
 
     // If the node contains mesh data, we load vertices and indices from the buffers
     // In glTF this is done via accessors and buffer views
@@ -205,6 +199,13 @@ void _loadNodes(Entity* entity, const tinygltf::Node &inputNode, const tinygltf:
             Subset subset{firstIndex, indexCount, glTFPrimitive.material};
 
             node->subsets.push_back(subset);
+        }
+    }
+
+    // Load node's children
+    if (!inputNode.children.empty()) {
+        for (int nodeIdx : inputNode.children) {
+            _loadNodes(entity, input.nodes[nodeIdx], input, node.get());
         }
     }
 

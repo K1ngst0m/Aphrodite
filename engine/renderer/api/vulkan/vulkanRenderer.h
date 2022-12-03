@@ -24,15 +24,16 @@ public:
 public:
     VulkanInstance      *getInstance() const;
     VulkanDevice        *getDevice() const;
-    VulkanRenderPass    *getDefaultRenderPass() const;
-    uint32_t             getCommandBufferCount() const;
+    VulkanSwapChain     *getSwapChain();
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
     VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
+    uint32_t             getCommandBufferCount() const;
     VkPipelineCache      getPipelineCache();
     uint32_t             getCurrentFrameIndex() const;
     uint32_t             getCurrentImageIndex() const;
     VkExtent2D           getSwapChainExtent() const;
-    VulkanSwapChain * getSwapChain() {return m_swapChain;}
+
+    VulkanRenderPass *getDefaultRenderPass() const;
 
 private:
     void _createInstance();
@@ -42,8 +43,6 @@ private:
     void _setupSwapChain();
 
 private:
-    void _createDefaultDepthAttachments();
-    void _createDefaultColorAttachments();
     void _createDefaultRenderPass();
     void _createDefaultFramebuffers();
     void _createDefaultSyncObjects();
@@ -56,15 +55,15 @@ private:
     }
 
 private:
-    VulkanInstance          *m_instance = nullptr;
-    VulkanDevice            *m_device = nullptr;
-    VulkanSwapChain         *m_swapChain = nullptr;
+    VulkanInstance  *m_instance  = nullptr;
+    VulkanDevice    *m_device    = nullptr;
+    VulkanSwapChain *m_swapChain = nullptr;
 
     VkPhysicalDeviceFeatures m_enabledFeatures{};
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkSurfaceKHR             m_surface;
 
-    VkPipelineCache   m_pipelineCache = VK_NULL_HANDLE;
+    VkPipelineCache m_pipelineCache = VK_NULL_HANDLE;
 
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIdx     = 0;
@@ -79,9 +78,9 @@ private:
         std::vector<VulkanImageView *>   colorImageViews;
 
         // TODO frames in flight depth attachment
-        VulkanImage     *depthImage = nullptr;
+        VulkanImage     *depthImage     = nullptr;
         VulkanImageView *depthImageView = nullptr;
-    } m_framebufferData;
+    } m_fbData;
 
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;
