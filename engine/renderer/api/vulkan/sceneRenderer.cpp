@@ -325,10 +325,10 @@ void VulkanSceneRenderer::cleanupResources() {
         m_pDevice->destroyImage(_forwardPass.colorImages[idx]);
         m_pDevice->destroyImageView(_postFxPass.colorImageViews[idx]);
         m_pDevice->destroyImageView(_forwardPass.colorImageViews[idx]);
+        m_pDevice->destroyImage(_forwardPass.depthImages[idx]);
+        m_pDevice->destroyImageView(_forwardPass.depthImageViews[idx]);
         vkDestroySampler(m_pDevice->getHandle(), _postFxPass.samplers[idx], nullptr);
     }
-    m_pDevice->destroyImage(_forwardPass.depthImage);
-    m_pDevice->destroyImageView(_forwardPass.depthImageView);
     m_pDevice->destroyBuffer(_postFxPass.quadVB);
     m_pDevice->destroyBuffer(_sceneInfoUB);
     vkDestroyRenderPass(m_pDevice->getHandle(), _forwardPass.renderPass->getHandle(), nullptr);
@@ -666,11 +666,16 @@ void VulkanSceneRenderer::_initForwardResource() {
     _forwardPass.framebuffers.resize(imageCount);
     _forwardPass.colorImages.resize(imageCount);
     _forwardPass.colorImageViews.resize(imageCount);
+    _forwardPass.depthImages.resize(imageCount);
+    _forwardPass.depthImageViews.resize(imageCount);
 
     // color attachment
     for (auto idx = 0; idx < imageCount; idx++) {
         auto &colorImage     = _forwardPass.colorImages[idx];
         auto &colorImageView = _forwardPass.colorImageViews[idx];
+        auto &depthImage     = _forwardPass.depthImages[idx];
+        auto &depthImageView = _forwardPass.depthImageViews[idx];
+        auto &framebuffer     = _forwardPass.framebuffers[idx];
 
         {
             ImageCreateInfo createInfo{
@@ -693,16 +698,9 @@ void VulkanSceneRenderer::_initForwardResource() {
             };
             m_pDevice->createImageView(&createInfo, &colorImageView, colorImage);
         }
-    }
-
-    // depth attachment
-    {
-        auto &depthImage     = _forwardPass.depthImage;
-        auto &depthImageView = _forwardPass.depthImageView;
-
-        VkFormat depthFormat = m_pDevice->getDepthFormat();
 
         {
+            VkFormat depthFormat = m_pDevice->getDepthFormat();
             ImageCreateInfo createInfo{};
             createInfo.extent   = {imageExtent.width, imageExtent.height, 1};
             createInfo.format   = static_cast<Format>(depthFormat);
@@ -722,14 +720,9 @@ void VulkanSceneRenderer::_initForwardResource() {
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             VK_CHECK_RESULT(m_pDevice->createImageView(&createInfo, &depthImageView, depthImage));
         }
-    }
 
-    for (uint32_t idx = 0; idx < imageCount; idx++) {
-        auto &framebuffer     = _forwardPass.framebuffers[idx];
-        auto &colorAttachment = _forwardPass.colorImageViews[idx];
-        auto &depthAttachment = _forwardPass.depthImageView;
         {
-            std::vector<VulkanImageView *> attachments{colorAttachment, depthAttachment};
+            std::vector<VulkanImageView *> attachments{colorImageView, depthImageView};
             FramebufferCreateInfo          createInfo{};
             createInfo.width  = imageExtent.width;
             createInfo.height = imageExtent.height;

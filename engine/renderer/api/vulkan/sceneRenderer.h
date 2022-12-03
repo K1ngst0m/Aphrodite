@@ -58,15 +58,15 @@ private:
 
 private:
     struct {
+        VulkanPipeline *pipeline = nullptr;
         vkl::VulkanRenderPass           *renderPass = nullptr;
+
         std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *>       colorImages;
         std::vector<VulkanImageView *>   colorImageViews;
+        std::vector<VulkanImage*>     depthImages;
+        std::vector<VulkanImageView *> depthImageViews;
 
-        VulkanImage     *depthImage     = nullptr;
-        VulkanImageView *depthImageView = nullptr;
-
-        VulkanPipeline *pipeline = nullptr;
     } _forwardPass;
 
     struct {
