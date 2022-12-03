@@ -57,10 +57,6 @@ private:
     void _loadSceneNodes();
 
 private:
-    SceneInfo                    _sceneInfo{};
-    std::vector<VkDescriptorSet> _descriptorSets;
-    std::vector<VulkanBuffer *>  _sceneInfoUBs;
-
     struct {
         vkl::VulkanRenderPass           *renderPass = nullptr;
         std::vector<VulkanFramebuffer *> framebuffers;
@@ -88,7 +84,7 @@ private:
         VulkanRenderPass  *renderPass     = nullptr;
         VulkanFramebuffer *framebuffer    = nullptr;
         VkSampler          depthSampler   = VK_NULL_HANDLE;
-    } _shaderPass;
+    } _shadowPass;
 
     struct {
         VulkanBuffer                    *quadVB     = nullptr;
@@ -102,6 +98,10 @@ private:
     } _postFxPass;
 
 private:
+    std::vector<VkDescriptorSet> _sceneSets;
+    SceneInfo                    _sceneInfo{};
+    VulkanBuffer                *_sceneInfoUB = nullptr;
+
     std::vector<std::shared_ptr<VulkanRenderData>> _renderList;
     std::deque<std::shared_ptr<VulkanUniformData>> _uniformList;
 

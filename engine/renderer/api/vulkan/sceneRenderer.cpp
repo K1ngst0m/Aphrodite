@@ -314,6 +314,25 @@ void VulkanSceneRenderer::cleanupResources() {
     if (_forwardPass.pipeline != nullptr) {
         m_pDevice->destroyPipeline(_forwardPass.pipeline);
     }
+
+    if (_postFxPass.pipeline != nullptr) {
+        m_pDevice->destroyPipeline(_postFxPass.pipeline);
+    }
+
+    for (uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++){
+        m_pDevice->destroyFramebuffers(_postFxPass.framebuffers[idx]);
+        m_pDevice->destroyFramebuffers(_forwardPass.framebuffers[idx]);
+        m_pDevice->destroyImage(_forwardPass.colorImages[idx]);
+        m_pDevice->destroyImageView(_postFxPass.colorImageViews[idx]);
+        m_pDevice->destroyImageView(_forwardPass.colorImageViews[idx]);
+        vkDestroySampler(m_pDevice->getHandle(), _postFxPass.samplers[idx], nullptr);
+    }
+    m_pDevice->destroyImage(_forwardPass.depthImage);
+    m_pDevice->destroyImageView(_forwardPass.depthImageView);
+    m_pDevice->destroyBuffer(_postFxPass.quadVB);
+    m_pDevice->destroyBuffer(_sceneInfoUB);
+    vkDestroyRenderPass(m_pDevice->getHandle(), _forwardPass.renderPass->getHandle(), nullptr);
+    vkDestroyRenderPass(m_pDevice->getHandle(), _postFxPass.renderPass->getHandle(), nullptr);
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -347,7 +366,7 @@ void VulkanSceneRenderer::drawScene() {
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
     commandBuffer->cmdBindPipeline(_forwardPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(_forwardPass.pipeline, 0, 1, &_descriptorSets[commandIndex]);
+    commandBuffer->cmdBindDescriptorSet(_forwardPass.pipeline, 0, 1, &_sceneSets[commandIndex]);
 
     // forward pass
     renderPassBeginInfo.pFramebuffer = _forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
@@ -385,9 +404,9 @@ void VulkanSceneRenderer::_initRenderList() {
 }
 
 void VulkanSceneRenderer::_initUniformList() {
-    _descriptorSets.resize(m_pRenderer->getCommandBufferCount());
+    _sceneSets.resize(m_pRenderer->getCommandBufferCount());
 
-    for (auto &set : _descriptorSets) {
+    for (auto &set : _sceneSets) {
         set = _forwardPass.pipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
 
         BufferCreateInfo bufferCI{
@@ -397,12 +416,11 @@ void VulkanSceneRenderer::_initUniformList() {
             .property  = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
 
-        VulkanBuffer *sceneInfoUB = nullptr;
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &sceneInfoUB, &_sceneInfo));
-        sceneInfoUB->setupDescriptor();
+        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_sceneInfoUB, &_sceneInfo));
+        _sceneInfoUB->setupDescriptor();
 
         std::vector<VkWriteDescriptorSet> writes{
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneInfoUB->getBufferInfo()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &_sceneInfoUB->getBufferInfo()),
             vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, _cameraInfos.data(), _cameraInfos.size()),
         };
 
@@ -570,6 +588,7 @@ void VulkanSceneRenderer::_initPostFxResource() {
     for (auto idx = 0; idx < imageCount; idx++) {
         auto &colorImage     = _postFxPass.colorImages[idx];
         auto &colorImageView = _postFxPass.colorImageViews[idx];
+        auto &framebuffer     = _postFxPass.framebuffers[idx];
 
         // get swapchain image
         {
@@ -589,14 +608,9 @@ void VulkanSceneRenderer::_initPostFxResource() {
             VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
             VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.samplers[idx]));
         }
-    }
-
-    for (auto idx = 0; idx < imageCount; idx++) {
-        auto &framebuffer     = _postFxPass.framebuffers[idx];
-        auto &colorAttachment = _postFxPass.colorImageViews[idx];
 
         {
-            std::vector<VulkanImageView *> attachments{colorAttachment};
+            std::vector<VulkanImageView *> attachments{colorImageView};
             FramebufferCreateInfo          createInfo{};
             createInfo.width  = m_pRenderer->getSwapChain()->getExtent().width;
             createInfo.height = m_pRenderer->getSwapChain()->getExtent().height;
