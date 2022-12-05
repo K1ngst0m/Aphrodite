@@ -166,16 +166,6 @@ struct MaterialInfo{
 
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
     : m_pDevice(device), m_node(std::move(sceneNode)) {
-    // create empty texture
-    {
-        uint32_t width         = 1024;
-        uint32_t height        = 1024;
-        uint32_t imageDataSize = width * height * 4;
-
-        std::vector<uint8_t> data(imageDataSize, 0);
-        m_emptyTexture = createTexture(m_pDevice, width, height, data.data(), imageDataSize);
-        m_emptyTexture.setupDescriptor();
-    }
 
     for (auto &image : m_node->getObject<Entity>()->_images) {
         // raw image data
@@ -328,9 +318,9 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                 if (material.baseColorTextureIndex > -1) {
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &m_textures[material.baseColorTextureIndex].descriptorInfo));
                     std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                } else {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &m_emptyTexture.descriptorInfo));
-                    std::cerr << "texture not found, use default texture." << std::endl;
+                }
+                else {
+                    std::cerr << "texture not found." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_NORMAL) {
@@ -339,8 +329,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &m_textures[material.normalTextureIndex].descriptorInfo));
                     std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &m_emptyTexture.descriptorInfo));
-                    std::cerr << "texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_PHYSICAL){
@@ -349,8 +338,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &m_textures[material.metallicRoughnessTextureIndex].descriptorInfo));
                     std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &m_emptyTexture.descriptorInfo));
-                    std::cerr << "texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_AO){
@@ -359,8 +347,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &m_textures[material.occlusionTextureIndex].descriptorInfo));
                     std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &m_emptyTexture.descriptorInfo));
-                    std::cerr << "texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found." << std::endl;
                 }
             }
             if (bindingBits & MATERIAL_BINDING_EMISSIVE){
@@ -369,8 +356,7 @@ void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout,
                     descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &m_textures[material.emissiveTextureIndex].descriptorInfo));
                     std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                 } else {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &m_emptyTexture.descriptorInfo));
-                    std::cerr << "texture not found, use default texture." << std::endl;
+                    std::cerr << "texture not found." << std::endl;
                 }
             }
 
@@ -437,10 +423,6 @@ VulkanRenderData::~VulkanRenderData()
         m_pDevice->destroyImageView(texture.imageView);
         vkDestroySampler(m_pDevice->getHandle(), texture.sampler, nullptr);
     }
-
-    m_pDevice->destroyImage(m_emptyTexture.image);
-    m_pDevice->destroyImageView(m_emptyTexture.imageView);
-    vkDestroySampler(m_pDevice->getHandle(), m_emptyTexture.sampler, nullptr);
 }
 
 VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<SceneNode> node)

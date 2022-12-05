@@ -35,12 +35,12 @@ struct VulkanRenderData
 
     VulkanBuffer *m_vertexBuffer = nullptr;
     VulkanBuffer *m_indexBuffer = nullptr;
-    TextureGpuData m_emptyTexture;
-    std::vector<TextureGpuData> m_textures;
-    std::vector<MaterialGpuData> m_materialGpuDataList;
 
     VulkanBuffer *m_objectUB = nullptr;
     VkDescriptorSet m_objectSet = VK_NULL_HANDLE;
+
+    std::vector<TextureGpuData> m_textures;
+    std::vector<MaterialGpuData> m_materialGpuDataList;
 
     VulkanDevice *m_pDevice = nullptr;
     std::shared_ptr<SceneNode> m_node = nullptr;
