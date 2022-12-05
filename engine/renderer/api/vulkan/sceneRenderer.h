@@ -47,6 +47,7 @@ private:
     void _initPostFxResource();
     void _initShadowPassResource();
     void _loadSceneNodes();
+    void _drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<MeshNode> &node);
 
 private:
     VulkanDescriptorSetLayout *pSceneLayout       = nullptr;

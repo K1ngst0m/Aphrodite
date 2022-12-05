@@ -27,8 +27,6 @@ struct VulkanRenderData
     VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode);
     ~VulkanRenderData();
 
-    void draw(VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
-
     void setupDescriptor(VulkanDescriptorSetLayout *objectLayout,
                          VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits);
     uint32_t getSetCount();

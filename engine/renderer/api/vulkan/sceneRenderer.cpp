@@ -275,7 +275,10 @@ void VulkanSceneRenderer::drawScene() {
     renderPassBeginInfo.pFramebuffer = _forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for (auto &renderable : _renderList) {
-        renderable->draw(_forwardPass.pipeline, commandBuffer);
+        VkDeviceSize offsets[1] = {0};
+        commandBuffer->cmdBindVertexBuffers(0, 1, renderable->m_vertexBuffer, offsets);
+        commandBuffer->cmdBindIndexBuffers(renderable->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        _drawNodes(renderable, _forwardPass.pipeline, commandBuffer, renderable->m_node->getObject<Entity>()->m_rootNode);
     }
     commandBuffer->cmdEndRenderPass();
 
@@ -731,4 +734,35 @@ void VulkanSceneRenderer::_initShadowPassResource() {
 void VulkanSceneRenderer::_initCommonResource() {
 
 }
-} // namespace vkl
+void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<MeshNode> &node)
+{
+    std::queue<std::shared_ptr<MeshNode>> q;
+    q.push(node);
+
+    while(!q.empty()){
+        auto subNode = q.front();
+        q.pop();
+
+        glm::mat4 nodeMatrix    = subNode->matrix;
+        auto     currentParent = subNode->parent;
+        while (currentParent) {
+            nodeMatrix    = currentParent->matrix * nodeMatrix;
+            currentParent = currentParent->parent;
+        }
+        nodeMatrix = renderData->m_node->matrix * nodeMatrix;
+        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
+
+        for (const auto& subset : subNode->subsets) {
+            if (subset.indexCount > 0) {
+                auto &materialSet = renderData->m_materialGpuDataList[subset.materialIndex];
+                drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
+                drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+            }
+        }
+
+        for (const auto &child : subNode->children){
+            q.push(child);
+        }
+    }
+}
+}  // namespace vkl
