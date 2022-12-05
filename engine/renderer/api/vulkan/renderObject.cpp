@@ -209,18 +209,14 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
     drawCmd->cmdBindIndexBuffers(_meshData.ib, 0, VK_INDEX_TYPE_UINT32);
 
     std::queue<std::shared_ptr<Node>> q;
-    for (auto &node : _node->getObject<Entity>()->_subNodeList) {
-        if (node->isVisible){
-            q.push(node);
-        }
-    }
+    q.push(_node->getObject<Entity>()->m_rootNode);
 
     while(!q.empty()){
         auto subNode = q.front();
         q.pop();
 
         glm::mat4 nodeMatrix    = subNode->matrix;
-        Node     *currentParent = subNode->parent;
+        auto     currentParent = subNode->parent;
         while (currentParent) {
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;

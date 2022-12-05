@@ -1,12 +1,14 @@
 #ifndef VKLENTITY_H_
 #define VKLENTITY_H_
 
+#include <utility>
+
 #include "object.h"
 
 namespace vkl
 {
 struct Subset;
-struct Texture;
+struct Image;
 struct Material;
 struct Vertex;
 struct Node;
@@ -14,10 +16,10 @@ struct Node;
 using ResourceIndex = int32_t;
 using SubNodeList = std::vector<std::shared_ptr<Node>>;
 using SubsetList = std::vector<Subset>;
-using TextureData = std::vector<uint8_t>;
+using ImageData = std::vector<uint8_t>;
 using VertexList = std::vector<Vertex>;
 using IndexList = std::vector<uint32_t>;
-using TextureList = std::vector<std::shared_ptr<Texture>>;
+using TextureList = std::vector<std::shared_ptr<Image>>;
 using MaterialList = std::vector<Material>;
 
 struct Vertex
@@ -36,25 +38,27 @@ struct Subset
     ResourceIndex materialIndex = -1;
 };
 
-struct Node
+struct Node : std::enable_shared_from_this<Node>
 {
+    Node(std::shared_ptr<Node> parent) : parent(std::move(parent)) {}
+    std::shared_ptr<Node> createChildNode();
     std::string name;
     glm::mat4 matrix = glm::mat4(1.0f);
     bool isVisible = true;
 
-    Node *parent;
+    std::shared_ptr<Node> parent;
     SubNodeList children;
     SubsetList subsets;
 };
 
-struct Texture
+struct Image
 {
     uint32_t width;
     uint32_t height;
     uint32_t mipLevels;
     uint32_t layerCount;
 
-    TextureData data;
+    ImageData data;
 };
 
 enum class AlphaMode : uint32_t
@@ -88,18 +92,17 @@ class Entity : public Object
 {
 public:
     static std::shared_ptr<Entity> Create();
-    Entity(IdType id);
-    ~Entity() override;
+    Entity(IdType id) : Object(id) { m_rootNode = std::make_shared<Node>(nullptr); }
+    ~Entity() override = default;
     void loadFromFile(const std::string &path);
     void cleanupResources();
+
+    std::shared_ptr<Node> m_rootNode;
 
     VertexList _vertices;
     IndexList _indices;
     TextureList _images;
-    SubNodeList _subNodeList;
     MaterialList _materials;
-
-    bool isLoaded = false;
 };
 }  // namespace vkl
 

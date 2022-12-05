@@ -192,8 +192,8 @@ VulkanPipeline *CreateForwardPipeline(VulkanDevice *pDevice,
 } // namespace
 
 namespace {
-std::shared_ptr<Texture> loadCubemapFromFile(const std::string &filename) {
-    auto           texture = std::make_shared<Texture>();
+std::shared_ptr<Image> loadCubemapFromFile(const std::string &filename) {
+    auto           texture = std::make_shared<Image>();
     int            width, height, channels;
     unsigned char *imageData = stbi_load(filename.c_str(), &width, &height, &channels, 0);
     uint32_t       imageSize = width * height * 4;

@@ -4,25 +4,25 @@
 #define TINYGLTF_NO_STB_IMAGE_WRITE
 #define STB_IMAGE_IMPLEMENTATION
 #include <tinygltf/tiny_gltf.h>
-// #include "stb_image.h"
 
 namespace vkl
 {
 
 namespace gltf
 {
-void _loadImages(Entity *entity, tinygltf::Model &input)
+void loadImages(std::vector<std::shared_ptr<Image>>& images, tinygltf::Model &input)
 {
+    images.clear();
     for(auto &glTFImage : input.images)
     {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        auto newTexture = std::make_shared<Texture>();
-        newTexture->width = glTFImage.width;
-        newTexture->height = glTFImage.height;
-        newTexture->data.resize(glTFImage.width * glTFImage.height * 4);
+        auto newImage = std::make_shared<Image>();
+        newImage->width = glTFImage.width;
+        newImage->height = glTFImage.height;
+        newImage->data.resize(glTFImage.width * glTFImage.height * 4);
         if(glTFImage.component == 3)
         {
-            unsigned char *rgba = new unsigned char[newTexture->data.size()];
+            unsigned char *rgba = new unsigned char[newImage->data.size()];
             unsigned char *rgb = glTFImage.image.data();
             for(size_t i = 0; i < glTFImage.width * glTFImage.height; ++i)
             {
@@ -30,21 +30,22 @@ void _loadImages(Entity *entity, tinygltf::Model &input)
                 rgba += 4;
                 rgb += 3;
             }
-            memcpy(newTexture->data.data(), rgba, glTFImage.image.size());
+            memcpy(newImage->data.data(), rgba, glTFImage.image.size());
         }
         else
         {
-            memcpy(newTexture->data.data(), glTFImage.image.data(), glTFImage.image.size());
+            memcpy(newImage->data.data(), glTFImage.image.data(), glTFImage.image.size());
         }
-        entity->_images.push_back(newTexture);
+        images.push_back(newImage);
     }
 }
-void _loadMaterials(Entity *entity, tinygltf::Model &input)
+void loadMaterials(std::vector<Material>& materials, tinygltf::Model &input)
 {
-    entity->_materials.resize(input.materials.size());
+    materials.clear();
+    materials.resize(input.materials.size());
     for(size_t i = 0; i < input.materials.size(); i++)
     {
-        auto &material = entity->_materials[i];
+        auto &material = materials[i];
         material.id = i;
         tinygltf::Material glTFMaterial = input.materials[i];
 
@@ -94,10 +95,13 @@ void _loadMaterials(Entity *entity, tinygltf::Model &input)
         }
     }
 }
-void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf::Model &input,
-                Node *parent)
+void loadNodes(std::vector<Vertex> &vertices,
+               std::vector<uint32_t>& indices,
+               const tinygltf::Node &inputNode,
+               const tinygltf::Model &input,
+               const std::shared_ptr<Node>& parent)
 {
-    auto node = std::make_shared<Node>();
+    auto node = parent->createChildNode();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
     node->name = inputNode.name;
@@ -129,8 +133,8 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : mesh.primitives)
         {
-            auto firstIndex = static_cast<int32_t>(entity->_indices.size());
-            auto vertexStart = static_cast<int32_t>(entity->_vertices.size());
+            auto firstIndex = static_cast<int32_t>(indices.size());
+            auto vertexStart = static_cast<int32_t>(vertices.size());
             auto indexCount = static_cast<int32_t>(0);
 
             // Vertices
@@ -191,7 +195,7 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
                     vert.color = glm::vec3(1.0f);
                     vert.tangent =
                         tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
-                    entity->_vertices.push_back(vert);
+                    vertices.push_back(vert);
                 }
             }
             // Indices
@@ -211,7 +215,7 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
-                        entity->_indices.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
@@ -221,7 +225,7 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
-                        entity->_indices.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
@@ -231,7 +235,7 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
-                        entity->_indices.push_back(buf[index] + vertexStart);
+                        indices.push_back(buf[index] + vertexStart);
                     }
                     break;
                 }
@@ -253,20 +257,20 @@ void _loadNodes(Entity *entity, const tinygltf::Node &inputNode, const tinygltf:
     {
         for(int nodeIdx : inputNode.children)
         {
-            _loadNodes(entity, input.nodes[nodeIdx], input, node.get());
+            loadNodes(vertices, indices, input.nodes[nodeIdx], input, node);
         }
     }
-
-    if(parent)
-    {
-        parent->children.push_back(node);
-    }
-    else
-    {
-        entity->_subNodeList.push_back(node);
-    }
 }
-void load(Entity *entity, const std::string &path)
+}  // namespace gltf
+
+std::shared_ptr<Node> Node::createChildNode()
+{
+    auto childNode = std::make_shared<Node>(shared_from_this());
+    children.push_back(childNode);
+    return childNode;
+}
+
+void Entity::loadFromFile(const std::string &path)
 {
     tinygltf::Model glTFInput;
     tinygltf::TinyGLTF gltfContext;
@@ -284,14 +288,14 @@ void load(Entity *entity, const std::string &path)
 
     if(fileLoaded)
     {
-        _loadImages(entity, glTFInput);
-        _loadMaterials(entity, glTFInput);
+        gltf::loadImages(_images, glTFInput);
+        gltf::loadMaterials(_materials, glTFInput);
 
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            _loadNodes(entity, node, glTFInput, nullptr);
+            gltf::loadNodes(_vertices, _indices, node, glTFInput, m_rootNode->createChildNode());
         }
     }
     else
@@ -301,27 +305,11 @@ void load(Entity *entity, const std::string &path)
         return;
     }
 }
-}  // namespace gltf
-
-Entity::Entity(IdType id) : Object(id)
-{
-}
-Entity::~Entity() = default;
-void Entity::loadFromFile(const std::string &path)
-{
-    if(isLoaded)
-    {
-        cleanupResources();
-    }
-    gltf::load(this, path);
-    isLoaded = true;
-}
 void Entity::cleanupResources()
 {
     _vertices.clear();
     _indices.clear();
     _images.clear();
-    _subNodeList.clear();
     _materials.clear();
 }
 std::shared_ptr<Entity> Entity::Create()

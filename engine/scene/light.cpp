@@ -26,6 +26,7 @@ void Light::update(float deltaTime)
     auto pData = std::static_pointer_cast<LightData>(data);
     pData->direction = glm::vec4(_direction, 1.0f);
     pData->position = glm::vec4(_position, 1.0f);
+    pData->type = static_cast<uint32_t>(_type);
 }
 
 std::shared_ptr<Light> Light::Create()
