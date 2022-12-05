@@ -24,11 +24,34 @@ namespace vkl {
 
 namespace {
 
-std::unordered_map<ShadingModel, MaterialBindingBits> materialBindingMap{
-    {ShadingModel::UNLIT, MATERIAL_BINDING_UNLIT},
-    {ShadingModel::DEFAULTLIT, MATERIAL_BINDING_DEFAULTLIT},
-    {ShadingModel::PBR, MATERIAL_BINDING_PBR},
-};
+VulkanPipeline *CreateShadowPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
+    VulkanPipeline            *pipeline;
+    VulkanDescriptorSetLayout *sceneLayout = nullptr;
+
+    // scene
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1),
+        };
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
+    }
+
+    {
+        // build Shader
+        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        EffectInfo            effectInfo{};
+        effectInfo.setLayouts.push_back(sceneLayout);
+        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = pDevice->getShaderCache()->getShaders(shaderDir / "shadow.vert.spv");
+        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "shadow.frag.spv");
+
+        GraphicsPipelineCreateInfo                   pipelineCreateInfo{};
+        pipelineCreateInfo.vertexInputInfo = pipelineCreateInfo.vertexInputBuilder.getPipelineVertexInputState({VertexComponent::POSITION});
+        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
+    }
+
+    return pipeline;
+}
 
 VulkanPipeline *CreatePostFxPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
     VulkanPipeline            *pipeline;
@@ -108,85 +131,9 @@ VulkanPipeline *CreateSkyboxPipeline(VulkanDevice *pDevice, VulkanRenderPass *pR
     return pipeline;
 }
 
-VulkanPipeline *CreateUnlitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo &sceneInfo) {
-    VulkanPipeline            *pipeline;
-    VulkanDescriptorSetLayout *sceneLayout    = nullptr;
-    VulkanDescriptorSetLayout *materialLayout = nullptr;
-
-    // scene
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0, sceneInfo.cameraCount));
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
-    }
-
-    // material
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
-    }
-
-    {
-        // build Shader
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        EffectInfo            effectInfo{};
-        effectInfo.setLayouts.push_back(sceneLayout);
-        effectInfo.setLayouts.push_back(materialLayout);
-        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = pDevice->getShaderCache()->getShaders(shaderDir / "unlit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "unlit.frag.spv");
-
-        GraphicsPipelineCreateInfo pipelineCreateInfo;
-        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
-    }
-
-    return pipeline;
-}
-
-VulkanPipeline *CreateDefaultLitPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo &sceneInfo) {
-    VulkanPipeline            *pipeline       = nullptr;
-    VulkanDescriptorSetLayout *sceneLayout    = nullptr;
-    VulkanDescriptorSetLayout *materialLayout = nullptr;
-
-    // scene
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sceneInfo.cameraCount),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, sceneInfo.lightCount),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        pDevice->createDescriptorSetLayout(&createInfo, &sceneLayout);
-    }
-
-    // material
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
-    }
-
-    {
-        EffectInfo            effectInfo{};
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        effectInfo.setLayouts.push_back(sceneLayout);
-        effectInfo.setLayouts.push_back(materialLayout);
-        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = pDevice->getShaderCache()->getShaders(shaderDir / "default_lit.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = pDevice->getShaderCache()->getShaders(shaderDir / "default_lit.frag.spv");
-
-        GraphicsPipelineCreateInfo pipelineCreateInfo;
-        VK_CHECK_RESULT(pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, pRenderPass, &pipeline));
-    }
-    return pipeline;
-}
-
-VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, SceneInfo &sceneInfo) {
+VulkanPipeline *CreateForwardPipeline(VulkanDevice *pDevice,
+                                      VulkanRenderPass *pRenderPass,
+                                      SceneInfo &sceneInfo) {
     VulkanPipeline            *pipeline       = nullptr;
     VulkanDescriptorSetLayout *sceneLayout    = nullptr;
     VulkanDescriptorSetLayout *objectLayout   = nullptr;
@@ -242,18 +189,6 @@ VulkanPipeline *CreatePBRPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRend
     return pipeline;
 }
 
-VulkanPipeline *CreatePipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass, ShadingModel model, SceneInfo &sceneInfo) {
-    switch (model) {
-    case ShadingModel::UNLIT:
-        return CreateUnlitPipeline(pDevice, pRenderPass, sceneInfo);
-    case ShadingModel::DEFAULTLIT:
-        return CreateDefaultLitPipeline(pDevice, pRenderPass, sceneInfo);
-    case ShadingModel::PBR:
-        return CreatePBRPipeline(pDevice, pRenderPass, sceneInfo);
-    }
-    return nullptr;
-}
-
 } // namespace
 
 namespace {
@@ -296,8 +231,8 @@ void VulkanSceneRenderer::loadResources() {
     _loadSceneNodes();
     _initForwardResource();
     _initPostFxResource();
-    _initRenderList();
-    _initUniformList();
+    // _initShadowPassResource();
+    _initRenderData();
     isSceneLoaded = true;
 }
 
@@ -326,8 +261,8 @@ void VulkanSceneRenderer::cleanupResources() {
         m_pDevice->destroyImageView(_forwardPass.colorImageViews[idx]);
         m_pDevice->destroyImage(_forwardPass.depthImages[idx]);
         m_pDevice->destroyImageView(_forwardPass.depthImageViews[idx]);
-        vkDestroySampler(m_pDevice->getHandle(), _postFxPass.samplers[idx], nullptr);
     }
+    vkDestroySampler(m_pDevice->getHandle(), _postFxPass.sampler, nullptr);
     m_pDevice->destroyBuffer(_postFxPass.quadVB);
     m_pDevice->destroyBuffer(_sceneInfoUB);
     vkDestroyRenderPass(m_pDevice->getHandle(), _forwardPass.renderPass->getHandle(), nullptr);
@@ -396,44 +331,32 @@ void VulkanSceneRenderer::update(float deltaTime) {
     }
 }
 
-void VulkanSceneRenderer::_initRenderList() {
-    for (auto &renderable : _renderList) {
-        renderable->loadResouces();
-    }
-}
-
-void VulkanSceneRenderer::_initUniformList() {
-    _sceneSets.resize(m_pRenderer->getCommandBufferCount());
-
-    for (auto &set : _sceneSets) {
-        set = _forwardPass.pipeline->getDescriptorSetLayout(SET_SCENE)->allocateSet();
-
+void VulkanSceneRenderer::_initRenderData() {
+    {
         BufferCreateInfo bufferCI{
             .size      = sizeof(SceneInfo),
             .alignment = 0,
             .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property  = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-
         VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_sceneInfoUB, &_sceneInfo));
         _sceneInfoUB->setupDescriptor();
+    }
 
+    for (auto &set : _sceneSets) {
         std::vector<VkWriteDescriptorSet> writes{
             vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &_sceneInfoUB->getBufferInfo()),
             vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, _cameraInfos.data(), _cameraInfos.size()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, _lightInfos.data(), _lightInfos.size()),
         };
-
-        if (getShadingModel() != ShadingModel::UNLIT) {
-            writes.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, _lightInfos.data(), _lightInfos.size()));
-        }
-
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupDescriptor(_forwardPass.pipeline->getDescriptorSetLayout(SET_OBJECT),
-                                    _forwardPass.pipeline->getDescriptorSetLayout(SET_MATERIAL),
-                                    materialBindingMap[getShadingModel()]);
+        renderable->loadResouces();
+        renderable->setupDescriptor(_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT),
+                                    _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL),
+                                    MATERIAL_BINDING_PBR);
     }
 }
 
@@ -475,7 +398,7 @@ void VulkanSceneRenderer::_loadSceneNodes() {
 }
 
 void VulkanSceneRenderer::_initSkyboxResource() {
-    VulkanPipeline *pipeline = _skyboxResource.pipeline;
+    VulkanPipeline *pipeline = _forwardPass.pipeline;
     VkDescriptorSet set      = _skyboxResource.set;
     VulkanImage    *cubemap  = _skyboxResource.cubeMap;
 
@@ -532,7 +455,7 @@ void VulkanSceneRenderer::_initSkyboxResource() {
     }
 
     pipeline = CreateSkyboxPipeline(m_pDevice, m_pRenderer->getDefaultRenderPass());
-    set      = pipeline->getDescriptorSetLayout(0)->allocateSet();
+    set      = pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SKYBOX)->allocateSet();
 
     std::vector<VkWriteDescriptorSet> writeDescriptorSets{
         // Binding 0 : Vertex shader uniform buffer
@@ -557,7 +480,6 @@ void VulkanSceneRenderer::_initPostFxResource() {
     _postFxPass.colorImageViews.resize(imageCount);
     _postFxPass.framebuffers.resize(imageCount);
     _postFxPass.sets.resize(imageCount);
-    _postFxPass.samplers.resize(imageCount);
 
     // buffer
     {
@@ -581,6 +503,12 @@ void VulkanSceneRenderer::_initPostFxResource() {
         VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_postFxPass.quadVB, quadVertices));
     }
 
+    // sampler
+    {
+        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.sampler));
+    }
+
     // color attachment
     for (auto idx = 0; idx < imageCount; idx++) {
         auto &colorImage     = _postFxPass.colorImages[idx];
@@ -600,11 +528,6 @@ void VulkanSceneRenderer::_initPostFxResource() {
             m_pDevice->createImageView(&createInfo, &colorImageView, colorImage);
         }
 
-        // sampler
-        {
-            VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.samplers[idx]));
-        }
 
         {
             std::vector<VulkanImageView *> attachments{colorImageView};
@@ -638,10 +561,10 @@ void VulkanSceneRenderer::_initPostFxResource() {
     _postFxPass.pipeline = CreatePostFxPipeline(m_pDevice, _postFxPass.renderPass);
     for (uint32_t idx = 0; idx < imageCount; idx++) {
         VkDescriptorSet &set = _postFxPass.sets[idx];
-        set                  = _postFxPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
+        set                  = _postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_OFFSCREEN)->allocateSet();
 
         VkDescriptorImageInfo imageInfo{
-            .sampler     = _postFxPass.samplers[idx],
+            .sampler     = _postFxPass.sampler,
             .imageView   = _forwardPass.colorImageViews[idx]->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
@@ -657,6 +580,7 @@ void VulkanSceneRenderer::_initPostFxResource() {
 }
 
 void VulkanSceneRenderer::_initForwardResource() {
+
     uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
@@ -683,9 +607,6 @@ void VulkanSceneRenderer::_initForwardResource() {
                 .format    = FORMAT_B8G8R8A8_UNORM,
             };
             m_pDevice->createImage(&createInfo, &colorImage);
-
-            // for debug
-            // colorImage = m_pRenderer->getSwapChain()->getImage(idx);
         }
 
         {
@@ -757,15 +678,29 @@ void VulkanSceneRenderer::_initForwardResource() {
         VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_forwardPass.renderPass, colorAttachments, depthAttachment));
     }
 
-    _forwardPass.pipeline = CreatePipeline(m_pDevice, _forwardPass.renderPass, getShadingModel(), _sceneInfo);
+    _forwardPass.pipeline = CreateForwardPipeline(m_pDevice, _forwardPass.renderPass, _sceneInfo);
+    pSceneLayout = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE);
+    pPBRMaterialLayout = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL);
+
+    _sceneSets.resize(m_pRenderer->getCommandBufferCount());
+    for (auto &set : _sceneSets) {
+        set = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE)->allocateSet();
+    }
 }
 void VulkanSceneRenderer::_initShadowPassResource() {
     uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
-    VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
     _shadowPass.framebuffers.resize(imageCount);
     _shadowPass.depthImageViews.resize(imageCount);
     _shadowPass.depthImages.resize(imageCount);
+
+    // sampler
+    {
+        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
+        createInfo.magFilter = _shadowPass.filter;
+        createInfo.minFilter = _shadowPass.filter;
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.sampler));
+    }
 
     for (uint32_t idx = 0; idx < imageCount; idx++) {
         auto &framebuffer    = _shadowPass.framebuffers[idx];
@@ -775,7 +710,7 @@ void VulkanSceneRenderer::_initShadowPassResource() {
         {
             VkFormat        depthFormat = m_pDevice->getDepthFormat();
             ImageCreateInfo createInfo{};
-            createInfo.extent   = {imageExtent.width, imageExtent.height, 1};
+            createInfo.extent   = {_shadowPass.dim, _shadowPass.dim, 1};
             createInfo.format   = static_cast<Format>(depthFormat);
             createInfo.tiling   = IMAGE_TILING_OPTIMAL;
             createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -797,8 +732,8 @@ void VulkanSceneRenderer::_initShadowPassResource() {
         {
             std::vector<VulkanImageView *> attachments{depthImageView};
             FramebufferCreateInfo          createInfo{};
-            createInfo.width  = imageExtent.width;
-            createInfo.height = imageExtent.height;
+            createInfo.width  = _shadowPass.dim;
+            createInfo.height = _shadowPass.dim;
             VK_CHECK_RESULT(m_pDevice->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
         }
     }
@@ -815,9 +750,17 @@ void VulkanSceneRenderer::_initShadowPassResource() {
             .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_forwardPass.renderPass, depthAttachment));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_shadowPass.renderPass, depthAttachment));
     }
 
-    _forwardPass.pipeline = CreatePipeline(m_pDevice, _forwardPass.renderPass, getShadingModel(), _sceneInfo);
+    _shadowPass.pipeline = CreateShadowPipeline(m_pDevice, _shadowPass.renderPass);
+
+    _shadowPass.cameraSets.resize(imageCount);
+    for (auto &set : _shadowPass.cameraSets){
+        set = _shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
+    }
+}
+void VulkanSceneRenderer::_initCommonResource() {
+
 }
 } // namespace vkl

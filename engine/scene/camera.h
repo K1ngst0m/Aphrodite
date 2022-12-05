@@ -6,62 +6,64 @@
 
 #include "uniformObject.h"
 
-namespace vkl {
-enum class CameraType {
+namespace vkl
+{
+enum class CameraType
+{
     LOOKAT,
     FIRSTPERSON,
 };
 
-enum class CameraDirection {
+enum class Direction
+{
     LEFT,
     RIGHT,
     UP,
     DOWN,
 };
 
-class Camera : public UniformObject {
+class Camera : public UniformObject
+{
 public:
     static std::shared_ptr<Camera> Create();
-    Camera(IdType id);
+    Camera(IdType id) : UniformObject(id) {}
     ~Camera() override = default;
 
     void load() override;
     void update(float deltaTime) override;
 
-    void setPosition(glm::vec3 position);
     void setAspectRatio(float aspectRatio);
     void setPerspective(float fov, float aspect, float znear, float zfar);
-    void rotate(glm::vec3 delta);
-    void setRotation(glm::vec3 rotation);
-    void setTranslation(glm::vec3 translation);
-    void translate(glm::vec3 delta);
+    bool isMoving() const;
 
-    void setType(CameraType type);
+    void setPosition(glm::vec3 position) { _position = position; }
+    void rotate(glm::vec3 delta) { _rotation += delta; }
+    void setRotation(glm::vec3 rotation) { _rotation = rotation; }
+    void setTranslation(glm::vec3 translation) { _position = translation; };
+    void translate(glm::vec3 delta) { _position += delta; }
+    void setType(CameraType type) { _cameraType = type; }
+    void setRotationSpeed(float rotationSpeed) { _rotationSpeed = rotationSpeed; }
+    void setMovementSpeed(float movementSpeed) { _movementSpeed = movementSpeed; }
 
-    void setRotationSpeed(float rotationSpeed);
-    void setMovementSpeed(float movementSpeed);
+    float getNearClip() const { return _znear; }
+    float getFarClip() const { return _zfar; }
+    float getRotationSpeed() const { return _rotationSpeed; }
 
-    bool  isMoving() const;
-    float getNearClip() const;
-    float getFarClip() const;
-    float getRotationSpeed() const;
-    void  processMovement(float deltaTime);
-
-    void setMovement(CameraDirection direction, bool flag);
-    void setFlipY(bool val);
+    void setMovement(Direction direction, bool flag) { keys[direction] = flag; }
+    void setFlipY(bool val) { _flipY = val; }
 
 private:
     void updateViewMatrix();
+    void processMovement(float deltaTime);
     void updateAspectRatio(float aspect);
 
 private:
-    std::unordered_map<CameraDirection, bool> keys{
-        {CameraDirection::LEFT, false},
-        {CameraDirection::RIGHT, false},
-        {CameraDirection::UP, false},
-        {CameraDirection::DOWN, false}};
+    std::unordered_map<Direction, bool> keys{ { Direction::LEFT, false },
+                                              { Direction::RIGHT, false },
+                                              { Direction::UP, false },
+                                              { Direction::DOWN, false } };
 
-    CameraType _cameraType;
+    CameraType _cameraType = CameraType::FIRSTPERSON;
 
     glm::vec3 _rotation = glm::vec3();
     glm::vec3 _position = glm::vec3();
@@ -77,9 +79,9 @@ private:
         glm::mat4 view;
     } _matrices;
 
-    float _fov;
-    float _znear;
-    float _zfar;
+    float _fov = 60.0f;
+    float _znear = 96.0f;
+    float _zfar = 0.01f;
 };
-} // namespace vkl
+}  // namespace vkl
 #endif

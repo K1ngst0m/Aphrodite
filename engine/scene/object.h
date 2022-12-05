@@ -3,16 +3,18 @@
 
 #include "idObject.h"
 
-namespace vkl {
+namespace vkl
+{
 
 class Scene;
 
-class Object : public IdObject {
+class Object : public IdObject
+{
 public:
-    Object(IdType id);
+    Object(IdType id) : IdObject(id) {}
     virtual ~Object() = default;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // VKLMODEL_H_
+#endif  // VKLMODEL_H_

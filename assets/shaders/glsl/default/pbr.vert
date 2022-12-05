@@ -16,16 +16,15 @@ layout (set = 0, binding = 1) uniform SceneUB{
     mat4 view;
     mat4 proj;
     vec4 viewPos;
-} sceneData[];
+} cameraData[];
 
-//push constants block
 layout( push_constant ) uniform constants
 {
     mat4 modelMatrix;
 };
 
 void main() {
-    gl_Position = sceneData[0].proj * sceneData[0].view * modelMatrix * vec4(inPosition, 1.0f);
+    gl_Position = cameraData[0].proj * cameraData[0].view * modelMatrix * vec4(inPosition, 1.0f);
     outWorldPos = vec3(modelMatrix * vec4(inPosition, 1.0f));
     outUV = inTexCoord;
     outNormal = mat3(modelMatrix) * inNormal;

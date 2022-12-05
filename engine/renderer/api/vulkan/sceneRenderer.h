@@ -23,12 +23,6 @@ enum MaterialBindingBits {
     MATERIAL_BINDING_PBR        = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL | MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
-enum DescriptorSetBinding {
-    SET_SCENE    = 0,
-    SET_OBJECT   = 1,
-    SET_MATERIAL = 2,
-};
-
 struct SceneInfo {
     glm::vec4 ambient{0.04f};
     uint32_t  cameraCount = 0;
@@ -36,9 +30,6 @@ struct SceneInfo {
 };
 
 class VulkanSceneRenderer : public SceneRenderer {
-    constexpr static uint32_t SHADOWMAP_DIM    = 2048;
-    constexpr static VkFilter SHADOWMAP_FILTER = VK_FILTER_LINEAR;
-
 public:
     static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer> &renderer);
     VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
@@ -49,8 +40,8 @@ public:
     void drawScene() override;
 
 private:
-    void _initRenderList();
-    void _initUniformList();
+    void _initRenderData();
+    void _initCommonResource();
     void _initSkyboxResource();
     void _initForwardResource();
     void _initPostFxResource();
@@ -58,33 +49,55 @@ private:
     void _loadSceneNodes();
 
 private:
-    struct {
-        VulkanPipeline *pipeline = nullptr;
-        vkl::VulkanRenderPass           *renderPass = nullptr;
+    VulkanDescriptorSetLayout *pSceneLayout       = nullptr;
+    VulkanDescriptorSetLayout *pPBRMaterialLayout = nullptr;
+
+    struct PASS_FORWARD {
+        enum SetBinding {
+            SET_SCENE    = 0,
+            SET_OBJECT   = 1,
+            SET_MATERIAL = 2,
+            SET_SKYBOX   = 3,
+        };
+
+        VulkanPipeline        *pipeline       = nullptr;
+        vkl::VulkanRenderPass *renderPass     = nullptr;
 
         std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *>       colorImages;
         std::vector<VulkanImageView *>   colorImageViews;
-        std::vector<VulkanImage*>     depthImages;
-        std::vector<VulkanImageView *> depthImageViews;
-
+        std::vector<VulkanImage *>       depthImages;
+        std::vector<VulkanImageView *>   depthImageViews;
     } _forwardPass;
 
-    struct {
-        VulkanRenderPass  *renderPass     = nullptr;
-        std::vector<VulkanImage*>     depthImages;
-        std::vector<VulkanImageView *> depthImageViews;
-        std::vector<VulkanFramebuffer*> framebuffers;
+    struct PASS_SHADOW {
+        enum SetBinding {
+            SET_SCENE = 0,
+        };
+
+        const uint32_t                   dim        = 2048;
+        const VkFilter                   filter     = VK_FILTER_LINEAR;
+        VulkanPipeline                  *pipeline   = nullptr;
+        VulkanRenderPass                *renderPass = nullptr;
+        VkSampler                        sampler    = VK_NULL_HANDLE;
+        std::vector<VulkanImage *>       depthImages;
+        std::vector<VulkanImageView *>   depthImageViews;
+        std::vector<VulkanFramebuffer *> framebuffers;
+        std::vector<VkDescriptorSet>     cameraSets;
     } _shadowPass;
 
-    struct {
+    struct PASS_POSTFX {
+        enum SetBinding {
+            SET_OFFSCREEN = 0,
+        };
+
         VulkanBuffer                    *quadVB     = nullptr;
         VulkanRenderPass                *renderPass = nullptr;
         VulkanPipeline                  *pipeline   = nullptr;
+        VkSampler                        sampler    = VK_NULL_HANDLE;
         std::vector<VulkanImage *>       colorImages;
         std::vector<VulkanImageView *>   colorImageViews;
         std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VkSampler>           samplers;
         std::vector<VkDescriptorSet>     sets;
     } _postFxPass;
 

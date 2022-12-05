@@ -13,6 +13,13 @@ enum class VertexComponent {
     TANGENT,
 };
 
+enum class VertexFormat{
+    FLOAT,
+    FLOAT2,
+    FLOAT3,
+    FLOAT4,
+};
+
 struct VertexInputBuilder {
     std::vector<VkVertexInputBindingDescription>   _vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;

@@ -3,46 +3,40 @@
 
 #include "common/common.h"
 
-namespace vkl {
+namespace vkl
+{
 
 typedef uint32_t IdType;
 
-class Id {
+class Id
+{
 public:
     template <typename T>
-    static IdType generateNewId() {
+    static IdType generateNewId()
+    {
         static IdType g_currentId = 0;
         return g_currentId++;
     }
 };
 
-class IdObject {
+class IdObject
+{
 private:
-    friend struct IdCmp; // Avoid calling getId()
+    friend struct IdCmp;  // Avoid calling getId()
     IdType mId;
 
 protected:
-    void _setId(IdType newId) {
-        mId = newId;
-    }
+    void _setId(IdType newId) { mId = newId; }
 
 public:
-    IdObject(IdType id)
-        : mId(id) {
-    }
+    IdObject(IdType id) : mId(id) {}
 
-    IdType getId() const {
-        return mId;
-    }
+    IdType getId() const { return mId; }
 
-    bool operator()(const IdObject *left, const IdObject *right) {
-        return left->mId < right->mId;
-    }
+    bool operator()(const IdObject *left, const IdObject *right) { return left->mId < right->mId; }
 
-    bool operator()(const IdObject &left, const IdObject &right) {
-        return left.mId < right.mId;
-    }
+    bool operator()(const IdObject &left, const IdObject &right) { return left.mId < right.mId; }
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // IDOBJECT_H_
+#endif  // IDOBJECT_H_

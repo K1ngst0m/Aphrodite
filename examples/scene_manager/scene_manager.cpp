@@ -1,7 +1,6 @@
 #include "scene_manager.h"
 #include "renderer/api/vulkan/uiRenderer.h"
 #include "renderer/uiRenderer.h"
-#include <memory>
 
 vkl::RenderConfig config{
     .enableDebug = true,
@@ -75,7 +74,7 @@ void scene_manager::setupScene() {
         camera->setFlipY(true);
         // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
         camera->rotate({0.0f, 180.0f, 0.0f});
-        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.1f, 96.0f);
+        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.01f, 96.0f);
         camera->setMovementSpeed(2.5f);
         camera->setRotationSpeed(0.1f);
 
@@ -92,8 +91,8 @@ void scene_manager::setupScene() {
     {
         auto dirLight = m_scene->createLight();
         dirLight->setColor(glm::vec3{1.0f});
-        dirLight->setDirection({-0.2f, -1.0f, -0.3f});
-        dirLight->setType(vkl::LightType::DIRECTIONAL);
+        dirLight->setDirection({0.2f, 1.0f, 0.3f});
+        dirLight->setType(vkl::LightType::POINT);
 
         // light1
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
@@ -110,11 +109,6 @@ void scene_manager::setupScene() {
         // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "FlightHelmet/glTF/FlightHelmet.gltf");
         m_modelNode = m_scene->getRootNode()->createChildNode(glm::rotate(glm::mat4(1.0f), 180.0f, {0.0f, 1.0f, 0.0f}));
         m_modelNode->attachObject(model);
-    }
-
-    {
-        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "prefab/Box.glb");
-        // m_scene->getRootNode()->createChildNode()->attachObject(model);
     }
 
     {
@@ -141,16 +135,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
             m_window->toggleCurosrVisibility();
             break;
         case VKL_KEY_W:
-            camera->setMovement(vkl::CameraDirection::UP, true);
+            camera->setMovement(vkl::Direction::UP, true);
             break;
         case VKL_KEY_A:
-            camera->setMovement(vkl::CameraDirection::LEFT, true);
+            camera->setMovement(vkl::Direction::LEFT, true);
             break;
         case VKL_KEY_S:
-            camera->setMovement(vkl::CameraDirection::DOWN, true);
+            camera->setMovement(vkl::Direction::DOWN, true);
             break;
         case VKL_KEY_D:
-            camera->setMovement(vkl::CameraDirection::RIGHT, true);
+            camera->setMovement(vkl::Direction::RIGHT, true);
             break;
         }
     }
@@ -158,16 +152,16 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     if (action == VKL_RELEASE) {
         switch (key) {
         case VKL_KEY_W:
-            camera->setMovement(vkl::CameraDirection::UP, false);
+            camera->setMovement(vkl::Direction::UP, false);
             break;
         case VKL_KEY_A:
-            camera->setMovement(vkl::CameraDirection::LEFT, false);
+            camera->setMovement(vkl::Direction::LEFT, false);
             break;
         case VKL_KEY_S:
-            camera->setMovement(vkl::CameraDirection::DOWN, false);
+            camera->setMovement(vkl::Direction::DOWN, false);
             break;
         case VKL_KEY_D:
-            camera->setMovement(vkl::CameraDirection::RIGHT, false);
+            camera->setMovement(vkl::Direction::RIGHT, false);
             break;
         }
     }

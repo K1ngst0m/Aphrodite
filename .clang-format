@@ -1,50 +1,44 @@
-# SPDX-License-Identifier: GPL-2.0
-#
-# clang-format configuration file. Intended for clang-format >= 11.
-#
-# For more information, see:
-#
-#   Documentation/process/clang-format.rst
-#   https://clang.llvm.org/docs/ClangFormat.html
-#   https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-#
----
-AccessModifierOffset: -4
+﻿---
+BasedOnStyle: Google
 AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
-AlignEscapedNewlines: Left
-AlignOperands: true
-AlignTrailingComments: false
-AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
-AllowShortFunctionsOnASingleLine: None
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: None
-AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: false
+#AlignConsecutiveAssignments: 'true'
+AlignEscapedNewlines: DontAlign
+AllowAllConstructorInitializersOnNextLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: 'false'
+AllowShortLoopsOnASingleLine: 'false'
+BinPackParameters: 'true'
+BreakBeforeBraces: Custom
+ColumnLimit: '105'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+BreakConstructorInitializers: 'AfterColon'
+ConstructorInitializerIndentWidth: '4'
+ContinuationIndentWidth: '4'
+Cpp11BracedListStyle: 'false'
+DerivePointerAlignment: 'false'
+IncludeBlocks: 'Preserve'
+IndentCaseLabels: 'false'
+IndentWidth: '4'
+PointerAlignment: Right
+SpaceBeforeParens: Never
+SpaceInEmptyParentheses: 'false'
+SpacesInParentheses: 'false'
+TabWidth: '4'
 UseTab: Never
-TabWidth: 4
-IndentWidth: 4
-ColumnLimit: 0
-Language: Cpp
-Standard: Cpp11
+AccessModifierOffset: '-4'
+IndentPPDirectives: 'AfterHash'
 BraceWrapping:
-  AfterClass: true
+  AfterCaseLabel:  true
+  AfterClass:      true
   AfterControlStatement: true
-  AfterEnum: true
-  AfterFunction: true
-  AfterNamespace: true
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  true
   AfterObjCDeclaration: true
-  AfterStruct: true
-  AfterUnion: true
-  AfterExternBlock: true
-  BeforeCatch: true
-  BeforeElse: true
-  IndentBraces: true
-  SplitEmptyFunction: true
-  SplitEmptyRecord: true
-  SplitEmptyNamespace: true
+  AfterStruct:     true
+  AfterUnion:      true
+  BeforeCatch:     true
+  BeforeElse:      true
+  IndentBraces:    false
+
+...

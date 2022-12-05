@@ -3,26 +3,28 @@
 
 #include "object.h"
 
-namespace vkl {
-class UniformObject : public Object {
+namespace vkl
+{
+class UniformObject : public Object
+{
 public:
-    UniformObject(IdType id);
+    UniformObject(IdType id) : Object(id) {}
     ~UniformObject() override = default;
 
-    virtual void     load()   = 0;
-    virtual void     update(float deltaTime) = 0;
-    virtual void    *getData();
-    virtual uint32_t getDataSize();
+    virtual void load() = 0;
+    virtual void update(float deltaTime) = 0;
 
-    bool isUpdated() const;
-    void setUpdated(bool flag);
+    virtual bool isUpdated() const { return updated; }
+    virtual void setUpdated(bool flag) { updated = flag; }
+    virtual void *getData() { return data.get(); }
+    virtual uint32_t getDataSize() { return dataSize; }
 
 protected:
-    size_t                dataSize = 0;
-    std::shared_ptr<void> data     = nullptr;
+    size_t dataSize = 0;
+    std::shared_ptr<void> data = nullptr;
 
     bool updated = false;
 };
-}
+}  // namespace vkl
 
-#endif // UNIFORMOBJECT_H_
+#endif  // UNIFORMOBJECT_H_
