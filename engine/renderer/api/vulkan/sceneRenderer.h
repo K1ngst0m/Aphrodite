@@ -40,20 +40,6 @@ struct ObjectInfo{
     glm::mat4 matrix = glm::mat4(1.0f);
 };
 
-struct MaterialInfo{
-    glm::vec4 emissiveFactor = glm::vec4(1.0f);
-    glm::vec4 baseColorFactor = glm::vec4(1.0f);
-    float     alphaCutoff     = 1.0f;
-    float     metallicFactor  = 1.0f;
-    float     roughnessFactor = 1.0f;
-    ResourceIndex baseColorTextureIndex = -1;
-    ResourceIndex normalTextureIndex    = -1;
-    ResourceIndex occlusionTextureIndex = -1;
-    ResourceIndex emissiveTextureIndex  = -1;
-    ResourceIndex metallicRoughnessTextureIndex = -1;
-    ResourceIndex specularGlossinessTextureIndex = -1;
-};
-
 class VulkanSceneRenderer : public SceneRenderer {
 public:
     static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer> &renderer);

@@ -299,16 +299,20 @@ void Entity::loadFromFile(const std::string &path)
         return;
     }
 }
-void Entity::cleanupResources()
+std::shared_ptr<Entity> Entity::Create()
+{
+    auto instance = std::make_shared<Entity>(Id::generateNewId<Entity>());
+    return instance;
+}
+Entity::Entity(IdType id) : Object(id)
+{
+    m_rootNode = std::make_shared<MeshNode>(nullptr);
+}
+Entity::~Entity()
 {
     m_vertices.clear();
     m_indices.clear();
     m_images.clear();
     m_materials.clear();
-}
-std::shared_ptr<Entity> Entity::Create()
-{
-    auto instance = std::make_shared<Entity>(Id::generateNewId<Entity>());
-    return instance;
 }
 }  // namespace vkl

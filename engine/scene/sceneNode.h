@@ -23,6 +23,7 @@ struct SceneNode : Node<SceneNode>
     void attachObject(const std::shared_ptr<Entity> &object);
     void attachObject(const std::shared_ptr<Light> &object);
     void attachObject(const std::shared_ptr<Camera> &object);
+
     template <typename TObject>
     std::shared_ptr<TObject> getObject() {return std::static_pointer_cast<TObject>(object);}
     IdType getAttachObjectId() { return object->getId(); }

@@ -62,12 +62,11 @@ enum class AlphaMode : uint32_t
 
 struct Material
 {
+    glm::vec4 emissiveFactor = glm::vec4(1.0f);
+    glm::vec4 baseColorFactor = glm::vec4(1.0f);
     float alphaCutoff = 1.0f;
     float metallicFactor = 1.0f;
     float roughnessFactor = 1.0f;
-    glm::vec4 emissiveFactor = glm::vec4(1.0f);
-    glm::vec4 baseColorFactor = glm::vec4(1.0f);
-
     ResourceIndex baseColorTextureIndex = -1;
     ResourceIndex normalTextureIndex = -1;
     ResourceIndex occlusionTextureIndex = -1;
@@ -84,10 +83,9 @@ class Entity : public Object
 {
 public:
     static std::shared_ptr<Entity> Create();
-    Entity(IdType id) : Object(id) { m_rootNode = std::make_shared<MeshNode>(nullptr); }
-    ~Entity() override = default;
+    Entity(IdType id);
+    ~Entity() override;
     void loadFromFile(const std::string &path);
-    void cleanupResources();
 
     std::shared_ptr<MeshNode> m_rootNode;
 

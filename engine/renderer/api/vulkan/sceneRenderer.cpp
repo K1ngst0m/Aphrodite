@@ -352,26 +352,13 @@ void VulkanSceneRenderer::_initRenderData() {
         VulkanBuffer * matInfoUB = nullptr;
         {
             {
-                MaterialInfo matInfo{
-                    .emissiveFactor = material->emissiveFactor,
-                    .baseColorFactor = material->baseColorFactor,
-                    .alphaCutoff = material->alphaCutoff,
-                    .metallicFactor = material->metallicFactor,
-                    .roughnessFactor = material->roughnessFactor,
-                    .baseColorTextureIndex = material->baseColorTextureIndex,
-                    .normalTextureIndex = material->normalTextureIndex,
-                    .occlusionTextureIndex = material->occlusionTextureIndex,
-                    .emissiveTextureIndex = material->emissiveTextureIndex,
-                    .metallicRoughnessTextureIndex = material->metallicRoughnessTextureIndex,
-                    .specularGlossinessTextureIndex = material->specularGlossinessTextureIndex,
-                };
                 BufferCreateInfo bufferCI{
-                    .size = sizeof(MaterialInfo),
+                    .size = sizeof(Material),
                     .alignment = 0,
                     .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
-                m_pDevice->createBuffer(&bufferCI, &matInfoUB, &matInfo);
+                m_pDevice->createBuffer(&bufferCI, &matInfoUB, &material);
                 matInfoUB->setupDescriptor();
             }
             std::vector<VkWriteDescriptorSet> descriptorWrites{};
