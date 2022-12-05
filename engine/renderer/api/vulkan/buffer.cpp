@@ -71,6 +71,11 @@ void VulkanBuffer::copyTo(const void *data, VkDeviceSize size) const {
     memcpy(mapped, data, size);
 }
 
+void VulkanBuffer::copyTo(const void *data) const
+{
+    copyTo(data, getSize());
+}
+
 /**
  * Flush a memory range of the buffer to make it visible to the device
  *
@@ -118,4 +123,4 @@ VkDeviceMemory VulkanBuffer::getMemory() {
 void *VulkanBuffer::getMapped() {
     return mapped;
 };
-} // namespace vkl
+}  // namespace vkl

@@ -7,9 +7,9 @@
 
 namespace vkl {
 class ShaderPass;
-class VulkanUniformData;
-class VulkanRenderData;
 class VulkanRenderer;
+struct VulkanUniformData;
+struct VulkanRenderData;
 
 enum MaterialBindingBits {
     MATERIAL_BINDING_NONE       = 0,

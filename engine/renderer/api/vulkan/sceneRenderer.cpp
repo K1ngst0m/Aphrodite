@@ -7,7 +7,7 @@
 #include "framebuffer.h"
 #include "imageView.h"
 #include "pipeline.h"
-#include "renderObject.h"
+#include "renderData.h"
 #include "renderer/api/vulkan/uiRenderer.h"
 #include "renderpass.h"
 #include "scene/camera.h"
@@ -15,7 +15,6 @@
 #include "scene/light.h"
 #include "scene/sceneNode.h"
 #include "swapChain.h"
-#include "uniformObject.h"
 #include "vkInit.hpp"
 #include "vulkan/vulkan_core.h"
 #include "vulkanRenderer.h"
@@ -215,14 +214,6 @@ void VulkanSceneRenderer::loadResources() {
 }
 
 void VulkanSceneRenderer::cleanupResources() {
-    for (auto &renderObject : _renderList) {
-        renderObject->cleanupResources();
-    }
-
-    for (auto &ubo : _uniformList) {
-        ubo->cleanupResources();
-    }
-
     if (_forwardPass.pipeline != nullptr) {
         m_pDevice->destroyPipeline(_forwardPass.pipeline);
     }
@@ -305,7 +296,7 @@ void VulkanSceneRenderer::drawScene() {
 
 void VulkanSceneRenderer::update(float deltaTime) {
     for (auto &ubo : _uniformList) {
-        ubo->updateBuffer(ubo->getData());
+        ubo->m_buffer->copyTo(ubo->m_object->getData());
     }
 }
 
@@ -331,7 +322,6 @@ void VulkanSceneRenderer::_initRenderData() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->loadResouces();
         renderable->setupDescriptor(_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT),
                                     _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL),
                                     MATERIAL_BINDING_PBR);
@@ -355,13 +345,13 @@ void VulkanSceneRenderer::_loadSceneNodes() {
         case AttachType::CAMERA: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
             _uniformList.push_front(ubo);
-            _cameraInfos.push_back(ubo->getBufferInfo());
+            _cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
             _sceneInfo.cameraCount++;
         } break;
         case AttachType::LIGHT: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
             _uniformList.push_back(ubo);
-            _lightInfos.push_back(ubo->getBufferInfo());
+            _lightInfos.push_back(ubo->m_buffer->getBufferInfo());
             _sceneInfo.lightCount++;
         } break;
         default:

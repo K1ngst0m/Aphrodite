@@ -9,7 +9,7 @@
 #include "physicalDevice.h"
 #include "pipeline.h"
 #include "queue.h"
-#include "renderObject.h"
+#include "renderData.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
 #include "scene/entity.h"
@@ -18,7 +18,6 @@
 #include "swapChain.h"
 #include "syncPrimitivesPool.h"
 #include "uiRenderer.h"
-#include "uniformObject.h"
 #include "vkUtils.h"
 
 namespace vkl {
