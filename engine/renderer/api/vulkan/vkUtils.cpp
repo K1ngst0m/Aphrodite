@@ -4,8 +4,9 @@ namespace vkl::utils
 {
 std::string errorString(VkResult errorCode)
 {
-    switch (errorCode) {
-#define STR(r)   \
+    switch(errorCode)
+    {
+#define STR(r) \
     case VK_##r: \
         return #r
         STR(NOT_READY);
@@ -53,9 +54,10 @@ std::vector<char> loadSpvFromFile(const std::string &filename)
     return buffer;
 }
 
-
-VkImageAspectFlags getImageAspectFlags(VkFormat format) {
-    switch (format) {
+VkImageAspectFlags getImageAspectFlags(VkFormat format)
+{
+    switch(format)
+    {
     case VK_FORMAT_D16_UNORM:
     case VK_FORMAT_D32_SFLOAT:
         return VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -70,22 +72,23 @@ VkImageAspectFlags getImageAspectFlags(VkFormat format) {
     }
 }
 
-VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage) {
-    if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage)
+{
+    if(usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    if(usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    if (usage & VK_IMAGE_USAGE_STORAGE_BIT)
+    if(usage & VK_IMAGE_USAGE_STORAGE_BIT)
         return VK_IMAGE_LAYOUT_GENERAL;
-    if (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+    if(usage & VK_IMAGE_USAGE_SAMPLED_BIT)
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
+    if(usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+    if(usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
         return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    if (usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
+    if(usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT)
         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
     return VK_IMAGE_LAYOUT_GENERAL;
 }
-} // namespace vkl::utils
+}  // namespace vkl::utils

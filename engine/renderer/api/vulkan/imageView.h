@@ -4,21 +4,24 @@
 #include "renderer/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl {
+namespace vkl
+{
 class VulkanDevice;
 class VulkanImage;
 
-class VulkanImageView : public ImageView, public ResourceHandle<VkImageView> {
+class VulkanImageView : public ImageView, public ResourceHandle<VkImageView>
+{
 public:
-    static VulkanImageView* createFromHandle(ImageViewCreateInfo* createInfo, VulkanImage *pImage, VkImageView handle);
+    static VulkanImageView *createFromHandle(ImageViewCreateInfo *createInfo, VulkanImage *pImage,
+                                             VkImageView handle);
 
-    VulkanImage *getImage();
-    VulkanDevice *getDevice();
+    VulkanImage *getImage() { return _image; }
+    VulkanDevice *getDevice() { return _device; }
 
 private:
     VulkanDevice *_device;
-    VulkanImage  *_image;
+    VulkanImage *_image;
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // IMAGEVIEW_H_
+#endif  // IMAGEVIEW_H_

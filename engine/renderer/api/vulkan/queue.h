@@ -3,27 +3,31 @@
 
 #include "device.h"
 
-namespace vkl {
-class VulkanQueue : public ResourceHandle<VkQueue> {
+namespace vkl
+{
+class VulkanQueue : public ResourceHandle<VkQueue>
+{
 public:
-    VulkanQueue(VulkanDevice *device, VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties &propertiesd);
+    VulkanQueue(VulkanDevice *device, VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
+                const VkQueueFamilyProperties &propertiesd);
 
-    uint32_t     getFamilyIndex() const;
-    uint32_t     getIndex() const;
-    VkQueueFlags getFlags() const;
-    VkResult     submit(uint32_t submitCount, const VkSubmitInfo *pSubmits, VkFence fence);
-    VkResult     present(const VkPresentInfoKHR &presentInfo);
-    VkResult     waitIdle();
+    uint32_t getFamilyIndex() const { return m_queueFamilyIndex; }
+    uint32_t getIndex() const { return m_index; }
+    VkQueueFlags getFlags() const { return m_properties.queueFlags; }
+    VkResult waitIdle() { return VkResult(vkQueueWaitIdle(_handle)); }
+
+    VkResult submit(uint32_t submitCount, const VkSubmitInfo *pSubmits, VkFence fence);
+    VkResult present(const VkPresentInfoKHR &presentInfo);
 
 private:
     VkResult acquireCommandBuffer(VulkanCommandBuffer **pCommandBuffer);
 
     VulkanDevice *m_device = nullptr;
 
-    uint32_t                m_queueFamilyIndex = 0;
-    uint32_t                m_index            = 0;
+    uint32_t m_queueFamilyIndex = 0;
+    uint32_t m_index = 0;
     VkQueueFamilyProperties m_properties;
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // QUEUE_H_
+#endif  // QUEUE_H_

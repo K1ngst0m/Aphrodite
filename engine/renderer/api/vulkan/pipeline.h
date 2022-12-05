@@ -3,9 +3,11 @@
 
 #include "device.h"
 
-namespace vkl {
+namespace vkl
+{
 
-enum class VertexComponent {
+enum class VertexComponent
+{
     POSITION,
     NORMAL,
     UV,
@@ -13,82 +15,92 @@ enum class VertexComponent {
     TANGENT,
 };
 
-enum class VertexFormat{
+enum class VertexFormat
+{
     FLOAT,
     FLOAT2,
     FLOAT3,
     FLOAT4,
 };
 
-struct VertexInputBuilder {
-    std::vector<VkVertexInputBindingDescription>   _vertexInputBindingDescriptions;
+struct VertexInputBuilder
+{
+    std::vector<VkVertexInputBindingDescription> _vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
-    VkPipelineVertexInputStateCreateInfo           _pipelineVertexInputStateCreateInfo;
-    VkPipelineVertexInputStateCreateInfo          &getPipelineVertexInputState(const std::vector<VertexComponent> &components);
+    VkPipelineVertexInputStateCreateInfo _pipelineVertexInputStateCreateInfo;
+    VkPipelineVertexInputStateCreateInfo &getPipelineVertexInputState(
+        const std::vector<VertexComponent> &components);
 };
 
-struct GraphicsPipelineCreateInfo {
-    std::vector<VkDynamicState>            dynamicStages;
-    VkPipelineVertexInputStateCreateInfo   vertexInputInfo;
+struct GraphicsPipelineCreateInfo
+{
+    std::vector<VkDynamicState> dynamicStages;
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;
-    VkViewport                             viewport;
-    VkRect2D                               scissor;
-    VkPipelineDynamicStateCreateInfo       dynamicState;
+    VkViewport viewport;
+    VkRect2D scissor;
+    VkPipelineDynamicStateCreateInfo dynamicState;
     VkPipelineRasterizationStateCreateInfo rasterizer;
-    VkPipelineColorBlendAttachmentState    colorBlendAttachment;
-    VkPipelineMultisampleStateCreateInfo   multisampling;
-    VertexInputBuilder                     vertexInputBuilder;
-    VkPipelineDepthStencilStateCreateInfo  depthStencil;
-    VkPipelineCache                        pipelineCache = VK_NULL_HANDLE;
+    VkPipelineColorBlendAttachmentState colorBlendAttachment;
+    VkPipelineMultisampleStateCreateInfo multisampling;
+    VertexInputBuilder vertexInputBuilder;
+    VkPipelineDepthStencilStateCreateInfo depthStencil;
+    VkPipelineCache pipelineCache = VK_NULL_HANDLE;
 
-    GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component, VkExtent2D extent = {0, 0}) {
+    GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component,
+                               VkExtent2D extent = { 0, 0 })
+    {
         vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState(component);
 
-        inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+        inputAssembly = vkl::init::pipelineInputAssemblyStateCreateInfo(
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
-        dynamicStages = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
-        dynamicState  = vkl::init::pipelineDynamicStateCreateInfo(dynamicStages.data(), static_cast<uint32_t>(dynamicStages.size()));
+        dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+        dynamicState = vkl::init::pipelineDynamicStateCreateInfo(
+            dynamicStages.data(), static_cast<uint32_t>(dynamicStages.size()));
 
-        rasterizer           = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-        multisampling        = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-        colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, VK_FALSE);
-        depthStencil         = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+        rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(
+            VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+        multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+        colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT,
+            VK_FALSE);
+        depthStencil =
+            vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     }
 
-    GraphicsPipelineCreateInfo()
-        : GraphicsPipelineCreateInfo(
-              {VertexComponent::POSITION,
-               VertexComponent::NORMAL,
-               VertexComponent::UV,
-               VertexComponent::COLOR,
-               VertexComponent::TANGENT}) {
+    GraphicsPipelineCreateInfo() :
+        GraphicsPipelineCreateInfo({ VertexComponent::POSITION, VertexComponent::NORMAL,
+                                     VertexComponent::UV, VertexComponent::COLOR,
+                                     VertexComponent::TANGENT })
+    {
     }
 };
 
-class VulkanPipeline : public ResourceHandle<VkPipeline> {
+class VulkanPipeline : public ResourceHandle<VkPipeline>
+{
 public:
-    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice                     *pDevice,
+    static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice *pDevice,
                                                   const GraphicsPipelineCreateInfo *pCreateInfo,
-                                                  ShaderEffect                     *effect,
-                                                  VulkanRenderPass                 *pRenderPass,
-                                                  VkPipeline                        handle);
+                                                  ShaderEffect *effect, VulkanRenderPass *pRenderPass,
+                                                  VkPipeline handle);
 
-    static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice,
-                                                 ShaderEffect *pEffect,
-                                                 VkPipeline    handle);
+    static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, ShaderEffect *pEffect,
+                                                 VkPipeline handle);
 
-    VkPipelineLayout           getPipelineLayout();
+    VkPipelineLayout getPipelineLayout();
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx);
-    ShaderEffect              *getEffect();
-    VkPipelineBindPoint        getBindPoint();
+    ShaderEffect *getEffect();
+    VkPipelineBindPoint getBindPoint();
 
 protected:
-    VkPipelineCache     _cache;
-    VulkanDevice       *_device = nullptr;
-    ShaderEffect       *_effect = nullptr;
+    VkPipelineCache _cache;
+    VulkanDevice *_device = nullptr;
+    ShaderEffect *_effect = nullptr;
     VkPipelineBindPoint _bindPoint;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // PIPELINE_H_
+#endif  // PIPELINE_H_

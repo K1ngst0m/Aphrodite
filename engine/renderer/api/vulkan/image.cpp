@@ -18,10 +18,4 @@ VulkanImage *VulkanImage::CreateFromHandle(VulkanDevice *pDevice, ImageCreateInf
     return instance;
 }
 
-VkDeviceMemory VulkanImage::getMemory() {
-    return _memory;
-}
-VulkanDevice *VulkanImage::getDevice() {
-    return _device;
-}
 } // namespace vkl

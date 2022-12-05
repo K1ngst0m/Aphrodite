@@ -3,23 +3,27 @@
 
 #include "device.h"
 
-namespace vkl {
-class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout> {
+namespace vkl
+{
+class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
+{
 public:
-    static VulkanDescriptorSetLayout *Create(VulkanDevice *device, VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+    static VulkanDescriptorSetLayout *Create(VulkanDevice *device,
+                                             VkDescriptorSetLayoutCreateInfo *pCreateInfo,
                                              VkDescriptorSetLayout handle);
 
-    std::vector<VkDescriptorSetLayoutBinding> getBindings();
-    VulkanDevice                             *getDevice();
-    VkDescriptorSet                           allocateSet();
-    VkResult                                  freeSet(VkDescriptorSet set);
+    std::vector<VkDescriptorSetLayoutBinding> getBindings() { return _bindings; }
+    VulkanDevice *getDevice() { return _device; }
+
+    VkDescriptorSet allocateSet();
+    VkResult freeSet(VkDescriptorSet set);
 
 private:
-    VulkanDevice                             *_device;
+    VulkanDevice *_device;
     std::vector<VkDescriptorSetLayoutBinding> _bindings;
-    VulkanDescriptorPool                     *_pool;
+    VulkanDescriptorPool *_pool;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // DESCRIPTORSET_H_
+#endif  // DESCRIPTORSET_H_

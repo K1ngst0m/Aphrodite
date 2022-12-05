@@ -11,7 +11,9 @@ public:
     static VulkanBuffer *CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo,
                                           VkBuffer buffer, VkDeviceMemory memory);
 
-    VkDeviceMemory getMemory();
+    VkDeviceMemory getMemory() { return memory; }
+    void *getMapped() { return mapped; };
+    VkDescriptorBufferInfo &getBufferInfo() { return descriptorInfo; }
 
 public:
     VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
@@ -25,8 +27,6 @@ public:
     VkResult bind(VkDeviceSize offset = 0) const;
 
     void setupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
-    VkDescriptorBufferInfo &getBufferInfo();
-    void *getMapped();
 
 private:
     VkDevice device;

@@ -4,33 +4,34 @@
 #include "common/spinlock.h"
 #include "device.h"
 
-namespace vkl {
+namespace vkl
+{
 using RenderPassHash = std::vector<uint64_t>;
 
-struct RenderPassCreateInfo {
+struct RenderPassCreateInfo
+{
 };
 
-class VulkanRenderPass {
+class VulkanRenderPass
+{
 public:
     static VulkanRenderPass *Create(VulkanDevice *pDevice, const RenderPassCreateInfo *pCreateInfo);
 
-    VulkanRenderPass(VkRenderPass handle, uint32_t colorAtachmentCount)
-        : m_handle(handle), m_colorAttachmentCount(colorAtachmentCount) {
+    VulkanRenderPass(VkRenderPass handle, uint32_t colorAtachmentCount) :
+        m_handle(handle),
+        m_colorAttachmentCount(colorAtachmentCount)
+    {
     }
 
-    VkRenderPass getHandle() const {
-        return m_handle;
-    }
+    VkRenderPass getHandle() const { return m_handle; }
 
-    uint32_t getColorAttachmentCount() const {
-        return m_colorAttachmentCount;
-    }
+    uint32_t getColorAttachmentCount() const { return m_colorAttachmentCount; }
 
 private:
-    VkRenderPass m_handle               = VK_NULL_HANDLE;
-    uint32_t     m_colorAttachmentCount = 0;
+    VkRenderPass m_handle = VK_NULL_HANDLE;
+    uint32_t m_colorAttachmentCount = 0;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // RENDERPASS_H_
+#endif  // RENDERPASS_H_

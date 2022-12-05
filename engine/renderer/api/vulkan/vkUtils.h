@@ -1,6 +1,7 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#include <vulkan/vulkan.h>
 #include <algorithm>
 #include <array>
 #include <cassert>
@@ -9,13 +10,12 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <set>
 #include <type_traits>
 #include <unordered_map>
 #include <vector>
-#include <map>
-#include <vulkan/vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -38,21 +38,23 @@
 // Default fence timeout in nanoseconds
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
-#define VK_CHECK_RESULT(f)                                                                                \
-    {                                                                                                     \
-        VkResult res = (f);                                                                               \
-        if (res != VK_SUCCESS) {                                                                          \
-            std::cout << "Fatal : VkResult is \"" << vkl::utils::errorString(res) << "\" in " << __FILE__ \
-                      << " at line " << __LINE__ << "\n";                                                 \
-            assert(res == VK_SUCCESS);                                                                    \
-        }                                                                                                 \
+#define VK_CHECK_RESULT(f) \
+    { \
+        VkResult res = (f); \
+        if(res != VK_SUCCESS) \
+        { \
+            std::cout << "Fatal : VkResult is \"" << vkl::utils::errorString(res) << "\" in " \
+                      << __FILE__ << " at line " << __LINE__ << "\n"; \
+            assert(res == VK_SUCCESS); \
+        } \
     }
 
-namespace vkl::utils {
-std::string        errorString(VkResult errorCode);
-std::vector<char>  loadSpvFromFile(const std::string &filename);
+namespace vkl::utils
+{
+std::string errorString(VkResult errorCode);
+std::vector<char> loadSpvFromFile(const std::string &filename);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
-VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
-} // namespace vkl::utils
+VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
+}  // namespace vkl::utils
 
-#endif // VKLUTILS_H_
+#endif  // VKLUTILS_H_

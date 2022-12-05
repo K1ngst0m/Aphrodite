@@ -7,7 +7,8 @@
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
-namespace vkl {
+namespace vkl
+{
 class VulkanBuffer;
 class VulkanBufferView;
 class VulkanImage;
@@ -33,74 +34,63 @@ struct RenderPassCreateInfo;
 struct GraphicsPipelineCreateInfo;
 struct EffectInfo;
 
-using QueueFamily             = std::vector<VulkanQueue *>;
+using QueueFamily = std::vector<VulkanQueue *>;
 using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool *>;
 
-struct DeviceCreateInfo {
-    const void        *pNext = nullptr;
-    uint32_t           enabledLayerCount;
+struct DeviceCreateInfo
+{
+    const void *pNext = nullptr;
+    uint32_t enabledLayerCount;
     const char *const *ppEnabledLayerNames;
-    uint32_t           enabledExtensionCount;
+    uint32_t enabledExtensionCount;
     const char *const *ppEnabledExtensionNames;
-    VkQueueFlags       requestQueueTypes = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
+    VkQueueFlags requestQueueTypes =
+        VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
 };
 
-class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice> {
+class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice>
+{
 public:
-    static VkResult Create(VulkanPhysicalDevice   *pPhysicalDevice,
-                           const DeviceCreateInfo *pCreateInfo,
-                           VulkanDevice          **ppDevice);
+    static VkResult Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo,
+                           VulkanDevice **ppDevice);
 
     static void Destroy(VulkanDevice *pDevice);
 
 public:
-    VkResult createBuffer(BufferCreateInfo *pCreateInfo,
-                          VulkanBuffer    **ppBuffer,
-                          void             *data = nullptr);
+    VkResult createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data = nullptr);
 
-    VkResult createImage(ImageCreateInfo *pCreateInfo,
-                         VulkanImage    **ppImage);
+    VkResult createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage);
 
-    VkResult createImageView(ImageViewCreateInfo *pCreateInfo,
-                             VulkanImageView    **ppImageView,
-                             VulkanImage         *pImage);
+    VkResult createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView,
+                             VulkanImage *pImage);
 
-    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo,
-                                VulkanFramebuffer    **ppFramebuffer,
-                                uint32_t               attachmentCount,
-                                VulkanImageView      **pAttachments);
+    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
+                                uint32_t attachmentCount, VulkanImageView **pAttachments);
 
-    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
-                              VulkanRenderPass                          **ppRenderPass,
+    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
                               const std::vector<VkAttachmentDescription> &colorAttachments);
 
-    VkResult createRenderPass(RenderPassCreateInfo                       *createInfo,
-                              VulkanRenderPass                          **ppRenderPass,
+    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
                               const std::vector<VkAttachmentDescription> &colorAttachments,
-                              const VkAttachmentDescription              &depthAttachment);
-
-    VkResult createRenderPass(RenderPassCreateInfo          *createInfo,
-                              VulkanRenderPass             **ppRenderPass,
                               const VkAttachmentDescription &depthAttachment);
 
-    VkResult createSwapchain(VkSurfaceKHR      surface,
-                             VulkanSwapChain **ppSwapchain,
-                             WindowData       *data);
+    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
+                              const VkAttachmentDescription &depthAttachment);
 
-    VkResult createCommandPool(VulkanCommandPool      **ppPool,
-                               uint32_t                 queueFamilyIndex,
-                               VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data);
+
+    VkResult createCommandPool(
+        VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
+        VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo *pCreateInfo,
-                                    EffectInfo               *pEffectInfo,
-                                    VulkanRenderPass         *pRenderPass,
-                                    VulkanPipeline          **ppPipeline);
+                                    EffectInfo *pEffectInfo, VulkanRenderPass *pRenderPass,
+                                    VulkanPipeline **ppPipeline);
 
-    VkResult createComputePipeline(EffectInfo      *pEffectInfo,
-                                   VulkanPipeline **ppPipeline);
+    VkResult createComputePipeline(EffectInfo *pEffectInfo, VulkanPipeline **ppPipeline);
 
     VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                       VulkanDescriptorSetLayout      **ppDescriptorSetLayout);
+                                       VulkanDescriptorSetLayout **ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
@@ -114,12 +104,10 @@ public:
     void destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout);
 
 public:
-    VkResult allocateCommandBuffers(uint32_t              commandBufferCount,
-                                    VulkanCommandBuffer **ppCommandBuffers,
-                                    VkQueueFlags          flags = VK_QUEUE_GRAPHICS_BIT);
+    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers,
+                                    VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT);
 
-    void freeCommandBuffers(uint32_t              commandBufferCount,
-                            VulkanCommandBuffer **ppCommandBuffers);
+    void freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
 
     VulkanCommandBuffer *beginSingleTimeCommands(VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT);
 
@@ -128,15 +116,15 @@ public:
     void waitIdle();
 
 public:
-    VulkanCommandPool        *getCommandPoolWithQueue(VulkanQueue *queue);
-    VulkanPhysicalDevice     *getPhysicalDevice() const;
-    VulkanQueue              *getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex = 0);
-    VkFormat                  getDepthFormat() const;
+    VulkanCommandPool *getCommandPoolWithQueue(VulkanQueue *queue);
+    VulkanPhysicalDevice *getPhysicalDevice() const;
+    VulkanQueue *getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex = 0);
+    VkFormat getDepthFormat() const;
     VulkanSyncPrimitivesPool *getSyncPrimitiviesPool();
-    VulkanShaderCache        *getShaderCache();
+    VulkanShaderCache *getShaderCache();
 
 private:
-    VulkanPhysicalDevice    *_physicalDevice;
+    VulkanPhysicalDevice *_physicalDevice;
     VkPhysicalDeviceFeatures _enabledFeatures;
 
     std::vector<QueueFamily> _queues = {};
@@ -144,11 +132,11 @@ private:
     QueueFamilyCommandPools _commandPools;
 
     VulkanSyncPrimitivesPool *_syncPrimitivesPool = nullptr;
-    VulkanShaderCache        *_shaderCache        = nullptr;
+    VulkanShaderCache *_shaderCache = nullptr;
 
     DeviceCreateInfo _createInfo;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // VKLDEVICE_H_
+#endif  // VKLDEVICE_H_

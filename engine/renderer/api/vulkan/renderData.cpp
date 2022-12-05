@@ -30,10 +30,11 @@ TextureGpuData createTexture(VulkanDevice * pDevice, uint32_t width, uint32_t he
     }
 
     TextureGpuData texture{};
+
     {
         ImageCreateInfo createInfo{};
         createInfo.extent    = {width, height, 1};
-        createInfo.format    = FORMAT_R8G8B8A8_SRGB;
+        createInfo.format    = FORMAT_R8G8B8A8_UNORM;
         createInfo.tiling    = IMAGE_TILING_OPTIMAL;
         createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
         createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -117,33 +118,28 @@ TextureGpuData createTexture(VulkanDevice * pDevice, uint32_t width, uint32_t he
 
     {
         ImageViewCreateInfo createInfo{};
-        createInfo.format                      = FORMAT_R8G8B8A8_SRGB;
+        createInfo.format                      = FORMAT_R8G8B8A8_UNORM;
         createInfo.viewType                    = IMAGE_VIEW_TYPE_2D;
         createInfo.subresourceRange.levelCount = texMipLevels;
         pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
     }
 
     {
-        // TODO
         VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
         samplerInfo.maxLod              = texMipLevels;
-        // samplerInfo.maxAnisotropy       = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy ? _device->getDeviceProperties().limits.maxSamplerAnisotropy : 1.0f;
-        // samplerInfo.anisotropyEnable    = _device->getPhysicalDevice()->getDeviceEnabledFeatures().samplerAnisotropy;
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
         VK_CHECK_RESULT(vkCreateSampler(pDevice->getHandle(), &samplerInfo, nullptr, &texture.sampler));
     }
 
+    texture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    texture.descriptorInfo.imageView   = texture.imageView->getHandle();
+    texture.descriptorInfo.sampler     = texture.sampler;
+
     pDevice->destroyBuffer(stagingBuffer);
 
     return texture;
 }
-}
-
-void TextureGpuData::setupDescriptor() {
-    descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    descriptorInfo.imageView   = imageView->getHandle();
-    descriptorInfo.sampler     = sampler;
 }
 
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
@@ -158,7 +154,6 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
         auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
         m_textures.push_back(texture);
-        m_textures.back().setupDescriptor();
     }
 
     // load buffer

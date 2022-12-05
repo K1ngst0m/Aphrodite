@@ -6,16 +6,6 @@
 namespace vkl
 {
 
-struct TextureGpuData
-{
-    VulkanImage *image = nullptr;
-    VulkanImageView *imageView = nullptr;
-    VkSampler sampler = VK_NULL_HANDLE;
-    VkDescriptorImageInfo descriptorInfo;
-
-    void setupDescriptor();
-};
-
 struct VulkanRenderData
 {
     VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode);

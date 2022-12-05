@@ -15,20 +15,24 @@
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
-namespace vkl {
-VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo, VulkanDevice **ppDevice) {
+namespace vkl
+{
+VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo,
+                              VulkanDevice **ppDevice)
+{
     auto &queueFamilyProperties = pPhysicalDevice->getQueueFamilyProperties();
-    auto  queueFamilyCount      = queueFamilyProperties.size();
+    auto queueFamilyCount = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
-    std::vector<std::vector<float>>      priorities(queueFamilyCount);
-    for (auto i = 0U; i < queueFamilyCount; ++i) {
+    std::vector<std::vector<float>> priorities(queueFamilyCount);
+    for(auto i = 0U; i < queueFamilyCount; ++i)
+    {
         const float defaultPriority = 1.0f;
         priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
-        queueCreateInfos[i].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfos[i].queueFamilyIndex = i;
-        queueCreateInfos[i].queueCount       = queueFamilyProperties[i].queueCount;
+        queueCreateInfos[i].queueCount = queueFamilyProperties[i].queueCount;
         queueCreateInfos[i].pQueuePriorities = priorities[i].data();
     }
 
@@ -38,38 +42,44 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
 
     // Create the Vulkan device.
     VkDeviceCreateInfo deviceCreateInfo = {
-        .sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext                   = pCreateInfo->pNext,
-        .queueCreateInfoCount    = (uint32_t)queueCreateInfos.size(),
-        .pQueueCreateInfos       = queueCreateInfos.data(),
-        .enabledLayerCount       = pCreateInfo->enabledLayerCount,
-        .ppEnabledLayerNames     = pCreateInfo->ppEnabledLayerNames,
-        .enabledExtensionCount   = pCreateInfo->enabledExtensionCount,
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext = pCreateInfo->pNext,
+        .queueCreateInfoCount = (uint32_t)queueCreateInfos.size(),
+        .pQueueCreateInfos = queueCreateInfos.data(),
+        .enabledLayerCount = pCreateInfo->enabledLayerCount,
+        .ppEnabledLayerNames = pCreateInfo->ppEnabledLayerNames,
+        .enabledExtensionCount = pCreateInfo->enabledExtensionCount,
         .ppEnabledExtensionNames = pCreateInfo->ppEnabledExtensionNames,
-        .pEnabledFeatures        = &pPhysicalDevice->getDeviceFeatures(),
+        .pEnabledFeatures = &pPhysicalDevice->getDeviceFeatures(),
     };
 
     VkDevice handle = VK_NULL_HANDLE;
-    auto     result = vkCreateDevice(pPhysicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle);
-    if (result != VK_SUCCESS)
+    auto result = vkCreateDevice(pPhysicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle);
+    if(result != VK_SUCCESS)
         return result;
 
     // Initialize Device class.
     auto *device = new VulkanDevice;
     memcpy(&device->_createInfo, pCreateInfo, sizeof(DeviceCreateInfo));
-    device->_handle             = handle;
-    device->_physicalDevice     = pPhysicalDevice;
+    device->_handle = handle;
+    device->_physicalDevice = pPhysicalDevice;
     device->_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
-    device->_shaderCache        = new VulkanShaderCache(device);
+    device->_shaderCache = new VulkanShaderCache(device);
 
     // Get handles to all of the previously enumerated and created queues.
     device->_queues.resize(queueFamilyCount);
-    for (auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex) {
-        for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex) {
+    for(auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
+    {
+        for(auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount;
+            ++queueIndex)
+        {
             VkQueue queue = VK_NULL_HANDLE;
             vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            if (queue) {
-                device->_queues[queueFamilyIndex].push_back(new VulkanQueue(device, queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]));
+            if(queue)
+            {
+                device->_queues[queueFamilyIndex].push_back(
+                    new VulkanQueue(device, queue, queueFamilyIndex, queueIndex,
+                                    queueFamilyProperties[queueFamilyIndex]));
             }
         }
     }
@@ -81,34 +91,42 @@ VkResult VulkanDevice::Create(VulkanPhysicalDevice *pPhysicalDevice, const Devic
     return VK_SUCCESS;
 }
 
-void VulkanDevice::Destroy(VulkanDevice *pDevice) {
-    for (auto &[_, commandpool] : pDevice->_commandPools) {
+void VulkanDevice::Destroy(VulkanDevice *pDevice)
+{
+    for(auto &[_, commandpool] : pDevice->_commandPools)
+    {
         pDevice->destroyCommandPool(commandpool);
     }
 
-    if (pDevice->_shaderCache) {
+    if(pDevice->_shaderCache)
+    {
         pDevice->_shaderCache->destroy();
     }
 
-    if (pDevice->_syncPrimitivesPool) {
+    if(pDevice->_syncPrimitivesPool)
+    {
         delete pDevice->_syncPrimitivesPool;
     }
 
-    if (pDevice->_handle) {
+    if(pDevice->_handle)
+    {
         vkDestroyDevice(pDevice->_handle, nullptr);
     }
     delete pDevice;
 }
 
-VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex, VkCommandPoolCreateFlags createFlags) {
+VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
+                                         VkCommandPoolCreateFlags createFlags)
+{
     VkCommandPoolCreateInfo cmdPoolInfo = {};
-    cmdPoolInfo.sType                   = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    cmdPoolInfo.queueFamilyIndex        = queueFamilyIndex;
-    cmdPoolInfo.flags                   = createFlags;
+    cmdPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    cmdPoolInfo.queueFamilyIndex = queueFamilyIndex;
+    cmdPoolInfo.flags = createFlags;
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
-    auto          result  = vkCreateCommandPool(_handle, &cmdPoolInfo, nullptr, &cmdPool);
-    if (result != VK_SUCCESS) {
+    auto result = vkCreateCommandPool(_handle, &cmdPoolInfo, nullptr, &cmdPool);
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
@@ -116,28 +134,33 @@ VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t qu
     return VK_SUCCESS;
 }
 
-VkFormat VulkanDevice::getDepthFormat() const {
-    return _physicalDevice->findSupportedFormat({VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-                                                VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+VkFormat VulkanDevice::getDepthFormat() const
+{
+    return _physicalDevice->findSupportedFormat(
+        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT },
+        VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView, VulkanImage *pImage) {
+VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView,
+                                       VulkanImage *pImage)
+{
     // Create a new Vulkan image view.
     VkImageViewCreateInfo createInfo = {};
-    createInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.pNext                 = nullptr;
-    createInfo.image                 = pImage->getHandle();
-    createInfo.viewType              = static_cast<VkImageViewType>(pCreateInfo->viewType);
-    createInfo.format                = static_cast<VkFormat>(pCreateInfo->format);
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.pNext = nullptr;
+    createInfo.image = pImage->getHandle();
+    createInfo.viewType = static_cast<VkImageViewType>(pCreateInfo->viewType);
+    createInfo.format = static_cast<VkFormat>(pCreateInfo->format);
     memcpy(&createInfo.components, &pCreateInfo->components, sizeof(VkComponentMapping));
-    createInfo.subresourceRange.aspectMask     = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format));
-    createInfo.subresourceRange.baseMipLevel   = pCreateInfo->subresourceRange.baseMipLevel;
-    createInfo.subresourceRange.levelCount     = pCreateInfo->subresourceRange.levelCount;
+    createInfo.subresourceRange.aspectMask =
+        vkl::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format));
+    createInfo.subresourceRange.baseMipLevel = pCreateInfo->subresourceRange.baseMipLevel;
+    createInfo.subresourceRange.levelCount = pCreateInfo->subresourceRange.levelCount;
     createInfo.subresourceRange.baseArrayLayer = pCreateInfo->subresourceRange.baseArrayLayer;
-    createInfo.subresourceRange.layerCount     = pCreateInfo->subresourceRange.layerCount;
-    VkImageView handle                         = VK_NULL_HANDLE;
-    auto        result                         = vkCreateImageView(pImage->getDevice()->getHandle(), &createInfo, nullptr, &handle);
-    if (result != VK_SUCCESS)
+    createInfo.subresourceRange.layerCount = pCreateInfo->subresourceRange.layerCount;
+    VkImageView handle = VK_NULL_HANDLE;
+    auto result = vkCreateImageView(pImage->getDevice()->getHandle(), &createInfo, nullptr, &handle);
+    if(result != VK_SUCCESS)
         return result;
 
     *ppImageView = VulkanImageView::createFromHandle(pCreateInfo, pImage, handle);
@@ -145,9 +168,10 @@ VkResult VulkanDevice::createImageView(ImageViewCreateInfo *pCreateInfo, VulkanI
     return VK_SUCCESS;
 }
 
-void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer) {
+void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer)
+{
     uint32_t queueFamilyIndex = commandBuffer->getQueueFamilyIndices();
-    auto     queue            = _queues[queueFamilyIndex][0];
+    auto queue = _queues[queueFamilyIndex][0];
 
     commandBuffer->end();
 
@@ -158,21 +182,23 @@ void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer) {
     freeCommandBuffers(1, &commandBuffer);
 }
 
-VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(VkQueueFlags flags) {
+VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(VkQueueFlags flags)
+{
     VulkanCommandBuffer *instance = nullptr;
     allocateCommandBuffers(1, &instance, flags);
     instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     return instance;
 }
 
-VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data) {
-    VkBuffer       buffer;
+VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data)
+{
+    VkBuffer buffer;
     VkDeviceMemory memory;
     // create buffer
     VkBufferCreateInfo bufferInfo{
-        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size        = pCreateInfo->size,
-        .usage       = pCreateInfo->usage,
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = pCreateInfo->size,
+        .usage = pCreateInfo->usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VK_CHECK_RESULT(vkCreateBuffer(_handle, &bufferInfo, nullptr, &buffer));
@@ -180,7 +206,9 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     // create memory
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(_handle, buffer, &memRequirements);
-    VkMemoryAllocateInfo allocInfo = vkl::init::memoryAllocateInfo(memRequirements.size, _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property));
+    VkMemoryAllocateInfo allocInfo = vkl::init::memoryAllocateInfo(
+        memRequirements.size,
+        _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property));
     VK_CHECK_RESULT(vkAllocateMemory(_handle, &allocInfo, nullptr, &memory));
 
     *ppBuffer = VulkanBuffer::CreateFromHandle(this, pCreateInfo, buffer, memory);
@@ -189,7 +217,8 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     VkResult result = (*ppBuffer)->bind();
     VK_CHECK_RESULT(result);
 
-    if (data) {
+    if(data)
+    {
         (*ppBuffer)->map();
         (*ppBuffer)->copyTo(data, (*ppBuffer)->getSize());
         (*ppBuffer)->unmap();
@@ -198,29 +227,31 @@ VkResult VulkanDevice::createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer 
     return result;
 }
 
-VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage) {
-    VkImage        image;
+VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage)
+{
+    VkImage image;
     VkDeviceMemory memory;
 
     VkImageCreateInfo imageCreateInfo{
-        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags         = pCreateInfo->flags,
-        .imageType     = VK_IMAGE_TYPE_2D,
-        .format        = static_cast<VkFormat>(pCreateInfo->format),
-        .mipLevels     = pCreateInfo->mipLevels,
-        .arrayLayers   = pCreateInfo->layerCount,
-        .samples       = VK_SAMPLE_COUNT_1_BIT,
-        .tiling        = static_cast<VkImageTiling>(pCreateInfo->tiling),
-        .usage         = pCreateInfo->usage,
-        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
+        .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        .flags = pCreateInfo->flags,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format = static_cast<VkFormat>(pCreateInfo->format),
+        .mipLevels = pCreateInfo->mipLevels,
+        .arrayLayers = pCreateInfo->layerCount,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .tiling = static_cast<VkImageTiling>(pCreateInfo->tiling),
+        .usage = pCreateInfo->usage,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
-    imageCreateInfo.extent.width  = pCreateInfo->extent.width;
+    imageCreateInfo.extent.width = pCreateInfo->extent.width;
     imageCreateInfo.extent.height = pCreateInfo->extent.height;
-    imageCreateInfo.extent.depth  = pCreateInfo->extent.depth;
+    imageCreateInfo.extent.depth = pCreateInfo->extent.depth;
 
-    if (vkCreateImage(_handle, &imageCreateInfo, nullptr, &image) != VK_SUCCESS) {
+    if(vkCreateImage(_handle, &imageCreateInfo, nullptr, &image) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create image!");
     }
 
@@ -228,18 +259,21 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     vkGetImageMemoryRequirements(_handle, image, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize  = memRequirements.size,
-        .memoryTypeIndex = _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = memRequirements.size,
+        .memoryTypeIndex =
+            _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, pCreateInfo->property),
     };
 
-    if (vkAllocateMemory(_handle, &allocInfo, nullptr, &memory) != VK_SUCCESS) {
+    if(vkAllocateMemory(_handle, &allocInfo, nullptr, &memory) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to allocate image memory!");
     }
 
     *ppImage = VulkanImage::CreateFromHandle(this, pCreateInfo, image, memory);
 
-    if ((*ppImage)->getMemory() != VK_NULL_HANDLE) {
+    if((*ppImage)->getMemory() != VK_NULL_HANDLE)
+    {
         auto result = (*ppImage)->bind();
         return result;
     }
@@ -247,60 +281,64 @@ VkResult VulkanDevice::createImage(ImageCreateInfo *pCreateInfo, VulkanImage **p
     return VK_SUCCESS;
 }
 
-VulkanPhysicalDevice *VulkanDevice::getPhysicalDevice() const {
+VulkanPhysicalDevice *VulkanDevice::getPhysicalDevice() const
+{
     return _physicalDevice;
 }
 
-VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                       *createInfo,
-                                        VulkanRenderPass                          **ppRenderPass,
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo *createInfo,
+                                        VulkanRenderPass **ppRenderPass,
                                         const std::vector<VkAttachmentDescription> &colorAttachments,
-                                        const VkAttachmentDescription              &depthAttachment) {
+                                        const VkAttachmentDescription &depthAttachment)
+{
     std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference>   colorAttachmentRefs;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
 
-    for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
+    for(uint32_t idx = 0; idx < colorAttachments.size(); idx++)
+    {
         attachments.push_back(colorAttachments[idx]);
         VkAttachmentReference ref{};
         ref.attachment = idx;
-        ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachmentRefs.push_back(ref);
     }
 
     attachments.push_back(depthAttachment);
     VkAttachmentReference depthAttachmentRef{};
     depthAttachmentRef.attachment = static_cast<uint32_t>(colorAttachments.size());
-    depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpassDescription{};
-    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size());
-    subpassDescription.pColorAttachments       = colorAttachmentRefs.data();
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
+    subpassDescription.pColorAttachments = colorAttachmentRefs.data();
     subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
 
     std::array<VkSubpassDependency, 1> dependencies;
 
-    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass      = 0;
-    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
-    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = 0;
 
     VkRenderPassCreateInfo renderPassInfo{
-        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .subpassCount    = 1,
-        .pSubpasses      = &subpassDescription,
+        .pAttachments = attachments.data(),
+        .subpassCount = 1,
+        .pSubpasses = &subpassDescription,
         .dependencyCount = dependencies.size(),
-        .pDependencies   = dependencies.data(),
+        .pDependencies = dependencies.data(),
     };
 
     VkRenderPass renderpass;
-    auto         result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
+    auto result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
 
-    if (result != VK_SUCCESS) {
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
@@ -310,40 +348,49 @@ VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                    
 }
 
 VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo,
-                                          VulkanFramebuffer    **ppFramebuffer,
-                                          uint32_t               attachmentCount,
-                                          VulkanImageView      **pAttachments) {
+                                          VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount,
+                                          VulkanImageView **pAttachments)
+{
     return VulkanFramebuffer::Create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
 }
 
-void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer) {
-    if (pBuffer->getMemory() != VK_NULL_HANDLE) {
+void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer)
+{
+    if(pBuffer->getMemory() != VK_NULL_HANDLE)
+    {
         vkFreeMemory(_handle, pBuffer->getMemory(), nullptr);
     }
     vkDestroyBuffer(_handle, pBuffer->getHandle(), nullptr);
     delete pBuffer;
 }
-void VulkanDevice::destroyImage(VulkanImage *pImage) {
-    if (pImage->getMemory() != VK_NULL_HANDLE) {
+void VulkanDevice::destroyImage(VulkanImage *pImage)
+{
+    if(pImage->getMemory() != VK_NULL_HANDLE)
+    {
         vkFreeMemory(_handle, pImage->getMemory(), nullptr);
     }
     vkDestroyImage(_handle, pImage->getHandle(), nullptr);
     delete pImage;
     pImage = nullptr;
 }
-void VulkanDevice::destroyImageView(VulkanImageView *pImageView) {
+void VulkanDevice::destroyImageView(VulkanImageView *pImageView)
+{
     vkDestroyImageView(_handle, pImageView->getHandle(), nullptr);
     delete pImageView;
     pImageView = nullptr;
 }
-void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass) {
+void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass)
+{
     vkDestroyRenderPass(_handle, pRenderpass->getHandle(), nullptr);
     delete pRenderpass;
 }
-void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer) {
+void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer)
+{
     delete pFramebuffer;
 }
-VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data) {
+VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain,
+                                       WindowData *data)
+{
     VulkanSwapChain *instance = VulkanSwapChain::Create(this, surface, data);
 
     *ppSwapchain = instance;
@@ -351,26 +398,30 @@ VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **p
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain) {
+void VulkanDevice::destroySwapchain(VulkanSwapChain *pSwapchain)
+{
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
 }
 
-VulkanQueue *VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex) {
-    const std::vector<VkQueueFamilyProperties> &queueFamilyProperties = _physicalDevice->getQueueFamilyProperties();
+VulkanQueue *VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex)
+{
+    const std::vector<VkQueueFamilyProperties> &queueFamilyProperties =
+        _physicalDevice->getQueueFamilyProperties();
 
     // Iterate over queues in order to find one matching requested flags.
     // Favor queue families matching only what's specified in queueFlags over
     // families having other bits set as well.
-    VkQueueFlags minFlags  = ~0;
+    VkQueueFlags minFlags = ~0;
     VulkanQueue *bestQueue = nullptr;
-    for (auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyProperties.size();
-         ++queueFamilyIndex) {
-        if (((queueFamilyProperties[queueFamilyIndex].queueFlags & flags) ==
-             flags) &&
-            queueIndex < queueFamilyProperties[queueFamilyIndex].queueCount) {
-            if (queueFamilyProperties[queueFamilyIndex].queueFlags < minFlags) {
-                minFlags  = queueFamilyProperties[queueFamilyIndex].queueFlags;
+    for(auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyProperties.size(); ++queueFamilyIndex)
+    {
+        if(((queueFamilyProperties[queueFamilyIndex].queueFlags & flags) == flags) &&
+           queueIndex < queueFamilyProperties[queueFamilyIndex].queueCount)
+        {
+            if(queueFamilyProperties[queueFamilyIndex].queueFlags < minFlags)
+            {
+                minFlags = queueFamilyProperties[queueFamilyIndex].queueFlags;
                 bestQueue = _queues[queueFamilyIndex][queueIndex];
             }
         }
@@ -379,14 +430,17 @@ VulkanQueue *VulkanDevice::getQueueByFlags(VkQueueFlags flags, uint32_t queueInd
     // Return the queue for the given flags.
     return bestQueue;
 }
-void VulkanDevice::waitIdle() {
+void VulkanDevice::waitIdle()
+{
     vkDeviceWaitIdle(getHandle());
 }
 
-VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue) {
+VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue)
+{
     auto indices = queue->getFamilyIndex();
 
-    if (_commandPools.count(indices)) {
+    if(_commandPools.count(indices))
+    {
         return _commandPools.at(indices);
     }
 
@@ -396,90 +450,101 @@ VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue) {
     return pool;
 }
 
-void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool) {
+void VulkanDevice::destroyCommandPool(VulkanCommandPool *pPool)
+{
     vkDestroyCommandPool(getHandle(), pPool->getHandle(), nullptr);
     delete pPool;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VkQueueFlags flags) {
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount,
+                                              VulkanCommandBuffer **ppCommandBuffers, VkQueueFlags flags)
+{
     auto *queue = getQueueByFlags(flags);
-    auto *pool  = getCommandPoolWithQueue(queue);
+    auto *pool = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
-    auto                         result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
-    if (result != VK_SUCCESS) {
+    auto result = pool->allocateCommandBuffers(commandBufferCount, handles.data());
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
-    for (auto i = 0; i < commandBufferCount; i++) {
+    for(auto i = 0; i < commandBufferCount; i++)
+    {
         ppCommandBuffers[i] = new VulkanCommandBuffer(pool, handles[i], pool->getQueueFamilyIndex());
     }
     return VK_SUCCESS;
 }
 
-void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers) {
+void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount,
+                                      VulkanCommandBuffer **ppCommandBuffers)
+{
     // Destroy all of the command buffers.
-    for (auto i = 0U; i < commandBufferCount; ++i) {
+    for(auto i = 0U; i < commandBufferCount; ++i)
+    {
         delete ppCommandBuffers[i];
     }
 }
 VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *pCreateInfo,
-                                              EffectInfo                       *pEffectInfo,
-                                              VulkanRenderPass                 *pRenderPass,
-                                              VulkanPipeline                  **ppPipeline) {
+                                              EffectInfo *pEffectInfo, VulkanRenderPass *pRenderPass,
+                                              VulkanPipeline **ppPipeline)
+{
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
     VkPipelineViewportStateCreateInfo viewportState = {};
-    viewportState.sType                             = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportState.pNext                             = nullptr;
+    viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewportState.pNext = nullptr;
 
     viewportState.viewportCount = 1;
-    viewportState.pViewports    = &pCreateInfo->viewport;
-    viewportState.scissorCount  = 1;
-    viewportState.pScissors     = &pCreateInfo->scissor;
+    viewportState.pViewports = &pCreateInfo->viewport;
+    viewportState.scissorCount = 1;
+    viewportState.pScissors = &pCreateInfo->scissor;
 
     // setup dummy color blending. We aren't using transparent objects yet
     // the blending is just "no blend", but we do write to the color attachment
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
-    colorBlending.sType                               = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    colorBlending.pNext                               = nullptr;
+    colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlending.pNext = nullptr;
 
-    colorBlending.logicOpEnable   = VK_FALSE;
-    colorBlending.logicOp         = VK_LOGIC_OP_COPY;
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.logicOp = VK_LOGIC_OP_COPY;
     colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments    = &pCreateInfo->colorBlendAttachment;
+    colorBlending.pAttachments = &pCreateInfo->colorBlendAttachment;
 
     // build the actual pipeline
     // we now use all of the info structs we have been writing into into this one to create the pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
-    pipelineInfo.sType                        = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.pNext                        = nullptr;
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.pNext = nullptr;
 
     ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for (const auto &[stage, sModule] : pEffectInfo->shaderMapList) {
+    for(const auto &[stage, sModule] : pEffectInfo->shaderMapList)
+    {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
-    pipelineInfo.stageCount          = shaderStages.size();
-    pipelineInfo.pStages             = shaderStages.data();
-    pipelineInfo.pVertexInputState   = &pCreateInfo->vertexInputInfo;
+    pipelineInfo.stageCount = shaderStages.size();
+    pipelineInfo.pStages = shaderStages.data();
+    pipelineInfo.pVertexInputState = &pCreateInfo->vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &pCreateInfo->inputAssembly;
-    pipelineInfo.pViewportState      = &viewportState;
-    pipelineInfo.pDynamicState       = &pCreateInfo->dynamicState;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pDynamicState = &pCreateInfo->dynamicState;
     pipelineInfo.pRasterizationState = &pCreateInfo->rasterizer;
-    pipelineInfo.pDepthStencilState  = &pCreateInfo->depthStencil;
-    pipelineInfo.pMultisampleState   = &pCreateInfo->multisampling;
-    pipelineInfo.pColorBlendState    = &colorBlending;
-    pipelineInfo.layout              = effect->getPipelineLayout();
-    pipelineInfo.renderPass          = pRenderPass->getHandle();
-    pipelineInfo.subpass             = 0;
-    pipelineInfo.basePipelineHandle  = VK_NULL_HANDLE;
+    pipelineInfo.pDepthStencilState = &pCreateInfo->depthStencil;
+    pipelineInfo.pMultisampleState = &pCreateInfo->multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.layout = effect->getPipelineLayout();
+    pipelineInfo.renderPass = pRenderPass->getHandle();
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     VkPipeline handle;
-    auto       result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->pipelineCache, 1, &pipelineInfo, nullptr, &handle);
+    auto result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->pipelineCache, 1, &pipelineInfo,
+                                            nullptr, &handle);
 
-    if (result != VK_SUCCESS) {
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
@@ -488,148 +553,159 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline) {
+void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline)
+{
     vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
 }
 
 VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                                 VulkanDescriptorSetLayout      **ppDescriptorSetLayout) {
+                                                 VulkanDescriptorSetLayout **ppDescriptorSetLayout)
+{
     VkDescriptorSetLayout setLayout;
-    auto                  result = vkCreateDescriptorSetLayout(_handle, pCreateInfo, nullptr, &setLayout);
-    if (result != VK_SUCCESS) {
+    auto result = vkCreateDescriptorSetLayout(_handle, pCreateInfo, nullptr, &setLayout);
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
     *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(this, pCreateInfo, setLayout);
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout) {
+void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout)
+{
     vkDestroyDescriptorSetLayout(_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
 }
-VulkanSyncPrimitivesPool *VulkanDevice::getSyncPrimitiviesPool() {
+VulkanSyncPrimitivesPool *VulkanDevice::getSyncPrimitiviesPool()
+{
     return _syncPrimitivesPool;
 }
-VulkanShaderCache *VulkanDevice::getShaderCache() {
+VulkanShaderCache *VulkanDevice::getShaderCache()
+{
     return _shaderCache;
 }
-VkResult VulkanDevice::createComputePipeline(EffectInfo      *pEffectInfo,
-                                             VulkanPipeline **ppPipeline) {
-    ShaderEffect                                *effect = ShaderEffect::Create(this, pEffectInfo);
+VkResult VulkanDevice::createComputePipeline(EffectInfo *pEffectInfo, VulkanPipeline **ppPipeline)
+{
+    ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
-    for (const auto &[stage, sModule] : pEffectInfo->shaderMapList) {
+    for(const auto &[stage, sModule] : pEffectInfo->shaderMapList)
+    {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(effect->getPipelineLayout());
-    ci.stage                       = shaderStages[0];
-    VkPipeline handle              = VK_NULL_HANDLE;
-    auto       result              = vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle);
-    if (result != VK_SUCCESS) {
+    ci.stage = shaderStages[0];
+    VkPipeline handle = VK_NULL_HANDLE;
+    auto result = vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle);
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
     *ppPipeline = VulkanPipeline::CreateComputePipeline(this, effect, handle);
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo                       *createInfo,
-                                        VulkanRenderPass                          **ppRenderPass,
-                                        const std::vector<VkAttachmentDescription> &colorAttachments) {
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo *createInfo,
+                                        VulkanRenderPass **ppRenderPass,
+                                        const std::vector<VkAttachmentDescription> &colorAttachments)
+{
     std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference>   colorAttachmentRefs;
+    std::vector<VkAttachmentReference> colorAttachmentRefs;
 
-    for (uint32_t idx = 0; idx < colorAttachments.size(); idx++) {
+    for(uint32_t idx = 0; idx < colorAttachments.size(); idx++)
+    {
         attachments.push_back(colorAttachments[idx]);
         VkAttachmentReference ref{};
         ref.attachment = idx;
-        ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachmentRefs.push_back(ref);
     }
 
     VkSubpassDescription subpassDescription{};
-    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentRefs.size());
-    subpassDescription.pColorAttachments       = colorAttachmentRefs.data();
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size());
+    subpassDescription.pColorAttachments = colorAttachmentRefs.data();
     subpassDescription.pDepthStencilAttachment = nullptr;
 
     std::array<VkSubpassDependency, 1> dependencies;
 
-    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass      = 0;
-    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
-    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = 0;
 
     VkRenderPassCreateInfo renderPassInfo{
-        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .subpassCount    = 1,
-        .pSubpasses      = &subpassDescription,
+        .pAttachments = attachments.data(),
+        .subpassCount = 1,
+        .pSubpasses = &subpassDescription,
         .dependencyCount = dependencies.size(),
-        .pDependencies   = dependencies.data(),
+        .pDependencies = dependencies.data(),
     };
 
     VkRenderPass renderpass;
-    auto         result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
+    auto result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
 
-    if (result != VK_SUCCESS) {
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
     *ppRenderPass = new VulkanRenderPass(renderpass, colorAttachmentRefs.size());
 
     return VK_SUCCESS;
-
 }
-VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo          *createInfo,
-                                        VulkanRenderPass             **ppRenderPass,
-                                        const VkAttachmentDescription &depthAttachment) {
+VkResult VulkanDevice::createRenderPass(RenderPassCreateInfo *createInfo,
+                                        VulkanRenderPass **ppRenderPass,
+                                        const VkAttachmentDescription &depthAttachment)
+{
     std::vector<VkAttachmentDescription> attachments;
 
     attachments.push_back(depthAttachment);
     VkAttachmentReference depthAttachmentRef{};
     depthAttachmentRef.attachment = 0;
-    depthAttachmentRef.layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpassDescription{};
-    subpassDescription.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescription.colorAttachmentCount    = 0;
-    subpassDescription.pColorAttachments       = nullptr;
+    subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpassDescription.colorAttachmentCount = 0;
+    subpassDescription.pColorAttachments = nullptr;
     subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
 
     std::array<VkSubpassDependency, 1> dependencies;
 
-    dependencies[0].srcSubpass      = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass      = 0;
-    dependencies[0].srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask   = VK_ACCESS_NONE_KHR;
-    dependencies[0].dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependencies[0].dstSubpass = 0;
+    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
+    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     dependencies[0].dependencyFlags = 0;
 
     VkRenderPassCreateInfo renderPassInfo{
-        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments    = attachments.data(),
-        .subpassCount    = 1,
-        .pSubpasses      = &subpassDescription,
+        .pAttachments = attachments.data(),
+        .subpassCount = 1,
+        .pSubpasses = &subpassDescription,
         .dependencyCount = dependencies.size(),
-        .pDependencies   = dependencies.data(),
+        .pDependencies = dependencies.data(),
     };
 
     VkRenderPass renderpass;
-    auto         result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
+    auto result = vkCreateRenderPass(_handle, &renderPassInfo, nullptr, &renderpass);
 
-    if (result != VK_SUCCESS) {
+    if(result != VK_SUCCESS)
+    {
         return result;
     }
 
     *ppRenderPass = new VulkanRenderPass(renderpass, 0);
 
     return VK_SUCCESS;
-
 }
-} // namespace vkl
+}  // namespace vkl

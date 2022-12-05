@@ -29,5 +29,5 @@ vec4 tonemap(vec4 color)
 void main()
 {
     vec3 col = texture(screenTexture, inUV).rgb;
-    outColor = tonemap(vec4(col, 1.0));
+    outColor = vec4(col, 1.0);
 }

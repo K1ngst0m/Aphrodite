@@ -5,10 +5,13 @@
 #include "renderer/renderer.h"
 #include "shader.h"
 
-namespace vkl {
-class VulkanRenderer : public Renderer {
+namespace vkl
+{
+class VulkanRenderer : public Renderer
+{
 public:
-    static std::shared_ptr<VulkanRenderer> Create(RenderConfig *config, std::shared_ptr<WindowData> windowData);
+    static std::shared_ptr<VulkanRenderer> Create(RenderConfig *config,
+                                                  std::shared_ptr<WindowData> windowData);
     VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
 
     ~VulkanRenderer() = default;
@@ -22,18 +25,16 @@ public:
     void _initDefaultResource();
 
 public:
-    VulkanInstance      *getInstance() const;
-    VulkanDevice        *getDevice() const;
-    VulkanSwapChain     *getSwapChain();
-    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const;
-    VulkanFramebuffer   *getDefaultFrameBuffer(uint32_t idx) const;
-    uint32_t             getCommandBufferCount() const;
-    VkPipelineCache      getPipelineCache();
-    uint32_t             getCurrentFrameIndex() const;
-    uint32_t             getCurrentImageIndex() const;
-    VkExtent2D           getSwapChainExtent() const;
-
-    VulkanRenderPass *getDefaultRenderPass() const;
+    VkPipelineCache getPipelineCache() { return m_pipelineCache; }
+    uint32_t getCurrentFrameIndex() const { return m_currentFrame; }
+    uint32_t getCurrentImageIndex() const { return m_imageIdx; }
+    VulkanSwapChain *getSwapChain() { return m_swapChain; }
+    VulkanRenderPass *getDefaultRenderPass() const { return m_renderPass; }
+    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
+    uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
+    VulkanDevice *getDevice() const { return m_device; }
+    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_fbData.framebuffers[idx]; }
+    VulkanInstance *getInstance() const { return m_instance; }
 
 private:
     void _createInstance();
@@ -51,43 +52,43 @@ private:
 
 private:
     // TODO
-    void getEnabledFeatures() {
-    }
+    void getEnabledFeatures() {}
 
 private:
-    VulkanInstance  *m_instance  = nullptr;
-    VulkanDevice    *m_device    = nullptr;
+    VulkanInstance *m_instance = nullptr;
+    VulkanDevice *m_device = nullptr;
     VulkanSwapChain *m_swapChain = nullptr;
 
     VkPhysicalDeviceFeatures m_enabledFeatures{};
     VkDebugUtilsMessengerEXT m_debugMessenger;
-    VkSurfaceKHR             m_surface;
+    VkSurfaceKHR m_surface;
 
     VkPipelineCache m_pipelineCache = VK_NULL_HANDLE;
 
     uint32_t m_currentFrame = 0;
-    uint32_t m_imageIdx     = 0;
+    uint32_t m_imageIdx = 0;
 
     // default resource
 private:
     vkl::VulkanRenderPass *m_renderPass = nullptr;
 
-    struct {
+    struct
+    {
         std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VulkanImage *>       colorImages;
-        std::vector<VulkanImageView *>   colorImageViews;
+        std::vector<VulkanImage *> colorImages;
+        std::vector<VulkanImageView *> colorImageViews;
 
         // TODO frames in flight depth attachment
-        VulkanImage     *depthImage     = nullptr;
+        VulkanImage *depthImage = nullptr;
         VulkanImageView *depthImageView = nullptr;
     } m_fbData;
 
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;
-    std::vector<VkFence>     m_inFlightFence;
+    std::vector<VkFence> m_inFlightFence;
 
     std::vector<VulkanCommandBuffer *> m_commandBuffers;
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // VULKANRENDERER_H_
+#endif  // VULKANRENDERER_H_

@@ -3,18 +3,22 @@
 #include "image.h"
 #include "imageView.h"
 
-namespace vkl {
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR        capabilities;
+namespace vkl
+{
+struct SwapChainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
+    std::vector<VkPresentModeKHR> presentModes;
 };
 
 VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
 {
-    for (const auto &availableFormat : availableFormats) {
-        if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
-            availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+    for(const auto &availableFormat : availableFormats)
+    {
+        if(availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM &&
+           availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
             return availableFormat;
         }
     }
@@ -24,8 +28,10 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>
 
 VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
 {
-    for (const auto &availablePresentMode : availablePresentModes) {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+    for(const auto &availablePresentMode : availablePresentModes)
+    {
+        if(availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
             return availablePresentMode;
         }
     }
@@ -33,9 +39,10 @@ VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR> &avai
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow* window)
+VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow *window)
 {
-    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+    if(capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+    {
         return capabilities.currentExtent;
     }
 
@@ -44,13 +51,16 @@ VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwi
 
     VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
-    actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-    actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width,
+                                    capabilities.maxImageExtent.width);
+    actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                                     capabilities.maxImageExtent.height);
 
     return actualExtent;
 }
 
-SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalDevice device) {
+SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalDevice device)
+{
     SwapChainSupportDetails details;
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &details.capabilities);
@@ -58,7 +68,8 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     uint32_t formatCount;
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, nullptr);
 
-    if (formatCount != 0) {
+    if(formatCount != 0)
+    {
         details.formats.resize(formatCount);
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, details.formats.data());
     }
@@ -66,71 +77,68 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     uint32_t presentModeCount;
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, nullptr);
 
-    if (presentModeCount != 0) {
+    if(presentModeCount != 0)
+    {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount,
+                                                  details.presentModes.data());
     }
 
     return details;
 }
 
-VulkanSwapChain* VulkanSwapChain::Create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data) {
+VulkanSwapChain *VulkanSwapChain::Create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data)
+{
     auto instance = new VulkanSwapChain;
-    instance->_device  = device;
+    instance->_device = device;
     instance->_surface = surface;
     instance->allocateImages(data);
     return instance;
 }
 
-VkResult VulkanSwapChain::acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore, VkFence fence) const {
-    return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, fence, pImageIndex);
+VkResult VulkanSwapChain::acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore,
+                                           VkFence fence) const
+{
+    return vkAcquireNextImageKHR(_device->getHandle(), _handle, UINT64_MAX, semaphore, fence,
+                                 pImageIndex);
 }
-
-VkFormat VulkanSwapChain::getImageFormat() const {
-    return _imageFormat;
-}
-VkExtent2D VulkanSwapChain::getExtent() const {
-    return _extent;
-}
-uint32_t VulkanSwapChain::getImageCount() const {
-    return _images.size();
-}
-VulkanImage *VulkanSwapChain::getImage(uint32_t idx) const {
-    return _images[idx];
-}
-void VulkanSwapChain::allocateImages(WindowData *data) {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(_surface, _device->getPhysicalDevice()->getHandle());
+void VulkanSwapChain::allocateImages(WindowData *data)
+{
+    SwapChainSupportDetails swapChainSupport =
+        querySwapChainSupport(_surface, _device->getPhysicalDevice()->getHandle());
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    VkPresentModeKHR   presentMode   = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D         extent        = chooseSwapExtent(swapChainSupport.capabilities, data->window);
+    VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, data->window);
 
     _imageColorSpace = surfaceFormat.colorSpace;
     _imageFormat = surfaceFormat.format;
-    _extent      = extent;
+    _extent = extent;
     _imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && _imageCount > swapChainSupport.capabilities.maxImageCount) {
+    if(swapChainSupport.capabilities.maxImageCount > 0 &&
+       _imageCount > swapChainSupport.capabilities.maxImageCount)
+    {
         _imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR swapChainCreateInfo{
-        .sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        .surface          = _surface,
-        .minImageCount    = _imageCount,
-        .imageFormat      = _imageFormat,
-        .imageColorSpace  = _imageColorSpace,
-        .imageExtent      = _extent,
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .surface = _surface,
+        .minImageCount = _imageCount,
+        .imageFormat = _imageFormat,
+        .imageColorSpace = _imageColorSpace,
+        .imageExtent = _extent,
         .imageArrayLayers = 1,
-        .imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        .preTransform     = swapChainSupport.capabilities.currentTransform,
-        .compositeAlpha   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .presentMode      = presentMode,
-        .clipped          = VK_TRUE,
-        .oldSwapchain     = VK_NULL_HANDLE,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .preTransform = swapChainSupport.capabilities.currentTransform,
+        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .presentMode = presentMode,
+        .clipped = VK_TRUE,
+        .oldSwapchain = VK_NULL_HANDLE,
     };
 
-    swapChainCreateInfo.imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE;
-    swapChainCreateInfo.queueFamilyIndexCount = 0; // Optional
-    swapChainCreateInfo.pQueueFamilyIndices   = nullptr; // Optional
+    swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    swapChainCreateInfo.queueFamilyIndexCount = 0;      // Optional
+    swapChainCreateInfo.pQueueFamilyIndices = nullptr;  // Optional
 
     VK_CHECK_RESULT(vkCreateSwapchainKHR(_device->getHandle(), &swapChainCreateInfo, nullptr, &_handle));
 
@@ -140,22 +148,24 @@ void VulkanSwapChain::allocateImages(WindowData *data) {
     vkGetSwapchainImagesKHR(_device->getHandle(), _handle, &_imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.
-    for (auto handle : images) {
+    for(auto handle : images)
+    {
         ImageCreateInfo imageCreateInfo = {};
-        imageCreateInfo.imageType       = IMAGE_TYPE_2D;
-        imageCreateInfo.format          = static_cast<Format>(_imageFormat);
-        imageCreateInfo.extent          = {_extent.width, _extent.height, 1};
-        imageCreateInfo.mipLevels       = 1;
-        imageCreateInfo.arrayLayers     = 1;
-        imageCreateInfo.samples         = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling          = IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.usage           = swapChainCreateInfo.imageUsage;
+        imageCreateInfo.imageType = IMAGE_TYPE_2D;
+        imageCreateInfo.format = static_cast<Format>(_imageFormat);
+        imageCreateInfo.extent = { _extent.width, _extent.height, 1 };
+        imageCreateInfo.mipLevels = 1;
+        imageCreateInfo.arrayLayers = 1;
+        imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling = IMAGE_TILING_OPTIMAL;
+        imageCreateInfo.usage = swapChainCreateInfo.imageUsage;
 
         auto image = VulkanImage::CreateFromHandle(_device, &imageCreateInfo, handle);
 
         _images.push_back(image);
     }
 }
-void VulkanSwapChain::cleanupImages() {
+void VulkanSwapChain::cleanupImages()
+{
 }
-} // namespace vkl
+}  // namespace vkl

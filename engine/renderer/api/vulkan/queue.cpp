@@ -12,22 +12,6 @@ VulkanQueue::VulkanQueue(VulkanDevice *device,
     _handle = queue;
 }
 
-uint32_t VulkanQueue::getFamilyIndex() const {
-    return m_queueFamilyIndex;
-}
-
-uint32_t VulkanQueue::getIndex() const {
-    return m_index;
-}
-
-VkQueueFlags VulkanQueue::getFlags() const {
-    return m_properties.queueFlags;
-}
-
-VkResult VulkanQueue::waitIdle() {
-    return VkResult(vkQueueWaitIdle(_handle));
-}
-
 VkResult VulkanQueue::submit(uint32_t submitCount, const VkSubmitInfo *pSubmits, VkFence fence) {
     VkResult result = vkQueueSubmit(_handle, submitCount, pSubmits, fence);
     return result;

@@ -3,24 +3,27 @@
 
 #include "device.h"
 
-namespace vkl {
+namespace vkl
+{
 class VulkanDevice;
-class VulkanImage : public Image, public ResourceHandle<VkImage> {
+class VulkanImage : public Image, public ResourceHandle<VkImage>
+{
 public:
-    static VulkanImage *CreateFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
+    static VulkanImage *CreateFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo,
+                                         VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
 
-    VkDeviceMemory getMemory();
-    VulkanDevice  *getDevice();
+    VkDeviceMemory getMemory() { return _memory; }
+    VulkanDevice *getDevice() { return _device; }
 
     VkResult bind(VkDeviceSize offset = 0) const;
 
 private:
-    VulkanDevice  *_device             = nullptr;
-    VkDeviceMemory _memory             = VK_NULL_HANDLE;
+    VulkanDevice *_device = nullptr;
+    VkDeviceMemory _memory = VK_NULL_HANDLE;
 
     void *_mapped = nullptr;
 };
 
-} // namespace vkl
+}  // namespace vkl
 
-#endif // IMAGE_H_
+#endif  // IMAGE_H_

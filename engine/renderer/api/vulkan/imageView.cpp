@@ -16,11 +16,4 @@ VulkanImageView *VulkanImageView::createFromHandle(ImageViewCreateInfo *pCreateI
     return imageView;
 }
 
-VulkanImage *VulkanImageView::getImage() {
-    return _image;
-}
-
-VulkanDevice *VulkanImageView::getDevice() {
-    return _device;
-}
 } // namespace vkl

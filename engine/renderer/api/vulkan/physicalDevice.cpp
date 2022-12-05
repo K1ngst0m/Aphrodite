@@ -1,16 +1,19 @@
 #include "physicalDevice.h"
 
-namespace vkl {
+namespace vkl
+{
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle)
-    : m_instance(instance) {
+VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle) :
+    m_instance(instance)
+{
     _handle = handle;
 
     uint32_t queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, nullptr);
     assert(queueFamilyCount > 0);
     _queueFamilyProperties.resize(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, _queueFamilyProperties.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount,
+                                             _queueFamilyProperties.data());
     vkGetPhysicalDeviceProperties(_handle, &_properties);
     vkGetPhysicalDeviceFeatures(_handle, &_features);
     vkGetPhysicalDeviceMemoryProperties(_handle, &_memoryProperties);
@@ -18,45 +21,37 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalD
     // Get list of supported extensions
     uint32_t extCount = 0;
     vkEnumerateDeviceExtensionProperties(_handle, nullptr, &extCount, nullptr);
-    if (extCount > 0) {
+    if(extCount > 0)
+    {
         std::vector<VkExtensionProperties> extensions(extCount);
-        if (vkEnumerateDeviceExtensionProperties(_handle, nullptr, &extCount, &extensions.front()) ==
-            VK_SUCCESS) {
-            for (auto ext : extensions) {
+        if(vkEnumerateDeviceExtensionProperties(_handle, nullptr, &extCount, &extensions.front()) ==
+           VK_SUCCESS)
+        {
+            for(auto ext : extensions)
+            {
                 _supportedExtensions.emplace_back(ext.extensionName);
             }
         }
     }
 }
 
-const VulkanInstance *VulkanPhysicalDevice::getInstance() const {
-    return m_instance;
-}
-const VkPhysicalDeviceProperties &VulkanPhysicalDevice::getDeviceProperties() {
-    return _properties;
-}
-const VkPhysicalDeviceFeatures &VulkanPhysicalDevice::getDeviceFeatures() {
-    return _features;
-}
-const VkPhysicalDeviceMemoryProperties &VulkanPhysicalDevice::getMemoryProperties() {
-    return _memoryProperties;
-}
-const std::vector<std::string> &VulkanPhysicalDevice::getDeviceSupportedExtensions() {
-    return _supportedExtensions;
-}
-const std::vector<VkQueueFamilyProperties> &VulkanPhysicalDevice::getQueueFamilyProperties() {
-    return _queueFamilyProperties;
+bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) const
+{
+    return (std::find(_supportedExtensions.begin(), _supportedExtensions.end(), extension) !=
+            _supportedExtensions.end());
 }
 
-bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) const {
-    return (std::find(_supportedExtensions.begin(), _supportedExtensions.end(), extension) != _supportedExtensions.end());
-}
-
-uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties, VkBool32 *memTypeFound) const {
-    for (uint32_t i = 0; i < _memoryProperties.memoryTypeCount; i++) {
-        if ((typeBits & 1) == 1) {
-            if ((_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                if (memTypeFound) {
+uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
+                                              VkBool32 *memTypeFound) const
+{
+    for(uint32_t i = 0; i < _memoryProperties.memoryTypeCount; i++)
+    {
+        if((typeBits & 1) == 1)
+        {
+            if((_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
+            {
+                if(memTypeFound)
+                {
                     *memTypeFound = true;
                 }
                 return i;
@@ -65,7 +60,8 @@ uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropert
         typeBits >>= 1;
     }
 
-    if (memTypeFound) {
+    if(memTypeFound)
+    {
         *memTypeFound = false;
         return 0;
     }
@@ -73,16 +69,20 @@ uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropert
     throw std::runtime_error("Could not find a matching memory type");
 }
 VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &candidates,
-                                                   VkImageTiling                tiling,
-                                                   VkFormatFeatureFlags         features) const {
-    for (VkFormat format : candidates) {
+                                                   VkImageTiling tiling,
+                                                   VkFormatFeatureFlags features) const
+{
+    for(VkFormat format : candidates)
+    {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(_handle, format, &props);
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        {
             return format;
         }
 
-        if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        {
             return format;
         }
     }
@@ -90,4 +90,4 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &
     assert("failed to find supported format!");
     return {};
 }
-} // namespace vkl
+}  // namespace vkl

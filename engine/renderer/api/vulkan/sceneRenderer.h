@@ -23,12 +23,19 @@ enum MaterialBindingBits {
     MATERIAL_BINDING_PBR        = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL | MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
+struct TextureGpuData
+{
+    VulkanImage *image = nullptr;
+    VulkanImageView *imageView = nullptr;
+    VkSampler sampler = VK_NULL_HANDLE;
+    VkDescriptorImageInfo descriptorInfo;
+};
+
 struct MaterialGpuData
 {
     VulkanBuffer *buffer = nullptr;
     VkDescriptorSet set = VK_NULL_HANDLE;
 };
-
 
 struct SceneInfo {
     glm::vec4 ambient{0.04f};
