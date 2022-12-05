@@ -10,13 +10,13 @@ namespace vkl
 
 namespace gltf
 {
-void loadImages(std::vector<std::shared_ptr<Image>>& images, tinygltf::Model &input)
+void loadImages(std::vector<std::shared_ptr<ImageDesc>>& images, tinygltf::Model &input)
 {
     images.clear();
     for(auto &glTFImage : input.images)
     {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        auto newImage = std::make_shared<Image>();
+        auto newImage = std::make_shared<ImageDesc>();
         newImage->width = glTFImage.width;
         newImage->height = glTFImage.height;
         newImage->data.resize(glTFImage.width * glTFImage.height * 4);
@@ -99,7 +99,7 @@ void loadNodes(std::vector<Vertex> &vertices,
                std::vector<uint32_t>& indices,
                const tinygltf::Node &inputNode,
                const tinygltf::Model &input,
-               const std::shared_ptr<Node>& parent)
+               const std::shared_ptr<MeshNode>& parent)
 {
     auto node = parent->createChildNode();
     node->matrix = glm::mat4(1.0f);
@@ -262,13 +262,6 @@ void loadNodes(std::vector<Vertex> &vertices,
     }
 }
 }  // namespace gltf
-
-std::shared_ptr<Node> Node::createChildNode()
-{
-    auto childNode = std::make_shared<Node>(shared_from_this());
-    children.push_back(childNode);
-    return childNode;
-}
 
 void Entity::loadFromFile(const std::string &path)
 {

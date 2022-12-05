@@ -208,7 +208,7 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
     drawCmd->cmdBindVertexBuffers(0, 1, _meshData.vb, offsets);
     drawCmd->cmdBindIndexBuffers(_meshData.ib, 0, VK_INDEX_TYPE_UINT32);
 
-    std::queue<std::shared_ptr<Node>> q;
+    std::queue<std::shared_ptr<MeshNode>> q;
     q.push(_node->getObject<Entity>()->m_rootNode);
 
     while(!q.empty()){
@@ -221,7 +221,7 @@ void VulkanRenderData::draw(VulkanPipeline * pipeline, VulkanCommandBuffer *draw
             nodeMatrix    = currentParent->matrix * nodeMatrix;
             currentParent = currentParent->parent;
         }
-        nodeMatrix = _node->getTransform() * nodeMatrix;
+        nodeMatrix = _node->matrix * nodeMatrix;
         drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 
         for (const auto& subset : subNode->subsets) {

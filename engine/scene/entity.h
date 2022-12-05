@@ -8,18 +8,16 @@
 namespace vkl
 {
 struct Subset;
-struct Image;
+struct ImageDesc;
 struct Material;
 struct Vertex;
-struct Node;
 
 using ResourceIndex = int32_t;
-using SubNodeList = std::vector<std::shared_ptr<Node>>;
 using SubsetList = std::vector<Subset>;
 using ImageData = std::vector<uint8_t>;
 using VertexList = std::vector<Vertex>;
 using IndexList = std::vector<uint32_t>;
-using TextureList = std::vector<std::shared_ptr<Image>>;
+using TextureList = std::vector<std::shared_ptr<ImageDesc>>;
 using MaterialList = std::vector<Material>;
 
 struct Vertex
@@ -38,20 +36,14 @@ struct Subset
     ResourceIndex materialIndex = -1;
 };
 
-struct Node : std::enable_shared_from_this<Node>
+struct MeshNode : Node<MeshNode>
 {
-    Node(std::shared_ptr<Node> parent) : parent(std::move(parent)) {}
-    std::shared_ptr<Node> createChildNode();
-    std::string name;
-    glm::mat4 matrix = glm::mat4(1.0f);
+    MeshNode(std::shared_ptr<MeshNode> parent, glm::mat4 matrix = glm::mat4(1.0f)) : Node<MeshNode>(std::move(parent), matrix) {}
     bool isVisible = true;
-
-    std::shared_ptr<Node> parent;
-    SubNodeList children;
     SubsetList subsets;
 };
 
-struct Image
+struct ImageDesc
 {
     uint32_t width;
     uint32_t height;
@@ -92,12 +84,12 @@ class Entity : public Object
 {
 public:
     static std::shared_ptr<Entity> Create();
-    Entity(IdType id) : Object(id) { m_rootNode = std::make_shared<Node>(nullptr); }
+    Entity(IdType id) : Object(id) { m_rootNode = std::make_shared<MeshNode>(nullptr); }
     ~Entity() override = default;
     void loadFromFile(const std::string &path);
     void cleanupResources();
 
-    std::shared_ptr<Node> m_rootNode;
+    std::shared_ptr<MeshNode> m_rootNode;
 
     VertexList _vertices;
     IndexList _indices;

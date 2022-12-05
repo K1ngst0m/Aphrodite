@@ -9,7 +9,7 @@ void VulkanUniformData::updateBuffer(void *data) const {
 }
 VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<SceneNode> node)
     : _device(device), _node(std::move(node)) {
-    switch (_node->getAttachType()) {
+    switch (_node->attachType) {
     case AttachType::LIGHT:
         _ubo = _node->getObject<Light>();
     case AttachType::CAMERA:

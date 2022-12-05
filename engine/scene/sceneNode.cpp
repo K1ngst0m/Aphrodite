@@ -1,52 +1,32 @@
 #include "sceneNode.h"
-#include "object.h"
-#include "light.h"
+
+#include <utility>
 #include "camera.h"
 #include "entity.h"
+#include "light.h"
+#include "object.h"
 
-namespace vkl {
+namespace vkl
+{
 
-SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix)
-    : _matrix(matrix), _parent(std::move(parent)) {
+SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix) :
+    Node<SceneNode>(std::move(parent), matrix)
+{
 }
-void SceneNode::attachObject(const std::shared_ptr<Entity>& object) {
-    _attachType = AttachType::ENTITY;
-    _object     = object;
+void SceneNode::attachObject(const std::shared_ptr<Entity> &object)
+{
+    attachType = AttachType::ENTITY;
+    this->object = object;
 }
-void SceneNode::attachObject(const std::shared_ptr<Light>& object) {
-    _attachType = AttachType::LIGHT;
-    _object     = object;
+void SceneNode::attachObject(const std::shared_ptr<Light> &object)
+{
+    attachType = AttachType::LIGHT;
+    this->object = object;
 }
-void SceneNode::attachObject(const std::shared_ptr<Camera>& object) {
-    _attachType = AttachType::CAMERA;
-    _object     = object;
-}
-
-std::shared_ptr<SceneNode> SceneNode::createChildNode(glm::mat4 matrix) {
-    auto childNode = std::make_shared<SceneNode>(shared_from_this(), matrix);
-    _children.push_back(childNode);
-    return _children.back();
-}
-
-void SceneNode::setTransform(glm::mat4 matrix) {
-    _matrix = matrix;
+void SceneNode::attachObject(const std::shared_ptr<Camera> &object)
+{
+    attachType = AttachType::CAMERA;
+    this->object = object;
 }
 
-std::vector<std::shared_ptr<SceneNode>>& SceneNode::getChildNode(){
-    return _children;
-}
-
-AttachType SceneNode::getAttachType() {
-    return _attachType;
-}
-
-glm::mat4 SceneNode::getTransform() {
-    return _matrix;
-}
-IdType SceneNode::getAttachObjectId() {
-    return _object->getId();
-}
-bool SceneNode::isAttached() {
-    return _attachType != AttachType::UNATTACHED;
-}
-} // namespace vkl
+}  // namespace vkl

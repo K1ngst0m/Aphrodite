@@ -192,28 +192,6 @@ VulkanPipeline *CreateForwardPipeline(VulkanDevice *pDevice,
 } // namespace
 
 namespace {
-std::shared_ptr<Image> loadCubemapFromFile(const std::string &filename) {
-    auto           texture = std::make_shared<Image>();
-    int            width, height, channels;
-    unsigned char *imageData = stbi_load(filename.c_str(), &width, &height, &channels, 0);
-    uint32_t       imageSize = width * height * 4;
-    texture->width           = width;
-    texture->height          = height;
-    texture->data.resize(imageSize);
-    if (channels == 3) {
-        unsigned char *rgba = new unsigned char[texture->data.size()];
-        unsigned char *rgb  = imageData;
-        for (size_t i = 0; i < width * height; ++i) {
-            memcpy(rgba, rgb, sizeof(unsigned char) * 3);
-            rgba += 4;
-            rgb += 3;
-        }
-        memcpy(texture->data.data(), rgba, imageSize);
-    } else {
-        memcpy(texture->data.data(), imageData, imageSize);
-    }
-    return texture;
-}
 } // namespace
 
 std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(const std::shared_ptr<VulkanRenderer> &renderer) {
@@ -369,7 +347,7 @@ void VulkanSceneRenderer::_loadSceneNodes() {
         auto node = q.front();
         q.pop();
 
-        switch (node->getAttachType()) {
+        switch (node->attachType) {
         case AttachType::ENTITY: {
             auto renderable = std::make_shared<VulkanRenderData>(m_pDevice, node);
             _renderList.push_back(renderable);
@@ -391,7 +369,7 @@ void VulkanSceneRenderer::_loadSceneNodes() {
             break;
         }
 
-        for (const auto &subNode : node->getChildNode()) {
+        for (const auto &subNode : node->children) {
             q.push(subNode);
         }
     }
@@ -403,55 +381,55 @@ void VulkanSceneRenderer::_initSkyboxResource() {
     VulkanImage    *cubemap  = _skyboxResource.cubeMap;
 
     {
-        auto             texture       = loadCubemapFromFile("");
-        VulkanBuffer    *stagingBuffer = nullptr;
-        BufferCreateInfo bufferCI{
-            .size      = static_cast<uint32_t>(texture->data.size()),
-            .alignment = 0,
-            .usage     = BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        };
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &stagingBuffer));
-        stagingBuffer->map();
-        stagingBuffer->copyTo(texture->data.data(), texture->data.size());
-        stagingBuffer->unmap();
+        // auto             texture       = loadCubemapFromFile("");
+        // VulkanBuffer    *stagingBuffer = nullptr;
+        // BufferCreateInfo bufferCI{
+        //     .size      = static_cast<uint32_t>(texture->data.size()),
+        //     .alignment = 0,
+        //     .usage     = BUFFER_USAGE_TRANSFER_SRC_BIT,
+        //     .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        // };
+        // VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &stagingBuffer));
+        // stagingBuffer->map();
+        // stagingBuffer->copyTo(texture->data.data(), texture->data.size());
+        // stagingBuffer->unmap();
 
-        ImageCreateInfo imageCI{
-            .extent      = {texture->width, texture->height, 1},
-            .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-            .imageType   = IMAGE_TYPE_2D,
-            .arrayLayers = 6,
-            .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
-            .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            .format      = FORMAT_B8G8R8A8_UNORM,
-            .tiling      = IMAGE_TILING_OPTIMAL,
-        };
+        // ImageCreateInfo imageCI{
+        //     .extent      = {texture->width, texture->height, 1},
+        //     .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+        //     .imageType   = IMAGE_TYPE_2D,
+        //     .arrayLayers = 6,
+        //     .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
+        //     .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        //     .format      = FORMAT_B8G8R8A8_UNORM,
+        //     .tiling      = IMAGE_TILING_OPTIMAL,
+        // };
 
-        VK_CHECK_RESULT(m_pDevice->createImage(&imageCI, &cubemap));
+        // VK_CHECK_RESULT(m_pDevice->createImage(&imageCI, &cubemap));
 
-        auto *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        cmd->cmdCopyBufferToImage(stagingBuffer, cubemap);
-        cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        m_pDevice->endSingleTimeCommands(cmd);
+        // auto *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        // cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        // cmd->cmdCopyBufferToImage(stagingBuffer, cubemap);
+        // cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        // m_pDevice->endSingleTimeCommands(cmd);
 
-        ImageViewCreateInfo imageViewCI{
-            .viewType  = IMAGE_VIEW_TYPE_CUBE,
-            .dimension = IMAGE_VIEW_DIMENSION_CUBE,
-            .format    = imageCI.format,
-        };
+        // ImageViewCreateInfo imageViewCI{
+        //     .viewType  = IMAGE_VIEW_TYPE_CUBE,
+        //     .dimension = IMAGE_VIEW_DIMENSION_CUBE,
+        //     .format    = imageCI.format,
+        // };
 
-        VkImageSubresourceRange subresourceRange = {};
-        subresourceRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-        subresourceRange.baseMipLevel            = 0;
-        subresourceRange.levelCount              = cubemap->getMipLevels();
-        subresourceRange.layerCount              = 6;
+        // VkImageSubresourceRange subresourceRange = {};
+        // subresourceRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+        // subresourceRange.baseMipLevel            = 0;
+        // subresourceRange.levelCount              = cubemap->getMipLevels();
+        // subresourceRange.layerCount              = 6;
 
-        _skyboxResource.cubeMapDescInfo = {
-            .sampler     = _skyboxResource.cubeMapSampler,
-            .imageView   = _skyboxResource.cubeMapView->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
+        // _skyboxResource.cubeMapDescInfo = {
+        //     .sampler     = _skyboxResource.cubeMapSampler,
+        //     .imageView   = _skyboxResource.cubeMapView->getHandle(),
+        //     .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        // };
     }
 
     pipeline = CreateSkyboxPipeline(m_pDevice, m_pRenderer->getDefaultRenderPass());
