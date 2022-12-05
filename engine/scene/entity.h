@@ -18,7 +18,7 @@ using ImageData = std::vector<uint8_t>;
 using VertexList = std::vector<Vertex>;
 using IndexList = std::vector<uint32_t>;
 using TextureList = std::vector<std::shared_ptr<ImageDesc>>;
-using MaterialList = std::vector<Material>;
+using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 struct Vertex
 {
@@ -91,10 +91,10 @@ public:
 
     std::shared_ptr<MeshNode> m_rootNode;
 
-    VertexList _vertices;
-    IndexList _indices;
-    TextureList _images;
-    MaterialList _materials;
+    VertexList m_vertices;
+    IndexList m_indices;
+    TextureList m_images;
+    MaterialList m_materials;
 };
 }  // namespace vkl
 

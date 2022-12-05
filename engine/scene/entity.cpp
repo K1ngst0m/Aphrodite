@@ -39,58 +39,59 @@ void loadImages(std::vector<std::shared_ptr<ImageDesc>>& images, tinygltf::Model
         images.push_back(newImage);
     }
 }
-void loadMaterials(std::vector<Material>& materials, tinygltf::Model &input)
+void loadMaterials(std::vector<std::shared_ptr<Material>>& materials, tinygltf::Model &input)
 {
     materials.clear();
     materials.resize(input.materials.size());
     for(size_t i = 0; i < input.materials.size(); i++)
     {
         auto &material = materials[i];
-        material.id = i;
+        material = std::make_shared<Material>();
+        material->id = i;
         tinygltf::Material glTFMaterial = input.materials[i];
 
         // factor
-        material.emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
-        material.baseColorFactor =
+        material->emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
+        material->baseColorFactor =
             glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
-        material.metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
-        material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
+        material->metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
+        material->roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
-        material.doubleSided = glTFMaterial.doubleSided;
+        material->doubleSided = glTFMaterial.doubleSided;
         if(glTFMaterial.alphaMode == "BLEND")
         {
-            material.alphaMode = AlphaMode::BLEND;
+            material->alphaMode = AlphaMode::BLEND;
         }
         if(glTFMaterial.alphaMode == "MASK")
         {
-            material.alphaCutoff = 0.5f;
-            material.alphaMode = AlphaMode::MASK;
+            material->alphaCutoff = 0.5f;
+            material->alphaMode = AlphaMode::MASK;
         }
-        material.alphaCutoff = glTFMaterial.alphaCutoff;
+        material->alphaCutoff = glTFMaterial.alphaCutoff;
 
         // common texture
         if(glTFMaterial.normalTexture.index > -1)
         {
-            material.normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
+            material->normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source;
         }
         if(glTFMaterial.emissiveTexture.index > -1)
         {
-            material.emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source;
+            material->emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source;
         }
         if(glTFMaterial.occlusionTexture.index > -1)
         {
-            material.occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source;
+            material->occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source;
         }
 
         // pbr texture
         if(glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1)
         {
-            material.baseColorTextureIndex =
+            material->baseColorTextureIndex =
                 input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source;
         }
         if(glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
         {
-            material.metallicRoughnessTextureIndex =
+            material->metallicRoughnessTextureIndex =
                 input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source;
         }
     }
@@ -281,14 +282,14 @@ void Entity::loadFromFile(const std::string &path)
 
     if(fileLoaded)
     {
-        gltf::loadImages(_images, glTFInput);
-        gltf::loadMaterials(_materials, glTFInput);
+        gltf::loadImages(m_images, glTFInput);
+        gltf::loadMaterials(m_materials, glTFInput);
 
         const tinygltf::Scene &scene = glTFInput.scenes[0];
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node node = glTFInput.nodes[nodeIdx];
-            gltf::loadNodes(_vertices, _indices, node, glTFInput, m_rootNode->createChildNode());
+            gltf::loadNodes(m_vertices, m_indices, node, glTFInput, m_rootNode->createChildNode());
         }
     }
     else
@@ -300,10 +301,10 @@ void Entity::loadFromFile(const std::string &path)
 }
 void Entity::cleanupResources()
 {
-    _vertices.clear();
-    _indices.clear();
-    _images.clear();
-    _materials.clear();
+    m_vertices.clear();
+    m_indices.clear();
+    m_images.clear();
+    m_materials.clear();
 }
 std::shared_ptr<Entity> Entity::Create()
 {

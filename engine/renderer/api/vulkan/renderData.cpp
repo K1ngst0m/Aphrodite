@@ -146,28 +146,10 @@ void TextureGpuData::setupDescriptor() {
     descriptorInfo.sampler     = sampler;
 }
 
-struct ObjectInfo{
-    glm::mat4 matrix = glm::mat4(1.0f);
-};
-
-struct MaterialInfo{
-    glm::vec4 emissiveFactor = glm::vec4(1.0f);
-    glm::vec4 baseColorFactor = glm::vec4(1.0f);
-    float     alphaCutoff     = 1.0f;
-    float     metallicFactor  = 1.0f;
-    float     roughnessFactor = 1.0f;
-    ResourceIndex baseColorTextureIndex = -1;
-    ResourceIndex normalTextureIndex    = -1;
-    ResourceIndex occlusionTextureIndex = -1;
-    ResourceIndex emissiveTextureIndex  = -1;
-    ResourceIndex metallicRoughnessTextureIndex = -1;
-    ResourceIndex specularGlossinessTextureIndex = -1;
-};
-
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
     : m_pDevice(device), m_node(std::move(sceneNode)) {
 
-    for (auto &image : m_node->getObject<Entity>()->_images) {
+    for (auto &image : m_node->getObject<Entity>()->m_images) {
         // raw image data
         unsigned char *imageData     = image->data.data();
         uint32_t       imageDataSize = image->data.size();
@@ -180,8 +162,8 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     }
 
     // load buffer
-    auto &vertices = m_node->getObject<Entity>()->_vertices;
-    auto &indices  = m_node->getObject<Entity>()->_indices;
+    auto &vertices = m_node->getObject<Entity>()->m_vertices;
+    auto &indices  = m_node->getObject<Entity>()->m_indices;
 
     assert(!vertices.empty());
 
@@ -258,129 +240,11 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
 }
 
-void VulkanRenderData::setupDescriptor(VulkanDescriptorSetLayout * objectLayout, VulkanDescriptorSetLayout *materialLayout, uint8_t bindingBits) {
-    {
-        ObjectInfo objInfo{};
-        BufferCreateInfo bufferCI{
-            .size = sizeof(ObjectInfo),
-            .alignment = 0,
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        };
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_objectUB, &objInfo));
-        m_objectUB->setupDescriptor();
-    }
-
-    {
-        m_objectSet = objectLayout->allocateSet();
-
-        std::vector<VkWriteDescriptorSet> descriptorWrites{
-            vkl::init::writeDescriptorSet(m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_objectUB->getBufferInfo())
-        };
-
-        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-    }
-
-    for (auto &material : m_node->getObject<Entity>()->_materials) {
-        // write descriptor set
-        auto set = materialLayout->allocateSet();
-        VulkanBuffer * matInfoUB = nullptr;
-        {
-            {
-                MaterialInfo matInfo{
-                    .emissiveFactor = material.emissiveFactor,
-                    .baseColorFactor = material.baseColorFactor,
-                    .alphaCutoff = material.alphaCutoff,
-                    .metallicFactor = material.metallicFactor,
-                    .roughnessFactor = material.roughnessFactor,
-                    .baseColorTextureIndex = material.baseColorTextureIndex,
-                    .normalTextureIndex = material.normalTextureIndex,
-                    .occlusionTextureIndex = material.occlusionTextureIndex,
-                    .emissiveTextureIndex = material.emissiveTextureIndex,
-                    .metallicRoughnessTextureIndex = material.metallicRoughnessTextureIndex,
-                    .specularGlossinessTextureIndex = material.specularGlossinessTextureIndex,
-                };
-                BufferCreateInfo bufferCI{
-                    .size = sizeof(MaterialInfo),
-                    .alignment = 0,
-                    .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                };
-                m_pDevice->createBuffer(&bufferCI, &matInfoUB, &matInfo);
-                matInfoUB->setupDescriptor();
-            }
-            std::vector<VkWriteDescriptorSet> descriptorWrites{};
-            // create material buffer Info
-            descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &matInfoUB->getBufferInfo()));
-
-            if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
-                std::cerr << "material id: [" << material.id << "] [base color]: ";
-                if (material.baseColorTextureIndex > -1) {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &m_textures[material.baseColorTextureIndex].descriptorInfo));
-                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                }
-                else {
-                    std::cerr << "texture not found." << std::endl;
-                }
-            }
-            if (bindingBits & MATERIAL_BINDING_NORMAL) {
-                std::cerr << "material id: [" << material.id << "] [normal]: ";
-                if (material.normalTextureIndex > -1) {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &m_textures[material.normalTextureIndex].descriptorInfo));
-                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                } else {
-                    std::cerr << "texture not found." << std::endl;
-                }
-            }
-            if (bindingBits & MATERIAL_BINDING_PHYSICAL){
-                std::cerr << "material id: [" << material.id << "] [physical desc]: ";
-                if (material.metallicFactor > -1) {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &m_textures[material.metallicRoughnessTextureIndex].descriptorInfo));
-                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                } else {
-                    std::cerr << "texture not found." << std::endl;
-                }
-            }
-            if (bindingBits & MATERIAL_BINDING_AO){
-                std::cerr << "material id: [" << material.id << "] [ao]: ";
-                if (material.occlusionTextureIndex > -1) {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &m_textures[material.occlusionTextureIndex].descriptorInfo));
-                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                } else {
-                    std::cerr << "texture not found." << std::endl;
-                }
-            }
-            if (bindingBits & MATERIAL_BINDING_EMISSIVE){
-                std::cerr << "material id: [" << material.id << "] [emissive]: ";
-                if (material.emissiveTextureIndex > -1) {
-                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &m_textures[material.emissiveTextureIndex].descriptorInfo));
-                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                } else {
-                    std::cerr << "texture not found." << std::endl;
-                }
-            }
-
-            vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-
-        m_materialGpuDataList.push_back({matInfoUB, set});
-    }
-}
-
-uint32_t VulkanRenderData::getSetCount() {
-    return m_node->getObject<Entity>()->_materials.size();
-}
-
 VulkanRenderData::~VulkanRenderData()
 {
     m_pDevice->destroyBuffer(m_vertexBuffer);
     m_pDevice->destroyBuffer(m_indexBuffer);
     m_pDevice->destroyBuffer(m_objectUB);
-
-    for(auto &matData : m_materialGpuDataList)
-    {
-        m_pDevice->destroyBuffer(matData.buffer);
-    }
 
     for(auto &texture : m_textures)
     {

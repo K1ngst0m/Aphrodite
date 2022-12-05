@@ -325,9 +325,113 @@ void VulkanSceneRenderer::_initRenderData() {
     }
 
     for (auto &renderable : _renderList) {
-        renderable->setupDescriptor(_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT),
-                                    _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL),
-                                    MATERIAL_BINDING_PBR);
+        {
+            ObjectInfo objInfo{};
+            BufferCreateInfo bufferCI{
+                .size = sizeof(ObjectInfo),
+                .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            };
+            VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &renderable->m_objectUB, &objInfo));
+            renderable->m_objectUB->setupDescriptor();
+        }
+
+        {
+            renderable->m_objectSet = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT)->allocateSet();
+
+            std::vector<VkWriteDescriptorSet> descriptorWrites{
+                vkl::init::writeDescriptorSet(renderable->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &renderable->m_objectUB->getBufferInfo())
+            };
+
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+    for (auto &material : renderable->m_node->getObject<Entity>()->m_materials) {
+        // write descriptor set
+        auto set = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL)->allocateSet();
+        VulkanBuffer * matInfoUB = nullptr;
+        {
+            {
+                MaterialInfo matInfo{
+                    .emissiveFactor = material->emissiveFactor,
+                    .baseColorFactor = material->baseColorFactor,
+                    .alphaCutoff = material->alphaCutoff,
+                    .metallicFactor = material->metallicFactor,
+                    .roughnessFactor = material->roughnessFactor,
+                    .baseColorTextureIndex = material->baseColorTextureIndex,
+                    .normalTextureIndex = material->normalTextureIndex,
+                    .occlusionTextureIndex = material->occlusionTextureIndex,
+                    .emissiveTextureIndex = material->emissiveTextureIndex,
+                    .metallicRoughnessTextureIndex = material->metallicRoughnessTextureIndex,
+                    .specularGlossinessTextureIndex = material->specularGlossinessTextureIndex,
+                };
+                BufferCreateInfo bufferCI{
+                    .size = sizeof(MaterialInfo),
+                    .alignment = 0,
+                    .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                };
+                m_pDevice->createBuffer(&bufferCI, &matInfoUB, &matInfo);
+                matInfoUB->setupDescriptor();
+            }
+            std::vector<VkWriteDescriptorSet> descriptorWrites{};
+            // create material buffer Info
+            descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &matInfoUB->getBufferInfo()));
+
+            auto bindingBits = MATERIAL_BINDING_PBR;
+            auto &m_textures = renderable->m_textures;
+            if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
+                std::cerr << "material id: [" << material->id << "] [base color]: ";
+                if (material->baseColorTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, &m_textures[material->baseColorTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
+                }
+                else {
+                    std::cerr << "texture not found." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_NORMAL) {
+                std::cerr << "material id: [" << material->id << "] [normal]: ";
+                if (material->normalTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, &m_textures[material->normalTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
+                } else {
+                    std::cerr << "texture not found." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_PHYSICAL){
+                std::cerr << "material id: [" << material->id << "] [physical desc]: ";
+                if (material->metallicFactor > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, &m_textures[material->metallicRoughnessTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
+                } else {
+                    std::cerr << "texture not found." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_AO){
+                std::cerr << "material id: [" << material->id << "] [ao]: ";
+                if (material->occlusionTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, &m_textures[material->occlusionTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
+                } else {
+                    std::cerr << "texture not found." << std::endl;
+                }
+            }
+            if (bindingBits & MATERIAL_BINDING_EMISSIVE){
+                std::cerr << "material id: [" << material->id << "] [emissive]: ";
+                if (material->emissiveTextureIndex > -1) {
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5, &m_textures[material->emissiveTextureIndex].descriptorInfo));
+                    std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
+                } else {
+                    std::cerr << "texture not found." << std::endl;
+                }
+            }
+
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+        }
+
+        materiaDataMaps[material] = {matInfoUB, set};
+    }
     }
 }
 
@@ -731,9 +835,6 @@ void VulkanSceneRenderer::_initShadowPassResource() {
         set = _shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
     }
 }
-void VulkanSceneRenderer::_initCommonResource() {
-
-}
 void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<MeshNode> &node)
 {
     std::queue<std::shared_ptr<MeshNode>> q;
@@ -754,7 +855,8 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
 
         for (const auto& subset : subNode->subsets) {
             if (subset.indexCount > 0) {
-                auto &materialSet = renderData->m_materialGpuDataList[subset.materialIndex];
+                auto &material = renderData->m_node->getObject<Entity>()->m_materials[subset.materialIndex];
+                auto &materialSet = materiaDataMaps[material];
                 drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
                 drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
             }

@@ -23,10 +23,35 @@ enum MaterialBindingBits {
     MATERIAL_BINDING_PBR        = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL | MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
+struct MaterialGpuData
+{
+    VulkanBuffer *buffer = nullptr;
+    VkDescriptorSet set = VK_NULL_HANDLE;
+};
+
+
 struct SceneInfo {
     glm::vec4 ambient{0.04f};
     uint32_t  cameraCount = 0;
     uint32_t  lightCount  = 0;
+};
+
+struct ObjectInfo{
+    glm::mat4 matrix = glm::mat4(1.0f);
+};
+
+struct MaterialInfo{
+    glm::vec4 emissiveFactor = glm::vec4(1.0f);
+    glm::vec4 baseColorFactor = glm::vec4(1.0f);
+    float     alphaCutoff     = 1.0f;
+    float     metallicFactor  = 1.0f;
+    float     roughnessFactor = 1.0f;
+    ResourceIndex baseColorTextureIndex = -1;
+    ResourceIndex normalTextureIndex    = -1;
+    ResourceIndex occlusionTextureIndex = -1;
+    ResourceIndex emissiveTextureIndex  = -1;
+    ResourceIndex metallicRoughnessTextureIndex = -1;
+    ResourceIndex specularGlossinessTextureIndex = -1;
 };
 
 class VulkanSceneRenderer : public SceneRenderer {
@@ -41,7 +66,6 @@ public:
 
 private:
     void _initRenderData();
-    void _initCommonResource();
     void _initSkyboxResource();
     void _initForwardResource();
     void _initPostFxResource();
@@ -125,6 +149,7 @@ private:
 private:
     VulkanDevice                   *m_pDevice   = nullptr;
     std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
+    std::unordered_map<std::shared_ptr<Material>, MaterialGpuData> materiaDataMaps;
 };
 } // namespace vkl
 
