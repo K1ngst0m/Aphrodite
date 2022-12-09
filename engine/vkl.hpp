@@ -15,6 +15,7 @@
 #include "renderer/api/vulkan/vkInit.hpp"
 #include "renderer/api/vulkan/vkUtils.h"
 #include "renderer/api/vulkan/vulkanRenderer.h"
+#include "renderer/api/vulkan/swapChain.h"
 #include "renderer/api/vulkan/uiRenderer.h"
 
 #include "common/common.h"

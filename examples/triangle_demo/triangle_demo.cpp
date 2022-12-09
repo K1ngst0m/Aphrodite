@@ -68,14 +68,14 @@ void triangle_demo::setupPipeline() {
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(&createInfo, &effectInfo, m_renderer->getDefaultRenderPass(), &m_demoPipeline));
 }
 void triangle_demo::buildCommands() {
-    VkViewport viewport = vkl::init::viewport(m_renderer->getSwapChainExtent());
-    VkRect2D   scissor  = vkl::init::rect2D(m_renderer->getSwapChainExtent());
+    VkViewport viewport = vkl::init::viewport(m_renderer->getSwapChain()->getExtent());
+    VkRect2D   scissor  = vkl::init::rect2D(m_renderer->getSwapChain()->getExtent());
 
     vkl::RenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.pRenderPass       = m_renderer->getDefaultRenderPass();
     renderPassBeginInfo.pFramebuffer = m_renderer->getDefaultFrameBuffer(m_renderer->getCurrentImageIndex());
     renderPassBeginInfo.renderArea.offset = {0, 0};
-    renderPassBeginInfo.renderArea.extent = m_renderer->getSwapChainExtent();
+    renderPassBeginInfo.renderArea.extent = m_renderer->getSwapChain()->getExtent();
     std::vector<VkClearValue> clearValues(2);
     clearValues[0].color                = {{0.1f, 0.1f, 0.1f, 1.0f}};
     clearValues[1].depthStencil         = {1.0f, 0};
