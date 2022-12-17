@@ -10,7 +10,7 @@ namespace vkl
 
 namespace gltf
 {
-void loadImages(std::vector<std::shared_ptr<ImageDesc>>& images, tinygltf::Model &input)
+void loadImages(std::vector<std::shared_ptr<ImageDesc>> &images, tinygltf::Model &input)
 {
     images.clear();
     for(auto &glTFImage : input.images)
@@ -39,7 +39,7 @@ void loadImages(std::vector<std::shared_ptr<ImageDesc>>& images, tinygltf::Model
         images.push_back(newImage);
     }
 }
-void loadMaterials(std::vector<std::shared_ptr<Material>>& materials, tinygltf::Model &input)
+void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input)
 {
     materials.clear();
     materials.resize(input.materials.size());
@@ -96,11 +96,9 @@ void loadMaterials(std::vector<std::shared_ptr<Material>>& materials, tinygltf::
         }
     }
 }
-void loadNodes(std::vector<Vertex> &vertices,
-               std::vector<uint8_t>& indices,
-               const tinygltf::Node &inputNode,
-               const tinygltf::Model &input,
-               const std::shared_ptr<SceneNode>& parent)
+void loadNodes(std::vector<Vertex> &vertices, std::vector<uint8_t> &indices,
+               const tinygltf::Node &inputNode, const tinygltf::Model &input,
+               const std::shared_ptr<SceneNode> &parent)
 {
     auto node = parent->createChildNode();
     node->matrix = glm::mat4(1.0f);
@@ -191,10 +189,13 @@ void loadNodes(std::vector<Vertex> &vertices,
                 {
                     Vertex vert{};
                     vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-                    vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
-                    vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+                    vert.normal = glm::normalize(glm::vec3(
+                        normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+                    vert.uv =
+                        texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
-                    vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
+                    vert.tangent =
+                        tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
                     vertices.push_back(vert);
                 }
             }
@@ -213,7 +214,7 @@ void loadNodes(std::vector<Vertex> &vertices,
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
                 {
                     indices.resize(indices.size() + accessor.count * 4);
-                    auto * dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
+                    auto *dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
                     mesh->m_indexType = IndexType::UINT32;
                     const auto *buf = reinterpret_cast<const uint32_t *>(
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
@@ -226,7 +227,7 @@ void loadNodes(std::vector<Vertex> &vertices,
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                 {
                     indices.resize(indices.size() + accessor.count * 2);
-                    auto * dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
+                    auto *dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
                     mesh->m_indexType = IndexType::UINT16;
                     const auto *buf = reinterpret_cast<const uint16_t *>(
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
@@ -243,7 +244,7 @@ void loadNodes(std::vector<Vertex> &vertices,
                 }
             }
 
-            Subset subset;
+            Mesh::Subset subset;
             subset.firstVertex = vertexStart;
             subset.vertexCount = vertexCount;
             subset.firstIndex = firstIndex;
@@ -251,7 +252,7 @@ void loadNodes(std::vector<Vertex> &vertices,
             subset.materialIndex = glTFPrimitive.material;
             subset.hasIndices = indexCount > 0;
 
-            node->getObject<Mesh>()->m_subsets.push_back(subset);
+            mesh->m_subsets.push_back(subset);
         }
     }
 
@@ -300,7 +301,7 @@ void Entity::loadFromFile(const std::string &path)
         assert("Could not open the glTF file.");
         return;
     }
- }
+}
 
 Entity::~Entity()
 {

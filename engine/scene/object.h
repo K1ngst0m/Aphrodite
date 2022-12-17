@@ -15,6 +15,7 @@ enum class ObjectType : uint8_t
     LIGHT,
     CAMERA,
     MESH,
+    SCENENODE,
 };
 
 class Object : public IdObject

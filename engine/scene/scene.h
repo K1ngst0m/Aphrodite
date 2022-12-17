@@ -26,10 +26,12 @@ enum class SceneManagerType
 class Light;
 class Entity;
 class Camera;
+struct Mesh;
 
-using CameraMapList = std::unordered_map<IdType, std::shared_ptr<Camera>>;
-using EntityMapList = std::unordered_map<IdType, std::shared_ptr<Entity>>;
-using LightMapList = std::unordered_map<IdType, std::shared_ptr<Light>>;
+using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
+using EntityMap = std::unordered_map<IdType, std::shared_ptr<Entity>>;
+using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
+using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
 
 class Scene
 {
@@ -38,7 +40,6 @@ public:
 
     std::shared_ptr<Light> createLight();
     std::shared_ptr<Entity> createEntity();
-    std::shared_ptr<Entity> createEntityFromGLTF(const std::string &path);
     std::shared_ptr<Camera> createCamera(float aspectRatio);
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
@@ -46,9 +47,9 @@ public:
     std::shared_ptr<Camera> getMainCamera() { return m_camera; }
 
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }
-    std::shared_ptr<Light> getLightWithId(IdType id) { return m_lightMapList[id]; }
-    std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameraMapList[id]; }
-    std::shared_ptr<Entity> getEntityWithId(IdType id) { return m_entityMapList[id]; }
+    std::shared_ptr<Light> getLightWithId(IdType id) { return m_lights[id]; }
+    std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
+    std::shared_ptr<Entity> getEntityWithId(IdType id) { return m_entities[id]; }
     glm::vec3 getAmbient() { return m_ambient; }
 
 private:
@@ -58,9 +59,10 @@ private:
     std::shared_ptr<SceneNode> m_rootNode = nullptr;
     std::shared_ptr<Camera> m_camera = nullptr;
 
-    CameraMapList m_cameraMapList;
-    EntityMapList m_entityMapList;
-    LightMapList m_lightMapList;
+    CameraMap m_cameras;
+    EntityMap m_entities;
+    LightMap m_lights;
+    MeshMap m_meshes;
 };
 
 }  // namespace vkl

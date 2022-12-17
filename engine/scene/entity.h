@@ -9,13 +9,11 @@
 namespace vkl
 {
 struct SceneNode;
-struct Subset;
 struct ImageDesc;
 struct Material;
 struct Vertex;
 
 using ResourceIndex = int32_t;
-using SubsetList = std::vector<Subset>;
 using ImageData = std::vector<uint8_t>;
 using VertexList = std::vector<Vertex>;
 using IndexList = std::vector<uint8_t>;
@@ -29,16 +27,6 @@ struct Vertex
     glm::vec2 uv;
     glm::vec3 color;
     glm::vec4 tangent;
-};
-
-struct Subset
-{
-    ResourceIndex firstIndex = -1;
-    ResourceIndex firstVertex = -1;
-    ResourceIndex vertexCount = -1;
-    ResourceIndex indexCount = -1;
-    ResourceIndex materialIndex = -1;
-    bool hasIndices = false;
 };
 
 struct ImageDesc
@@ -85,7 +73,16 @@ enum class IndexType{
 struct Mesh : public Object
 {
     Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}
-    SubsetList m_subsets;
+    struct Subset
+    {
+        ResourceIndex firstIndex = -1;
+        ResourceIndex firstVertex = -1;
+        ResourceIndex vertexCount = -1;
+        ResourceIndex indexCount = -1;
+        ResourceIndex materialIndex = -1;
+        bool hasIndices = false;
+    };
+    std::vector<Subset> m_subsets;
     IndexType m_indexType = IndexType::UINT32;
 };
 
