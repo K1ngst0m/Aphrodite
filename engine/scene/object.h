@@ -20,11 +20,6 @@ enum class ObjectType : uint8_t
 class Object : public IdObject
 {
 public:
-    // template <typename TObject, typename... Args>
-    // static std::shared_ptr<TObject> Create(Args &&...args)
-    // {
-    //     auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
-    // }
     Object(IdType id, ObjectType type) : IdObject(id), m_type(type) {}
     virtual ~Object() = default;
 
@@ -34,24 +29,25 @@ protected:
     ObjectType m_type;
 };
 
-template <typename TNode>
-struct Node : std::enable_shared_from_this<TNode>
+class UniformObject : public Object
 {
-    Node(std::shared_ptr<TNode> parent, glm::mat4 transform = glm::mat4(1.0f)) :
-        parent(std::move(parent)),
-        matrix(transform)
-    {
-    }
-    std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f))
-    {
-        auto childNode = std::make_shared<TNode>(this->shared_from_this(), transform);
-        children.push_back(childNode);
-        return childNode;
-    }
-    std::string name;
-    std::vector<std::shared_ptr<TNode>> children;
-    std::shared_ptr<TNode> parent;
-    glm::mat4 matrix = glm::mat4(1.0f);
+public:
+    UniformObject(IdType id, ObjectType type) : Object(id, type) {}
+    ~UniformObject() override = default;
+
+    virtual void load() = 0;
+    virtual void update(float deltaTime) = 0;
+
+    virtual bool isUpdated() const { return updated; }
+    virtual void setUpdated(bool flag) { updated = flag; }
+    virtual void *getData() { return data.get(); }
+    virtual uint32_t getDataSize() { return dataSize; }
+
+protected:
+    size_t dataSize = 0;
+    std::shared_ptr<void> data = nullptr;
+
+    bool updated = false;
 };
 
 }  // namespace vkl

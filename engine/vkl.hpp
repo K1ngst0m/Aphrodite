@@ -31,6 +31,6 @@
 #include "scene/light.h"
 #include "scene/object.h"
 #include "scene/scene.h"
-#include "scene/sceneNode.h"
+#include "scene/node.h"
 
 #endif // VKL_H_

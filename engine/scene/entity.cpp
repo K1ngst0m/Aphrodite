@@ -1,5 +1,5 @@
 #include "entity.h"
-#include "sceneNode.h"
+#include "node.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE

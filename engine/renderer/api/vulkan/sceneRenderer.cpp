@@ -13,7 +13,7 @@
 #include "scene/camera.h"
 #include "scene/entity.h"
 #include "scene/light.h"
-#include "scene/sceneNode.h"
+#include "scene/node.h"
 #include "swapChain.h"
 #include "vkInit.hpp"
 #include "vulkan/vulkan_core.h"

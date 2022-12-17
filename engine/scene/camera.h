@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "uniformObject.h"
+#include "object.h"
 
 namespace vkl
 {

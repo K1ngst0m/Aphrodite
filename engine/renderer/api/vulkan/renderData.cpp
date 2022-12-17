@@ -8,6 +8,8 @@
 #include "pipeline.h"
 #include "scene/entity.h"
 #include "sceneRenderer.h"
+#include "scene/camera.h"
+#include "scene/light.h"
 #include "vkInit.hpp"
 
 namespace vkl {

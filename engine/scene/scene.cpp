@@ -1,11 +1,8 @@
 #include "scene.h"
-
-#include <memory>
 #include "camera.h"
 #include "common/assetManager.h"
 #include "entity.h"
 #include "light.h"
-#include "sceneNode.h"
 
 namespace vkl {
 std::unique_ptr<Scene> Scene::Create(SceneManagerType type) {

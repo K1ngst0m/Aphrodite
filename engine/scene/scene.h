@@ -1,7 +1,7 @@
 #ifndef VKLSCENEMANGER_H_
 #define VKLSCENEMANGER_H_
 
-#include "sceneNode.h"
+#include "node.h"
 
 namespace vkl
 {
@@ -22,6 +22,10 @@ enum class SceneManagerType
 {
     DEFAULT,
 };
+
+class Light;
+class Entity;
+class Camera;
 
 using CameraMapList = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using EntityMapList = std::unordered_map<IdType, std::shared_ptr<Entity>>;
