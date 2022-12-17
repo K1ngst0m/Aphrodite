@@ -13,20 +13,10 @@ SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix) :
     Node<SceneNode>(std::move(parent), matrix)
 {
 }
-void SceneNode::attachObject(const std::shared_ptr<Entity> &object)
+void SceneNode::attachObject(const std::shared_ptr<Object> &object)
 {
-    attachType = AttachType::ENTITY;
-    this->object = object;
+    assert(object->getType() != ObjectType::UNATTACHED);
+    m_attachType = object->getType();
+    m_object = object;
 }
-void SceneNode::attachObject(const std::shared_ptr<Light> &object)
-{
-    attachType = AttachType::LIGHT;
-    this->object = object;
-}
-void SceneNode::attachObject(const std::shared_ptr<Camera> &object)
-{
-    attachType = AttachType::CAMERA;
-    this->object = object;
-}
-
 }  // namespace vkl

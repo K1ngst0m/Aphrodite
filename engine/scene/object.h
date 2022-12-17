@@ -8,11 +8,30 @@ namespace vkl
 
 class Scene;
 
+enum class ObjectType : uint8_t
+{
+    UNATTACHED,
+    ENTITY,
+    LIGHT,
+    CAMERA,
+    MESH,
+};
+
 class Object : public IdObject
 {
 public:
-    Object(IdType id) : IdObject(id) {}
+    // template <typename TObject, typename... Args>
+    // static std::shared_ptr<TObject> Create(Args &&...args)
+    // {
+    //     auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
+    // }
+    Object(IdType id, ObjectType type) : IdObject(id), m_type(type) {}
     virtual ~Object() = default;
+
+    ObjectType getType() { return m_type; }
+
+protected:
+    ObjectType m_type;
 };
 
 template <typename TNode>

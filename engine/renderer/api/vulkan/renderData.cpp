@@ -251,10 +251,10 @@ VulkanRenderData::~VulkanRenderData()
 
 VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<SceneNode> node)
     : m_device(device), m_node(std::move(node)) {
-    switch (m_node->attachType) {
-    case AttachType::LIGHT:
+    switch (m_node->m_attachType) {
+    case ObjectType::LIGHT:
         m_object = m_node->getObject<Light>();
-    case AttachType::CAMERA:
+    case ObjectType::CAMERA:
         m_object = m_node->getObject<Camera>();
     default:
         assert("invalid object type");

@@ -7,6 +7,7 @@
 
 namespace vkl
 {
+struct SceneNode;
 struct Subset;
 struct ImageDesc;
 struct Material;
@@ -34,13 +35,6 @@ struct Subset
     ResourceIndex firstIndex = -1;
     ResourceIndex indexCount = -1;
     ResourceIndex materialIndex = -1;
-};
-
-struct MeshNode : Node<MeshNode>
-{
-    MeshNode(std::shared_ptr<MeshNode> parent, glm::mat4 matrix = glm::mat4(1.0f)) : Node<MeshNode>(std::move(parent), matrix) {}
-    bool isVisible = true;
-    SubsetList subsets;
 };
 
 struct ImageDesc
@@ -79,15 +73,22 @@ struct Material
     uint32_t id;
 };
 
+struct Mesh : public Object
+{
+    static std::shared_ptr<Mesh> Create();
+    Mesh(IdType id) : Object(id, ObjectType::MESH) {}
+    SubsetList m_subsets;
+};
+
 class Entity : public Object
 {
 public:
     static std::shared_ptr<Entity> Create();
-    Entity(IdType id);
+    Entity(IdType id) : Object(id, ObjectType::ENTITY) {}
     ~Entity() override;
     void loadFromFile(const std::string &path);
 
-    std::shared_ptr<MeshNode> m_rootNode;
+    std::shared_ptr<SceneNode> m_rootNode = nullptr;
 
     VertexList m_vertices;
     IndexList m_indices;

@@ -26,7 +26,7 @@ class Camera : public UniformObject
 {
 public:
     static std::shared_ptr<Camera> Create();
-    Camera(IdType id) : UniformObject(id) {}
+    Camera(IdType id) : UniformObject(id, ObjectType::CAMERA) {}
     ~Camera() override = default;
 
     void load() override;

@@ -18,7 +18,7 @@ class Light : public UniformObject
 public:
     static std::shared_ptr<Light> Create();
 
-    Light(IdType id) : UniformObject(id) {}
+    Light(IdType id) : UniformObject(id, ObjectType::LIGHT) {}
     ~Light() override = default;
 
     void setPosition(glm::vec3 value) { _position = value; }

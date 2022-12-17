@@ -430,18 +430,18 @@ void VulkanSceneRenderer::_loadSceneNodes() {
         auto node = q.front();
         q.pop();
 
-        switch (node->attachType) {
-        case AttachType::ENTITY: {
+        switch (node->m_attachType) {
+        case ObjectType::ENTITY: {
             auto renderable = std::make_shared<VulkanRenderData>(m_pDevice, node);
             _renderList.push_back(renderable);
         } break;
-        case AttachType::CAMERA: {
+        case ObjectType::CAMERA: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
             _uniformList.push_front(ubo);
             _cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
             _sceneInfo.cameraCount++;
         } break;
-        case AttachType::LIGHT: {
+        case ObjectType::LIGHT: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
             _uniformList.push_back(ubo);
             _lightInfos.push_back(ubo->m_buffer->getBufferInfo());
@@ -821,14 +821,18 @@ void VulkanSceneRenderer::_initShadowPassResource() {
         set = _shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
     }
 }
-void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<MeshNode> &node)
+void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<SceneNode> &node)
 {
-    std::queue<std::shared_ptr<MeshNode>> q;
+    std::queue<std::shared_ptr<SceneNode>> q;
     q.push(node);
 
     while(!q.empty()){
         auto subNode = q.front();
         q.pop();
+
+        for (const auto &child : subNode->children){
+            q.push(child);
+        }
 
         glm::mat4 nodeMatrix    = subNode->matrix;
         auto     currentParent = subNode->parent;
@@ -839,17 +843,17 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
         nodeMatrix = renderData->m_node->matrix * nodeMatrix;
         drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &nodeMatrix);
 
-        for (const auto& subset : subNode->subsets) {
+        if (subNode->m_attachType == ObjectType::UNATTACHED){
+            continue;
+        }
+
+        for (const auto& subset : subNode->getObject<Mesh>()->m_subsets) {
             if (subset.indexCount > 0) {
                 auto &material = renderData->m_node->getObject<Entity>()->m_materials[subset.materialIndex];
                 auto &materialSet = materiaDataMaps[material];
                 drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
                 drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
             }
-        }
-
-        for (const auto &child : subNode->children){
-            q.push(child);
         }
     }
 }

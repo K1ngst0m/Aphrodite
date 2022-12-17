@@ -8,7 +8,7 @@ namespace vkl
 class UniformObject : public Object
 {
 public:
-    UniformObject(IdType id) : Object(id) {}
+    UniformObject(IdType id, ObjectType type) : Object(id, type) {}
     ~UniformObject() override = default;
 
     virtual void load() = 0;

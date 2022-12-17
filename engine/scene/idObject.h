@@ -23,19 +23,19 @@ class IdObject
 {
 private:
     friend struct IdCmp;  // Avoid calling getId()
-    IdType mId;
+    IdType m_Id;
 
 protected:
-    void _setId(IdType newId) { mId = newId; }
+    void _setId(IdType newId) { m_Id = newId; }
 
 public:
-    IdObject(IdType id) : mId(id) {}
+    IdObject(IdType id) : m_Id(id) {}
 
-    IdType getId() const { return mId; }
+    IdType getId() const { return m_Id; }
 
-    bool operator()(const IdObject *left, const IdObject *right) { return left->mId < right->mId; }
+    bool operator()(const IdObject *left, const IdObject *right) { return left->m_Id < right->m_Id; }
 
-    bool operator()(const IdObject &left, const IdObject &right) { return left.mId < right.mId; }
+    bool operator()(const IdObject &left, const IdObject &right) { return left.m_Id < right.m_Id; }
 };
 }  // namespace vkl
 

@@ -1,4 +1,5 @@
 #include "entity.h"
+#include "sceneNode.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -100,7 +101,7 @@ void loadNodes(std::vector<Vertex> &vertices,
                std::vector<uint32_t>& indices,
                const tinygltf::Node &inputNode,
                const tinygltf::Model &input,
-               const std::shared_ptr<MeshNode>& parent)
+               const std::shared_ptr<SceneNode>& parent)
 {
     auto node = parent->createChildNode();
     node->matrix = glm::mat4(1.0f);
@@ -131,6 +132,8 @@ void loadNodes(std::vector<Vertex> &vertices,
     if(inputNode.mesh > -1)
     {
         const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
+        auto meshObj = Mesh::Create();
+        node->attachObject(meshObj);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : mesh.primitives)
         {
@@ -249,7 +252,7 @@ void loadNodes(std::vector<Vertex> &vertices,
 
             Subset subset{ firstIndex, indexCount, glTFPrimitive.material };
 
-            node->subsets.push_back(subset);
+            node->getObject<Mesh>()->m_subsets.push_back(subset);
         }
     }
 
@@ -302,11 +305,8 @@ void Entity::loadFromFile(const std::string &path)
 std::shared_ptr<Entity> Entity::Create()
 {
     auto instance = std::make_shared<Entity>(Id::generateNewId<Entity>());
+    instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
     return instance;
-}
-Entity::Entity(IdType id) : Object(id)
-{
-    m_rootNode = std::make_shared<MeshNode>(nullptr);
 }
 Entity::~Entity()
 {
@@ -314,5 +314,10 @@ Entity::~Entity()
     m_indices.clear();
     m_images.clear();
     m_materials.clear();
+}
+std::shared_ptr<Mesh> Mesh::Create()
+{
+    auto instance = std::make_shared<Mesh>(Id::generateNewId<Mesh>());
+    return instance;
 }
 }  // namespace vkl
