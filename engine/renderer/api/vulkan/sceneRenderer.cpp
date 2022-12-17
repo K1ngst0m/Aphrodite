@@ -210,7 +210,6 @@ void VulkanSceneRenderer::loadResources() {
     _initPostFxResource();
     // _initShadowPassResource();
     _initRenderData();
-    isSceneLoaded = true;
 }
 
 void VulkanSceneRenderer::cleanupResources() {
