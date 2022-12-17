@@ -1,5 +1,4 @@
 #include "entity.h"
-#include "node.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -301,12 +300,6 @@ void Entity::loadFromFile(const std::string &path)
         assert("Could not open the glTF file.");
         return;
     }
-}
-std::shared_ptr<Entity> Entity::Create()
-{
-    auto instance = std::make_shared<Entity>(Id::generateNewId<Entity>());
-    instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
-    return instance;
 }
 Entity::~Entity()
 {

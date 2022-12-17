@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "object.h"
+#include "node.h"
 
 namespace vkl
 {
@@ -83,8 +84,7 @@ struct Mesh : public Object
 class Entity : public Object
 {
 public:
-    static std::shared_ptr<Entity> Create();
-    Entity(IdType id) : Object(id, ObjectType::ENTITY) {}
+    Entity() : Object(Id::generateNewId<Entity>(), ObjectType::ENTITY), m_rootNode(std::make_shared<SceneNode>(nullptr)) {}
     ~Entity() override;
     void loadFromFile(const std::string &path);
 

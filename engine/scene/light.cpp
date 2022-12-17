@@ -29,9 +29,4 @@ void Light::update(float deltaTime)
     pData->type = static_cast<uint32_t>(_type);
 }
 
-std::shared_ptr<Light> Light::Create()
-{
-    auto instance = std::make_shared<Light>(Id::generateNewId<Light>());
-    return instance;
-}
 }  // namespace vkl

@@ -41,7 +41,6 @@ VulkanPipeline *VulkanPipeline::CreateComputePipeline(VulkanDevice *pDevice, Sha
     instance->_effect = pEffect;
     instance->_handle = handle;
     instance->_device = pDevice;
-    instance->_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
     return instance;
 }
 

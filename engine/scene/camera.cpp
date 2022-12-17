@@ -119,9 +119,4 @@ void Camera::processMovement(float deltaTime)
     }
 };
 
-std::shared_ptr<Camera> Camera::Create()
-{
-    auto instance = std::make_shared<Camera>(Id::generateNewId<Camera>());
-    return instance;
-}
 }  // namespace vkl
