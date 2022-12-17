@@ -18,7 +18,7 @@ using ResourceIndex = int32_t;
 using SubsetList = std::vector<Subset>;
 using ImageData = std::vector<uint8_t>;
 using VertexList = std::vector<Vertex>;
-using IndexList = std::vector<uint32_t>;
+using IndexList = std::vector<uint8_t>;
 using TextureList = std::vector<std::shared_ptr<ImageDesc>>;
 using MaterialList = std::vector<std::shared_ptr<Material>>;
 
@@ -77,10 +77,16 @@ struct Material
     uint32_t id;
 };
 
+enum class IndexType{
+    UINT16,
+    UINT32,
+};
+
 struct Mesh : public Object
 {
     Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}
     SubsetList m_subsets;
+    IndexType m_indexType = IndexType::UINT32;
 };
 
 class Entity : public Object

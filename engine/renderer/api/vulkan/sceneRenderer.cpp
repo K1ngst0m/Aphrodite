@@ -274,11 +274,6 @@ void VulkanSceneRenderer::drawScene() {
     renderPassBeginInfo.pFramebuffer = _forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for (auto &renderable : _renderList) {
-        VkDeviceSize offsets[1] = {0};
-        commandBuffer->cmdBindVertexBuffers(0, 1, renderable->m_vertexBuffer, offsets);
-        if (renderable->m_indexBuffer){
-            commandBuffer->cmdBindIndexBuffers(renderable->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-        }
         _drawNodes(renderable, _forwardPass.pipeline, commandBuffer, renderable->m_node->getObject<Entity>()->m_rootNode);
     }
     commandBuffer->cmdEndRenderPass();
@@ -832,6 +827,9 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
         auto subNode = q.front();
         q.pop();
 
+        auto entity = renderData->m_node->getObject<Entity>();
+        auto mesh = subNode->getObject<Mesh>();
+
         for (const auto &child : subNode->children){
             q.push(child);
         }
@@ -849,9 +847,24 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
             continue;
         }
 
-        for (const auto& subset : subNode->getObject<Mesh>()->m_subsets) {
+        VkDeviceSize offsets[1] = {0};
+        drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
+        if (renderData->m_indexBuffer){
+            VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+            switch (mesh->m_indexType) {
+            case IndexType::UINT16:
+                indexType = VK_INDEX_TYPE_UINT16;
+                break;
+            case IndexType::UINT32:
+                indexType = VK_INDEX_TYPE_UINT32;
+                break;
+            }
+            drawCmd->cmdBindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
+        }
+
+        for (const auto& subset : mesh->m_subsets) {
             if (subset.indexCount > 0) {
-                auto &material = renderData->m_node->getObject<Entity>()->m_materials[subset.materialIndex];
+                auto &material = entity->m_materials[subset.materialIndex];
                 auto &materialSet = materiaDataMaps[material];
                 drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
                 if (subset.hasIndices){

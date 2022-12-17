@@ -97,7 +97,7 @@ void loadMaterials(std::vector<std::shared_ptr<Material>>& materials, tinygltf::
     }
 }
 void loadNodes(std::vector<Vertex> &vertices,
-               std::vector<uint32_t>& indices,
+               std::vector<uint8_t>& indices,
                const tinygltf::Node &inputNode,
                const tinygltf::Model &input,
                const std::shared_ptr<SceneNode>& parent)
@@ -130,10 +130,11 @@ void loadNodes(std::vector<Vertex> &vertices,
     // In glTF this is done via accessors and buffer views
     if(inputNode.mesh > -1)
     {
-        const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
-        node->attachObject(Object::Create<Mesh>());
+        const tinygltf::Mesh gltfMesh = input.meshes[inputNode.mesh];
+        auto mesh = Object::Create<Mesh>();
+        node->attachObject(mesh);
         // Iterate through all primitives of this node's mesh
-        for(const auto &glTFPrimitive : mesh.primitives)
+        for(const auto &glTFPrimitive : gltfMesh.primitives)
         {
             auto firstIndex = static_cast<int32_t>(indices.size());
             auto vertexStart = static_cast<int32_t>(vertices.size());
@@ -190,13 +191,10 @@ void loadNodes(std::vector<Vertex> &vertices,
                 {
                     Vertex vert{};
                     vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-                    vert.normal = glm::normalize(glm::vec3(
-                        normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
-                    vert.uv =
-                        texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+                    vert.normal = glm::normalize(glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+                    vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
-                    vert.tangent =
-                        tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
+                    vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
                     vertices.push_back(vert);
                 }
             }
@@ -209,35 +207,32 @@ void loadNodes(std::vector<Vertex> &vertices,
                 indexCount += static_cast<uint32_t>(accessor.count);
 
                 // glTF supports different component types of indices
+                uint32_t idxOffset = indices.size();
                 switch(accessor.componentType)
                 {
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
                 {
+                    indices.resize(indices.size() + accessor.count * 4);
+                    auto * dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
+                    mesh->m_indexType = IndexType::UINT32;
                     const auto *buf = reinterpret_cast<const uint32_t *>(
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
-                        indices.push_back(buf[index] + vertexStart);
+                        dataPtr[index] = buf[index] + vertexStart;
                     }
                     break;
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                 {
+                    indices.resize(indices.size() + accessor.count * 2);
+                    auto * dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
+                    mesh->m_indexType = IndexType::UINT16;
                     const auto *buf = reinterpret_cast<const uint16_t *>(
                         &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
-                        indices.push_back(buf[index] + vertexStart);
-                    }
-                    break;
-                }
-                case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE:
-                {
-                    const auto *buf = reinterpret_cast<const uint8_t *>(
-                        &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-                    for(size_t index = 0; index < accessor.count; index++)
-                    {
-                        indices.push_back(buf[index] + vertexStart);
+                        dataPtr[index] = buf[index] + vertexStart;
                     }
                     break;
                 }
@@ -305,7 +300,7 @@ void Entity::loadFromFile(const std::string &path)
         assert("Could not open the glTF file.");
         return;
     }
-}
+ }
 
 Entity::~Entity()
 {
