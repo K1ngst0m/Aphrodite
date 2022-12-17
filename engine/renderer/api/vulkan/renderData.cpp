@@ -164,12 +164,6 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
     assert(!vertices.empty());
 
-    if (indices.empty()) {
-        for (size_t i = 0; i < vertices.size(); i++) {
-            indices.push_back(i);
-        }
-    }
-
     // setup vertex buffer
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
@@ -203,6 +197,7 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     }
 
     // setup index buffer
+    if (!indices.empty())
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
         // using staging buffer
@@ -239,8 +234,10 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
 VulkanRenderData::~VulkanRenderData()
 {
+    if (m_indexBuffer){
+        m_pDevice->destroyBuffer(m_indexBuffer);
+    }
     m_pDevice->destroyBuffer(m_vertexBuffer);
-    m_pDevice->destroyBuffer(m_indexBuffer);
     m_pDevice->destroyBuffer(m_objectUB);
 
     for(auto &texture : m_textures)

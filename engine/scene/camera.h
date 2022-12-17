@@ -35,21 +35,21 @@ public:
     void setPerspective(float fov, float aspect, float znear, float zfar);
     bool isMoving() const;
 
-    void setPosition(glm::vec3 position) { _position = position; }
-    void rotate(glm::vec3 delta) { _rotation += delta; }
-    void setRotation(glm::vec3 rotation) { _rotation = rotation; }
-    void setTranslation(glm::vec3 translation) { _position = translation; };
-    void translate(glm::vec3 delta) { _position += delta; }
-    void setType(CameraType type) { _cameraType = type; }
-    void setRotationSpeed(float rotationSpeed) { _rotationSpeed = rotationSpeed; }
-    void setMovementSpeed(float movementSpeed) { _movementSpeed = movementSpeed; }
+    void setPosition(glm::vec3 position) { m_position = position; }
+    void rotate(glm::vec3 delta) { m_rotation += delta; }
+    void setRotation(glm::vec3 rotation) { m_rotation = rotation; }
+    void setTranslation(glm::vec3 translation) { m_position = translation; };
+    void translate(glm::vec3 delta) { m_position += delta; }
+    void setType(CameraType type) { m_cameraType = type; }
+    void setRotationSpeed(float rotationSpeed) { m_rotationSpeed = rotationSpeed; }
+    void setMovementSpeed(float movementSpeed) { m_movementSpeed = movementSpeed; }
 
-    float getNearClip() const { return _znear; }
-    float getFarClip() const { return _zfar; }
-    float getRotationSpeed() const { return _rotationSpeed; }
+    float getNearClip() const { return m_znear; }
+    float getFarClip() const { return m_zfar; }
+    float getRotationSpeed() const { return m_rotationSpeed; }
 
-    void setMovement(Direction direction, bool flag) { keys[direction] = flag; }
-    void setFlipY(bool val) { _flipY = val; }
+    void setMovement(Direction direction, bool flag) { m_keys[direction] = flag; }
+    void setFlipY(bool val) { m_flipY = val; }
 
 private:
     void updateViewMatrix();
@@ -57,30 +57,30 @@ private:
     void updateAspectRatio(float aspect);
 
 private:
-    std::unordered_map<Direction, bool> keys{ { Direction::LEFT, false },
+    std::unordered_map<Direction, bool> m_keys{ { Direction::LEFT, false },
                                               { Direction::RIGHT, false },
                                               { Direction::UP, false },
                                               { Direction::DOWN, false } };
 
-    CameraType _cameraType = CameraType::FIRSTPERSON;
+    CameraType m_cameraType = CameraType::FIRSTPERSON;
 
-    glm::vec3 _rotation = glm::vec3();
-    glm::vec3 _position = glm::vec3();
+    glm::vec3 m_rotation = glm::vec3();
+    glm::vec3 m_position = glm::vec3();
 
-    float _rotationSpeed = 1.0f;
-    float _movementSpeed = 1.0f;
+    float m_rotationSpeed = 1.0f;
+    float m_movementSpeed = 1.0f;
 
-    bool _flipY = false;
+    bool m_flipY = false;
 
     struct
     {
         glm::mat4 perspective;
         glm::mat4 view;
-    } _matrices;
+    } m_matrices;
 
-    float _fov = 60.0f;
-    float _znear = 96.0f;
-    float _zfar = 0.01f;
+    float m_fov = 60.0f;
+    float m_znear = 96.0f;
+    float m_zfar = 0.01f;
 };
 }  // namespace vkl
 #endif

@@ -131,14 +131,14 @@ void loadNodes(std::vector<Vertex> &vertices,
     if(inputNode.mesh > -1)
     {
         const tinygltf::Mesh mesh = input.meshes[inputNode.mesh];
-        auto meshObj = Mesh::Create();
-        node->attachObject(meshObj);
+        node->attachObject(Object::Create<Mesh>());
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : mesh.primitives)
         {
             auto firstIndex = static_cast<int32_t>(indices.size());
             auto vertexStart = static_cast<int32_t>(vertices.size());
             auto indexCount = static_cast<int32_t>(0);
+            auto vertexCount = 0;
 
             // Vertices
             {
@@ -146,7 +146,6 @@ void loadNodes(std::vector<Vertex> &vertices,
                 const float *normalsBuffer = nullptr;
                 const float *texCoordsBuffer = nullptr;
                 const float *tangentsBuffer = nullptr;
-                size_t vertexCount = 0;
 
                 // Get buffer data for vertex normals
                 if(glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end())
@@ -249,7 +248,13 @@ void loadNodes(std::vector<Vertex> &vertices,
                 }
             }
 
-            Subset subset{ firstIndex, indexCount, glTFPrimitive.material };
+            Subset subset;
+            subset.firstVertex = vertexStart;
+            subset.vertexCount = vertexCount;
+            subset.firstIndex = firstIndex;
+            subset.indexCount = indexCount;
+            subset.materialIndex = glTFPrimitive.material;
+            subset.hasIndices = indexCount > 0;
 
             node->getObject<Mesh>()->m_subsets.push_back(subset);
         }
@@ -301,16 +306,12 @@ void Entity::loadFromFile(const std::string &path)
         return;
     }
 }
+
 Entity::~Entity()
 {
     m_vertices.clear();
     m_indices.clear();
     m_images.clear();
     m_materials.clear();
-}
-std::shared_ptr<Mesh> Mesh::Create()
-{
-    auto instance = std::make_shared<Mesh>(Id::generateNewId<Mesh>());
-    return instance;
 }
 }  // namespace vkl

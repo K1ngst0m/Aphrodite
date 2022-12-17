@@ -1,10 +1,10 @@
-#ifndef VKLENTITY_H_
-#define VKLENTITY_H_
+#ifndef ENTITY_H_
+#define ENTITY_H_
 
 #include <utility>
 
-#include "object.h"
 #include "node.h"
+#include "object.h"
 
 namespace vkl
 {
@@ -34,8 +34,11 @@ struct Vertex
 struct Subset
 {
     ResourceIndex firstIndex = -1;
+    ResourceIndex firstVertex = -1;
+    ResourceIndex vertexCount = -1;
     ResourceIndex indexCount = -1;
     ResourceIndex materialIndex = -1;
+    bool hasIndices = false;
 };
 
 struct ImageDesc
@@ -76,15 +79,18 @@ struct Material
 
 struct Mesh : public Object
 {
-    static std::shared_ptr<Mesh> Create();
-    Mesh(IdType id) : Object(id, ObjectType::MESH) {}
+    Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}
     SubsetList m_subsets;
 };
 
 class Entity : public Object
 {
 public:
-    Entity() : Object(Id::generateNewId<Entity>(), ObjectType::ENTITY), m_rootNode(std::make_shared<SceneNode>(nullptr)) {}
+    Entity() :
+        Object(Id::generateNewId<Entity>(), ObjectType::ENTITY),
+        m_rootNode(std::make_shared<SceneNode>(nullptr))
+    {
+    }
     ~Entity() override;
     void loadFromFile(const std::string &path);
 

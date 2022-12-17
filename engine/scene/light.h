@@ -19,20 +19,20 @@ public:
     Light() : UniformObject(Id::generateNewId<Light>(), ObjectType::LIGHT) {}
     ~Light() override = default;
 
-    void setPosition(glm::vec3 value) { _position = value; }
-    void setDirection(glm::vec3 value) { _direction = value; }
+    void setPosition(glm::vec3 value) { m_position = value; }
+    void setDirection(glm::vec3 value) { m_direction = value; }
 
-    void setColor(glm::vec3 value) { _color = value; }
-    void setType(LightType type) { _type = type; }
+    void setColor(glm::vec3 value) { m_color = value; }
+    void setType(LightType type) { m_type = type; }
 
     void load() override;
     void update(float deltaTime) override;
 
 private:
-    glm::vec3 _color = glm::vec3(1.0f);
-    glm::vec3 _position = glm::vec3{ 1.2f, 1.0f, 2.0f };
-    glm::vec3 _direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-    LightType _type = LightType::DIRECTIONAL;
+    glm::vec3 m_color = glm::vec3(1.0f);
+    glm::vec3 m_position = glm::vec3{ 1.2f, 1.0f, 2.0f };
+    glm::vec3 m_direction = glm::vec3(-0.2f, -1.0f, -0.3f);
+    LightType m_type = LightType::DIRECTIONAL;
 };
 }  // namespace vkl
 

@@ -43,6 +43,7 @@ public:
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
     void setMainCamera(const std::shared_ptr<Camera> &camera) { m_camera = camera; }
+    std::shared_ptr<Camera> getMainCamera() { return m_camera; }
 
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }
     std::shared_ptr<Light> getLightWithId(IdType id) { return m_lightMapList[id]; }

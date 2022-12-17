@@ -276,7 +276,9 @@ void VulkanSceneRenderer::drawScene() {
     for (auto &renderable : _renderList) {
         VkDeviceSize offsets[1] = {0};
         commandBuffer->cmdBindVertexBuffers(0, 1, renderable->m_vertexBuffer, offsets);
-        commandBuffer->cmdBindIndexBuffers(renderable->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        if (renderable->m_indexBuffer){
+            commandBuffer->cmdBindIndexBuffers(renderable->m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+        }
         _drawNodes(renderable, _forwardPass.pipeline, commandBuffer, renderable->m_node->getObject<Entity>()->m_rootNode);
     }
     commandBuffer->cmdEndRenderPass();
@@ -852,7 +854,12 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
                 auto &material = renderData->m_node->getObject<Entity>()->m_materials[subset.materialIndex];
                 auto &materialSet = materiaDataMaps[material];
                 drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
-                drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+                if (subset.hasIndices){
+                    drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+                }
+                else{
+                    drawCmd->cmdDraw(subset.vertexCount, 1, subset.firstVertex, 0);
+                }
             }
         }
     }
