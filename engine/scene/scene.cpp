@@ -46,4 +46,10 @@ std::shared_ptr<Entity> Scene::createEntity()
     return entity;
 }
 
+std::shared_ptr<Mesh> Scene::createMesh()
+{
+    auto mesh = Object::Create<Mesh>();
+    m_meshes[mesh->getId()] = mesh;
+    return mesh;
+}
 }  // namespace vkl

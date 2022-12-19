@@ -15,9 +15,7 @@ struct Vertex;
 
 using ResourceIndex = int32_t;
 using ImageData = std::vector<uint8_t>;
-using VertexList = std::vector<Vertex>;
-using IndexList = std::vector<uint8_t>;
-using TextureList = std::vector<std::shared_ptr<ImageDesc>>;
+using ImageList = std::vector<std::shared_ptr<ImageDesc>>;
 using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 struct Vertex
@@ -65,7 +63,8 @@ struct Material
     uint32_t id;
 };
 
-enum class IndexType{
+enum class IndexType
+{
     UINT16,
     UINT32,
 };
@@ -82,6 +81,8 @@ struct Mesh : public Object
         ResourceIndex materialIndex = -1;
         bool hasIndices = false;
     };
+    std::vector<Vertex> m_vertices;
+    std::vector<uint8_t> m_indices;
     std::vector<Subset> m_subsets;
     IndexType m_indexType = IndexType::UINT32;
 };
@@ -99,9 +100,7 @@ public:
 
     std::shared_ptr<SceneNode> m_rootNode = nullptr;
 
-    VertexList m_vertices;
-    IndexList m_indices;
-    TextureList m_images;
+    ImageList m_images;
     MaterialList m_materials;
 };
 }  // namespace vkl

@@ -147,7 +147,9 @@ TextureGpuData createTexture(VulkanDevice * pDevice, uint32_t width, uint32_t he
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
     : m_pDevice(device), m_node(std::move(sceneNode)) {
 
-    for (auto &image : m_node->getObject<Entity>()->m_images) {
+    auto entity = m_node->getObject<Entity>();
+
+    for (auto &image : entity->m_images) {
         // raw image data
         unsigned char *imageData     = image->data.data();
         uint32_t       imageDataSize = image->data.size();
@@ -159,8 +161,26 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     }
 
     // load buffer
-    auto &vertices = m_node->getObject<Entity>()->m_vertices;
-    auto &indices  = m_node->getObject<Entity>()->m_indices;
+    std::vector<Vertex> vertices;
+    std::vector<uint8_t> indices;
+
+    {
+        std::queue<std::shared_ptr<SceneNode>> q;
+        q.push(entity->m_rootNode);
+        while(!q.empty()){
+            auto node = q.front();
+            q.pop();
+            for (const auto& subNode : node->children){
+                q.push(subNode);
+            }
+
+            auto mesh = node->getObject<Mesh>();
+            if (mesh){
+                vertices.insert(vertices.cbegin(), mesh->m_vertices.cbegin(), mesh->m_vertices.cend());
+                indices.insert(indices.cbegin(), mesh->m_indices.cbegin(), mesh->m_indices.cend());
+            }
+        }
+    }
 
     assert(!vertices.empty());
 

@@ -38,6 +38,7 @@ class Scene
 public:
     static std::unique_ptr<Scene> Create(SceneManagerType type);
 
+    std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
     std::shared_ptr<Entity> createEntity();
     std::shared_ptr<Camera> createCamera(float aspectRatio);
