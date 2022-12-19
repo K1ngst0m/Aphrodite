@@ -1,6 +1,6 @@
 #include "pipeline.h"
 #include "renderpass.h"
-#include "scene/entity.h"
+#include "scene/mesh.h"
 #include "shader.h"
 
 namespace vkl {

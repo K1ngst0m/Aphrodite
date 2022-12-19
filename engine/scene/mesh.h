@@ -1,5 +1,5 @@
-#ifndef ENTITY_H_
-#define ENTITY_H_
+#ifndef MESH_H_
+#define MESH_H_
 
 #include <utility>
 
@@ -86,14 +86,6 @@ struct Mesh : public Object
     std::vector<Subset> m_subsets;
     IndexType m_indexType = IndexType::UINT32;
 };
-
-class Entity : public Object
-{
-public:
-    Entity();
-    ~Entity() override = default;
-    std::shared_ptr<SceneNode> m_rootNode = nullptr;
-};
 }  // namespace vkl
 
-#endif  // VKLENTITY_H_
+#endif  // MESH_H_

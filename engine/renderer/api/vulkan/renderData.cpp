@@ -7,7 +7,7 @@
 #include "imageView.h"
 #include "pipeline.h"
 #include "scene/camera.h"
-#include "scene/entity.h"
+#include "scene/mesh.h"
 #include "scene/light.h"
 #include "sceneRenderer.h"
 #include "vkInit.hpp"
@@ -21,32 +21,6 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     std::vector<Vertex> vertices;
     std::vector<uint8_t> indices;
 
-    if(m_node->m_attachType == ObjectType::ENTITY)
-    {
-        auto entity = m_node->getObject<Entity>();
-        {
-            std::queue<std::shared_ptr<SceneNode>> q;
-            q.push(entity->m_rootNode);
-            while(!q.empty())
-            {
-                auto node = q.front();
-                q.pop();
-                for(const auto &subNode : node->children)
-                {
-                    q.push(subNode);
-                }
-
-                auto mesh = node->getObject<Mesh>();
-                if(mesh)
-                {
-                    vertices.insert(vertices.cbegin(), mesh->m_vertices.cbegin(),
-                                    mesh->m_vertices.cend());
-                    indices.insert(indices.cbegin(), mesh->m_indices.cbegin(), mesh->m_indices.cend());
-                }
-            }
-        }
-    }
-    else if(m_node->m_attachType == ObjectType::MESH)
     {
         auto mesh = m_node->getObject<Mesh>();
 
@@ -54,8 +28,6 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
             vertices = mesh->m_vertices;
             indices = mesh->m_indices;
         }
-
-        assert("unique mesh loading hasn't implemented yet.");
     }
 
     assert(!vertices.empty());

@@ -11,7 +11,6 @@ class Scene;
 enum class ObjectType : uint8_t
 {
     UNATTACHED,
-    ENTITY,
     LIGHT,
     CAMERA,
     MESH,

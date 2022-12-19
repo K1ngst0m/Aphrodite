@@ -1,7 +1,7 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "scene/entity.h"
+#include "scene/mesh.h"
 #include "device.h"
 #include "renderer/sceneRenderer.h"
 #include "vulkanRenderer.h"

@@ -1,7 +1,7 @@
 #include "node.h"
 
 #include "camera.h"
-#include "entity.h"
+#include "mesh.h"
 #include "light.h"
 #include "object.h"
 

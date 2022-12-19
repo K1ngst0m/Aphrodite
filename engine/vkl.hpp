@@ -27,7 +27,7 @@
 #include "app/app.h"
 
 #include "scene/camera.h"
-#include "scene/entity.h"
+#include "scene/mesh.h"
 #include "scene/light.h"
 #include "scene/object.h"
 #include "scene/scene.h"

@@ -24,14 +24,12 @@ enum class SceneManagerType
 };
 
 class Light;
-class Entity;
 class Camera;
 struct Mesh;
 struct ImageDesc;
 struct Material;
 
 using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
-using EntityMap = std::unordered_map<IdType, std::shared_ptr<Entity>>;
 using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
 using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
 
@@ -42,8 +40,6 @@ public:
 
     std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
-    std::shared_ptr<Entity> createEntity();
-    std::shared_ptr<Entity> createEntityFromFile(const std::string &path);
     std::shared_ptr<Camera> createCamera(float aspectRatio);
     std::shared_ptr<SceneNode> createFromFile(const std::string &path,
                                               const std::shared_ptr<SceneNode> &parent = nullptr);
@@ -55,7 +51,6 @@ public:
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }
     std::shared_ptr<Light> getLightWithId(IdType id) { return m_lights[id]; }
     std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
-    std::shared_ptr<Entity> getEntityWithId(IdType id) { return m_entities[id]; }
     std::shared_ptr<Mesh> getMeshWithId(IdType id) { return m_meshes[id]; }
     std::vector<std::shared_ptr<ImageDesc>> &getImages() { return m_images; }
     std::vector<std::shared_ptr<Material>> &getMaterials() { return m_materials; }
@@ -69,7 +64,6 @@ private:
     std::shared_ptr<Camera> m_camera = nullptr;
 
     CameraMap m_cameras;
-    EntityMap m_entities;
     LightMap m_lights;
     MeshMap m_meshes;
     std::vector<std::shared_ptr<ImageDesc>> m_images;

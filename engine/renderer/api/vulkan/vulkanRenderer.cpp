@@ -12,7 +12,7 @@
 #include "renderData.h"
 #include "renderer/sceneRenderer.h"
 #include "renderpass.h"
-#include "scene/entity.h"
+#include "scene/mesh.h"
 #include "sceneRenderer.h"
 #include "shader.h"
 #include "swapChain.h"
