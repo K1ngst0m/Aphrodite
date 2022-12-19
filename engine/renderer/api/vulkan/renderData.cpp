@@ -6,184 +6,61 @@
 #include "image.h"
 #include "imageView.h"
 #include "pipeline.h"
-#include "scene/entity.h"
-#include "sceneRenderer.h"
 #include "scene/camera.h"
+#include "scene/entity.h"
 #include "scene/light.h"
+#include "sceneRenderer.h"
 #include "vkInit.hpp"
 
-namespace vkl {
-namespace  {
-TextureGpuData createTexture(VulkanDevice * pDevice, uint32_t width, uint32_t height, void *data, uint32_t dataSize, bool genMipmap = false) {
-    uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
-
-    // Load texture from image buffer
-    vkl::VulkanBuffer *stagingBuffer;
-    {
-        BufferCreateInfo createInfo{};
-        createInfo.size     = dataSize;
-        createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
-        createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        pDevice->createBuffer(&createInfo, &stagingBuffer);
-
-        stagingBuffer->map();
-        stagingBuffer->copyTo(data, dataSize);
-        stagingBuffer->unmap();
-    }
-
-    TextureGpuData texture{};
-
-    {
-        ImageCreateInfo createInfo{};
-        createInfo.extent    = {width, height, 1};
-        createInfo.format    = FORMAT_R8G8B8A8_UNORM;
-        createInfo.tiling    = IMAGE_TILING_OPTIMAL;
-        createInfo.usage     = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
-        createInfo.property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        createInfo.mipLevels = texMipLevels;
-
-        pDevice->createImage(&createInfo, &texture.image);
-
-        auto *cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
-        cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        pDevice->endSingleTimeCommands(cmd);
-
-        cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
-
-        // generate mipmap chains
-        for (int32_t i = 1; i < texMipLevels; i++) {
-            VkImageBlit imageBlit{};
-
-            // Source
-            imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageBlit.srcSubresource.layerCount = 1;
-            imageBlit.srcSubresource.mipLevel   = i - 1;
-            imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-            imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-            imageBlit.srcOffsets[1].z           = 1;
-
-            // Destination
-            imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            imageBlit.dstSubresource.layerCount = 1;
-            imageBlit.dstSubresource.mipLevel   = i;
-            imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-            imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-            imageBlit.dstOffsets[1].z           = 1;
-
-            VkImageSubresourceRange mipSubRange = {};
-            mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-            mipSubRange.baseMipLevel            = i;
-            mipSubRange.levelCount              = 1;
-            mipSubRange.layerCount              = 1;
-
-            // Prepare current mip level as image blit destination
-            cmd->cmdImageMemoryBarrier(
-                texture.image,
-                0,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                mipSubRange);
-
-            // Blit from previous level
-            cmd->cmdBlitImage(
-                texture.image,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                texture.image,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                1,
-                &imageBlit,
-                VK_FILTER_LINEAR);
-
-            // Prepare current mip level as image blit source for next level
-            cmd->cmdImageMemoryBarrier(
-                texture.image,
-                VK_ACCESS_TRANSFER_WRITE_BIT,
-                VK_ACCESS_TRANSFER_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                mipSubRange);
-        }
-
-        cmd->cmdTransitionImageLayout(texture.image,
-                                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        pDevice->endSingleTimeCommands(cmd);
-    }
-
-    {
-        ImageViewCreateInfo createInfo{};
-        createInfo.format                      = FORMAT_R8G8B8A8_UNORM;
-        createInfo.viewType                    = IMAGE_VIEW_TYPE_2D;
-        createInfo.subresourceRange.levelCount = texMipLevels;
-        pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
-    }
-
-    {
-        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        samplerInfo.maxLod              = texMipLevels;
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-        VK_CHECK_RESULT(vkCreateSampler(pDevice->getHandle(), &samplerInfo, nullptr, &texture.sampler));
-    }
-
-    texture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    texture.descriptorInfo.imageView   = texture.imageView->getHandle();
-    texture.descriptorInfo.sampler     = texture.sampler;
-
-    pDevice->destroyBuffer(stagingBuffer);
-
-    return texture;
-}
-}
-
-VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode)
-    : m_pDevice(device), m_node(std::move(sceneNode)) {
-
-    auto entity = m_node->getObject<Entity>();
-
-    for (auto &image : entity->m_images) {
-        // raw image data
-        unsigned char *imageData     = image->data.data();
-        uint32_t       imageDataSize = image->data.size();
-        uint32_t       width         = image->width;
-        uint32_t       height        = image->height;
-
-        auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
-        m_textures.push_back(texture);
-    }
-
-    // load buffer
+namespace vkl
+{
+VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode) :
+    m_pDevice(device),
+    m_node(std::move(sceneNode))
+{
     std::vector<Vertex> vertices;
     std::vector<uint8_t> indices;
 
+    if(m_node->m_attachType == ObjectType::ENTITY)
     {
-        std::queue<std::shared_ptr<SceneNode>> q;
-        q.push(entity->m_rootNode);
-        while(!q.empty()){
-            auto node = q.front();
-            q.pop();
-            for (const auto& subNode : node->children){
-                q.push(subNode);
-            }
+        auto entity = m_node->getObject<Entity>();
+        {
+            std::queue<std::shared_ptr<SceneNode>> q;
+            q.push(entity->m_rootNode);
+            while(!q.empty())
+            {
+                auto node = q.front();
+                q.pop();
+                for(const auto &subNode : node->children)
+                {
+                    q.push(subNode);
+                }
 
-            auto mesh = node->getObject<Mesh>();
-            if (mesh){
-                vertices.insert(vertices.cbegin(), mesh->m_vertices.cbegin(), mesh->m_vertices.cend());
-                indices.insert(indices.cbegin(), mesh->m_indices.cbegin(), mesh->m_indices.cend());
+                auto mesh = node->getObject<Mesh>();
+                if(mesh)
+                {
+                    vertices.insert(vertices.cbegin(), mesh->m_vertices.cbegin(),
+                                    mesh->m_vertices.cend());
+                    indices.insert(indices.cbegin(), mesh->m_indices.cbegin(), mesh->m_indices.cend());
+                }
             }
         }
+    }
+    else if(m_node->m_attachType == ObjectType::MESH)
+    {
+        auto mesh = m_node->getObject<Mesh>();
+
+        {
+            vertices = mesh->m_vertices;
+            indices = mesh->m_indices;
+        }
+
+        assert("unique mesh loading hasn't implemented yet.");
     }
 
     assert(!vertices.empty());
 
+    // load buffer
     // setup vertex buffer
     {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
@@ -191,9 +68,9 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
         vkl::VulkanBuffer *stagingBuffer;
         {
             BufferCreateInfo createInfo{};
-            createInfo.size     = bufferSize;
+            createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
             m_pDevice->createBuffer(&createInfo, &stagingBuffer);
         }
 
@@ -203,9 +80,9 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
         {
             BufferCreateInfo createInfo{};
-            createInfo.size     = bufferSize;
+            createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            createInfo.usage = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             m_pDevice->createBuffer(&createInfo, &m_vertexBuffer);
         }
 
@@ -217,7 +94,7 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     }
 
     // setup index buffer
-    if (!indices.empty())
+    if(!indices.empty())
     {
         VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
         // using staging buffer
@@ -225,9 +102,9 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
         {
             BufferCreateInfo createInfo{};
-            createInfo.size     = bufferSize;
+            createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
             m_pDevice->createBuffer(&createInfo, &stagingBuffer);
         }
 
@@ -237,9 +114,9 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
         {
             BufferCreateInfo createInfo{};
-            createInfo.size     = bufferSize;
+            createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage    = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            createInfo.usage = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             m_pDevice->createBuffer(&createInfo, &m_indexBuffer);
         }
 
@@ -249,28 +126,24 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
 
         m_pDevice->destroyBuffer(stagingBuffer);
     }
-
 }
 
 VulkanRenderData::~VulkanRenderData()
 {
-    if (m_indexBuffer){
+    if(m_indexBuffer)
+    {
         m_pDevice->destroyBuffer(m_indexBuffer);
     }
     m_pDevice->destroyBuffer(m_vertexBuffer);
     m_pDevice->destroyBuffer(m_objectUB);
-
-    for(auto &texture : m_textures)
-    {
-        m_pDevice->destroyImage(texture.image);
-        m_pDevice->destroyImageView(texture.imageView);
-        vkDestroySampler(m_pDevice->getHandle(), texture.sampler, nullptr);
-    }
 }
 
-VulkanUniformData::VulkanUniformData(VulkanDevice * device, std::shared_ptr<SceneNode> node)
-    : m_device(device), m_node(std::move(node)) {
-    switch (m_node->m_attachType) {
+VulkanUniformData::VulkanUniformData(VulkanDevice *device, std::shared_ptr<SceneNode> node) :
+    m_device(device),
+    m_node(std::move(node))
+{
+    switch(m_node->m_attachType)
+    {
     case ObjectType::LIGHT:
         m_object = m_node->getObject<Light>();
     case ObjectType::CAMERA:
@@ -293,6 +166,5 @@ VulkanUniformData::~VulkanUniformData()
 {
     m_device->destroyBuffer(m_buffer);
 };
-
 
 }  // namespace vkl

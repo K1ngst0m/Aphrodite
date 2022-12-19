@@ -90,18 +90,9 @@ struct Mesh : public Object
 class Entity : public Object
 {
 public:
-    Entity() :
-        Object(Id::generateNewId<Entity>(), ObjectType::ENTITY),
-        m_rootNode(std::make_shared<SceneNode>(nullptr))
-    {
-    }
-    ~Entity() override;
-    void loadFromFile(const std::string &path);
-
+    Entity();
+    ~Entity() override = default;
     std::shared_ptr<SceneNode> m_rootNode = nullptr;
-
-    ImageList m_images;
-    MaterialList m_materials;
 };
 }  // namespace vkl
 

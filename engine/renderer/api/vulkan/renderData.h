@@ -17,8 +17,6 @@ struct VulkanRenderData
     VulkanBuffer *m_objectUB = nullptr;
     VkDescriptorSet m_objectSet = VK_NULL_HANDLE;
 
-    std::vector<TextureGpuData> m_textures;
-
     VulkanDevice *m_pDevice = nullptr;
     std::shared_ptr<SceneNode> m_node = nullptr;
 };

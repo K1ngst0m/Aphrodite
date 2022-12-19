@@ -18,13 +18,13 @@ public:
 
     virtual void cleanupResources() = 0;
 
-    ShadingModel getShadingModel() const { return _shadingModel; }
-    void setShadingModel(ShadingModel model) { _shadingModel = model; }
-    void setScene(const std::shared_ptr<Scene> &scene) { _scene = scene; }
+    ShadingModel getShadingModel() const { return m_shadingModel; }
+    void setShadingModel(ShadingModel model) { m_shadingModel = model; }
+    void setScene(const std::shared_ptr<Scene> &scene) { m_scene = scene; }
 
 protected:
-    std::shared_ptr<Scene> _scene = nullptr;
-    ShadingModel _shadingModel = ShadingModel::UNLIT;
+    std::shared_ptr<Scene> m_scene = nullptr;
+    ShadingModel m_shadingModel = ShadingModel::UNLIT;
 };
 
 }  // namespace vkl

@@ -27,6 +27,8 @@ class Light;
 class Entity;
 class Camera;
 struct Mesh;
+struct ImageDesc;
+struct Material;
 
 using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using EntityMap = std::unordered_map<IdType, std::shared_ptr<Entity>>;
@@ -41,7 +43,10 @@ public:
     std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
     std::shared_ptr<Entity> createEntity();
+    std::shared_ptr<Entity> createEntityFromFile(const std::string &path);
     std::shared_ptr<Camera> createCamera(float aspectRatio);
+    std::shared_ptr<SceneNode> createFromFile(const std::string &path,
+                                              const std::shared_ptr<SceneNode> &parent = nullptr);
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
     void setMainCamera(const std::shared_ptr<Camera> &camera) { m_camera = camera; }
@@ -51,6 +56,9 @@ public:
     std::shared_ptr<Light> getLightWithId(IdType id) { return m_lights[id]; }
     std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
     std::shared_ptr<Entity> getEntityWithId(IdType id) { return m_entities[id]; }
+    std::shared_ptr<Mesh> getMeshWithId(IdType id) { return m_meshes[id]; }
+    std::vector<std::shared_ptr<ImageDesc>> &getImages() { return m_images; }
+    std::vector<std::shared_ptr<Material>> &getMaterials() { return m_materials; }
     glm::vec3 getAmbient() { return m_ambient; }
 
 private:
@@ -64,6 +72,8 @@ private:
     EntityMap m_entities;
     LightMap m_lights;
     MeshMap m_meshes;
+    std::vector<std::shared_ptr<ImageDesc>> m_images;
+    std::vector<std::shared_ptr<Material>> m_materials;
 };
 
 }  // namespace vkl

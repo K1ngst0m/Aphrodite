@@ -22,6 +22,123 @@
 namespace vkl {
 
 namespace {
+GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height, void *data,
+                             uint32_t dataSize, bool genMipmap = false)
+{
+    uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
+
+    // Load texture from image buffer
+    vkl::VulkanBuffer *stagingBuffer;
+    {
+        BufferCreateInfo createInfo{};
+        createInfo.size = dataSize;
+        createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
+        createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        pDevice->createBuffer(&createInfo, &stagingBuffer);
+
+        stagingBuffer->map();
+        stagingBuffer->copyTo(data, dataSize);
+        stagingBuffer->unmap();
+    }
+
+    GpuTexture texture{};
+
+    {
+        ImageCreateInfo createInfo{};
+        createInfo.extent = { width, height, 1 };
+        createInfo.format = FORMAT_R8G8B8A8_UNORM;
+        createInfo.tiling = IMAGE_TILING_OPTIMAL;
+        createInfo.usage =
+            IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
+        createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        createInfo.mipLevels = texMipLevels;
+
+        pDevice->createImage(&createInfo, &texture.image);
+
+        auto *cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
+        cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        pDevice->endSingleTimeCommands(cmd);
+
+        cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
+
+        // generate mipmap chains
+        for(int32_t i = 1; i < texMipLevels; i++)
+        {
+            VkImageBlit imageBlit{};
+
+            // Source
+            imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.srcSubresource.layerCount = 1;
+            imageBlit.srcSubresource.mipLevel = i - 1;
+            imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+            imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+            imageBlit.srcOffsets[1].z = 1;
+
+            // Destination
+            imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            imageBlit.dstSubresource.layerCount = 1;
+            imageBlit.dstSubresource.mipLevel = i;
+            imageBlit.dstOffsets[1].x = int32_t(width >> i);
+            imageBlit.dstOffsets[1].y = int32_t(height >> i);
+            imageBlit.dstOffsets[1].z = 1;
+
+            VkImageSubresourceRange mipSubRange = {};
+            mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            mipSubRange.baseMipLevel = i;
+            mipSubRange.levelCount = 1;
+            mipSubRange.layerCount = 1;
+
+            // Prepare current mip level as image blit destination
+            cmd->cmdImageMemoryBarrier(texture.image, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                                       VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       mipSubRange);
+
+            // Blit from previous level
+            cmd->cmdBlitImage(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture.image,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+
+            // Prepare current mip level as image blit source for next level
+            cmd->cmdImageMemoryBarrier(
+                texture.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
+        }
+
+        cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        pDevice->endSingleTimeCommands(cmd);
+    }
+
+    {
+        ImageViewCreateInfo createInfo{};
+        createInfo.format = FORMAT_R8G8B8A8_UNORM;
+        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+        createInfo.subresourceRange.levelCount = texMipLevels;
+        pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
+    }
+
+    {
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.maxLod = texMipLevels;
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+        VK_CHECK_RESULT(vkCreateSampler(pDevice->getHandle(), &samplerInfo, nullptr, &texture.sampler));
+    }
+
+    texture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    texture.descriptorInfo.imageView = texture.imageView->getHandle();
+    texture.descriptorInfo.sampler = texture.sampler;
+
+    pDevice->destroyBuffer(stagingBuffer);
+
+    return texture;
+}
 
 VulkanPipeline *CreateShadowPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass) {
     VulkanPipeline            *pipeline;
@@ -205,7 +322,7 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &
 
 void VulkanSceneRenderer::loadResources() {
     // _initPostFxResource();
-    _loadSceneNodes();
+    _loadScene();
     _initForwardResource();
     _initPostFxResource();
     // _initShadowPassResource();
@@ -213,28 +330,28 @@ void VulkanSceneRenderer::loadResources() {
 }
 
 void VulkanSceneRenderer::cleanupResources() {
-    if (_forwardPass.pipeline != nullptr) {
-        m_pDevice->destroyPipeline(_forwardPass.pipeline);
+    if (m_forwardPass.pipeline != nullptr) {
+        m_pDevice->destroyPipeline(m_forwardPass.pipeline);
     }
 
-    if (_postFxPass.pipeline != nullptr) {
-        m_pDevice->destroyPipeline(_postFxPass.pipeline);
+    if (m_postFxPass.pipeline != nullptr) {
+        m_pDevice->destroyPipeline(m_postFxPass.pipeline);
     }
 
     for (uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++) {
-        m_pDevice->destroyFramebuffers(_postFxPass.framebuffers[idx]);
-        m_pDevice->destroyFramebuffers(_forwardPass.framebuffers[idx]);
-        m_pDevice->destroyImage(_forwardPass.colorImages[idx]);
-        m_pDevice->destroyImageView(_postFxPass.colorImageViews[idx]);
-        m_pDevice->destroyImageView(_forwardPass.colorImageViews[idx]);
-        m_pDevice->destroyImage(_forwardPass.depthImages[idx]);
-        m_pDevice->destroyImageView(_forwardPass.depthImageViews[idx]);
+        m_pDevice->destroyFramebuffers(m_postFxPass.framebuffers[idx]);
+        m_pDevice->destroyFramebuffers(m_forwardPass.framebuffers[idx]);
+        m_pDevice->destroyImage(m_forwardPass.colorImages[idx]);
+        m_pDevice->destroyImageView(m_postFxPass.colorImageViews[idx]);
+        m_pDevice->destroyImageView(m_forwardPass.colorImageViews[idx]);
+        m_pDevice->destroyImage(m_forwardPass.depthImages[idx]);
+        m_pDevice->destroyImageView(m_forwardPass.depthImageViews[idx]);
     }
-    vkDestroySampler(m_pDevice->getHandle(), _postFxPass.sampler, nullptr);
-    m_pDevice->destroyBuffer(_postFxPass.quadVB);
-    m_pDevice->destroyBuffer(_sceneInfoUB);
-    vkDestroyRenderPass(m_pDevice->getHandle(), _forwardPass.renderPass->getHandle(), nullptr);
-    vkDestroyRenderPass(m_pDevice->getHandle(), _postFxPass.renderPass->getHandle(), nullptr);
+    vkDestroySampler(m_pDevice->getHandle(), m_postFxPass.sampler, nullptr);
+    m_pDevice->destroyBuffer(m_postFxPass.quadVB);
+    m_pDevice->destroyBuffer(m_sceneInfoUB);
+    vkDestroyRenderPass(m_pDevice->getHandle(), m_forwardPass.renderPass->getHandle(), nullptr);
+    vkDestroyRenderPass(m_pDevice->getHandle(), m_postFxPass.renderPass->getHandle(), nullptr);
 }
 
 void VulkanSceneRenderer::drawScene() {
@@ -251,7 +368,7 @@ void VulkanSceneRenderer::drawScene() {
     clearValues[1].depthStencil = {1.0f, 0};
 
     RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass       = _forwardPass.renderPass;
+    renderPassBeginInfo.pRenderPass       = m_forwardPass.renderPass;
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = extent;
     renderPassBeginInfo.clearValueCount   = clearValues.size();
@@ -267,25 +384,25 @@ void VulkanSceneRenderer::drawScene() {
     // dynamic state
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(_forwardPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(_forwardPass.pipeline, 0, 1, &_sceneSets[commandIndex]);
+    commandBuffer->cmdBindPipeline(m_forwardPass.pipeline);
+    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, 0, 1, &m_sceneSets[commandIndex]);
 
     // forward pass
-    renderPassBeginInfo.pFramebuffer = _forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
+    renderPassBeginInfo.pFramebuffer = m_forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-    for (auto &renderable : _renderList) {
-        _drawNodes(renderable, _forwardPass.pipeline, commandBuffer, renderable->m_node->getObject<Entity>()->m_rootNode);
+    for (auto &renderable : m_renderList) {
+        _drawNodes(renderable, m_forwardPass.pipeline, commandBuffer, renderable->m_node->getObject<Entity>()->m_rootNode);
     }
     commandBuffer->cmdEndRenderPass();
 
-    renderPassBeginInfo.pFramebuffer    = _postFxPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
-    renderPassBeginInfo.pRenderPass     = _postFxPass.renderPass;
+    renderPassBeginInfo.pFramebuffer    = m_postFxPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
+    renderPassBeginInfo.pRenderPass     = m_postFxPass.renderPass;
     renderPassBeginInfo.clearValueCount = 1;
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     VkDeviceSize offsets[1] = {0};
-    commandBuffer->cmdBindVertexBuffers(0, 1, _postFxPass.quadVB, offsets);
-    commandBuffer->cmdBindPipeline(_postFxPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(_postFxPass.pipeline, 0, 1, &_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
+    commandBuffer->cmdBindVertexBuffers(0, 1, m_postFxPass.quadVB, offsets);
+    commandBuffer->cmdBindPipeline(m_postFxPass.pipeline);
+    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, 0, 1, &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
     commandBuffer->cmdDraw(6, 1, 0, 0);
     commandBuffer->cmdEndRenderPass();
 
@@ -294,7 +411,7 @@ void VulkanSceneRenderer::drawScene() {
 }
 
 void VulkanSceneRenderer::update(float deltaTime) {
-    for (auto &ubo : _uniformList) {
+    for (auto &ubo : m_uniformList) {
         ubo->m_buffer->copyTo(ubo->m_object->getData());
     }
 }
@@ -307,20 +424,20 @@ void VulkanSceneRenderer::_initRenderData() {
             .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property  = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_sceneInfoUB, &_sceneInfo));
-        _sceneInfoUB->setupDescriptor();
+        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_sceneInfoUB, &m_sceneInfo));
+        m_sceneInfoUB->setupDescriptor();
     }
 
-    for (auto &set : _sceneSets) {
+    for (auto &set : m_sceneSets) {
         std::vector<VkWriteDescriptorSet> writes{
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &_sceneInfoUB->getBufferInfo()),
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, _cameraInfos.data(), _cameraInfos.size()),
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, _lightInfos.data(), _lightInfos.size()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_sceneInfoUB->getBufferInfo()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_cameraInfos.data(), m_cameraInfos.size()),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, m_lightInfos.data(), m_lightInfos.size()),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
-    for (auto &renderable : _renderList) {
+    for (auto &renderable : m_renderList) {
         {
             ObjectInfo objInfo{};
             BufferCreateInfo bufferCI{
@@ -333,7 +450,7 @@ void VulkanSceneRenderer::_initRenderData() {
         }
 
         {
-            renderable->m_objectSet = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT)->allocateSet();
+            renderable->m_objectSet = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT)->allocateSet();
 
             std::vector<VkWriteDescriptorSet> descriptorWrites{
                 vkl::init::writeDescriptorSet(renderable->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &renderable->m_objectUB->getBufferInfo())
@@ -342,9 +459,9 @@ void VulkanSceneRenderer::_initRenderData() {
             vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
 
-    for (auto &material : renderable->m_node->getObject<Entity>()->m_materials) {
+    for (auto &material : m_scene->getMaterials()) {
         // write descriptor set
-        auto set = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL)->allocateSet();
+        auto set = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL)->allocateSet();
         VulkanBuffer * matInfoUB = nullptr;
         {
             {
@@ -362,7 +479,6 @@ void VulkanSceneRenderer::_initRenderData() {
             descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &matInfoUB->getBufferInfo()));
 
             auto bindingBits = MATERIAL_BINDING_PBR;
-            auto &m_textures = renderable->m_textures;
             if (bindingBits & MATERIAL_BINDING_BASECOLOR) {
                 std::cerr << "material id: [" << material->id << "] [base color]: ";
                 if (material->baseColorTextureIndex > -1) {
@@ -413,36 +529,48 @@ void VulkanSceneRenderer::_initRenderData() {
             vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
 
-        materiaDataMaps[material] = {matInfoUB, set};
+        m_materialDataMaps[material] = {matInfoUB, set};
     }
     }
 }
 
-void VulkanSceneRenderer::_loadSceneNodes() {
-    _sceneInfo.ambient = glm::vec4(_scene->getAmbient(), 1.0f);
+void VulkanSceneRenderer::_loadScene() {
+    for (auto & image : m_scene->getImages()){
+        // raw image data
+        uint8_t *imageData = image->data.data();
+        uint32_t imageDataSize = image->data.size();
+        uint32_t width = image->width;
+        uint32_t height = image->height;
+
+        auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
+        m_textures.push_back(texture);
+    }
+
+    m_sceneInfo.ambient = glm::vec4(m_scene->getAmbient(), 1.0f);
     std::queue<std::shared_ptr<SceneNode>> q;
-    q.push(_scene->getRootNode());
+    q.push(m_scene->getRootNode());
 
     while (!q.empty()) {
         auto node = q.front();
         q.pop();
 
         switch (node->m_attachType) {
+        case ObjectType::MESH:
         case ObjectType::ENTITY: {
             auto renderable = std::make_shared<VulkanRenderData>(m_pDevice, node);
-            _renderList.push_back(renderable);
+            m_renderList.push_back(renderable);
         } break;
         case ObjectType::CAMERA: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
-            _uniformList.push_front(ubo);
-            _cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
-            _sceneInfo.cameraCount++;
+            m_uniformList.push_front(ubo);
+            m_cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_sceneInfo.cameraCount++;
         } break;
         case ObjectType::LIGHT: {
             auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
-            _uniformList.push_back(ubo);
-            _lightInfos.push_back(ubo->m_buffer->getBufferInfo());
-            _sceneInfo.lightCount++;
+            m_uniformList.push_back(ubo);
+            m_lightInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_sceneInfo.lightCount++;
         } break;
         default:
             assert("unattached scene node.");
@@ -456,9 +584,9 @@ void VulkanSceneRenderer::_loadSceneNodes() {
 }
 
 void VulkanSceneRenderer::_initSkyboxResource() {
-    VulkanPipeline *pipeline = _forwardPass.pipeline;
-    VkDescriptorSet set      = _skyboxResource.set;
-    VulkanImage    *cubemap  = _skyboxResource.cubeMap;
+    VulkanPipeline *pipeline = m_forwardPass.pipeline;
+    VkDescriptorSet set      = m_skyboxResource.set;
+    VulkanImage    *cubemap  = m_skyboxResource.cubeMap;
 
     {
         // auto             texture       = loadCubemapFromFile("");
@@ -521,23 +649,23 @@ void VulkanSceneRenderer::_initSkyboxResource() {
             set,
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             0,
-            _cameraInfos.data()),
+            m_cameraInfos.data()),
         // Binding 1 : Fragment shader cubemap sampler
         vkl::init::writeDescriptorSet(
             set,
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             1,
-            &_skyboxResource.cubeMapDescInfo)};
+            &m_skyboxResource.cubeMapDescInfo)};
 
     vkUpdateDescriptorSets(m_pDevice->getHandle(), writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
 }
 
 void VulkanSceneRenderer::_initPostFxResource() {
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
-    _postFxPass.colorImages.resize(imageCount);
-    _postFxPass.colorImageViews.resize(imageCount);
-    _postFxPass.framebuffers.resize(imageCount);
-    _postFxPass.sets.resize(imageCount);
+    m_postFxPass.colorImages.resize(imageCount);
+    m_postFxPass.colorImageViews.resize(imageCount);
+    m_postFxPass.framebuffers.resize(imageCount);
+    m_postFxPass.sets.resize(imageCount);
 
     // buffer
     {
@@ -558,20 +686,20 @@ void VulkanSceneRenderer::_initPostFxResource() {
             .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &_postFxPass.quadVB, quadVertices));
+        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_postFxPass.quadVB, quadVertices));
     }
 
     // sampler
     {
         VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_postFxPass.sampler));
     }
 
     // color attachment
     for (auto idx = 0; idx < imageCount; idx++) {
-        auto &colorImage     = _postFxPass.colorImages[idx];
-        auto &colorImageView = _postFxPass.colorImageViews[idx];
-        auto &framebuffer    = _postFxPass.framebuffers[idx];
+        auto &colorImage     = m_postFxPass.colorImages[idx];
+        auto &colorImageView = m_postFxPass.colorImageViews[idx];
+        auto &framebuffer    = m_postFxPass.framebuffers[idx];
 
         // get swapchain image
         {
@@ -613,17 +741,17 @@ void VulkanSceneRenderer::_initPostFxResource() {
             colorAttachment,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_postFxPass.renderPass, colorAttachments));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &m_postFxPass.renderPass, colorAttachments));
     }
 
-    _postFxPass.pipeline = CreatePostFxPipeline(m_pDevice, _postFxPass.renderPass);
+    m_postFxPass.pipeline = CreatePostFxPipeline(m_pDevice, m_postFxPass.renderPass);
     for (uint32_t idx = 0; idx < imageCount; idx++) {
-        VkDescriptorSet &set = _postFxPass.sets[idx];
-        set                  = _postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_OFFSCREEN)->allocateSet();
+        VkDescriptorSet &set = m_postFxPass.sets[idx];
+        set                  = m_postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_OFFSCREEN)->allocateSet();
 
         VkDescriptorImageInfo imageInfo{
-            .sampler     = _postFxPass.sampler,
-            .imageView   = _forwardPass.colorImageViews[idx]->getHandle(),
+            .sampler     = m_postFxPass.sampler,
+            .imageView   = m_forwardPass.colorImageViews[idx]->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
@@ -642,19 +770,19 @@ void VulkanSceneRenderer::_initForwardResource() {
     uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
-    _forwardPass.framebuffers.resize(imageCount);
-    _forwardPass.colorImages.resize(imageCount);
-    _forwardPass.colorImageViews.resize(imageCount);
-    _forwardPass.depthImages.resize(imageCount);
-    _forwardPass.depthImageViews.resize(imageCount);
+    m_forwardPass.framebuffers.resize(imageCount);
+    m_forwardPass.colorImages.resize(imageCount);
+    m_forwardPass.colorImageViews.resize(imageCount);
+    m_forwardPass.depthImages.resize(imageCount);
+    m_forwardPass.depthImageViews.resize(imageCount);
 
     // color attachment
     for (auto idx = 0; idx < imageCount; idx++) {
-        auto &colorImage     = _forwardPass.colorImages[idx];
-        auto &colorImageView = _forwardPass.colorImageViews[idx];
-        auto &depthImage     = _forwardPass.depthImages[idx];
-        auto &depthImageView = _forwardPass.depthImageViews[idx];
-        auto &framebuffer    = _forwardPass.framebuffers[idx];
+        auto &colorImage     = m_forwardPass.colorImages[idx];
+        auto &colorImageView = m_forwardPass.colorImageViews[idx];
+        auto &depthImage     = m_forwardPass.depthImages[idx];
+        auto &depthImageView = m_forwardPass.depthImageViews[idx];
+        auto &framebuffer    = m_forwardPass.framebuffers[idx];
 
         {
             ImageCreateInfo createInfo{
@@ -733,42 +861,42 @@ void VulkanSceneRenderer::_initForwardResource() {
             colorAttachment,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_forwardPass.renderPass, colorAttachments, depthAttachment));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &m_forwardPass.renderPass, colorAttachments, depthAttachment));
     }
 
-    _forwardPass.pipeline = CreateForwardPipeline(m_pDevice, _forwardPass.renderPass, _sceneInfo);
-    pSceneLayout = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE);
-    pPBRMaterialLayout = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL);
+    m_forwardPass.pipeline = CreateForwardPipeline(m_pDevice, m_forwardPass.renderPass, m_sceneInfo);
+    m_pSceneLayout = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE);
+    m_pPBRMaterialLayout = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL);
 
-    _sceneSets.resize(m_pRenderer->getCommandBufferCount());
-    for (auto &set : _sceneSets) {
-        set = _forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE)->allocateSet();
+    m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
+    for (auto &set : m_sceneSets) {
+        set = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE)->allocateSet();
     }
 }
 void VulkanSceneRenderer::_initShadowPassResource() {
     uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
 
-    _shadowPass.framebuffers.resize(imageCount);
-    _shadowPass.depthImageViews.resize(imageCount);
-    _shadowPass.depthImages.resize(imageCount);
+    m_shadowPass.framebuffers.resize(imageCount);
+    m_shadowPass.depthImageViews.resize(imageCount);
+    m_shadowPass.depthImages.resize(imageCount);
 
     // sampler
     {
         VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-        createInfo.magFilter = _shadowPass.filter;
-        createInfo.minFilter = _shadowPass.filter;
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &_postFxPass.sampler));
+        createInfo.magFilter = m_shadowPass.filter;
+        createInfo.minFilter = m_shadowPass.filter;
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_postFxPass.sampler));
     }
 
     for (uint32_t idx = 0; idx < imageCount; idx++) {
-        auto &framebuffer    = _shadowPass.framebuffers[idx];
-        auto &depthImage     = _shadowPass.depthImages[idx];
-        auto &depthImageView = _shadowPass.depthImageViews[idx];
+        auto &framebuffer    = m_shadowPass.framebuffers[idx];
+        auto &depthImage     = m_shadowPass.depthImages[idx];
+        auto &depthImageView = m_shadowPass.depthImageViews[idx];
 
         {
             VkFormat        depthFormat = m_pDevice->getDepthFormat();
             ImageCreateInfo createInfo{};
-            createInfo.extent   = {_shadowPass.dim, _shadowPass.dim, 1};
+            createInfo.extent   = {m_shadowPass.dim, m_shadowPass.dim, 1};
             createInfo.format   = static_cast<Format>(depthFormat);
             createInfo.tiling   = IMAGE_TILING_OPTIMAL;
             createInfo.usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
@@ -790,8 +918,8 @@ void VulkanSceneRenderer::_initShadowPassResource() {
         {
             std::vector<VulkanImageView *> attachments{depthImageView};
             FramebufferCreateInfo          createInfo{};
-            createInfo.width  = _shadowPass.dim;
-            createInfo.height = _shadowPass.dim;
+            createInfo.width  = m_shadowPass.dim;
+            createInfo.height = m_shadowPass.dim;
             VK_CHECK_RESULT(m_pDevice->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
         }
     }
@@ -808,14 +936,14 @@ void VulkanSceneRenderer::_initShadowPassResource() {
             .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &_shadowPass.renderPass, depthAttachment));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &m_shadowPass.renderPass, depthAttachment));
     }
 
-    _shadowPass.pipeline = CreateShadowPipeline(m_pDevice, _shadowPass.renderPass);
+    m_shadowPass.pipeline = CreateShadowPipeline(m_pDevice, m_shadowPass.renderPass);
 
-    _shadowPass.cameraSets.resize(imageCount);
-    for (auto &set : _shadowPass.cameraSets){
-        set = _shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
+    m_shadowPass.cameraSets.resize(imageCount);
+    for (auto &set : m_shadowPass.cameraSets){
+        set = m_shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
     }
 }
 void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& renderData, VulkanPipeline * pipeline, VulkanCommandBuffer * drawCmd, const std::shared_ptr<SceneNode> &node)
@@ -864,8 +992,8 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData>& re
 
         for (const auto& subset : mesh->m_subsets) {
             if (subset.indexCount > 0) {
-                auto &material = entity->m_materials[subset.materialIndex];
-                auto &materialSet = materiaDataMaps[material];
+                auto &material = m_scene->getMaterials()[subset.materialIndex];
+                auto &materialSet = m_materialDataMaps[material];
                 drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
                 if (subset.hasIndices){
                     drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
