@@ -104,9 +104,7 @@ void scene_manager::setupScene() {
 
     // load from gltf file
     {
-        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "Sponza/glTF/Sponza.gltf");
-        // auto model    = m_scene->createEntityFromGLTF(vkl::AssetManager::GetModelDir() / "FlightHelmet/glTF/FlightHelmet.gltf");
-        m_modelNode = m_scene->createFromFile(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        m_modelNode = m_scene->createMeshesFromFile(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         m_modelNode->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, {0.0f, 1.0f, 0.0f});
     }
 

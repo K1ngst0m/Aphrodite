@@ -32,6 +32,8 @@ struct Material;
 using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
 using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
+using ImageDescList = std::vector<std::shared_ptr<ImageDesc>>;
+using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 class Scene
 {
@@ -41,8 +43,7 @@ public:
     std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
     std::shared_ptr<Camera> createCamera(float aspectRatio);
-    std::shared_ptr<SceneNode> createFromFile(const std::string &path,
-                                              const std::shared_ptr<SceneNode> &parent = nullptr);
+    std::shared_ptr<SceneNode> createMeshesFromFile(const std::string &path, const std::shared_ptr<SceneNode> &parent = nullptr);
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
     void setMainCamera(const std::shared_ptr<Camera> &camera) { m_camera = camera; }
@@ -66,8 +67,8 @@ private:
     CameraMap m_cameras;
     LightMap m_lights;
     MeshMap m_meshes;
-    std::vector<std::shared_ptr<ImageDesc>> m_images;
-    std::vector<std::shared_ptr<Material>> m_materials;
+    ImageDescList m_images;
+    MaterialList m_materials;
 };
 
 }  // namespace vkl

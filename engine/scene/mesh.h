@@ -69,6 +69,11 @@ enum class IndexType
     UINT32,
 };
 
+enum class PrimitiveTopology{
+    TRI_LIST,
+    TRI_STRIP,
+};
+
 struct Mesh : public Object
 {
     Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}
@@ -85,6 +90,7 @@ struct Mesh : public Object
     std::vector<uint8_t> m_indices;
     std::vector<Subset> m_subsets;
     IndexType m_indexType = IndexType::UINT32;
+    PrimitiveTopology m_topology = PrimitiveTopology::TRI_LIST;
 };
 }  // namespace vkl
 

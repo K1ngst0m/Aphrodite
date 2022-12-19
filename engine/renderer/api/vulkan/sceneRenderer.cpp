@@ -142,6 +142,7 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
     return texture;
 }
 
+
 VulkanPipeline *CreateShadowPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass)
 {
     VulkanPipeline *pipeline;

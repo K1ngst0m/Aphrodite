@@ -14,28 +14,12 @@
 
 namespace vkl
 {
-VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode) :
-    m_pDevice(device),
-    m_node(std::move(sceneNode))
-{
-    std::vector<Vertex> vertices;
-    std::vector<uint8_t> indices;
 
-    {
-        auto mesh = m_node->getObject<Mesh>();
-
-        {
-            vertices = mesh->m_vertices;
-            indices = mesh->m_indices;
-        }
-    }
-
-    assert(!vertices.empty());
-
-    // load buffer
+static VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkDeviceSize size, VkBufferUsageFlags usage){
+    VulkanBuffer * buffer = nullptr;
     // setup vertex buffer
     {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = size;
         // using staging buffer
         vkl::VulkanBuffer *stagingBuffer;
         {
@@ -43,60 +27,44 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
             createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            m_pDevice->createBuffer(&createInfo, &stagingBuffer);
+            pDevice->createBuffer(&createInfo, &stagingBuffer);
         }
 
         stagingBuffer->map();
-        stagingBuffer->copyTo(vertices.data(), static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer->copyTo(data, static_cast<VkDeviceSize>(bufferSize));
         stagingBuffer->unmap();
 
         {
             BufferCreateInfo createInfo{};
             createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage = BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            m_pDevice->createBuffer(&createInfo, &m_vertexBuffer);
+            createInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            pDevice->createBuffer(&createInfo, &buffer);
         }
 
-        auto cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, m_vertexBuffer, bufferSize);
-        m_pDevice->endSingleTimeCommands(cmd);
+        auto cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        cmd->cmdCopyBuffer(stagingBuffer, buffer, bufferSize);
+        pDevice->endSingleTimeCommands(cmd);
 
-        m_pDevice->destroyBuffer(stagingBuffer);
+        pDevice->destroyBuffer(stagingBuffer);
     }
+    return buffer;
+}
 
-    // setup index buffer
-    if(!indices.empty())
-    {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-        // using staging buffer
-        vkl::VulkanBuffer *stagingBuffer = nullptr;
+VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode) :
+    m_pDevice(device),
+    m_node(std::move(sceneNode))
+{
+    auto mesh = m_node->getObject<Mesh>();
 
-        {
-            BufferCreateInfo createInfo{};
-            createInfo.size = bufferSize;
-            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            m_pDevice->createBuffer(&createInfo, &stagingBuffer);
-        }
+    auto &vertices = mesh->m_vertices;
+    auto &indices = mesh->m_indices;
 
-        stagingBuffer->map();
-        stagingBuffer->copyTo(indices.data(), static_cast<VkDeviceSize>(bufferSize));
-        stagingBuffer->unmap();
-
-        {
-            BufferCreateInfo createInfo{};
-            createInfo.size = bufferSize;
-            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage = BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            m_pDevice->createBuffer(&createInfo, &m_indexBuffer);
-        }
-
-        auto cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        cmd->cmdCopyBuffer(stagingBuffer, m_indexBuffer, bufferSize);
-        m_pDevice->endSingleTimeCommands(cmd);
-
-        m_pDevice->destroyBuffer(stagingBuffer);
+    // load buffer
+    assert(!vertices.empty());
+    m_vertexBuffer = createBuffer(m_pDevice, vertices.data(), sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    if (!indices.empty()){
+        m_indexBuffer = createBuffer(m_pDevice, indices.data(), sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
     }
 }
 

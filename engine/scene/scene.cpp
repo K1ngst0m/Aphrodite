@@ -1,8 +1,8 @@
 #include "scene.h"
 #include "camera.h"
-#include "mesh.h"
-#include "light.h"
 #include "common/assetManager.h"
+#include "light.h"
+#include "mesh.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -43,7 +43,8 @@ void loadImages(std::vector<std::shared_ptr<ImageDesc>> &images, tinygltf::Model
         images.push_back(newImage);
     }
 }
-void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input, uint32_t offset)
+void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input,
+                   uint32_t offset)
 {
     materials.clear();
     materials.resize(input.materials.size());
@@ -56,7 +57,8 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
 
         // factor
         material->emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
-        material->baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
+        material->baseColorFactor =
+            glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
         material->metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
         material->roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
@@ -75,15 +77,18 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         // common texture
         if(glTFMaterial.normalTexture.index > -1)
         {
-            material->normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source + offset;
+            material->normalTextureIndex =
+                input.textures[glTFMaterial.normalTexture.index].source + offset;
         }
         if(glTFMaterial.emissiveTexture.index > -1)
         {
-            material->emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
+            material->emissiveTextureIndex =
+                input.textures[glTFMaterial.emissiveTexture.index].source + offset;
         }
         if(glTFMaterial.occlusionTexture.index > -1)
         {
-            material->occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
+            material->occlusionTextureIndex =
+                input.textures[glTFMaterial.occlusionTexture.index].source + offset;
         }
 
         // pbr texture
@@ -95,13 +100,15 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         if(glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
         {
             material->metallicRoughnessTextureIndex =
-                input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source + offset;
+                input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source +
+                offset;
         }
     }
 }
 
 void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
-               const std::shared_ptr<SceneNode> &parent, uint32_t materialOffset){
+               const std::shared_ptr<SceneNode> &parent, uint32_t materialOffset)
+{
     auto node = parent->createChildNode();
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
@@ -133,7 +140,7 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
         const tinygltf::Mesh gltfMesh = input.meshes[inputNode.mesh];
         auto mesh = Object::Create<Mesh>();
         auto &indices = mesh->m_indices;
-        auto &vertices= mesh->m_vertices;
+        auto &vertices = mesh->m_vertices;
         node->attachObject(mesh);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : gltfMesh.primitives)
@@ -269,8 +276,7 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
         }
     }
 }
-
-}  // namespace gltf
+}  // namespace
 
 std::unique_ptr<Scene> Scene::Create(SceneManagerType type)
 {
@@ -312,7 +318,7 @@ std::shared_ptr<Mesh> Scene::createMesh()
     return mesh;
 }
 
-std::shared_ptr<SceneNode> Scene::createFromFile(const std::string &path,
+std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
                                                  const std::shared_ptr<SceneNode> &parent)
 {
     auto node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
@@ -339,8 +345,10 @@ std::shared_ptr<SceneNode> Scene::createFromFile(const std::string &path,
         std::vector<std::shared_ptr<Material>> materials;
         loadImages(images, inputModel);
         loadMaterials(materials, inputModel, imageOffset);
-        m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()), std::make_move_iterator(images.cend()));
-        m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()), std::make_move_iterator(materials.cend()));
+        m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
+                        std::make_move_iterator(images.cend()));
+        m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()),
+                           std::make_move_iterator(materials.cend()));
 
         const tinygltf::Scene &scene = inputModel.scenes[0];
         for(int nodeIdx : scene.nodes)
