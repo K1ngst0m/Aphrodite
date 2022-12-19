@@ -14,13 +14,13 @@ namespace vkl
 
 namespace
 {
-void loadImages(std::vector<std::shared_ptr<ImageDesc>> &images, tinygltf::Model &input)
+void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model &input)
 {
     images.clear();
     for(auto &glTFImage : input.images)
     {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        auto newImage = std::make_shared<ImageDesc>();
+        auto newImage = std::make_shared<ImageInfo>();
         newImage->width = glTFImage.width;
         newImage->height = glTFImage.height;
         newImage->data.resize(glTFImage.width * glTFImage.height * 4);
@@ -341,7 +341,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
     {
         uint32_t imageOffset = m_images.size();
         uint32_t materialOffset = m_materials.size();
-        std::vector<std::shared_ptr<ImageDesc>> images;
+        std::vector<std::shared_ptr<ImageInfo>> images;
         std::vector<std::shared_ptr<Material>> materials;
         loadImages(images, inputModel);
         loadMaterials(materials, inputModel, imageOffset);

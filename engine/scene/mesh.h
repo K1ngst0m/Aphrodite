@@ -1,21 +1,18 @@
 #ifndef MESH_H_
 #define MESH_H_
 
-#include <utility>
-
-#include "node.h"
 #include "object.h"
 
 namespace vkl
 {
 struct SceneNode;
-struct ImageDesc;
+struct ImageInfo;
 struct Material;
 struct Vertex;
 
 using ResourceIndex = int32_t;
 using ImageData = std::vector<uint8_t>;
-using ImageList = std::vector<std::shared_ptr<ImageDesc>>;
+using ImageList = std::vector<std::shared_ptr<ImageInfo>>;
 using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 struct Vertex
@@ -27,7 +24,7 @@ struct Vertex
     glm::vec4 tangent;
 };
 
-struct ImageDesc
+struct ImageInfo
 {
     uint32_t width;
     uint32_t height;

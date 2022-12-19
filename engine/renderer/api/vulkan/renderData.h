@@ -5,7 +5,6 @@
 
 namespace vkl
 {
-
 struct VulkanRenderData
 {
     VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode);

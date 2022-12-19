@@ -11,8 +11,8 @@
 #include "renderer/api/vulkan/uiRenderer.h"
 #include "renderpass.h"
 #include "scene/camera.h"
-#include "scene/mesh.h"
 #include "scene/light.h"
+#include "scene/mesh.h"
 #include "scene/node.h"
 #include "swapChain.h"
 #include "vkInit.hpp"
@@ -141,7 +141,6 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
 
     return texture;
 }
-
 
 VulkanPipeline *CreateShadowPipeline(VulkanDevice *pDevice, VulkanRenderPass *pRenderPass)
 {
@@ -440,8 +439,7 @@ void VulkanSceneRenderer::drawScene()
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for(auto &renderable : m_renderList)
     {
-        _drawNodes(renderable, m_forwardPass.pipeline, commandBuffer,
-                   renderable->m_node);
+        _drawNodes(renderable, m_forwardPass.pipeline, commandBuffer, renderable->m_node);
     }
     commandBuffer->cmdEndRenderPass();
 
@@ -1064,47 +1062,41 @@ void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData> &re
                                      VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd,
                                      const std::shared_ptr<SceneNode> &node)
 {
-    if(renderData->m_node->m_attachType == ObjectType::MESH)
+    auto mesh = renderData->m_node->getObject<Mesh>();
+    drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                sizeof(glm::mat4), &renderData->m_node->matrix);
+    VkDeviceSize offsets[1] = { 0 };
+    drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
+    if(renderData->m_indexBuffer)
     {
-        auto mesh = renderData->m_node->getObject<Mesh>();
-        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                                    sizeof(glm::mat4), &renderData->m_node->matrix);
-        VkDeviceSize offsets[1] = { 0 };
-        drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
-        if(renderData->m_indexBuffer)
+        VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+        switch(mesh->m_indexType)
         {
-            VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-            switch(mesh->m_indexType)
-            {
-            case IndexType::UINT16:
-                indexType = VK_INDEX_TYPE_UINT16;
-                break;
-            case IndexType::UINT32:
-                indexType = VK_INDEX_TYPE_UINT32;
-                break;
-            }
-            drawCmd->cmdBindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
+        case IndexType::UINT16:
+            indexType = VK_INDEX_TYPE_UINT16;
+            break;
+        case IndexType::UINT32:
+            indexType = VK_INDEX_TYPE_UINT32;
+            break;
         }
-        for(const auto &subset : mesh->m_subsets)
-        {
-            if(subset.indexCount > 0)
-            {
-                auto &material = m_scene->getMaterials()[subset.materialIndex];
-                auto &materialSet = m_materialDataMaps[material];
-                drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
-                if(subset.hasIndices)
-                {
-                    drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
-                }
-                else
-                {
-                    drawCmd->cmdDraw(subset.vertexCount, 1, subset.firstVertex, 0);
-                }
-            }
-        }
+        drawCmd->cmdBindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
     }
-    else {
-        assert(0);
+    for(const auto &subset : mesh->m_subsets)
+    {
+        if(subset.indexCount > 0)
+        {
+            auto &material = m_scene->getMaterials()[subset.materialIndex];
+            auto &materialSet = m_materialDataMaps[material];
+            drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
+            if(subset.hasIndices)
+            {
+                drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+            }
+            else
+            {
+                drawCmd->cmdDraw(subset.vertexCount, 1, subset.firstVertex, 0);
+            }
+        }
     }
 }
 

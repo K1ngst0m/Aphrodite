@@ -26,13 +26,13 @@ enum class SceneManagerType
 class Light;
 class Camera;
 struct Mesh;
-struct ImageDesc;
+struct ImageInfo;
 struct Material;
 
 using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
 using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
-using ImageDescList = std::vector<std::shared_ptr<ImageDesc>>;
+using ImageInfoList = std::vector<std::shared_ptr<ImageInfo>>;
 using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 class Scene
@@ -53,9 +53,11 @@ public:
     std::shared_ptr<Light> getLightWithId(IdType id) { return m_lights[id]; }
     std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
     std::shared_ptr<Mesh> getMeshWithId(IdType id) { return m_meshes[id]; }
-    std::vector<std::shared_ptr<ImageDesc>> &getImages() { return m_images; }
-    std::vector<std::shared_ptr<Material>> &getMaterials() { return m_materials; }
+
     glm::vec3 getAmbient() { return m_ambient; }
+
+    ImageInfoList &getImages() { return m_images; }
+    MaterialList &getMaterials() { return m_materials; }
 
 private:
     AABB m_aabb;
@@ -67,7 +69,7 @@ private:
     CameraMap m_cameras;
     LightMap m_lights;
     MeshMap m_meshes;
-    ImageDescList m_images;
+    ImageInfoList m_images;
     MaterialList m_materials;
 };
 
