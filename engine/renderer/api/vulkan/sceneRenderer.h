@@ -64,6 +64,7 @@ public:
     void drawScene() override;
 
 private:
+    void _initSetLayout();
     void _initSampler();
     void _initRenderData();
     void _initSkyboxResource();
@@ -75,12 +76,20 @@ private:
 
 private:
     struct {
+        VulkanDescriptorSetLayout * pSampler;
+        VulkanDescriptorSetLayout * pMaterial;
+        VulkanDescriptorSetLayout * pScene;
+        VulkanDescriptorSetLayout * pObject;
+        VulkanDescriptorSetLayout * pOffScreen;
+    } m_setLayout;
+
+    struct {
         VkSampler texture = VK_NULL_HANDLE;
         VkSampler shadow = VK_NULL_HANDLE;
         VkSampler postFX = VK_NULL_HANDLE;
         VkSampler cubeMap = VK_NULL_HANDLE;
         VkDescriptorSet set = VK_NULL_HANDLE;
-    } m_samplers;
+    } m_sampler;
 
     struct PASS_FORWARD
     {
