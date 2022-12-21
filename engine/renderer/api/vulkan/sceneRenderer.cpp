@@ -280,6 +280,7 @@ void VulkanSceneRenderer::update(float deltaTime)
 
 void VulkanSceneRenderer::_initRenderData()
 {
+    // [TODO] object data
     {
         BufferCreateInfo bufferCI{
             .size = sizeof(SceneInfo),
@@ -317,8 +318,7 @@ void VulkanSceneRenderer::_initRenderData()
         }
 
         {
-            renderable->m_objectSet =
-                m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_OBJECT)->allocateSet();
+            renderable->m_objectSet = m_setLayout.pObject->allocateSet();
 
             std::vector<VkWriteDescriptorSet> descriptorWrites{ vkl::init::writeDescriptorSet(
                 renderable->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
@@ -819,7 +819,7 @@ void VulkanSceneRenderer::_initForward()
     m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
     for(auto &set : m_sceneSets)
     {
-        set = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE)->allocateSet();
+        set = m_setLayout.pScene->allocateSet();
     }
 }
 
