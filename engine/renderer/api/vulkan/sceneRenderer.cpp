@@ -127,12 +127,6 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
 }
 }  // namespace
 
-std::unique_ptr<VulkanSceneRenderer> VulkanSceneRenderer::Create(const std::shared_ptr<VulkanRenderer> &renderer)
-{
-    auto instance = std::make_unique<VulkanSceneRenderer>(renderer);
-    return instance;
-}
-
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer) :
     m_pDevice(renderer->getDevice()),
     m_pRenderer(renderer)

@@ -9,6 +9,11 @@ namespace vkl
 class SceneRenderer
 {
 public:
+    template <typename TSceneRenderer, typename ... Args>
+    static std::unique_ptr<TSceneRenderer> Create(Args && ...args){
+        auto instance = std::make_unique<TSceneRenderer>(std::forward<Args>(args)...);
+        return instance;
+    }
     SceneRenderer() = default;
     virtual ~SceneRenderer() = default;
 

@@ -117,7 +117,7 @@ void scene_manager::setupScene() {
 
 void scene_manager::setupRenderer() {
     m_renderer      = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
-    m_sceneRenderer = vkl::VulkanSceneRenderer::Create(m_renderer);
+    m_sceneRenderer = vkl::SceneRenderer::Create<vkl::VulkanSceneRenderer>(m_renderer);
     // m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 

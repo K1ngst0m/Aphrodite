@@ -55,7 +55,6 @@ struct ObjectInfo
 class VulkanSceneRenderer : public SceneRenderer
 {
 public:
-    static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer> &renderer);
     VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
     ~VulkanSceneRenderer() override = default;
     void loadResources() override;
