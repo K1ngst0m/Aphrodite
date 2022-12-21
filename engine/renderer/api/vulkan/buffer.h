@@ -5,7 +5,7 @@
 
 namespace vkl
 {
-class VulkanBuffer : public Buffer, public ResourceHandle<VkBuffer>
+class VulkanBuffer : public Buffer<VkBuffer>
 {
 public:
     static VulkanBuffer *CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo,

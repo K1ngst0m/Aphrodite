@@ -14,8 +14,8 @@
 
 namespace vkl
 {
-
-static VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkDeviceSize size, VkBufferUsageFlags usage){
+namespace {
+VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkDeviceSize size, VkBufferUsageFlags usage){
     VulkanBuffer * buffer = nullptr;
     // setup vertex buffer
     {
@@ -49,6 +49,7 @@ static VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkD
         pDevice->destroyBuffer(stagingBuffer);
     }
     return buffer;
+}
 }
 
 VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode) :
