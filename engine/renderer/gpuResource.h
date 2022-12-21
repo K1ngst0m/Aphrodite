@@ -686,14 +686,6 @@ public:
     uint32_t getOffset() const { return _createInfo.alignment; }
 };
 
-struct BufferViewCreateInfo
-{
-};
-
-class BufferView : public Resource<BufferViewCreateInfo>
-{
-};
-
 struct ImageCreateInfo
 {
     Extent3D extent;
@@ -740,14 +732,6 @@ public:
     ComponentMapping getComponentMapping() const { return _createInfo.components; }
 
     const ImageSubresourceRange &GetSubresourceRange() const { return _createInfo.subresourceRange; }
-};
-
-struct SamplerCreateInfo
-{
-};
-
-class Sampler : public Resource<SamplerCreateInfo>
-{
 };
 
 struct FramebufferCreateInfo
