@@ -163,7 +163,8 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyDescriptorSetLayout(m_setLayout.pOffScreen);
     }
 
-    for (auto & texture : m_textures){
+    for(auto &texture : m_textures)
+    {
         m_pDevice->destroyImage(texture.image);
         m_pDevice->destroyImageView(texture.imageView);
     }
@@ -183,17 +184,20 @@ void VulkanSceneRenderer::cleanupResources()
     // vkDestroySampler(m_pDevice->getHandle(), m_samplers.cubeMap, nullptr);
     // vkDestroySampler(m_pDevice->getHandle(), m_samplers.shadow, nullptr);
     //
-    for (auto &[_, matData] : m_materialDataMaps){
+    for(auto &[_, matData] : m_materialDataMaps)
+    {
         m_pDevice->destroyBuffer(matData.buffer);
     }
 
-    for (auto &renderData : m_renderList){
+    for(auto &renderData : m_renderList)
+    {
         m_pDevice->destroyBuffer(renderData->m_vertexBuffer);
         m_pDevice->destroyBuffer(renderData->m_indexBuffer);
         m_pDevice->destroyBuffer(renderData->m_objectUB);
     }
 
-    for (auto &ubData : m_uniformList){
+    for(auto &ubData : m_uniformList)
+    {
         m_pDevice->destroyBuffer(ubData->m_buffer);
     }
 
@@ -322,7 +326,8 @@ void VulkanSceneRenderer::_initRenderData()
                                    descriptorWrites.data(), 0, nullptr);
         }
 
-        for (auto & texture : m_textures){
+        for(auto &texture : m_textures)
+        {
             texture.descriptorInfo = {
                 .sampler = m_sampler.texture,
                 .imageView = texture.imageView->getHandle(),
@@ -650,13 +655,11 @@ void VulkanSceneRenderer::_initPostFx()
         // build Shader
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
-        pipelineCreateInfo.setLayouts.push_back(m_setLayout.pOffScreen);
-        pipelineCreateInfo.setLayouts.push_back(m_setLayout.pSampler);
-        pipelineCreateInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
-            m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv");
-        pipelineCreateInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] =
-            m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv");
-
+        pipelineCreateInfo.setLayouts = { m_setLayout.pOffScreen, m_setLayout.pSampler };
+        pipelineCreateInfo.shaderMapList = {
+            { VK_SHADER_STAGE_VERTEX_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv") },
+        };
         std::vector<VkVertexInputBindingDescription> bindingDescs{
             { 0, 4 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX },
         };
@@ -670,7 +673,8 @@ void VulkanSceneRenderer::_initPostFx()
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDescs.size()),
             .pVertexAttributeDescriptions = attrDescs.data(),
         };
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_postFxPass.renderPass, &m_postFxPass.pipeline));
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_postFxPass.renderPass, &m_postFxPass.pipeline));
     }
 
     for(uint32_t idx = 0; idx < imageCount; idx++)
@@ -800,14 +804,16 @@ void VulkanSceneRenderer::_initForward()
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         pipelineCreateInfo.setLayouts = { m_setLayout.pScene, m_setLayout.pObject, m_setLayout.pMaterial,
-                                  m_setLayout.pSampler };
-        pipelineCreateInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+                                          m_setLayout.pSampler };
+        pipelineCreateInfo.constants.push_back(
+            vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_VERTEX_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
             { VK_SHADER_STAGE_FRAGMENT_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
         };
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_forwardPass.renderPass, &m_forwardPass.pipeline));
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_forwardPass.renderPass, &m_forwardPass.pipeline));
     }
 
     m_sceneSets.resize(m_pRenderer->getCommandBufferCount());

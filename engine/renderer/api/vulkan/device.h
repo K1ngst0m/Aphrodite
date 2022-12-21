@@ -45,8 +45,7 @@ struct DeviceCreateInfo
     const char *const *ppEnabledLayerNames;
     uint32_t enabledExtensionCount;
     const char *const *ppEnabledExtensionNames;
-    VkQueueFlags requestQueueTypes =
-        VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
+    VkQueueFlags requestQueueTypes = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
 };
 
 class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice>
@@ -62,8 +61,7 @@ public:
 
     VkResult createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage);
 
-    VkResult createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView,
-                             VulkanImage *pImage);
+    VkResult createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
 
     VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
                                 uint32_t attachmentCount, VulkanImageView **pAttachments);
@@ -80,12 +78,10 @@ public:
 
     VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data);
 
-    VkResult createCommandPool(
-        VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
-        VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    VkResult createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
+                               VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo,
-                                     VulkanRenderPass *pRenderPass,
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass,
                                     VulkanPipeline **ppPipeline);
 
     VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
@@ -117,12 +113,12 @@ public:
     void waitIdle();
 
 public:
+    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return _syncPrimitivesPool; }
+    VulkanShaderCache *getShaderCache() { return _shaderCache; }
     VulkanCommandPool *getCommandPoolWithQueue(VulkanQueue *queue);
     VulkanPhysicalDevice *getPhysicalDevice() const;
     VulkanQueue *getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex = 0);
     VkFormat getDepthFormat() const;
-    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool();
-    VulkanShaderCache *getShaderCache();
 
 private:
     VulkanPhysicalDevice *_physicalDevice;

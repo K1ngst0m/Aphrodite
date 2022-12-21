@@ -588,14 +588,6 @@ void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout
     vkDestroyDescriptorSetLayout(_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
 }
-VulkanSyncPrimitivesPool *VulkanDevice::getSyncPrimitiviesPool()
-{
-    return _syncPrimitivesPool;
-}
-VulkanShaderCache *VulkanDevice::getShaderCache()
-{
-    return _shaderCache;
-}
 VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& createInfo, VulkanPipeline **ppPipeline)
 {
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
