@@ -3,7 +3,8 @@ layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec2 inUV;
 
-layout(set = 0, binding = 0) uniform sampler2D screenTexture;
+layout(set = 0, binding = 0) uniform texture2D screenTexture;
+layout(set = 1, binding = 1) uniform sampler samp;
 
 vec3 Uncharted2Tonemap(vec3 color)
 {
@@ -28,6 +29,6 @@ vec4 tonemap(vec4 color)
 
 void main()
 {
-    vec3 col = texture(screenTexture, inUV).rgb;
+    vec3 col = texture(sampler2D(screenTexture, samp), inUV).rgb;
     outColor = vec4(col, 1.0);
 }

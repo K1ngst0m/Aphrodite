@@ -64,17 +64,23 @@ public:
     void drawScene() override;
 
 private:
+    void _initSampler();
     void _initRenderData();
     void _initSkyboxResource();
-    void _initForwardResource();
-    void _initPostFxResource();
-    void _initShadowPassResource();
+    void _initForward();
+    void _initPostFx();
+    void _initShadow();
     void _loadScene();
     void _drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
 
 private:
-    VulkanDescriptorSetLayout *m_pSceneLayout = nullptr;
-    VulkanDescriptorSetLayout *m_pPBRMaterialLayout = nullptr;
+    struct {
+        VkSampler texture = VK_NULL_HANDLE;
+        VkSampler shadow = VK_NULL_HANDLE;
+        VkSampler postFX = VK_NULL_HANDLE;
+        VkSampler cubeMap = VK_NULL_HANDLE;
+        VkDescriptorSet set = VK_NULL_HANDLE;
+    } m_samplers;
 
     struct PASS_FORWARD
     {
@@ -83,12 +89,12 @@ private:
             SET_SCENE = 0,
             SET_OBJECT = 1,
             SET_MATERIAL = 2,
-            SET_SKYBOX = 3,
+            SET_SAMPLER = 3,
+            SET_SKYBOX = 4,
         };
 
         VulkanPipeline *pipeline = nullptr;
         vkl::VulkanRenderPass *renderPass = nullptr;
-        VkSampler textureSampler = VK_NULL_HANDLE;
 
         std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *> colorImages;
@@ -108,7 +114,6 @@ private:
         const VkFilter filter = VK_FILTER_LINEAR;
         VulkanPipeline *pipeline = nullptr;
         VulkanRenderPass *renderPass = nullptr;
-        VkSampler sampler = VK_NULL_HANDLE;
         std::vector<VulkanImage *> depthImages;
         std::vector<VulkanImageView *> depthImageViews;
         std::vector<VulkanFramebuffer *> framebuffers;
@@ -120,12 +125,12 @@ private:
         enum SetBinding
         {
             SET_OFFSCREEN = 0,
+            SET_SAMPLER = 1,
         };
 
         VulkanBuffer *quadVB = nullptr;
         VulkanRenderPass *renderPass = nullptr;
         VulkanPipeline *pipeline = nullptr;
-        VkSampler sampler = VK_NULL_HANDLE;
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
         std::vector<VulkanFramebuffer *> framebuffers;
@@ -139,7 +144,6 @@ private:
         VulkanPipeline *pipeline = nullptr;
         VulkanImage *cubeMap = nullptr;
         VulkanImageView *cubeMapView = nullptr;
-        VkSampler cubeMapSampler = nullptr;
         VkDescriptorImageInfo cubeMapDescInfo{};
     } m_skyboxResource;
 

@@ -24,6 +24,8 @@ namespace vkl
 
 namespace
 {
+VulkanDescriptorSetLayout *samplerLayout = nullptr;
+
 GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height, void *data,
                          uint32_t dataSize, bool genMipmap = false)
 {
@@ -175,8 +177,8 @@ VulkanPipeline *CreatePostFxPipeline(VulkanDevice *pDevice, VulkanRenderPass *pR
     // off screen texture
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings;
-        bindings.push_back(vkl::init::descriptorSetLayoutBinding(
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
+        bindings.push_back(vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+                                                                 VK_SHADER_STAGE_FRAGMENT_BIT, 0));
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &textureLayout);
     }
@@ -186,6 +188,7 @@ VulkanPipeline *CreatePostFxPipeline(VulkanDevice *pDevice, VulkanRenderPass *pR
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
         EffectInfo effectInfo{};
         effectInfo.setLayouts.push_back(textureLayout);
+        effectInfo.setLayouts.push_back(samplerLayout);
         effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
             pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv");
         effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] =
@@ -299,19 +302,31 @@ VulkanPipeline *CreateForwardPipeline(VulkanDevice *pDevice, VulkanRenderPass *p
             vkl::init::descriptorSetLayoutBinding(
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),  // material info
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
                                                   VK_SHADER_STAGE_FRAGMENT_BIT, 5),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
         pDevice->createDescriptorSetLayout(&createInfo, &materialLayout);
+    }
+
+    {
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER,
+                                                  VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER,
+                                                  VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+        };
+
+        VkDescriptorSetLayoutCreateInfo createInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
+        pDevice->createDescriptorSetLayout(&createInfo, &samplerLayout);
     }
 
     {
@@ -320,6 +335,7 @@ VulkanPipeline *CreateForwardPipeline(VulkanDevice *pDevice, VulkanRenderPass *p
         effectInfo.setLayouts.push_back(sceneLayout);
         effectInfo.setLayouts.push_back(objectLayout);
         effectInfo.setLayouts.push_back(materialLayout);
+        effectInfo.setLayouts.push_back(samplerLayout);
         effectInfo.constants.push_back(
             vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
@@ -351,11 +367,10 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &
 
 void VulkanSceneRenderer::loadResources()
 {
-    // _initPostFxResource();
+    _initSampler();
     _loadScene();
-    _initForwardResource();
-    _initPostFxResource();
-    // _initShadowPassResource();
+    _initForward();
+    _initPostFx();
     _initRenderData();
 }
 
@@ -381,7 +396,11 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyImage(m_forwardPass.depthImages[idx]);
         m_pDevice->destroyImageView(m_forwardPass.depthImageViews[idx]);
     }
-    vkDestroySampler(m_pDevice->getHandle(), m_postFxPass.sampler, nullptr);
+    vkDestroySampler(m_pDevice->getHandle(), m_samplers.postFX, nullptr);
+    vkDestroySampler(m_pDevice->getHandle(), m_samplers.texture, nullptr);
+    // vkDestroySampler(m_pDevice->getHandle(), m_samplers.cubeMap, nullptr);
+    // vkDestroySampler(m_pDevice->getHandle(), m_samplers.shadow, nullptr);
+
     m_pDevice->destroyBuffer(m_postFxPass.quadVB);
     m_pDevice->destroyBuffer(m_sceneInfoUB);
     vkDestroyRenderPass(m_pDevice->getHandle(), m_forwardPass.renderPass->getHandle(), nullptr);
@@ -419,10 +438,11 @@ void VulkanSceneRenderer::drawScene()
     // dynamic state
     commandBuffer->cmdSetViewport(&viewport);
     commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(m_forwardPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, 0, 1, &m_sceneSets[commandIndex]);
 
     // forward pass
+    commandBuffer->cmdBindPipeline(m_forwardPass.pipeline);
+    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SCENE, 1, &m_sceneSets[commandIndex]);
+    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SAMPLER, 1, &m_samplers.set);
     renderPassBeginInfo.pFramebuffer = m_forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for(auto &renderable : m_renderList)
@@ -438,8 +458,9 @@ void VulkanSceneRenderer::drawScene()
     VkDeviceSize offsets[1] = { 0 };
     commandBuffer->cmdBindVertexBuffers(0, 1, m_postFxPass.quadVB, offsets);
     commandBuffer->cmdBindPipeline(m_postFxPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, 0, 1,
+    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
                                         &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
+    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_samplers.set);
     commandBuffer->cmdDraw(6, 1, 0, 0);
     commandBuffer->cmdEndRenderPass();
 
@@ -536,7 +557,7 @@ void VulkanSceneRenderer::_initRenderData()
                     if(material->baseColorTextureIndex > -1)
                     {
                         descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1,
                             &m_textures[material->baseColorTextureIndex].descriptorInfo));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
@@ -551,7 +572,7 @@ void VulkanSceneRenderer::_initRenderData()
                     if(material->normalTextureIndex > -1)
                     {
                         descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2,
+                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2,
                             &m_textures[material->normalTextureIndex].descriptorInfo));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
@@ -566,7 +587,7 @@ void VulkanSceneRenderer::_initRenderData()
                     if(material->metallicFactor > -1)
                     {
                         descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3,
+                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
                             &m_textures[material->metallicRoughnessTextureIndex].descriptorInfo));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
@@ -581,7 +602,7 @@ void VulkanSceneRenderer::_initRenderData()
                     if(material->occlusionTextureIndex > -1)
                     {
                         descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4,
+                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4,
                             &m_textures[material->occlusionTextureIndex].descriptorInfo));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
@@ -596,7 +617,7 @@ void VulkanSceneRenderer::_initRenderData()
                     if(material->emissiveTextureIndex > -1)
                     {
                         descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 5,
+                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5,
                             &m_textures[material->emissiveTextureIndex].descriptorInfo));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
@@ -618,14 +639,6 @@ void VulkanSceneRenderer::_initRenderData()
 
 void VulkanSceneRenderer::_loadScene()
 {
-    {
-        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_forwardPass.textureSampler));
-    }
-
     for(auto &image : m_scene->getImages())
     {
         // raw image data
@@ -636,7 +649,7 @@ void VulkanSceneRenderer::_loadScene()
 
         auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
         texture.descriptorInfo = {
-            .sampler = m_forwardPass.textureSampler,
+            .sampler = m_samplers.texture,
             .imageView = texture.imageView->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
@@ -761,7 +774,7 @@ void VulkanSceneRenderer::_initSkyboxResource()
                            writeDescriptorSets.data(), 0, nullptr);
 }
 
-void VulkanSceneRenderer::_initPostFxResource()
+void VulkanSceneRenderer::_initPostFx()
 {
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     m_postFxPass.colorImages.resize(imageCount);
@@ -786,13 +799,6 @@ void VulkanSceneRenderer::_initPostFxResource()
         };
 
         VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_postFxPass.quadVB, quadVertices));
-    }
-
-    // sampler
-    {
-        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-        VK_CHECK_RESULT(
-            vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_postFxPass.sampler));
     }
 
     // color attachment
@@ -849,25 +855,48 @@ void VulkanSceneRenderer::_initPostFxResource()
     m_postFxPass.pipeline = CreatePostFxPipeline(m_pDevice, m_postFxPass.renderPass);
     for(uint32_t idx = 0; idx < imageCount; idx++)
     {
-        VkDescriptorSet &set = m_postFxPass.sets[idx];
+        auto &set = m_postFxPass.sets[idx];
         set = m_postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_OFFSCREEN)->allocateSet();
 
         VkDescriptorImageInfo imageInfo{
-            .sampler = m_postFxPass.sampler,
+            .sampler = m_samplers.postFX,
             .imageView = m_forwardPass.colorImageViews[idx]->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
 
         std::vector<VkWriteDescriptorSet> writes{
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &imageInfo),
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &imageInfo),
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writes.size()),
                                writes.data(), 0, nullptr);
     }
+
+    // TODO
+    {
+        auto &set = m_samplers.set;
+        set = m_postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_SAMPLER)->allocateSet();
+
+        std::vector<VkDescriptorImageInfo> imageInfos{
+            {
+                .sampler = m_samplers.texture,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            },
+            {
+                .sampler = m_samplers.postFX,
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            },
+        };
+        std::vector<VkWriteDescriptorSet> writes{
+            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLER, 0, imageInfos.data(),
+                                          imageInfos.size()),
+        };
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writes.size()),
+                               writes.data(), 0, nullptr);
+    }
 }
 
-void VulkanSceneRenderer::_initForwardResource()
+void VulkanSceneRenderer::_initForward()
 {
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
@@ -971,8 +1000,6 @@ void VulkanSceneRenderer::_initForwardResource()
     }
 
     m_forwardPass.pipeline = CreateForwardPipeline(m_pDevice, m_forwardPass.renderPass, m_sceneInfo);
-    m_pSceneLayout = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE);
-    m_pPBRMaterialLayout = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL);
 
     m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
     for(auto &set : m_sceneSets)
@@ -980,22 +1007,13 @@ void VulkanSceneRenderer::_initForwardResource()
         set = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SCENE)->allocateSet();
     }
 }
-void VulkanSceneRenderer::_initShadowPassResource()
+void VulkanSceneRenderer::_initShadow()
 {
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
 
     m_shadowPass.framebuffers.resize(imageCount);
     m_shadowPass.depthImageViews.resize(imageCount);
     m_shadowPass.depthImages.resize(imageCount);
-
-    // sampler
-    {
-        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-        createInfo.magFilter = m_shadowPass.filter;
-        createInfo.minFilter = m_shadowPass.filter;
-        VK_CHECK_RESULT(
-            vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_postFxPass.sampler));
-    }
 
     for(uint32_t idx = 0; idx < imageCount; idx++)
     {
@@ -1060,11 +1078,11 @@ void VulkanSceneRenderer::_initShadowPassResource()
     }
 }
 void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData,
-                                     VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd)
+                                          VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd)
 {
     auto mesh = renderData->m_node->getObject<Mesh>();
     drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                                sizeof(glm::mat4), &renderData->m_node->matrix);
+                              sizeof(glm::mat4), &renderData->m_node->matrix);
     VkDeviceSize offsets[1] = { 0 };
     drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
     if(renderData->m_indexBuffer)
@@ -1100,4 +1118,32 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
     }
 }
 
+void VulkanSceneRenderer::_initSampler()
+{
+    // texture
+    {
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+        VK_CHECK_RESULT(
+            vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers.texture));
+    }
+
+    // shadow
+    {
+        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
+        createInfo.magFilter = m_shadowPass.filter;
+        createInfo.minFilter = m_shadowPass.filter;
+        VK_CHECK_RESULT(
+            vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_samplers.shadow));
+    }
+
+    // postFX
+    {
+        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
+        VK_CHECK_RESULT(
+            vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_samplers.postFX));
+    }
+}
 }  // namespace vkl
