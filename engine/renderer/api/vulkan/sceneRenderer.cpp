@@ -125,18 +125,6 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
         pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
     }
 
-    {
-        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
-        samplerInfo.maxLod = texMipLevels;
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-        VK_CHECK_RESULT(vkCreateSampler(pDevice->getHandle(), &samplerInfo, nullptr, &texture.sampler));
-    }
-
-    texture.descriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    texture.descriptorInfo.imageView = texture.imageView->getHandle();
-    texture.descriptorInfo.sampler = texture.sampler;
-
     pDevice->destroyBuffer(stagingBuffer);
 
     return texture;
@@ -439,7 +427,7 @@ void VulkanSceneRenderer::drawScene()
     commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
     for(auto &renderable : m_renderList)
     {
-        _drawNodes(renderable, m_forwardPass.pipeline, commandBuffer, renderable->m_node);
+        _drawRenderData(renderable, m_forwardPass.pipeline, commandBuffer);
     }
     commandBuffer->cmdEndRenderPass();
 
@@ -630,6 +618,14 @@ void VulkanSceneRenderer::_initRenderData()
 
 void VulkanSceneRenderer::_loadScene()
 {
+    {
+        VkSamplerCreateInfo samplerInfo = vkl::init::samplerCreateInfo();
+        samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_forwardPass.textureSampler));
+    }
+
     for(auto &image : m_scene->getImages())
     {
         // raw image data
@@ -639,6 +635,11 @@ void VulkanSceneRenderer::_loadScene()
         uint32_t height = image->height;
 
         auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
+        texture.descriptorInfo = {
+            .sampler = m_forwardPass.textureSampler,
+            .imageView = texture.imageView->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
         m_textures.push_back(texture);
     }
 
@@ -1058,9 +1059,8 @@ void VulkanSceneRenderer::_initShadowPassResource()
         set = m_shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
     }
 }
-void VulkanSceneRenderer::_drawNodes(const std::shared_ptr<VulkanRenderData> &renderData,
-                                     VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd,
-                                     const std::shared_ptr<SceneNode> &node)
+void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData,
+                                     VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd)
 {
     auto mesh = renderData->m_node->getObject<Mesh>();
     drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,

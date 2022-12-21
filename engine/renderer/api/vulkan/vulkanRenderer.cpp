@@ -139,13 +139,6 @@ std::vector<const char *> getRequiredInstanceExtensions(bool isEnableDebug)
 
 }  // namespace
 
-std::shared_ptr<VulkanRenderer> VulkanRenderer::Create(RenderConfig *config,
-                                                       std::shared_ptr<WindowData> windowData)
-{
-    auto instance = std::make_shared<VulkanRenderer>(std::move(windowData), config);
-    return instance;
-}
-
 void VulkanRenderer::_createDefaultFramebuffers()
 {
     m_fbData.framebuffers.resize(m_swapChain->getImageCount());
@@ -427,21 +420,7 @@ void VulkanRenderer::idleDevice()
     m_device->waitIdle();
 }
 
-void VulkanRenderer::_initDefaultResource()
-{
-    m_renderSemaphore.resize(_config.maxFrames);
-    m_presentSemaphore.resize(_config.maxFrames);
-    m_inFlightFence.resize(_config.maxFrames);
-    m_commandBuffers.resize(_config.maxFrames);
-
-    _allocateDefaultCommandBuffers();
-    _createDefaultRenderPass();
-    _createDefaultSyncObjects();
-    _createDefaultFramebuffers();
-    _createPipelineCache();
-}
-
-VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config) :
+VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
     Renderer(std::move(windowData), config)
 {
     _createInstance();
@@ -451,7 +430,16 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderCon
     _setupSwapChain();
     if(_config.initDefaultResource)
     {
-        _initDefaultResource();
+        m_renderSemaphore.resize(_config.maxFrames);
+        m_presentSemaphore.resize(_config.maxFrames);
+        m_inFlightFence.resize(_config.maxFrames);
+        m_commandBuffers.resize(_config.maxFrames);
+
+        _allocateDefaultCommandBuffers();
+        _createDefaultRenderPass();
+        _createDefaultSyncObjects();
+        _createDefaultFramebuffers();
+        _createPipelineCache();
     }
 }
 

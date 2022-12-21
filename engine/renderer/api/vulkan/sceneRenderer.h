@@ -1,34 +1,36 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "scene/mesh.h"
 #include "device.h"
 #include "renderer/sceneRenderer.h"
+#include "scene/mesh.h"
 #include "vulkanRenderer.h"
 
-namespace vkl {
+namespace vkl
+{
 class ShaderPass;
 class VulkanRenderer;
 struct VulkanUniformData;
 struct VulkanRenderData;
 
-enum MaterialBindingBits {
-    MATERIAL_BINDING_NONE       = 0,
-    MATERIAL_BINDING_BASECOLOR  = (1 << 0),
-    MATERIAL_BINDING_NORMAL     = (1 << 1),
-    MATERIAL_BINDING_PHYSICAL   = (1 << 2),
-    MATERIAL_BINDING_AO         = (1 << 3),
-    MATERIAL_BINDING_EMISSIVE   = (1 << 4),
-    MATERIAL_BINDING_UNLIT      = MATERIAL_BINDING_BASECOLOR,
+enum MaterialBindingBits
+{
+    MATERIAL_BINDING_NONE = 0,
+    MATERIAL_BINDING_BASECOLOR = (1 << 0),
+    MATERIAL_BINDING_NORMAL = (1 << 1),
+    MATERIAL_BINDING_PHYSICAL = (1 << 2),
+    MATERIAL_BINDING_AO = (1 << 3),
+    MATERIAL_BINDING_EMISSIVE = (1 << 4),
+    MATERIAL_BINDING_UNLIT = MATERIAL_BINDING_BASECOLOR,
     MATERIAL_BINDING_DEFAULTLIT = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL),
-    MATERIAL_BINDING_PBR        = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL | MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
+    MATERIAL_BINDING_PBR = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL |
+                            MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
 struct GpuTexture
 {
     VulkanImage *image = nullptr;
     VulkanImageView *imageView = nullptr;
-    VkSampler sampler = VK_NULL_HANDLE;
     VkDescriptorImageInfo descriptorInfo;
 };
 
@@ -38,17 +40,20 @@ struct MaterialGpuData
     VkDescriptorSet set = VK_NULL_HANDLE;
 };
 
-struct SceneInfo {
-    glm::vec4 ambient{0.04f};
-    uint32_t  cameraCount = 0;
-    uint32_t  lightCount  = 0;
+struct SceneInfo
+{
+    glm::vec4 ambient{ 0.04f };
+    uint32_t cameraCount = 0;
+    uint32_t lightCount = 0;
 };
 
-struct ObjectInfo{
+struct ObjectInfo
+{
     glm::mat4 matrix = glm::mat4(1.0f);
 };
 
-class VulkanSceneRenderer : public SceneRenderer {
+class VulkanSceneRenderer : public SceneRenderer
+{
 public:
     static std::unique_ptr<VulkanSceneRenderer> Create(const std::shared_ptr<VulkanRenderer> &renderer);
     VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
@@ -65,77 +70,82 @@ private:
     void _initPostFxResource();
     void _initShadowPassResource();
     void _loadScene();
-    void _drawNodes(const std::shared_ptr<VulkanRenderData>& renderData,
-                    VulkanPipeline * pipeline,
-                    VulkanCommandBuffer * drawCmd,
-                    const std::shared_ptr<SceneNode> &node);
+    void _drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
 
 private:
-    VulkanDescriptorSetLayout *m_pSceneLayout       = nullptr;
+    VulkanDescriptorSetLayout *m_pSceneLayout = nullptr;
     VulkanDescriptorSetLayout *m_pPBRMaterialLayout = nullptr;
 
-    struct PASS_FORWARD {
-        enum SetBinding {
-            SET_SCENE    = 0,
-            SET_OBJECT   = 1,
+    struct PASS_FORWARD
+    {
+        enum SetBinding
+        {
+            SET_SCENE = 0,
+            SET_OBJECT = 1,
             SET_MATERIAL = 2,
-            SET_SKYBOX   = 3,
+            SET_SKYBOX = 3,
         };
 
-        VulkanPipeline        *pipeline       = nullptr;
-        vkl::VulkanRenderPass *renderPass     = nullptr;
+        VulkanPipeline *pipeline = nullptr;
+        vkl::VulkanRenderPass *renderPass = nullptr;
+        VkSampler textureSampler = VK_NULL_HANDLE;
 
         std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VulkanImage *>       colorImages;
-        std::vector<VulkanImageView *>   colorImageViews;
-        std::vector<VulkanImage *>       depthImages;
-        std::vector<VulkanImageView *>   depthImageViews;
+        std::vector<VulkanImage *> colorImages;
+        std::vector<VulkanImageView *> colorImageViews;
+        std::vector<VulkanImage *> depthImages;
+        std::vector<VulkanImageView *> depthImageViews;
     } m_forwardPass;
 
-    struct PASS_SHADOW {
-        enum SetBinding {
+    struct PASS_SHADOW
+    {
+        enum SetBinding
+        {
             SET_SCENE = 0,
         };
 
-        const uint32_t                   dim        = 2048;
-        const VkFilter                   filter     = VK_FILTER_LINEAR;
-        VulkanPipeline                  *pipeline   = nullptr;
-        VulkanRenderPass                *renderPass = nullptr;
-        VkSampler                        sampler    = VK_NULL_HANDLE;
-        std::vector<VulkanImage *>       depthImages;
-        std::vector<VulkanImageView *>   depthImageViews;
+        const uint32_t dim = 2048;
+        const VkFilter filter = VK_FILTER_LINEAR;
+        VulkanPipeline *pipeline = nullptr;
+        VulkanRenderPass *renderPass = nullptr;
+        VkSampler sampler = VK_NULL_HANDLE;
+        std::vector<VulkanImage *> depthImages;
+        std::vector<VulkanImageView *> depthImageViews;
         std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VkDescriptorSet>     cameraSets;
+        std::vector<VkDescriptorSet> cameraSets;
     } m_shadowPass;
 
-    struct PASS_POSTFX {
-        enum SetBinding {
+    struct PASS_POSTFX
+    {
+        enum SetBinding
+        {
             SET_OFFSCREEN = 0,
         };
 
-        VulkanBuffer                    *quadVB     = nullptr;
-        VulkanRenderPass                *renderPass = nullptr;
-        VulkanPipeline                  *pipeline   = nullptr;
-        VkSampler                        sampler    = VK_NULL_HANDLE;
-        std::vector<VulkanImage *>       colorImages;
-        std::vector<VulkanImageView *>   colorImageViews;
+        VulkanBuffer *quadVB = nullptr;
+        VulkanRenderPass *renderPass = nullptr;
+        VulkanPipeline *pipeline = nullptr;
+        VkSampler sampler = VK_NULL_HANDLE;
+        std::vector<VulkanImage *> colorImages;
+        std::vector<VulkanImageView *> colorImageViews;
         std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VkDescriptorSet>     sets;
+        std::vector<VkDescriptorSet> sets;
     } m_postFxPass;
 
 private:
-    struct {
-        VkDescriptorSet       set            = VK_NULL_HANDLE;
-        VulkanPipeline       *pipeline       = nullptr;
-        VulkanImage          *cubeMap        = nullptr;
-        VulkanImageView      *cubeMapView    = nullptr;
-        VkSampler             cubeMapSampler = nullptr;
+    struct
+    {
+        VkDescriptorSet set = VK_NULL_HANDLE;
+        VulkanPipeline *pipeline = nullptr;
+        VulkanImage *cubeMap = nullptr;
+        VulkanImageView *cubeMapView = nullptr;
+        VkSampler cubeMapSampler = nullptr;
         VkDescriptorImageInfo cubeMapDescInfo{};
     } m_skyboxResource;
 
     std::vector<VkDescriptorSet> m_sceneSets;
-    SceneInfo                    m_sceneInfo{};
-    VulkanBuffer                *m_sceneInfoUB = nullptr;
+    SceneInfo m_sceneInfo{};
+    VulkanBuffer *m_sceneInfoUB = nullptr;
 
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderList;
     std::deque<std::shared_ptr<VulkanUniformData>> m_uniformList;
@@ -145,10 +155,10 @@ private:
     std::vector<GpuTexture> m_textures{};
 
 private:
-    VulkanDevice                   *m_pDevice   = nullptr;
+    VulkanDevice *m_pDevice = nullptr;
     std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
     std::unordered_map<std::shared_ptr<Material>, MaterialGpuData> m_materialDataMaps;
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // VKSCENERENDERER_H_
+#endif  // VKSCENERENDERER_H_

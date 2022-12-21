@@ -10,19 +10,15 @@ namespace vkl
 class VulkanRenderer : public Renderer
 {
 public:
-    static std::shared_ptr<VulkanRenderer> Create(RenderConfig *config,
-                                                  std::shared_ptr<WindowData> windowData);
-    VulkanRenderer(std::shared_ptr<WindowData> windowData, RenderConfig *config);
+    VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config);
 
     ~VulkanRenderer() = default;
 
+    void init();
     void cleanup() override;
     void idleDevice() override;
     void prepareFrame();
     void submitAndPresent();
-
-public:
-    void _initDefaultResource();
 
 public:
     VkPipelineCache getPipelineCache() { return m_pipelineCache; }

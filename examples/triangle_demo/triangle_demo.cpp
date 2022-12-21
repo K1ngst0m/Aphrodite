@@ -17,7 +17,7 @@ void triangle_demo::init() {
     };
 
     // setup renderer
-    m_renderer = vkl::VulkanRenderer::Create(&config, m_window->getWindowData());
+    m_renderer = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
     m_device = m_renderer->getDevice();
     setupPipeline();
 }
