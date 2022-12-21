@@ -485,8 +485,8 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount,
         delete ppCommandBuffers[i];
     }
 }
-VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *pCreateInfo,
-                                              EffectInfo *pEffectInfo, VulkanRenderPass *pRenderPass,
+VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo,
+                                              VulkanRenderPass *pRenderPass,
                                               VulkanPipeline **ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
@@ -496,9 +496,9 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *
     viewportState.pNext = nullptr;
 
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &pCreateInfo->viewport;
+    viewportState.pViewports = &createInfo.viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &pCreateInfo->scissor;
+    viewportState.pScissors = &createInfo.scissor;
 
     // setup dummy color blending. We aren't using transparent objects yet
     // the blending is just "no blend", but we do write to the color attachment
@@ -509,7 +509,19 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *
     colorBlending.logicOpEnable = VK_FALSE;
     colorBlending.logicOp = VK_LOGIC_OP_COPY;
     colorBlending.attachmentCount = 1;
-    colorBlending.pAttachments = &pCreateInfo->colorBlendAttachment;
+    colorBlending.pAttachments = &createInfo.colorBlendAttachment;
+
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    {
+        std::vector<VkDescriptorSetLayout> setLayouts;
+        setLayouts.reserve(createInfo.setLayouts.size());
+        for(auto setLayout : createInfo.setLayouts)
+        {
+            setLayouts.push_back(setLayout->getHandle());
+        }
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+        vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
+    }
 
     // build the actual pipeline
     // we now use all of the info structs we have been writing into into this one to create the pipeline
@@ -517,30 +529,28 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.pNext = nullptr;
 
-    ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
-
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for(const auto &[stage, sModule] : pEffectInfo->shaderMapList)
+    for(const auto &[stage, sModule] : createInfo.shaderMapList)
     {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     pipelineInfo.stageCount = shaderStages.size();
     pipelineInfo.pStages = shaderStages.data();
-    pipelineInfo.pVertexInputState = &pCreateInfo->vertexInputInfo;
-    pipelineInfo.pInputAssemblyState = &pCreateInfo->inputAssembly;
+    pipelineInfo.pVertexInputState = &createInfo.vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &createInfo.inputAssembly;
     pipelineInfo.pViewportState = &viewportState;
-    pipelineInfo.pDynamicState = &pCreateInfo->dynamicState;
-    pipelineInfo.pRasterizationState = &pCreateInfo->rasterizer;
-    pipelineInfo.pDepthStencilState = &pCreateInfo->depthStencil;
-    pipelineInfo.pMultisampleState = &pCreateInfo->multisampling;
+    pipelineInfo.pDynamicState = &createInfo.dynamicState;
+    pipelineInfo.pRasterizationState = &createInfo.rasterizer;
+    pipelineInfo.pDepthStencilState = &createInfo.depthStencil;
+    pipelineInfo.pMultisampleState = &createInfo.multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
-    pipelineInfo.layout = effect->getPipelineLayout();
+    pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = pRenderPass->getHandle();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
     VkPipeline handle;
-    auto result = vkCreateGraphicsPipelines(getHandle(), pCreateInfo->pipelineCache, 1, &pipelineInfo,
+    auto result = vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo,
                                             nullptr, &handle);
 
     if(result != VK_SUCCESS)
@@ -548,7 +558,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo *
         return result;
     }
 
-    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, pCreateInfo, effect, pRenderPass, handle);
+    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, createInfo, pRenderPass, pipelineLayout, handle);
 
     return VK_SUCCESS;
 }
@@ -585,15 +595,25 @@ VulkanShaderCache *VulkanDevice::getShaderCache()
 {
     return _shaderCache;
 }
-VkResult VulkanDevice::createComputePipeline(EffectInfo *pEffectInfo, VulkanPipeline **ppPipeline)
+VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& createInfo, VulkanPipeline **ppPipeline)
 {
-    ShaderEffect *effect = ShaderEffect::Create(this, pEffectInfo);
+    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    {
+        std::vector<VkDescriptorSetLayout> setLayouts;
+        setLayouts.reserve(createInfo.setLayouts.size());
+        for(auto setLayout : createInfo.setLayouts)
+        {
+            setLayouts.push_back(setLayout->getHandle());
+        }
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo = vkl::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+        vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
+    }
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
-    for(const auto &[stage, sModule] : pEffectInfo->shaderMapList)
+    for(const auto &[stage, sModule] : createInfo.shaderMapList)
     {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
-    VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(effect->getPipelineLayout());
+    VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(pipelineLayout);
     ci.stage = shaderStages[0];
     VkPipeline handle = VK_NULL_HANDLE;
     auto result = vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle);
@@ -601,7 +621,7 @@ VkResult VulkanDevice::createComputePipeline(EffectInfo *pEffectInfo, VulkanPipe
     {
         return result;
     }
-    *ppPipeline = VulkanPipeline::CreateComputePipeline(this, effect, handle);
+    *ppPipeline = VulkanPipeline::CreateComputePipeline(this, createInfo, pipelineLayout, handle);
     return VK_SUCCESS;
 }
 

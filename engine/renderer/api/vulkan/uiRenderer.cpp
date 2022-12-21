@@ -143,7 +143,6 @@ void VulkanUIRenderer::cleanup() {
     _device->destroyImage(_fontData.image);
     vkDestroySampler(_device->getHandle(), _fontData.sampler, nullptr);
 
-    delete _effect;
     _device->destroyPipeline(_pipeline);
 
     vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
@@ -290,14 +289,12 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         VK_CHECK_RESULT(_device->createDescriptorSetLayout(&layoutCreateInfo, &pLayout));
 
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-        EffectInfo info;
-        info.setLayouts.push_back(pLayout);
-        info.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-        info.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
-        info.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
+        pipelineCI.setLayouts.push_back(pLayout);
+        pipelineCI.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
 
-        VK_CHECK_RESULT(_device->createGraphicsPipeline(&pipelineCI, &info, renderPass, &_pipeline));
-        _effect = _pipeline->getEffect();
+        VK_CHECK_RESULT(_device->createGraphicsPipeline(pipelineCI, renderPass, &_pipeline));
     }
 
     // Descriptor pool
@@ -309,7 +306,7 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
 
         // Descriptor set
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_effect->getDescriptorSetLayout(0)->getHandle(), 1);
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_pipeline->getDescriptorSetLayout(0)->getHandle(), 1);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
         VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
             _fontData.sampler,

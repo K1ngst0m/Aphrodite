@@ -39,21 +39,4 @@ VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path)
     }
     return shaderModuleCaches[path];
 }
-ShaderEffect *ShaderEffect::Create(VulkanDevice *pDevice, EffectInfo *pInfo)
-{
-    auto instance = new ShaderEffect(pDevice);
-    std::vector<VkDescriptorSetLayout> setLayouts;
-    for(auto setLayout : pInfo->setLayouts)
-    {
-        instance->_setLayouts.push_back(setLayout);
-        setLayouts.push_back(setLayout->getHandle());
-    }
-    instance->_constants = pInfo->constants;
-    instance->_shaderMapList = pInfo->shaderMapList;
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-        vkl::init::pipelineLayoutCreateInfo(setLayouts, pInfo->constants);
-    VK_CHECK_RESULT(vkCreatePipelineLayout(pDevice->getHandle(), &pipelineLayoutInfo, nullptr,
-                                           &instance->_pipelineLayout));
-    return instance;
-}
 }  // namespace vkl

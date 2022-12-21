@@ -9,7 +9,7 @@ AllowShortIfStatementsOnASingleLine: 'false'
 AllowShortLoopsOnASingleLine: 'false'
 BinPackParameters: 'true'
 BreakBeforeBraces: Custom
-ColumnLimit: '105'
+ColumnLimit: '120'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 BreakConstructorInitializers: 'AfterColon'
 ConstructorInitializerIndentWidth: '4'

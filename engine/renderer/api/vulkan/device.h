@@ -32,6 +32,7 @@ class VulkanQueue;
 class VulkanSyncPrimitivesPool;
 struct RenderPassCreateInfo;
 struct GraphicsPipelineCreateInfo;
+struct ComputePipelineCreateInfo;
 struct EffectInfo;
 
 using QueueFamily = std::vector<VulkanQueue *>;
@@ -83,11 +84,11 @@ public:
         VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
         VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo *pCreateInfo,
-                                    EffectInfo *pEffectInfo, VulkanRenderPass *pRenderPass,
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo,
+                                     VulkanRenderPass *pRenderPass,
                                     VulkanPipeline **ppPipeline);
 
-    VkResult createComputePipeline(EffectInfo *pEffectInfo, VulkanPipeline **ppPipeline);
+    VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
 
     VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
                                        VulkanDescriptorSetLayout **ppDescriptorSetLayout);

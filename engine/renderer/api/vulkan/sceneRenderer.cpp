@@ -312,7 +312,7 @@ void VulkanSceneRenderer::_initRenderData()
         for(auto &material : m_scene->getMaterials())
         {
             // write descriptor set
-            auto set = m_forwardPass.pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_MATERIAL)->allocateSet();
+            auto set = m_setLayout.pMaterial->allocateSet();
             VulkanBuffer *matInfoUB = nullptr;
             {
                 {
@@ -628,15 +628,14 @@ void VulkanSceneRenderer::_initPostFx()
     {
         // build Shader
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
-        EffectInfo effectInfo{};
-        effectInfo.setLayouts.push_back(m_setLayout.pOffScreen);
-        effectInfo.setLayouts.push_back(m_setLayout.pSampler);
-        effectInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
+        GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        pipelineCreateInfo.setLayouts.push_back(m_setLayout.pOffScreen);
+        pipelineCreateInfo.setLayouts.push_back(m_setLayout.pSampler);
+        pipelineCreateInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
             m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv");
-        effectInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] =
+        pipelineCreateInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] =
             m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv");
 
-        GraphicsPipelineCreateInfo pipelineCreateInfo{};
         std::vector<VkVertexInputBindingDescription> bindingDescs{
             { 0, 4 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX },
         };
@@ -650,14 +649,13 @@ void VulkanSceneRenderer::_initPostFx()
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDescs.size()),
             .pVertexAttributeDescriptions = attrDescs.data(),
         };
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo,
-                                                          m_postFxPass.renderPass, &m_postFxPass.pipeline));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_postFxPass.renderPass, &m_postFxPass.pipeline));
     }
 
     for(uint32_t idx = 0; idx < imageCount; idx++)
     {
         auto &set = m_postFxPass.sets[idx];
-        set = m_postFxPass.pipeline->getDescriptorSetLayout(PASS_POSTFX::SET_OFFSCREEN)->allocateSet();
+        set = m_setLayout.pOffScreen->allocateSet();
 
         VkDescriptorImageInfo imageInfo{
             .sampler = m_sampler.postFX,
@@ -778,19 +776,17 @@ void VulkanSceneRenderer::_initForward()
     }
 
     {
-        EffectInfo effectInfo{};
+        GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        effectInfo.setLayouts = { m_setLayout.pScene, m_setLayout.pObject, m_setLayout.pMaterial,
+        pipelineCreateInfo.setLayouts = { m_setLayout.pScene, m_setLayout.pObject, m_setLayout.pMaterial,
                                   m_setLayout.pSampler };
-        effectInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
-        effectInfo.shaderMapList = {
+        pipelineCreateInfo.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
+        pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_VERTEX_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
             { VK_SHADER_STAGE_FRAGMENT_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
         };
 
-        GraphicsPipelineCreateInfo pipelineCreateInfo{};
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(&pipelineCreateInfo, &effectInfo, m_forwardPass.renderPass,
-                                                          &m_forwardPass.pipeline));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_forwardPass.renderPass, &m_forwardPass.pipeline));
     }
 
     m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
@@ -872,6 +868,7 @@ void VulkanSceneRenderer::_initShadow()
     //     set = m_shadowPass.pipeline->getDescriptorSetLayout(0)->allocateSet();
     // }
 }
+
 void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline,
                                           VulkanCommandBuffer *drawCmd)
 {
@@ -938,6 +935,7 @@ void VulkanSceneRenderer::_initSampler()
         VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.postFX));
     }
 
+    // allocate set
     {
         auto &set = m_sampler.set;
         set = m_setLayout.pSampler->allocateSet();

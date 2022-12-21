@@ -38,32 +38,6 @@ private:
 
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
 
-struct EffectInfo
-{
-    std::vector<VulkanDescriptorSetLayout *> setLayouts;
-    std::vector<VkPushConstantRange> constants;
-    ShaderMapList shaderMapList;
-};
-
-class ShaderEffect
-{
-public:
-    static ShaderEffect *Create(VulkanDevice *pDevice, EffectInfo *pInfo);
-    ShaderEffect(VulkanDevice *device) : _device(device) {}
-    ~ShaderEffect() { vkDestroyPipelineLayout(_device->getHandle(), _pipelineLayout, nullptr); }
-
-    VkPipelineLayout getPipelineLayout() { return _pipelineLayout; }
-    VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx) { return _setLayouts[idx]; }
-    const ShaderMapList &getShaderMapList() { return _shaderMapList; }
-
-private:
-    VulkanDevice *_device;
-    std::vector<VkPushConstantRange> _constants;
-    std::vector<VulkanDescriptorSetLayout *> _setLayouts;
-    ShaderMapList _shaderMapList;
-    VkPipelineLayout _pipelineLayout;
-};
-
 }  // namespace vkl
 
 #endif  // SHADER_H_

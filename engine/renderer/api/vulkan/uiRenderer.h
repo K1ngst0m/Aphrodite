@@ -34,7 +34,6 @@ private:
     uint32_t _indexCount  = 0;
 
     VulkanPipeline *_pipeline = nullptr;
-    ShaderEffect   *_effect = nullptr;
 
     VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
     VkDescriptorSet  _descriptorSet = VK_NULL_HANDLE;
