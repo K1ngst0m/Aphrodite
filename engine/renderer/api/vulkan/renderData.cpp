@@ -69,16 +69,6 @@ VulkanRenderData::VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNo
     }
 }
 
-VulkanRenderData::~VulkanRenderData()
-{
-    if(m_indexBuffer)
-    {
-        m_pDevice->destroyBuffer(m_indexBuffer);
-    }
-    m_pDevice->destroyBuffer(m_vertexBuffer);
-    m_pDevice->destroyBuffer(m_objectUB);
-}
-
 VulkanUniformData::VulkanUniformData(VulkanDevice *device, std::shared_ptr<SceneNode> node) :
     m_device(device),
     m_node(std::move(node))
@@ -102,10 +92,5 @@ VulkanUniformData::VulkanUniformData(VulkanDevice *device, std::shared_ptr<Scene
     m_buffer->setupDescriptor();
     m_buffer->map();
 }
-
-VulkanUniformData::~VulkanUniformData()
-{
-    m_device->destroyBuffer(m_buffer);
-};
 
 }  // namespace vkl

@@ -7,7 +7,7 @@ namespace vkl
 VulkanDescriptorSetLayout *VulkanDescriptorSetLayout::Create(
     VulkanDevice *device, VkDescriptorSetLayoutCreateInfo *pCreateInfo, VkDescriptorSetLayout handle)
 {
-    auto instance = new VulkanDescriptorSetLayout;
+    auto instance = new VulkanDescriptorSetLayout();
     for(auto i = 0; i < pCreateInfo->bindingCount; i++)
     {
         instance->_bindings.push_back(pCreateInfo->pBindings[i]);
@@ -25,5 +25,13 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet()
 VkResult VulkanDescriptorSetLayout::freeSet(VkDescriptorSet set)
 {
     return _pool->freeSet(set);
+}
+VulkanDescriptorSetLayout::VulkanDescriptorSetLayout()
+{
+    // _pool = new VulkanDescriptorPool(this);
+}
+VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
+{
+    delete _pool;
 }
 }  // namespace vkl

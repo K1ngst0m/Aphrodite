@@ -565,6 +565,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
 
 void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline)
 {
+    vkDestroyPipelineLayout(getHandle(), pipeline->getPipelineLayout(), nullptr);
     vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
 }

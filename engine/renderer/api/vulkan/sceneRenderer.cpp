@@ -161,6 +161,19 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyPipeline(m_postFxPass.pipeline);
     }
 
+    {
+        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pMaterial);
+        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pObject);
+        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pSampler);
+        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pScene);
+        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pOffScreen);
+    }
+
+    for (auto & texture : m_textures){
+        m_pDevice->destroyImage(texture.image);
+        m_pDevice->destroyImageView(texture.imageView);
+    }
+
     for(uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++)
     {
         m_pDevice->destroyFramebuffers(m_postFxPass.framebuffers[idx]);
@@ -175,6 +188,20 @@ void VulkanSceneRenderer::cleanupResources()
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.texture, nullptr);
     // vkDestroySampler(m_pDevice->getHandle(), m_samplers.cubeMap, nullptr);
     // vkDestroySampler(m_pDevice->getHandle(), m_samplers.shadow, nullptr);
+    //
+    for (auto &[_, matData] : m_materialDataMaps){
+        m_pDevice->destroyBuffer(matData.buffer);
+    }
+
+    for (auto &renderData : m_renderList){
+        m_pDevice->destroyBuffer(renderData->m_vertexBuffer);
+        m_pDevice->destroyBuffer(renderData->m_indexBuffer);
+        m_pDevice->destroyBuffer(renderData->m_objectUB);
+    }
+
+    for (auto &ubData : m_uniformList){
+        m_pDevice->destroyBuffer(ubData->m_buffer);
+    }
 
     m_pDevice->destroyBuffer(m_postFxPass.quadVB);
     m_pDevice->destroyBuffer(m_sceneInfoUB);
@@ -923,10 +950,10 @@ void VulkanSceneRenderer::_initSampler()
 
     // shadow
     {
-        VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
-        createInfo.magFilter = m_shadowPass.filter;
-        createInfo.minFilter = m_shadowPass.filter;
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.shadow));
+        // VkSamplerCreateInfo createInfo = vkl::init::samplerCreateInfo();
+        // createInfo.magFilter = m_shadowPass.filter;
+        // createInfo.minFilter = m_shadowPass.filter;
+        // VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.shadow));
     }
 
     // postFX

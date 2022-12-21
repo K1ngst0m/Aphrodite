@@ -8,7 +8,6 @@ namespace vkl
 struct VulkanRenderData
 {
     VulkanRenderData(VulkanDevice *device, std::shared_ptr<SceneNode> sceneNode);
-    ~VulkanRenderData();
 
     VulkanBuffer *m_vertexBuffer = nullptr;
     VulkanBuffer *m_indexBuffer = nullptr;
@@ -23,7 +22,6 @@ struct VulkanRenderData
 struct VulkanUniformData
 {
     VulkanUniformData(VulkanDevice *device, std::shared_ptr<SceneNode> node);
-    ~VulkanUniformData();
 
     VulkanBuffer *m_buffer = nullptr;
     VulkanDevice *m_device = nullptr;

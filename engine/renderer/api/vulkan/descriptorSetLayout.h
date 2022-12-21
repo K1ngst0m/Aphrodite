@@ -11,6 +11,9 @@ public:
     static VulkanDescriptorSetLayout *Create(VulkanDevice *device,
                                              VkDescriptorSetLayoutCreateInfo *pCreateInfo,
                                              VkDescriptorSetLayout handle);
+    VulkanDescriptorSetLayout();
+
+    ~VulkanDescriptorSetLayout();
 
     std::vector<VkDescriptorSetLayoutBinding> getBindings() { return _bindings; }
     VulkanDevice *getDevice() { return _device; }
