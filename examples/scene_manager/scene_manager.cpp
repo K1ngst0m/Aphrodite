@@ -24,7 +24,7 @@ void scene_manager::run() {
         m_window->pollEvents();
 
         // update scene object
-        // m_modelNode->setTransform(glm::rotate(m_modelNode->getTransform(), 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f}));
+        m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f});
 
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);

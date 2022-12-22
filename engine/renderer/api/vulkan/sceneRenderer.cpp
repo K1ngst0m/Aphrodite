@@ -900,8 +900,16 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
                                           VulkanCommandBuffer *drawCmd)
 {
     auto mesh = renderData->m_node->getObject<Mesh>();
-    drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                              &renderData->m_node->matrix);
+    {
+        auto matrix = renderData->m_node->matrix;
+        auto currentNode = renderData->m_node->parent;
+        while(currentNode){
+            matrix = currentNode->matrix * matrix;
+            currentNode = currentNode->parent;
+        }
+        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
+                                &matrix);
+    }
     VkDeviceSize offsets[1] = { 0 };
     drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
     if(renderData->m_indexBuffer)
