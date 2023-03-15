@@ -20,8 +20,6 @@ include_directories(engine)
 add_subdirectory(engine)
 add_subdirectory(examples)
 
-add_subdirectory(external/glad)
-
 find_package(Vulkan ${Vulkan_MIN_VERSION} REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(xcb REQUIRED IMPORTED_TARGET xcb)
