@@ -423,6 +423,7 @@ void VulkanRenderer::idleDevice()
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
     Renderer(std::move(windowData), config)
 {
+    volkInitialize();
     _createInstance();
     _setupDebugMessenger();
     _createSurface();

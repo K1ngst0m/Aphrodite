@@ -1,7 +1,8 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
+
 #include <algorithm>
 #include <array>
 #include <cassert>

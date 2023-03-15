@@ -31,6 +31,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo, VulkanIns
     if(result != VK_SUCCESS)
         return result;
 
+    volkLoadInstance(handle);
     // Create a new Instance object to wrap Vulkan handle.
     auto instance = new VulkanInstance();
     instance->_handle = handle;

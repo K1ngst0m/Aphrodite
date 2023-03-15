@@ -25,6 +25,8 @@ file(GLOB base_src
   ../external/spirv_reflect/*.h
   ../external/imgui/*.cpp
   ../external/imgui/*.h
+  ../external/volk/volk.h
+  ../external/volk/volk.c
   )
 
 
@@ -43,4 +45,9 @@ file(GLOB BASE_HEADERS
 
 add_library(engine STATIC ${base_src})
 
-target_link_libraries(engine ${vulkan_lib} glfw ${xcb_libraries} ${cmake_thread_libs_init})
+target_link_libraries(engine
+  glfw
+  ${xcb_libraries}
+  ${cmake_thread_libs_init}
+  dl
+  )
