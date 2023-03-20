@@ -82,7 +82,7 @@ void VulkanUIRenderer::initUI() {
         imageInfo.tiling        = IMAGE_TILING_OPTIMAL;
         imageInfo.usage         = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT;
         imageInfo.property      = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        VK_CHECK_RESULT(_device->createImage(&imageInfo, &_fontData.image));
+        VK_CHECK_RESULT(_device->createImage(imageInfo, &_fontData.image));
     }
 
     // Image view
@@ -92,7 +92,7 @@ void VulkanUIRenderer::initUI() {
         viewInfo.format                      = FORMAT_R8G8B8A8_UNORM;
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.layerCount = 1;
-        VK_CHECK_RESULT(_device->createImageView(&viewInfo, &_fontData.view, _fontData.image));
+        VK_CHECK_RESULT(_device->createImageView(viewInfo, &_fontData.view, _fontData.image));
     }
 
     // font data upload
@@ -102,7 +102,7 @@ void VulkanUIRenderer::initUI() {
         createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
         createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
         createInfo.size     = uploadSize;
-        _device->createBuffer(&createInfo, &stagingBuffer);
+        _device->createBuffer(createInfo, &stagingBuffer);
         stagingBuffer->map();
         stagingBuffer->copyTo(fontData, uploadSize);
         stagingBuffer->unmap();
@@ -172,7 +172,7 @@ bool VulkanUIRenderer::update(float deltaTime) {
             .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(&createInfo, &_vertexBuffer));
+        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_vertexBuffer));
     }
     if ((_vertexBuffer->getHandle() == VK_NULL_HANDLE) || (_vertexCount != imDrawData->TotalVtxCount)) {
         _vertexBuffer->unmap();
@@ -182,7 +182,7 @@ bool VulkanUIRenderer::update(float deltaTime) {
             .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(&createInfo, &_vertexBuffer));
+        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_vertexBuffer));
         _vertexCount = imDrawData->TotalVtxCount;
         _vertexBuffer->unmap();
         _vertexBuffer->map();
@@ -196,7 +196,7 @@ bool VulkanUIRenderer::update(float deltaTime) {
             .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(&createInfo, &_indexBuffer));
+        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_indexBuffer));
     }
     if ((_indexBuffer->getHandle() == VK_NULL_HANDLE) || (_indexCount < imDrawData->TotalIdxCount)) {
         _indexBuffer->unmap();
@@ -206,7 +206,7 @@ bool VulkanUIRenderer::update(float deltaTime) {
             .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(&createInfo, &_indexBuffer));
+        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_indexBuffer));
         _indexCount = imDrawData->TotalIdxCount;
         _indexBuffer->map();
         updateCmdBuffers = true;

@@ -27,7 +27,7 @@ VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkDeviceSi
             createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
             createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
-            pDevice->createBuffer(&createInfo, &stagingBuffer);
+            pDevice->createBuffer(createInfo, &stagingBuffer);
         }
 
         stagingBuffer->map();
@@ -39,7 +39,7 @@ VulkanBuffer * createBuffer(VulkanDevice * pDevice, const void* data, VkDeviceSi
             createInfo.size = bufferSize;
             createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
             createInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            pDevice->createBuffer(&createInfo, &buffer);
+            pDevice->createBuffer(createInfo, &buffer);
         }
 
         auto cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
@@ -88,7 +88,7 @@ VulkanUniformData::VulkanUniformData(VulkanDevice *device, std::shared_ptr<Scene
     createInfo.size = m_object->getDataSize();
     createInfo.usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    VK_CHECK_RESULT(m_device->createBuffer(&createInfo, &m_buffer, m_object->getData()));
+    VK_CHECK_RESULT(m_device->createBuffer(createInfo, &m_buffer, m_object->getData()));
     m_buffer->setupDescriptor();
     m_buffer->map();
 }

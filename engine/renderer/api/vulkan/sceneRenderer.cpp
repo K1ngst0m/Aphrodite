@@ -36,7 +36,7 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
         createInfo.size = dataSize;
         createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
         createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        pDevice->createBuffer(&createInfo, &stagingBuffer);
+        pDevice->createBuffer(createInfo, &stagingBuffer);
 
         stagingBuffer->map();
         stagingBuffer->copyTo(data, dataSize);
@@ -54,7 +54,7 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
         createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         createInfo.mipLevels = texMipLevels;
 
-        pDevice->createImage(&createInfo, &texture.image);
+        pDevice->createImage(createInfo, &texture.image);
 
         auto *cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -118,7 +118,7 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
         createInfo.format = FORMAT_R8G8B8A8_UNORM;
         createInfo.viewType = IMAGE_VIEW_TYPE_2D;
         createInfo.subresourceRange.levelCount = texMipLevels;
-        pDevice->createImageView(&createInfo, &texture.imageView, texture.image);
+        pDevice->createImageView(createInfo, &texture.imageView, texture.image);
     }
 
     pDevice->destroyBuffer(stagingBuffer);
@@ -286,7 +286,7 @@ void VulkanSceneRenderer::_initRenderData()
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_sceneInfoUB, &m_sceneInfo));
+        VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &m_sceneInfoUB, &m_sceneInfo));
         m_sceneInfoUB->setupDescriptor();
     }
 
@@ -311,7 +311,7 @@ void VulkanSceneRenderer::_initRenderData()
                 .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
             };
-            VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &renderable->m_objectUB, &objInfo));
+            VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderable->m_objectUB, &objInfo));
             renderable->m_objectUB->setupDescriptor();
         }
 
@@ -348,7 +348,7 @@ void VulkanSceneRenderer::_initRenderData()
                         .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                         .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                     };
-                    m_pDevice->createBuffer(&bufferCI, &matInfoUB, &material);
+                    m_pDevice->createBuffer(bufferCI, &matInfoUB, &material);
                     matInfoUB->setupDescriptor();
                 }
                 std::vector<VkWriteDescriptorSet> descriptorWrites{};
@@ -598,7 +598,7 @@ void VulkanSceneRenderer::_initPostFx()
             .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
 
-        VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &m_postFxPass.quadVB, quadVertices));
+        VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &m_postFxPass.quadVB, quadVertices));
     }
 
     // color attachment
@@ -618,7 +618,7 @@ void VulkanSceneRenderer::_initPostFx()
             ImageViewCreateInfo createInfo{};
             createInfo.format = FORMAT_B8G8R8A8_UNORM;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            m_pDevice->createImageView(&createInfo, &colorImageView, colorImage);
+            m_pDevice->createImageView(createInfo, &colorImageView, colorImage);
         }
 
         {
@@ -756,7 +756,7 @@ void VulkanSceneRenderer::_initForward()
                 .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 .format = FORMAT_B8G8R8A8_UNORM,
             };
-            m_pDevice->createImage(&createInfo, &colorImage);
+            m_pDevice->createImage(createInfo, &colorImage);
         }
 
         {
@@ -764,7 +764,7 @@ void VulkanSceneRenderer::_initForward()
                 .viewType = IMAGE_VIEW_TYPE_2D,
                 .format = FORMAT_B8G8R8A8_UNORM,
             };
-            m_pDevice->createImageView(&createInfo, &colorImageView, colorImage);
+            m_pDevice->createImageView(createInfo, &colorImageView, colorImage);
         }
 
         {
@@ -775,7 +775,7 @@ void VulkanSceneRenderer::_initForward()
             createInfo.tiling = IMAGE_TILING_OPTIMAL;
             createInfo.usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            VK_CHECK_RESULT(m_pDevice->createImage(&createInfo, &depthImage));
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
         }
 
         VulkanCommandBuffer *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
@@ -787,7 +787,7 @@ void VulkanSceneRenderer::_initForward()
             ImageViewCreateInfo createInfo{};
             createInfo.format = FORMAT_D32_SFLOAT;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            VK_CHECK_RESULT(m_pDevice->createImageView(&createInfo, &depthImageView, depthImage));
+            VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &depthImageView, depthImage));
         }
 
         {

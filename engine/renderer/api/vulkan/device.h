@@ -57,11 +57,11 @@ public:
     static void Destroy(VulkanDevice *pDevice);
 
 public:
-    VkResult createBuffer(BufferCreateInfo *pCreateInfo, VulkanBuffer **ppBuffer, void *data = nullptr);
+    VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, void *data = nullptr);
 
-    VkResult createImage(ImageCreateInfo *pCreateInfo, VulkanImage **ppImage);
+    VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
 
-    VkResult createImageView(ImageViewCreateInfo *pCreateInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
+    VkResult createImageView(const ImageViewCreateInfo& createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
 
     VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
                                 uint32_t attachmentCount, VulkanImageView **pAttachments);
@@ -132,6 +132,7 @@ private:
     VulkanShaderCache *_shaderCache = nullptr;
 
     DeviceCreateInfo _createInfo;
+    VkDevice _handle = VK_NULL_HANDLE;
 };
 
 }  // namespace vkl

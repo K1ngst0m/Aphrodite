@@ -108,7 +108,7 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
-void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo)
+void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT createInfo)
 {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -166,7 +166,7 @@ void VulkanRenderer::_createDefaultFramebuffers()
                 .viewType = IMAGE_VIEW_TYPE_2D,
                 .format = FORMAT_B8G8R8A8_UNORM,
             };
-            m_device->createImageView(&createInfo, &colorImageView, colorImage);
+            m_device->createImageView(createInfo, &colorImageView, colorImage);
         }
     }
 
@@ -184,7 +184,7 @@ void VulkanRenderer::_createDefaultFramebuffers()
             createInfo.tiling = IMAGE_TILING_OPTIMAL;
             createInfo.usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
             createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            VK_CHECK_RESULT(m_device->createImage(&createInfo, &depthImage));
+            VK_CHECK_RESULT(m_device->createImage(createInfo, &depthImage));
         }
 
         VulkanCommandBuffer *cmd = m_device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
@@ -196,7 +196,7 @@ void VulkanRenderer::_createDefaultFramebuffers()
             ImageViewCreateInfo createInfo{};
             createInfo.format = FORMAT_D32_SFLOAT;
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            VK_CHECK_RESULT(m_device->createImageView(&createInfo, &depthImageView, depthImage));
+            VK_CHECK_RESULT(m_device->createImageView(createInfo, &depthImageView, depthImage));
         }
     }
 
@@ -328,8 +328,7 @@ void VulkanRenderer::_setupDebugMessenger()
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
 
-    VK_CHECK_RESULT(
-        createDebugUtilsMessengerEXT(m_instance->getHandle(), &createInfo, nullptr, &m_debugMessenger));
+    VK_CHECK_RESULT(createDebugUtilsMessengerEXT(m_instance->getHandle(), &createInfo, nullptr, &m_debugMessenger));
 }
 
 void VulkanRenderer::_createDefaultSyncObjects()
