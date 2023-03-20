@@ -4,10 +4,15 @@ file(GLOB base_src
   common/*.hpp
 
   vkl.hpp
+  vklHelper.hpp
 
   renderer/*.cpp
   renderer/*.h
   renderer/*.hpp
+
+  renderer/helper/*.cpp
+  renderer/helper/*.h
+  renderer/helper/*.hpp
 
   renderer/api/vulkan/*.cpp
   renderer/api/vulkan/*.h
@@ -32,9 +37,12 @@ file(GLOB base_src
 
 file(GLOB BASE_HEADERS
   vkl.hpp
+  vklHelper.hpp
 
   renderer/*.h
   renderer/*.hpp
+  renderer/helper/*.h
+  renderer/helper/*.hpp
 
   scene/*.h
   scene/*.hpp

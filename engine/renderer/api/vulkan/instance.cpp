@@ -4,27 +4,27 @@
 namespace vkl
 {
 
-VkResult VulkanInstance::Create(const InstanceCreateInfo *pCreateInfo, VulkanInstance **ppInstance)
+VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInstance **ppInstance)
 {
     // Fill out VkApplicationInfo struct.
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pNext = pCreateInfo->pApplicationInfo->pNext;
-    appInfo.pApplicationName = pCreateInfo->pApplicationInfo->pApplicationName;
-    appInfo.applicationVersion = pCreateInfo->pApplicationInfo->applicationVersion;
-    appInfo.pEngineName = pCreateInfo->pApplicationInfo->pEngineName;
-    appInfo.engineVersion = pCreateInfo->pApplicationInfo->engineVersion;
+    appInfo.pNext = createInfo.pApplicationInfo->pNext;
+    appInfo.pApplicationName = createInfo.pApplicationInfo->pApplicationName;
+    appInfo.applicationVersion = createInfo.pApplicationInfo->applicationVersion;
+    appInfo.pEngineName = createInfo.pApplicationInfo->pEngineName;
+    appInfo.engineVersion = createInfo.pApplicationInfo->engineVersion;
     appInfo.apiVersion = VK_API_VERSION_1_0;
 
     // Create VkInstance.
     VkInstanceCreateInfo instanceCreateInfo = {};
     instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    instanceCreateInfo.pNext = pCreateInfo->pNext;
+    instanceCreateInfo.pNext = createInfo.pNext;
     instanceCreateInfo.pApplicationInfo = &appInfo;
-    instanceCreateInfo.enabledLayerCount = pCreateInfo->enabledLayerCount;
-    instanceCreateInfo.ppEnabledLayerNames = pCreateInfo->ppEnabledLayerNames;
-    instanceCreateInfo.enabledExtensionCount = pCreateInfo->enabledExtensionCount;
-    instanceCreateInfo.ppEnabledExtensionNames = pCreateInfo->ppEnabledExtensionNames;
+    instanceCreateInfo.enabledLayerCount = createInfo.enabledLayerCount;
+    instanceCreateInfo.ppEnabledLayerNames = createInfo.ppEnabledLayerNames;
+    instanceCreateInfo.enabledExtensionCount = createInfo.enabledExtensionCount;
+    instanceCreateInfo.ppEnabledExtensionNames = createInfo.ppEnabledExtensionNames;
 
     VkInstance handle = VK_NULL_HANDLE;
     auto result = vkCreateInstance(&instanceCreateInfo, nullptr, &handle);

@@ -7,6 +7,7 @@
 
 namespace vkl
 {
+
 struct InstanceCreateInfo
 {
     const void *pNext;
@@ -22,7 +23,7 @@ class VulkanPhysicalDevice;
 class VulkanInstance : public ResourceHandle<VkInstance>
 {
 public:
-    static VkResult Create(const InstanceCreateInfo *pCreateInfo, VulkanInstance **ppInstance);
+    static VkResult Create(const InstanceCreateInfo &createInfo, VulkanInstance **ppInstance);
 
     static void Destroy(VulkanInstance *pInstance);
 

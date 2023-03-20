@@ -1,16 +1,17 @@
 #include "renderData.h"
-#include "buffer.h"
-#include "commandBuffer.h"
-#include "descriptorSetLayout.h"
-#include "device.h"
-#include "image.h"
-#include "imageView.h"
-#include "pipeline.h"
 #include "scene/camera.h"
 #include "scene/mesh.h"
 #include "scene/light.h"
 #include "sceneRenderer.h"
-#include "vkInit.hpp"
+
+#include "renderer/api/vulkan/buffer.h"
+#include "renderer/api/vulkan/commandBuffer.h"
+#include "renderer/api/vulkan/descriptorSetLayout.h"
+#include "renderer/api/vulkan/device.h"
+#include "renderer/api/vulkan/image.h"
+#include "renderer/api/vulkan/imageView.h"
+#include "renderer/api/vulkan/pipeline.h"
+#include "renderer/api/vulkan/vkInit.hpp"
 
 namespace vkl
 {

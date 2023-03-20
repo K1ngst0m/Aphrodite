@@ -1,24 +1,25 @@
 #include "vulkanRenderer.h"
-#include "buffer.h"
-#include "commandBuffer.h"
-#include "commandPool.h"
-#include "device.h"
-#include "framebuffer.h"
-#include "image.h"
-#include "imageView.h"
-#include "physicalDevice.h"
-#include "pipeline.h"
-#include "queue.h"
-#include "renderData.h"
-#include "renderer/sceneRenderer.h"
-#include "renderpass.h"
-#include "scene/mesh.h"
 #include "sceneRenderer.h"
-#include "shader.h"
-#include "swapChain.h"
-#include "syncPrimitivesPool.h"
 #include "uiRenderer.h"
-#include "vkUtils.h"
+#include "renderData.h"
+
+#include "renderer/api/vulkan/buffer.h"
+#include "renderer/api/vulkan/commandBuffer.h"
+#include "renderer/api/vulkan/commandPool.h"
+#include "renderer/api/vulkan/device.h"
+#include "renderer/api/vulkan/framebuffer.h"
+#include "renderer/api/vulkan/image.h"
+#include "renderer/api/vulkan/imageView.h"
+#include "renderer/api/vulkan/physicalDevice.h"
+#include "renderer/api/vulkan/pipeline.h"
+#include "renderer/api/vulkan/queue.h"
+#include "renderer/api/vulkan/renderpass.h"
+#include "renderer/api/vulkan/shader.h"
+#include "renderer/api/vulkan/swapChain.h"
+#include "renderer/api/vulkan/syncPrimitivesPool.h"
+#include "renderer/api/vulkan/vkUtils.h"
+
+#include "scene/mesh.h"
 
 namespace vkl
 {
@@ -27,6 +28,7 @@ namespace
 {
 const std::vector<const char *> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
 bool checkValidationLayerSupport()
 {
     uint32_t layerCount;
@@ -262,7 +264,7 @@ void VulkanRenderer::_createInstance()
         instanceCreateInfo.enabledLayerCount = 0;
     }
 
-    VulkanInstance::Create(&instanceCreateInfo, &m_instance);
+    VulkanInstance::Create(instanceCreateInfo, &m_instance);
 }
 
 void VulkanRenderer::_createDevice()

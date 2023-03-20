@@ -1,8 +1,8 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
-#include "renderer/uiRenderer.h"
 #include "vkl.hpp"
+#include "vklHelper.hpp"
 
 class scene_manager : public vkl::BaseApp {
 public:

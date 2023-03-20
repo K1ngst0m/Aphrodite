@@ -1,9 +1,9 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include "device.h"
 #include "renderer/renderer.h"
-#include "shader.h"
+#include "renderer/api/vulkan/device.h"
+#include "renderer/api/vulkan/shader.h"
 
 namespace vkl
 {

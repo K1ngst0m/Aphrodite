@@ -1,6 +1,4 @@
 #include "scene_manager.h"
-#include "renderer/api/vulkan/uiRenderer.h"
-#include "renderer/uiRenderer.h"
 
 vkl::RenderConfig config{
     .enableDebug = true,

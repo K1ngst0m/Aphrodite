@@ -1,8 +1,8 @@
 #ifndef VKSCENERENDERER_H_
 #define VKSCENERENDERER_H_
 
-#include "device.h"
 #include "renderer/sceneRenderer.h"
+#include "renderer/api/vulkan/device.h"
 #include "scene/mesh.h"
 #include "vulkanRenderer.h"
 
