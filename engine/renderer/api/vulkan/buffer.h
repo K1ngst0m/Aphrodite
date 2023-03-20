@@ -8,8 +8,7 @@ namespace vkl
 class VulkanBuffer : public Buffer<VkBuffer>
 {
 public:
-    static VulkanBuffer *CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo,
-                                          VkBuffer buffer, VkDeviceMemory memory);
+    VulkanBuffer(VulkanDevice *pDevice, const BufferCreateInfo &createInfo, VkBuffer buffer, VkDeviceMemory memory);
 
     VkDeviceMemory getMemory() { return memory; }
     void *getMapped() { return mapped; };
@@ -29,7 +28,7 @@ public:
     void setupDescriptor(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
 
 private:
-    VkDevice device;
+    VulkanDevice * pDevice;
     VkDeviceMemory memory = VK_NULL_HANDLE;
     VkDescriptorBufferInfo descriptorInfo;
     void *mapped = nullptr;

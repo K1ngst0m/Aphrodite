@@ -2,30 +2,28 @@
 #include "device.h"
 
 namespace vkl {
-VulkanBuffer *VulkanBuffer::CreateFromHandle(VulkanDevice *pDevice, BufferCreateInfo *pCreateInfo, VkBuffer buffer, VkDeviceMemory memory) {
-    VulkanBuffer *instance = new VulkanBuffer;
-    memcpy(&instance->getCreateInfo(), pCreateInfo, sizeof(BufferCreateInfo));
-    instance->device = pDevice->getHandle();
-    instance->_handle = buffer;
-    instance->memory = memory;
 
-    return instance;
+VulkanBuffer::VulkanBuffer(VulkanDevice *pDevice, const BufferCreateInfo &createInfo, VkBuffer buffer, VkDeviceMemory memory)
+    :pDevice(pDevice), memory(memory)
+{
+    _handle = buffer;
+    _createInfo = createInfo;
 }
 
 VkResult VulkanBuffer::map(VkDeviceSize size, VkDeviceSize offset) {
-    return vkMapMemory(device, memory, offset, size, 0, &mapped);
+    return vkMapMemory(pDevice->getHandle(), memory, offset, size, 0, &mapped);
 }
 
 
 void VulkanBuffer::unmap() {
     if (mapped) {
-        vkUnmapMemory(device, memory);
+        vkUnmapMemory(pDevice->getHandle(), memory);
         mapped = nullptr;
     }
 }
 
 VkResult VulkanBuffer::bind(VkDeviceSize offset) const {
-    return vkBindBufferMemory(device, _handle, memory, offset);
+    return vkBindBufferMemory(pDevice->getHandle(), _handle, memory, offset);
 }
 
 void VulkanBuffer::setupDescriptor(VkDeviceSize size, VkDeviceSize offset) {
@@ -50,7 +48,7 @@ VkResult VulkanBuffer::flush(VkDeviceSize size, VkDeviceSize offset) const {
     mappedRange.memory              = memory;
     mappedRange.offset              = offset;
     mappedRange.size                = size;
-    return vkFlushMappedMemoryRanges(device, 1, &mappedRange);
+    return vkFlushMappedMemoryRanges(pDevice->getHandle(), 1, &mappedRange);
 }
 
 VkResult VulkanBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const {
@@ -59,7 +57,7 @@ VkResult VulkanBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const 
     mappedRange.memory              = memory;
     mappedRange.offset              = offset;
     mappedRange.size                = size;
-    return vkInvalidateMappedMemoryRanges(device, 1, &mappedRange);
+    return vkInvalidateMappedMemoryRanges(pDevice->getHandle(), 1, &mappedRange);
 }
 
 }  // namespace vkl

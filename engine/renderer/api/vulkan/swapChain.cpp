@@ -160,7 +160,7 @@ void VulkanSwapChain::allocateImages(WindowData *data)
         imageCreateInfo.tiling = IMAGE_TILING_OPTIMAL;
         imageCreateInfo.usage = swapChainCreateInfo.imageUsage;
 
-        auto image = VulkanImage::CreateFromHandle(_device, &imageCreateInfo, handle);
+        auto image = new VulkanImage(_device, imageCreateInfo, handle);
 
         _images.push_back(image);
     }

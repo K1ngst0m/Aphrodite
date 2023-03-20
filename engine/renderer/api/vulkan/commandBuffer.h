@@ -73,10 +73,10 @@ public:
     uint32_t getQueueFamilyIndices();
 
 private:
-    VulkanCommandPool *_pool;
-    CommandBufferState _state;
-    bool _submittedToQueue = false;
-    uint32_t _queueFamilyType;
+    VulkanCommandPool *m_pool;
+    CommandBufferState m_state;
+    bool m_submittedToQueue = false;
+    uint32_t m_queueFamilyType;
 };
 }  // namespace vkl
 

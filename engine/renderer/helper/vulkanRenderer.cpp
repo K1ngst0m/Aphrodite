@@ -237,7 +237,7 @@ void VulkanRenderer::_createInstance()
 
     VkApplicationInfo appInfo{
         .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "Centimani",
+        .pApplicationName = "Aphrodite",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "Centimani Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),

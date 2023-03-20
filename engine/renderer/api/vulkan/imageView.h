@@ -12,8 +12,7 @@ class VulkanImage;
 class VulkanImageView : public ImageView<VkImageView>
 {
 public:
-    static VulkanImageView *createFromHandle(ImageViewCreateInfo *createInfo, VulkanImage *pImage,
-                                             VkImageView handle);
+    VulkanImageView(const ImageViewCreateInfo &createInfo, VulkanImage *pImage, VkImageView handle);
 
     VulkanImage *getImage() { return _image; }
     VulkanDevice *getDevice() { return _device; }

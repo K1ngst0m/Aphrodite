@@ -12,21 +12,21 @@ namespace vkl
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-    _pool->freeCommandBuffers(1, &_handle);
+    m_pool->freeCommandBuffers(1, &_handle);
 }
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle,
                                          uint32_t queueFamilyIndices) :
-    _pool(pool),
-    _state(CommandBufferState::INITIAL),
-    _queueFamilyType(queueFamilyIndices)
+    m_pool(pool),
+    m_state(CommandBufferState::INITIAL),
+    m_queueFamilyType(queueFamilyIndices)
 {
     _handle = handle;
 }
 
 VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
-    if(_state == CommandBufferState::RECORDING)
+    if(m_state == CommandBufferState::RECORDING)
     {
         return VK_NOT_READY;
     }
@@ -42,19 +42,19 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
     }
 
     // Mark CommandBuffer as recording and reset internal state.
-    _state = CommandBufferState::RECORDING;
+    m_state = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
 }
 
 VkResult VulkanCommandBuffer::end()
 {
-    if(_state != CommandBufferState::RECORDING)
+    if(m_state != CommandBufferState::RECORDING)
     {
         return VK_NOT_READY;
     }
 
-    _state = CommandBufferState::EXECUTABLE;
+    m_state = CommandBufferState::EXECUTABLE;
 
     return vkEndCommandBuffer(_handle);
 }
@@ -63,7 +63,7 @@ VkResult VulkanCommandBuffer::reset()
 {
     if(_handle != VK_NULL_HANDLE)
         return vkResetCommandBuffer(_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-    _state = CommandBufferState::INITIAL;
+    m_state = CommandBufferState::INITIAL;
     return VK_SUCCESS;
 }
 
@@ -305,7 +305,7 @@ void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, 
 }
 VulkanCommandPool *VulkanCommandBuffer::getPool()
 {
-    return _pool;
+    return m_pool;
 }
 void VulkanCommandBuffer::cmdImageMemoryBarrier(
     VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
@@ -333,6 +333,6 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcI
 }
 uint32_t VulkanCommandBuffer::getQueueFamilyIndices()
 {
-    return _queueFamilyType;
+    return m_queueFamilyType;
 };
 }  // namespace vkl

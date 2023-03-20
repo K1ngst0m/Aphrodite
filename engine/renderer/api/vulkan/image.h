@@ -8,8 +8,7 @@ namespace vkl
 class VulkanImage : public Image<VkImage>
 {
 public:
-    static VulkanImage *CreateFromHandle(VulkanDevice *pDevice, ImageCreateInfo *pCreateInfo,
-                                         VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
+    VulkanImage(VulkanDevice *pDevice, const ImageCreateInfo &createInfo, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
 
     VkDeviceMemory getMemory() { return _memory; }
     VulkanDevice *getDevice() { return _device; }

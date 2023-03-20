@@ -171,9 +171,7 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo &createInfo, Vu
     VkImageView handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateImageView(pImage->getDevice()->getHandle(), &info, nullptr, &handle));
 
-    // [TODO]
-    auto ci = createInfo;
-    *ppImageView = VulkanImageView::createFromHandle(&ci, pImage, handle);
+    *ppImageView = new VulkanImageView(createInfo, pImage, handle);
 
     return VK_SUCCESS;
 }
@@ -221,9 +219,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
         _physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property));
     VK_CHECK_RESULT(vkAllocateMemory(_handle, &allocInfo, nullptr, &memory));
 
-    // [TODO]
-    auto ci = createInfo;
-    *ppBuffer = VulkanBuffer::CreateFromHandle(this, &ci, buffer, memory);
+    *ppBuffer = new VulkanBuffer(this, createInfo, buffer, memory);
 
     // bind buffer and memory
     VK_CHECK_RESULT((*ppBuffer)->bind());
@@ -275,8 +271,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
 
     VK_CHECK_RESULT(vkAllocateMemory(_handle, &allocInfo, nullptr, &memory));
 
-    auto ci = createInfo;
-    *ppImage = VulkanImage::CreateFromHandle(this, &ci, image, memory);
+    *ppImage = new VulkanImage(this, createInfo, image, memory);
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE)
     {
