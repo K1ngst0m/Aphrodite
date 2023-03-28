@@ -9,9 +9,9 @@ template <typename TNode>
 struct Node : public Object, std::enable_shared_from_this<TNode>
 {
     Node(std::shared_ptr<TNode> parent, IdType id, ObjectType type, glm::mat4 transform = glm::mat4(1.0f)) :
-        Object(id, type),
-        parent(std::move(parent)),
-        matrix(transform)
+        Object{ id, type },
+        parent{ std::move(parent) },
+        matrix{ transform }
     {
     }
     std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f))
@@ -20,13 +20,11 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
         children.push_back(childNode);
         return childNode;
     }
-    void addChild(std::shared_ptr<TNode> childNode){
-        children.push_back(std::move(childNode));
-    }
-    std::string name;
-    std::vector<std::shared_ptr<TNode>> children;
-    std::shared_ptr<TNode> parent;
-    glm::mat4 matrix = glm::mat4(1.0f);
+    void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
+    std::string name{};
+    std::vector<std::shared_ptr<TNode>> children{};
+    std::shared_ptr<TNode> parent{};
+    glm::mat4 matrix{ 1.0f };
 };
 
 struct SceneNode : Node<SceneNode>
@@ -40,8 +38,8 @@ struct SceneNode : Node<SceneNode>
         return std::static_pointer_cast<TObject>(m_object);
     }
 
-    std::shared_ptr<Object> m_object = nullptr;
-    ObjectType m_attachType = ObjectType::UNATTACHED;
+    std::shared_ptr<Object> m_object{ nullptr };
+    ObjectType m_attachType{ ObjectType::UNATTACHED };
 };
 }  // namespace vkl
 

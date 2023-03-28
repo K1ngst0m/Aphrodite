@@ -29,10 +29,10 @@ public:
     void update(float deltaTime) override;
 
 private:
-    glm::vec3 m_color = glm::vec3(1.0f);
-    glm::vec3 m_position = glm::vec3{ 1.2f, 1.0f, 2.0f };
-    glm::vec3 m_direction = glm::vec3(-0.2f, -1.0f, -0.3f);
-    LightType m_type = LightType::DIRECTIONAL;
+    glm::vec3 m_color{ 1.0f };
+    glm::vec3 m_position{ 1.2f, 1.0f, 2.0f };
+    glm::vec3 m_direction{ -0.2f, -1.0f, -0.3f };
+    LightType m_type{ LightType::DIRECTIONAL };
 };
 }  // namespace vkl
 

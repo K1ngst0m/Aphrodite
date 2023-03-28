@@ -1,9 +1,10 @@
 #include "app.h"
 
-namespace vkl {
+namespace vkl
+{
 
-BaseApp::BaseApp(std::string sessionName)
-    : m_sessionName(std::move(sessionName)) {
+BaseApp::BaseApp(std::string sessionName) : m_sessionName(std::move(sessionName))
+{
 }
 
-} // namespace vkl
+}  // namespace vkl

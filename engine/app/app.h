@@ -3,8 +3,10 @@
 
 #include <string>
 
-namespace vkl {
-class BaseApp {
+namespace vkl
+{
+class BaseApp
+{
 public:
     BaseApp(std::string sessionName = "Untitled");
     virtual ~BaseApp() = default;
@@ -16,6 +18,6 @@ public:
 protected:
     const std::string m_sessionName;
 };
-} // namespace vkl
+}  // namespace vkl
 
-#endif // VULKANBASE_H_
+#endif  // VULKANBASE_H_

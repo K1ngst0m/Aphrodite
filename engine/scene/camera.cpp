@@ -7,9 +7,9 @@ namespace vkl
 
 struct CameraDataLayout
 {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::vec4 position;
+    glm::mat4 view{ 1.0f };
+    glm::mat4 proj{ 1.0f };
+    glm::vec4 position{ 1.0f };
 };
 
 void Camera::load()
@@ -17,7 +17,7 @@ void Camera::load()
     updateViewMatrix();
     dataSize = sizeof(CameraDataLayout);
     data = std::make_shared<CameraDataLayout>();
-    auto pData = std::static_pointer_cast<CameraDataLayout>(data);
+    auto pData{ std::static_pointer_cast<CameraDataLayout>(data) };
     pData->view = m_matrices.view;
     pData->proj = m_matrices.perspective;
     pData->position = glm::vec4(m_position, 1.0f);
@@ -29,7 +29,7 @@ void Camera::update(float deltaTime)
     updateViewMatrix();
 
     updated = true;
-    auto pData = std::static_pointer_cast<CameraDataLayout>(data);
+    auto pData{ std::static_pointer_cast<CameraDataLayout>(data) };
     pData->view = m_matrices.view;
     pData->proj = m_matrices.perspective;
     pData->position = glm::vec4(m_position, 1.0f);
@@ -61,8 +61,7 @@ void Camera::updateViewMatrix()
     glm::mat4 rotM = glm::mat4(1.0f);
     glm::mat4 transM;
 
-    rotM = glm::rotate(rotM, glm::radians(m_rotation.x * (m_flipY ? -1.0f : 1.0f)),
-                       glm::vec3(1.0f, 0.0f, 0.0f));
+    rotM = glm::rotate(rotM, glm::radians(m_rotation.x * (m_flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
     rotM = glm::rotate(rotM, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
     rotM = glm::rotate(rotM, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
 
@@ -103,18 +102,16 @@ void Camera::processMovement(float deltaTime)
             camFront.z = cos(glm::radians(m_rotation.x)) * cos(glm::radians(m_rotation.y));
             camFront = glm::normalize(camFront);
 
-            float moveSpeed = deltaTime * m_movementSpeed;
+            float moveSpeed{ deltaTime * m_movementSpeed };
 
             if(m_keys[Direction::UP])
                 m_position += camFront * moveSpeed;
             if(m_keys[Direction::DOWN])
                 m_position -= camFront * moveSpeed;
             if(m_keys[Direction::LEFT])
-                m_position -=
-                    glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                m_position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
             if(m_keys[Direction::RIGHT])
-                m_position +=
-                    glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                m_position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
         }
     }
 };

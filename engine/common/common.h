@@ -36,7 +36,7 @@
 #include <stb_image.h>
 
 namespace vkl {
-inline uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1) {
+constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1) {
     return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
 } // namespace vkl

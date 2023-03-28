@@ -11,21 +11,21 @@ namespace vkl
 
 struct WindowData
 {
-    GLFWwindow *window = nullptr;
-    uint32_t width;
-    uint32_t height;
-    bool resized = false;
-    WindowData(uint32_t w, uint32_t h) : width(w), height(h) {}
+    GLFWwindow *window{ nullptr };
+    uint32_t width{};
+    uint32_t height{};
+    bool resized{ false };
+    WindowData(uint32_t w, uint32_t h) : width{ w }, height{ h } {}
     float getAspectRatio() const { return static_cast<float>(width) / height; }
 };
 
 struct CursorData
 {
-    float lastX;
-    float lastY;
-    bool firstMouse = true;
-    bool isCursorDisable = false;
-    CursorData(float lastXin, float lastYin) : lastX(lastXin), lastY(lastYin) {}
+    float lastX{};
+    float lastY{};
+    bool firstMouse{ true };
+    bool isCursorDisable{ false };
+    CursorData(float lastXin, float lastYin) : lastX{ lastXin }, lastY{ lastYin } {}
 };
 
 using FramebufferSizeFunc = std::function<void(int width, int height)>;
@@ -63,9 +63,9 @@ public:
     void pollEvents();
 
 private:
-    bool m_isCursorVisible = false;
-    std::shared_ptr<WindowData> m_windowData = nullptr;
-    std::shared_ptr<CursorData> m_cursorData = nullptr;
+    bool m_isCursorVisible{ false };
+    std::shared_ptr<WindowData> m_windowData{ nullptr };
+    std::shared_ptr<CursorData> m_cursorData{ nullptr };
     FramebufferSizeFunc m_framebufferResizeCB;
     CursorPosFunc m_cursorPosCB;
     KeyFunc m_keyCB;

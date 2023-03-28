@@ -26,19 +26,19 @@ public:
         auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
         return instance;
     }
-    Object(IdType id, ObjectType type) : IdObject(id), m_type(type) {}
+    Object(IdType id, ObjectType type) : IdObject{ id }, m_type{ type } {}
     virtual ~Object() = default;
 
     ObjectType getType() { return m_type; }
 
 protected:
-    ObjectType m_type;
+    ObjectType m_type{};
 };
 
 class UniformObject : public Object
 {
 public:
-    UniformObject(IdType id, ObjectType type) : Object(id, type) {}
+    UniformObject(IdType id, ObjectType type) : Object{ id, type } {}
     ~UniformObject() override = default;
 
     virtual void load() = 0;
@@ -50,10 +50,10 @@ public:
     virtual uint32_t getDataSize() { return dataSize; }
 
 protected:
-    size_t dataSize = 0;
-    std::shared_ptr<void> data = nullptr;
+    size_t dataSize{ 0 };
+    std::shared_ptr<void> data{ nullptr };
 
-    bool updated = false;
+    bool updated{ false };
 };
 
 }  // namespace vkl

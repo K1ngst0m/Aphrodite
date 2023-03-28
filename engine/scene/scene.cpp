@@ -43,8 +43,8 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model
         images.push_back(newImage);
     }
 }
-void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input,
-                   uint32_t offset)
+
+void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input, uint32_t offset)
 {
     materials.clear();
     materials.resize(input.materials.size());
@@ -53,12 +53,11 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         auto &material = materials[i];
         material = std::make_shared<Material>();
         material->id = i;
-        tinygltf::Material glTFMaterial = input.materials[i];
+        tinygltf::Material glTFMaterial{ input.materials[i] };
 
         // factor
         material->emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
-        material->baseColorFactor =
-            glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
+        material->baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
         material->metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
         material->roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
@@ -77,18 +76,15 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         // common texture
         if(glTFMaterial.normalTexture.index > -1)
         {
-            material->normalTextureIndex =
-                input.textures[glTFMaterial.normalTexture.index].source + offset;
+            material->normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source + offset;
         }
         if(glTFMaterial.emissiveTexture.index > -1)
         {
-            material->emissiveTextureIndex =
-                input.textures[glTFMaterial.emissiveTexture.index].source + offset;
+            material->emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
         }
         if(glTFMaterial.occlusionTexture.index > -1)
         {
-            material->occlusionTextureIndex =
-                input.textures[glTFMaterial.occlusionTexture.index].source + offset;
+            material->occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
         }
 
         // pbr texture
@@ -100,24 +96,22 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         if(glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
         {
             material->metallicRoughnessTextureIndex =
-                input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source +
-                offset;
+                input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source + offset;
         }
     }
 }
 
-void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
-               const std::shared_ptr<SceneNode> &parent, uint32_t materialOffset)
+void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, const std::shared_ptr<SceneNode> &parent,
+               uint32_t materialOffset)
 {
-    auto node = parent->createChildNode();
+    auto node{ parent->createChildNode() };
     node->matrix = glm::mat4(1.0f);
     node->parent = parent;
     node->name = inputNode.name;
 
     if(inputNode.translation.size() == 3)
     {
-        node->matrix =
-            glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+        node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
     }
     if(inputNode.rotation.size() == 4)
     {
@@ -137,25 +131,25 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
     // In glTF this is done via accessors and buffer views
     if(inputNode.mesh > -1)
     {
-        const tinygltf::Mesh gltfMesh = input.meshes[inputNode.mesh];
-        auto mesh = Object::Create<Mesh>();
-        auto &indices = mesh->m_indices;
-        auto &vertices = mesh->m_vertices;
+        const tinygltf::Mesh gltfMesh{ input.meshes[inputNode.mesh] };
+        auto mesh{ Object::Create<Mesh>() };
+        auto &indices{ mesh->m_indices };
+        auto &vertices{ mesh->m_vertices };
         node->attachObject(mesh);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : gltfMesh.primitives)
         {
-            auto firstIndex = static_cast<int32_t>(indices.size());
-            auto vertexStart = static_cast<int32_t>(vertices.size());
-            auto indexCount = static_cast<int32_t>(0);
-            auto vertexCount = 0;
+            auto firstIndex{ static_cast<int32_t>(indices.size()) };
+            auto vertexStart{ static_cast<int32_t>(vertices.size()) };
+            auto indexCount{ static_cast<int32_t>(0) };
+            auto vertexCount{ 0 };
 
             // Vertices
             {
-                const float *positionBuffer = nullptr;
-                const float *normalsBuffer = nullptr;
-                const float *texCoordsBuffer = nullptr;
-                const float *tangentsBuffer = nullptr;
+                const float *positionBuffer{ nullptr };
+                const float *normalsBuffer{ nullptr };
+                const float *texCoordsBuffer{ nullptr };
+                const float *tangentsBuffer{ nullptr };
 
                 // Get buffer data for vertex normals
                 if(glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end())
@@ -200,13 +194,11 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
                 {
                     Vertex vert{};
                     vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
-                    vert.normal = glm::normalize(glm::vec3(
-                        normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
-                    vert.uv =
-                        texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+                    vert.normal = glm::normalize(
+                        glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
+                    vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
-                    vert.tangent =
-                        tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
+                    vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
                     vertices.push_back(vert);
                 }
             }
@@ -219,7 +211,7 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
                 indexCount += static_cast<uint32_t>(accessor.count);
 
                 // glTF supports different component types of indices
-                uint32_t idxOffset = indices.size();
+                uint32_t idxOffset{ static_cast<uint32_t>(indices.size()) };
                 switch(accessor.componentType)
                 {
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
@@ -227,8 +219,8 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
                     indices.resize(indices.size() + accessor.count * 4);
                     auto *dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
                     mesh->m_indexType = IndexType::UINT32;
-                    const auto *buf = reinterpret_cast<const uint32_t *>(
-                        &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                    const auto *buf =
+                        reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
                         dataPtr[index] = buf[index] + vertexStart;
@@ -240,8 +232,8 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
                     indices.resize(indices.size() + accessor.count * 2);
                     auto *dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
                     mesh->m_indexType = IndexType::UINT16;
-                    const auto *buf = reinterpret_cast<const uint16_t *>(
-                        &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                    const auto *buf =
+                        reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
                         dataPtr[index] = buf[index] + vertexStart;
@@ -249,13 +241,12 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input,
                     break;
                 }
                 default:
-                    std::cerr << "Index component type " << accessor.componentType << " not supported!"
-                              << std::endl;
+                    std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
                     return;
                 }
             }
 
-            Mesh::Subset subset;
+            Mesh::Subset subset{};
             subset.firstVertex = vertexStart;
             subset.vertexCount = vertexCount;
             subset.firstIndex = firstIndex;
@@ -284,7 +275,7 @@ std::unique_ptr<Scene> Scene::Create(SceneManagerType type)
     {
     case SceneManagerType::DEFAULT:
     {
-        auto instance = std::make_unique<Scene>();
+        auto instance{ std::make_unique<Scene>() };
         instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
         return instance;
     }
@@ -319,7 +310,7 @@ std::shared_ptr<Mesh> Scene::createMesh()
 }
 
 std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
-                                                 const std::shared_ptr<SceneNode> &parent)
+                                                       const std::shared_ptr<SceneNode> &parent)
 {
     auto node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
 

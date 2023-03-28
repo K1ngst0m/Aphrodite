@@ -43,7 +43,8 @@ public:
     std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
     std::shared_ptr<Camera> createCamera(float aspectRatio);
-    std::shared_ptr<SceneNode> createMeshesFromFile(const std::string &path, const std::shared_ptr<SceneNode> &parent = nullptr);
+    std::shared_ptr<SceneNode> createMeshesFromFile(const std::string &path,
+                                                    const std::shared_ptr<SceneNode> &parent = nullptr);
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
     void setMainCamera(const std::shared_ptr<Camera> &camera) { m_camera = camera; }
@@ -61,16 +62,16 @@ public:
 
 private:
     AABB m_aabb;
-    glm::vec3 m_ambient = glm::vec3(0.02f);
+    glm::vec3 m_ambient{ 0.02f };
 
-    std::shared_ptr<SceneNode> m_rootNode = nullptr;
-    std::shared_ptr<Camera> m_camera = nullptr;
+    std::shared_ptr<SceneNode> m_rootNode{ nullptr };
+    std::shared_ptr<Camera> m_camera{ nullptr };
 
-    CameraMap m_cameras;
-    LightMap m_lights;
-    MeshMap m_meshes;
-    ImageInfoList m_images;
-    MaterialList m_materials;
+    CameraMap m_cameras{};
+    LightMap m_lights{};
+    MeshMap m_meshes{};
+    ImageInfoList m_images{};
+    MaterialList m_materials{};
 };
 
 }  // namespace vkl

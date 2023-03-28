@@ -43,21 +43,21 @@ enum class AlphaMode : uint32_t
 
 struct Material
 {
-    glm::vec4 emissiveFactor = glm::vec4(1.0f);
-    glm::vec4 baseColorFactor = glm::vec4(1.0f);
-    float alphaCutoff = 1.0f;
-    float metallicFactor = 1.0f;
-    float roughnessFactor = 1.0f;
-    ResourceIndex baseColorTextureIndex = -1;
-    ResourceIndex normalTextureIndex = -1;
-    ResourceIndex occlusionTextureIndex = -1;
-    ResourceIndex emissiveTextureIndex = -1;
-    ResourceIndex metallicRoughnessTextureIndex = -1;
-    ResourceIndex specularGlossinessTextureIndex = -1;
+    glm::vec4 emissiveFactor{ 1.0f };
+    glm::vec4 baseColorFactor{ 1.0f };
+    float alphaCutoff{ 1.0f };
+    float metallicFactor{ 1.0f };
+    float roughnessFactor{ 1.0f };
+    ResourceIndex baseColorTextureIndex{ -1 };
+    ResourceIndex normalTextureIndex{ -1 };
+    ResourceIndex occlusionTextureIndex{ -1 };
+    ResourceIndex emissiveTextureIndex{ -1 };
+    ResourceIndex metallicRoughnessTextureIndex{ -1 };
+    ResourceIndex specularGlossinessTextureIndex{ -1 };
 
-    bool doubleSided = false;
-    AlphaMode alphaMode = AlphaMode::OPAQUE;
-    uint32_t id;
+    bool doubleSided{ false };
+    AlphaMode alphaMode{ AlphaMode::OPAQUE };
+    uint32_t id{ 0 };
 };
 
 enum class IndexType
@@ -66,7 +66,8 @@ enum class IndexType
     UINT32,
 };
 
-enum class PrimitiveTopology{
+enum class PrimitiveTopology
+{
     TRI_LIST,
     TRI_STRIP,
 };
@@ -76,18 +77,18 @@ struct Mesh : public Object
     Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}
     struct Subset
     {
-        ResourceIndex firstIndex = -1;
-        ResourceIndex firstVertex = -1;
-        ResourceIndex vertexCount = -1;
-        ResourceIndex indexCount = -1;
-        ResourceIndex materialIndex = -1;
-        bool hasIndices = false;
+        ResourceIndex firstIndex{ -1 };
+        ResourceIndex firstVertex{ -1 };
+        ResourceIndex vertexCount{ -1 };
+        ResourceIndex indexCount = { -1 };
+        ResourceIndex materialIndex{ -1 };
+        bool hasIndices{ false };
     };
-    std::vector<Vertex> m_vertices;
-    std::vector<uint8_t> m_indices;
-    std::vector<Subset> m_subsets;
-    IndexType m_indexType = IndexType::UINT32;
-    PrimitiveTopology m_topology = PrimitiveTopology::TRI_LIST;
+    std::vector<Vertex> m_vertices{};
+    std::vector<uint8_t> m_indices{};
+    std::vector<Subset> m_subsets{};
+    IndexType m_indexType{ IndexType::UINT32 };
+    PrimitiveTopology m_topology{ PrimitiveTopology::TRI_LIST };
 };
 }  // namespace vkl
 

@@ -25,7 +25,7 @@ enum class Direction
 class Camera : public UniformObject
 {
 public:
-    Camera() : UniformObject(Id::generateNewId<Camera>(), ObjectType::CAMERA) {}
+    Camera() : UniformObject{ Id::generateNewId<Camera>(), ObjectType::CAMERA } {}
     ~Camera() override = default;
 
     void load() override;
@@ -57,18 +57,20 @@ private:
     void updateAspectRatio(float aspect);
 
 private:
-    std::unordered_map<Direction, bool> m_keys{ { Direction::LEFT, false },
-                                              { Direction::RIGHT, false },
-                                              { Direction::UP, false },
-                                              { Direction::DOWN, false } };
+    std::unordered_map<Direction, bool> m_keys{
+        { Direction::LEFT, false },
+        { Direction::RIGHT, false },
+        { Direction::UP, false },
+        { Direction::DOWN, false }
+    };
 
-    CameraType m_cameraType = CameraType::FIRSTPERSON;
+    CameraType m_cameraType{ CameraType::FIRSTPERSON };
 
-    glm::vec3 m_rotation = glm::vec3();
-    glm::vec3 m_position = glm::vec3();
+    glm::vec3 m_rotation{};
+    glm::vec3 m_position{};
 
-    float m_rotationSpeed = 1.0f;
-    float m_movementSpeed = 1.0f;
+    float m_rotationSpeed{ 1.0f };
+    float m_movementSpeed{ 1.0f };
 
     bool m_flipY = false;
 
@@ -78,9 +80,9 @@ private:
         glm::mat4 view;
     } m_matrices;
 
-    float m_fov = 60.0f;
-    float m_znear = 96.0f;
-    float m_zfar = 0.01f;
+    float m_fov{ 60.0f };
+    float m_znear{ 96.0f };
+    float m_zfar{ 0.01f };
 };
 }  // namespace vkl
 #endif
