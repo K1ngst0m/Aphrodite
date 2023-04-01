@@ -1,9 +1,9 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include "renderer/renderer.h"
 #include "renderer/api/vulkan/device.h"
 #include "renderer/api/vulkan/shader.h"
+#include "renderer/renderer.h"
 
 namespace vkl
 {
@@ -14,7 +14,6 @@ public:
 
     ~VulkanRenderer() = default;
 
-    void init();
     void cleanup() override;
     void idleDevice() override;
     void prepareFrame();
@@ -31,13 +30,9 @@ public:
     VulkanDevice *getDevice() const { return m_device; }
     VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_fbData.framebuffers[idx]; }
     VulkanInstance *getInstance() const { return m_instance; }
-
-private:
-    void _createInstance();
-    void _createDevice();
-    void _createSurface();
-    void _setupDebugMessenger();
-    void _setupSwapChain();
+    VulkanQueue* getGraphicsQueue() const {return m_queue.graphics;}
+    VulkanQueue* getComputeQueue() const {return m_queue.compute;}
+    VulkanQueue* getTransferQueue() const {return m_queue.transfer;}
 
 private:
     void _createDefaultRenderPass();
@@ -47,16 +42,11 @@ private:
     void _allocateDefaultCommandBuffers();
 
 private:
-    // TODO
-    void getEnabledFeatures() {}
-
-private:
     VulkanInstance *m_instance = nullptr;
     VulkanDevice *m_device = nullptr;
     VulkanSwapChain *m_swapChain = nullptr;
 
     VkPhysicalDeviceFeatures m_enabledFeatures{};
-    VkDebugUtilsMessengerEXT m_debugMessenger;
     VkSurfaceKHR m_surface;
 
     VkPipelineCache m_pipelineCache = VK_NULL_HANDLE;
@@ -67,6 +57,13 @@ private:
     // default resource
 private:
     vkl::VulkanRenderPass *m_renderPass = nullptr;
+
+    struct
+    {
+        VulkanQueue *graphics = nullptr;
+        VulkanQueue *compute = graphics;
+        VulkanQueue *transfer = compute;
+    } m_queue;
 
     struct
     {

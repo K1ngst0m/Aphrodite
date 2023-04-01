@@ -9,7 +9,6 @@ namespace vkl
 
 struct SwapChainCreateInfo
 {
-    const void *pNext;
     VkSurfaceKHR surface;
     VkSurfaceFormatKHR format;
     VkBool32 tripleBuffer;
@@ -18,28 +17,24 @@ struct SwapChainCreateInfo
 class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR>
 {
 public:
-    static VulkanSwapChain *Create(VulkanDevice *device, VkSurfaceKHR surface, WindowData *data);
-    void allocateImages(WindowData *data);
-    void cleanupImages();
+    VulkanSwapChain(VulkanDevice *pDevice, VkSurfaceKHR surface, void *pWindowHandle);
 
     VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore,
                               VkFence fence = VK_NULL_HANDLE) const;
 
 public:
-    VkFormat getImageFormat() const { return _imageFormat; }
-    VkExtent2D getExtent() const { return _extent; }
-    uint32_t getImageCount() const { return _images.size(); }
-    VulkanImage *getImage(uint32_t idx) const { return _images[idx]; }
+    VkFormat getImageFormat() const { return m_surfaceFormat.format; }
+    VkExtent2D getExtent() const { return m_extent; }
+    uint32_t getImageCount() const { return m_images.size(); }
+    VulkanImage *getImage(uint32_t idx) const { return m_images[idx]; }
 
 private:
-    VulkanDevice *_device;
-    std::vector<VulkanImage *> _images;
+    VulkanDevice *m_device;
+    std::vector<VulkanImage *> m_images;
 
-    uint32_t _imageCount;
-    VkColorSpaceKHR _imageColorSpace;
-    VkFormat _imageFormat;
-    VkExtent2D _extent;
-    VkSurfaceKHR _surface;
+    VkSurfaceKHR m_surface;
+    VkSurfaceFormatKHR m_surfaceFormat;
+    VkExtent2D m_extent;
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };

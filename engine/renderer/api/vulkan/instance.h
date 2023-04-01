@@ -8,33 +8,41 @@
 namespace vkl
 {
 
+enum InstanceCreationFlagBits
+{
+    INSTANCE_CREATION_ENABLE_DEBUG = 1 << 0,
+};
+using InstanceCreationFlags = uint32_t;
+
 struct InstanceCreateInfo
 {
-    const void *pNext;
-    const VkApplicationInfo *pApplicationInfo;
-    uint32_t enabledLayerCount;
-    const char *const *ppEnabledLayerNames;
-    uint32_t enabledExtensionCount;
-    const char *const *ppEnabledExtensionNames;
+    const char* pApplicationName = "Aphrodite";
+    InstanceCreationFlags flags {};
+    std::vector<const char *> enabledLayers {};
+    std::vector<const char *> enabledExtensions {};
 };
 
 class VulkanPhysicalDevice;
 
 class VulkanInstance : public ResourceHandle<VkInstance>
 {
+private:
+    VulkanInstance()= default;
+
 public:
     static VkResult Create(const InstanceCreateInfo &createInfo, VulkanInstance **ppInstance);
 
     static void Destroy(VulkanInstance *pInstance);
 
-    ThreadPool *GetThreadPool() { return _threadPool; }
-    VulkanPhysicalDevice *getPhysicalDevices(uint32_t idx) { return _physicalDevices[idx]; }
+    ThreadPool *GetThreadPool() { return m_threadPool; }
+    VulkanPhysicalDevice *getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx]; }
 
 private:
-    std::vector<const char *> _supportedInstanceExtensions;
-    std::vector<std::string> _validationLayers;
-    std::vector<VulkanPhysicalDevice *> _physicalDevices;
-    ThreadPool *_threadPool = nullptr;
+    VkDebugUtilsMessengerEXT m_debugMessenger {};
+    std::vector<const char *> m_supportedInstanceExtensions {};
+    std::vector<std::string> m_validationLayers {};
+    std::vector<VulkanPhysicalDevice *> m_physicalDevices {};
+    ThreadPool *m_threadPool = nullptr;
 };
 }  // namespace vkl
 

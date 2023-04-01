@@ -38,21 +38,25 @@ struct EffectInfo;
 using QueueFamily = std::vector<VulkanQueue *>;
 using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool *>;
 
+enum DeviceCreateFlagBits
+{
+
+};
+using DeviceCreateFlags = uint32_t;
+
 struct DeviceCreateInfo
 {
-    const void *pNext = nullptr;
-    uint32_t enabledLayerCount;
-    const char *const *ppEnabledLayerNames;
-    uint32_t enabledExtensionCount;
-    const char *const *ppEnabledExtensionNames;
-    VkQueueFlags requestQueueTypes = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT;
+    DeviceCreateFlags flags;
+    std::vector<const char *> enabledExtensions;
+    VulkanPhysicalDevice *pPhysicalDevice = nullptr;
 };
 
 class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice>
 {
+private:
+    VulkanDevice() = default;
 public:
-    static VkResult Create(VulkanPhysicalDevice *pPhysicalDevice, const DeviceCreateInfo *pCreateInfo,
-                           VulkanDevice **ppDevice);
+    static VkResult Create(const DeviceCreateInfo &createInfo, VulkanDevice **ppDevice);
 
     static void Destroy(VulkanDevice *pDevice);
 
@@ -61,7 +65,7 @@ public:
 
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
 
-    VkResult createImageView(const ImageViewCreateInfo& createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
+    VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
 
     VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
                                 uint32_t attachmentCount, VulkanImageView **pAttachments);
@@ -76,7 +80,7 @@ public:
     VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
                               const VkAttachmentDescription &depthAttachment);
 
-    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, WindowData *data);
+    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, void *windowHandle);
 
     VkResult createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
                                VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
@@ -101,38 +105,36 @@ public:
     void destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout);
 
 public:
-    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers,
-                                    VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT);
+    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VulkanQueue *pQueue);
 
     void freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
 
-    VulkanCommandBuffer *beginSingleTimeCommands(VkQueueFlags flags = VK_QUEUE_GRAPHICS_BIT);
+    VulkanCommandBuffer *beginSingleTimeCommands(VulkanQueue * pQueue);
 
     void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer);
 
     void waitIdle();
 
 public:
-    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return _syncPrimitivesPool; }
-    VulkanShaderCache *getShaderCache() { return _shaderCache; }
+    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_syncPrimitivesPool; }
+    VulkanShaderCache *getShaderCache() { return m_shaderCache; }
     VulkanCommandPool *getCommandPoolWithQueue(VulkanQueue *queue);
     VulkanPhysicalDevice *getPhysicalDevice() const;
-    VulkanQueue *getQueueByFlags(VkQueueFlags flags, uint32_t queueIndex = 0);
+    VulkanQueue *getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex = 0);
     VkFormat getDepthFormat() const;
 
 private:
-    VulkanPhysicalDevice *_physicalDevice;
-    VkPhysicalDeviceFeatures _enabledFeatures;
+    VulkanPhysicalDevice *m_physicalDevice;
+    VkPhysicalDeviceFeatures m_enabledFeatures;
 
-    std::vector<QueueFamily> _queues = {};
+    std::vector<QueueFamily> m_queues = {};
 
-    QueueFamilyCommandPools _commandPools;
+    QueueFamilyCommandPools m_commandPools;
 
-    VulkanSyncPrimitivesPool *_syncPrimitivesPool = nullptr;
-    VulkanShaderCache *_shaderCache = nullptr;
+    VulkanSyncPrimitivesPool *m_syncPrimitivesPool = nullptr;
+    VulkanShaderCache *m_shaderCache = nullptr;
 
-    DeviceCreateInfo _createInfo;
-    VkDevice _handle = VK_NULL_HANDLE;
+    DeviceCreateInfo m_createInfo;
 };
 
 }  // namespace vkl

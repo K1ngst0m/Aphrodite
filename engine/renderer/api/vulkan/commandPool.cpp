@@ -7,7 +7,7 @@ VulkanCommandPool *VulkanCommandPool::Create(VulkanDevice *device, uint32_t queu
     VulkanCommandPool *instance = new VulkanCommandPool;
     instance->_device           = device;
     instance->_queueFamilyIndex = queueFamilyIndex;
-    instance->_handle           = pool;
+    instance->getHandle()           = pool;
     return instance;
 }
 VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBufferCount,
@@ -19,7 +19,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBuffe
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.pNext                       = nullptr;
-    allocInfo.commandPool                 = _handle;
+    allocInfo.commandPool                 = getHandle();
     allocInfo.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount          = commandBufferCount;
     auto result                           = vkAllocateCommandBuffers(_device->getHandle(), &allocInfo, pCommandBuffers);
@@ -33,7 +33,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t         commandBuffe
 void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer *pCommandBuffers) {
     // Safe guard access to internal resources across threads.
     _spinLock.Lock();
-    vkFreeCommandBuffers(_device->getHandle(), _handle, commandBufferCount, pCommandBuffers);
+    vkFreeCommandBuffers(_device->getHandle(), getHandle(), commandBufferCount, pCommandBuffers);
     _spinLock.Unlock();
 }
 uint32_t VulkanCommandPool::getQueueFamilyIndex() const {

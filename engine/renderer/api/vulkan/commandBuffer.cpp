@@ -12,7 +12,7 @@ namespace vkl
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
 {
-    m_pool->freeCommandBuffers(1, &_handle);
+    m_pool->freeCommandBuffers(1, &m_handle);
 }
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle,
@@ -21,7 +21,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffe
     m_state(CommandBufferState::INITIAL),
     m_queueFamilyType(queueFamilyIndices)
 {
-    _handle = handle;
+    m_handle = handle;
 }
 
 VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
@@ -35,7 +35,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = static_cast<VkCommandBufferUsageFlags>(flags);
-    auto result = vkBeginCommandBuffer(_handle, &beginInfo);
+    auto result = vkBeginCommandBuffer(m_handle, &beginInfo);
     if(result != VK_SUCCESS)
     {
         return result;
@@ -56,13 +56,13 @@ VkResult VulkanCommandBuffer::end()
 
     m_state = CommandBufferState::EXECUTABLE;
 
-    return vkEndCommandBuffer(_handle);
+    return vkEndCommandBuffer(m_handle);
 }
 
 VkResult VulkanCommandBuffer::reset()
 {
-    if(_handle != VK_NULL_HANDLE)
-        return vkResetCommandBuffer(_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    if(m_handle != VK_NULL_HANDLE)
+        return vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
     m_state = CommandBufferState::INITIAL;
     return VK_SUCCESS;
 }
@@ -76,61 +76,61 @@ void VulkanCommandBuffer::cmdBeginRenderPass(const RenderPassBeginInfo *pBeginIn
     renderPassBeginInfo.pClearValues = pBeginInfo->pClearValues;
     renderPassBeginInfo.framebuffer = pBeginInfo->pFramebuffer->getHandle(pBeginInfo->pRenderPass);
 
-    vkCmdBeginRenderPass(_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 void VulkanCommandBuffer::cmdNextSubpass()
 {
 }
 void VulkanCommandBuffer::cmdEndRenderPass()
 {
-    vkCmdEndRenderPass(_handle);
+    vkCmdEndRenderPass(m_handle);
 }
 void VulkanCommandBuffer::cmdSetViewport(VkViewport *viewport)
 {
-    vkCmdSetViewport(_handle, 0, 1, viewport);
+    vkCmdSetViewport(m_handle, 0, 1, viewport);
 }
 void VulkanCommandBuffer::cmdSetSissor(VkRect2D *scissor)
 {
-    vkCmdSetScissor(_handle, 0, 1, scissor);
+    vkCmdSetScissor(m_handle, 0, 1, scissor);
 }
 void VulkanCommandBuffer::cmdBindPipeline(VulkanPipeline *pPipeline)
 {
-    vkCmdBindPipeline(_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
+    vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
 void VulkanCommandBuffer::cmdBindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet,
                                                uint32_t descriptorSetCount,
                                                const VkDescriptorSet *pDescriptorSets)
 {
-    vkCmdBindDescriptorSets(_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
+    vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
                             descriptorSetCount, pDescriptorSets, 0, nullptr);
 }
 void VulkanCommandBuffer::cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                                                const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets)
 {
-    vkCmdBindVertexBuffers(_handle, firstBinding, bindingCount, &pBuffer->getHandle(), pOffsets);
+    vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), pOffsets);
 }
 void VulkanCommandBuffer::cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset,
                                               VkIndexType indexType)
 {
-    vkCmdBindIndexBuffer(_handle, pBuffer->getHandle(), offset, indexType);
+    vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
 void VulkanCommandBuffer::cmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stage,
                                            uint32_t offset, uint32_t size, const void *pValues)
 {
-    vkCmdPushConstants(_handle, layout, stage, offset, size, pValues);
+    vkCmdPushConstants(m_handle, layout, stage, offset, size, pValues);
 }
 void VulkanCommandBuffer::cmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                          uint32_t firstIndex, uint32_t vertexOffset,
                                          uint32_t firstInstance)
 {
-    vkCmdDrawIndexed(_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 void VulkanCommandBuffer::cmdCopyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer,
                                         VkDeviceSize size)
 {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
+    vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void VulkanCommandBuffer::cmdTransitionImageLayout(VulkanImage *image, VkImageLayout oldLayout,
                                                    VkImageLayout newLayout,
@@ -251,7 +251,7 @@ void VulkanCommandBuffer::cmdTransitionImageLayout(VulkanImage *image, VkImageLa
         break;
     }
 
-    vkCmdPipelineBarrier(_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                          &imageMemoryBarrier);
 }
 void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage *image)
@@ -272,7 +272,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage
     region.imageOffset = { 0, 0, 0 };
     region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
 
-    vkCmdCopyBufferToImage(_handle, buffer->getHandle(), image->getHandle(),
+    vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstImage)
@@ -295,13 +295,13 @@ void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstIm
     copyRegion.extent.height = srcImage->getHeight();
     copyRegion.extent.depth = 1;
 
-    vkCmdCopyImage(_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+    vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                    dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
 void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                   uint32_t firstInstance)
 {
-    vkCmdDraw(_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+    vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 VulkanCommandPool *VulkanCommandBuffer::getPool()
 {
@@ -320,7 +320,7 @@ void VulkanCommandBuffer::cmdImageMemoryBarrier(
     imageMemoryBarrier.image = image->getHandle();
     imageMemoryBarrier.subresourceRange = subresourceRange;
 
-    vkCmdPipelineBarrier(_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                          &imageMemoryBarrier);
 }
 void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout,
@@ -328,7 +328,7 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcI
                                        uint32_t regionCount, const VkImageBlit *pRegions,
                                        VkFilter filter)
 {
-    vkCmdBlitImage(_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout,
+    vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout,
                    1, pRegions, filter);
 }
 uint32_t VulkanCommandBuffer::getQueueFamilyIndices()

@@ -78,7 +78,7 @@ void Window::setKeyCallback(const KeyFunc &cbFunc)
 void Window::setCursorVisibility(bool flag)
 {
     glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-    m_isCursorVisible = flag;
+    m_cursorData->isCursorVisible = flag;
 }
 
 void Window::close()

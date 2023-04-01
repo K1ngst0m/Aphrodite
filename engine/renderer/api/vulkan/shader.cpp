@@ -39,4 +39,10 @@ VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path)
     }
     return shaderModuleCaches[path];
 }
+VulkanShaderModule::VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
+    _entrypoint(std::move(entrypoint)),
+    _code(std::move(code))
+{
+    getHandle() = shaderModule;
+}
 }  // namespace vkl

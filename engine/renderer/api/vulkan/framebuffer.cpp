@@ -16,9 +16,9 @@ VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreate
 
     // Create a VulkanFramebuffer class instance.
     VulkanFramebuffer *framebuffer = new VulkanFramebuffer;
-    framebuffer->_device          = device;
-    memcpy(&framebuffer->_createInfo, pCreateInfo, sizeof(FramebufferCreateInfo));
-    framebuffer->_attachments = std::move(attachments);
+    framebuffer->m_device          = device;
+    memcpy(&framebuffer->getCreateInfo(), pCreateInfo, sizeof(FramebufferCreateInfo));
+    framebuffer->m_attachments = std::move(attachments);
 
     // Copy object address to parameter.
     *ppFramebuffer = framebuffer;
@@ -28,34 +28,33 @@ VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreate
 }
 
 VkExtent2D VulkanFramebuffer::GetExtents() {
-    return {_createInfo.width, _createInfo.height};
+    return {getCreateInfo().width, getCreateInfo().height};
 }
 
 VulkanImageView *VulkanFramebuffer::GetAttachment(uint32_t attachmentIndex) {
-    if (attachmentIndex < _attachments.size())
-        return _attachments[attachmentIndex];
+    if (attachmentIndex < m_attachments.size())
+        return m_attachments[attachmentIndex];
 
     return VK_NULL_HANDLE;
 }
 
 uint32_t VulkanFramebuffer::GetAttachmentCount() const {
-    return static_cast<uint32_t>(_attachments.size());
+    return static_cast<uint32_t>(m_attachments.size());
 }
 
 VkFramebuffer VulkanFramebuffer::getHandle(VulkanRenderPass *pRenderPass) {
     // Make thread-safe.
-    _spinLock.Lock();
+    m_spinLock.Lock();
 
     // See if handle already exists for given render pass.
     VkFramebuffer handle = VK_NULL_HANDLE;
-    auto          itr    = _cache.find(pRenderPass);
-    if (itr != _cache.cend()) {
+    if (auto itr = m_cache.find(pRenderPass);itr != m_cache.cend()) {
         handle = itr->second;
     } else {
         // Get the native Vulkan ImageView handles from the attachment list.
-        std::vector<VkImageView> attachments(_attachments.size());
-        for (auto i = 0U; i < _attachments.size(); ++i)
-            attachments[i] = _attachments[i]->getHandle();
+        std::vector<VkImageView> attachments(m_attachments.size());
+        for (auto i = 0U; i < m_attachments.size(); ++i)
+            attachments[i] = m_attachments[i]->getHandle();
 
         // Create the Vulkan framebuffer.
         VkFramebufferCreateInfo createInfo = {};
@@ -63,24 +62,24 @@ VkFramebuffer VulkanFramebuffer::getHandle(VulkanRenderPass *pRenderPass) {
         createInfo.renderPass              = pRenderPass->getHandle();
         createInfo.attachmentCount         = static_cast<uint32_t>(attachments.size());
         createInfo.pAttachments            = attachments.data();
-        createInfo.width                   = _createInfo.width;
-        createInfo.height                  = _createInfo.height;
-        createInfo.layers                  = _createInfo.layers;
+        createInfo.width                   = getCreateInfo().width;
+        createInfo.height                  = getCreateInfo().height;
+        createInfo.layers                  = getCreateInfo().layers;
 
-        auto result = vkCreateFramebuffer(_device->getHandle(), &createInfo, nullptr, &handle);
+        auto result = vkCreateFramebuffer(m_device->getHandle(), &createInfo, nullptr, &handle);
         if (result == VK_SUCCESS)
-            _cache.emplace(pRenderPass, handle);
+            m_cache.emplace(pRenderPass, handle);
     }
 
     // Unlock access.
-    _spinLock.Unlock();
+    m_spinLock.Unlock();
 
     return handle;
 }
 
 VulkanFramebuffer::~VulkanFramebuffer() {
-    for (auto &[_, handle] : _cache) {
-        vkDestroyFramebuffer(_device->getHandle(), handle, nullptr);
+    for (auto &[_, handle] : m_cache) {
+        vkDestroyFramebuffer(m_device->getHandle(), handle, nullptr);
     }
 }
 } // namespace vkl

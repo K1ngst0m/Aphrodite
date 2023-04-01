@@ -15,16 +15,16 @@ public:
 
     ~VulkanDescriptorSetLayout();
 
-    std::vector<VkDescriptorSetLayoutBinding> getBindings() { return _bindings; }
-    VulkanDevice *getDevice() { return _device; }
+    std::vector<VkDescriptorSetLayoutBinding> getBindings() { return m_bindings; }
+    VulkanDevice *getDevice() { return m_device; }
 
     VkDescriptorSet allocateSet();
     VkResult freeSet(VkDescriptorSet set);
 
 private:
-    VulkanDevice *_device;
-    std::vector<VkDescriptorSetLayoutBinding> _bindings;
-    VulkanDescriptorPool *_pool;
+    VulkanDevice *m_device;
+    std::vector<VkDescriptorSetLayoutBinding> m_bindings;
+    VulkanDescriptorPool *m_pool;
 };
 
 }  // namespace vkl

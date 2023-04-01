@@ -616,58 +616,26 @@ enum AccessFlagBits
 };
 using AccessFlags = uint32_t;
 
-struct MemberInfo
-{
-    BaseType baseType;
-    uint32_t offset;
-    uint32_t size;
-    uint32_t vecSize;
-    uint32_t columns;
-    uint32_t arraySize;
-    char name[MAX_DESCRIPTION_SIZE];
-    const MemberInfo *pNext;
-    const MemberInfo *pMembers;
-};
-
-struct PipelineResource
-{
-    ShaderStageFlags stages;
-    PipelineResourceType resourceType;
-    BaseType baseType;
-    AccessFlags access;
-    uint32_t set;
-    uint32_t binding;
-    uint32_t location;
-    uint32_t inputAttachmentIndex;
-    uint32_t vecSize;
-    uint32_t columns;
-    uint32_t arraySize;
-    uint32_t offset;
-    uint32_t size;
-    char name[MAX_DESCRIPTION_SIZE];
-    const MemberInfo *pMembers;
-};
-
 template <typename T_Handle>
 class ResourceHandle
 {
 public:
-    T_Handle &getHandle() { return _handle; }
+    T_Handle &getHandle() { return m_handle; }
 
-    const T_Handle &getHandle() const { return _handle; }
+    const T_Handle &getHandle() const { return m_handle; }
 
 protected:
-    T_Handle _handle = nullptr;
+    T_Handle m_handle = nullptr;
 };
 
 template <typename T_CreateInfo>
 class Resource
 {
 public:
-    T_CreateInfo &getCreateInfo() { return _createInfo; }
+    T_CreateInfo &getCreateInfo() { return m_createInfo; }
 
 protected:
-    T_CreateInfo _createInfo;
+    T_CreateInfo m_createInfo;
 };
 
 struct BufferCreateInfo
@@ -682,8 +650,8 @@ template <typename T>
 class Buffer : public Resource<BufferCreateInfo>, public ResourceHandle<T>
 {
 public:
-    uint32_t getSize() const { return _createInfo.size; }
-    uint32_t getOffset() const { return _createInfo.alignment; }
+    uint32_t getSize() const { return m_createInfo.size; }
+    uint32_t getOffset() const { return m_createInfo.alignment; }
 };
 
 struct ImageCreateInfo
@@ -706,12 +674,12 @@ template<typename THandle>
 class Image : public Resource<ImageCreateInfo>, public ResourceHandle<THandle>
 {
 public:
-    Extent3D getExtent() const { return _createInfo.extent; }
-    uint32_t getWidth() const { return _createInfo.extent.width; }
-    uint32_t getHeight() const { return _createInfo.extent.height; }
-    uint32_t getMipLevels() const { return _createInfo.mipLevels; }
-    uint32_t getLayerCount() const { return _createInfo.layerCount; }
-    uint32_t getOffset() const { return _createInfo.alignment; }
+    Extent3D getExtent() const { return m_createInfo.extent; }
+    uint32_t getWidth() const { return m_createInfo.extent.width; }
+    uint32_t getHeight() const { return m_createInfo.extent.height; }
+    uint32_t getMipLevels() const { return m_createInfo.mipLevels; }
+    uint32_t getLayerCount() const { return m_createInfo.layerCount; }
+    uint32_t getOffset() const { return m_createInfo.alignment; }
 };
 
 struct ImageViewCreateInfo
@@ -727,11 +695,11 @@ template <typename THandle>
 class ImageView : public Resource<ImageViewCreateInfo>, public ResourceHandle<THandle>
 {
 public:
-    ImageViewType getImageViewType() const { return _createInfo.viewType; }
-    Format getFormat() const { return _createInfo.format; }
-    ComponentMapping getComponentMapping() const { return _createInfo.components; }
+    ImageViewType getImageViewType() const { return m_createInfo.viewType; }
+    Format getFormat() const { return m_createInfo.format; }
+    ComponentMapping getComponentMapping() const { return m_createInfo.components; }
 
-    const ImageSubresourceRange &GetSubresourceRange() const { return _createInfo.subresourceRange; }
+    const ImageSubresourceRange &GetSubresourceRange() const { return m_createInfo.subresourceRange; }
 };
 
 struct FramebufferCreateInfo
@@ -744,9 +712,9 @@ struct FramebufferCreateInfo
 class FrameBuffer : public Resource<FramebufferCreateInfo>
 {
 public:
-    uint32_t getWidth() const { return _createInfo.width; }
-    uint32_t getHeight() const { return _createInfo.height; }
-    uint32_t getLayerCount() const { return _createInfo.layers; }
+    uint32_t getWidth() const { return m_createInfo.width; }
+    uint32_t getHeight() const { return m_createInfo.height; }
+    uint32_t getLayerCount() const { return m_createInfo.layers; }
 };
 
 }  // namespace vkl

@@ -39,13 +39,13 @@ VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice,
                                                        VkPipeline handle)
 {
     auto *instance = new VulkanPipeline();
-    instance->_handle = handle;
-    instance->_device = pDevice;
-    instance->_layout = layout;
-    instance->_setLayouts = createInfo.setLayouts;
-    instance->_constants = createInfo.constants;
-    instance->_shaderMapList = createInfo.shaderMapList;
-    instance->_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    instance->getHandle() = handle;
+    instance->m_device = pDevice;
+    instance->m_layout = layout;
+    instance->m_setLayouts = createInfo.setLayouts;
+    instance->m_constants = createInfo.constants;
+    instance->m_shaderMapList = createInfo.shaderMapList;
+    instance->m_bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     return instance;
 }
 
@@ -53,13 +53,13 @@ VulkanPipeline *VulkanPipeline::CreateComputePipeline(VulkanDevice *pDevice,
                                                       const ComputePipelineCreateInfo &createInfo, VkPipelineLayout layout, VkPipeline handle)
 {
     auto *instance = new VulkanPipeline();
-    instance->_handle = handle;
-    instance->_device = pDevice;
-    instance->_layout = layout;
-    instance->_setLayouts = createInfo.setLayouts;
-    instance->_constants = createInfo.constants;
-    instance->_shaderMapList = createInfo.shaderMapList;
-    instance->_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+    instance->getHandle() = handle;
+    instance->m_device = pDevice;
+    instance->m_layout = layout;
+    instance->m_setLayouts = createInfo.setLayouts;
+    instance->m_constants = createInfo.constants;
+    instance->m_shaderMapList = createInfo.shaderMapList;
+    instance->m_bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
     return instance;
 }
 

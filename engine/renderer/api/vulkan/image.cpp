@@ -6,12 +6,12 @@ namespace vkl {
 VulkanImage::VulkanImage(VulkanDevice *pDevice, const ImageCreateInfo &createInfo, VkImage image, VkDeviceMemory memory)
     : _device(pDevice), _memory(memory)
 {
-    _handle = image;
-    _createInfo = createInfo;
+    getHandle() = image;
+    getCreateInfo() = createInfo;
 }
 
 VkResult VulkanImage::bind(VkDeviceSize offset) const
 {
-    return vkBindImageMemory(_device->getHandle(), _handle, _memory, offset);
+    return vkBindImageMemory(_device->getHandle(), getHandle(), _memory, offset);
 }
 }  // namespace vkl

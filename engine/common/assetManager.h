@@ -12,11 +12,11 @@ enum class ShaderAssetType {
 
 class AssetManager {
 public:
-    static const std::filesystem::path &GetAssertDir();
-    static const std::filesystem::path &GetShaderDir(ShaderAssetType type);
-    static const std::filesystem::path &GetTextureDir();
-    static const std::filesystem::path &GetModelDir();
-    static const std::filesystem::path &GetFontDir();
+    static std::filesystem::path GetAssertDir();
+    static std::filesystem::path GetShaderDir(ShaderAssetType type);
+    static std::filesystem::path GetTextureDir();
+    static std::filesystem::path GetModelDir();
+    static std::filesystem::path GetFontDir();
 };
 } // namespace vkl
 

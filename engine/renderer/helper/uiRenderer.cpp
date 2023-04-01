@@ -21,7 +21,7 @@
 
 namespace vkl {
 VulkanUIRenderer::VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData)
-    : UIRenderer(windowData), _renderer(renderer), _device(renderer->getDevice()) {
+    : UIRenderer(windowData), m_renderer(renderer), m_device(renderer->getDevice()) {
     // Init ImGui
     ImGui::CreateContext();
     // Color scheme
@@ -44,7 +44,7 @@ VulkanUIRenderer::VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& render
     style.Colors[ImGuiCol_ButtonActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
     // Dimensions
     ImGuiIO &io        = ImGui::GetIO();
-    io.FontGlobalScale = _fontData.scale;
+    io.FontGlobalScale = m_fontData.scale;
 }
 
 VulkanUIRenderer::~VulkanUIRenderer() {
@@ -60,13 +60,13 @@ void VulkanUIRenderer::initUI() {
     unsigned char    *fontData;
     int               texWidth, texHeight;
     const std::string filename = AssetManager::GetFontDir() / "Roboto-Medium.ttf";
-    io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * _fontData.scale);
+    io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_fontData.scale);
     io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
     VkDeviceSize uploadSize = texWidth * texHeight * 4 * sizeof(char);
 
     // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling above)
     ImGuiStyle &style = ImGui::GetStyle();
-    style.ScaleAllSizes(_fontData.scale);
+    style.ScaleAllSizes(m_fontData.scale);
 
     // Create target image for copy
     {
@@ -82,7 +82,7 @@ void VulkanUIRenderer::initUI() {
         imageInfo.tiling        = IMAGE_TILING_OPTIMAL;
         imageInfo.usage         = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT;
         imageInfo.property      = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        VK_CHECK_RESULT(_device->createImage(imageInfo, &_fontData.image));
+        VK_CHECK_RESULT(m_device->createImage(imageInfo, &m_fontData.image));
     }
 
     // Image view
@@ -92,7 +92,7 @@ void VulkanUIRenderer::initUI() {
         viewInfo.format                      = FORMAT_R8G8B8A8_UNORM;
         viewInfo.subresourceRange.levelCount = 1;
         viewInfo.subresourceRange.layerCount = 1;
-        VK_CHECK_RESULT(_device->createImageView(viewInfo, &_fontData.view, _fontData.image));
+        VK_CHECK_RESULT(m_device->createImageView(viewInfo, &m_fontData.view, m_fontData.image));
     }
 
     // font data upload
@@ -102,18 +102,18 @@ void VulkanUIRenderer::initUI() {
         createInfo.usage    = BUFFER_USAGE_TRANSFER_SRC_BIT;
         createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
         createInfo.size     = uploadSize;
-        _device->createBuffer(createInfo, &stagingBuffer);
+        m_device->createBuffer(createInfo, &stagingBuffer);
         stagingBuffer->map();
         stagingBuffer->copyTo(fontData, uploadSize);
         stagingBuffer->unmap();
 
         // Copy buffer data to font image
-        auto *copyCmd = _device->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-        copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyCmd->cmdCopyBufferToImage(stagingBuffer, _fontData.image);
-        copyCmd->cmdTransitionImageLayout(_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        _device->endSingleTimeCommands(copyCmd);
-        _device->destroyBuffer(stagingBuffer);
+        auto *copyCmd = m_device->beginSingleTimeCommands(m_renderer->getTransferQueue());
+        copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        copyCmd->cmdCopyBufferToImage(stagingBuffer, m_fontData.image);
+        copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        m_device->endSingleTimeCommands(copyCmd);
+        m_device->destroyBuffer(stagingBuffer);
     }
 
     // Font texture Sampler
@@ -126,7 +126,7 @@ void VulkanUIRenderer::initUI() {
         samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(_device->getHandle(), &samplerInfo, nullptr, &_fontData.sampler));
+        VK_CHECK_RESULT(vkCreateSampler(m_device->getHandle(), &samplerInfo, nullptr, &m_fontData.sampler));
     }
 
 }
@@ -137,15 +137,15 @@ void VulkanUIRenderer::resize(uint32_t width, uint32_t height) {
 }
 
 void VulkanUIRenderer::cleanup() {
-    _device->destroyBuffer(_vertexBuffer);
-    _device->destroyBuffer(_indexBuffer);
-    _device->destroyImageView(_fontData.view);
-    _device->destroyImage(_fontData.image);
-    vkDestroySampler(_device->getHandle(), _fontData.sampler, nullptr);
+    m_device->destroyBuffer(m_vertexBuffer);
+    m_device->destroyBuffer(m_indexBuffer);
+    m_device->destroyImageView(m_fontData.view);
+    m_device->destroyImage(m_fontData.image);
+    vkDestroySampler(m_device->getHandle(), m_fontData.sampler, nullptr);
 
-    _device->destroyPipeline(_pipeline);
+    m_device->destroyPipeline(m_pipeline);
 
-    vkDestroyDescriptorPool(_device->getHandle(), _descriptorPool, nullptr);
+    vkDestroyDescriptorPool(m_device->getHandle(), m_descriptorPool, nullptr);
 }
 
 bool VulkanUIRenderer::update(float deltaTime) {
@@ -166,55 +166,55 @@ bool VulkanUIRenderer::update(float deltaTime) {
     }
 
     // Vertex buffer
-    if (_vertexBuffer == nullptr){
+    if (m_vertexBuffer == nullptr){
         BufferCreateInfo createInfo{
             .size     = vertexBufferSize,
             .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_vertexBuffer));
+        VK_CHECK_RESULT(m_device->createBuffer(createInfo, &m_vertexBuffer));
     }
-    if ((_vertexBuffer->getHandle() == VK_NULL_HANDLE) || (_vertexCount != imDrawData->TotalVtxCount)) {
-        _vertexBuffer->unmap();
-        _device->destroyBuffer(_vertexBuffer);
+    if ((m_vertexBuffer->getHandle() == VK_NULL_HANDLE) || (m_vertexCount != imDrawData->TotalVtxCount)) {
+        m_vertexBuffer->unmap();
+        m_device->destroyBuffer(m_vertexBuffer);
         BufferCreateInfo createInfo{
             .size     = vertexBufferSize,
             .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_vertexBuffer));
-        _vertexCount = imDrawData->TotalVtxCount;
-        _vertexBuffer->unmap();
-        _vertexBuffer->map();
+        VK_CHECK_RESULT(m_device->createBuffer(createInfo, &m_vertexBuffer));
+        m_vertexCount = imDrawData->TotalVtxCount;
+        m_vertexBuffer->unmap();
+        m_vertexBuffer->map();
         updateCmdBuffers = true;
     }
 
     // Index buffer
-    if (_indexBuffer == nullptr){
+    if (m_indexBuffer == nullptr){
         BufferCreateInfo createInfo{
             .size     = indexBufferSize,
             .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_indexBuffer));
+        VK_CHECK_RESULT(m_device->createBuffer(createInfo, &m_indexBuffer));
     }
-    if ((_indexBuffer->getHandle() == VK_NULL_HANDLE) || (_indexCount < imDrawData->TotalIdxCount)) {
-        _indexBuffer->unmap();
-        _device->destroyBuffer(_indexBuffer);
+    if ((m_indexBuffer->getHandle() == VK_NULL_HANDLE) || (m_indexCount < imDrawData->TotalIdxCount)) {
+        m_indexBuffer->unmap();
+        m_device->destroyBuffer(m_indexBuffer);
         BufferCreateInfo createInfo{
             .size     = indexBufferSize,
             .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
             .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        VK_CHECK_RESULT(_device->createBuffer(createInfo, &_indexBuffer));
-        _indexCount = imDrawData->TotalIdxCount;
-        _indexBuffer->map();
+        VK_CHECK_RESULT(m_device->createBuffer(createInfo, &m_indexBuffer));
+        m_indexCount = imDrawData->TotalIdxCount;
+        m_indexBuffer->map();
         updateCmdBuffers = true;
     }
 
     // Upload data
-    ImDrawVert *vtxDst = (ImDrawVert *)_vertexBuffer->getMapped();
-    ImDrawIdx  *idxDst = (ImDrawIdx *)_indexBuffer->getMapped();
+    ImDrawVert *vtxDst = (ImDrawVert *)m_vertexBuffer->getMapped();
+    ImDrawIdx  *idxDst = (ImDrawIdx *)m_indexBuffer->getMapped();
 
     for (int n = 0; n < imDrawData->CmdListsCount; n++) {
         const ImDrawList *cmd_list = imDrawData->CmdLists[n];
@@ -225,8 +225,8 @@ bool VulkanUIRenderer::update(float deltaTime) {
     }
 
     // Flush to make writes visible to GPU
-    _vertexBuffer->flush();
-    _indexBuffer->flush();
+    m_vertexBuffer->flush();
+    m_indexBuffer->flush();
 
     return updateCmdBuffers;
 }
@@ -286,15 +286,15 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
             vkl::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
         VkDescriptorSetLayoutCreateInfo layoutCreateInfo = vkl::init::descriptorSetLayoutCreateInfo(bindings);
-        VK_CHECK_RESULT(_device->createDescriptorSetLayout(&layoutCreateInfo, &pLayout));
+        VK_CHECK_RESULT(m_device->createDescriptorSetLayout(&layoutCreateInfo, &pLayout));
 
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
         pipelineCI.setLayouts.push_back(pLayout);
         pipelineCI.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-        pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
-        pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = _device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
 
-        VK_CHECK_RESULT(_device->createGraphicsPipeline(pipelineCI, renderPass, &_pipeline));
+        VK_CHECK_RESULT(m_device->createGraphicsPipeline(pipelineCI, renderPass, &m_pipeline));
     }
 
     // Descriptor pool
@@ -303,18 +303,18 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
             vkl::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
 
         VkDescriptorPoolCreateInfo descriptorPoolInfo = vkl::init::descriptorPoolCreateInfo(poolSizes, 2);
-        VK_CHECK_RESULT(vkCreateDescriptorPool(_device->getHandle(), &descriptorPoolInfo, nullptr, &_descriptorPool));
+        VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getHandle(), &descriptorPoolInfo, nullptr, &m_descriptorPool));
 
         // Descriptor set
-        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(_descriptorPool, &_pipeline->getDescriptorSetLayout(0)->getHandle(), 1);
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(_device->getHandle(), &allocInfo, &_descriptorSet));
+        VkDescriptorSetAllocateInfo allocInfo = vkl::init::descriptorSetAllocateInfo(m_descriptorPool, &m_pipeline->getDescriptorSetLayout(0)->getHandle(), 1);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->getHandle(), &allocInfo, &m_descriptorSet));
         VkDescriptorImageInfo fontDescriptor = vkl::init::descriptorImageInfo(
-            _fontData.sampler,
-            _fontData.view->getHandle(),
+            m_fontData.sampler,
+            m_fontData.view->getHandle(),
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-            vkl::init::writeDescriptorSet(_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-        vkUpdateDescriptorSets(_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+            vkl::init::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+        vkUpdateDescriptorSets(m_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
     }
 }
 
@@ -324,7 +324,7 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
     if (!updated){
         ImGuiIO& io = ImGui::GetIO();
 
-        io.DisplaySize = ImVec2((float)_renderer->getWindowWidth(), (float)_renderer->getWindowHeight());
+        io.DisplaySize = ImVec2((float)m_renderer->getWindowWidth(), (float)m_renderer->getWindowHeight());
 
         ImGui::NewFrame();
 
@@ -349,15 +349,15 @@ void VulkanUIRenderer::drawUI(VulkanCommandBuffer *command) {
 
     ImGuiIO &io = ImGui::GetIO();
 
-    command->cmdBindPipeline(_pipeline);
-    command->cmdBindDescriptorSet(_pipeline, 0, 1, &_descriptorSet);
-    _pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-    _pushConstBlock.translate = glm::vec2(-1.0f);
-    command->cmdPushConstants(_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(_pushConstBlock), &_pushConstBlock);
+    command->cmdBindPipeline(m_pipeline);
+    command->cmdBindDescriptorSet(m_pipeline, 0, 1, &m_descriptorSet);
+    m_pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
+    m_pushConstBlock.translate = glm::vec2(-1.0f);
+    command->cmdPushConstants(m_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(m_pushConstBlock), &m_pushConstBlock);
 
     VkDeviceSize offsets[1] = {0};
-    command->cmdBindVertexBuffers(0, 1, _vertexBuffer, offsets);
-    command->cmdBindIndexBuffers(_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    command->cmdBindVertexBuffers(0, 1, m_vertexBuffer, offsets);
+    command->cmdBindIndexBuffers(m_indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
     for (int32_t i = 0; i < imDrawData->CmdListsCount; i++) {
         const ImDrawList *cmd_list = imDrawData->CmdLists[i];

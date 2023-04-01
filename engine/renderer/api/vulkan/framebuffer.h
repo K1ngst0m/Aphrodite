@@ -21,10 +21,10 @@ public:
     VulkanImageView *GetAttachment(uint32_t attachmentIndex);
 
 private:
-    VulkanDevice                                         *_device = nullptr;
-    std::vector<VulkanImageView *>                        _attachments;
-    std::unordered_map<VulkanRenderPass *, VkFramebuffer> _cache;
-    SpinLock                                              _spinLock;
+    VulkanDevice                                         *m_device = nullptr;
+    std::vector<VulkanImageView *>                        m_attachments;
+    std::unordered_map<VulkanRenderPass *, VkFramebuffer> m_cache;
+    SpinLock                                              m_spinLock;
 };
 } // namespace vkl
 

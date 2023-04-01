@@ -26,7 +26,49 @@ namespace vkl
 
 namespace
 {
-GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height, void *data, uint32_t dataSize,
+VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const void *data, VkDeviceSize size,
+                           VkBufferUsageFlags usage)
+{
+    VulkanBuffer *buffer = nullptr;
+    // setup vertex buffer
+    {
+        VkDeviceSize bufferSize = size;
+        // using staging buffer
+        vkl::VulkanBuffer *stagingBuffer;
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
+            createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            pDevice->createBuffer(createInfo, &stagingBuffer);
+        }
+
+        stagingBuffer->map();
+        stagingBuffer->copyTo(data, static_cast<VkDeviceSize>(bufferSize));
+        stagingBuffer->unmap();
+
+        {
+            BufferCreateInfo createInfo{};
+            createInfo.size = bufferSize;
+            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            createInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            pDevice->createBuffer(createInfo, &buffer);
+        }
+
+        auto cmd = pDevice->beginSingleTimeCommands(pQueue);
+        cmd->cmdCopyBuffer(stagingBuffer, buffer, bufferSize);
+        pDevice->endSingleTimeCommands(cmd);
+
+        pDevice->destroyBuffer(stagingBuffer);
+    }
+    return buffer;
+}
+}  // namespace
+
+
+namespace
+{
+GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue * pQueue, uint32_t width, uint32_t height, void *data, uint32_t dataSize,
                          bool genMipmap = false)
 {
     uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
@@ -58,14 +100,14 @@ GpuTexture createTexture(VulkanDevice *pDevice, uint32_t width, uint32_t height,
 
         pDevice->createImage(createInfo, &texture.image);
 
-        auto *cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        auto *cmd = pDevice->beginSingleTimeCommands(pQueue);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
         cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
         cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         pDevice->endSingleTimeCommands(cmd);
 
-        cmd = pDevice->beginSingleTimeCommands(VK_QUEUE_GRAPHICS_BIT);
+        cmd = pDevice->beginSingleTimeCommands(pQueue);
 
         // generate mipmap chains
         for(int32_t i = 1; i < texMipLevels; i++)
@@ -304,7 +346,7 @@ void VulkanSceneRenderer::_initRenderData()
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
-    for(auto &renderable : m_renderList)
+    for(auto &renderData : m_renderList)
     {
         {
             ObjectInfo objInfo{};
@@ -313,16 +355,16 @@ void VulkanSceneRenderer::_initRenderData()
                 .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
             };
-            VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderable->m_objectUB, &objInfo));
-            renderable->m_objectUB->setupDescriptor();
+            VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderData->m_objectUB, &objInfo));
+            renderData->m_objectUB->setupDescriptor();
         }
 
         {
-            renderable->m_objectSet = m_setLayout.pObject->allocateSet();
+            renderData->m_objectSet = m_setLayout.pObject->allocateSet();
 
             std::vector<VkWriteDescriptorSet> descriptorWrites{ vkl::init::writeDescriptorSet(
-                renderable->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                &renderable->m_objectUB->getBufferInfo()) };
+                renderData->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
+                &renderData->m_objectUB->getBufferInfo()) };
 
             vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
                                    descriptorWrites.data(), 0, nullptr);
@@ -454,7 +496,7 @@ void VulkanSceneRenderer::_loadScene()
         uint32_t width = image->width;
         uint32_t height = image->height;
 
-        auto texture = createTexture(m_pDevice, width, height, imageData, imageDataSize, true);
+        auto texture = createTexture(m_pDevice, m_pRenderer->getGraphicsQueue(), width, height, imageData, imageDataSize, true);
         m_textures.push_back(texture);
     }
 
@@ -472,6 +514,19 @@ void VulkanSceneRenderer::_loadScene()
         case ObjectType::MESH:
         {
             auto renderable = std::make_shared<VulkanRenderData>(m_pDevice, node);
+            {
+                auto mesh = node->getObject<Mesh>();
+                auto &vertices = mesh->m_vertices;
+                auto &indices = mesh->m_indices;
+                // load buffer
+                assert(!vertices.empty());
+                renderable->m_vertexBuffer =
+                    createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), vertices.data(), sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
+                if(!indices.empty())
+                {
+                    renderable->m_indexBuffer = createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), indices.data(), sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
+                }
+            }
             m_renderList.push_back(renderable);
         }
         break;
@@ -780,7 +835,7 @@ void VulkanSceneRenderer::_initForward()
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
         }
 
-        VulkanCommandBuffer *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
+        VulkanCommandBuffer *cmd = m_pDevice->beginSingleTimeCommands(m_pRenderer->getGraphicsQueue());
         cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         m_pDevice->endSingleTimeCommands(cmd);

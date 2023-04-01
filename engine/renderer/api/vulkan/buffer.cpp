@@ -6,8 +6,8 @@ namespace vkl {
 VulkanBuffer::VulkanBuffer(VulkanDevice *pDevice, const BufferCreateInfo &createInfo, VkBuffer buffer, VkDeviceMemory memory)
     :pDevice(pDevice), memory(memory)
 {
-    _handle = buffer;
-    _createInfo = createInfo;
+    getHandle() = buffer;
+    getCreateInfo() = createInfo;
 }
 
 VkResult VulkanBuffer::map(VkDeviceSize size, VkDeviceSize offset) {
@@ -23,12 +23,12 @@ void VulkanBuffer::unmap() {
 }
 
 VkResult VulkanBuffer::bind(VkDeviceSize offset) const {
-    return vkBindBufferMemory(pDevice->getHandle(), _handle, memory, offset);
+    return vkBindBufferMemory(pDevice->getHandle(), getHandle(), memory, offset);
 }
 
 void VulkanBuffer::setupDescriptor(VkDeviceSize size, VkDeviceSize offset) {
     descriptorInfo.offset = offset;
-    descriptorInfo.buffer = _handle;
+    descriptorInfo.buffer = getHandle();
     descriptorInfo.range  = size;
 }
 

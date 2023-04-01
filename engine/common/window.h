@@ -25,6 +25,7 @@ struct CursorData
     float lastY{};
     bool firstMouse{ true };
     bool isCursorDisable{ false };
+    bool isCursorVisible{ false };
     CursorData(float lastXin, float lastYin) : lastX{ lastXin }, lastY{ lastYin } {}
 };
 
@@ -42,7 +43,7 @@ public:
 
 public:
     std::shared_ptr<CursorData> getMouseData() { return m_cursorData; }
-    void toggleCurosrVisibility() { setCursorVisibility(!m_isCursorVisible); }
+    void toggleCurosrVisibility() { setCursorVisibility(!m_cursorData->isCursorVisible); }
     float getCursorYpos() { return m_cursorData->lastY; }
     float getCursorXpos() { return m_cursorData->lastX; }
     float getAspectRatio() { return m_windowData->getAspectRatio(); }
@@ -63,9 +64,9 @@ public:
     void pollEvents();
 
 private:
-    bool m_isCursorVisible{ false };
     std::shared_ptr<WindowData> m_windowData{ nullptr };
     std::shared_ptr<CursorData> m_cursorData{ nullptr };
+
     FramebufferSizeFunc m_framebufferResizeCB;
     CursorPosFunc m_cursorPosCB;
     KeyFunc m_keyCB;

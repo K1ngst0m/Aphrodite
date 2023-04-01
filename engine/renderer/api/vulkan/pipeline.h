@@ -95,18 +95,18 @@ public:
     static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const ComputePipelineCreateInfo &createInfo, VkPipelineLayout layout,
                                                  VkPipeline handle);
 
-    VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx) { return _setLayouts[idx]; }
-    VkPipelineLayout getPipelineLayout() { return _layout; }
-    VkPipelineBindPoint getBindPoint() { return _bindPoint; }
+    VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx) { return m_setLayouts[idx]; }
+    VkPipelineLayout getPipelineLayout() { return m_layout; }
+    VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 
 protected:
-    VkPipelineCache _cache = VK_NULL_HANDLE;
-    VulkanDevice *_device = nullptr;
-    VkPipelineLayout _layout = VK_NULL_HANDLE;
-    VkPipelineBindPoint _bindPoint;
-    std::vector<VkPushConstantRange> _constants;
-    std::vector<VulkanDescriptorSetLayout *> _setLayouts;
-    ShaderMapList _shaderMapList;
+    VkPipelineCache m_cache = VK_NULL_HANDLE;
+    VulkanDevice *m_device = nullptr;
+    VkPipelineLayout m_layout = VK_NULL_HANDLE;
+    VkPipelineBindPoint m_bindPoint;
+    std::vector<VkPushConstantRange> m_constants;
+    std::vector<VulkanDescriptorSetLayout *> m_setLayouts;
+    ShaderMapList m_shaderMapList;
 };
 
 }  // namespace vkl

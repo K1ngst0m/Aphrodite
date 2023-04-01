@@ -23,32 +23,32 @@ public:
     bool update(float deltaTime);
 
 private:
-    std::shared_ptr<VulkanRenderer> _renderer = nullptr;
+    std::shared_ptr<VulkanRenderer> m_renderer = nullptr;
 
-    VulkanDevice   *_device = nullptr;
+    VulkanDevice   *m_device = nullptr;
 
-    VulkanBuffer *_vertexBuffer = nullptr;
-    VulkanBuffer *_indexBuffer  = nullptr;
+    VulkanBuffer *m_vertexBuffer = nullptr;
+    VulkanBuffer *m_indexBuffer  = nullptr;
 
-    uint32_t _vertexCount = 0;
-    uint32_t _indexCount  = 0;
+    uint32_t m_vertexCount = 0;
+    uint32_t m_indexCount  = 0;
 
-    VulkanPipeline *_pipeline = nullptr;
+    VulkanPipeline *m_pipeline = nullptr;
 
-    VkDescriptorPool _descriptorPool = VK_NULL_HANDLE;
-    VkDescriptorSet  _descriptorSet = VK_NULL_HANDLE;
+    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSet  m_descriptorSet = VK_NULL_HANDLE;
 
     struct {
         VulkanImage     *image = nullptr;
         VulkanImageView *view = nullptr;
         VkSampler        sampler = VK_NULL_HANDLE;
         float            scale = 1.0f;
-    } _fontData;
+    } m_fontData;
 
     struct PushConstBlock {
         glm::vec2 scale;
         glm::vec2 translate;
-    } _pushConstBlock;
+    } m_pushConstBlock;
 };
 } // namespace vkl
 

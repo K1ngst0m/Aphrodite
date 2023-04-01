@@ -9,13 +9,7 @@ namespace vkl
 class VulkanShaderModule : public ResourceHandle<VkShaderModule>
 {
 public:
-    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule,
-                       std::string entrypoint = "main") :
-        _entrypoint(std::move(entrypoint)),
-        _code(std::move(code))
-    {
-        _handle = shaderModule;
-    }
+    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
 
     std::vector<char> getCode() { return _code; }
 

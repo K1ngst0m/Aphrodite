@@ -14,7 +14,7 @@ public:
     uint32_t getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t getIndex() const { return m_index; }
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
-    VkResult waitIdle() { return VkResult(vkQueueWaitIdle(_handle)); }
+    VkResult waitIdle() { return VkResult(vkQueueWaitIdle(getHandle())); }
 
     VkResult submit(uint32_t submitCount, const VkSubmitInfo *pSubmits, VkFence fence);
     VkResult present(const VkPresentInfoKHR &presentInfo);

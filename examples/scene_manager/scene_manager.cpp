@@ -1,28 +1,27 @@
 #include "scene_manager.h"
 
-vkl::RenderConfig config{
-    .enableDebug = true,
-    .enableUI    = false,
-    .maxFrames   = 2,
-};
+#include "aixlog.hpp"
 
-scene_manager::scene_manager()
-    : vkl::BaseApp("scene_manager") {
+scene_manager::scene_manager() : vkl::BaseApp("scene_manager")
+{
 }
 
-void scene_manager::init() {
+void scene_manager::init()
+{
     setupWindow();
     setupRenderer();
     setupScene();
 }
 
-void scene_manager::run() {
-    while (!m_window->shouldClose()) {
+void scene_manager::run()
+{
+    while(!m_window->shouldClose())
+    {
         auto timer = vkl::Timer(m_deltaTime);
         m_window->pollEvents();
 
         // update scene object
-        m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, {0.0f, 1.0f, 0.0f});
+        m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
         m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
@@ -34,30 +33,30 @@ void scene_manager::run() {
     }
 }
 
-void scene_manager::finish() {
+void scene_manager::finish()
+{
     m_renderer->idleDevice();
     m_sceneRenderer->cleanupResources();
     // m_uiRenderer->cleanup();
     m_renderer->cleanup();
 }
 
-void scene_manager::setupWindow() {
+void scene_manager::setupWindow()
+{
     m_window = vkl::Window::Create(1366, 768);
 
-    m_window->setCursorPosCallback([=](double xposIn, double yposIn) {
-        this->mouseHandleDerive(xposIn, yposIn);
-    });
+    m_window->setCursorPosCallback([=](double xposIn, double yposIn) { this->mouseHandleDerive(xposIn, yposIn); });
 
     m_window->setFramebufferSizeCallback([=](int width, int height) {
         // this->m_framebufferResized = true;
     });
 
-    m_window->setKeyCallback([=](int key, int scancode, int action, int mods) {
-        this->keyboardHandleDerive(key, scancode, action, mods);
-    });
+    m_window->setKeyCallback(
+        [=](int key, int scancode, int action, int mods) { this->keyboardHandleDerive(key, scancode, action, mods); });
 }
 
-void scene_manager::setupScene() {
+void scene_manager::setupScene()
+{
     // scene global argument setup
     {
         m_scene = vkl::Scene::Create(vkl::SceneManagerType::DEFAULT);
@@ -68,10 +67,10 @@ void scene_manager::setupScene() {
     {
         auto camera = m_scene->createCamera(m_window->getAspectRatio());
         camera->setType(vkl::CameraType::FIRSTPERSON);
-        camera->setPosition({0.0f, 0.0f, -3.0f});
+        camera->setPosition({ 0.0f, 0.0f, -3.0f });
         camera->setFlipY(true);
         // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
-        camera->rotate({0.0f, 180.0f, 0.0f});
+        camera->rotate({ 0.0f, 180.0f, 0.0f });
         camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.01f, 96.0f);
         camera->setMovementSpeed(2.5f);
         camera->setRotationSpeed(0.1f);
@@ -88,8 +87,8 @@ void scene_manager::setupScene() {
     // direction light
     {
         auto dirLight = m_scene->createLight();
-        dirLight->setColor(glm::vec3{1.0f});
-        dirLight->setDirection({0.2f, 1.0f, 0.3f});
+        dirLight->setColor(glm::vec3{ 1.0f });
+        dirLight->setDirection({ 0.2f, 1.0f, 0.3f });
         dirLight->setType(vkl::LightType::POINT);
 
         // light1
@@ -102,8 +101,9 @@ void scene_manager::setupScene() {
 
     // load from gltf file
     {
-        m_modelNode = m_scene->createMeshesFromFile(vkl::AssetManager::GetModelDir() / "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        m_modelNode->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, {0.0f, 1.0f, 0.0f});
+        m_modelNode = m_scene->createMeshesFromFile(vkl::AssetManager::GetModelDir() /
+                                                    "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        m_modelNode->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, { 0.0f, 1.0f, 0.0f });
     }
 
     {
@@ -113,16 +113,26 @@ void scene_manager::setupScene() {
     }
 }
 
-void scene_manager::setupRenderer() {
-    m_renderer      = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
+void scene_manager::setupRenderer()
+{
+    vkl::RenderConfig config{
+        .enableDebug = true,
+        .enableUI = false,
+        .maxFrames = 2,
+    };
+
+    m_renderer = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
     m_sceneRenderer = vkl::SceneRenderer::Create<vkl::VulkanSceneRenderer>(m_renderer);
     // m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 
-void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods) {
+void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
+{
     auto camera = m_cameraNode->getObject<vkl::Camera>();
-    if (action == VKL_PRESS) {
-        switch (key) {
+    if(action == VKL_PRESS)
+    {
+        switch(key)
+        {
         case VKL_KEY_ESCAPE:
             m_window->close();
             break;
@@ -144,8 +154,10 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
         }
     }
 
-    if (action == VKL_RELEASE) {
-        switch (key) {
+    if(action == VKL_RELEASE)
+    {
+        switch(key)
+        {
         case VKL_KEY_W:
             camera->setMovement(vkl::Direction::UP, false);
             break;
@@ -162,16 +174,17 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     }
 }
 
-void scene_manager::mouseHandleDerive(double xposIn, double yposIn) {
+void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
+{
     float dx = m_window->getCursorXpos() - xposIn;
     float dy = m_window->getCursorYpos() - yposIn;
 
-
     auto camera = m_cameraNode->getObject<vkl::Camera>();
-    camera->rotate(glm::vec3(dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f));
+    camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});
 }
 
-int main() {
+int main()
+{
     scene_manager app;
 
     app.init();

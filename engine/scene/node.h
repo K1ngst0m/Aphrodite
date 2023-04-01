@@ -13,6 +13,17 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
         parent{ std::move(parent) },
         matrix{ transform }
     {
+        if constexpr(std::is_same<TNode, Node>::value)
+        {
+            if(parent->parent)
+            {
+                name = parent->name + "-" + std::to_string(id);
+            }
+            else
+            {
+                name = std::to_string(id);
+            }
+        }
     }
     std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f))
     {
@@ -23,7 +34,7 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
     void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
     std::string name{};
     std::vector<std::shared_ptr<TNode>> children{};
-    std::shared_ptr<TNode> parent{};
+    std::shared_ptr<TNode> parent{ nullptr };
     glm::mat4 matrix{ 1.0f };
 };
 
