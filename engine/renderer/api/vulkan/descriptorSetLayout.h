@@ -1,10 +1,14 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
+class VulkanDescriptorPool;
+
 class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 {
 public:

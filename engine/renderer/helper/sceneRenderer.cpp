@@ -1,7 +1,7 @@
 #include "sceneRenderer.h"
-#include "vulkanRenderer.h"
 #include "renderData.h"
 #include "uiRenderer.h"
+#include "vulkanRenderer.h"
 
 #include "common/assetManager.h"
 
@@ -10,16 +10,7 @@
 #include "scene/mesh.h"
 #include "scene/node.h"
 
-#include "renderer/api/vulkan/commandBuffer.h"
-#include "renderer/api/vulkan/commandPool.h"
-#include "renderer/api/vulkan/descriptorSetLayout.h"
 #include "renderer/api/vulkan/device.h"
-#include "renderer/api/vulkan/framebuffer.h"
-#include "renderer/api/vulkan/imageView.h"
-#include "renderer/api/vulkan/pipeline.h"
-#include "renderer/api/vulkan/renderpass.h"
-#include "renderer/api/vulkan/swapChain.h"
-#include "renderer/api/vulkan/vkInit.hpp"
 
 namespace vkl
 {
@@ -65,11 +56,10 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const voi
 }
 }  // namespace
 
-
 namespace
 {
-GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue * pQueue, uint32_t width, uint32_t height, void *data, uint32_t dataSize,
-                         bool genMipmap = false)
+GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
+                         uint32_t dataSize, bool genMipmap = false)
 {
     uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
 
@@ -496,7 +486,8 @@ void VulkanSceneRenderer::_loadScene()
         uint32_t width = image->width;
         uint32_t height = image->height;
 
-        auto texture = createTexture(m_pDevice, m_pRenderer->getGraphicsQueue(), width, height, imageData, imageDataSize, true);
+        auto texture =
+            createTexture(m_pDevice, m_pRenderer->getGraphicsQueue(), width, height, imageData, imageDataSize, true);
         m_textures.push_back(texture);
     }
 
@@ -521,10 +512,13 @@ void VulkanSceneRenderer::_loadScene()
                 // load buffer
                 assert(!vertices.empty());
                 renderable->m_vertexBuffer =
-                    createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), vertices.data(), sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
+                    createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), vertices.data(),
+                                 sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
                 if(!indices.empty())
                 {
-                    renderable->m_indexBuffer = createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), indices.data(), sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
+                    renderable->m_indexBuffer =
+                        createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), indices.data(),
+                                     sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
                 }
             }
             m_renderList.push_back(renderable);
@@ -960,12 +954,13 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
     {
         auto matrix = renderData->m_node->matrix;
         auto currentNode = renderData->m_node->parent;
-        while(currentNode){
+        while(currentNode)
+        {
             matrix = currentNode->matrix * matrix;
             currentNode = currentNode->parent;
         }
         drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
-                                &matrix);
+                                  &matrix);
     }
     VkDeviceSize offsets[1] = { 0 };
     drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);

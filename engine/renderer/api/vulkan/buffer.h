@@ -1,10 +1,13 @@
 #ifndef VULKAN_BUFFER_H_
 #define VULKAN_BUFFER_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
+
 class VulkanBuffer : public Buffer<VkBuffer>
 {
 public:

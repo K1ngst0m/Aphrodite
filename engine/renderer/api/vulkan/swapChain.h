@@ -2,22 +2,24 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "common/window.h"
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
+class VulkanImage;
 
 struct SwapChainCreateInfo
 {
     VkSurfaceKHR surface;
-    VkSurfaceFormatKHR format;
-    VkBool32 tripleBuffer;
+    void *windowHandle;
 };
 
 class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR>
 {
 public:
-    VulkanSwapChain(VulkanDevice *pDevice, VkSurfaceKHR surface, void *pWindowHandle);
+    VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDevice *pDevice);
 
     VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore,
                               VkFence fence = VK_NULL_HANDLE) const;

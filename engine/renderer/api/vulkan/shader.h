@@ -1,10 +1,12 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
 
 class VulkanShaderModule : public ResourceHandle<VkShaderModule>
 {

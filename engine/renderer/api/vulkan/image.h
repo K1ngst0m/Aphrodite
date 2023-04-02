@@ -1,10 +1,12 @@
 #ifndef VULKAN_IMAGE_H_
 #define VULKAN_IMAGE_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
 class VulkanImage : public Image<VkImage>
 {
 public:

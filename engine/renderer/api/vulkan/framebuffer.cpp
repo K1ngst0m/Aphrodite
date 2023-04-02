@@ -1,6 +1,5 @@
 #include "framebuffer.h"
-#include "imageView.h"
-#include "renderpass.h"
+#include "device.h"
 
 namespace vkl {
 VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments) {

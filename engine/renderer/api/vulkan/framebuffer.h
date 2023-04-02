@@ -1,10 +1,14 @@
 #ifndef FRAMEBUFFER_H_
 #define FRAMEBUFFER_H_
 
-#include "device.h"
 #include "common/spinlock.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl {
+class VulkanDevice;
+class VulkanRenderPass;
+class VulkanImageView;
 
 class VulkanFramebuffer : public FrameBuffer {
 public:

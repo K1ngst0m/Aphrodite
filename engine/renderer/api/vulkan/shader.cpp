@@ -1,7 +1,5 @@
 #include "shader.h"
-#include "descriptorSetLayout.h"
-#include "pipeline.h"
-#include "renderpass.h"
+#include "device.h"
 
 namespace vkl
 {

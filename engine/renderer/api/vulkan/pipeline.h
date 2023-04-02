@@ -1,11 +1,15 @@
 #ifndef PIPELINE_H_
 #define PIPELINE_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 #include "shader.h"
 
 namespace vkl
 {
+class VulkanDevice;
+class VulkanRenderPass;
+class VulkanDescriptorSetLayout;
 
 enum class VertexComponent
 {

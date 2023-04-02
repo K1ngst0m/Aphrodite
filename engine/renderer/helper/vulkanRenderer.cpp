@@ -3,21 +3,7 @@
 #include "sceneRenderer.h"
 #include "uiRenderer.h"
 
-#include "renderer/api/vulkan/buffer.h"
-#include "renderer/api/vulkan/commandBuffer.h"
-#include "renderer/api/vulkan/commandPool.h"
 #include "renderer/api/vulkan/device.h"
-#include "renderer/api/vulkan/framebuffer.h"
-#include "renderer/api/vulkan/image.h"
-#include "renderer/api/vulkan/imageView.h"
-#include "renderer/api/vulkan/physicalDevice.h"
-#include "renderer/api/vulkan/pipeline.h"
-#include "renderer/api/vulkan/queue.h"
-#include "renderer/api/vulkan/renderpass.h"
-#include "renderer/api/vulkan/shader.h"
-#include "renderer/api/vulkan/swapChain.h"
-#include "renderer/api/vulkan/syncPrimitivesPool.h"
-#include "renderer/api/vulkan/vkUtils.h"
 
 #include "scene/mesh.h"
 
@@ -26,6 +12,87 @@ namespace vkl
 
 const std::vector<const char *> validationLayers = { "VK_LAYER_KHRONOS_validation" };
 const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
+    Renderer(std::move(windowData), config)
+{
+    // create instance
+    {
+        volkInitialize();
+
+        std::vector<const char *> extensions{};
+        {
+            uint32_t glfwExtensionCount = 0;
+            const char **glfwExtensions;
+            glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+            extensions = std::vector<const char *>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+            if(m_config.enableDebug)
+            {
+                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            }
+        }
+
+        InstanceCreateInfo instanceCreateInfo{ .enabledExtensions = extensions };
+
+        if(m_config.enableDebug)
+        {
+            instanceCreateInfo.flags = INSTANCE_CREATION_ENABLE_DEBUG;
+            instanceCreateInfo.enabledLayers = validationLayers;
+        }
+
+        VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_instance));
+    }
+
+    // create device
+    {
+        DeviceCreateInfo createInfo{
+            .enabledExtensions = deviceExtensions,
+            // TODO select physical device
+            .pPhysicalDevice = m_instance->getPhysicalDevices(0),
+        };
+
+        VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_device));
+
+        // get 3 type queue
+        m_queue.graphics = m_device->getQueueByFlags(QUEUE_GRAPHICS);
+        m_queue.compute = m_device->getQueueByFlags(QUEUE_COMPUTE);
+        m_queue.transfer = m_device->getQueueByFlags(QUEUE_TRANSFER);
+        if(!m_queue.compute)
+        {
+            m_queue.compute = m_queue.graphics;
+        }
+        if(!m_queue.transfer)
+        {
+            m_queue.transfer = m_queue.compute;
+        }
+    }
+
+    // setup swapchain
+    {
+        VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_windowData->window, nullptr, &m_surface));
+        SwapChainCreateInfo createInfo{
+            .surface = m_surface,
+            .windowHandle = m_windowData->window,
+        };
+        VK_CHECK_RESULT(m_device->createSwapchain(createInfo, &m_swapChain));
+    }
+
+    // init default resources
+    if(m_config.initDefaultResource)
+    {
+        m_renderSemaphore.resize(m_config.maxFrames);
+        m_presentSemaphore.resize(m_config.maxFrames);
+        m_inFlightFence.resize(m_config.maxFrames);
+        m_commandBuffers.resize(m_config.maxFrames);
+
+        _allocateDefaultCommandBuffers();
+        _createDefaultRenderPass();
+        _createDefaultSyncObjects();
+        _createDefaultFramebuffers();
+        _createPipelineCache();
+    }
+}
 
 void VulkanRenderer::_createDefaultFramebuffers()
 {
@@ -223,83 +290,6 @@ void VulkanRenderer::cleanup()
 void VulkanRenderer::idleDevice()
 {
     m_device->waitIdle();
-}
-
-VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
-    Renderer(std::move(windowData), config)
-{
-    // create instance
-    {
-        volkInitialize();
-
-        std::vector<const char *> extensions{};
-        {
-            uint32_t glfwExtensionCount = 0;
-            const char **glfwExtensions;
-            glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            extensions = std::vector<const char *>(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-            if(m_config.enableDebug)
-            {
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            }
-        }
-
-        InstanceCreateInfo instanceCreateInfo{ .enabledExtensions = extensions };
-
-        if(m_config.enableDebug)
-        {
-            instanceCreateInfo.flags = INSTANCE_CREATION_ENABLE_DEBUG;
-            instanceCreateInfo.enabledLayers = validationLayers;
-        }
-
-        VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_instance));
-    }
-
-    // create device
-    {
-        DeviceCreateInfo createInfo{
-            .enabledExtensions = deviceExtensions,
-            // TODO select physical device
-            .pPhysicalDevice = m_instance->getPhysicalDevices(0),
-        };
-
-        VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_device));
-
-        // get 3 type queue
-        m_queue.graphics = m_device->getQueueByFlags(QUEUE_GRAPHICS);
-        m_queue.compute = m_device->getQueueByFlags(QUEUE_COMPUTE);
-        m_queue.transfer = m_device->getQueueByFlags(QUEUE_TRANSFER);
-        if(!m_queue.compute)
-        {
-            m_queue.compute = m_queue.graphics;
-        }
-        if(!m_queue.transfer)
-        {
-            m_queue.transfer = m_queue.compute;
-        }
-    }
-
-    // setup swapchain
-    {
-        VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_windowData->window, nullptr, &m_surface));
-        VK_CHECK_RESULT(m_device->createSwapchain(m_surface, &m_swapChain, m_windowData->window));
-    }
-
-    // init default resources
-    if(m_config.initDefaultResource)
-    {
-        m_renderSemaphore.resize(m_config.maxFrames);
-        m_presentSemaphore.resize(m_config.maxFrames);
-        m_inFlightFence.resize(m_config.maxFrames);
-        m_commandBuffers.resize(m_config.maxFrames);
-
-        _allocateDefaultCommandBuffers();
-        _createDefaultRenderPass();
-        _createDefaultSyncObjects();
-        _createDefaultFramebuffers();
-        _createPipelineCache();
-    }
 }
 
 void VulkanRenderer::_createPipelineCache()

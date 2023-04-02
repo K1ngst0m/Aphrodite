@@ -4,14 +4,7 @@
 #include "scene/mesh.h"
 #include "sceneRenderer.h"
 
-#include "renderer/api/vulkan/buffer.h"
-#include "renderer/api/vulkan/commandBuffer.h"
-#include "renderer/api/vulkan/descriptorSetLayout.h"
 #include "renderer/api/vulkan/device.h"
-#include "renderer/api/vulkan/image.h"
-#include "renderer/api/vulkan/imageView.h"
-#include "renderer/api/vulkan/pipeline.h"
-#include "renderer/api/vulkan/vkInit.hpp"
 
 namespace vkl
 {

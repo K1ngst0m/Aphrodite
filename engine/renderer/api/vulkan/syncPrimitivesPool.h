@@ -2,10 +2,12 @@
 #define SYNCPRIMITIVESPOOL_H_
 
 #include "common/spinlock.h"
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDevice;
 class VulkanSyncPrimitivesPool
 {
 public:

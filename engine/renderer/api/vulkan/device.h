@@ -6,37 +6,26 @@
 #include "renderer/gpuResource.h"
 #include "vkInit.hpp"
 #include "vkUtils.h"
+#include "buffer.h"
+#include "commandBuffer.h"
+#include "commandPool.h"
+#include "descriptorSetLayout.h"
+#include "descriptorPool.h"
+#include "framebuffer.h"
+#include "image.h"
+#include "imageView.h"
+#include "pipeline.h"
+#include "queue.h"
+#include "renderpass.h"
+#include "shader.h"
+#include "swapChain.h"
+#include "syncPrimitivesPool.h"
+#include "vkInit.hpp"
+#include "vkUtils.h"
 
 namespace vkl
 {
-class VulkanBuffer;
-class VulkanBufferView;
-class VulkanImage;
-class VulkanImageView;
-class VulkanSampler;
-class VulkanFramebuffer;
-class VulkanRenderPass;
-class VulkanSwapChain;
-class VulkanCommandBuffer;
-class VulkanCommandPool;
-class VulkanShaderModule;
-class VulkanDescriptorPool;
-class VulkanDescriptorSetLayout;
-class VulkanShaderCache;
-class WindowData;
-class PipelineBuilder;
-class ShaderEffect;
-class ShaderPass;
-class VulkanPipeline;
-class VulkanQueue;
-class VulkanSyncPrimitivesPool;
-struct RenderPassCreateInfo;
-struct GraphicsPipelineCreateInfo;
-struct ComputePipelineCreateInfo;
-struct EffectInfo;
 
-using QueueFamily = std::vector<VulkanQueue *>;
-using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool *>;
 
 enum DeviceCreateFlagBits
 {
@@ -80,7 +69,7 @@ public:
     VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
                               const VkAttachmentDescription &depthAttachment);
 
-    VkResult createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, void *windowHandle);
+    VkResult createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain **ppSwapchain);
 
     VkResult createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
                                VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);

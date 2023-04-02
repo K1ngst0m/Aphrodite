@@ -2,17 +2,7 @@
 
 #include "common/assetManager.h"
 
-#include "renderer/api/vulkan/commandBuffer.h"
-#include "renderer/api/vulkan/descriptorSetLayout.h"
-#include "renderer/api/vulkan/image.h"
-#include "renderer/api/vulkan/imageView.h"
-#include "renderer/api/vulkan/pipeline.h"
-#include "renderer/api/vulkan/physicalDevice.h"
-#include "renderer/api/vulkan/shader.h"
-#include "renderer/api/vulkan/vkUtils.h"
-#include "renderer/gpuResource.h"
-#include "renderer/api/vulkan/renderpass.h"
-#include "renderer/api/vulkan/shader.h"
+#include "renderer/api/vulkan/device.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>

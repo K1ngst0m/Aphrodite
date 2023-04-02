@@ -2,10 +2,12 @@
 #define DESCRIPTORPOOL_H_
 
 #include "common/spinlock.h"
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+class VulkanDescriptorSetLayout;
 class VulkanDescriptorPool : ResourceHandle<VkDescriptorPool>
 {
 public:

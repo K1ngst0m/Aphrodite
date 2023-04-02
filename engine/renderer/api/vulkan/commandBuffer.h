@@ -1,10 +1,19 @@
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
+
+class VulkanDevice;
+class VulkanRenderPass;
+class VulkanFramebuffer;
+class VulkanCommandPool;
+class VulkanPipeline;
+class VulkanBuffer;
+class VulkanImage;
 
 struct RenderPassBeginInfo
 {

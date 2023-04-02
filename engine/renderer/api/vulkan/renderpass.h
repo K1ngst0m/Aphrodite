@@ -2,11 +2,13 @@
 #define RENDERPASS_H_
 
 #include "common/spinlock.h"
-#include "device.h"
+#include "renderer/gpuResource.h"
+#include "vkUtils.h"
 
 namespace vkl
 {
 using RenderPassHash = std::vector<uint64_t>;
+class VulkanDevice;
 
 struct RenderPassCreateInfo
 {

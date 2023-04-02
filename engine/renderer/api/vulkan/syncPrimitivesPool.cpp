@@ -1,4 +1,5 @@
 #include "syncPrimitivesPool.h"
+#include "device.h"
 
 namespace vkl
 {

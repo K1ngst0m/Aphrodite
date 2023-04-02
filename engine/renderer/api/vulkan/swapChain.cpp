@@ -1,7 +1,5 @@
 #include "swapChain.h"
-#include "buffer.h"
-#include "image.h"
-#include "imageView.h"
+#include "device.h"
 
 namespace vkl
 {
@@ -93,11 +91,11 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     return details;
 }
 
-VulkanSwapChain::VulkanSwapChain(VulkanDevice *device, VkSurfaceKHR surface, void *windowHandle)
-    :m_device(device), m_surface(surface)
+VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDevice *pDevice)
+    :m_device(pDevice), m_surface(createInfo.surface)
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_surface, m_device->getPhysicalDevice()->getHandle(),
-                                                                     static_cast<GLFWwindow *>(windowHandle));
+                                                                     static_cast<GLFWwindow *>(createInfo.windowHandle));
 
     uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
     if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)

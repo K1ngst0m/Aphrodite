@@ -1,7 +1,5 @@
 #include "queue.h"
-#include "commandBuffer.h"
-#include "swapChain.h"
-#include "syncPrimitivesPool.h"
+#include "device.h"
 
 namespace vkl {
 
@@ -18,7 +16,8 @@ VkResult VulkanQueue::submit(uint32_t submitCount, const VkSubmitInfo *pSubmits,
 }
 
 VkResult VulkanQueue::present(const VkPresentInfoKHR &presentInfo) {
-    VkResult result = vkQueuePresentKHR(m_device->getQueueByFlags(VK_QUEUE_GRAPHICS_BIT)->getHandle(), &presentInfo);
+    assert(getFlags() & VK_QUEUE_GRAPHICS_BIT);
+    VkResult result = vkQueuePresentKHR(getHandle(), &presentInfo);
     return result;
 }
 

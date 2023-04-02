@@ -34,6 +34,8 @@
 
 #include <stb_image.h>
 
+#include "vkInit.hpp"
+
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0
 // Default fence timeout in nanoseconds

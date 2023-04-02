@@ -1,5 +1,5 @@
 #include "descriptorPool.h"
-#include "descriptorSetLayout.h"
+#include "device.h"
 
 namespace vkl
 {

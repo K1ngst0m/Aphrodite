@@ -1,20 +1,4 @@
 #include "device.h"
-#include "buffer.h"
-#include "commandBuffer.h"
-#include "commandPool.h"
-#include "descriptorSetLayout.h"
-#include "framebuffer.h"
-#include "image.h"
-#include "imageView.h"
-#include "pipeline.h"
-#include "queue.h"
-#include "renderpass.h"
-#include "shader.h"
-#include "swapChain.h"
-#include "syncPrimitivesPool.h"
-#include "vkInit.hpp"
-#include "vkUtils.h"
-#include "vulkan/vulkan_core.h"
 
 namespace vkl
 {
@@ -379,9 +363,9 @@ void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer)
 {
     delete pFramebuffer;
 }
-VkResult VulkanDevice::createSwapchain(VkSurfaceKHR surface, VulkanSwapChain **ppSwapchain, void *windowHandle)
+VkResult VulkanDevice::createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain **ppSwapchain)
 {
-    *ppSwapchain = new VulkanSwapChain(this, surface, windowHandle);
+    *ppSwapchain = new VulkanSwapChain(createInfo, this);
     return VK_SUCCESS;
 }
 
