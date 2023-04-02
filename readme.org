@@ -1,10 +1,10 @@
-* Centimani
+* Aphrodite
 ** Cloning
 
 #+BEGIN_SRC bash
-git clone https://github.com/K1ngst0m/Centimani
+git clone https://github.com/K1ngst0m/Aphrodite -b next
 
-cd Centimani
+cd Aphrodite
 #+END_SRC
 
 ** Building and Running
