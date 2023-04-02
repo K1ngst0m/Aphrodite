@@ -501,8 +501,9 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo &cr
 
 VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass)
 {
-    std::vector<VkAttachmentDescription> attachments;
-    std::vector<VkAttachmentReference> colorAttachmentRefs;
+    std::vector<VkAttachmentDescription> attachments {};
+    std::vector<VkAttachmentReference> colorAttachmentRefs {};
+    VkAttachmentReference depthAttachmentRef {};
 
     auto &colorAttachments = createInfo.colorAttachments;
     for(uint32_t idx = 0; idx < colorAttachments.size(); idx++)
@@ -515,21 +516,19 @@ VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, 
         colorAttachmentRefs.push_back(ref);
     }
 
-    VkAttachmentReference depthAttachmentRef {
-        .attachment = static_cast<uint32_t>(colorAttachments.size()),
-        .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-    };
-
     VkSubpassDescription subpassDescription{
         .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size()),
         .pColorAttachments = colorAttachmentRefs.data(),
     };
 
-    if (!createInfo.depthAttachment.empty())
+    if (createInfo.depthAttachment.has_value())
     {
-        // TODO multi depth attachment ?
-        attachments.push_back(createInfo.depthAttachment[0]);
+        depthAttachmentRef = {
+            .attachment = static_cast<uint32_t>(colorAttachments.size()),
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+        attachments.push_back(createInfo.depthAttachment.value());
         subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
     }
 

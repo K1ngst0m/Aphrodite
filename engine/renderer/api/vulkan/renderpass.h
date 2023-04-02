@@ -13,26 +13,23 @@ class VulkanDevice;
 struct RenderPassCreateInfo
 {
     std::vector<VkAttachmentDescription> colorAttachments {};
-    std::vector<VkAttachmentDescription> depthAttachment {};
+    std::optional<VkAttachmentDescription> depthAttachment {};
 };
 
-class VulkanRenderPass
+class VulkanRenderPass : public ResourceHandle<VkRenderPass>
 {
 public:
     static VulkanRenderPass *Create(VulkanDevice *pDevice, const RenderPassCreateInfo *pCreateInfo);
 
     VulkanRenderPass(VkRenderPass handle, uint32_t colorAtachmentCount) :
-        m_handle(handle),
         m_colorAttachmentCount(colorAtachmentCount)
     {
+        getHandle() = handle;
     }
-
-    VkRenderPass getHandle() const { return m_handle; }
 
     uint32_t getColorAttachmentCount() const { return m_colorAttachmentCount; }
 
 private:
-    VkRenderPass m_handle = VK_NULL_HANDLE;
     uint32_t m_colorAttachmentCount = 0;
 };
 
