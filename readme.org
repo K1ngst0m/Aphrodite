@@ -1,4 +1,4 @@
-* Aphrodite
+* Aphrodite-next
 ** Cloning
 
 #+BEGIN_SRC bash
