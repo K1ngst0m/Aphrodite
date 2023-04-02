@@ -12,6 +12,8 @@ class VulkanDevice;
 
 struct RenderPassCreateInfo
 {
+    std::vector<VkAttachmentDescription> colorAttachments {};
+    std::vector<VkAttachmentDescription> depthAttachment {};
 };
 
 class VulkanRenderPass

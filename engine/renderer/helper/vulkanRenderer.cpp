@@ -195,11 +195,12 @@ void VulkanRenderer::_createDefaultRenderPass()
         .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
 
-    std::vector<VkAttachmentDescription> colorAttachments{
-        colorAttachment,
+    RenderPassCreateInfo createInfo{
+        .colorAttachments = { colorAttachment },
+        .depthAttachment = { depthAttachment },
     };
 
-    VK_CHECK_RESULT(m_device->createRenderPass(nullptr, &m_renderPass, colorAttachments, depthAttachment));
+    VK_CHECK_RESULT(m_device->createRenderPass(createInfo, &m_renderPass));
 }
 
 void VulkanRenderer::_allocateDefaultCommandBuffers()

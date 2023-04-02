@@ -695,11 +695,12 @@ void VulkanSceneRenderer::_initPostFx()
 
         };
 
-        std::vector<VkAttachmentDescription> colorAttachments{
-            colorAttachment,
+
+        RenderPassCreateInfo createInfo{
+            .colorAttachments = {colorAttachment},
         };
 
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(nullptr, &m_postFxPass.renderPass, colorAttachments));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(createInfo, &m_postFxPass.renderPass));
     }
 
     {
@@ -782,12 +783,12 @@ void VulkanSceneRenderer::_initForward()
             .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         };
 
-        std::vector<VkAttachmentDescription> colorAttachments{
-            colorAttachment,
+        RenderPassCreateInfo createInfo{
+            .colorAttachments = {colorAttachment},
+            .depthAttachment = {depthAttachment},
         };
 
-        VK_CHECK_RESULT(
-            m_pDevice->createRenderPass(nullptr, &m_forwardPass.renderPass, colorAttachments, depthAttachment));
+        VK_CHECK_RESULT(m_pDevice->createRenderPass(createInfo, &m_forwardPass.renderPass));
     }
 
     // frame buffer

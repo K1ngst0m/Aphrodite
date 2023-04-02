@@ -59,15 +59,7 @@ public:
     VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
                                 uint32_t attachmentCount, VulkanImageView **pAttachments);
 
-    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
-                              const std::vector<VkAttachmentDescription> &colorAttachments);
-
-    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
-                              const std::vector<VkAttachmentDescription> &colorAttachments,
-                              const VkAttachmentDescription &depthAttachment);
-
-    VkResult createRenderPass(RenderPassCreateInfo *createInfo, VulkanRenderPass **ppRenderPass,
-                              const VkAttachmentDescription &depthAttachment);
+    VkResult createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass);
 
     VkResult createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain **ppSwapchain);
 
