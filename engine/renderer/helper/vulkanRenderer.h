@@ -29,7 +29,6 @@ public:
     VulkanQueue *getGraphicsQueue() const { return m_queue.graphics; }
     VulkanQueue *getComputeQueue() const { return m_queue.compute; }
     VulkanQueue *getTransferQueue() const { return m_queue.transfer; }
-
     VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
     VulkanShaderCache *getShaderCache() { return m_pShaderCache; }
 

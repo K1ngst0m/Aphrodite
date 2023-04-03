@@ -10,12 +10,10 @@ file(GLOB base_src
   renderer/*.h
   renderer/*.hpp
 
-  renderer/helper/renderData.h
   renderer/helper/sceneRenderer.h
   renderer/helper/vulkanRenderer.h
   # renderer/helper/uiRenderer.cpp
 
-  renderer/helper/renderData.cpp
   renderer/helper/sceneRenderer.cpp
   renderer/helper/vulkanRenderer.cpp
   # renderer/helper/uiRenderer.cpp
@@ -45,7 +43,6 @@ file(GLOB BASE_HEADERS
   vkl.hpp
   vklHelper.hpp
 
-  renderer/helper/renderData.h
   renderer/helper/sceneRenderer.h
   renderer/helper/vulkanRenderer.h
   # renderer/helper/uiRenderer.h

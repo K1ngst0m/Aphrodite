@@ -1,6 +1,4 @@
 #include "sceneRenderer.h"
-#include "renderData.h"
-#include "vulkanRenderer.h"
 
 #include "common/assetManager.h"
 
@@ -17,7 +15,10 @@ namespace vkl
 namespace
 {
 
-VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const void *data, VkDeviceSize size,
+VulkanBuffer *createBuffer(VulkanDevice *pDevice,
+                           VulkanQueue *pQueue,
+                           const void *data,
+                           VkDeviceSize size,
                            VkBufferUsageFlags usage)
 {
     VulkanBuffer *buffer = nullptr;
@@ -215,14 +216,14 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyBuffer(matData.buffer);
     }
 
-    for(auto &renderData : m_renderList)
+    for(auto &renderData : m_renderDataList)
     {
         m_pDevice->destroyBuffer(renderData->m_vertexBuffer);
         m_pDevice->destroyBuffer(renderData->m_indexBuffer);
         m_pDevice->destroyBuffer(renderData->m_objectUB);
     }
 
-    for(auto &ubData : m_uniformList)
+    for(auto &ubData : m_uniformDataList)
     {
         m_pDevice->destroyBuffer(ubData->m_buffer);
     }
@@ -296,7 +297,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
-        for(auto &renderable : m_renderList)
+        for(auto &renderable : m_renderDataList)
         {
             _drawRenderData(renderable, m_forwardPass.pipeline, commandBuffer);
         }
@@ -332,7 +333,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
 void VulkanSceneRenderer::update(float deltaTime)
 {
-    for(auto &ubo : m_uniformList)
+    for(auto &ubo : m_uniformDataList)
     {
         ubo->m_buffer->copyTo(ubo->m_object->getData());
     }
@@ -364,7 +365,7 @@ void VulkanSceneRenderer::_initRenderData()
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
-    for(auto &renderData : m_renderList)
+    for(auto &renderData : m_renderDataList)
     {
         {
             ObjectInfo objInfo{};
@@ -532,39 +533,65 @@ void VulkanSceneRenderer::_loadScene()
         {
         case ObjectType::MESH:
         {
-            auto renderable = std::make_shared<VulkanRenderData>(m_pDevice, node);
+            auto renderData = std::make_shared<VulkanRenderData>(node);
             {
                 auto mesh = node->getObject<Mesh>();
                 auto &vertices = mesh->m_vertices;
                 auto &indices = mesh->m_indices;
                 // load buffer
                 assert(!vertices.empty());
-                renderable->m_vertexBuffer =
+                renderData->m_vertexBuffer =
                     createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), vertices.data(),
                                  sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
                 if(!indices.empty())
                 {
-                    renderable->m_indexBuffer =
+                    renderData->m_indexBuffer =
                         createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), indices.data(),
                                      sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
                 }
             }
-            m_renderList.push_back(renderable);
+            m_renderDataList.push_back(renderData);
         }
         break;
         case ObjectType::CAMERA:
         {
-            auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
-            m_uniformList.push_front(ubo);
+            auto ubo = std::make_shared<VulkanUniformData>(node);
+            {
+                auto object = node->getObject<Camera>();
+                object->load();
+                ubo->m_object = object;
+                BufferCreateInfo createInfo{
+                    .size = object->getDataSize(),
+                    .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                };
+                VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
+                ubo->m_buffer->setupDescriptor();
+                ubo->m_buffer->map();
+            }
             m_cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_uniformDataList.push_front(std::move(ubo));
             m_sceneInfo.cameraCount++;
         }
         break;
         case ObjectType::LIGHT:
         {
-            auto ubo = std::make_shared<VulkanUniformData>(m_pDevice, node);
-            m_uniformList.push_back(ubo);
+            auto ubo = std::make_shared<VulkanUniformData>(node);
+            {
+                auto object = node->getObject<Light>();
+                object->load();
+                ubo->m_object = object;
+                BufferCreateInfo createInfo{
+                    .size = object->getDataSize(),
+                    .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                };
+                VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
+                ubo->m_buffer->setupDescriptor();
+                ubo->m_buffer->map();
+            }
             m_lightInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_uniformDataList.push_back(std::move(ubo));
             m_sceneInfo.lightCount++;
         }
         break;

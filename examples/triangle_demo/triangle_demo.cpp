@@ -87,15 +87,15 @@ void triangle_demo::buildCommands() {
     auto  commandIndex  = m_renderer->getCurrentFrameIndex();
     auto *commandBuffer = m_renderer->getDefaultCommandBuffer(commandIndex);
 
-    commandBuffer->begin(0);
-
-    // render pass
-    commandBuffer->beginRenderPass(&renderPassBeginInfo);
+    commandBuffer->begin();
 
     // dynamic state
     commandBuffer->setViewport(&viewport);
     commandBuffer->setSissor(&scissor);
     commandBuffer->bindPipeline(m_demoPipeline);
+
+    // render pass
+    commandBuffer->beginRenderPass(&renderPassBeginInfo);
     commandBuffer->draw(3, 1, 0, 0);
     commandBuffer->endRenderPass();
 

@@ -40,6 +40,33 @@ struct MaterialGpuData
     VkDescriptorSet set = VK_NULL_HANDLE;
 };
 
+struct VulkanRenderData
+{
+    VulkanRenderData(std::shared_ptr<SceneNode> sceneNode)
+        : m_node{std::move(sceneNode)}
+    {}
+
+    VulkanBuffer *m_vertexBuffer = nullptr;
+    VulkanBuffer *m_indexBuffer = nullptr;
+
+    VulkanBuffer *m_objectUB = nullptr;
+    VkDescriptorSet m_objectSet = VK_NULL_HANDLE;
+
+    std::shared_ptr<SceneNode> m_node = nullptr;
+};
+
+struct VulkanUniformData
+{
+    VulkanUniformData(std::shared_ptr<SceneNode> node)
+        : m_node{std::move(node)}
+    {}
+
+    VulkanBuffer *m_buffer = nullptr;
+
+    std::shared_ptr<SceneNode> m_node = nullptr;
+    std::shared_ptr<UniformObject> m_object = nullptr;
+};
+
 struct SceneInfo
 {
     glm::vec4 ambient{ 0.04f };
@@ -152,8 +179,8 @@ private:
     SceneInfo m_sceneInfo{};
     VulkanBuffer *m_sceneInfoUB = nullptr;
 
-    std::vector<std::shared_ptr<VulkanRenderData>> m_renderList;
-    std::deque<std::shared_ptr<VulkanUniformData>> m_uniformList;
+    std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;
+    std::deque<std::shared_ptr<VulkanUniformData>> m_uniformDataList;
 
     std::vector<VkDescriptorBufferInfo> m_cameraInfos{};
     std::vector<VkDescriptorBufferInfo> m_lightInfos{};

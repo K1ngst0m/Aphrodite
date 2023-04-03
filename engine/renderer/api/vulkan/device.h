@@ -86,7 +86,6 @@ public:
 
 private:
     VulkanPhysicalDevice *m_physicalDevice;
-    VkPhysicalDeviceFeatures m_enabledFeatures;
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools m_commandPools;
     DeviceCreateInfo m_createInfo;
