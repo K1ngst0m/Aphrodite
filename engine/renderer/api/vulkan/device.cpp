@@ -109,19 +109,17 @@ void VulkanDevice::Destroy(VulkanDevice *pDevice)
     delete pDevice;
 }
 
-VkResult VulkanDevice::createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
-                                         VkCommandPoolCreateFlags createFlags)
+VkResult VulkanDevice::createCommandPool(const CommandPoolCreateInfo& createInfo, VulkanCommandPool **ppPool)
 {
     VkCommandPoolCreateInfo cmdPoolInfo {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = createFlags,
-        .queueFamilyIndex = queueFamilyIndex,
+        .flags = createInfo.flags,
+        .queueFamilyIndex = createInfo.queueFamilyIndex,
     };
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
-
-    *ppPool = VulkanCommandPool::Create(this, queueFamilyIndex, cmdPool);
+    *ppPool = new VulkanCommandPool(createInfo, this, cmdPool);
     return VK_SUCCESS;
 }
 
@@ -168,6 +166,7 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags type, const std::fun
     VK_CHECK_RESULT(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
     func(cmd);
     VK_CHECK_RESULT(cmd->end());
+
     uint32_t queueFamilyIndex = cmd->getQueueFamilyIndices();
     auto *queue = m_queues[queueFamilyIndex][0];
 
@@ -342,8 +341,9 @@ VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue)
         return m_commandPools.at(queueIndices);
     }
 
+    CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
     VulkanCommandPool *pool = nullptr;
-    createCommandPool(&pool, queueIndices);
+    createCommandPool(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
     return pool;
 }

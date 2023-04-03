@@ -1,21 +1,19 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
-#include "physicalDevice.h"
-#include "renderer/device.h"
-#include "renderer/gpuResource.h"
-#include "vkInit.hpp"
-#include "vkUtils.h"
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
-#include "descriptorSetLayout.h"
 #include "descriptorPool.h"
+#include "descriptorSetLayout.h"
 #include "framebuffer.h"
 #include "image.h"
 #include "imageView.h"
+#include "physicalDevice.h"
 #include "pipeline.h"
 #include "queue.h"
+#include "renderer/device.h"
+#include "renderer/gpuResource.h"
 #include "renderpass.h"
 #include "shader.h"
 #include "swapChain.h"
@@ -25,7 +23,6 @@
 
 namespace vkl
 {
-
 
 enum DeviceCreateFlagBits
 {
@@ -44,6 +41,7 @@ class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice>
 {
 private:
     VulkanDevice() = default;
+
 public:
     static VkResult Create(const DeviceCreateInfo &createInfo, VulkanDevice **ppDevice);
 
@@ -51,25 +49,15 @@ public:
 
 public:
     VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, void *data = nullptr);
-
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
-
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
-
     VkResult createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer);
-
     VkResult createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass);
-
-    VkResult createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain **ppSwapchain);
-
-    VkResult createCommandPool(VulkanCommandPool **ppPool, uint32_t queueFamilyIndex,
-                               VkCommandPoolCreateFlags createFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
+    VkResult createSwapchain(const SwapChainCreateInfo &createInfo, VulkanSwapChain **ppSwapchain);
+    VkResult createCommandPool(const CommandPoolCreateInfo&createInfo, VulkanCommandPool **ppPool);
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass,
                                     VulkanPipeline **ppPipeline);
-
     VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
-
     VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
                                        VulkanDescriptorSetLayout **ppDescriptorSetLayout);
 
@@ -85,18 +73,19 @@ public:
     void destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout);
 
 public:
-    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VulkanQueue *pQueue);
+    VulkanCommandPool *getCommandPoolWithQueue(VulkanQueue *queue);
+    VulkanQueue *getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex = 0);
+    VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers,
+                                    VulkanQueue *pQueue);
     void freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
-    VkResult executeSingleCommands(QueueTypeFlags type, const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
+    VkResult executeSingleCommands(QueueTypeFlags type,
+                                   const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
+
     void waitIdle();
     void waitForFence(const std::vector<VkFence> &fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
-
-public:
     VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_syncPrimitivesPool; }
     VulkanShaderCache *getShaderCache() { return m_shaderCache; }
-    VulkanCommandPool *getCommandPoolWithQueue(VulkanQueue *queue);
     VulkanPhysicalDevice *getPhysicalDevice() const;
-    VulkanQueue *getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex = 0);
     VkFormat getDepthFormat() const;
 
 private:

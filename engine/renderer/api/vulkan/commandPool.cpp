@@ -3,15 +3,12 @@
 
 namespace vkl
 {
-
-VulkanCommandPool *VulkanCommandPool::Create(VulkanDevice *device, uint32_t queueFamilyIndex, VkCommandPool pool)
+VulkanCommandPool::VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice *device, VkCommandPool pool)
+    :m_createInfo(createInfo), m_device(device)
 {
-    VulkanCommandPool *instance = new VulkanCommandPool;
-    instance->m_device = device;
-    instance->m_queueFamilyIndex = queueFamilyIndex;
-    instance->getHandle() = pool;
-    return instance;
+    getHandle() = pool;
 }
+
 VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers)
 {
     // Safe guard access to internal resources across threads.
@@ -40,8 +37,9 @@ void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const Vk
     vkFreeCommandBuffers(m_device->getHandle(), getHandle(), commandBufferCount, pCommandBuffers);
     m_spinLock.Unlock();
 }
+
 uint32_t VulkanCommandPool::getQueueFamilyIndex() const
 {
-    return m_queueFamilyIndex;
+    return m_createInfo.queueFamilyIndex;
 }
 }  // namespace vkl
