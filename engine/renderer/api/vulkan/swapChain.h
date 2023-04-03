@@ -9,6 +9,7 @@ namespace vkl
 {
 class VulkanDevice;
 class VulkanImage;
+class VulkanQueue;
 
 struct SwapChainCreateInfo
 {
@@ -23,6 +24,8 @@ public:
 
     VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore,
                               VkFence fence = VK_NULL_HANDLE) const;
+
+    VkResult presentImage(const uint32_t& imageIdx, VulkanQueue *pQueue, const std::vector<VkSemaphore>& waitSemaphores);
 
 public:
     VkFormat getImageFormat() const { return m_surfaceFormat.format; }

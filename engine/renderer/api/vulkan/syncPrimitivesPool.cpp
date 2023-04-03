@@ -10,11 +10,11 @@ VulkanSyncPrimitivesPool::VulkanSyncPrimitivesPool(VulkanDevice *device) : m_dev
 VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool()
 {
     // Destroy all created fences.
-    for(auto fence : m_allFences)
+    for(auto *fence : m_allFences)
         vkDestroyFence(m_device->getHandle(), fence, nullptr);
 
     // Destroy all created semaphores.
-    for(auto semaphore : m_allSemaphores)
+    for(auto *semaphore : m_allSemaphores)
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 

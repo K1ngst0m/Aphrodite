@@ -9,6 +9,13 @@ namespace vkl
 class VulkanDevice;
 class VulkanCommandBuffer;
 
+struct QueueSubmitInfo{
+    std::vector<VulkanCommandBuffer*> commandBuffers;
+    std::vector<VkPipelineStageFlags> waitStages;
+    std::vector<VkSemaphore> waitSemaphores;
+    std::vector<VkSemaphore> signalSemaphores;
+};
+
 class VulkanQueue : public ResourceHandle<VkQueue>
 {
 public:
@@ -20,8 +27,7 @@ public:
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
     VkResult waitIdle() { return VkResult(vkQueueWaitIdle(getHandle())); }
 
-    VkResult submit(uint32_t submitCount, const VkSubmitInfo *pSubmits, VkFence fence);
-    VkResult present(const VkPresentInfoKHR &presentInfo);
+    VkResult submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
 
 private:
     VkResult acquireCommandBuffer(VulkanCommandBuffer **pCommandBuffer);

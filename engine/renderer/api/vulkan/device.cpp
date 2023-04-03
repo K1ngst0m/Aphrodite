@@ -159,12 +159,12 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo &createInfo, Vu
 void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer)
 {
     uint32_t queueFamilyIndex = commandBuffer->getQueueFamilyIndices();
-    auto queue = m_queues[queueFamilyIndex][0];
+    auto *queue = m_queues[queueFamilyIndex][0];
 
     commandBuffer->end();
 
-    VkSubmitInfo submitInfo = vkl::init::submitInfo(&commandBuffer->getHandle());
-    queue->submit(1, &submitInfo, VK_NULL_HANDLE);
+    QueueSubmitInfo submitInfo{.commandBuffers = {commandBuffer}};
+    queue->submit({submitInfo}, VK_NULL_HANDLE);
     queue->waitIdle();
 
     freeCommandBuffers(1, &commandBuffer);
@@ -333,16 +333,16 @@ void VulkanDevice::waitIdle()
 
 VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue)
 {
-    auto indices = queue->getFamilyIndex();
+    auto queueIndices = queue->getFamilyIndex();
 
-    if(m_commandPools.count(indices))
+    if(m_commandPools.count(queueIndices))
     {
-        return m_commandPools.at(indices);
+        return m_commandPools.at(queueIndices);
     }
 
     VulkanCommandPool *pool = nullptr;
-    createCommandPool(&pool, indices);
-    m_commandPools[indices] = pool;
+    createCommandPool(&pool, queueIndices);
+    m_commandPools[queueIndices] = pool;
     return pool;
 }
 

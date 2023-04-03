@@ -238,31 +238,16 @@ void VulkanRenderer::prepareFrame()
 void VulkanRenderer::submitAndPresent()
 {
     auto *queue = m_queue.graphics;
-    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSubmitInfo submitInfo{
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &m_renderSemaphore[m_currentFrame],
-        .pWaitDstStageMask = waitStages,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &m_commandBuffers[m_currentFrame]->getHandle(),
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &m_presentSemaphore[m_currentFrame],
+
+    QueueSubmitInfo submitInfo{
+        .commandBuffers = {m_commandBuffers[m_currentFrame]},
+        .waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
+        .waitSemaphores = {m_renderSemaphore[m_currentFrame]},
+        .signalSemaphores = {m_presentSemaphore[m_currentFrame]},
     };
 
-    VK_CHECK_RESULT(queue->submit(1, &submitInfo, m_inFlightFence[m_currentFrame]));
-
-    VkPresentInfoKHR presentInfo = {
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &m_presentSemaphore[m_currentFrame],
-        .swapchainCount = 1,
-        .pSwapchains = &m_swapChain->getHandle(),
-        .pImageIndices = &m_imageIdx,
-        .pResults = nullptr,  // Optional
-    };
-
-    VK_CHECK_RESULT(queue->present(presentInfo));
+    VK_CHECK_RESULT(queue->submit({submitInfo}, m_inFlightFence[m_currentFrame]));
+    VK_CHECK_RESULT(m_swapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_currentFrame] }));
 
     m_currentFrame = (m_currentFrame + 1) % m_config.maxFrames;
 }

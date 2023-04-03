@@ -156,4 +156,21 @@ VkResult VulkanSwapChain::acquireNextImage(uint32_t *pImageIndex, VkSemaphore se
     return vkAcquireNextImageKHR(m_device->getHandle(), getHandle(), UINT64_MAX, semaphore, fence,
                                  pImageIndex);
 }
+
+VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue *pQueue, const std::vector<VkSemaphore>& waitSemaphores)
+{
+    VkPresentInfoKHR presentInfo = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+        .pWaitSemaphores = waitSemaphores.data(),
+        .swapchainCount = 1,
+        .pSwapchains = &getHandle(),
+        .pImageIndices = &imageIdx,
+        .pResults = nullptr,  // Optional
+    };
+
+    VkResult result = vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
+    return result;
+}
+
 }  // namespace vkl
