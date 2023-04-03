@@ -109,7 +109,3 @@ Tested on Gentoo Base System, BSPWM
   ```
 
 ***
-
-## Documentation
-
-[Aphrodite Wiki](https://github.com/npchitman/Aphrodite/wiki) will comming soon!
