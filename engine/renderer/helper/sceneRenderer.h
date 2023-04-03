@@ -69,7 +69,6 @@ private:
     void _initSkyboxResource();
     void _initForward();
     void _initPostFx();
-    void _initShadow();
     void _loadScene();
     void _drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
 
@@ -102,7 +101,6 @@ private:
         };
 
         VulkanPipeline *pipeline = nullptr;
-        // VulkanRenderPass *renderPass = nullptr;
 
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
@@ -120,10 +118,8 @@ private:
         const uint32_t dim = 2048;
         const VkFilter filter = VK_FILTER_LINEAR;
         VulkanPipeline *pipeline = nullptr;
-        VulkanRenderPass *renderPass = nullptr;
         std::vector<VulkanImage *> depthImages;
         std::vector<VulkanImageView *> depthImageViews;
-        std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VkDescriptorSet> cameraSets;
     } m_shadowPass;
 

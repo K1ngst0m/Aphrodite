@@ -67,7 +67,7 @@ VkResult VulkanCommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::cmdBeginRenderPass(const RenderPassBeginInfo *pBeginInfo)
+void VulkanCommandBuffer::beginRenderPass(const RenderPassBeginInfo *pBeginInfo)
 {
     VkRenderPassBeginInfo renderPassBeginInfo = vkl::init::renderPassBeginInfo();
     renderPassBeginInfo.renderPass = pBeginInfo->pRenderPass->getHandle();

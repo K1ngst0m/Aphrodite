@@ -48,7 +48,7 @@ public:
 
     void beginRendering(const VkRenderingInfo &renderingInfo);
     void endRendering();
-    void cmdBeginRenderPass(const RenderPassBeginInfo *pBeginInfo);
+    void beginRenderPass(const RenderPassBeginInfo *pBeginInfo);
     void endRenderPass();
     void setViewport(VkViewport *viewport);
     void setSissor(VkRect2D *scissor);

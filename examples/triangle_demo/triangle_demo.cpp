@@ -90,14 +90,14 @@ void triangle_demo::buildCommands() {
     commandBuffer->begin(0);
 
     // render pass
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
+    commandBuffer->beginRenderPass(&renderPassBeginInfo);
 
     // dynamic state
-    commandBuffer->cmdSetViewport(&viewport);
-    commandBuffer->cmdSetSissor(&scissor);
-    commandBuffer->cmdBindPipeline(m_demoPipeline);
-    commandBuffer->cmdDraw(3, 1, 0, 0);
-    commandBuffer->cmdEndRenderPass();
+    commandBuffer->setViewport(&viewport);
+    commandBuffer->setSissor(&scissor);
+    commandBuffer->bindPipeline(m_demoPipeline);
+    commandBuffer->draw(3, 1, 0, 0);
+    commandBuffer->endRenderPass();
 
     commandBuffer->end();
 }

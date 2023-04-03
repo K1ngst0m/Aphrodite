@@ -32,7 +32,7 @@ function(buildExamples)
 endfunction(buildExamples)
 
 set(EXAMPLES
-    # triangle_demo
+    triangle_demo
     scene_manager
 )
 
