@@ -98,11 +98,11 @@ void VulkanUIRenderer::initUI() {
         stagingBuffer->unmap();
 
         // Copy buffer data to font image
-        auto *copyCmd = m_device->beginSingleTimeCommands(m_renderer->getTransferQueue());
-        copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyCmd->cmdCopyBufferToImage(stagingBuffer, m_fontData.image);
-        copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        m_device->endSingleTimeCommands(copyCmd);
+        m_device->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *copyCmd){
+            copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            copyCmd->cmdCopyBufferToImage(stagingBuffer, m_fontData.image);
+            copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
         m_device->destroyBuffer(stagingBuffer);
     }
 

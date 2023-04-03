@@ -86,14 +86,10 @@ public:
 
 public:
     VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers, VulkanQueue *pQueue);
-
     void freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
-
-    VulkanCommandBuffer *beginSingleTimeCommands(VulkanQueue * pQueue);
-
-    void endSingleTimeCommands(VulkanCommandBuffer *commandBuffer);
-
+    VkResult executeSingleCommands(QueueTypeFlags type, const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
     void waitIdle();
+    void waitForFence(const std::vector<VkFence> &fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 public:
     VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_syncPrimitivesPool; }

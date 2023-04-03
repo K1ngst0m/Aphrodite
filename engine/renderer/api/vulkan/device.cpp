@@ -57,8 +57,12 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     device->m_handle = handle;
     device->m_createInfo = createInfo;
     device->m_physicalDevice = physicalDevice;
-    device->m_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
-    device->m_shaderCache = new VulkanShaderCache(device);
+
+    // TODO
+    {
+        device->m_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
+        device->m_shaderCache = new VulkanShaderCache(device);
+    }
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);
@@ -156,26 +160,24 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo &createInfo, Vu
     return VK_SUCCESS;
 }
 
-void VulkanDevice::endSingleTimeCommands(VulkanCommandBuffer *commandBuffer)
+VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags type, const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func)
 {
-    uint32_t queueFamilyIndex = commandBuffer->getQueueFamilyIndices();
+    VulkanCommandBuffer *cmd = nullptr;
+    VK_CHECK_RESULT(allocateCommandBuffers(1, &cmd, getQueueByFlags(type)));
+
+    VK_CHECK_RESULT(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    func(cmd);
+    VK_CHECK_RESULT(cmd->end());
+    uint32_t queueFamilyIndex = cmd->getQueueFamilyIndices();
     auto *queue = m_queues[queueFamilyIndex][0];
 
-    commandBuffer->end();
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    VK_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
+    VK_CHECK_RESULT(queue->waitIdle());
 
-    QueueSubmitInfo submitInfo{.commandBuffers = {commandBuffer}};
-    queue->submit({submitInfo}, VK_NULL_HANDLE);
-    queue->waitIdle();
+    freeCommandBuffers(1, &cmd);
 
-    freeCommandBuffers(1, &commandBuffer);
-}
-
-VulkanCommandBuffer *VulkanDevice::beginSingleTimeCommands(VulkanQueue * pQueue)
-{
-    VulkanCommandBuffer *instance = nullptr;
-    allocateCommandBuffers(1, &instance, pQueue);
-    instance->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    return instance;
+    return VK_SUCCESS;
 }
 
 VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, void *data)
@@ -504,7 +506,7 @@ VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, 
     std::vector<VkAttachmentReference> colorAttachmentRefs {};
     VkAttachmentReference depthAttachmentRef {};
 
-    auto &colorAttachments = createInfo.colorAttachments;
+    const auto &colorAttachments = createInfo.colorAttachments;
     for(uint32_t idx = 0; idx < colorAttachments.size(); idx++)
     {
         attachments.push_back(colorAttachments[idx]);
@@ -558,5 +560,9 @@ VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, 
     *ppRenderPass = new VulkanRenderPass(renderpass, colorAttachmentRefs.size());
 
     return VK_SUCCESS;
+}
+void VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool waitAll, uint32_t timeout)
+{
+    vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 }  // namespace vkl

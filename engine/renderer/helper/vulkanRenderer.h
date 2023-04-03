@@ -20,43 +20,26 @@ public:
     void submitAndPresent();
 
 public:
-    VkPipelineCache getPipelineCache() { return m_pipelineCache; }
-    uint32_t getCurrentFrameIndex() const { return m_currentFrame; }
-    uint32_t getCurrentImageIndex() const { return m_imageIdx; }
-    VulkanSwapChain *getSwapChain() { return m_swapChain; }
-    VulkanRenderPass *getDefaultRenderPass() const { return m_renderPass; }
-    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
-    uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
-    VulkanDevice *getDevice() const { return m_device; }
-    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_defaultFb.framebuffers[idx]; }
     VulkanInstance *getInstance() const { return m_instance; }
-    VulkanQueue* getGraphicsQueue() const {return m_queue.graphics;}
-    VulkanQueue* getComputeQueue() const {return m_queue.compute;}
-    VulkanQueue* getTransferQueue() const {return m_queue.transfer;}
-
-private:
-    void _createDefaultRenderPass();
-    void _createDefaultFramebuffers();
-    void _createDefaultSyncObjects();
-    void _createPipelineCache();
-    void _allocateDefaultCommandBuffers();
+    VulkanDevice *getDevice() const { return m_device; }
+    uint32_t getCurrentFrameIndex() const { return m_currentFrameIdx; }
+    uint32_t getCurrentImageIndex() const { return m_imageIdx; }
+    VkPipelineCache getPipelineCache() { return m_pipelineCache; }
+    VulkanSwapChain *getSwapChain() { return m_swapChain; }
+    VulkanQueue *getGraphicsQueue() const { return m_queue.graphics; }
+    VulkanQueue *getComputeQueue() const { return m_queue.compute; }
+    VulkanQueue *getTransferQueue() const { return m_queue.transfer; }
 
 private:
     VulkanInstance *m_instance = nullptr;
     VulkanDevice *m_device = nullptr;
     VulkanSwapChain *m_swapChain = nullptr;
-
-    VkPhysicalDeviceFeatures m_enabledFeatures{};
     VkSurfaceKHR m_surface;
 
     VkPipelineCache m_pipelineCache = VK_NULL_HANDLE;
 
-    uint32_t m_currentFrame = 0;
+    uint32_t m_currentFrameIdx = 0;
     uint32_t m_imageIdx = 0;
-
-    // default resource
-private:
-    vkl::VulkanRenderPass *m_renderPass = nullptr;
 
     struct
     {
@@ -65,13 +48,23 @@ private:
         VulkanQueue *transfer = compute;
     } m_queue;
 
+    // default resource
+public:
+    VulkanRenderPass *getDefaultRenderPass() const { return m_renderPass; }
+    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_defaultFb.framebuffers[idx]; }
+    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
+    uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
+
+private:
+    vkl::VulkanRenderPass *m_renderPass = nullptr;
+
     struct
     {
         std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
-        std::vector<VulkanImage *>depthImages;
-        std::vector<VulkanImageView *>depthImageViews;
+        std::vector<VulkanImage *> depthImages;
+        std::vector<VulkanImageView *> depthImageViews;
     } m_defaultFb;
 
     std::vector<VkSemaphore> m_renderSemaphore;
