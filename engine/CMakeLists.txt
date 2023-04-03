@@ -10,9 +10,15 @@ file(GLOB base_src
   renderer/*.h
   renderer/*.hpp
 
-  renderer/helper/*.cpp
-  renderer/helper/*.h
-  renderer/helper/*.hpp
+  renderer/helper/renderData.h
+  renderer/helper/sceneRenderer.h
+  renderer/helper/vulkanRenderer.h
+  # renderer/helper/uiRenderer.cpp
+
+  renderer/helper/renderData.cpp
+  renderer/helper/sceneRenderer.cpp
+  renderer/helper/vulkanRenderer.cpp
+  # renderer/helper/uiRenderer.cpp
 
   renderer/api/vulkan/*.cpp
   renderer/api/vulkan/*.h
@@ -26,10 +32,10 @@ file(GLOB base_src
   app/*.h
   app/*.hpp
 
-  ../external/spirv_reflect/*.cpp
-  ../external/spirv_reflect/*.h
-  ../external/imgui/*.cpp
-  ../external/imgui/*.h
+  # ../external/spirv_reflect/*.cpp
+  # ../external/spirv_reflect/*.h
+  # ../external/imgui/*.cpp
+  # ../external/imgui/*.h
   ../external/volk/volk.h
   ../external/volk/volk.c
   )
@@ -39,10 +45,10 @@ file(GLOB BASE_HEADERS
   vkl.hpp
   vklHelper.hpp
 
-  renderer/*.h
-  renderer/*.hpp
-  renderer/helper/*.h
-  renderer/helper/*.hpp
+  renderer/helper/renderData.h
+  renderer/helper/sceneRenderer.h
+  renderer/helper/vulkanRenderer.h
+  # renderer/helper/uiRenderer.h
 
   scene/*.h
   scene/*.hpp

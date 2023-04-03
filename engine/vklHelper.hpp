@@ -4,6 +4,6 @@
 #include "renderer/helper/vulkanRenderer.h"
 #include "renderer/helper/renderData.h"
 #include "renderer/helper/sceneRenderer.h"
-#include "renderer/helper/uiRenderer.h"
+// #include "renderer/helper/uiRenderer.h"
 
 #endif // HELPER_H_

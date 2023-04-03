@@ -102,9 +102,8 @@ private:
         };
 
         VulkanPipeline *pipeline = nullptr;
-        vkl::VulkanRenderPass *renderPass = nullptr;
+        // VulkanRenderPass *renderPass = nullptr;
 
-        std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
         std::vector<VulkanImage *> depthImages;
@@ -137,11 +136,9 @@ private:
         };
 
         VulkanBuffer *quadVB = nullptr;
-        VulkanRenderPass *renderPass = nullptr;
         VulkanPipeline *pipeline = nullptr;
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
-        std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VkDescriptorSet> sets;
     } m_postFxPass;
 

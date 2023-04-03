@@ -1,6 +1,5 @@
 #include "sceneRenderer.h"
 #include "renderData.h"
-#include "uiRenderer.h"
 #include "vulkanRenderer.h"
 
 #include "common/assetManager.h"
@@ -17,6 +16,7 @@ namespace vkl
 
 namespace
 {
+
 VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const void *data, VkDeviceSize size,
                            VkBufferUsageFlags usage)
 {
@@ -47,17 +47,13 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const voi
         }
 
         pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-            cmd->cmdCopyBuffer(stagingBuffer, buffer, bufferSize);
+            cmd->copyBuffer(stagingBuffer, buffer, bufferSize);
         });
 
         pDevice->destroyBuffer(stagingBuffer);
     }
     return buffer;
 }
-}  // namespace
-
-namespace
-{
 GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
                          uint32_t dataSize, bool genMipmap = false)
 {
@@ -91,9 +87,9 @@ GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t wi
         pDevice->createImage(createInfo, &texture.image);
 
         pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            cmd->cmdCopyBufferToImage(stagingBuffer, texture.image);
-            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->copyBufferToImage(stagingBuffer, texture.image);
+            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         });
 
@@ -126,21 +122,21 @@ GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t wi
                 mipSubRange.layerCount = 1;
 
                 // Prepare current mip level as image blit destination
-                cmd->cmdImageMemoryBarrier(texture.image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                cmd->imageMemoryBarrier(texture.image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                         VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
                 // Blit from previous level
-                cmd->cmdBlitImage(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture.image,
+                cmd->blitImage(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture.image,
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
                 // Prepare current mip level as image blit source for next level
-                cmd->cmdImageMemoryBarrier(texture.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                cmd->imageMemoryBarrier(texture.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
             }
 
-            cmd->cmdTransitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
 
@@ -158,6 +154,7 @@ GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t wi
 
     return texture;
 }
+
 }  // namespace
 
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer) :
@@ -204,8 +201,6 @@ void VulkanSceneRenderer::cleanupResources()
 
     for(uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++)
     {
-        m_pDevice->destroyFramebuffers(m_postFxPass.framebuffers[idx]);
-        m_pDevice->destroyFramebuffers(m_forwardPass.framebuffers[idx]);
         m_pDevice->destroyImage(m_forwardPass.colorImages[idx]);
         m_pDevice->destroyImageView(m_postFxPass.colorImageViews[idx]);
         m_pDevice->destroyImageView(m_forwardPass.colorImageViews[idx]);
@@ -214,8 +209,6 @@ void VulkanSceneRenderer::cleanupResources()
     }
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.postFX, nullptr);
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.texture, nullptr);
-    // vkDestroySampler(m_pDevice->getHandle(), m_samplers.cubeMap, nullptr);
-    // vkDestroySampler(m_pDevice->getHandle(), m_samplers.shadow, nullptr);
     //
     for(auto &[_, matData] : m_materialDataMaps)
     {
@@ -236,8 +229,6 @@ void VulkanSceneRenderer::cleanupResources()
 
     m_pDevice->destroyBuffer(m_postFxPass.quadVB);
     m_pDevice->destroyBuffer(m_sceneInfoUB);
-    vkDestroyRenderPass(m_pDevice->getHandle(), m_forwardPass.renderPass->getHandle(), nullptr);
-    vkDestroyRenderPass(m_pDevice->getHandle(), m_postFxPass.renderPass->getHandle(), nullptr);
 }
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
@@ -253,51 +244,88 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
-    RenderPassBeginInfo renderPassBeginInfo{
-        .pRenderPass = m_forwardPass.renderPass,
-        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
-        .pClearValues = clearValues.data(),
+    VulkanImageView * pColorAttachment = m_forwardPass.colorImageViews[m_pRenderer->getCurrentImageIndex()];
+    VkRenderingAttachmentInfoKHR forwardColorAttachmentInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView = pColorAttachment->getHandle(),
+        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue = clearValues[0],
     };
-    renderPassBeginInfo.renderArea = {
+
+    VulkanImageView * pDepthAttachment = m_forwardPass.depthImageViews[m_pRenderer->getCurrentImageIndex()];
+    VkRenderingAttachmentInfoKHR forwardDepthAttachmentInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView = pDepthAttachment->getHandle(),
+        .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .clearValue = clearValues[1],
+    };
+
+    VkRenderingInfo renderingInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .layerCount = 1,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &forwardColorAttachmentInfo,
+        .pDepthAttachment = &forwardDepthAttachmentInfo,
+    };
+
+    renderingInfo.renderArea = {
         .offset = {0, 0},
         .extent = extent,
     };
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
-    auto commandIndex = m_pRenderer->getCurrentFrameIndex();
-    auto *commandBuffer = m_pRenderer->getDefaultCommandBuffer(commandIndex);
+    uint32_t commandIndex = m_pRenderer->getCurrentFrameIndex();
+    VulkanCommandBuffer *commandBuffer = m_pRenderer->getDefaultCommandBuffer(commandIndex);
 
     commandBuffer->begin();
 
     // dynamic state
-    commandBuffer->cmdSetViewport(&viewport);
-    commandBuffer->cmdSetSissor(&scissor);
+    commandBuffer->setViewport(&viewport);
+    commandBuffer->setSissor(&scissor);
 
     // forward pass
-    commandBuffer->cmdBindPipeline(m_forwardPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SCENE, 1, &m_sceneSets[commandIndex]);
-    commandBuffer->cmdBindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SAMPLER, 1, &m_sampler.set);
-    renderPassBeginInfo.pFramebuffer = m_forwardPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-    for(auto &renderable : m_renderList)
     {
-        _drawRenderData(renderable, m_forwardPass.pipeline, commandBuffer);
+        commandBuffer->bindPipeline(m_forwardPass.pipeline);
+        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SCENE, 1, &m_sceneSets[commandIndex]);
+        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SAMPLER, 1, &m_sampler.set);
+        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        commandBuffer->beginRendering(renderingInfo);
+        for(auto &renderable : m_renderList)
+        {
+            _drawRenderData(renderable, m_forwardPass.pipeline, commandBuffer);
+        }
+        commandBuffer->endRendering();
+        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
-    commandBuffer->cmdEndRenderPass();
 
-    renderPassBeginInfo.pFramebuffer = m_postFxPass.framebuffers[m_pRenderer->getCurrentImageIndex()];
-    renderPassBeginInfo.pRenderPass = m_postFxPass.renderPass;
-    renderPassBeginInfo.clearValueCount = 1;
-    commandBuffer->cmdBeginRenderPass(&renderPassBeginInfo);
-    VkDeviceSize offsets[1] = { 0 };
-    commandBuffer->cmdBindVertexBuffers(0, 1, m_postFxPass.quadVB, offsets);
-    commandBuffer->cmdBindPipeline(m_postFxPass.pipeline);
-    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
+    pColorAttachment = m_postFxPass.colorImageViews[m_pRenderer->getCurrentImageIndex()];
+    VkRenderingAttachmentInfoKHR postFxColorAttachmentInfo{
+        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView = pColorAttachment->getHandle(),
+        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue = clearValues[0],
+    };
+    renderingInfo.pColorAttachments = &postFxColorAttachmentInfo;
+    renderingInfo.pDepthAttachment = nullptr;
+
+    commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    commandBuffer->beginRendering(renderingInfo);
+    commandBuffer->bindVertexBuffers(0, 1, m_postFxPass.quadVB, {0});
+    commandBuffer->bindPipeline(m_postFxPass.pipeline);
+    commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
                                         &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
-    commandBuffer->cmdBindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_sampler.set);
-    commandBuffer->cmdDraw(6, 1, 0, 0);
-    commandBuffer->cmdEndRenderPass();
+    commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_sampler.set);
+    commandBuffer->draw(6, 1, 0, 0);
+    commandBuffer->endRendering();
+    commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
     commandBuffer->end();
 }
@@ -554,76 +582,6 @@ void VulkanSceneRenderer::_loadScene()
 
 void VulkanSceneRenderer::_initSkyboxResource()
 {
-    // VulkanPipeline *pipeline = m_forwardPass.pipeline;
-    // VkDescriptorSet set = m_skyboxResource.set;
-    // VulkanImage *cubemap = m_skyboxResource.cubeMap;
-
-    // {
-    //     // auto             texture       = loadCubemapFromFile("");
-    //     // VulkanBuffer    *stagingBuffer = nullptr;
-    //     // BufferCreateInfo bufferCI{
-    //     //     .size      = static_cast<uint32_t>(texture->data.size()),
-    //     //     .alignment = 0,
-    //     //     .usage     = BUFFER_USAGE_TRANSFER_SRC_BIT,
-    //     //     .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-    //     // };
-    //     // VK_CHECK_RESULT(m_pDevice->createBuffer(&bufferCI, &stagingBuffer));
-    //     // stagingBuffer->map();
-    //     // stagingBuffer->copyTo(texture->data.data(), texture->data.size());
-    //     // stagingBuffer->unmap();
-
-    //     // ImageCreateInfo imageCI{
-    //     //     .extent      = {texture->width, texture->height, 1},
-    //     //     .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-    //     //     .imageType   = IMAGE_TYPE_2D,
-    //     //     .arrayLayers = 6,
-    //     //     .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
-    //     //     .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    //     //     .format      = FORMAT_B8G8R8A8_UNORM,
-    //     //     .tiling      = IMAGE_TILING_OPTIMAL,
-    //     // };
-
-    //     // VK_CHECK_RESULT(m_pDevice->createImage(&imageCI, &cubemap));
-
-    //     // auto *cmd = m_pDevice->beginSingleTimeCommands(VK_QUEUE_TRANSFER_BIT);
-    //     // cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_UNDEFINED,
-    //     // VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL); cmd->cmdCopyBufferToImage(stagingBuffer, cubemap);
-    //     // cmd->cmdTransitionImageLayout(cubemap, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-    //     // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); m_pDevice->endSingleTimeCommands(cmd);
-
-    //     // ImageViewCreateInfo imageViewCI{
-    //     //     .viewType  = IMAGE_VIEW_TYPE_CUBE,
-    //     //     .dimension = IMAGE_VIEW_DIMENSION_CUBE,
-    //     //     .format    = imageCI.format,
-    //     // };
-
-    //     // VkImageSubresourceRange subresourceRange = {};
-    //     // subresourceRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-    //     // subresourceRange.baseMipLevel            = 0;
-    //     // subresourceRange.levelCount              = cubemap->getMipLevels();
-    //     // subresourceRange.layerCount              = 6;
-
-    //     // _skyboxResource.cubeMapDescInfo = {
-    //     //     .sampler     = _skyboxResource.cubeMapSampler,
-    //     //     .imageView   = _skyboxResource.cubeMapView->getHandle(),
-    //     //     .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    //     // };
-    // }
-
-    // pipeline = CreateSkyboxPipeline(m_pDevice, m_pRenderer->getDefaultRenderPass());
-    // set = pipeline->getDescriptorSetLayout(PASS_FORWARD::SET_SKYBOX)->allocateSet();
-
-    // std::vector<VkWriteDescriptorSet> writeDescriptorSets{
-    //     // Binding 0 : Vertex shader uniform buffer
-    //     vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-    //     m_cameraInfos.data()),
-    //     // Binding 1 : Fragment shader cubemap sampler
-    //     vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
-    //                                   &m_skyboxResource.cubeMapDescInfo)
-    // };
-
-    // vkUpdateDescriptorSets(m_pDevice->getHandle(), writeDescriptorSets.size(),
-    //                        writeDescriptorSets.data(), 0, nullptr);
 }
 
 void VulkanSceneRenderer::_initPostFx()
@@ -631,7 +589,6 @@ void VulkanSceneRenderer::_initPostFx()
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     m_postFxPass.colorImages.resize(imageCount);
     m_postFxPass.colorImageViews.resize(imageCount);
-    m_postFxPass.framebuffers.resize(imageCount);
     m_postFxPass.sets.resize(imageCount);
 
     // buffer
@@ -657,7 +614,6 @@ void VulkanSceneRenderer::_initPostFx()
     {
         auto &colorImage = m_postFxPass.colorImages[idx];
         auto &colorImageView = m_postFxPass.colorImageViews[idx];
-        auto &framebuffer = m_postFxPass.framebuffers[idx];
 
         // get swapchain image
         {
@@ -671,38 +627,6 @@ void VulkanSceneRenderer::_initPostFx()
             createInfo.viewType = IMAGE_VIEW_TYPE_2D;
             m_pDevice->createImageView(createInfo, &colorImageView, colorImage);
         }
-
-        {
-            std::vector<VulkanImageView *> attachments{ colorImageView };
-            FramebufferCreateInfo createInfo{
-                .width = m_pRenderer->getSwapChain()->getExtent().width,
-                .height = m_pRenderer->getSwapChain()->getExtent().height,
-                .attachments = {attachments},
-            };
-            VK_CHECK_RESULT(
-                m_pDevice->createFramebuffers(createInfo, &framebuffer));
-        }
-    }
-
-    {
-        VkAttachmentDescription colorAttachment{
-            .format = m_pRenderer->getSwapChain()->getImageFormat(),
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-
-        };
-
-
-        RenderPassCreateInfo createInfo{
-            .colorAttachments = {colorAttachment},
-        };
-
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(createInfo, &m_postFxPass.renderPass));
     }
 
     {
@@ -727,8 +651,15 @@ void VulkanSceneRenderer::_initPostFx()
             .vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDescs.size()),
             .pVertexAttributeDescriptions = attrDescs.data(),
         };
+
+        auto swapchainFormat = m_pRenderer->getSwapChain()->getSurfaceFormat();
+        pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &swapchainFormat,
+        };
         VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_postFxPass.renderPass, &m_postFxPass.pipeline));
+            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_postFxPass.pipeline));
     }
 
     for(uint32_t idx = 0; idx < imageCount; idx++)
@@ -755,43 +686,10 @@ void VulkanSceneRenderer::_initForward()
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
-    m_forwardPass.framebuffers.resize(imageCount);
     m_forwardPass.colorImages.resize(imageCount);
     m_forwardPass.colorImageViews.resize(imageCount);
     m_forwardPass.depthImages.resize(imageCount);
     m_forwardPass.depthImageViews.resize(imageCount);
-
-    // render pass
-    {
-        VkAttachmentDescription colorAttachment{
-            .format = m_pRenderer->getSwapChain()->getImageFormat(),
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-
-        };
-        VkAttachmentDescription depthAttachment{
-            .format = m_pDevice->getDepthFormat(),
-            .samples = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        };
-
-        RenderPassCreateInfo createInfo{
-            .colorAttachments = {colorAttachment},
-            .depthAttachment = {depthAttachment},
-        };
-
-        VK_CHECK_RESULT(m_pDevice->createRenderPass(createInfo, &m_forwardPass.renderPass));
-    }
 
     // frame buffer
     for(auto idx = 0; idx < imageCount; idx++)
@@ -800,7 +698,6 @@ void VulkanSceneRenderer::_initForward()
         auto &colorImageView = m_forwardPass.colorImageViews[idx];
         auto &depthImage = m_forwardPass.depthImages[idx];
         auto &depthImageView = m_forwardPass.depthImageViews[idx];
-        auto &framebuffer = m_forwardPass.framebuffers[idx];
 
         {
             ImageCreateInfo createInfo{
@@ -834,7 +731,7 @@ void VulkanSceneRenderer::_initForward()
         }
 
         m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-            cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
+            cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         });
 
@@ -845,22 +742,18 @@ void VulkanSceneRenderer::_initForward()
             };
             VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &depthImageView, depthImage));
         }
-
-        {
-            std::vector<VulkanImageView *> attachments{ colorImageView, depthImageView };
-            FramebufferCreateInfo createInfo{
-                .width = imageExtent.width,
-                .height = imageExtent.height,
-                .attachments = {attachments},
-            };
-            VK_CHECK_RESULT(
-                m_pDevice->createFramebuffers(createInfo, &framebuffer));
-        }
     }
 
     {
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        std::vector<VkFormat> colorFormats = {m_pRenderer->getSwapChain()->getSurfaceFormat()};
+        pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            .colorAttachmentCount = static_cast<uint32_t>(colorFormats.size()),
+            .pColorAttachmentFormats = colorFormats.data(),
+            .depthAttachmentFormat = m_pDevice->getDepthFormat(),
+        };
         pipelineCreateInfo.setLayouts = { m_setLayout.pScene, m_setLayout.pObject, m_setLayout.pMaterial,
                                           m_setLayout.pSampler };
         pipelineCreateInfo.constants.push_back(
@@ -870,8 +763,7 @@ void VulkanSceneRenderer::_initForward()
             { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
         };
 
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_forwardPass.renderPass, &m_forwardPass.pipeline));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_forwardPass.pipeline));
     }
 
     m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
@@ -966,11 +858,10 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
             matrix = currentNode->matrix * matrix;
             currentNode = currentNode->parent;
         }
-        drawCmd->cmdPushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
+        drawCmd->pushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                                   &matrix);
     }
-    VkDeviceSize offsets[1] = { 0 };
-    drawCmd->cmdBindVertexBuffers(0, 1, renderData->m_vertexBuffer, offsets);
+    drawCmd->bindVertexBuffers(0, 1, renderData->m_vertexBuffer, {0});
     if(renderData->m_indexBuffer)
     {
         VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -983,7 +874,7 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
             indexType = VK_INDEX_TYPE_UINT32;
             break;
         }
-        drawCmd->cmdBindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
+        drawCmd->bindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
     }
     for(const auto &subset : mesh->m_subsets)
     {
@@ -991,14 +882,14 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
         {
             auto &material = m_scene->getMaterials()[subset.materialIndex];
             auto &materialSet = m_materialDataMaps[material];
-            drawCmd->cmdBindDescriptorSet(pipeline, 2, 1, &materialSet.set);
+            drawCmd->bindDescriptorSet(pipeline, 2, 1, &materialSet.set);
             if(subset.hasIndices)
             {
-                drawCmd->cmdDrawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+                drawCmd->drawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
             }
             else
             {
-                drawCmd->cmdDraw(subset.vertexCount, 1, subset.firstVertex, 0);
+                drawCmd->draw(subset.vertexCount, 1, subset.firstVertex, 0);
             }
         }
     }

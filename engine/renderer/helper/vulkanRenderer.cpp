@@ -1,18 +1,12 @@
 #include "vulkanRenderer.h"
 #include "renderData.h"
 #include "sceneRenderer.h"
-#include "uiRenderer.h"
-
 #include "renderer/api/vulkan/device.h"
 
 #include "scene/mesh.h"
 
 namespace vkl
 {
-
-const std::vector<const char *> validationLayers = { "VK_LAYER_KHRONOS_validation" };
-const std::vector<const char *> deviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
     Renderer(std::move(windowData), config)
 {
@@ -37,6 +31,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         if(m_config.enableDebug)
         {
+            const std::vector<const char *> validationLayers = {
+                "VK_LAYER_KHRONOS_validation"
+            };
             instanceCreateInfo.flags = INSTANCE_CREATION_ENABLE_DEBUG;
             instanceCreateInfo.enabledLayers = validationLayers;
         }
@@ -46,6 +43,11 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
     // create device
     {
+        const std::vector<const char *> deviceExtensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+        };
+
         DeviceCreateInfo createInfo{
             .enabledExtensions = deviceExtensions,
             // TODO select physical device
@@ -97,7 +99,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         {
             VkAttachmentDescription colorAttachment{
-                .format = m_swapChain->getImageFormat(),
+                .format = m_swapChain->getSurfaceFormat(),
                 .samples = VK_SAMPLE_COUNT_1_BIT,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -190,7 +192,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
                     }
 
                     m_device->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-                        cmd->cmdTransitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                        cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
                     });
 
@@ -232,7 +234,7 @@ void VulkanRenderer::beginFrame()
 {
     VK_CHECK_RESULT(m_device->waitForFence({m_frameFences[m_currentFrameIdx]}));
     VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_currentFrameIdx]));
-    VK_CHECK_RESULT(m_pSyncPrimitivesPool->ReleaseFence(m_frameFences[m_currentFrameIdx]));
+    VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_currentFrameIdx]));
 }
 
 void VulkanRenderer::endFrame()

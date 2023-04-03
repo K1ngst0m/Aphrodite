@@ -28,7 +28,7 @@ public:
     VkResult presentImage(const uint32_t& imageIdx, VulkanQueue *pQueue, const std::vector<VkSemaphore>& waitSemaphores);
 
 public:
-    VkFormat getImageFormat() const { return m_surfaceFormat.format; }
+    VkFormat getSurfaceFormat() const { return m_surfaceFormat.format; }
     VkExtent2D getExtent() const { return m_extent; }
     uint32_t getImageCount() const { return m_images.size(); }
     VulkanImage *getImage(uint32_t idx) const { return m_images[idx]; }

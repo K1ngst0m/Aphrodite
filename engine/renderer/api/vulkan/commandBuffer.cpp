@@ -78,61 +78,58 @@ void VulkanCommandBuffer::cmdBeginRenderPass(const RenderPassBeginInfo *pBeginIn
 
     vkCmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
-void VulkanCommandBuffer::cmdNextSubpass()
-{
-}
-void VulkanCommandBuffer::cmdEndRenderPass()
+void VulkanCommandBuffer::endRenderPass()
 {
     vkCmdEndRenderPass(m_handle);
 }
-void VulkanCommandBuffer::cmdSetViewport(VkViewport *viewport)
+void VulkanCommandBuffer::setViewport(VkViewport *viewport)
 {
     vkCmdSetViewport(m_handle, 0, 1, viewport);
 }
-void VulkanCommandBuffer::cmdSetSissor(VkRect2D *scissor)
+void VulkanCommandBuffer::setSissor(VkRect2D *scissor)
 {
     vkCmdSetScissor(m_handle, 0, 1, scissor);
 }
-void VulkanCommandBuffer::cmdBindPipeline(VulkanPipeline *pPipeline)
+void VulkanCommandBuffer::bindPipeline(VulkanPipeline *pPipeline)
 {
     vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
-void VulkanCommandBuffer::cmdBindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet,
+void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet,
                                                uint32_t descriptorSetCount,
                                                const VkDescriptorSet *pDescriptorSets)
 {
     vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
                             descriptorSetCount, pDescriptorSets, 0, nullptr);
 }
-void VulkanCommandBuffer::cmdBindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
-                                               const VulkanBuffer *pBuffer, const VkDeviceSize *pOffsets)
+void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
+                                               const VulkanBuffer *pBuffer, const std::vector<VkDeviceSize>& offsets)
 {
-    vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), pOffsets);
+    vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
 }
-void VulkanCommandBuffer::cmdBindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset,
+void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset,
                                               VkIndexType indexType)
 {
     vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void VulkanCommandBuffer::cmdPushConstants(VkPipelineLayout layout, VkShaderStageFlags stage,
+void VulkanCommandBuffer::pushConstants(VkPipelineLayout layout, VkShaderStageFlags stage,
                                            uint32_t offset, uint32_t size, const void *pValues)
 {
     vkCmdPushConstants(m_handle, layout, stage, offset, size, pValues);
 }
-void VulkanCommandBuffer::cmdDrawIndexed(uint32_t indexCount, uint32_t instanceCount,
+void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                          uint32_t firstIndex, uint32_t vertexOffset,
                                          uint32_t firstInstance)
 {
     vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
-void VulkanCommandBuffer::cmdCopyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer,
+void VulkanCommandBuffer::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer,
                                         VkDeviceSize size)
 {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void VulkanCommandBuffer::cmdTransitionImageLayout(VulkanImage *image, VkImageLayout oldLayout,
+void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout,
                                                    VkImageLayout newLayout,
                                                    VkPipelineStageFlags srcStageMask,
                                                    VkPipelineStageFlags dstStageMask)
@@ -254,7 +251,7 @@ void VulkanCommandBuffer::cmdTransitionImageLayout(VulkanImage *image, VkImageLa
     vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                          &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage *image)
+void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image)
 {
     VkBufferImageCopy region{
         .bufferOffset = 0,
@@ -275,7 +272,7 @@ void VulkanCommandBuffer::cmdCopyBufferToImage(VulkanBuffer *buffer, VulkanImage
     vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
-void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstImage)
+void VulkanCommandBuffer::copyImage(VulkanImage *srcImage, VulkanImage *dstImage)
 {
     // Copy region for transfer from framebuffer to cube face
     VkImageCopy copyRegion = {};
@@ -298,7 +295,7 @@ void VulkanCommandBuffer::cmdCopyImage(VulkanImage *srcImage, VulkanImage *dstIm
     vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                    dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
-void VulkanCommandBuffer::cmdDraw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
+void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                   uint32_t firstInstance)
 {
     vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
@@ -307,7 +304,7 @@ VulkanCommandPool *VulkanCommandBuffer::getPool()
 {
     return m_pool;
 }
-void VulkanCommandBuffer::cmdImageMemoryBarrier(
+void VulkanCommandBuffer::imageMemoryBarrier(
     VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
@@ -323,7 +320,7 @@ void VulkanCommandBuffer::cmdImageMemoryBarrier(
     vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                          &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout,
+void VulkanCommandBuffer::blitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout,
                                        VulkanImage *dstImage, VkImageLayout dstImageLayout,
                                        uint32_t regionCount, const VkImageBlit *pRegions,
                                        VkFilter filter)
@@ -331,8 +328,16 @@ void VulkanCommandBuffer::cmdBlitImage(VulkanImage *srcImage, VkImageLayout srcI
     vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout,
                    1, pRegions, filter);
 }
-uint32_t VulkanCommandBuffer::getQueueFamilyIndices()
+uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const
 {
     return m_queueFamilyType;
 };
+void VulkanCommandBuffer::beginRendering(const VkRenderingInfo &renderingInfo)
+{
+    vkCmdBeginRendering(getHandle(), &renderingInfo);
+}
+void VulkanCommandBuffer::endRendering()
+{
+    vkCmdEndRendering(getHandle());
+}
 }  // namespace vkl

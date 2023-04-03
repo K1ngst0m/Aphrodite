@@ -30,7 +30,7 @@ private:
     std::shared_ptr<vkl::Scene> m_scene;
 
     std::unique_ptr<vkl::VulkanSceneRenderer> m_sceneRenderer;
-    std::unique_ptr<vkl::VulkanUIRenderer>    m_uiRenderer;
+    // std::unique_ptr<vkl::VulkanUIRenderer>    m_uiRenderer;
     std::shared_ptr<vkl::VulkanRenderer>      m_renderer;
 
     std::shared_ptr<vkl::Window> m_window;

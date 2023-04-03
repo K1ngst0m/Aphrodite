@@ -38,6 +38,7 @@ struct VertexInputBuilder
 
 struct GraphicsPipelineCreateInfo
 {
+    VkPipelineRenderingCreateInfo renderingCreateInfo;
     std::vector<VkDynamicState> dynamicStages;
     VkPipelineVertexInputStateCreateInfo vertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo inputAssembly;

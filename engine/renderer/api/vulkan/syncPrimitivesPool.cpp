@@ -47,7 +47,7 @@ VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence &fence, bool isSignaled)
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::ReleaseFence(VkFence fence)
+VkResult VulkanSyncPrimitivesPool::releaseFence(VkFence fence)
 {
     m_fenceLock.Lock();
     if(m_allFences.count(fence))

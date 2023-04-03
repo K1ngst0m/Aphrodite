@@ -141,7 +141,7 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDe
             .mipLevels = 1,
             .arrayLayers = 1,
             .usage = swapChainCreateInfo.imageUsage,
-            .format = static_cast<Format>(m_surfaceFormat.format),
+            .format = static_cast<Format>(getSurfaceFormat()),
             .samples = VK_SAMPLE_COUNT_1_BIT,
             .tiling = IMAGE_TILING_OPTIMAL,
         };

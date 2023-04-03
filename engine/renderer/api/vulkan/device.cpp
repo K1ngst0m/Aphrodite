@@ -39,9 +39,15 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     // Enable all physical device available features.
     VkPhysicalDeviceFeatures supportedFeatures = physicalDevice->getDeviceFeatures();
 
+    constexpr VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+        .dynamicRendering = VK_TRUE,
+    };
+
     // Create the Vulkan device.
     VkDeviceCreateInfo deviceCreateInfo{
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .pNext = &dynamicRenderingFeature,
         .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
         .enabledExtensionCount = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
@@ -391,7 +397,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
     {
         std::vector<VkDescriptorSetLayout> setLayouts;
         setLayouts.reserve(createInfo.setLayouts.size());
-        for(auto setLayout : createInfo.setLayouts)
+        for(auto *setLayout : createInfo.setLayouts)
         {
             setLayouts.push_back(setLayout->getHandle());
         }
@@ -414,10 +420,16 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
         .pColorBlendState = &colorBlending,
         .pDynamicState = &createInfo.dynamicState,
         .layout = pipelineLayout,
-        .renderPass = pRenderPass->getHandle(),
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
     };
+
+    if(pRenderPass){
+        pipelineInfo.renderPass = pRenderPass->getHandle();
+    }
+    else{
+        pipelineInfo.pNext = &createInfo.renderingCreateInfo;
+    }
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto &[stage, sModule] : createInfo.shaderMapList)
