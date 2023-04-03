@@ -265,10 +265,9 @@ VulkanPhysicalDevice *VulkanDevice::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
-VkResult VulkanDevice::createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
-                                          uint32_t attachmentCount, VulkanImageView **pAttachments)
+VkResult VulkanDevice::createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer)
 {
-    return VulkanFramebuffer::Create(this, pCreateInfo, ppFramebuffer, attachmentCount, pAttachments);
+    return VulkanFramebuffer::Create(this, createInfo, ppFramebuffer);
 }
 
 void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer)

@@ -1,7 +1,5 @@
 #include "scene_manager.h"
 
-#include "aixlog.hpp"
-
 scene_manager::scene_manager() : vkl::BaseApp("scene_manager")
 {
 }

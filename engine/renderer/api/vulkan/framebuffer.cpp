@@ -2,8 +2,10 @@
 #include "device.h"
 
 namespace vkl {
-VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments) {
+VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer) {
     // Iterate over attachments and make sure each ImageView exists in ObjectLookup.
+    uint32_t attachmentCount = {static_cast<uint32_t>(createInfo.attachments.size())};
+    const auto *ppAttachments = createInfo.attachments.data();
     std::vector<VulkanImageView *> attachments;
     for (auto i = 0U; i < attachmentCount; ++i) {
         VulkanImageView *imageView = ppAttachments[i];
@@ -16,7 +18,7 @@ VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreate
     // Create a VulkanFramebuffer class instance.
     VulkanFramebuffer *framebuffer = new VulkanFramebuffer;
     framebuffer->m_device          = device;
-    memcpy(&framebuffer->getCreateInfo(), pCreateInfo, sizeof(FramebufferCreateInfo));
+    framebuffer->m_createInfo     = createInfo;
     framebuffer->m_attachments = std::move(attachments);
 
     // Copy object address to parameter.
@@ -27,7 +29,7 @@ VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreate
 }
 
 VkExtent2D VulkanFramebuffer::GetExtents() {
-    return {getCreateInfo().width, getCreateInfo().height};
+    return {m_createInfo.width, m_createInfo.height};
 }
 
 VulkanImageView *VulkanFramebuffer::GetAttachment(uint32_t attachmentIndex) {
@@ -61,9 +63,9 @@ VkFramebuffer VulkanFramebuffer::getHandle(VulkanRenderPass *pRenderPass) {
         createInfo.renderPass              = pRenderPass->getHandle();
         createInfo.attachmentCount         = static_cast<uint32_t>(attachments.size());
         createInfo.pAttachments            = attachments.data();
-        createInfo.width                   = getCreateInfo().width;
-        createInfo.height                  = getCreateInfo().height;
-        createInfo.layers                  = getCreateInfo().layers;
+        createInfo.width                   = m_createInfo.width;
+        createInfo.height                  = m_createInfo.height;
+        createInfo.layers                  = m_createInfo.layers;
 
         auto result = vkCreateFramebuffer(m_device->getHandle(), &createInfo, nullptr, &handle);
         if (result == VK_SUCCESS)

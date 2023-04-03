@@ -28,7 +28,7 @@ public:
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
     uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
     VulkanDevice *getDevice() const { return m_device; }
-    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_fbData.framebuffers[idx]; }
+    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_defaultFb.framebuffers[idx]; }
     VulkanInstance *getInstance() const { return m_instance; }
     VulkanQueue* getGraphicsQueue() const {return m_queue.graphics;}
     VulkanQueue* getComputeQueue() const {return m_queue.compute;}
@@ -70,11 +70,9 @@ private:
         std::vector<VulkanFramebuffer *> framebuffers;
         std::vector<VulkanImage *> colorImages;
         std::vector<VulkanImageView *> colorImageViews;
-
-        // TODO frames in flight depth attachment
-        VulkanImage *depthImage = nullptr;
-        VulkanImageView *depthImageView = nullptr;
-    } m_fbData;
+        std::vector<VulkanImage *>depthImages;
+        std::vector<VulkanImageView *>depthImageViews;
+    } m_defaultFb;
 
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;

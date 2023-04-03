@@ -5,14 +5,25 @@
 #include "renderer/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl {
+namespace vkl
+{
 class VulkanDevice;
 class VulkanRenderPass;
 class VulkanImageView;
 
-class VulkanFramebuffer : public FrameBuffer {
+struct FramebufferCreateInfo
+{
+    uint32_t width;
+    uint32_t height;
+    uint32_t layers = 1;
+    std::vector<VulkanImageView*> attachments;
+};
+
+class VulkanFramebuffer
+{
 public:
-    static VkResult Create(VulkanDevice *device, const FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer, uint32_t attachmentCount, VulkanImageView **ppAttachments);
+    static VkResult Create(VulkanDevice *device, const FramebufferCreateInfo &createInfo,
+                           VulkanFramebuffer **ppFramebuffer);
 
     ~VulkanFramebuffer();
 
@@ -24,12 +35,17 @@ public:
 
     VulkanImageView *GetAttachment(uint32_t attachmentIndex);
 
-private:
-    VulkanDevice                                         *m_device = nullptr;
-    std::vector<VulkanImageView *>                        m_attachments;
-    std::unordered_map<VulkanRenderPass *, VkFramebuffer> m_cache;
-    SpinLock                                              m_spinLock;
-};
-} // namespace vkl
+    uint32_t getWidth() const { return m_createInfo.width; }
+    uint32_t getHeight() const { return m_createInfo.height; }
+    uint32_t getLayerCount() const { return m_createInfo.layers; }
 
-#endif // FRAMEBUFFER_H_
+private:
+    VulkanDevice *m_device = nullptr;
+    std::vector<VulkanImageView *> m_attachments;
+    std::unordered_map<VulkanRenderPass *, VkFramebuffer> m_cache;
+    SpinLock m_spinLock;
+    FramebufferCreateInfo m_createInfo{};
+};
+}  // namespace vkl
+
+#endif  // FRAMEBUFFER_H_

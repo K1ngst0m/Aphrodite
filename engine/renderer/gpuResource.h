@@ -702,21 +702,6 @@ public:
     const ImageSubresourceRange &GetSubresourceRange() const { return m_createInfo.subresourceRange; }
 };
 
-struct FramebufferCreateInfo
-{
-    uint32_t width;
-    uint32_t height;
-    uint32_t layers = 1;
-};
-
-class FrameBuffer : public Resource<FramebufferCreateInfo>
-{
-public:
-    uint32_t getWidth() const { return m_createInfo.width; }
-    uint32_t getHeight() const { return m_createInfo.height; }
-    uint32_t getLayerCount() const { return m_createInfo.layers; }
-};
-
 }  // namespace vkl
 
 #endif  // RESOURCE_H_

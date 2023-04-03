@@ -56,8 +56,7 @@ public:
 
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
 
-    VkResult createFramebuffers(FramebufferCreateInfo *pCreateInfo, VulkanFramebuffer **ppFramebuffer,
-                                uint32_t attachmentCount, VulkanImageView **pAttachments);
+    VkResult createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer);
 
     VkResult createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass);
 

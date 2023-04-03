@@ -674,11 +674,13 @@ void VulkanSceneRenderer::_initPostFx()
 
         {
             std::vector<VulkanImageView *> attachments{ colorImageView };
-            FramebufferCreateInfo createInfo{};
-            createInfo.width = m_pRenderer->getSwapChain()->getExtent().width;
-            createInfo.height = m_pRenderer->getSwapChain()->getExtent().height;
+            FramebufferCreateInfo createInfo{
+                .width = m_pRenderer->getSwapChain()->getExtent().width,
+                .height = m_pRenderer->getSwapChain()->getExtent().height,
+                .attachments = {attachments},
+            };
             VK_CHECK_RESULT(
-                m_pDevice->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
+                m_pDevice->createFramebuffers(createInfo, &framebuffer));
         }
     }
 
@@ -821,12 +823,13 @@ void VulkanSceneRenderer::_initForward()
 
         {
             VkFormat depthFormat = m_pDevice->getDepthFormat();
-            ImageCreateInfo createInfo{};
-            createInfo.extent = { imageExtent.width, imageExtent.height, 1 };
-            createInfo.format = static_cast<Format>(depthFormat);
-            createInfo.tiling = IMAGE_TILING_OPTIMAL;
-            createInfo.usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            createInfo.property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            ImageCreateInfo createInfo{
+                .extent = { imageExtent.width, imageExtent.height, 1 },
+                .usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                .format = static_cast<Format>(depthFormat),
+                .tiling = IMAGE_TILING_OPTIMAL,
+            };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
         }
 
@@ -836,19 +839,22 @@ void VulkanSceneRenderer::_initForward()
         m_pDevice->endSingleTimeCommands(cmd);
 
         {
-            ImageViewCreateInfo createInfo{};
-            createInfo.format = FORMAT_D32_SFLOAT;
-            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
+            ImageViewCreateInfo createInfo{
+                .viewType = IMAGE_VIEW_TYPE_2D,
+                .format = FORMAT_D32_SFLOAT,
+            };
             VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &depthImageView, depthImage));
         }
 
         {
             std::vector<VulkanImageView *> attachments{ colorImageView, depthImageView };
-            FramebufferCreateInfo createInfo{};
-            createInfo.width = imageExtent.width;
-            createInfo.height = imageExtent.height;
+            FramebufferCreateInfo createInfo{
+                .width = imageExtent.width,
+                .height = imageExtent.height,
+                .attachments = {attachments},
+            };
             VK_CHECK_RESULT(
-                m_pDevice->createFramebuffers(&createInfo, &framebuffer, attachments.size(), attachments.data()));
+                m_pDevice->createFramebuffers(createInfo, &framebuffer));
         }
     }
 
