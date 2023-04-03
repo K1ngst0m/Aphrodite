@@ -30,9 +30,9 @@ void triangle_demo::run() {
     while (!m_window->shouldClose()) {
         m_window->pollEvents();
 
-        m_renderer->prepareFrame();
+        m_renderer->beginFrame();
         buildCommands();
-        m_renderer->submitAndPresent();
+        m_renderer->endFrame();
     }
 }
 
@@ -62,8 +62,8 @@ void triangle_demo::setupPipeline() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    createInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_device->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
-    createInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
+    createInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
+    createInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(createInfo, m_renderer->getDefaultRenderPass(), &m_demoPipeline));
 }
 void triangle_demo::buildCommands() {

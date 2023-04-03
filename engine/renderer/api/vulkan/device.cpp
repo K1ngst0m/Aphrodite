@@ -58,12 +58,6 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     device->m_createInfo = createInfo;
     device->m_physicalDevice = physicalDevice;
 
-    // TODO
-    {
-        device->m_syncPrimitivesPool = new VulkanSyncPrimitivesPool(device);
-        device->m_shaderCache = new VulkanShaderCache(device);
-    }
-
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);
     for(auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
@@ -90,16 +84,6 @@ void VulkanDevice::Destroy(VulkanDevice *pDevice)
     for(auto &[_, commandpool] : pDevice->m_commandPools)
     {
         pDevice->destroyCommandPool(commandpool);
-    }
-
-    if(pDevice->m_shaderCache)
-    {
-        pDevice->m_shaderCache->destroy();
-    }
-
-    if(pDevice->m_syncPrimitivesPool)
-    {
-        delete pDevice->m_syncPrimitivesPool;
     }
 
     if(pDevice->m_handle)
@@ -327,9 +311,9 @@ VulkanQueue *VulkanDevice::getQueueByFlags(QueueTypeFlags flags, uint32_t queueI
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
 }
 
-void VulkanDevice::waitIdle()
+VkResult VulkanDevice::waitIdle()
 {
-    vkDeviceWaitIdle(getHandle());
+    return vkDeviceWaitIdle(getHandle());
 }
 
 VulkanCommandPool *VulkanDevice::getCommandPoolWithQueue(VulkanQueue *queue)
@@ -479,7 +463,7 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo &cr
     {
         std::vector<VkDescriptorSetLayout> setLayouts;
         setLayouts.reserve(createInfo.setLayouts.size());
-        for(auto setLayout : createInfo.setLayouts)
+        for(auto *setLayout : createInfo.setLayouts)
         {
             setLayouts.push_back(setLayout->getHandle());
         }
@@ -492,6 +476,7 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo &cr
     {
         shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
+
     VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(pipelineLayout);
     ci.stage = shaderStages[0];
     VkPipeline handle = VK_NULL_HANDLE;
@@ -561,8 +546,8 @@ VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, 
 
     return VK_SUCCESS;
 }
-void VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool waitAll, uint32_t timeout)
+VkResult VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool waitAll, uint32_t timeout)
 {
-    vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
+    return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 }  // namespace vkl

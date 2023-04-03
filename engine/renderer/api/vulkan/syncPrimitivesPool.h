@@ -16,11 +16,11 @@ public:
     ~VulkanSyncPrimitivesPool();
 
     VkResult acquireFence(VkFence &fence, bool isSignaled = true);
-    void ReleaseFence(VkFence fence);
+    VkResult ReleaseFence(VkFence fence);
     bool Exists(VkFence fence);
 
     VkResult acquireSemaphore(uint32_t semaphoreCount, VkSemaphore *pSemaphores);
-    void ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore *pSemaphores);
+    VkResult ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore *pSemaphores);
     bool Exists(VkSemaphore semaphore);
 
 private:

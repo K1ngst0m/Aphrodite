@@ -55,11 +55,9 @@ public:
     VkResult createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass);
     VkResult createSwapchain(const SwapChainCreateInfo &createInfo, VulkanSwapChain **ppSwapchain);
     VkResult createCommandPool(const CommandPoolCreateInfo&createInfo, VulkanCommandPool **ppPool);
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass,
-                                    VulkanPipeline **ppPipeline);
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass, VulkanPipeline **ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
-    VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                       VulkanDescriptorSetLayout **ppDescriptorSetLayout);
+    VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo, VulkanDescriptorSetLayout **ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);
@@ -81,24 +79,16 @@ public:
     VkResult executeSingleCommands(QueueTypeFlags type,
                                    const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
 
-    void waitIdle();
-    void waitForFence(const std::vector<VkFence> &fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
-    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_syncPrimitivesPool; }
-    VulkanShaderCache *getShaderCache() { return m_shaderCache; }
+    VkResult waitIdle();
+    VkResult waitForFence(const std::vector<VkFence> &fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
     VulkanPhysicalDevice *getPhysicalDevice() const;
     VkFormat getDepthFormat() const;
 
 private:
     VulkanPhysicalDevice *m_physicalDevice;
     VkPhysicalDeviceFeatures m_enabledFeatures;
-
-    std::vector<QueueFamily> m_queues = {};
-
+    std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools m_commandPools;
-
-    VulkanSyncPrimitivesPool *m_syncPrimitivesPool = nullptr;
-    VulkanShaderCache *m_shaderCache = nullptr;
-
     DeviceCreateInfo m_createInfo;
 };
 

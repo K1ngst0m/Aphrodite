@@ -83,8 +83,13 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
     {
         m_renderSemaphore.resize(m_config.maxFrames);
         m_presentSemaphore.resize(m_config.maxFrames);
-        m_inFlightFence.resize(m_config.maxFrames);
+        m_frameFences.resize(m_config.maxFrames);
         m_commandBuffers.resize(m_config.maxFrames);
+
+        {
+            m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_device);
+            m_pShaderCache = new VulkanShaderCache(m_device);
+        }
 
         {
             m_device->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), m_queue.graphics);
@@ -125,12 +130,12 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
             VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
             VkFenceCreateInfo fenceInfo = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
-            m_device->getSyncPrimitiviesPool()->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
-            m_device->getSyncPrimitiviesPool()->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
+            m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
+            m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
 
             for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
             {
-                m_device->getSyncPrimitiviesPool()->acquireFence(m_inFlightFence[idx]);
+                m_pSyncPrimitivesPool->acquireFence(m_frameFences[idx]);
             }
         }
 
@@ -223,25 +228,25 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
     }
 }
 
-void VulkanRenderer::prepareFrame()
+void VulkanRenderer::beginFrame()
 {
-    m_device->waitForFence({m_inFlightFence[m_currentFrameIdx]});
+    VK_CHECK_RESULT(m_device->waitForFence({m_frameFences[m_currentFrameIdx]}));
     VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_currentFrameIdx]));
-    m_device->getSyncPrimitiviesPool()->ReleaseFence(m_inFlightFence[m_currentFrameIdx]);
+    VK_CHECK_RESULT(m_pSyncPrimitivesPool->ReleaseFence(m_frameFences[m_currentFrameIdx]));
 }
 
-void VulkanRenderer::submitAndPresent()
+void VulkanRenderer::endFrame()
 {
     auto *queue = m_queue.graphics;
 
-    QueueSubmitInfo submitInfo{
+    QueueSubmitInfo submitInfo {
         .commandBuffers = { m_commandBuffers[m_currentFrameIdx] },
         .waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
         .waitSemaphores = { m_renderSemaphore[m_currentFrameIdx] },
         .signalSemaphores = { m_presentSemaphore[m_currentFrameIdx] },
     };
 
-    VK_CHECK_RESULT(queue->submit({ submitInfo }, m_inFlightFence[m_currentFrameIdx]));
+    VK_CHECK_RESULT(queue->submit({ submitInfo }, m_frameFences[m_currentFrameIdx]));
     VK_CHECK_RESULT(m_swapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_currentFrameIdx] }));
 
     m_currentFrameIdx = (m_currentFrameIdx + 1) % m_config.maxFrames;
@@ -249,6 +254,16 @@ void VulkanRenderer::submitAndPresent()
 
 void VulkanRenderer::cleanup()
 {
+    if(m_pShaderCache)
+    {
+        m_pShaderCache->destroy();
+    }
+
+    if(m_pSyncPrimitivesPool)
+    {
+        delete m_pSyncPrimitivesPool;
+    }
+
     if(m_config.initDefaultResource)
     {
         for(auto *framebuffer : m_defaultFb.framebuffers)

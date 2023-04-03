@@ -281,8 +281,8 @@ void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderP
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
         pipelineCI.setLayouts.push_back(pLayout);
         pipelineCI.constants.push_back(vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-        pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
-        pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_device->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
+        pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
 
         VK_CHECK_RESULT(m_device->createGraphicsPipeline(pipelineCI, renderPass, &m_pipeline));
     }

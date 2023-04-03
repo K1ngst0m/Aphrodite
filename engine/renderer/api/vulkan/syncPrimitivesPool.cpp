@@ -47,15 +47,21 @@ VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence &fence, bool isSignaled)
     return result;
 }
 
-void VulkanSyncPrimitivesPool::ReleaseFence(VkFence fence)
+VkResult VulkanSyncPrimitivesPool::ReleaseFence(VkFence fence)
 {
     m_fenceLock.Lock();
-    if(m_allFences.find(fence) != m_allFences.end())
+    if(m_allFences.count(fence))
     {
-        vkResetFences(m_device->getHandle(), 1, &fence);
+        VkResult result = vkResetFences(m_device->getHandle(), 1, &fence);
+        if (result != VK_SUCCESS)
+        {
+            m_fenceLock.Unlock();
+            return result;
+        }
         m_availableFences.push(fence);
     }
     m_fenceLock.Unlock();
+    return VK_SUCCESS;
 }
 
 bool VulkanSyncPrimitivesPool::Exists(VkFence fence)
@@ -97,17 +103,18 @@ VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkS
     return result;
 }
 
-void VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore *pSemaphores)
+VkResult VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore *pSemaphores)
 {
     m_semaphoreLock.Lock();
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
-        if(m_allSemaphores.find(pSemaphores[i]) != m_allSemaphores.end())
+        if(m_allSemaphores.count(pSemaphores[i]))
         {
             m_availableSemaphores.push(pSemaphores[i]);
         }
     }
     m_semaphoreLock.Unlock();
+    return VK_SUCCESS;
 }
 
 bool VulkanSyncPrimitivesPool::Exists(VkSemaphore semaphore)

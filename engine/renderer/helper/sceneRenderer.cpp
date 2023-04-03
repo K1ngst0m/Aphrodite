@@ -240,9 +240,8 @@ void VulkanSceneRenderer::cleanupResources()
     vkDestroyRenderPass(m_pDevice->getHandle(), m_postFxPass.renderPass->getHandle(), nullptr);
 }
 
-void VulkanSceneRenderer::drawScene()
+void VulkanSceneRenderer::recordDrawSceneCommands()
 {
-    m_pRenderer->prepareFrame();
     VkExtent2D extent{
         .width = m_pRenderer->getWindowWidth(),
         .height = m_pRenderer->getWindowHeight(),
@@ -254,12 +253,15 @@ void VulkanSceneRenderer::drawScene()
     clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
-    RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass = m_forwardPass.renderPass;
-    renderPassBeginInfo.renderArea.offset = { 0, 0 };
-    renderPassBeginInfo.renderArea.extent = extent;
-    renderPassBeginInfo.clearValueCount = clearValues.size();
-    renderPassBeginInfo.pClearValues = clearValues.data();
+    RenderPassBeginInfo renderPassBeginInfo{
+        .pRenderPass = m_forwardPass.renderPass,
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+        .pClearValues = clearValues.data(),
+    };
+    renderPassBeginInfo.renderArea = {
+        .offset = {0, 0},
+        .extent = extent,
+    };
 
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
@@ -298,7 +300,6 @@ void VulkanSceneRenderer::drawScene()
     commandBuffer->cmdEndRenderPass();
 
     commandBuffer->end();
-    m_pRenderer->submitAndPresent();
 }
 
 void VulkanSceneRenderer::update(float deltaTime)
@@ -710,8 +711,8 @@ void VulkanSceneRenderer::_initPostFx()
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         pipelineCreateInfo.setLayouts = { m_setLayout.pOffScreen, m_setLayout.pSampler };
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv") },
         };
         std::vector<VkVertexInputBindingDescription> bindingDescs{
             { 0, 4 * sizeof(float), VK_VERTEX_INPUT_RATE_VERTEX },
@@ -865,8 +866,8 @@ void VulkanSceneRenderer::_initForward()
         pipelineCreateInfo.constants.push_back(
             vkl::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pDevice->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
         };
 
         VK_CHECK_RESULT(

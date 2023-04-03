@@ -19,7 +19,7 @@ public:
 
     virtual void loadResources() = 0;
     virtual void update(float deltaTime) = 0;
-    virtual void drawScene() = 0;
+    virtual void recordDrawSceneCommands() = 0;
 
     virtual void cleanupResources() = 0;
 

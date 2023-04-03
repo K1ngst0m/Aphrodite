@@ -16,8 +16,8 @@ public:
 
     void cleanup() override;
     void idleDevice() override;
-    void prepareFrame();
-    void submitAndPresent();
+    void beginFrame();
+    void endFrame();
 
 public:
     VulkanInstance *getInstance() const { return m_instance; }
@@ -29,6 +29,13 @@ public:
     VulkanQueue *getGraphicsQueue() const { return m_queue.graphics; }
     VulkanQueue *getComputeQueue() const { return m_queue.compute; }
     VulkanQueue *getTransferQueue() const { return m_queue.transfer; }
+
+    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
+    VulkanShaderCache *getShaderCache() { return m_pShaderCache; }
+
+private:
+    VulkanSyncPrimitivesPool *m_pSyncPrimitivesPool = nullptr;
+    VulkanShaderCache *m_pShaderCache = nullptr;
 
 private:
     VulkanInstance *m_instance = nullptr;
@@ -69,7 +76,7 @@ private:
 
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;
-    std::vector<VkFence> m_inFlightFence;
+    std::vector<VkFence> m_frameFences;
 
     std::vector<VulkanCommandBuffer *> m_commandBuffers;
 };

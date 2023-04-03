@@ -27,7 +27,9 @@ void scene_manager::run()
         // m_uiRenderer->update(m_deltaTime);
 
         // draw and submit
-        m_sceneRenderer->drawScene();
+        m_renderer->beginFrame();
+        m_sceneRenderer->recordDrawSceneCommands();
+        m_renderer->endFrame();
     }
 }
 
@@ -116,7 +118,7 @@ void scene_manager::setupRenderer()
     vkl::RenderConfig config{
         .enableDebug = true,
         .enableUI = false,
-        .maxFrames = 2,
+        .maxFrames = 1,
     };
 
     m_renderer = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
@@ -174,8 +176,8 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
 
 void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
 {
-    float dx = m_window->getCursorXpos() - xposIn;
-    float dy = m_window->getCursorYpos() - yposIn;
+    const float dx = m_window->getCursorXpos() - xposIn;
+    const float dy = m_window->getCursorYpos() - yposIn;
 
     auto camera = m_cameraNode->getObject<vkl::Camera>();
     camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});

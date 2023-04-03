@@ -60,7 +60,7 @@ public:
     void loadResources() override;
     void cleanupResources() override;
     void update(float deltaTime) override;
-    void drawScene() override;
+    void recordDrawSceneCommands() override;
 
 private:
     void _initSetLayout();
