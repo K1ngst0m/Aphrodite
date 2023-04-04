@@ -51,10 +51,95 @@ int main() {
     app.finish();
 }
 void triangle_demo::setupPipeline() {
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
-    vertexInputInfo.sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount   = 0;
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    {
+        VkAttachmentDescription colorAttachment{
+            .format = m_renderer->getSwapChain()->getSurfaceFormat(),
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+
+        };
+        VkAttachmentDescription depthAttachment{
+            .format = m_device->getDepthFormat(),
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        };
+
+        aph::RenderPassCreateInfo createInfo{
+            .colorAttachments = { colorAttachment },
+            .depthAttachment = { depthAttachment },
+        };
+
+        VK_CHECK_RESULT(m_device->createRenderPass(createInfo, &m_pRenderPass));
+    }
+
+    {
+        m_framebuffers.resize(m_renderer->getSwapChain()->getImageCount());
+        m_colorAttachments.resize(m_renderer->getSwapChain()->getImageCount());
+        m_depthAttachments.resize(m_renderer->getSwapChain()->getImageCount());
+
+        // color and depth attachment
+        for(auto idx = 0; idx < m_renderer->getSwapChain()->getImageCount(); idx++)
+        {
+            // color image view
+            {
+                auto &colorImage = m_colorAttachments[idx];
+                colorImage = m_renderer->getSwapChain()->getImage(idx);
+            }
+
+            // depth image view
+            {
+                auto &depthImage = m_depthAttachments[idx];
+                VkFormat depthFormat = m_device->getDepthFormat();
+                {
+                    aph::ImageCreateInfo createInfo{
+                        .extent = { m_renderer->getSwapChain()->getExtent().width, m_renderer->getSwapChain()->getExtent().height, 1 },
+                        .usage = aph::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                        .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                        .format = static_cast<aph::Format>(depthFormat),
+                        .tiling = aph::IMAGE_TILING_OPTIMAL,
+                    };
+                    VK_CHECK_RESULT(m_device->createImage(createInfo, &depthImage));
+                }
+
+                m_device->executeSingleCommands(aph::QUEUE_GRAPHICS, [&](aph::VulkanCommandBuffer *cmd){
+                    cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                });
+            }
+
+            // framebuffers
+            {
+                auto &framebuffer = m_framebuffers[idx];
+                auto colorAttachment = m_colorAttachments[idx]->getImageView();
+                auto depthAttachment = m_depthAttachments[idx]->getImageView();
+                {
+                    std::vector<aph::VulkanImageView *> attachments{ colorAttachment, depthAttachment };
+                    aph::FramebufferCreateInfo createInfo{
+                        .width = m_renderer->getSwapChain()->getExtent().width,
+                        .height = m_renderer->getSwapChain()->getExtent().height,
+                        .attachments = { attachments },
+                    };
+                    VK_CHECK_RESULT(m_device->createFramebuffers(createInfo, &framebuffer));
+                }
+            }
+        }
+    }
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{
+        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount   = 0,
+        .vertexAttributeDescriptionCount = 0,
+    };
 
     aph::GraphicsPipelineCreateInfo createInfo{};
     createInfo.vertexInputInfo = vertexInputInfo;
@@ -64,15 +149,15 @@ void triangle_demo::setupPipeline() {
 
     createInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
     createInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
-    VK_CHECK_RESULT(m_device->createGraphicsPipeline(createInfo, m_renderer->getDefaultRenderPass(), &m_demoPipeline));
+    VK_CHECK_RESULT(m_device->createGraphicsPipeline(createInfo, m_pRenderPass, &m_demoPipeline));
 }
 void triangle_demo::buildCommands() {
     VkViewport viewport = aph::init::viewport(m_renderer->getSwapChain()->getExtent());
     VkRect2D   scissor  = aph::init::rect2D(m_renderer->getSwapChain()->getExtent());
 
     aph::RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass       = m_renderer->getDefaultRenderPass();
-    renderPassBeginInfo.pFramebuffer = m_renderer->getDefaultFrameBuffer(m_renderer->getCurrentImageIndex());
+    renderPassBeginInfo.pRenderPass       = m_pRenderPass;
+    renderPassBeginInfo.pFramebuffer      = m_framebuffers[m_renderer->getCurrentImageIndex()];
     renderPassBeginInfo.renderArea.offset = {0, 0};
     renderPassBeginInfo.renderArea.extent = m_renderer->getSwapChain()->getExtent();
     std::vector<VkClearValue> clearValues(2);

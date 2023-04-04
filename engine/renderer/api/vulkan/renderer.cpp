@@ -82,10 +82,10 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
     // init default resources
     if(m_config.initDefaultResource)
     {
-        m_renderSemaphore.resize(m_config.maxFrames);
-        m_presentSemaphore.resize(m_config.maxFrames);
         m_frameFences.resize(m_config.maxFrames);
         m_commandBuffers.resize(m_config.maxFrames);
+        m_renderSemaphore.resize(m_config.maxFrames);
+        m_presentSemaphore.resize(m_config.maxFrames);
 
         {
             m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_device);
@@ -94,37 +94,6 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         {
             m_device->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), m_queue.graphics);
-        }
-
-        {
-            VkAttachmentDescription colorAttachment{
-                .format = m_swapChain->getSurfaceFormat(),
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-
-            };
-            VkAttachmentDescription depthAttachment{
-                .format = m_device->getDepthFormat(),
-                .samples = VK_SAMPLE_COUNT_1_BIT,
-                .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            };
-
-            RenderPassCreateInfo createInfo{
-                .colorAttachments = { colorAttachment },
-                .depthAttachment = { depthAttachment },
-            };
-
-            VK_CHECK_RESULT(m_device->createRenderPass(createInfo, &m_renderPass));
         }
 
         {
@@ -137,87 +106,6 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
             for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
             {
                 m_pSyncPrimitivesPool->acquireFence(m_frameFences[idx]);
-            }
-        }
-
-        {
-            m_defaultFb.framebuffers.resize(m_swapChain->getImageCount());
-            m_defaultFb.colorImages.resize(m_swapChain->getImageCount());
-            m_defaultFb.colorImageViews.resize(m_swapChain->getImageCount());
-            m_defaultFb.depthImages.resize(m_swapChain->getImageCount());
-            m_defaultFb.depthImageViews.resize(m_swapChain->getImageCount());
-
-            // color and depth attachment
-            for(auto idx = 0; idx < m_swapChain->getImageCount(); idx++)
-            {
-                // color image view
-                {
-                    auto &colorImage = m_defaultFb.colorImages[idx];
-                    auto &colorImageView = m_defaultFb.colorImageViews[idx];
-
-                    // get swapchain image
-                    {
-                        ImageCreateInfo createInfo{
-                            .imageType = IMAGE_TYPE_2D,
-                            .format = FORMAT_B8G8R8A8_UNORM,
-                        };
-                        colorImage = m_swapChain->getImage(idx);
-                    }
-
-                    // get image view
-                    {
-                        ImageViewCreateInfo createInfo{
-                            .viewType = IMAGE_VIEW_TYPE_2D,
-                            .format = FORMAT_B8G8R8A8_UNORM,
-                        };
-                        m_device->createImageView(createInfo, &colorImageView, colorImage);
-                    }
-                }
-
-                // depth image view
-                {
-                    auto &depthImage = m_defaultFb.depthImages[idx];
-                    auto &depthImageView = m_defaultFb.depthImageViews[idx];
-                    VkFormat depthFormat = m_device->getDepthFormat();
-                    {
-                        ImageCreateInfo createInfo{
-                            .extent = { m_swapChain->getExtent().width, m_swapChain->getExtent().height, 1 },
-                            .usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                            .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                            .format = static_cast<Format>(depthFormat),
-                            .tiling = IMAGE_TILING_OPTIMAL,
-                        };
-                        VK_CHECK_RESULT(m_device->createImage(createInfo, &depthImage));
-                    }
-
-                    m_device->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-                        cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-                    });
-
-                    {
-                        ImageViewCreateInfo createInfo{};
-                        createInfo.format = FORMAT_D32_SFLOAT;
-                        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-                        VK_CHECK_RESULT(m_device->createImageView(createInfo, &depthImageView, depthImage));
-                    }
-                }
-
-                // framebuffers
-                {
-                    auto &framebuffer = m_defaultFb.framebuffers[idx];
-                    auto &colorAttachment = m_defaultFb.colorImageViews[idx];
-                    auto &depthAttachment = m_defaultFb.depthImageViews[idx];
-                    {
-                        std::vector<VulkanImageView *> attachments{ colorAttachment, depthAttachment };
-                        FramebufferCreateInfo createInfo{
-                            .width = m_swapChain->getExtent().width,
-                            .height = m_swapChain->getExtent().height,
-                            .attachments = { attachments },
-                        };
-                        VK_CHECK_RESULT(m_device->createFramebuffers(createInfo, &framebuffer));
-                    }
-                }
             }
         }
 
@@ -263,31 +151,6 @@ void VulkanRenderer::cleanup()
     if(m_pSyncPrimitivesPool)
     {
         delete m_pSyncPrimitivesPool;
-    }
-
-    if(m_config.initDefaultResource)
-    {
-        for(auto *framebuffer : m_defaultFb.framebuffers)
-        {
-            m_device->destroyFramebuffers(framebuffer);
-        }
-
-        for(auto *imageView : m_defaultFb.colorImageViews)
-        {
-            m_device->destroyImageView(imageView);
-        }
-
-        for(auto *imageView : m_defaultFb.depthImageViews)
-        {
-            m_device->destroyImageView(imageView);
-        }
-
-        for(auto *image : m_defaultFb.depthImages)
-        {
-            m_device->destroyImage(image);
-        }
-
-        m_device->destoryRenderPass(m_renderPass);
     }
 
     vkDestroyPipelineCache(m_device->getHandle(), m_pipelineCache, nullptr);

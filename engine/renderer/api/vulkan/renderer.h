@@ -56,23 +56,10 @@ private:
 
     // default resource
 public:
-    VulkanRenderPass *getDefaultRenderPass() const { return m_renderPass; }
-    VulkanFramebuffer *getDefaultFrameBuffer(uint32_t idx) const { return m_defaultFb.framebuffers[idx]; }
     VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
     uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
 
 private:
-    VulkanRenderPass *m_renderPass = nullptr;
-
-    struct
-    {
-        std::vector<VulkanFramebuffer *> framebuffers;
-        std::vector<VulkanImage *> colorImages;
-        std::vector<VulkanImageView *> colorImageViews;
-        std::vector<VulkanImage *> depthImages;
-        std::vector<VulkanImageView *> depthImageViews;
-    } m_defaultFb;
-
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;
     std::vector<VkFence> m_frameFences;
