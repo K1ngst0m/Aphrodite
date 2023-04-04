@@ -2,7 +2,7 @@
 #define SCENE_MANAGER_H_
 
 #include "vkl.hpp"
-#include "vklHelper.hpp"
+#include "vklRenderer.hpp"
 
 class triangle_demo : public vkl::BaseApp {
 public:

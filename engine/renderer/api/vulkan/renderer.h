@@ -1,8 +1,8 @@
 #ifndef VULKAN_RENDERER_H_
 #define VULKAN_RENDERER_H_
 
-#include "renderer/api/vulkan/device.h"
-#include "renderer/api/vulkan/shader.h"
+#include "api/vulkan/device.h"
+#include "api/vulkan/shader.h"
 #include "renderer/renderer.h"
 
 namespace vkl

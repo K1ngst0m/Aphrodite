@@ -1,7 +1,7 @@
 #ifndef PIPELINE_H_
 #define PIPELINE_H_
 
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 #include "shader.h"
 

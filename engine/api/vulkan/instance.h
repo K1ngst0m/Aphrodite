@@ -2,7 +2,7 @@
 #define INSTANCE_H_
 
 #include "common/threadPool.h"
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace vkl

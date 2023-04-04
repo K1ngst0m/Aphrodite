@@ -2,7 +2,7 @@
 #define SCENE_MANAGER_H_
 
 #include "vkl.hpp"
-#include "vklHelper.hpp"
+#include "vklRenderer.hpp"
 
 class scene_manager : public vkl::BaseApp {
 public:

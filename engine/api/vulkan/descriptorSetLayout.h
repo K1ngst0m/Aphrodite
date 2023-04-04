@@ -1,7 +1,7 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace vkl

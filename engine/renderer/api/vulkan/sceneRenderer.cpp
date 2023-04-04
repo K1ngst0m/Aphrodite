@@ -7,7 +7,7 @@
 #include "scene/mesh.h"
 #include "scene/node.h"
 
-#include "renderer/api/vulkan/device.h"
+#include "api/vulkan/device.h"
 
 namespace vkl
 {

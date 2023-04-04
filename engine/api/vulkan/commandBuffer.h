@@ -1,7 +1,7 @@
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace vkl

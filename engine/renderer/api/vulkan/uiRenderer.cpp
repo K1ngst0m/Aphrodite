@@ -2,7 +2,7 @@
 
 #include "common/assetManager.h"
 
-#include "renderer/api/vulkan/device.h"
+#include "api/vulkan/device.h"
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>

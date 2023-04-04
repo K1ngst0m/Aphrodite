@@ -1,7 +1,7 @@
 #ifndef VULKAN_IMAGE_H_
 #define VULKAN_IMAGE_H_
 
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace vkl

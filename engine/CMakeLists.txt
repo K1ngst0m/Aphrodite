@@ -4,23 +4,23 @@ file(GLOB base_src
   common/*.hpp
 
   vkl.hpp
-  vklHelper.hpp
+  vklRenderer.hpp
 
   renderer/*.cpp
   renderer/*.h
   renderer/*.hpp
 
-  renderer/helper/sceneRenderer.h
-  renderer/helper/vulkanRenderer.h
-  # renderer/helper/uiRenderer.cpp
+  renderer/api/vulkan/sceneRenderer.h
+  renderer/api/vulkan/renderer.h
+  # renderer/api/vulkan/uiRenderer.cpp
 
-  renderer/helper/sceneRenderer.cpp
-  renderer/helper/vulkanRenderer.cpp
-  # renderer/helper/uiRenderer.cpp
+  renderer/api/vulkan/sceneRenderer.cpp
+  renderer/api/vulkan/renderer.cpp
+  # renderer/api/vulkan/uiRenderer.cpp
 
-  renderer/api/vulkan/*.cpp
-  renderer/api/vulkan/*.h
-  renderer/api/vulkan/*.hpp
+  api/vulkan/*.cpp
+  api/vulkan/*.h
+  api/vulkan/*.hpp
 
   scene/*.cpp
   scene/*.h
@@ -36,22 +36,6 @@ file(GLOB base_src
   # ../external/imgui/*.h
   ../external/volk/volk.h
   ../external/volk/volk.c
-  )
-
-
-file(GLOB BASE_HEADERS
-  vkl.hpp
-  vklHelper.hpp
-
-  renderer/helper/sceneRenderer.h
-  renderer/helper/vulkanRenderer.h
-  # renderer/helper/uiRenderer.h
-
-  scene/*.h
-  scene/*.hpp
-
-  ../external/spirv_reflect/*.h
-  ../external/imgui/*.h
   )
 
 add_library(engine STATIC ${base_src})

@@ -2,7 +2,7 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "common/window.h"
-#include "renderer/gpuResource.h"
+#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace vkl

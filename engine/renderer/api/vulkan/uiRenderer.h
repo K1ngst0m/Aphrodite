@@ -1,12 +1,12 @@
 #ifndef VULKAN_UIRENDERER_H_
 #define VULKAN_UIRENDERER_H_
 
-#include "renderer/api/vulkan/buffer.h"
-#include "renderer/api/vulkan/commandBuffer.h"
-#include "renderer/api/vulkan/image.h"
-#include "renderer/api/vulkan/shader.h"
+#include "api/vulkan/buffer.h"
+#include "api/vulkan/commandBuffer.h"
+#include "api/vulkan/image.h"
+#include "api/vulkan/shader.h"
 #include "renderer/uiRenderer.h"
-#include "vulkanRenderer.h"
+#include "renderer.h"
 
 namespace vkl {
 class VulkanUIRenderer : public UIRenderer {
