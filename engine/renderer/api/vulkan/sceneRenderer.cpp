@@ -201,11 +201,6 @@ void VulkanSceneRenderer::cleanupResources()
     }
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.postFX, nullptr);
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.texture, nullptr);
-    //
-    for(auto &[_, matData] : m_materialDataMaps)
-    {
-        m_pDevice->destroyBuffer(matData.buffer);
-    }
 
     for(auto &renderData : m_renderDataList)
     {
@@ -370,6 +365,7 @@ void VulkanSceneRenderer::_initRenderData()
 
     for(auto &renderData : m_renderDataList)
     {
+        // object info
         {
             ObjectInfo objInfo{};
             BufferCreateInfo bufferCI{
@@ -379,12 +375,11 @@ void VulkanSceneRenderer::_initRenderData()
             };
             VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderData->m_objectUB, &objInfo));
             renderData->m_objectUB->setupDescriptor();
-        }
 
-        {
             renderData->m_objectSet = m_setLayout.pObject->allocateSet();
 
-            std::vector<VkWriteDescriptorSet> descriptorWrites{ aph::init::writeDescriptorSet(
+            std::vector<VkWriteDescriptorSet> descriptorWrites{
+                aph::init::writeDescriptorSet(
                 renderData->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
                 &renderData->m_objectUB->getBufferInfo()) };
 
@@ -401,22 +396,36 @@ void VulkanSceneRenderer::_initRenderData()
         {
             // write descriptor set
             auto set = m_setLayout.pMaterial->allocateSet();
-            VulkanBuffer *matInfoUB = nullptr;
             {
                 std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
                 {
-                    BufferCreateInfo bufferCI{
-                        .size = sizeof(Material),
-                        .alignment = 0,
-                        .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                        .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    };
-                    m_pDevice->createBuffer(bufferCI, &matInfoUB, &material);
-                    matInfoUB->setupDescriptor();
+                    // BufferCreateInfo bufferCI{
+                    //     .size = sizeof(Material),
+                    //     .alignment = 0,
+                    //     .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                    //     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                    // };
+                    // m_pDevice->createBuffer(bufferCI, &matInfoUB, &material);
+                    // matInfoUB->setupDescriptor();
+
                     // create material buffer Info
-                    descriptorWrites.push_back(aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                                                                            &matInfoUB->getBufferInfo()));
+                    VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
+                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
+                        .dataSize = sizeof(Material),
+                        .pData = &material,
+                    };
+
+                    VkWriteDescriptorSet writeDescriptorSet{
+                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                        .pNext = &writeDescriptorSetInlineUniformBlock,
+                        .dstSet = set,
+                        .dstBinding = 0,
+                        .descriptorCount = sizeof(Material),
+                        .descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+                    };
+
+                    descriptorWrites.push_back(writeDescriptorSet);
                 }
 
                 auto bindingBits = MATERIAL_BINDING_PBR;
@@ -490,7 +499,7 @@ void VulkanSceneRenderer::_initRenderData()
                                        descriptorWrites.data(), 0, nullptr);
             }
 
-            m_materialDataMaps[material] = { matInfoUB, set };
+            m_materialSetMaps[material] = set;
         }
     }
 }
@@ -784,8 +793,8 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
         if(subset.indexCount > 0)
         {
             auto &material = m_scene->getMaterials()[subset.materialIndex];
-            auto &materialSet = m_materialDataMaps[material];
-            drawCmd->bindDescriptorSet(pipeline, 2, 1, &materialSet.set);
+            auto &materialSet = m_materialSetMaps[material];
+            drawCmd->bindDescriptorSet(pipeline, 2, 1, &materialSet);
             if(subset.hasIndices)
             {
                 drawCmd->drawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
@@ -874,9 +883,9 @@ void VulkanSceneRenderer::_initSetLayout()
     // material
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                  0),  // material info
+                                                  0, sizeof(Material)),  // material info
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3),

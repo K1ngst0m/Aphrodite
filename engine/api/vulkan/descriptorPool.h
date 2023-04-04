@@ -19,15 +19,15 @@ public:
     VkResult freeSet(VkDescriptorSet descriptorSet);
 
 private:
-    VulkanDescriptorSetLayout *_layout;
-    std::vector<VkDescriptorPoolSize> _poolSizes;
-    uint32_t _maxSetsPerPool = 50;
+    VulkanDescriptorSetLayout *m_layout;
+    std::vector<VkDescriptorPoolSize> m_poolSizes;
+    uint32_t m_maxSetsPerPool = 50;
 
-    std::vector<VkDescriptorPool> _pools;
-    std::vector<uint32_t> _allocatedSets;
-    uint32_t _currentAllocationPoolIndex = 0;
-    std::unordered_map<VkDescriptorSet, uint32_t> _allocatedDescriptorSets;
-
+    std::vector<VkDescriptorPool> m_pools;
+    std::vector<uint32_t> m_allocatedSets;
+    uint32_t m_currentAllocationPoolIndex = 0;
+    std::unordered_map<VkDescriptorSet, uint32_t> m_allocatedDescriptorSets;
+    std::unordered_map<VkDescriptorType, uint32_t> descriptorTypeCounts;
     SpinLock _spinLock;
 };
 }  // namespace aph

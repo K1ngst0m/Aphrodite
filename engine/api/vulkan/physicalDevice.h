@@ -20,7 +20,6 @@ public:
 
     VulkanInstance *getInstance() const { return m_instance; }
     VkPhysicalDeviceProperties getDeviceProperties() { return m_properties; }
-    VkPhysicalDeviceFeatures getDeviceFeatures() { return m_supportedFeatures; }
     VkPhysicalDeviceMemoryProperties getMemoryProperties() { return m_memoryProperties; }
     std::vector<std::string> getDeviceSupportedExtensions() { return m_supportedExtensions; }
     std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() { return m_queueFamilyProperties; }
@@ -42,7 +41,6 @@ private:
 
     VkPhysicalDeviceProperties m_properties;
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
-    VkPhysicalDeviceFeatures m_supportedFeatures;
     std::vector<std::string> m_supportedExtensions;
     std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
     std::unordered_map<QueueTypeFlags, std::vector<uint32_t>> m_queueFamilyMap;

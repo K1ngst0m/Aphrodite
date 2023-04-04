@@ -27,12 +27,6 @@ enum MaterialBindingBits
                             MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
-struct MaterialGpuData
-{
-    VulkanBuffer *buffer = nullptr;
-    VkDescriptorSet set = VK_NULL_HANDLE;
-};
-
 struct VulkanRenderData
 {
     VulkanRenderData(std::shared_ptr<SceneNode> sceneNode)
@@ -179,7 +173,7 @@ private:
 private:
     VulkanDevice *m_pDevice = nullptr;
     std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
-    std::unordered_map<std::shared_ptr<Material>, MaterialGpuData> m_materialDataMaps;
+    std::unordered_map<std::shared_ptr<Material>, VkDescriptorSet> m_materialSetMaps;
 };
 }  // namespace aph
 

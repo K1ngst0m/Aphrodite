@@ -3,22 +3,21 @@
 
 namespace aph
 {
-VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : _layout(layout)
+VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : m_layout(layout)
 {
     const auto &bindings = layout->getBindings();
 
-    std::unordered_map<VkDescriptorType, uint32_t> descriptorTypeCounts;
     for(auto &binding : bindings)
     {
         descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
     }
 
-    _poolSizes.resize(descriptorTypeCounts.size());
+    m_poolSizes.resize(descriptorTypeCounts.size());
     uint32_t index = 0;
     for(auto [type, count] : descriptorTypeCounts)
     {
-        _poolSizes[index].type = type;
-        _poolSizes[index].descriptorCount = count * _maxSetsPerPool;
+        m_poolSizes[index].type = type;
+        m_poolSizes[index].descriptorCount = count * m_maxSetsPerPool;
         ++index;
     }
 }
@@ -26,15 +25,15 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : 
 VulkanDescriptorPool::~VulkanDescriptorPool()
 {
     // Destroy all allocated descriptor sets.
-    for(auto it : _allocatedDescriptorSets)
+    for(auto it : m_allocatedDescriptorSets)
     {
-        vkFreeDescriptorSets(_layout->getDevice()->getHandle(), _pools[it.second], 1, &it.first);
+        vkFreeDescriptorSets(m_layout->getDevice()->getHandle(), m_pools[it.second], 1, &it.first);
     }
 
     // Destroy all created pools.
-    for(auto pool : _pools)
+    for(auto pool : m_pools)
     {
-        vkDestroyDescriptorPool(_layout->getDevice()->getHandle(), pool, nullptr);
+        vkDestroyDescriptorPool(m_layout->getDevice()->getHandle(), pool, nullptr);
     }
 }
 
@@ -47,53 +46,62 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
     while(true)
     {
         // Allocate a new VkDescriptorPool if necessary.
-        if(_pools.size() <= _currentAllocationPoolIndex)
+        if(m_pools.size() <= m_currentAllocationPoolIndex)
         {
             // Create the Vulkan descriptor pool.
-            VkDescriptorPoolCreateInfo createInfo = {};
-            createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-            createInfo.poolSizeCount = static_cast<uint32_t>(_poolSizes.size());
-            createInfo.pPoolSizes = _poolSizes.data();
-            createInfo.maxSets = _maxSetsPerPool;
+            VkDescriptorPoolCreateInfo createInfo = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                .maxSets = m_maxSetsPerPool,
+                .poolSizeCount = static_cast<uint32_t>(m_poolSizes.size()),
+                .pPoolSizes = m_poolSizes.data(),
+            };
+            VkDescriptorPoolInlineUniformBlockCreateInfo descriptorPoolInlineUniformBlockCreateInfo{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO,
+                .maxInlineUniformBlockBindings = static_cast<uint32_t>(descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
+            };
+            if (descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
+            {
+                createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
+            }
             VkDescriptorPool handle = VK_NULL_HANDLE;
             auto result =
-                vkCreateDescriptorPool(_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
+                vkCreateDescriptorPool(m_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
             if(result != VK_SUCCESS)
                 return VK_NULL_HANDLE;
 
             // Add the Vulkan handle to the descriptor pool instance.
-            _pools.push_back(handle);
-            _allocatedSets.push_back(0);
+            m_pools.push_back(handle);
+            m_allocatedSets.push_back(0);
             break;
         }
 
-        if(_allocatedSets[_currentAllocationPoolIndex] < _maxSetsPerPool)
+        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool)
             break;
 
         // Increment pool index.
-        ++_currentAllocationPoolIndex;
+        ++m_currentAllocationPoolIndex;
     }
 
     // Increment allocated set count for given pool.
-    ++_allocatedSets[_currentAllocationPoolIndex];
+    ++m_allocatedSets[m_currentAllocationPoolIndex];
 
     // Allocate a new descriptor set from the current pool index.
-    VkDescriptorSetLayout setLayout = _layout->getHandle();
+    VkDescriptorSetLayout setLayout = m_layout->getHandle();
 
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = _pools[_currentAllocationPoolIndex];
+    allocInfo.descriptorPool = m_pools[m_currentAllocationPoolIndex];
     allocInfo.descriptorSetCount = 1;
     allocInfo.pSetLayouts = &setLayout;
     VkDescriptorSet handle = VK_NULL_HANDLE;
-    auto result = vkAllocateDescriptorSets(_layout->getDevice()->getHandle(), &allocInfo, &handle);
+    auto result = vkAllocateDescriptorSets(m_layout->getDevice()->getHandle(), &allocInfo, &handle);
     if(result != VK_SUCCESS)
         return VK_NULL_HANDLE;
 
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
-    _allocatedDescriptorSets.emplace(handle, _currentAllocationPoolIndex);
+    m_allocatedDescriptorSets.emplace(handle, m_currentAllocationPoolIndex);
 
     // Unlock access to internal resources.
     _spinLock.Unlock();
@@ -108,22 +116,22 @@ VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
     _spinLock.Lock();
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
-    auto it = _allocatedDescriptorSets.find(descriptorSet);
-    if(it == _allocatedDescriptorSets.end())
+    auto it = m_allocatedDescriptorSets.find(descriptorSet);
+    if(it == m_allocatedDescriptorSets.end())
         return VK_INCOMPLETE;
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
-    vkFreeDescriptorSets(_layout->getDevice()->getHandle(), _pools[poolIndex], 1, &descriptorSet);
+    vkFreeDescriptorSets(m_layout->getDevice()->getHandle(), m_pools[poolIndex], 1, &descriptorSet);
 
     // Remove descriptor set from allocatedDescriptorSets map.
-    _allocatedDescriptorSets.erase(descriptorSet);
+    m_allocatedDescriptorSets.erase(descriptorSet);
 
     // Decrement the number of allocated descriptor sets for the pool.
-    --_allocatedSets[poolIndex];
+    --m_allocatedSets[poolIndex];
 
     // Set the next allocation to use this pool index.
-    _currentAllocationPoolIndex = poolIndex;
+    m_currentAllocationPoolIndex = poolIndex;
 
     // Unlock access to internal resources.
     _spinLock.Unlock();

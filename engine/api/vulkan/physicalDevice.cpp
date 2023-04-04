@@ -37,7 +37,6 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalD
         }
     }
     vkGetPhysicalDeviceProperties(getHandle(), &m_properties);
-    vkGetPhysicalDeviceFeatures(getHandle(), &m_supportedFeatures);
     vkGetPhysicalDeviceMemoryProperties(getHandle(), &m_memoryProperties);
 
     // Get list of supported extensions

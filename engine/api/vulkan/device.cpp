@@ -37,22 +37,33 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     }
 
     // Enable all physical device available features.
-    VkPhysicalDeviceFeatures supportedFeatures = physicalDevice->getDeviceFeatures();
+    VkPhysicalDeviceFeatures supportedFeatures = {};
+    vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
+    VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+    vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
-    constexpr VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature {
+	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlockFeature{
+		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES,
+		.inlineUniformBlock = VK_TRUE,
+    };
+
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+        .pNext = &inlineUniformBlockFeature,
         .dynamicRendering = VK_TRUE,
     };
+
+    supportedFeatures2.pNext = &dynamicRenderingFeature;
+    supportedFeatures2.features = supportedFeatures;
 
     // Create the Vulkan device.
     VkDeviceCreateInfo deviceCreateInfo{
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        .pNext = &dynamicRenderingFeature,
+        .pNext = &supportedFeatures2,
         .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
         .enabledExtensionCount = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
         .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
-        .pEnabledFeatures = &supportedFeatures,
     };
 
     VkDevice handle = VK_NULL_HANDLE;
@@ -157,7 +168,7 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags type, const std::fun
     func(cmd);
     VK_CHECK_RESULT(cmd->end());
 
-    uint32_t queueFamilyIndex = cmd->getQueueFamilyIndices();
+    uint32_t queueFamilyIndex = getQueueByFlags(type)->getFamilyIndex();
     auto *queue = m_queues[queueFamilyIndex][0];
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
