@@ -658,7 +658,7 @@ struct ImageCreateInfo
 {
     Extent3D extent;
     uint32_t flags = 0;
-    ImageType imageType;
+    ImageType imageType = IMAGE_TYPE_2D;
     uint32_t alignment = 0;
     uint32_t mipLevels = 1;
     uint32_t layerCount = 1;

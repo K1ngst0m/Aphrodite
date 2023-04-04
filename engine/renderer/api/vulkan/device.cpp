@@ -212,7 +212,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
     VkImageCreateInfo imageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags = createInfo.flags,
-        .imageType = VK_IMAGE_TYPE_2D,
+        .imageType = static_cast<VkImageType>(createInfo.imageType),
         .format = static_cast<VkFormat>(createInfo.format),
         .mipLevels = createInfo.mipLevels,
         .arrayLayers = createInfo.layerCount,

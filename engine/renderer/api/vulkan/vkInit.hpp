@@ -341,8 +341,7 @@ inline VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet dstSet, VkDescrip
     return writeDescriptorSet;
 }
 
-inline VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet dstSet, VkDescriptorType type, uint32_t binding,
-                                               VkDescriptorImageInfo *imageInfo, uint32_t descriptorCount = 1)
+inline VkWriteDescriptorSet writeDescriptorSet(VkDescriptorSet dstSet, VkDescriptorType type, uint32_t binding, VkDescriptorImageInfo *imageInfo, uint32_t descriptorCount = 1)
 {
     VkWriteDescriptorSet writeDescriptorSet{};
     writeDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

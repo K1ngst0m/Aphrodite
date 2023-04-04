@@ -6,7 +6,7 @@
 namespace vkl {
 
 VulkanImageView::VulkanImageView(const ImageViewCreateInfo &createInfo, VulkanImage *pImage, VkImageView handle)
-    : _device(pImage->getDevice()), _image(pImage)
+    : m_device(pImage->getDevice()), m_image(pImage)
 {
     getHandle() = handle;
     getCreateInfo() = createInfo;

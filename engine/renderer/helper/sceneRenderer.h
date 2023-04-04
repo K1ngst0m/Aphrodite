@@ -27,13 +27,6 @@ enum MaterialBindingBits
                             MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
 };
 
-struct GpuTexture
-{
-    VulkanImage *image = nullptr;
-    VulkanImageView *imageView = nullptr;
-    VkDescriptorImageInfo descriptorInfo;
-};
-
 struct MaterialGpuData
 {
     VulkanBuffer *buffer = nullptr;
@@ -129,10 +122,8 @@ private:
 
         VulkanPipeline *pipeline = nullptr;
 
-        std::vector<VulkanImage *> colorImages;
-        std::vector<VulkanImageView *> colorImageViews;
-        std::vector<VulkanImage *> depthImages;
-        std::vector<VulkanImageView *> depthImageViews;
+        std::vector<VulkanImage *> colorAttachments;
+        std::vector<VulkanImage *> depthAttachments;
     } m_forwardPass;
 
     struct PASS_SHADOW
@@ -145,8 +136,7 @@ private:
         const uint32_t dim = 2048;
         const VkFilter filter = VK_FILTER_LINEAR;
         VulkanPipeline *pipeline = nullptr;
-        std::vector<VulkanImage *> depthImages;
-        std::vector<VulkanImageView *> depthImageViews;
+        std::vector<VulkanImage *> depthAttachments;
         std::vector<VkDescriptorSet> cameraSets;
     } m_shadowPass;
 
@@ -160,8 +150,7 @@ private:
 
         VulkanBuffer *quadVB = nullptr;
         VulkanPipeline *pipeline = nullptr;
-        std::vector<VulkanImage *> colorImages;
-        std::vector<VulkanImageView *> colorImageViews;
+        std::vector<VulkanImage *> colorAttachments;
         std::vector<VkDescriptorSet> sets;
     } m_postFxPass;
 
@@ -184,7 +173,7 @@ private:
 
     std::vector<VkDescriptorBufferInfo> m_cameraInfos{};
     std::vector<VkDescriptorBufferInfo> m_lightInfos{};
-    std::vector<GpuTexture> m_textures{};
+    std::vector<VulkanImage*> m_textures{};
 
 private:
     VulkanDevice *m_pDevice = nullptr;

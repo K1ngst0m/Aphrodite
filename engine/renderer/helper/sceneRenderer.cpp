@@ -28,10 +28,11 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice,
         // using staging buffer
         vkl::VulkanBuffer *stagingBuffer;
         {
-            BufferCreateInfo createInfo{};
-            createInfo.size = bufferSize;
-            createInfo.property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT;
-            createInfo.usage = BUFFER_USAGE_TRANSFER_SRC_BIT;
+            BufferCreateInfo createInfo{
+                .size = static_cast<uint32_t>(bufferSize),
+                .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            };
             pDevice->createBuffer(createInfo, &stagingBuffer);
         }
 
@@ -40,10 +41,11 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice,
         stagingBuffer->unmap();
 
         {
-            BufferCreateInfo createInfo{};
-            createInfo.size = bufferSize;
-            createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-            createInfo.usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+            BufferCreateInfo createInfo{
+                .size = static_cast<uint32_t>(bufferSize),
+                .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            };
             pDevice->createBuffer(createInfo, &buffer);
         }
 
@@ -55,7 +57,7 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice,
     }
     return buffer;
 }
-GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
+VulkanImage* createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
                          uint32_t dataSize, bool genMipmap = false)
 {
     uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
@@ -74,23 +76,24 @@ GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t wi
         stagingBuffer->unmap();
     }
 
-    GpuTexture texture{};
+    VulkanImage* texture{};
 
     {
-        ImageCreateInfo createInfo{};
-        createInfo.extent = { width, height, 1 };
-        createInfo.format = FORMAT_R8G8B8A8_UNORM;
-        createInfo.tiling = IMAGE_TILING_OPTIMAL;
-        createInfo.usage = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT;
-        createInfo.property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        createInfo.mipLevels = texMipLevels;
+        ImageCreateInfo createInfo{
+            .extent = { width, height, 1 },
+            .mipLevels = texMipLevels,
+            .usage = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT,
+            .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            .format = FORMAT_R8G8B8A8_UNORM,
+            .tiling = IMAGE_TILING_OPTIMAL,
+        };
 
-        pDevice->createImage(createInfo, &texture.image);
+        pDevice->createImage(createInfo, &texture);
 
         pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd){
-            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            cmd->copyBufferToImage(stagingBuffer, texture.image);
-            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->copyBufferToImage(stagingBuffer, texture);
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         });
 
@@ -123,32 +126,24 @@ GpuTexture createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t wi
                 mipSubRange.layerCount = 1;
 
                 // Prepare current mip level as image blit destination
-                cmd->imageMemoryBarrier(texture.image, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                         VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
                 // Blit from previous level
-                cmd->blitImage(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture.image,
+                cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
                                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
                 // Prepare current mip level as image blit source for next level
-                cmd->imageMemoryBarrier(texture.image, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
             }
 
-            cmd->transitionImageLayout(texture.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
 
-    }
-
-    {
-        ImageViewCreateInfo createInfo{};
-        createInfo.format = FORMAT_R8G8B8A8_UNORM;
-        createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-        createInfo.subresourceRange.levelCount = texMipLevels;
-        pDevice->createImageView(createInfo, &texture.imageView, texture.image);
     }
 
     pDevice->destroyBuffer(stagingBuffer);
@@ -196,17 +191,13 @@ void VulkanSceneRenderer::cleanupResources()
 
     for(auto &texture : m_textures)
     {
-        m_pDevice->destroyImage(texture.image);
-        m_pDevice->destroyImageView(texture.imageView);
+        m_pDevice->destroyImage(texture);
     }
 
     for(uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++)
     {
-        m_pDevice->destroyImage(m_forwardPass.colorImages[idx]);
-        m_pDevice->destroyImageView(m_postFxPass.colorImageViews[idx]);
-        m_pDevice->destroyImageView(m_forwardPass.colorImageViews[idx]);
-        m_pDevice->destroyImage(m_forwardPass.depthImages[idx]);
-        m_pDevice->destroyImageView(m_forwardPass.depthImageViews[idx]);
+        m_pDevice->destroyImage(m_forwardPass.colorAttachments[idx]);
+        m_pDevice->destroyImage(m_forwardPass.depthAttachments[idx]);
     }
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.postFX, nullptr);
     vkDestroySampler(m_pDevice->getHandle(), m_sampler.texture, nullptr);
@@ -245,39 +236,6 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
     clearValues[1].depthStencil = { 1.0f, 0 };
 
-    VulkanImageView * pColorAttachment = m_forwardPass.colorImageViews[m_pRenderer->getCurrentImageIndex()];
-    VkRenderingAttachmentInfoKHR forwardColorAttachmentInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = pColorAttachment->getHandle(),
-        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue = clearValues[0],
-    };
-
-    VulkanImageView * pDepthAttachment = m_forwardPass.depthImageViews[m_pRenderer->getCurrentImageIndex()];
-    VkRenderingAttachmentInfoKHR forwardDepthAttachmentInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = pDepthAttachment->getHandle(),
-        .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .clearValue = clearValues[1],
-    };
-
-    VkRenderingInfo renderingInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .layerCount = 1,
-        .colorAttachmentCount = 1,
-        .pColorAttachments = &forwardColorAttachmentInfo,
-        .pDepthAttachment = &forwardDepthAttachmentInfo,
-    };
-
-    renderingInfo.renderArea = {
-        .offset = {0, 0},
-        .extent = extent,
-    };
-
     VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
 
     uint32_t commandIndex = m_pRenderer->getCurrentFrameIndex();
@@ -291,6 +249,39 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
     // forward pass
     {
+        VulkanImageView * pColorAttachment = m_forwardPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+        VkRenderingAttachmentInfoKHR forwardColorAttachmentInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = pColorAttachment->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = clearValues[0],
+        };
+
+        VulkanImageView * pDepthAttachment = m_forwardPass.depthAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+        VkRenderingAttachmentInfoKHR forwardDepthAttachmentInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = pDepthAttachment->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue = clearValues[1],
+        };
+
+        VkRenderingInfo renderingInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &forwardColorAttachmentInfo,
+            .pDepthAttachment = &forwardDepthAttachmentInfo,
+        };
+
+        renderingInfo.renderArea = {
+            .offset = {0, 0},
+            .extent = extent,
+        };
+
         commandBuffer->bindPipeline(m_forwardPass.pipeline);
         commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SCENE, 1, &m_sceneSets[commandIndex]);
         commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SAMPLER, 1, &m_sampler.set);
@@ -305,28 +296,40 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
-    pColorAttachment = m_postFxPass.colorImageViews[m_pRenderer->getCurrentImageIndex()];
-    VkRenderingAttachmentInfoKHR postFxColorAttachmentInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView = pColorAttachment->getHandle(),
-        .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue = clearValues[0],
-    };
-    renderingInfo.pColorAttachments = &postFxColorAttachmentInfo;
-    renderingInfo.pDepthAttachment = nullptr;
+    {
+        VulkanImageView* pColorAttachment = m_postFxPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+        VkRenderingAttachmentInfoKHR postFxColorAttachmentInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView = pColorAttachment->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = clearValues[0],
+        };
 
-    commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    commandBuffer->beginRendering(renderingInfo);
-    commandBuffer->bindVertexBuffers(0, 1, m_postFxPass.quadVB, {0});
-    commandBuffer->bindPipeline(m_postFxPass.pipeline);
-    commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
-                                        &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
-    commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_sampler.set);
-    commandBuffer->draw(6, 1, 0, 0);
-    commandBuffer->endRendering();
-    commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        VkRenderingInfo renderingInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .layerCount = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments = &postFxColorAttachmentInfo,
+            .pDepthAttachment = nullptr,
+        };
+        renderingInfo.renderArea = {
+            .offset = {0, 0},
+            .extent = extent,
+        };
+
+        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        commandBuffer->beginRendering(renderingInfo);
+        commandBuffer->bindVertexBuffers(0, 1, m_postFxPass.quadVB, {0});
+        commandBuffer->bindPipeline(m_postFxPass.pipeline);
+        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
+                                            &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
+        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_sampler.set);
+        commandBuffer->draw(6, 1, 0, 0);
+        commandBuffer->endRendering();
+        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    }
 
     commandBuffer->end();
 }
@@ -389,14 +392,10 @@ void VulkanSceneRenderer::_initRenderData()
                                    descriptorWrites.data(), 0, nullptr);
         }
 
-        for(auto &texture : m_textures)
-        {
-            texture.descriptorInfo = {
-                .sampler = m_sampler.texture,
-                .imageView = texture.imageView->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            };
-        }
+        auto writeDescInfo = [](VulkanImage *pImage, VkDescriptorSet set, uint32_t binding) -> VkWriteDescriptorSet {
+            return vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, binding,
+                                                 &pImage->getImageView()->getDescInfoMap(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+        };
 
         for(auto &material : m_scene->getMaterials())
         {
@@ -404,6 +403,8 @@ void VulkanSceneRenderer::_initRenderData()
             auto set = m_setLayout.pMaterial->allocateSet();
             VulkanBuffer *matInfoUB = nullptr;
             {
+                std::vector<VkWriteDescriptorSet> descriptorWrites{};
+
                 {
                     BufferCreateInfo bufferCI{
                         .size = sizeof(Material),
@@ -413,11 +414,10 @@ void VulkanSceneRenderer::_initRenderData()
                     };
                     m_pDevice->createBuffer(bufferCI, &matInfoUB, &material);
                     matInfoUB->setupDescriptor();
+                    // create material buffer Info
+                    descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
+                                                                            &matInfoUB->getBufferInfo()));
                 }
-                std::vector<VkWriteDescriptorSet> descriptorWrites{};
-                // create material buffer Info
-                descriptorWrites.push_back(vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                                                                         &matInfoUB->getBufferInfo()));
 
                 auto bindingBits = MATERIAL_BINDING_PBR;
                 if(bindingBits & MATERIAL_BINDING_BASECOLOR)
@@ -425,9 +425,7 @@ void VulkanSceneRenderer::_initRenderData()
                     std::cerr << "material id: [" << material->id << "] [base color]: ";
                     if(material->baseColorTextureIndex > -1)
                     {
-                        descriptorWrites.push_back(
-                            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1,
-                                                          &m_textures[material->baseColorTextureIndex].descriptorInfo));
+                        descriptorWrites.push_back(writeDescInfo(m_textures[material->baseColorTextureIndex], set, 1));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
                     else
@@ -440,9 +438,7 @@ void VulkanSceneRenderer::_initRenderData()
                     std::cerr << "material id: [" << material->id << "] [normal]: ";
                     if(material->normalTextureIndex > -1)
                     {
-                        descriptorWrites.push_back(
-                            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2,
-                                                          &m_textures[material->normalTextureIndex].descriptorInfo));
+                        descriptorWrites.push_back(writeDescInfo(m_textures[material->normalTextureIndex], set, 2));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
                     else
@@ -455,9 +451,7 @@ void VulkanSceneRenderer::_initRenderData()
                     std::cerr << "material id: [" << material->id << "] [physical desc]: ";
                     if(material->metallicFactor > -1)
                     {
-                        descriptorWrites.push_back(vkl::init::writeDescriptorSet(
-                            set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
-                            &m_textures[material->metallicRoughnessTextureIndex].descriptorInfo));
+                        descriptorWrites.push_back(writeDescInfo(m_textures[material->metallicRoughnessTextureIndex], set, 3));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
                     else
@@ -470,9 +464,7 @@ void VulkanSceneRenderer::_initRenderData()
                     std::cerr << "material id: [" << material->id << "] [ao]: ";
                     if(material->occlusionTextureIndex > -1)
                     {
-                        descriptorWrites.push_back(
-                            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4,
-                                                          &m_textures[material->occlusionTextureIndex].descriptorInfo));
+                        descriptorWrites.push_back(writeDescInfo(m_textures[material->occlusionTextureIndex], set, 4));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
                     else
@@ -485,9 +477,7 @@ void VulkanSceneRenderer::_initRenderData()
                     std::cerr << "material id: [" << material->id << "] [emissive]: ";
                     if(material->emissiveTextureIndex > -1)
                     {
-                        descriptorWrites.push_back(
-                            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5,
-                                                          &m_textures[material->emissiveTextureIndex].descriptorInfo));
+                        descriptorWrites.push_back(writeDescInfo(m_textures[material->emissiveTextureIndex], set, 5));
                         std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
                     }
                     else
@@ -614,8 +604,7 @@ void VulkanSceneRenderer::_initSkyboxResource()
 void VulkanSceneRenderer::_initPostFx()
 {
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
-    m_postFxPass.colorImages.resize(imageCount);
-    m_postFxPass.colorImageViews.resize(imageCount);
+    m_postFxPass.colorAttachments.resize(imageCount);
     m_postFxPass.sets.resize(imageCount);
 
     // buffer
@@ -634,26 +623,6 @@ void VulkanSceneRenderer::_initPostFx()
         };
 
         VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &m_postFxPass.quadVB, quadVertices));
-    }
-
-    // color attachment
-    for(auto idx = 0; idx < imageCount; idx++)
-    {
-        auto &colorImage = m_postFxPass.colorImages[idx];
-        auto &colorImageView = m_postFxPass.colorImageViews[idx];
-
-        // get swapchain image
-        {
-            colorImage = m_pRenderer->getSwapChain()->getImage(idx);
-        }
-
-        // get image view
-        {
-            ImageViewCreateInfo createInfo{};
-            createInfo.format = FORMAT_B8G8R8A8_UNORM;
-            createInfo.viewType = IMAGE_VIEW_TYPE_2D;
-            m_pDevice->createImageView(createInfo, &colorImageView, colorImage);
-        }
     }
 
     {
@@ -689,19 +658,19 @@ void VulkanSceneRenderer::_initPostFx()
             m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_postFxPass.pipeline));
     }
 
-    for(uint32_t idx = 0; idx < imageCount; idx++)
+    // color attachment
+    for(auto idx = 0; idx < imageCount; idx++)
     {
+        auto & colorAttachment = m_postFxPass.colorAttachments[idx];
+        colorAttachment = m_pRenderer->getSwapChain()->getImage(idx);
+
         auto &set = m_postFxPass.sets[idx];
         set = m_setLayout.pOffScreen->allocateSet();
 
-        VkDescriptorImageInfo imageInfo{
-            .sampler = m_sampler.postFX,
-            .imageView = m_forwardPass.colorImageViews[idx]->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-
         std::vector<VkWriteDescriptorSet> writes{
-            vkl::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &imageInfo),
+            vkl::init::writeDescriptorSet(
+                set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0,
+                &m_forwardPass.colorAttachments[idx]->getImageView()->getDescInfoMap(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)),
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
@@ -713,18 +682,14 @@ void VulkanSceneRenderer::_initForward()
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
-    m_forwardPass.colorImages.resize(imageCount);
-    m_forwardPass.colorImageViews.resize(imageCount);
-    m_forwardPass.depthImages.resize(imageCount);
-    m_forwardPass.depthImageViews.resize(imageCount);
+    m_forwardPass.colorAttachments.resize(imageCount);
+    m_forwardPass.depthAttachments.resize(imageCount);
 
     // frame buffer
     for(auto idx = 0; idx < imageCount; idx++)
     {
-        auto &colorImage = m_forwardPass.colorImages[idx];
-        auto &colorImageView = m_forwardPass.colorImageViews[idx];
-        auto &depthImage = m_forwardPass.depthImages[idx];
-        auto &depthImageView = m_forwardPass.depthImageViews[idx];
+        auto &colorImage = m_forwardPass.colorAttachments[idx];
+        auto &depthImage = m_forwardPass.depthAttachments[idx];
 
         {
             ImageCreateInfo createInfo{
@@ -735,14 +700,6 @@ void VulkanSceneRenderer::_initForward()
                 .format = FORMAT_B8G8R8A8_UNORM,
             };
             m_pDevice->createImage(createInfo, &colorImage);
-        }
-
-        {
-            ImageViewCreateInfo createInfo{
-                .viewType = IMAGE_VIEW_TYPE_2D,
-                .format = FORMAT_B8G8R8A8_UNORM,
-            };
-            m_pDevice->createImageView(createInfo, &colorImageView, colorImage);
         }
 
         {
@@ -761,14 +718,6 @@ void VulkanSceneRenderer::_initForward()
             cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         });
-
-        {
-            ImageViewCreateInfo createInfo{
-                .viewType = IMAGE_VIEW_TYPE_2D,
-                .format = FORMAT_D32_SFLOAT,
-            };
-            VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &depthImageView, depthImage));
-        }
     }
 
     {
