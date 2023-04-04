@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanSyncPrimitivesPool
@@ -31,6 +31,6 @@ private:
     std::queue<VkSemaphore> m_availableSemaphores;
     SpinLock m_fenceLock, m_semaphoreLock;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // SYNCPRIMITIVESPOOL_H_

@@ -6,7 +6,7 @@
 #include <mutex>
 #include <thread>
 
-namespace vkl {
+namespace aph {
 class SpinLock {
 public:
     void Lock() {
@@ -41,6 +41,6 @@ private:
     spinLock.Unlock();          \
     }
 
-} // namespace vkl
+} // namespace aph
 
 #endif // SPINLOCK_H_

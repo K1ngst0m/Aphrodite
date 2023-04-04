@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 
 class VulkanDevice;
@@ -85,6 +85,6 @@ private:
     bool m_submittedToQueue = false;
     uint32_t m_queueFamilyType;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // COMMANDBUFFER_H_

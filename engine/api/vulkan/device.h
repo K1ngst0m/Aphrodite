@@ -18,7 +18,7 @@
 #include "vkInit.hpp"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 
 enum DeviceCreateFlagBits
@@ -87,6 +87,6 @@ private:
     QueueFamilyCommandPools m_commandPools;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLDEVICE_H_

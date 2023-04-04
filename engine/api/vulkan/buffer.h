@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 
@@ -46,6 +46,6 @@ private:
     VkDescriptorBufferInfo descriptorInfo;
     void *mapped = nullptr;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLBUFFER_H_

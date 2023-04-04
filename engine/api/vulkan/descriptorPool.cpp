@@ -1,7 +1,7 @@
 #include "descriptorPool.h"
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : _layout(layout)
 {
@@ -131,4 +131,4 @@ VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
     // Return success.
     return VK_SUCCESS;
 }
-}  // namespace vkl
+}  // namespace aph

@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 
-namespace vkl {
+namespace aph {
 class WindowData;
 class UIRenderer {
 public:
@@ -14,6 +14,6 @@ public:
 protected:
     std::shared_ptr<WindowData> _windowData = nullptr;
 };
-} // namespace vkl
+} // namespace aph
 
 #endif // UIRENDERER_H_

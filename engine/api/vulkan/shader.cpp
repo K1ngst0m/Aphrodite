@@ -1,7 +1,7 @@
 #include "shader.h"
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 static VkShaderModule createShaderModule(VulkanDevice *device, const std::vector<char> &code)
 {
@@ -30,7 +30,7 @@ VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        std::vector<char> spvCode = vkl::utils::loadSpvFromFile(path);
+        std::vector<char> spvCode = aph::utils::loadSpvFromFile(path);
         VkShaderModule shaderModule = createShaderModule(_device, spvCode);
 
         shaderModuleCaches[path] = new VulkanShaderModule(spvCode, shaderModule);
@@ -43,4 +43,4 @@ VulkanShaderModule::VulkanShaderModule(std::vector<char> code, VkShaderModule sh
 {
     getHandle() = shaderModule;
 }
-}  // namespace vkl
+}  // namespace aph

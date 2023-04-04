@@ -4,7 +4,7 @@
 #include "renderer/renderer.h"
 #include "scene/scene.h"
 
-namespace vkl
+namespace aph
 {
 class SceneRenderer
 {
@@ -32,6 +32,6 @@ protected:
     ShadingModel m_shadingModel = ShadingModel::UNLIT;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLSCENERENDERER_H_

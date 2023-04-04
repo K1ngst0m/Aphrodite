@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 
 enum InstanceCreationFlagBits
@@ -44,6 +44,6 @@ private:
     std::vector<VulkanPhysicalDevice *> m_physicalDevices {};
     ThreadPool *m_threadPool = nullptr;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // INSTANCE_H_

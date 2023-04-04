@@ -3,7 +3,7 @@
 
 #include "object.h"
 
-namespace vkl
+namespace aph
 {
 template <typename TNode>
 struct Node : public Object, std::enable_shared_from_this<TNode>
@@ -52,6 +52,6 @@ struct SceneNode : Node<SceneNode>
     std::shared_ptr<Object> m_object{ nullptr };
     ObjectType m_attachType{ ObjectType::UNATTACHED };
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // SCENENODE_H_

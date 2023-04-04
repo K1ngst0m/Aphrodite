@@ -3,7 +3,7 @@
 
 #include "node.h"
 
-namespace vkl
+namespace aph
 {
 enum class ShadingModel
 {
@@ -74,6 +74,6 @@ private:
     MaterialList m_materials{};
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLSCENEMANGER_H_

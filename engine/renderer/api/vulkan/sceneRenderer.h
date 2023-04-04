@@ -6,7 +6,7 @@
 #include "scene/mesh.h"
 #include "renderer.h"
 
-namespace vkl
+namespace aph
 {
 class ShaderPass;
 class VulkanRenderer;
@@ -180,6 +180,6 @@ private:
     std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
     std::unordered_map<std::shared_ptr<Material>, MaterialGpuData> m_materialDataMaps;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKSCENERENDERER_H_

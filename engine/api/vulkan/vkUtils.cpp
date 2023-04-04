@@ -1,6 +1,6 @@
 #include "vkUtils.h"
 
-namespace vkl::utils
+namespace aph::utils
 {
 std::string errorString(VkResult errorCode)
 {
@@ -91,4 +91,4 @@ VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage)
 
     return VK_IMAGE_LAYOUT_GENERAL;
 }
-}  // namespace vkl::utils
+}  // namespace aph::utils

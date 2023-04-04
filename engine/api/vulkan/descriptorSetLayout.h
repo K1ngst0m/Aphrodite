@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanDescriptorPool;
@@ -31,6 +31,6 @@ private:
     VulkanDescriptorPool *m_pool;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // DESCRIPTORSET_H_

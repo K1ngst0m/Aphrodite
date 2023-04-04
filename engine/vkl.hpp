@@ -1,5 +1,5 @@
-#ifndef VKL_H_
-#define VKL_H_
+#ifndef APH_H_
+#define APH_H_
 
 #include "renderer/renderer.h"
 #include "renderer/sceneRenderer.h"
@@ -27,4 +27,4 @@
 #include "scene/scene.h"
 #include "scene/node.h"
 
-#endif // VKL_H_
+#endif // APH_H_

@@ -4,7 +4,7 @@
 #include "vkl.hpp"
 #include "vklRenderer.hpp"
 
-class scene_manager : public vkl::BaseApp {
+class scene_manager : public aph::BaseApp {
 public:
     scene_manager();
 
@@ -22,18 +22,18 @@ private:
     void setupScene();
 
 private:
-    std::shared_ptr<vkl::SceneNode> m_modelNode            = nullptr;
-    std::shared_ptr<vkl::SceneNode> m_pointLightNode       = nullptr;
-    std::shared_ptr<vkl::SceneNode> m_directionalLightNode = nullptr;
-    std::shared_ptr<vkl::SceneNode> m_cameraNode           = nullptr;
+    std::shared_ptr<aph::SceneNode> m_modelNode            = nullptr;
+    std::shared_ptr<aph::SceneNode> m_pointLightNode       = nullptr;
+    std::shared_ptr<aph::SceneNode> m_directionalLightNode = nullptr;
+    std::shared_ptr<aph::SceneNode> m_cameraNode           = nullptr;
 
-    std::shared_ptr<vkl::Scene> m_scene;
+    std::shared_ptr<aph::Scene> m_scene;
 
-    std::unique_ptr<vkl::VulkanSceneRenderer> m_sceneRenderer;
-    // std::unique_ptr<vkl::VulkanUIRenderer>    m_uiRenderer;
-    std::shared_ptr<vkl::VulkanRenderer>      m_renderer;
+    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer;
+    // std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer;
+    std::shared_ptr<aph::VulkanRenderer>      m_renderer;
 
-    std::shared_ptr<vkl::Window> m_window;
+    std::shared_ptr<aph::Window> m_window;
     float                        m_deltaTime;
 };
 

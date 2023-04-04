@@ -3,7 +3,7 @@
 #include "scene/mesh.h"
 #include "shader.h"
 
-namespace vkl
+namespace aph
 {
 namespace
 {
@@ -28,7 +28,7 @@ VkPipelineVertexInputStateCreateInfo &VertexInputBuilder::getPipelineVertexInput
         location++;
     }
     _vertexInputBindingDescriptions = { { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX } };
-    _pipelineVertexInputStateCreateInfo = vkl::init::pipelineVertexInputStateCreateInfo(
+    _pipelineVertexInputStateCreateInfo = aph::init::pipelineVertexInputStateCreateInfo(
         _vertexInputBindingDescriptions, _vertexInputAttributeDescriptions);
     return _pipelineVertexInputStateCreateInfo;
 }
@@ -63,4 +63,4 @@ VulkanPipeline *VulkanPipeline::CreateComputePipeline(VulkanDevice *pDevice,
     return instance;
 }
 
-}  // namespace vkl
+}  // namespace aph

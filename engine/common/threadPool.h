@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 
-namespace vkl {
+namespace aph {
 // A thread-safe queue class.
 template <typename T>
 class ThreadSafeQueue {
@@ -95,6 +95,6 @@ private:
     std::mutex                                  m_threadsCompleteMutex;
     std::condition_variable                     m_threadsCompleteCondition;
 };
-} // namespace vkl
+} // namespace aph
 
 #endif // THREADPOOL_H_

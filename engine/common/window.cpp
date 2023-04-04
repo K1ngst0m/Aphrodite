@@ -1,7 +1,7 @@
 #include "window.h"
 #include <GLFW/glfw3.h>
 
-namespace vkl
+namespace aph
 {
 std::shared_ptr<Window> Window::Create(uint32_t width, uint32_t height)
 {
@@ -93,4 +93,4 @@ void Window::pollEvents()
 {
     glfwPollEvents();
 }
-}  // namespace vkl
+}  // namespace aph

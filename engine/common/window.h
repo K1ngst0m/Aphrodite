@@ -6,7 +6,7 @@
 
 class GLFWwindow;
 
-namespace vkl
+namespace aph
 {
 
 struct WindowData
@@ -71,6 +71,6 @@ private:
     CursorPosFunc m_cursorPosCB;
     KeyFunc m_keyCB;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // WINDOW_H_

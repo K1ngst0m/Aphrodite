@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanCommandBuffer;
@@ -41,6 +41,6 @@ private:
 
 using QueueFamily = std::vector<VulkanQueue *>;
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // QUEUE_H_

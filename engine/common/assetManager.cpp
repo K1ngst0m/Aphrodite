@@ -1,6 +1,6 @@
 #include "assetManager.h"
 
-namespace vkl
+namespace aph
 {
 
 static const std::filesystem::path assetDir = "assets";
@@ -37,4 +37,4 @@ std::filesystem::path AssetManager::GetFontDir()
 {
     return fontDir;
 }
-}  // namespace vkl
+}  // namespace aph

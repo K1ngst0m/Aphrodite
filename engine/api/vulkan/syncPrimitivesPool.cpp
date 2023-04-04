@@ -1,7 +1,7 @@
 #include "syncPrimitivesPool.h"
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 VulkanSyncPrimitivesPool::VulkanSyncPrimitivesPool(VulkanDevice *device) : m_device(device)
 {
@@ -124,4 +124,4 @@ bool VulkanSyncPrimitivesPool::Exists(VkSemaphore semaphore)
     m_semaphoreLock.Unlock();
     return result;
 }
-}  // namespace vkl
+}  // namespace aph

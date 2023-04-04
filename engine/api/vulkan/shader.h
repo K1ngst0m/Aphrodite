@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 
@@ -34,6 +34,6 @@ private:
 
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // SHADER_H_

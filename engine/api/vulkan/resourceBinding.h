@@ -4,7 +4,7 @@
 #include "vkUtils.h"
 #include <map>
 
-namespace vkl {
+namespace aph {
 class VulkanBuffer;
 class VulkanBufferView;
 class VulkanImageView;
@@ -56,6 +56,6 @@ private:
     bool                                      m_dirty = false;
 };
 
-} // namespace vkl
+} // namespace aph
 
 #endif // RESOURCEBINDING_H_

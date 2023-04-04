@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 
@@ -14,7 +14,7 @@ struct CommandPoolCreateInfo{
     VkCommandPoolCreateFlags flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 };
 
-class VulkanCommandPool : public ResourceHandle<VkCommandPool>
+class VulkanCommandPool : public ResourceHandle<VkCommandPool, CommandPoolCreateInfo>
 {
 public:
     VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice *device, VkCommandPool pool);
@@ -23,12 +23,11 @@ public:
     uint32_t getQueueFamilyIndex() const;
 
 private:
-    CommandPoolCreateInfo m_createInfo;
     VulkanDevice *m_device = nullptr;
     SpinLock m_spinLock;
 };
 
 using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool *>;
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // COMMANDPOOL_H_

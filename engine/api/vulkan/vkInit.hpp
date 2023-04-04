@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace vkl::init
+namespace aph::init
 {
 
 inline VkMemoryAllocateInfo memoryAllocateInfo(uint32_t size, uint32_t memTypeIndex)

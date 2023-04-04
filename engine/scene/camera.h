@@ -6,7 +6,7 @@
 
 #include "object.h"
 
-namespace vkl
+namespace aph
 {
 enum class CameraType
 {
@@ -84,5 +84,5 @@ private:
     float m_znear{ 96.0f };
     float m_zfar{ 0.01f };
 };
-}  // namespace vkl
+}  // namespace aph
 #endif

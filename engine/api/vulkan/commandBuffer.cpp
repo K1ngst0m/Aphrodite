@@ -7,7 +7,7 @@
 #include "renderpass.h"
 #include "vkInit.hpp"
 
-namespace vkl
+namespace aph
 {
 
 VulkanCommandBuffer::~VulkanCommandBuffer()
@@ -69,7 +69,7 @@ VkResult VulkanCommandBuffer::reset()
 
 void VulkanCommandBuffer::beginRenderPass(const RenderPassBeginInfo *pBeginInfo)
 {
-    VkRenderPassBeginInfo renderPassBeginInfo = vkl::init::renderPassBeginInfo();
+    VkRenderPassBeginInfo renderPassBeginInfo = aph::init::renderPassBeginInfo();
     renderPassBeginInfo.renderPass = pBeginInfo->pRenderPass->getHandle();
     renderPassBeginInfo.renderArea = pBeginInfo->renderArea;
     renderPassBeginInfo.clearValueCount = pBeginInfo->clearValueCount;
@@ -145,7 +145,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayou
 
     const auto &imageCreateInfo = image->getCreateInfo();
     imageMemoryBarrier.subresourceRange = {
-        .aspectMask = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+        .aspectMask = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
         .baseMipLevel = 0,
         .levelCount = imageCreateInfo.mipLevels,
         .baseArrayLayer = 0,
@@ -309,7 +309,7 @@ void VulkanCommandBuffer::imageMemoryBarrier(
     VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
     VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
 {
-    VkImageMemoryBarrier imageMemoryBarrier = vkl::init::imageMemoryBarrier();
+    VkImageMemoryBarrier imageMemoryBarrier = aph::init::imageMemoryBarrier();
     imageMemoryBarrier.srcAccessMask = srcAccessMask;
     imageMemoryBarrier.dstAccessMask = dstAccessMask;
     imageMemoryBarrier.oldLayout = oldImageLayout;
@@ -340,4 +340,4 @@ void VulkanCommandBuffer::endRendering()
 {
     vkCmdEndRendering(getHandle());
 }
-}  // namespace vkl
+}  // namespace aph

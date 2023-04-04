@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-namespace vkl {
+namespace aph {
 class Timer {
 public:
     Timer(float &interval)
@@ -21,6 +21,6 @@ private:
     float                                &_interval;
 };
 
-} // namespace vkl
+} // namespace aph
 
 #endif // TIMER_H_

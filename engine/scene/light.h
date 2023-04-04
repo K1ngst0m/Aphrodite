@@ -3,7 +3,7 @@
 
 #include "object.h"
 
-namespace vkl
+namespace aph
 {
 
 enum class LightType : uint32_t
@@ -34,6 +34,6 @@ private:
     glm::vec3 m_direction{ -0.2f, -1.0f, -0.3f };
     LightType m_type{ LightType::DIRECTIONAL };
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLLIGHT_H_

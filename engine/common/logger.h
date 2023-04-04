@@ -13,7 +13,7 @@
 #include <utility>
 #include <vector>
 
-namespace vkl {
+namespace aph {
 #define LOG_SILENT 0
 #define LOG_ERR 1
 #define LOG_ERROR 1
@@ -29,21 +29,21 @@ namespace vkl {
 #define LOG_INIT_CLOG(obj_name) Logger obj_name(std::clog, __PRETTY_FUNCTION__)
 #define LOG_INIT_CUSTOM(X) Logger log((X), __PRETTY_FUNCTION__)
 
-#ifdef VKL_LOG_NO_COLORS
+#ifdef APH_LOG_NO_COLORS
 
-#define VKL_LOG_TIME "[ TIME    ]"
-#define VKL_LOG_DEBUG "[ DEBUG   ]"
-#define VKL_LOG_ERROR "[ ERROR   ]"
-#define VKL_LOG_WARNING "[ WARNING ]"
-#define VKL_LOG_INFO "[ INFO    ]"
+#define APH_LOG_TIME "[ TIME    ]"
+#define APH_LOG_DEBUG "[ DEBUG   ]"
+#define APH_LOG_ERROR "[ ERROR   ]"
+#define APH_LOG_WARNING "[ WARNING ]"
+#define APH_LOG_INFO "[ INFO    ]"
 
 #else
 
-#define VKL_LOG_TIME "\033[0;35m[ TIME    ]\033[0;0m"
-#define VKL_LOG_DEBUG "[ DEBUG   ]"
-#define VKL_LOG_ERROR "\033[0;31m[ ERROR   ]\033[0;0m"
-#define VKL_LOG_WARNING "\033[0;33m[ WARNING ]\033[0;0m"
-#define VKL_LOG_INFO "\033[0;34m[ INFO    ]\033[0;0m"
+#define APH_LOG_TIME "\033[0;35m[ TIME    ]\033[0;0m"
+#define APH_LOG_DEBUG "[ DEBUG   ]"
+#define APH_LOG_ERROR "\033[0;31m[ ERROR   ]\033[0;0m"
+#define APH_LOG_WARNING "\033[0;33m[ WARNING ]\033[0;0m"
+#define APH_LOG_INFO "\033[0;34m[ INFO    ]\033[0;0m"
 
 #endif
 
@@ -79,6 +79,6 @@ private:
     std::string              _name;
 };
 
-} // namespace vkl
+} // namespace aph
 
 #endif // LOGGER_H_

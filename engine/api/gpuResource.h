@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 
-namespace vkl
+namespace aph
 {
 #define MAX_DESCRIPTION_SIZE 256U
 
@@ -632,7 +632,7 @@ protected:
     T_CreateInfo m_createInfo;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 
 

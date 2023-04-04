@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanImage;
@@ -43,6 +43,6 @@ private:
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // SWAPCHAIN_H_

@@ -2,7 +2,7 @@
 
 #include <glm/gtx/string_cast.hpp>
 
-namespace vkl
+namespace aph
 {
 
 struct CameraDataLayout
@@ -116,4 +116,4 @@ void Camera::processMovement(float deltaTime)
     }
 };
 
-}  // namespace vkl
+}  // namespace aph

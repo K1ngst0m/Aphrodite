@@ -9,7 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <tinygltf/tiny_gltf.h>
 
-namespace vkl
+namespace aph
 {
 
 namespace
@@ -358,4 +358,4 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
     return node;
 }
 
-}  // namespace vkl
+}  // namespace aph

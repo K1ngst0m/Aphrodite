@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDescriptorSetLayout;
 class VulkanDescriptorPool : ResourceHandle<VkDescriptorPool>
@@ -30,6 +30,6 @@ private:
 
     SpinLock _spinLock;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // DESCRIPTORPOOL_H_

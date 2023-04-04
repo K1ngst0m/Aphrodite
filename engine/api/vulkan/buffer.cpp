@@ -1,7 +1,7 @@
 #include "buffer.h"
 #include "device.h"
 
-namespace vkl {
+namespace aph {
 
 VulkanBuffer::VulkanBuffer(VulkanDevice *pDevice, const BufferCreateInfo &createInfo, VkBuffer buffer, VkDeviceMemory memory)
     :pDevice(pDevice), memory(memory)
@@ -60,4 +60,4 @@ VkResult VulkanBuffer::invalidate(VkDeviceSize size, VkDeviceSize offset) const 
     return vkInvalidateMappedMemoryRanges(pDevice->getHandle(), 1, &mappedRange);
 }
 
-}  // namespace vkl
+}  // namespace aph

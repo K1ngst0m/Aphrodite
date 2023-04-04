@@ -3,7 +3,7 @@
 
 #include "common/common.h"
 
-namespace vkl
+namespace aph
 {
 
 typedef uint32_t IdType;
@@ -37,6 +37,6 @@ public:
 
     bool operator()(const IdObject &left, const IdObject &right) { return left.m_Id < right.m_Id; }
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // IDOBJECT_H_

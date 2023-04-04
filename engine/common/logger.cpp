@@ -1,6 +1,6 @@
 #include "logger.h"
 
-namespace vkl {
+namespace aph {
 template <typename T>
 std::string format_duration(T xms) {
     uint64_t seconds = static_cast<uint64_t>(xms);
@@ -39,19 +39,19 @@ std::string format_duration(T xms) {
 std::string prep_level(Logger &l) {
     switch (l._message_level) {
     case LOG_ERR:
-        return VKL_LOG_ERROR;
+        return APH_LOG_ERROR;
         break;
     case LOG_WARN:
-        return VKL_LOG_WARNING;
+        return APH_LOG_WARNING;
         break;
     case LOG_INFO:
-        return VKL_LOG_INFO;
+        return APH_LOG_INFO;
         break;
     case LOG_DEBUG:
-        return VKL_LOG_DEBUG;
+        return APH_LOG_DEBUG;
         break;
     case LOG_TIME:
-        return VKL_LOG_TIME;
+        return APH_LOG_TIME;
         break;
     default:
         return "";
@@ -166,7 +166,7 @@ void Logger::add_snapshot(const std::string &n, bool quiet) {
     _snaps.push_back(now);
     _snap_ns.push_back(n);
     if (_loglevel() >= LOG_TIME && !quiet)
-        _fac << VKL_LOG_TIME << prep_time(*this) << prep_name(*this)
+        _fac << APH_LOG_TIME << prep_time(*this) << prep_name(*this)
              << ": Added snap '" << n << "'\n";
 }
 
@@ -183,4 +183,4 @@ void Logger::flush() {
     _fac.flush();
 }
 
-} // namespace vkl
+} // namespace aph

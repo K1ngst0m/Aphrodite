@@ -1,6 +1,6 @@
 #include "renderpass.h"
 
-namespace vkl
+namespace aph
 {
 static std::unordered_map<VkSampleCountFlagBits, uint8_t> sampleCountToBitField = {
     { VK_SAMPLE_COUNT_1_BIT, 0 }, { VK_SAMPLE_COUNT_2_BIT, 1 },  { VK_SAMPLE_COUNT_4_BIT, 2 },
@@ -21,4 +21,4 @@ static std::unordered_map<VkImageLayout, uint8_t> imageLayoutToBitField = {
     { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 9 }
 };
 
-}  // namespace vkl
+}  // namespace aph

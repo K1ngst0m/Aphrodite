@@ -47,18 +47,18 @@
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
         { \
-            std::cout << "Fatal : VkResult is \"" << vkl::utils::errorString(res) << "\" in " \
+            std::cout << "Fatal : VkResult is \"" << aph::utils::errorString(res) << "\" in " \
                       << __FILE__ << " at line " << __LINE__ << "\n"; \
             assert(res == VK_SUCCESS); \
         } \
     }
 
-namespace vkl::utils
+namespace aph::utils
 {
 std::string errorString(VkResult errorCode);
 std::vector<char> loadSpvFromFile(const std::string &filename);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
 VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
-}  // namespace vkl::utils
+}  // namespace aph::utils
 
 #endif  // VKLUTILS_H_

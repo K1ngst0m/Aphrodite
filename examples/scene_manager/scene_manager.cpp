@@ -1,6 +1,6 @@
 #include "scene_manager.h"
 
-scene_manager::scene_manager() : vkl::BaseApp("scene_manager")
+scene_manager::scene_manager() : aph::BaseApp("scene_manager")
 {
 }
 
@@ -15,14 +15,14 @@ void scene_manager::run()
 {
     while(!m_window->shouldClose())
     {
-        auto timer = vkl::Timer(m_deltaTime);
+        auto timer = aph::Timer(m_deltaTime);
         m_window->pollEvents();
 
         // update scene object
         m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
-        m_cameraNode->getObject<vkl::Camera>()->update(m_deltaTime);
+        m_cameraNode->getObject<aph::Camera>()->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
         // m_uiRenderer->update(m_deltaTime);
 
@@ -43,7 +43,7 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = vkl::Window::Create(1366, 768);
+    m_window = aph::Window::Create(1366, 768);
 
     m_window->setCursorPosCallback([=](double xposIn, double yposIn) { this->mouseHandleDerive(xposIn, yposIn); });
 
@@ -59,14 +59,14 @@ void scene_manager::setupScene()
 {
     // scene global argument setup
     {
-        m_scene = vkl::Scene::Create(vkl::SceneManagerType::DEFAULT);
+        m_scene = aph::Scene::Create(aph::SceneManagerType::DEFAULT);
         m_scene->setAmbient(glm::vec4(0.2f));
     }
 
     // scene camera
     {
         auto camera = m_scene->createCamera(m_window->getAspectRatio());
-        camera->setType(vkl::CameraType::FIRSTPERSON);
+        camera->setType(aph::CameraType::FIRSTPERSON);
         camera->setPosition({ 0.0f, 0.0f, -3.0f });
         camera->setFlipY(true);
         // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
@@ -89,7 +89,7 @@ void scene_manager::setupScene()
         auto dirLight = m_scene->createLight();
         dirLight->setColor(glm::vec3{ 1.0f });
         dirLight->setDirection({ 0.2f, 1.0f, 0.3f });
-        dirLight->setType(vkl::LightType::POINT);
+        dirLight->setType(aph::LightType::POINT);
 
         // light1
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
@@ -101,74 +101,75 @@ void scene_manager::setupScene()
 
     // load from gltf file
     {
-        m_modelNode = m_scene->createMeshesFromFile(vkl::AssetManager::GetModelDir() /
+        m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
                                                     "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         m_modelNode->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, { 0.0f, 1.0f, 0.0f });
     }
 
     {
         m_sceneRenderer->setScene(m_scene);
-        m_sceneRenderer->setShadingModel(vkl::ShadingModel::PBR);
+        m_sceneRenderer->setShadingModel(aph::ShadingModel::PBR);
         m_sceneRenderer->loadResources();
     }
 }
 
 void scene_manager::setupRenderer()
 {
-    vkl::RenderConfig config{
+    aph::RenderConfig config{
         .enableDebug = true,
         .enableUI = false,
         .maxFrames = 1,
     };
 
-    m_renderer = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
-    m_sceneRenderer = vkl::SceneRenderer::Create<vkl::VulkanSceneRenderer>(m_renderer);
-    // m_uiRenderer    = vkl::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
+    m_renderer = aph::Renderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
+    m_sceneRenderer = aph::SceneRenderer::Create<aph::VulkanSceneRenderer>(m_renderer);
+    // m_uiRenderer    = aph::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
 {
-    auto camera = m_cameraNode->getObject<vkl::Camera>();
-    if(action == VKL_PRESS)
+    using namespace aph;
+    auto camera = m_cameraNode->getObject<aph::Camera>();
+    if(action == APH_PRESS)
     {
         switch(key)
         {
-        case VKL_KEY_ESCAPE:
+        case APH_KEY_ESCAPE:
             m_window->close();
             break;
-        case VKL_KEY_1:
+        case APH_KEY_1:
             m_window->toggleCurosrVisibility();
             break;
-        case VKL_KEY_W:
-            camera->setMovement(vkl::Direction::UP, true);
+        case APH_KEY_W:
+            camera->setMovement(aph::Direction::UP, true);
             break;
-        case VKL_KEY_A:
-            camera->setMovement(vkl::Direction::LEFT, true);
+        case APH_KEY_A:
+            camera->setMovement(aph::Direction::LEFT, true);
             break;
-        case VKL_KEY_S:
-            camera->setMovement(vkl::Direction::DOWN, true);
+        case APH_KEY_S:
+            camera->setMovement(aph::Direction::DOWN, true);
             break;
-        case VKL_KEY_D:
-            camera->setMovement(vkl::Direction::RIGHT, true);
+        case APH_KEY_D:
+            camera->setMovement(aph::Direction::RIGHT, true);
             break;
         }
     }
 
-    if(action == VKL_RELEASE)
+    if(action == APH_RELEASE)
     {
         switch(key)
         {
-        case VKL_KEY_W:
-            camera->setMovement(vkl::Direction::UP, false);
+        case APH_KEY_W:
+            camera->setMovement(aph::Direction::UP, false);
             break;
-        case VKL_KEY_A:
-            camera->setMovement(vkl::Direction::LEFT, false);
+        case APH_KEY_A:
+            camera->setMovement(aph::Direction::LEFT, false);
             break;
-        case VKL_KEY_S:
-            camera->setMovement(vkl::Direction::DOWN, false);
+        case APH_KEY_S:
+            camera->setMovement(aph::Direction::DOWN, false);
             break;
-        case VKL_KEY_D:
-            camera->setMovement(vkl::Direction::RIGHT, false);
+        case APH_KEY_D:
+            camera->setMovement(aph::Direction::RIGHT, false);
             break;
         }
     }
@@ -179,7 +180,7 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
     const float dx = m_window->getCursorXpos() - xposIn;
     const float dy = m_window->getCursorYpos() - yposIn;
 
-    auto camera = m_cameraNode->getObject<vkl::Camera>();
+    auto camera = m_cameraNode->getObject<aph::Camera>();
     camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});
 }
 

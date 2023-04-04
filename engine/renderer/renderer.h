@@ -6,7 +6,7 @@
 #include "common/common.h"
 #include "common/window.h"
 
-namespace vkl
+namespace aph
 {
 struct RenderConfig
 {
@@ -43,6 +43,6 @@ protected:
     std::shared_ptr<WindowData> m_windowData = nullptr;
     RenderConfig m_config;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // RENDERER_H_

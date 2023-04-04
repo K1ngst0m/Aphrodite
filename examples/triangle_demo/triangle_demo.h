@@ -4,7 +4,7 @@
 #include "vkl.hpp"
 #include "vklRenderer.hpp"
 
-class triangle_demo : public vkl::BaseApp {
+class triangle_demo : public aph::BaseApp {
 public:
     triangle_demo();
 
@@ -18,12 +18,12 @@ private:
     void buildCommands();
 
 private:
-    std::shared_ptr<vkl::Window>         m_window;
-    std::shared_ptr<vkl::VulkanRenderer> m_renderer;
-    vkl::VulkanDevice                   *m_device = nullptr;
+    std::shared_ptr<aph::Window>         m_window;
+    std::shared_ptr<aph::VulkanRenderer> m_renderer;
+    aph::VulkanDevice                   *m_device = nullptr;
     float                                m_deltaTime;
 
-    vkl::VulkanPipeline   *m_demoPipeline;
+    aph::VulkanPipeline   *m_demoPipeline;
 };
 
 #endif // SCENE_MANAGER_H_

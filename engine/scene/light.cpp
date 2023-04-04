@@ -1,6 +1,6 @@
 #include "light.h"
 
-namespace vkl
+namespace aph
 {
 
 struct LightData
@@ -29,4 +29,4 @@ void Light::update(float deltaTime)
     pData->type = static_cast<uint32_t>(m_type);
 }
 
-}  // namespace vkl
+}  // namespace aph

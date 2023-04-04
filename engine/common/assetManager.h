@@ -3,7 +3,7 @@
 
 #include "common.h"
 
-namespace vkl {
+namespace aph {
 
 enum class ShaderAssetType {
     GLSL,
@@ -18,6 +18,6 @@ public:
     static std::filesystem::path GetModelDir();
     static std::filesystem::path GetFontDir();
 };
-} // namespace vkl
+} // namespace aph
 
 #endif // ASSETMANAGER_H_

@@ -1,12 +1,13 @@
 #include "commandPool.h"
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 VulkanCommandPool::VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice *device, VkCommandPool pool)
-    :m_createInfo(createInfo), m_device(device)
+    :m_device(device)
 {
     getHandle() = pool;
+    getCreateInfo() = m_createInfo;
 }
 
 VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers)
@@ -42,4 +43,4 @@ uint32_t VulkanCommandPool::getQueueFamilyIndex() const
 {
     return m_createInfo.queueFamilyIndex;
 }
-}  // namespace vkl
+}  // namespace aph

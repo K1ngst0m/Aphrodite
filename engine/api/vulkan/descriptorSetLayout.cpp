@@ -1,7 +1,7 @@
 #include "descriptorSetLayout.h"
 #include "descriptorPool.h"
 
-namespace vkl
+namespace aph
 {
 
 VulkanDescriptorSetLayout *VulkanDescriptorSetLayout::Create(
@@ -35,4 +35,4 @@ VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout()
 {
     delete m_pool;
 }
-}  // namespace vkl
+}  // namespace aph

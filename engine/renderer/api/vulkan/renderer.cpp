@@ -4,7 +4,7 @@
 
 #include "scene/mesh.h"
 
-namespace vkl
+namespace aph
 {
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
     Renderer(std::move(windowData), config)
@@ -128,8 +128,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
         }
 
         {
-            VkSemaphoreCreateInfo semaphoreInfo = vkl::init::semaphoreCreateInfo();
-            VkFenceCreateInfo fenceInfo = vkl::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+            VkSemaphoreCreateInfo semaphoreInfo = aph::init::semaphoreCreateInfo();
+            VkFenceCreateInfo fenceInfo = aph::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
@@ -303,4 +303,4 @@ void VulkanRenderer::idleDevice()
     m_device->waitIdle();
 }
 
-}  // namespace vkl
+}  // namespace aph

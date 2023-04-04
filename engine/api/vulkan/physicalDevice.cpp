@@ -1,6 +1,6 @@
 #include "physicalDevice.h"
 
-namespace vkl
+namespace aph
 {
 
 VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle) :
@@ -112,4 +112,4 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &
     assert("failed to find supported format!");
     return {};
 }
-}  // namespace vkl
+}  // namespace aph

@@ -3,7 +3,7 @@
 
 #include "instance.h"
 
-namespace vkl
+namespace aph
 {
 enum QueueTypeBits
 {
@@ -47,6 +47,6 @@ private:
     std::vector<VkQueueFamilyProperties> m_queueFamilyProperties;
     std::unordered_map<QueueTypeFlags, std::vector<uint32_t>> m_queueFamilyMap;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // PHYSICALDEVICE_H_

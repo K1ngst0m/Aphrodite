@@ -1,7 +1,7 @@
 #include "queue.h"
 #include "device.h"
 
-namespace vkl {
+namespace aph {
 
 VulkanQueue::VulkanQueue(VulkanDevice *device,
                          VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
@@ -37,4 +37,4 @@ VkResult VulkanQueue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Vk
     return result;
 }
 
-} // namespace vkl
+} // namespace aph

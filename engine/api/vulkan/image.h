@@ -4,7 +4,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanImageView;
@@ -98,6 +98,6 @@ private:
     std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // IMAGE_H_

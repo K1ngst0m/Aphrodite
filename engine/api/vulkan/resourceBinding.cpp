@@ -1,6 +1,6 @@
 #include "resourceBinding.h"
 
-namespace vkl
+namespace aph
 {
 void ResourceBindings::clear(uint32_t set)
 {
@@ -106,4 +106,4 @@ void ResourceBindings::bind(uint32_t set, uint32_t binding, uint32_t arrayElemen
     // Always mark ResourceBindings as dirty for fast checking during descriptor set binding.
     m_dirty = true;
 }
-}  // namespace vkl
+}  // namespace aph

@@ -1,7 +1,7 @@
 #include "image.h"
 #include "device.h"
 
-namespace vkl {
+namespace aph {
 
 VulkanImage::VulkanImage(VulkanDevice *pDevice, const ImageCreateInfo &createInfo, VkImage image, VkDeviceMemory memory)
     : m_device(pDevice), m_memory(memory)
@@ -44,4 +44,4 @@ VulkanImageView *VulkanImage::getImageView(Format imageFormat)
 
     return m_imageViewMap[imageFormat];
 }
-}  // namespace vkl
+}  // namespace aph

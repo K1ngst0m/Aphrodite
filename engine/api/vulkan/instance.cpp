@@ -1,7 +1,7 @@
 #include "instance.h"
 #include "physicalDevice.h"
 
-namespace vkl
+namespace aph
 {
 
 #ifdef VK_CHECK_RESULT
@@ -216,4 +216,4 @@ void VulkanInstance::Destroy(VulkanInstance *pInstance)
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);
     vkDestroyInstance(pInstance->getHandle(), nullptr);
 }
-}  // namespace vkl
+}  // namespace aph

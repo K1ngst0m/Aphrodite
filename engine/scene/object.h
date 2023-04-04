@@ -3,7 +3,7 @@
 
 #include "idObject.h"
 
-namespace vkl
+namespace aph
 {
 
 class Scene;
@@ -56,6 +56,6 @@ protected:
     bool updated{ false };
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VKLMODEL_H_

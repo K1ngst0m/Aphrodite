@@ -5,7 +5,7 @@
 #include "api/vulkan/shader.h"
 #include "renderer/renderer.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanRenderer : public Renderer
 {
@@ -62,7 +62,7 @@ public:
     uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
 
 private:
-    vkl::VulkanRenderPass *m_renderPass = nullptr;
+    VulkanRenderPass *m_renderPass = nullptr;
 
     struct
     {
@@ -79,6 +79,6 @@ private:
 
     std::vector<VulkanCommandBuffer *> m_commandBuffers;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VULKANRENDERER_H_

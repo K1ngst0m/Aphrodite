@@ -5,7 +5,7 @@
 #include "vkUtils.h"
 #include "shader.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanRenderPass;
@@ -61,19 +61,19 @@ struct GraphicsPipelineCreateInfo
         vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState(component);
 
         inputAssembly =
-            vkl::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+            aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
 
         dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-        dynamicState = vkl::init::pipelineDynamicStateCreateInfo(dynamicStages.data(),
+        dynamicState = aph::init::pipelineDynamicStateCreateInfo(dynamicStages.data(),
                                                                  static_cast<uint32_t>(dynamicStages.size()));
 
-        rasterizer = vkl::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
+        rasterizer = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
                                                                      VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-        multisampling = vkl::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-        colorBlendAttachment = vkl::init::pipelineColorBlendAttachmentState(
+        multisampling = aph::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+        colorBlendAttachment = aph::init::pipelineColorBlendAttachmentState(
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
             VK_FALSE);
-        depthStencil = vkl::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+        depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     }
 
     GraphicsPipelineCreateInfo() :
@@ -114,6 +114,6 @@ protected:
     ShaderMapList m_shaderMapList;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // PIPELINE_H_

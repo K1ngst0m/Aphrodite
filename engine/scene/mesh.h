@@ -3,7 +3,7 @@
 
 #include "object.h"
 
-namespace vkl
+namespace aph
 {
 struct SceneNode;
 struct ImageInfo;
@@ -90,6 +90,6 @@ struct Mesh : public Object
     IndexType m_indexType{ IndexType::UINT32 };
     PrimitiveTopology m_topology{ PrimitiveTopology::TRI_LIST };
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // MESH_H_

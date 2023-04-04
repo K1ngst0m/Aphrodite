@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 using RenderPassHash = std::vector<uint64_t>;
 class VulkanDevice;
@@ -33,6 +33,6 @@ private:
     uint32_t m_colorAttachmentCount = 0;
 };
 
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // RENDERPASS_H_

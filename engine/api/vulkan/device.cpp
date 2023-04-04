@@ -1,6 +1,6 @@
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 
 #ifdef VK_CHECK_RESULT
@@ -132,7 +132,7 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo &createInfo, Vu
         .format = static_cast<VkFormat>(createInfo.format),
     };
     info.subresourceRange = {
-        .aspectMask = vkl::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format)),
+        .aspectMask = aph::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format)),
         .baseMipLevel = createInfo.subresourceRange.baseMipLevel,
         .levelCount = createInfo.subresourceRange.levelCount,
         .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
@@ -185,7 +185,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
     // create memory
     VkMemoryRequirements memRequirements;
     vkGetBufferMemoryRequirements(m_handle, buffer, &memRequirements);
-    VkMemoryAllocateInfo allocInfo = vkl::init::memoryAllocateInfo(
+    VkMemoryAllocateInfo allocInfo = aph::init::memoryAllocateInfo(
         memRequirements.size, m_physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property));
     VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
 
@@ -402,7 +402,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
             setLayouts.push_back(setLayout->getHandle());
         }
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            vkl::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+            aph::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
         vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
     }
 
@@ -434,7 +434,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto &[stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
+        shaderStages.push_back(aph::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages = shaderStages.data();
@@ -480,16 +480,16 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo &cr
             setLayouts.push_back(setLayout->getHandle());
         }
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            vkl::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+            aph::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
         VK_CHECK_RESULT(vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
     }
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
     for(const auto &[stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(vkl::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
+        shaderStages.push_back(aph::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
     }
 
-    VkComputePipelineCreateInfo ci = vkl::init::computePipelineCreateInfo(pipelineLayout);
+    VkComputePipelineCreateInfo ci = aph::init::computePipelineCreateInfo(pipelineLayout);
     ci.stage = shaderStages[0];
     VkPipeline handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
@@ -562,4 +562,4 @@ VkResult VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool wai
 {
     return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
-}  // namespace vkl
+}  // namespace aph

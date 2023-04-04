@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace vkl
+namespace aph
 {
 class VulkanDevice;
 class VulkanRenderPass;
@@ -46,6 +46,6 @@ private:
     SpinLock m_spinLock;
     FramebufferCreateInfo m_createInfo{};
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // FRAMEBUFFER_H_

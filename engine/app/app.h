@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace vkl
+namespace aph
 {
 class BaseApp
 {
@@ -18,6 +18,6 @@ public:
 protected:
     const std::string m_sessionName;
 };
-}  // namespace vkl
+}  // namespace aph
 
 #endif  // VULKANBASE_H_

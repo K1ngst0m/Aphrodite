@@ -1,7 +1,7 @@
 #include "swapChain.h"
 #include "device.h"
 
-namespace vkl
+namespace aph
 {
 struct SwapChainSupportDetails
 {
@@ -173,4 +173,4 @@ VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue *pQ
     return result;
 }
 
-}  // namespace vkl
+}  // namespace aph

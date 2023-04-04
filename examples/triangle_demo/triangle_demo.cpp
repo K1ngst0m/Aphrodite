@@ -1,15 +1,15 @@
 #include "triangle_demo.h"
 
 triangle_demo::triangle_demo()
-    : vkl::BaseApp("triangle_demo") {
+    : aph::BaseApp("triangle_demo") {
 }
 
 void triangle_demo::init() {
     // setup window
-    m_window = vkl::Window::Create(1366, 768);
+    m_window = aph::Window::Create(1366, 768);
 
     // renderer config
-    vkl::RenderConfig config{
+    aph::RenderConfig config{
         .enableDebug         = true,
         .enableUI            = false,
         .initDefaultResource = true,
@@ -17,14 +17,14 @@ void triangle_demo::init() {
     };
 
     // setup renderer
-    m_renderer = vkl::Renderer::Create<vkl::VulkanRenderer>(m_window->getWindowData(), config);
+    m_renderer = aph::Renderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
     m_device = m_renderer->getDevice();
     setupPipeline();
 }
 
 void triangle_demo::run() {
     // get frame deltatime
-    auto timer = vkl::Timer(m_deltaTime);
+    auto timer = aph::Timer(m_deltaTime);
 
     // loop
     while (!m_window->shouldClose()) {
@@ -56,7 +56,7 @@ void triangle_demo::setupPipeline() {
     vertexInputInfo.vertexBindingDescriptionCount   = 0;
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
-    vkl::GraphicsPipelineCreateInfo createInfo{};
+    aph::GraphicsPipelineCreateInfo createInfo{};
     createInfo.vertexInputInfo = vertexInputInfo;
 
     // build Shader
@@ -67,10 +67,10 @@ void triangle_demo::setupPipeline() {
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(createInfo, m_renderer->getDefaultRenderPass(), &m_demoPipeline));
 }
 void triangle_demo::buildCommands() {
-    VkViewport viewport = vkl::init::viewport(m_renderer->getSwapChain()->getExtent());
-    VkRect2D   scissor  = vkl::init::rect2D(m_renderer->getSwapChain()->getExtent());
+    VkViewport viewport = aph::init::viewport(m_renderer->getSwapChain()->getExtent());
+    VkRect2D   scissor  = aph::init::rect2D(m_renderer->getSwapChain()->getExtent());
 
-    vkl::RenderPassBeginInfo renderPassBeginInfo{};
+    aph::RenderPassBeginInfo renderPassBeginInfo{};
     renderPassBeginInfo.pRenderPass       = m_renderer->getDefaultRenderPass();
     renderPassBeginInfo.pFramebuffer = m_renderer->getDefaultFrameBuffer(m_renderer->getCurrentImageIndex());
     renderPassBeginInfo.renderArea.offset = {0, 0};
@@ -81,7 +81,7 @@ void triangle_demo::buildCommands() {
     renderPassBeginInfo.clearValueCount = clearValues.size();
     renderPassBeginInfo.pClearValues    = clearValues.data();
 
-    VkCommandBufferBeginInfo beginInfo = vkl::init::commandBufferBeginInfo();
+    VkCommandBufferBeginInfo beginInfo = aph::init::commandBufferBeginInfo();
 
     // record command
     auto  commandIndex  = m_renderer->getCurrentFrameIndex();

@@ -1,7 +1,7 @@
 #include "framebuffer.h"
 #include "device.h"
 
-namespace vkl {
+namespace aph {
 VkResult VulkanFramebuffer::Create(VulkanDevice *device, const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer) {
     // Iterate over attachments and make sure each ImageView exists in ObjectLookup.
     uint32_t attachmentCount = {static_cast<uint32_t>(createInfo.attachments.size())};
@@ -83,4 +83,4 @@ VulkanFramebuffer::~VulkanFramebuffer() {
         vkDestroyFramebuffer(m_device->getHandle(), handle, nullptr);
     }
 }
-} // namespace vkl
+} // namespace aph

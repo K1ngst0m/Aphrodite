@@ -1,6 +1,6 @@
 #include "threadPool.h"
 
-namespace vkl {
+namespace aph {
 ThreadPool::ThreadPool(uint32_t threadCount) {
     // Spawn maxThreadCount threads to execute tasks.
     for (auto i = 0U; i < threadCount; ++i) {
@@ -66,4 +66,4 @@ void ThreadPool::Abort() {
     // Wait for running threads to complete.
     Wait();
 }
-} // namespace vkl
+} // namespace aph
