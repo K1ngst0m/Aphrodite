@@ -215,7 +215,6 @@ void VulkanSceneRenderer::cleanupResources()
     }
 
     m_pDevice->destroyBuffer(m_postFxPass.quadVB);
-    m_pDevice->destroyBuffer(m_sceneInfoUB);
 }
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
@@ -339,22 +338,25 @@ void VulkanSceneRenderer::update(float deltaTime)
 
 void VulkanSceneRenderer::_initRenderData()
 {
-    // [TODO] object data
-    {
-        BufferCreateInfo bufferCI{
-            .size = sizeof(SceneInfo),
-            .alignment = 0,
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_COHERENT_BIT | MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-        };
-        VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &m_sceneInfoUB, &m_sceneInfo));
-        m_sceneInfoUB->setupDescriptor();
-    }
-
     for(auto &set : m_sceneSets)
     {
+        VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
+            .dataSize = sizeof(SceneInfo),
+            .pData = &m_sceneInfo,
+        };
+
+        VkWriteDescriptorSet sceneInfoSetWrite{
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext = &writeDescriptorSetInlineUniformBlock,
+            .dstSet = set,
+            .dstBinding = 0,
+            .descriptorCount = sizeof(SceneInfo),
+            .descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+        };
+
         std::vector<VkWriteDescriptorSet> writes{
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &m_sceneInfoUB->getBufferInfo()),
+            sceneInfoSetWrite,
             aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_cameraInfos.data(),
                                           m_cameraInfos.size()),
             aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, m_lightInfos.data(),
@@ -400,16 +402,6 @@ void VulkanSceneRenderer::_initRenderData()
                 std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
                 {
-                    // BufferCreateInfo bufferCI{
-                    //     .size = sizeof(Material),
-                    //     .alignment = 0,
-                    //     .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                    //     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                    // };
-                    // m_pDevice->createBuffer(bufferCI, &matInfoUB, &material);
-                    // matInfoUB->setupDescriptor();
-
-                    // create material buffer Info
                     VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
                         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
                         .dataSize = sizeof(Material),
@@ -712,12 +704,11 @@ void VulkanSceneRenderer::_initForward()
         }
 
         {
-            VkFormat depthFormat = m_pDevice->getDepthFormat();
             ImageCreateInfo createInfo{
                 .extent = { imageExtent.width, imageExtent.height, 1 },
                 .usage = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                .format = static_cast<Format>(depthFormat),
+                .format = static_cast<Format>(m_pDevice->getDepthFormat()),
                 .tiling = IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
@@ -858,8 +849,8 @@ void VulkanSceneRenderer::_initSetLayout()
     // scene
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SceneInfo)),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1,
                                                   m_sceneInfo.cameraCount),

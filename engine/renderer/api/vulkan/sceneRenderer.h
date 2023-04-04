@@ -161,7 +161,6 @@ private:
 
     std::vector<VkDescriptorSet> m_sceneSets;
     SceneInfo m_sceneInfo{};
-    VulkanBuffer *m_sceneInfoUB = nullptr;
 
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;
     std::deque<std::shared_ptr<VulkanUniformData>> m_uniformDataList;
