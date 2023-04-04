@@ -1,7 +1,6 @@
 #ifndef VKL_H_
 #define VKL_H_
 
-#include "renderer/device.h"
 #include "renderer/renderer.h"
 #include "renderer/sceneRenderer.h"
 

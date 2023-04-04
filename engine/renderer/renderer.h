@@ -5,7 +5,6 @@
 
 #include "common/common.h"
 #include "common/window.h"
-#include "device.h"
 
 namespace vkl
 {

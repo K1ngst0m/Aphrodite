@@ -1,6 +1,7 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
+#include "renderer/gpuResource.h"
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
@@ -11,8 +12,6 @@
 #include "physicalDevice.h"
 #include "pipeline.h"
 #include "queue.h"
-#include "renderer/device.h"
-#include "renderer/gpuResource.h"
 #include "renderpass.h"
 #include "shader.h"
 #include "swapChain.h"
@@ -36,7 +35,7 @@ struct DeviceCreateInfo
     VulkanPhysicalDevice *pPhysicalDevice = nullptr;
 };
 
-class VulkanDevice : public GraphicsDevice, public ResourceHandle<VkDevice>
+class VulkanDevice : public ResourceHandle<VkDevice, DeviceCreateInfo>
 {
 private:
     VulkanDevice() = default;
@@ -87,7 +86,6 @@ private:
     VulkanPhysicalDevice *m_physicalDevice;
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools m_commandPools;
-    DeviceCreateInfo m_createInfo;
 };
 
 }  // namespace vkl

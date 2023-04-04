@@ -616,92 +616,24 @@ enum AccessFlagBits
 };
 using AccessFlags = uint32_t;
 
-template <typename T_Handle>
+struct DummyCreateInfo
+{
+};
+
+template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
 class ResourceHandle
 {
 public:
     T_Handle &getHandle() { return m_handle; }
-
     const T_Handle &getHandle() const { return m_handle; }
-
+    T_CreateInfo &getCreateInfo() { return m_createInfo; }
 protected:
     T_Handle m_handle = nullptr;
-};
-
-template <typename T_CreateInfo>
-class Resource
-{
-public:
-    T_CreateInfo &getCreateInfo() { return m_createInfo; }
-
-protected:
     T_CreateInfo m_createInfo;
 };
 
-struct BufferCreateInfo
-{
-    uint32_t size = 0;
-    uint32_t alignment = 0;
-    BufferUsageFlags usage;
-    MemoryPropertyFlags property;
-};
-
-template <typename T>
-class Buffer : public Resource<BufferCreateInfo>, public ResourceHandle<T>
-{
-public:
-    uint32_t getSize() const { return m_createInfo.size; }
-    uint32_t getOffset() const { return m_createInfo.alignment; }
-};
-
-struct ImageCreateInfo
-{
-    Extent3D extent;
-    uint32_t flags = 0;
-    ImageType imageType = IMAGE_TYPE_2D;
-    uint32_t alignment = 0;
-    uint32_t mipLevels = 1;
-    uint32_t layerCount = 1;
-    uint32_t arrayLayers = 1;
-    ImageUsageFlags usage;
-    MemoryPropertyFlags property;
-    Format format;
-    SampleCountFlags samples = SAMPLE_COUNT_1_BIT;
-    ImageTiling tiling = IMAGE_TILING_OPTIMAL;
-};
-
-template<typename THandle>
-class Image : public Resource<ImageCreateInfo>, public ResourceHandle<THandle>
-{
-public:
-    Extent3D getExtent() const { return m_createInfo.extent; }
-    uint32_t getWidth() const { return m_createInfo.extent.width; }
-    uint32_t getHeight() const { return m_createInfo.extent.height; }
-    uint32_t getMipLevels() const { return m_createInfo.mipLevels; }
-    uint32_t getLayerCount() const { return m_createInfo.layerCount; }
-    uint32_t getOffset() const { return m_createInfo.alignment; }
-};
-
-struct ImageViewCreateInfo
-{
-    ImageViewType viewType;
-    ImageViewDimension dimension;
-    Format format;
-    ComponentMapping components;
-    ImageSubresourceRange subresourceRange;
-};
-
-template <typename THandle>
-class ImageView : public Resource<ImageViewCreateInfo>, public ResourceHandle<THandle>
-{
-public:
-    ImageViewType getImageViewType() const { return m_createInfo.viewType; }
-    Format getFormat() const { return m_createInfo.format; }
-    ComponentMapping getComponentMapping() const { return m_createInfo.components; }
-
-    const ImageSubresourceRange &GetSubresourceRange() const { return m_createInfo.subresourceRange; }
-};
-
 }  // namespace vkl
+
+
 
 #endif  // RESOURCE_H_

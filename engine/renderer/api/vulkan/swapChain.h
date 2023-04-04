@@ -17,7 +17,7 @@ struct SwapChainCreateInfo
     void *windowHandle;
 };
 
-class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR>
+class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
 {
 public:
     VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDevice *pDevice);
