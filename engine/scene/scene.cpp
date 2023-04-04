@@ -135,7 +135,7 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
         auto mesh{ Object::Create<Mesh>() };
         auto &indices{ mesh->m_indices };
         auto &vertices{ mesh->m_vertices };
-        node->attachObject(mesh);
+        node->attachObject<Mesh>(mesh);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : gltfMesh.primitives)
         {

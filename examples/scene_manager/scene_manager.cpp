@@ -77,7 +77,7 @@ void scene_manager::setupScene()
 
         // camera 1 (main)
         m_cameraNode = m_scene->getRootNode()->createChildNode();
-        m_cameraNode->attachObject(camera);
+        m_cameraNode->attachObject<aph::Camera>(camera);
         m_scene->setMainCamera(camera);
 
         // // camera 2
@@ -93,7 +93,7 @@ void scene_manager::setupScene()
 
         // light1
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
-        m_directionalLightNode->attachObject(dirLight);
+        m_directionalLightNode->attachObject<aph::Light>(dirLight);
 
         // // #light 2
         // m_scene->getRootNode()->createChildNode()->attachObject(dirLight);

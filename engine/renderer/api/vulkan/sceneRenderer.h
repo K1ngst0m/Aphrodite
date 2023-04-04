@@ -77,6 +77,7 @@ class VulkanSceneRenderer : public SceneRenderer
 public:
     VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
     ~VulkanSceneRenderer() override = default;
+
     void loadResources() override;
     void cleanupResources() override;
     void update(float deltaTime) override;

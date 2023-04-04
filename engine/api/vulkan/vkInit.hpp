@@ -423,8 +423,8 @@ pipelineRasterizationStateCreateInfo(VkPolygonMode polygonMode, VkCullModeFlags 
     return pipelineRasterizationStateCreateInfo;
 }
 
-inline VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(VkColorComponentFlags colorWriteMask,
-                                                                             VkBool32 blendEnable)
+inline VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState(VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+                                                                             VkBool32 blendEnable = VK_FALSE)
 {
     VkPipelineColorBlendAttachmentState pipelineColorBlendAttachmentState{};
     pipelineColorBlendAttachmentState.colorWriteMask = colorWriteMask;
@@ -466,7 +466,7 @@ inline VkPipelineViewportStateCreateInfo pipelineViewportStateCreateInfo(uint32_
 }
 
 inline VkPipelineMultisampleStateCreateInfo
-pipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples,
+pipelineMultisampleStateCreateInfo(VkSampleCountFlagBits rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
                                    VkPipelineMultisampleStateCreateFlags flags = 0)
 {
     VkPipelineMultisampleStateCreateInfo pipelineMultisampleStateCreateInfo{};

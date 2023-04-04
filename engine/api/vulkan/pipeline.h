@@ -59,28 +59,21 @@ struct GraphicsPipelineCreateInfo
     GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component, VkExtent2D extent = { 0, 0 })
     {
         vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState(component);
-
-        inputAssembly =
-            aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-
+        inputAssembly = aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
         dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
         dynamicState = aph::init::pipelineDynamicStateCreateInfo(dynamicStages.data(),
                                                                  static_cast<uint32_t>(dynamicStages.size()));
-
         rasterizer = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
                                                                      VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-        multisampling = aph::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
-        colorBlendAttachment = aph::init::pipelineColorBlendAttachmentState(
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-            VK_FALSE);
+        multisampling = aph::init::pipelineMultisampleStateCreateInfo();
+        colorBlendAttachment = aph::init::pipelineColorBlendAttachmentState();
         depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     }
 
     GraphicsPipelineCreateInfo() :
         GraphicsPipelineCreateInfo({ VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV,
                                      VertexComponent::COLOR, VertexComponent::TANGENT })
-    {
-    }
+    {}
 };
 
 struct ComputePipelineCreateInfo

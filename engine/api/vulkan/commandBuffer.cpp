@@ -32,9 +32,10 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
     }
 
     // Begin command recording.
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = static_cast<VkCommandBufferUsageFlags>(flags);
+    VkCommandBufferBeginInfo beginInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = static_cast<VkCommandBufferUsageFlags>(flags),
+    };
     auto result = vkBeginCommandBuffer(m_handle, &beginInfo);
     if(result != VK_SUCCESS)
     {

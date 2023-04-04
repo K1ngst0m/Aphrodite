@@ -250,7 +250,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     // forward pass
     {
         VulkanImageView * pColorAttachment = m_forwardPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
-        VkRenderingAttachmentInfoKHR forwardColorAttachmentInfo{
+        VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -260,7 +260,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         };
 
         VulkanImageView * pDepthAttachment = m_forwardPass.depthAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
-        VkRenderingAttachmentInfoKHR forwardDepthAttachmentInfo{
+        VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pDepthAttachment->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
@@ -298,7 +298,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
     {
         VulkanImageView* pColorAttachment = m_postFxPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
-        VkRenderingAttachmentInfoKHR postFxColorAttachmentInfo{
+        VkRenderingAttachmentInfo postFxColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -650,7 +650,7 @@ void VulkanSceneRenderer::_initPostFx()
 
         auto swapchainFormat = m_pRenderer->getSwapChain()->getSurfaceFormat();
         pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = 1,
             .pColorAttachmentFormats = &swapchainFormat,
         };
@@ -725,7 +725,7 @@ void VulkanSceneRenderer::_initForward()
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {m_pRenderer->getSwapChain()->getSurfaceFormat()};
         pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = static_cast<uint32_t>(colorFormats.size()),
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat = m_pDevice->getDepthFormat(),

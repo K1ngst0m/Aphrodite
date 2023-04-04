@@ -1,19 +1,20 @@
 #include "triangle_demo.h"
 
-triangle_demo::triangle_demo()
-    : aph::BaseApp("triangle_demo") {
+triangle_demo::triangle_demo() : aph::BaseApp("triangle_demo")
+{
 }
 
-void triangle_demo::init() {
+void triangle_demo::init()
+{
     // setup window
     m_window = aph::Window::Create(1366, 768);
 
     // renderer config
     aph::RenderConfig config{
-        .enableDebug         = true,
-        .enableUI            = false,
+        .enableDebug = true,
+        .enableUI = false,
         .initDefaultResource = true,
-        .maxFrames           = 2,
+        .maxFrames = 2,
     };
 
     // setup renderer
@@ -22,12 +23,14 @@ void triangle_demo::init() {
     setupPipeline();
 }
 
-void triangle_demo::run() {
+void triangle_demo::run()
+{
     // get frame deltatime
     auto timer = aph::Timer(m_deltaTime);
 
     // loop
-    while (!m_window->shouldClose()) {
+    while(!m_window->shouldClose())
+    {
         m_window->pollEvents();
 
         m_renderer->beginFrame();
@@ -36,21 +39,24 @@ void triangle_demo::run() {
     }
 }
 
-void triangle_demo::finish() {
+void triangle_demo::finish()
+{
     // wait device idle before cleanup
     m_renderer->idleDevice();
     m_device->destroyPipeline(m_demoPipeline);
     m_renderer->cleanup();
 }
 
-int main() {
+int main()
+{
     triangle_demo app;
 
     app.init();
     app.run();
     app.finish();
 }
-void triangle_demo::setupPipeline() {
+void triangle_demo::setupPipeline()
+{
     {
         VkAttachmentDescription colorAttachment{
             .format = m_renderer->getSwapChain()->getSurfaceFormat(),
@@ -99,21 +105,21 @@ void triangle_demo::setupPipeline() {
             // depth image view
             {
                 auto &depthImage = m_depthAttachments[idx];
-                VkFormat depthFormat = m_device->getDepthFormat();
                 {
                     aph::ImageCreateInfo createInfo{
-                        .extent = { m_renderer->getSwapChain()->getExtent().width, m_renderer->getSwapChain()->getExtent().height, 1 },
+                        .extent = { m_renderer->getSwapChain()->getExtent().width,
+                                    m_renderer->getSwapChain()->getExtent().height, 1 },
                         .usage = aph::IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                         .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                        .format = static_cast<aph::Format>(depthFormat),
+                        .format = static_cast<aph::Format>(m_device->getDepthFormat()),
                         .tiling = aph::IMAGE_TILING_OPTIMAL,
                     };
                     VK_CHECK_RESULT(m_device->createImage(createInfo, &depthImage));
                 }
 
-                m_device->executeSingleCommands(aph::QUEUE_GRAPHICS, [&](aph::VulkanCommandBuffer *cmd){
+                m_device->executeSingleCommands(aph::QUEUE_GRAPHICS, [&](aph::VulkanCommandBuffer *cmd) {
                     cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
                 });
             }
 
@@ -136,8 +142,8 @@ void triangle_demo::setupPipeline() {
     }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{
-        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount   = 0,
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .vertexBindingDescriptionCount = 0,
         .vertexAttributeDescriptionCount = 0,
     };
 
@@ -147,29 +153,32 @@ void triangle_demo::setupPipeline() {
     // build Shader
     std::filesystem::path shaderDir = "assets/shaders/glsl/default";
 
-    createInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT]   = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
-    createInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
+    createInfo.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
+        m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.vert.spv");
+    createInfo.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] =
+        m_renderer->getShaderCache()->getShaders(shaderDir / "triangle.frag.spv");
     VK_CHECK_RESULT(m_device->createGraphicsPipeline(createInfo, m_pRenderPass, &m_demoPipeline));
 }
-void triangle_demo::buildCommands() {
+void triangle_demo::buildCommands()
+{
     VkViewport viewport = aph::init::viewport(m_renderer->getSwapChain()->getExtent());
-    VkRect2D   scissor  = aph::init::rect2D(m_renderer->getSwapChain()->getExtent());
+    VkRect2D scissor = aph::init::rect2D(m_renderer->getSwapChain()->getExtent());
 
     aph::RenderPassBeginInfo renderPassBeginInfo{};
-    renderPassBeginInfo.pRenderPass       = m_pRenderPass;
-    renderPassBeginInfo.pFramebuffer      = m_framebuffers[m_renderer->getCurrentImageIndex()];
-    renderPassBeginInfo.renderArea.offset = {0, 0};
+    renderPassBeginInfo.pRenderPass = m_pRenderPass;
+    renderPassBeginInfo.pFramebuffer = m_framebuffers[m_renderer->getCurrentImageIndex()];
+    renderPassBeginInfo.renderArea.offset = { 0, 0 };
     renderPassBeginInfo.renderArea.extent = m_renderer->getSwapChain()->getExtent();
     std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color                = {{0.1f, 0.1f, 0.1f, 1.0f}};
-    clearValues[1].depthStencil         = {1.0f, 0};
+    clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
+    clearValues[1].depthStencil = { 1.0f, 0 };
     renderPassBeginInfo.clearValueCount = clearValues.size();
-    renderPassBeginInfo.pClearValues    = clearValues.data();
+    renderPassBeginInfo.pClearValues = clearValues.data();
 
     VkCommandBufferBeginInfo beginInfo = aph::init::commandBufferBeginInfo();
 
     // record command
-    auto  commandIndex  = m_renderer->getCurrentFrameIndex();
+    auto commandIndex = m_renderer->getCurrentFrameIndex();
     auto *commandBuffer = m_renderer->getDefaultCommandBuffer(commandIndex);
 
     commandBuffer->begin();
