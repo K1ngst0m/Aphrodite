@@ -78,52 +78,50 @@ private:
         SET_LAYOUT_MATERIAL,
         SET_LAYOUT_SCENE,
         SET_LAYOUT_OBJECT,
-        SET_LAYOUT_OFFSCR,
+        SET_LAYOUT_POSTFX,
         SET_LAYOUT_MAX,
     };
 
     enum SamplerIndex
     {
         SAMP_TEXTURE,
-        SAMP_SHADOW,
+        // SAMP_SHADOW,
         SAMP_POSTFX,
-        SAMP_CUBEMAP,
+        // SAMP_CUBEMAP,
         SAMP_MAX,
     };
 
+    enum PipelineIndex
+    {
+        PIPELINE_GRAPHICS_FORWARD,
+        // PIPELINE_GRAPHICS_SHADOW,
+        PIPELINE_COMPUTE_POSTFX,
+        PIPELINE_MAX,
+    };
+
+    std::array<VulkanPipeline *, PIPELINE_MAX> m_pipelines;
     std::array<VulkanDescriptorSetLayout *, SET_LAYOUT_MAX> m_setLayouts;
     std::array<VkSampler, SAMP_MAX> m_samplers;
 
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
+    std::vector<VkDescriptorSet> m_postFxSets{};
 
     struct PASS_FORWARD
     {
-        VulkanPipeline *pipeline{};
         std::vector<VulkanImage *> colorAttachments;
         std::vector<VulkanImage *> depthAttachments;
-    } m_forwardPass;
+    } m_forward;
 
-    struct PASS_SHADOW
-    {
-        const uint32_t dim{ 2048 };
-        const VkFilter filter{ VK_FILTER_LINEAR };
-        VulkanPipeline *pipeline{};
-        std::vector<VulkanImage *> depthAttachments;
-        std::vector<VkDescriptorSet> cameraSets;
-    } m_shadowPass;
-
-    struct PASS_POSTFX
-    {
-        VulkanBuffer *quadVB{};
-        VulkanPipeline *pipeline{};
-        std::vector<VulkanImage *> colorAttachments{};
-        std::vector<VkDescriptorSet> sets{};
-    } m_postFxPass;
+    // struct PASS_SHADOW
+    // {
+    //     const uint32_t dim{ 2048 };
+    //     const VkFilter filter{ VK_FILTER_LINEAR };
+    //     std::vector<VulkanImage *> depthAttachments;
+    //     std::vector<VkDescriptorSet> cameraSets;
+    // } m_shadow;
 
 private:
-    SceneInfo m_sceneInfo{};
-
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;
     std::deque<std::shared_ptr<VulkanUniformData>> m_uniformDataList;
 

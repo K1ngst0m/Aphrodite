@@ -111,7 +111,7 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDe
         .imageColorSpace = swapChainSupport.preferedSurfaceFormat.colorSpace,
         .imageExtent = swapChainSupport.preferedExtent,
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices = nullptr,

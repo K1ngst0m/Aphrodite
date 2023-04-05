@@ -43,7 +43,7 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = aph::Window::Create(1366, 768);
+    m_window = aph::Window::Create(1440, 768);
 
     m_window->setCursorPosCallback([=](double xposIn, double yposIn) { this->mouseHandleDerive(xposIn, yposIn); });
 

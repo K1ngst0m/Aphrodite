@@ -62,6 +62,7 @@ public:
                        const void *pValues);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                      uint32_t firstInstance);
+    void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size);
     void transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout,

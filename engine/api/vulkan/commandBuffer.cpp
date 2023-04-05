@@ -341,4 +341,8 @@ void VulkanCommandBuffer::endRendering()
 {
     vkCmdEndRendering(getHandle());
 }
+void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+{
+    vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
+}
 }  // namespace aph
