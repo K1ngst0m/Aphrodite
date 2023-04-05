@@ -21,17 +21,11 @@ enum class SceneManagerType
     DEFAULT,
 };
 
-class Light;
-class Camera;
-struct Mesh;
-struct ImageInfo;
-struct Material;
-
 using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
 using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
 using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
 using ImageInfoList = std::vector<std::shared_ptr<ImageInfo>>;
-using MaterialList = std::vector<std::shared_ptr<Material>>;
+using MaterialList = std::vector<Material>;
 
 class Scene
 {

@@ -1,7 +1,9 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
-#include "object.h"
+#include "scene/mesh.h"
+#include "scene/light.h"
+#include "scene/camera.h"
 
 namespace aph
 {
@@ -37,10 +39,6 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
     std::shared_ptr<TNode> parent{};
     glm::mat4 matrix{ 1.0f };
 };
-
-class Camera;
-class Light;
-struct Mesh;
 
 struct SceneNode : Node<SceneNode>
 {

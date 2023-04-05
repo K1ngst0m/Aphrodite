@@ -22,7 +22,7 @@ void VulkanShaderCache::destroy()
 {
     for(auto &[key, shaderModule] : shaderModuleCaches)
     {
-        vkDestroyShaderModule(_device->getHandle(), shaderModule->getHandle(), nullptr);
+        vkDestroyShaderModule(m_device->getHandle(), shaderModule->getHandle(), nullptr);
         delete shaderModule;
     }
 }
@@ -31,15 +31,15 @@ VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path)
     if(!shaderModuleCaches.count(path))
     {
         std::vector<char> spvCode = aph::utils::loadSpvFromFile(path);
-        VkShaderModule shaderModule = createShaderModule(_device, spvCode);
+        VkShaderModule shaderModule = createShaderModule(m_device, spvCode);
 
         shaderModuleCaches[path] = new VulkanShaderModule(spvCode, shaderModule);
     }
     return shaderModuleCaches[path];
 }
 VulkanShaderModule::VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
-    _entrypoint(std::move(entrypoint)),
-    _code(std::move(code))
+    m_entrypoint(std::move(entrypoint)),
+    m_code(std::move(code))
 {
     getHandle() = shaderModule;
 }

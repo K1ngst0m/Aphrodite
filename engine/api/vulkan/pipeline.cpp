@@ -24,13 +24,13 @@ VkPipelineVertexInputStateCreateInfo &VertexInputBuilder::getPipelineVertexInput
     {
         VkVertexInputAttributeDescription desc = vertexComponmentMap[component];
         desc.location = location;
-        _vertexInputAttributeDescriptions.push_back(desc);
+        inputAttribute.push_back(desc);
         location++;
     }
-    _vertexInputBindingDescriptions = { { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX } };
-    _pipelineVertexInputStateCreateInfo = aph::init::pipelineVertexInputStateCreateInfo(
-        _vertexInputBindingDescriptions, _vertexInputAttributeDescriptions);
-    return _pipelineVertexInputStateCreateInfo;
+    inputBinding = { { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX } };
+    vertexInputState = aph::init::pipelineVertexInputStateCreateInfo(
+        inputBinding, inputAttribute);
+    return vertexInputState;
 }
 
 VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice,

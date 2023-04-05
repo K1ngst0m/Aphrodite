@@ -30,9 +30,9 @@ enum class VertexFormat
 
 struct VertexInputBuilder
 {
-    std::vector<VkVertexInputBindingDescription> _vertexInputBindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> _vertexInputAttributeDescriptions;
-    VkPipelineVertexInputStateCreateInfo _pipelineVertexInputStateCreateInfo;
+    std::vector<VkVertexInputBindingDescription> inputBinding;
+    std::vector<VkVertexInputAttributeDescription> inputAttribute;
+    VkPipelineVertexInputStateCreateInfo vertexInputState;
     VkPipelineVertexInputStateCreateInfo &getPipelineVertexInputState(const std::vector<VertexComponent> &components);
 };
 

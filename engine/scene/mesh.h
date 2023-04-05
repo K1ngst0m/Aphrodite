@@ -12,8 +12,6 @@ struct Vertex;
 
 using ResourceIndex = int32_t;
 using ImageData = std::vector<uint8_t>;
-using ImageList = std::vector<std::shared_ptr<ImageInfo>>;
-using MaterialList = std::vector<std::shared_ptr<Material>>;
 
 struct Vertex
 {

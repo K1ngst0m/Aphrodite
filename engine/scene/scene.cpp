@@ -44,58 +44,57 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model
     }
 }
 
-void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::Model &input, uint32_t offset)
+void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uint32_t offset)
 {
     materials.clear();
     materials.resize(input.materials.size());
     for(size_t i = 0; i < input.materials.size(); i++)
     {
         auto &material = materials[i];
-        material = std::make_shared<Material>();
-        material->id = i;
+        material.id = i;
         tinygltf::Material glTFMaterial{ input.materials[i] };
 
         // factor
-        material->emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
-        material->baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
-        material->metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
-        material->roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
+        material.emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
+        material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
+        material.metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
+        material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
-        material->doubleSided = glTFMaterial.doubleSided;
+        material.doubleSided = glTFMaterial.doubleSided;
         if(glTFMaterial.alphaMode == "BLEND")
         {
-            material->alphaMode = AlphaMode::BLEND;
+            material.alphaMode = AlphaMode::BLEND;
         }
         if(glTFMaterial.alphaMode == "MASK")
         {
-            material->alphaCutoff = 0.5f;
-            material->alphaMode = AlphaMode::MASK;
+            material.alphaCutoff = 0.5f;
+            material.alphaMode = AlphaMode::MASK;
         }
-        material->alphaCutoff = glTFMaterial.alphaCutoff;
+        material.alphaCutoff = glTFMaterial.alphaCutoff;
 
         // common texture
         if(glTFMaterial.normalTexture.index > -1)
         {
-            material->normalId = input.textures[glTFMaterial.normalTexture.index].source + offset;
+            material.normalId = input.textures[glTFMaterial.normalTexture.index].source + offset;
         }
         if(glTFMaterial.emissiveTexture.index > -1)
         {
-            material->emissiveId = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
+            material.emissiveId = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
         }
         if(glTFMaterial.occlusionTexture.index > -1)
         {
-            material->occlusionId = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
+            material.occlusionId = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
         }
 
         // pbr texture
         if(glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1)
         {
-            material->baseColorId =
+            material.baseColorId =
                 input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source + offset;
         }
         if(glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
         {
-            material->metallicRoughnessId =
+            material.metallicRoughnessId =
                 input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source + offset;
         }
     }
@@ -333,7 +332,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         uint32_t imageOffset = m_images.size();
         uint32_t materialOffset = m_materials.size();
         std::vector<std::shared_ptr<ImageInfo>> images;
-        std::vector<std::shared_ptr<Material>> materials;
+        std::vector<Material> materials;
         loadImages(m_images, inputModel);
         loadMaterials(m_materials, inputModel, imageOffset);
         m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
