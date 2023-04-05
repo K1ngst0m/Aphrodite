@@ -1,8 +1,8 @@
 #ifndef SCENE_MANAGER_H_
 #define SCENE_MANAGER_H_
 
-#include "vkl.hpp"
-#include "vklRenderer.hpp"
+#include "aph_core.hpp"
+#include "aph_renderer.hpp"
 
 class triangle_demo : public aph::BaseApp
 {

@@ -3,8 +3,8 @@ file(GLOB base_src
   common/*.h
   common/*.hpp
 
-  vkl.hpp
-  vklRenderer.hpp
+  aph_core.hpp
+  aph_renderer.hpp
 
   renderer/*.cpp
   renderer/*.h
