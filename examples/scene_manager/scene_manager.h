@@ -22,10 +22,10 @@ private:
     void setupScene();
 
 private:
-    std::shared_ptr<aph::SceneNode> m_modelNode            = nullptr;
-    std::shared_ptr<aph::SceneNode> m_pointLightNode       = nullptr;
-    std::shared_ptr<aph::SceneNode> m_directionalLightNode = nullptr;
-    std::shared_ptr<aph::SceneNode> m_cameraNode           = nullptr;
+    std::shared_ptr<aph::SceneNode> m_modelNode;
+    std::shared_ptr<aph::SceneNode> m_pointLightNode;
+    std::shared_ptr<aph::SceneNode> m_directionalLightNode;
+    std::shared_ptr<aph::SceneNode> m_cameraNode;
 
     std::shared_ptr<aph::Scene> m_scene;
 
@@ -34,7 +34,7 @@ private:
     std::shared_ptr<aph::VulkanRenderer>      m_renderer;
 
     std::shared_ptr<aph::Window> m_window;
-    float                        m_deltaTime;
+    float                        m_deltaTime {};
 };
 
 #endif // SCENE_MANAGER_H_
