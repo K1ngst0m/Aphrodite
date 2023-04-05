@@ -45,15 +45,17 @@ struct Material
 {
     glm::vec4 emissiveFactor{ 1.0f };
     glm::vec4 baseColorFactor{ 1.0f };
+
     float alphaCutoff{ 1.0f };
     float metallicFactor{ 1.0f };
     float roughnessFactor{ 1.0f };
-    ResourceIndex baseColorTextureIndex{ -1 };
-    ResourceIndex normalTextureIndex{ -1 };
-    ResourceIndex occlusionTextureIndex{ -1 };
-    ResourceIndex emissiveTextureIndex{ -1 };
-    ResourceIndex metallicRoughnessTextureIndex{ -1 };
-    ResourceIndex specularGlossinessTextureIndex{ -1 };
+
+    ResourceIndex baseColorId{ -1 };
+    ResourceIndex normalId{ -1 };
+    ResourceIndex occlusionId{ -1 };
+    ResourceIndex emissiveId{ -1 };
+    ResourceIndex metallicRoughnessId{ -1 };
+    ResourceIndex specularGlossinessId{ -1 };
 
     bool doubleSided{ false };
     AlphaMode alphaMode{ AlphaMode::OPAQUE };

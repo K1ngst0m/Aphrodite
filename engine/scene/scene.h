@@ -7,8 +7,6 @@ namespace aph
 {
 enum class ShadingModel
 {
-    UNLIT,
-    DEFAULTLIT,
     PBR,
 };
 

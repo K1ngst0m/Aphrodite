@@ -1,4 +1,5 @@
 #version 450
+#extension GL_EXT_nonuniform_qualifier : enable
 
 layout(location = 0) in vec3 inWorldPos;
 layout(location = 1) in vec3 inNormal;
@@ -27,6 +28,8 @@ layout (set = 0, binding = 2) uniform LightUB{
     vec3 direction;
 } lightData[];
 
+layout (set = 0, binding = 3) uniform texture2D textures[];
+
 const float PI = 3.14159265359;
 
 layout(set = 1, binding = 0) uniform ObjectUB{
@@ -39,18 +42,14 @@ layout(set = 2, binding = 0) uniform MatInfoUB{
     float     alphaCutoff;
     float     metallicFactor;
     float     roughnessFactor;
-    int baseColorTextureIndex;
-    int normalTextureIndex;
-    int occlusionTextureIndex;
-    int emissiveTextureIndex;
-    int metallicRoughnessTextureIndex;
-    int specularGlossinessTextureIndex;
-} ;
-layout(set = 2, binding = 1) uniform texture2D colorMap;
-layout(set = 2, binding = 2) uniform texture2D normalMap;
-layout(set = 2, binding = 3) uniform texture2D physicalDescMap;
-layout(set = 2, binding = 4) uniform texture2D aoMap;
-layout(set = 2, binding = 5) uniform texture2D emissiveMap;
+    int baseColorId;
+    int normalId;
+    int occlusionId;
+    int emissiveId;
+    int metallicRoughnessId;
+    int specularGlossinessId;
+};
+
 layout(set = 3, binding = 0) uniform sampler samp;
 
 vec3 getNormal()
@@ -59,7 +58,8 @@ vec3 getNormal()
     vec3 T = normalize(inTangent.xyz);
     vec3 B = cross(inNormal, inTangent.xyz) * inTangent.w;
     mat3 TBN = mat3(T, B, N);
-    return TBN * normalize(texture(sampler2D(normalMap, samp), inUV).xyz * 2.0 - vec3(1.0));
+    vec3 normal = normalId > -1 ? texture(sampler2D(textures[normalId], samp), inUV).rgb : inNormal;
+    return TBN * normalize(normal);
 }
 
 // ----------------------------------------------------------------------------
@@ -103,19 +103,19 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 
 void main() {
-    vec3 albedo = baseColorTextureIndex > -1 ? texture(sampler2D(colorMap, samp), inUV).rgb : baseColorFactor.xyz;
-    float metallic = metallicRoughnessTextureIndex > -1 ? texture(sampler2D(physicalDescMap, samp), inUV).r : metallicFactor;
-    float roughness = metallicRoughnessTextureIndex > -1 ? texture(sampler2D(physicalDescMap, samp), inUV).g : roughnessFactor;
+    vec3 albedo = baseColorId > -1 ? texture(sampler2D(textures[baseColorId], samp), inUV).rgb : baseColorFactor.xyz;
+    float metallic = metallicRoughnessId > -1 ? texture(sampler2D(textures[metallicRoughnessId], samp), inUV).r : metallicFactor;
+    float roughness = metallicRoughnessId > -1 ? texture(sampler2D(textures[metallicRoughnessId], samp), inUV).g : roughnessFactor;
     vec3 ao = vec3(1.0f);
-    if (occlusionTextureIndex > -1){
-        if (occlusionTextureIndex == metallicRoughnessTextureIndex){
-            ao = texture(sampler2D(aoMap, samp), inUV).aaa;
+    if (occlusionId > -1){
+        if (occlusionId == metallicRoughnessId){
+            ao = texture(sampler2D(textures[occlusionId], samp), inUV).aaa;
         }
         else{
-            ao = texture(sampler2D(aoMap, samp), inUV).rgb;
+            ao = texture(sampler2D(textures[occlusionId], samp), inUV).rgb;
         }
     }
-    vec3 emissive = emissiveTextureIndex > -1 ? texture(sampler2D(emissiveMap, samp), inUV).rgb : emissiveFactor.xyz;
+    vec3 emissive = emissiveId > -1 ? texture(sampler2D(textures[emissiveId], samp), inUV).rgb : emissiveFactor.xyz;
 
     vec3 N = getNormal();
     vec3 V = normalize(cameraData[0].viewPos - inWorldPos);

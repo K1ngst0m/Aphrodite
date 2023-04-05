@@ -118,7 +118,7 @@ void scene_manager::setupRenderer()
     aph::RenderConfig config{
         .enableDebug = true,
         .enableUI = false,
-        .maxFrames = 1,
+        .maxFrames = 2,
     };
 
     m_renderer = aph::Renderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);

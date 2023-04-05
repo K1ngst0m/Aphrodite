@@ -42,8 +42,15 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
+    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+        .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
+        .runtimeDescriptorArray = VK_TRUE,
+    };
+
 	VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlockFeature{
 		.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES,
+        .pNext = &descriptorIndexingFeatures,
 		.inlineUniformBlock = VK_TRUE,
     };
 

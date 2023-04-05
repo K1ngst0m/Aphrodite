@@ -93,8 +93,8 @@ public:
     }
 
 private:
-    VulkanDevice *m_device;
-    VulkanImage *m_image;
+    VulkanDevice *m_device {};
+    VulkanImage *m_image {};
     std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap;
 };
 

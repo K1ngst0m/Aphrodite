@@ -21,12 +21,11 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const voi
     VulkanBuffer *buffer = nullptr;
     // setup vertex buffer
     {
-        VkDeviceSize bufferSize = size;
         // using staging buffer
-        aph::VulkanBuffer *stagingBuffer;
+        aph::VulkanBuffer *stagingBuffer{};
         {
             BufferCreateInfo createInfo{
-                .size = static_cast<uint32_t>(bufferSize),
+                .size = static_cast<uint32_t>(size),
                 .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
                 .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
             };
@@ -35,7 +34,7 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const voi
 
         {
             BufferCreateInfo createInfo{
-                .size = static_cast<uint32_t>(bufferSize),
+                .size = static_cast<uint32_t>(size),
                 .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                 .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             };
@@ -43,13 +42,14 @@ VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const voi
         }
 
         pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd) {
-            cmd->copyBuffer(stagingBuffer, buffer, bufferSize);
+            cmd->copyBuffer(stagingBuffer, buffer, size);
         });
 
         pDevice->destroyBuffer(stagingBuffer);
     }
     return buffer;
 }
+
 VulkanImage *createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
                            uint32_t dataSize, bool genMipmap = false)
 {
@@ -169,12 +169,9 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyPipeline(m_postFxPass.pipeline);
     }
 
+    for (auto *setLayout : m_setLayouts)
     {
-        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pMaterial);
-        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pObject);
-        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pSampler);
-        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pScene);
-        m_pDevice->destroyDescriptorSetLayout(m_setLayout.pOffScreen);
+        m_pDevice->destroyDescriptorSetLayout(setLayout);
     }
 
     for(auto &texture : m_textures)
@@ -187,8 +184,10 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyImage(m_forwardPass.colorAttachments[idx]);
         m_pDevice->destroyImage(m_forwardPass.depthAttachments[idx]);
     }
-    vkDestroySampler(m_pDevice->getHandle(), m_sampler.postFX, nullptr);
-    vkDestroySampler(m_pDevice->getHandle(), m_sampler.texture, nullptr);
+
+    for (auto & sampler : m_samplers){
+        vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
+    }
 
     for(auto &renderData : m_renderDataList)
     {
@@ -220,8 +219,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
     VkCommandBufferBeginInfo beginInfo = aph::init::commandBufferBeginInfo();
 
-    uint32_t commandIndex = m_pRenderer->getCurrentFrameIndex();
-    VulkanCommandBuffer *commandBuffer = m_pRenderer->getDefaultCommandBuffer(commandIndex);
+    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
+    uint32_t frameIdx = m_pRenderer->getCurrentFrameIndex();
+
+    auto *commandBuffer = m_pRenderer->getDefaultCommandBuffer(frameIdx);
 
     commandBuffer->begin();
 
@@ -232,7 +233,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     // forward pass
     {
         VulkanImageView *pColorAttachment =
-            m_forwardPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+            m_forwardPass.colorAttachments[imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
@@ -243,7 +244,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         };
 
         VulkanImageView *pDepthAttachment =
-            m_forwardPass.depthAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+            m_forwardPass.depthAttachments[imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pDepthAttachment->getHandle(),
@@ -255,21 +256,17 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         VkRenderingInfo renderingInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .renderArea {.offset { 0, 0 }, .extent {extent},},
             .layerCount = 1,
             .colorAttachmentCount = 1,
             .pColorAttachments = &forwardColorAttachmentInfo,
             .pDepthAttachment = &forwardDepthAttachmentInfo,
         };
 
-        renderingInfo.renderArea = {
-            .offset = { 0, 0 },
-            .extent = extent,
-        };
-
         commandBuffer->bindPipeline(m_forwardPass.pipeline);
-        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SCENE, 1,
-                                         &m_sceneSets[commandIndex]);
-        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, PASS_FORWARD::SET_SAMPLER, 1, &m_sampler.set);
+        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, 0, 1, &m_sceneSet);
+        commandBuffer->bindDescriptorSet(m_forwardPass.pipeline, 3, 1, &m_samplerSet);
+
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
@@ -280,13 +277,13 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
             _drawRenderData(renderable, m_forwardPass.pipeline, commandBuffer);
         }
         commandBuffer->endRendering();
+
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
 
     {
-        VulkanImageView *pColorAttachment =
-            m_postFxPass.colorAttachments[m_pRenderer->getCurrentImageIndex()]->getImageView();
+        VulkanImageView *pColorAttachment = m_postFxPass.colorAttachments[imageIdx]->getImageView();
         VkRenderingAttachmentInfo postFxColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
@@ -298,14 +295,11 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         VkRenderingInfo renderingInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .renderArea {.offset { 0, 0 }, .extent {extent},},
             .layerCount = 1,
             .colorAttachmentCount = 1,
             .pColorAttachments = &postFxColorAttachmentInfo,
             .pDepthAttachment = nullptr,
-        };
-        renderingInfo.renderArea = {
-            .offset = { 0, 0 },
-            .extent = extent,
         };
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
@@ -313,9 +307,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->beginRendering(renderingInfo);
         commandBuffer->bindVertexBuffers(0, 1, m_postFxPass.quadVB, { 0 });
         commandBuffer->bindPipeline(m_postFxPass.pipeline);
-        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_OFFSCREEN, 1,
-                                         &m_postFxPass.sets[m_pRenderer->getCurrentImageIndex()]);
-        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, PASS_POSTFX::SET_SAMPLER, 1, &m_sampler.set);
+        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, 0, 1, &m_postFxPass.sets[imageIdx]);
+        commandBuffer->bindDescriptorSet(m_postFxPass.pipeline, 1, 1, &m_samplerSet);
         commandBuffer->draw(6, 1, 0, 0);
         commandBuffer->endRendering();
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -329,13 +322,12 @@ void VulkanSceneRenderer::update(float deltaTime)
 {
     for(auto &ubo : m_uniformDataList)
     {
-        ubo->m_buffer->copyTo(ubo->m_object->getData());
+        ubo->update();
     }
 }
 
 void VulkanSceneRenderer::_initRenderData()
 {
-    for(auto &set : m_sceneSets)
     {
         VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
@@ -346,18 +338,29 @@ void VulkanSceneRenderer::_initRenderData()
         VkWriteDescriptorSet sceneInfoSetWrite{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext = &writeDescriptorSetInlineUniformBlock,
-            .dstSet = set,
+            .dstSet = m_sceneSet,
             .dstBinding = 0,
             .descriptorCount = sizeof(SceneInfo),
             .descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
         };
 
+        std::vector<VkDescriptorImageInfo> m_textureInfos{};
+        for (auto &texture: m_textures){
+            VkDescriptorImageInfo info{
+                .imageView = texture->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            };
+            m_textureInfos.push_back(info);
+        }
+
         std::vector<VkWriteDescriptorSet> writes{
             sceneInfoSetWrite,
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_cameraInfos.data(),
+            aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_cameraInfos.data(),
                                           m_cameraInfos.size()),
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, m_lightInfos.data(),
+            aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, m_lightInfos.data(),
                                          m_lightInfos.size()),
+            aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, m_textureInfos.data(),
+                                         m_textureInfos.size()),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -373,13 +376,18 @@ void VulkanSceneRenderer::_initRenderData()
                 .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
             };
             VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderData->m_objectUB, &objInfo));
-            renderData->m_objectUB->setupDescriptor();
 
-            renderData->m_objectSet = m_setLayout.pObject->allocateSet();
+            renderData->m_objectSet = m_setLayouts[SET_LAYOUT_OBJECT]->allocateSet();
+
+            VkDescriptorBufferInfo bufferInfo{
+                .buffer = renderData->m_objectUB->getHandle(),
+                .offset = 0,
+                .range = VK_WHOLE_SIZE,
+            };
 
             std::vector<VkWriteDescriptorSet> descriptorWrites{ aph::init::writeDescriptorSet(
                 renderData->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
-                &renderData->m_objectUB->getBufferInfo()) };
+                &bufferInfo) };
 
             vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
                                    descriptorWrites.data(), 0, nullptr);
@@ -394,7 +402,7 @@ void VulkanSceneRenderer::_initRenderData()
         for(auto &material : m_scene->getMaterials())
         {
             // write descriptor set
-            auto set = m_setLayout.pMaterial->allocateSet();
+            auto set = m_setLayouts[SET_LAYOUT_MATERIAL]->allocateSet();
             {
                 std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
@@ -402,7 +410,7 @@ void VulkanSceneRenderer::_initRenderData()
                     VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
                         .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
                         .dataSize = sizeof(Material),
-                        .pData = &material,
+                        .pData = material.get(),
                     };
 
                     VkWriteDescriptorSet writeDescriptorSet{
@@ -415,74 +423,6 @@ void VulkanSceneRenderer::_initRenderData()
                     };
 
                     descriptorWrites.push_back(writeDescriptorSet);
-                }
-
-                auto bindingBits = MATERIAL_BINDING_PBR;
-                if(bindingBits & MATERIAL_BINDING_BASECOLOR)
-                {
-                    std::cerr << "material id: [" << material->id << "] [base color]: ";
-                    if(material->baseColorTextureIndex > -1)
-                    {
-                        descriptorWrites.push_back(writeDescInfo(m_textures[material->baseColorTextureIndex], set, 1));
-                        std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "texture not found." << std::endl;
-                    }
-                }
-                if(bindingBits & MATERIAL_BINDING_NORMAL)
-                {
-                    std::cerr << "material id: [" << material->id << "] [normal]: ";
-                    if(material->normalTextureIndex > -1)
-                    {
-                        descriptorWrites.push_back(writeDescInfo(m_textures[material->normalTextureIndex], set, 2));
-                        std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "texture not found." << std::endl;
-                    }
-                }
-                if(bindingBits & MATERIAL_BINDING_PHYSICAL)
-                {
-                    std::cerr << "material id: [" << material->id << "] [physical desc]: ";
-                    if(material->metallicFactor > -1)
-                    {
-                        descriptorWrites.push_back(
-                            writeDescInfo(m_textures[material->metallicRoughnessTextureIndex], set, 3));
-                        std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "texture not found." << std::endl;
-                    }
-                }
-                if(bindingBits & MATERIAL_BINDING_AO)
-                {
-                    std::cerr << "material id: [" << material->id << "] [ao]: ";
-                    if(material->occlusionTextureIndex > -1)
-                    {
-                        descriptorWrites.push_back(writeDescInfo(m_textures[material->occlusionTextureIndex], set, 4));
-                        std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "texture not found." << std::endl;
-                    }
-                }
-                if(bindingBits & MATERIAL_BINDING_EMISSIVE)
-                {
-                    std::cerr << "material id: [" << material->id << "] [emissive]: ";
-                    if(material->emissiveTextureIndex > -1)
-                    {
-                        descriptorWrites.push_back(writeDescInfo(m_textures[material->emissiveTextureIndex], set, 5));
-                        std::cerr << descriptorWrites.back().pImageInfo->imageView << std::endl;
-                    }
-                    else
-                    {
-                        std::cerr << "texture not found." << std::endl;
-                    }
                 }
 
                 vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
@@ -555,10 +495,9 @@ void VulkanSceneRenderer::_loadScene()
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
                 VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
-                ubo->m_buffer->setupDescriptor();
                 ubo->m_buffer->map();
             }
-            m_cameraInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_cameraInfos.push_back({ubo->m_buffer->getHandle(), 0, VK_WHOLE_SIZE});
             m_uniformDataList.push_front(std::move(ubo));
             m_sceneInfo.cameraCount++;
         }
@@ -576,10 +515,9 @@ void VulkanSceneRenderer::_loadScene()
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
                 VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
-                ubo->m_buffer->setupDescriptor();
                 ubo->m_buffer->map();
             }
-            m_lightInfos.push_back(ubo->m_buffer->getBufferInfo());
+            m_lightInfos.push_back({ubo->m_buffer->getHandle(), 0, VK_WHOLE_SIZE});
             m_uniformDataList.push_back(std::move(ubo));
             m_sceneInfo.lightCount++;
         }
@@ -594,10 +532,6 @@ void VulkanSceneRenderer::_loadScene()
             q.push(subNode);
         }
     }
-}
-
-void VulkanSceneRenderer::_initSkyboxResource()
-{
 }
 
 void VulkanSceneRenderer::_initPostFx()
@@ -628,7 +562,7 @@ void VulkanSceneRenderer::_initPostFx()
         // build Shader
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
-        pipelineCreateInfo.setLayouts = { m_setLayout.pOffScreen, m_setLayout.pSampler };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_OFFSCR], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.vert.spv") },
             { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.frag.spv") },
@@ -648,7 +582,7 @@ void VulkanSceneRenderer::_initPostFx()
         };
 
         auto swapchainFormat = m_pRenderer->getSwapChain()->getSurfaceFormat();
-        pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
+        pipelineCreateInfo.renderingCreateInfo = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = 1,
             .pColorAttachmentFormats = &swapchainFormat,
@@ -663,7 +597,7 @@ void VulkanSceneRenderer::_initPostFx()
         colorAttachment = m_pRenderer->getSwapChain()->getImage(idx);
 
         auto &set = m_postFxPass.sets[idx];
-        set = m_setLayout.pOffScreen->allocateSet();
+        set = m_setLayouts[SET_LAYOUT_OFFSCR]->allocateSet();
 
         std::vector<VkWriteDescriptorSet> writes{
             aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0,
@@ -727,8 +661,8 @@ void VulkanSceneRenderer::_initForward()
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat = m_pDevice->getDepthFormat(),
         };
-        pipelineCreateInfo.setLayouts = { m_setLayout.pScene, m_setLayout.pObject, m_setLayout.pMaterial,
-                                          m_setLayout.pSampler };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_OBJECT], m_setLayouts[SET_LAYOUT_MATERIAL],
+                                          m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         pipelineCreateInfo.shaderMapList = {
@@ -739,10 +673,8 @@ void VulkanSceneRenderer::_initForward()
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_forwardPass.pipeline));
     }
 
-    m_sceneSets.resize(m_pRenderer->getCommandBufferCount());
-    for(auto &set : m_sceneSets)
     {
-        set = m_setLayout.pScene->allocateSet();
+        m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
     }
 }
 
@@ -803,7 +735,7 @@ void VulkanSceneRenderer::_initSampler()
         samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
         samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_sampler.texture));
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
     }
 
     // shadow
@@ -817,21 +749,21 @@ void VulkanSceneRenderer::_initSampler()
     // postFX
     {
         VkSamplerCreateInfo createInfo = aph::init::samplerCreateInfo();
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.postFX));
+        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_samplers[SAMP_POSTFX]));
     }
 
     // allocate set and update
     {
-        auto &set = m_sampler.set;
-        set = m_setLayout.pSampler->allocateSet();
+        auto &set = m_samplerSet;
+        set = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
 
         std::vector<VkDescriptorImageInfo> imageInfos{
             {
-                .sampler = m_sampler.texture,
+                .sampler = m_samplers[SAMP_TEXTURE],
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
             {
-                .sampler = m_sampler.postFX,
+                .sampler = m_samplers[SAMP_POSTFX],
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
         };
@@ -855,9 +787,10 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2,
                                                   m_sceneInfo.lightCount),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3, m_textures.size()),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayout.pScene);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SCENE]);
     }
 
     // off screen texture
@@ -866,23 +799,17 @@ void VulkanSceneRenderer::_initSetLayout()
         bindings.push_back(
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 0));
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayout.pOffScreen);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_OFFSCR]);
     }
 
     // material
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                                   sizeof(Material)),  // material info
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 4),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayout.pMaterial);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_MATERIAL]);
     }
 
     // object
@@ -892,7 +819,7 @@ void VulkanSceneRenderer::_initSetLayout()
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayout.pObject);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_OBJECT]);
     }
 
     // sampler
@@ -902,7 +829,7 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayout.pSampler);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
 }
 }  // namespace aph

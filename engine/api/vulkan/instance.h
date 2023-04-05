@@ -42,7 +42,7 @@ private:
     std::vector<const char *> m_supportedInstanceExtensions {};
     std::vector<std::string> m_validationLayers {};
     std::vector<VulkanPhysicalDevice *> m_physicalDevices {};
-    ThreadPool *m_threadPool = nullptr;
+    ThreadPool *m_threadPool {};
 };
 }  // namespace aph
 

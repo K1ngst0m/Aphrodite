@@ -29,7 +29,7 @@ public:
 
 protected:
     std::shared_ptr<Scene> m_scene = nullptr;
-    ShadingModel m_shadingModel = ShadingModel::UNLIT;
+    ShadingModel m_shadingModel = ShadingModel::PBR;
 };
 
 }  // namespace aph

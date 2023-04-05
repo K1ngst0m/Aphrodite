@@ -37,7 +37,7 @@ public:
                                  VkFormatFeatureFlags features) const;
 
 private:
-    VulkanInstance *m_instance = nullptr;
+    VulkanInstance *m_instance {};
 
     VkPhysicalDeviceProperties m_properties;
     VkPhysicalDeviceMemoryProperties m_memoryProperties;

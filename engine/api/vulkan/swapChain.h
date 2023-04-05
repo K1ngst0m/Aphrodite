@@ -34,12 +34,12 @@ public:
     VulkanImage *getImage(uint32_t idx) const { return m_images[idx]; }
 
 private:
-    VulkanDevice *m_device;
-    std::vector<VulkanImage *> m_images;
+    VulkanDevice *m_device {};
+    std::vector<VulkanImage *> m_images {};
 
-    VkSurfaceKHR m_surface;
-    VkSurfaceFormatKHR m_surfaceFormat;
-    VkExtent2D m_extent;
+    VkSurfaceKHR m_surface {};
+    VkSurfaceFormatKHR m_surfaceFormat {};
+    VkExtent2D m_extent {};
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };

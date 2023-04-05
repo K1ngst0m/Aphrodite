@@ -13,20 +13,6 @@ class VulkanRenderer;
 struct VulkanUniformData;
 struct VulkanRenderData;
 
-enum MaterialBindingBits
-{
-    MATERIAL_BINDING_NONE = 0,
-    MATERIAL_BINDING_BASECOLOR = (1 << 0),
-    MATERIAL_BINDING_NORMAL = (1 << 1),
-    MATERIAL_BINDING_PHYSICAL = (1 << 2),
-    MATERIAL_BINDING_AO = (1 << 3),
-    MATERIAL_BINDING_EMISSIVE = (1 << 4),
-    MATERIAL_BINDING_UNLIT = MATERIAL_BINDING_BASECOLOR,
-    MATERIAL_BINDING_DEFAULTLIT = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL),
-    MATERIAL_BINDING_PBR = (MATERIAL_BINDING_BASECOLOR | MATERIAL_BINDING_NORMAL |
-                            MATERIAL_BINDING_PHYSICAL | MATERIAL_BINDING_AO | MATERIAL_BINDING_EMISSIVE),
-};
-
 struct VulkanRenderData
 {
     VulkanRenderData(std::shared_ptr<SceneNode> sceneNode)
@@ -48,6 +34,11 @@ struct VulkanUniformData
         : m_node{std::move(node)}
     {}
 
+    void update()
+    {
+        m_buffer->copyTo(m_object->getData());
+    }
+
     VulkanBuffer *m_buffer {};
 
     std::shared_ptr<SceneNode> m_node {};
@@ -63,7 +54,7 @@ struct SceneInfo
 
 struct ObjectInfo
 {
-    glm::mat4 matrix = glm::mat4(1.0f);
+    glm::mat4 matrix {1.0f};
 };
 
 class VulkanSceneRenderer : public SceneRenderer
@@ -81,53 +72,44 @@ private:
     void _initSetLayout();
     void _initSampler();
     void _initRenderData();
-    void _initSkyboxResource();
     void _initForward();
     void _initPostFx();
     void _loadScene();
     void _drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline, VulkanCommandBuffer *drawCmd);
 
 private:
-    struct {
-        VulkanDescriptorSetLayout * pSampler {};
-        VulkanDescriptorSetLayout * pMaterial {};
-        VulkanDescriptorSetLayout * pScene {};
-        VulkanDescriptorSetLayout * pObject {};
-        VulkanDescriptorSetLayout * pOffScreen {};
-    } m_setLayout;
+    enum SetLayoutIndex{
+        SET_LAYOUT_SAMP = 0,
+        SET_LAYOUT_MATERIAL = 1,
+        SET_LAYOUT_SCENE = 2,
+        SET_LAYOUT_OBJECT = 3,
+        SET_LAYOUT_OFFSCR = 4,
+        SET_LAYOUT_MAX = 5,
+    };
 
-    struct {
-        VkSampler texture {};
-        VkSampler shadow {};
-        VkSampler postFX {};
-        VkSampler cubeMap {};
-        VkDescriptorSet set {};
-    } m_sampler;
+    enum SamplerIndex{
+        SAMP_TEXTURE = 0,
+        SAMP_SHADOW = 1,
+        SAMP_POSTFX = 2,
+        SAMP_CUBEMAP = 3,
+        SAMP_MAX = 4,
+    };
+
+    std::array<VulkanDescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
+    std::array<VkSampler, SAMP_MAX> m_samplers;
+
+    VkDescriptorSet m_sceneSet   {};
+    VkDescriptorSet m_samplerSet {};
 
     struct PASS_FORWARD
     {
-        enum SetBinding
-        {
-            SET_SCENE = 0,
-            SET_OBJECT = 1,
-            SET_MATERIAL = 2,
-            SET_SAMPLER = 3,
-            SET_SKYBOX = 4,
-        };
-
         VulkanPipeline *pipeline {};
-
         std::vector<VulkanImage *> colorAttachments;
         std::vector<VulkanImage *> depthAttachments;
     } m_forwardPass;
 
     struct PASS_SHADOW
     {
-        enum SetBinding
-        {
-            SET_SCENE = 0,
-        };
-
         const uint32_t dim {2048};
         const VkFilter filter {VK_FILTER_LINEAR};
         VulkanPipeline *pipeline {};
@@ -137,12 +119,6 @@ private:
 
     struct PASS_POSTFX
     {
-        enum SetBinding
-        {
-            SET_OFFSCREEN = 0,
-            SET_SAMPLER = 1,
-        };
-
         VulkanBuffer *quadVB {};
         VulkanPipeline *pipeline {};
         std::vector<VulkanImage *> colorAttachments {};
@@ -150,16 +126,6 @@ private:
     } m_postFxPass;
 
 private:
-    struct
-    {
-        VkDescriptorSet set {};
-        VulkanPipeline *pipeline {};
-        VulkanImage *cubeMap {};
-        VulkanImageView *cubeMapView {};
-        VkDescriptorImageInfo cubeMapDescInfo{};
-    } m_skyboxResource;
-
-    std::vector<VkDescriptorSet> m_sceneSets{};
     SceneInfo m_sceneInfo{};
 
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;

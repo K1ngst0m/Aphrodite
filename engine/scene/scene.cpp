@@ -76,26 +76,26 @@ void loadMaterials(std::vector<std::shared_ptr<Material>> &materials, tinygltf::
         // common texture
         if(glTFMaterial.normalTexture.index > -1)
         {
-            material->normalTextureIndex = input.textures[glTFMaterial.normalTexture.index].source + offset;
+            material->normalId = input.textures[glTFMaterial.normalTexture.index].source + offset;
         }
         if(glTFMaterial.emissiveTexture.index > -1)
         {
-            material->emissiveTextureIndex = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
+            material->emissiveId = input.textures[glTFMaterial.emissiveTexture.index].source + offset;
         }
         if(glTFMaterial.occlusionTexture.index > -1)
         {
-            material->occlusionTextureIndex = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
+            material->occlusionId = input.textures[glTFMaterial.occlusionTexture.index].source + offset;
         }
 
         // pbr texture
         if(glTFMaterial.pbrMetallicRoughness.baseColorTexture.index > -1)
         {
-            material->baseColorTextureIndex =
+            material->baseColorId =
                 input.textures[glTFMaterial.pbrMetallicRoughness.baseColorTexture.index].source + offset;
         }
         if(glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index > -1)
         {
-            material->metallicRoughnessTextureIndex =
+            material->metallicRoughnessId =
                 input.textures[glTFMaterial.pbrMetallicRoughness.metallicRoughnessTexture.index].source + offset;
         }
     }
@@ -334,8 +334,8 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         uint32_t materialOffset = m_materials.size();
         std::vector<std::shared_ptr<ImageInfo>> images;
         std::vector<std::shared_ptr<Material>> materials;
-        loadImages(images, inputModel);
-        loadMaterials(materials, inputModel, imageOffset);
+        loadImages(m_images, inputModel);
+        loadMaterials(m_materials, inputModel, imageOffset);
         m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
                         std::make_move_iterator(images.cend()));
         m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()),
