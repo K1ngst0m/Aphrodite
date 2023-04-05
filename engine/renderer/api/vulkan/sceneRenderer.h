@@ -33,13 +33,13 @@ struct VulkanRenderData
         : m_node{std::move(sceneNode)}
     {}
 
-    VulkanBuffer *m_vertexBuffer = nullptr;
-    VulkanBuffer *m_indexBuffer = nullptr;
+    VulkanBuffer *m_vertexBuffer {};
+    VulkanBuffer *m_indexBuffer {};
 
-    VulkanBuffer *m_objectUB = nullptr;
-    VkDescriptorSet m_objectSet = VK_NULL_HANDLE;
+    VulkanBuffer *m_objectUB {};
+    VkDescriptorSet m_objectSet {};
 
-    std::shared_ptr<SceneNode> m_node = nullptr;
+    std::shared_ptr<SceneNode> m_node {};
 };
 
 struct VulkanUniformData
@@ -48,17 +48,17 @@ struct VulkanUniformData
         : m_node{std::move(node)}
     {}
 
-    VulkanBuffer *m_buffer = nullptr;
+    VulkanBuffer *m_buffer {};
 
-    std::shared_ptr<SceneNode> m_node = nullptr;
-    std::shared_ptr<UniformObject> m_object = nullptr;
+    std::shared_ptr<SceneNode> m_node {};
+    std::shared_ptr<UniformObject> m_object {};
 };
 
 struct SceneInfo
 {
     glm::vec4 ambient{ 0.04f };
-    uint32_t cameraCount = 0;
-    uint32_t lightCount = 0;
+    uint32_t cameraCount {};
+    uint32_t lightCount {};
 };
 
 struct ObjectInfo
@@ -89,19 +89,19 @@ private:
 
 private:
     struct {
-        VulkanDescriptorSetLayout * pSampler;
-        VulkanDescriptorSetLayout * pMaterial;
-        VulkanDescriptorSetLayout * pScene;
-        VulkanDescriptorSetLayout * pObject;
-        VulkanDescriptorSetLayout * pOffScreen;
+        VulkanDescriptorSetLayout * pSampler {};
+        VulkanDescriptorSetLayout * pMaterial {};
+        VulkanDescriptorSetLayout * pScene {};
+        VulkanDescriptorSetLayout * pObject {};
+        VulkanDescriptorSetLayout * pOffScreen {};
     } m_setLayout;
 
     struct {
-        VkSampler texture = VK_NULL_HANDLE;
-        VkSampler shadow = VK_NULL_HANDLE;
-        VkSampler postFX = VK_NULL_HANDLE;
-        VkSampler cubeMap = VK_NULL_HANDLE;
-        VkDescriptorSet set = VK_NULL_HANDLE;
+        VkSampler texture {};
+        VkSampler shadow {};
+        VkSampler postFX {};
+        VkSampler cubeMap {};
+        VkDescriptorSet set {};
     } m_sampler;
 
     struct PASS_FORWARD
@@ -115,7 +115,7 @@ private:
             SET_SKYBOX = 4,
         };
 
-        VulkanPipeline *pipeline = nullptr;
+        VulkanPipeline *pipeline {};
 
         std::vector<VulkanImage *> colorAttachments;
         std::vector<VulkanImage *> depthAttachments;
@@ -128,9 +128,9 @@ private:
             SET_SCENE = 0,
         };
 
-        const uint32_t dim = 2048;
-        const VkFilter filter = VK_FILTER_LINEAR;
-        VulkanPipeline *pipeline = nullptr;
+        const uint32_t dim {2048};
+        const VkFilter filter {VK_FILTER_LINEAR};
+        VulkanPipeline *pipeline {};
         std::vector<VulkanImage *> depthAttachments;
         std::vector<VkDescriptorSet> cameraSets;
     } m_shadowPass;
@@ -143,23 +143,23 @@ private:
             SET_SAMPLER = 1,
         };
 
-        VulkanBuffer *quadVB = nullptr;
-        VulkanPipeline *pipeline = nullptr;
-        std::vector<VulkanImage *> colorAttachments;
-        std::vector<VkDescriptorSet> sets;
+        VulkanBuffer *quadVB {};
+        VulkanPipeline *pipeline {};
+        std::vector<VulkanImage *> colorAttachments {};
+        std::vector<VkDescriptorSet> sets {};
     } m_postFxPass;
 
 private:
     struct
     {
-        VkDescriptorSet set = VK_NULL_HANDLE;
-        VulkanPipeline *pipeline = nullptr;
-        VulkanImage *cubeMap = nullptr;
-        VulkanImageView *cubeMapView = nullptr;
+        VkDescriptorSet set {};
+        VulkanPipeline *pipeline {};
+        VulkanImage *cubeMap {};
+        VulkanImageView *cubeMapView {};
         VkDescriptorImageInfo cubeMapDescInfo{};
     } m_skyboxResource;
 
-    std::vector<VkDescriptorSet> m_sceneSets;
+    std::vector<VkDescriptorSet> m_sceneSets{};
     SceneInfo m_sceneInfo{};
 
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;
@@ -170,9 +170,9 @@ private:
     std::vector<VulkanImage*> m_textures{};
 
 private:
-    VulkanDevice *m_pDevice = nullptr;
-    std::shared_ptr<VulkanRenderer> m_pRenderer = nullptr;
-    std::unordered_map<std::shared_ptr<Material>, VkDescriptorSet> m_materialSetMaps;
+    VulkanDevice *m_pDevice {};
+    std::shared_ptr<VulkanRenderer> m_pRenderer {};
+    std::unordered_map<std::shared_ptr<Material>, VkDescriptorSet> m_materialSetMaps {};
 };
 }  // namespace aph
 

@@ -180,10 +180,8 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags type, const std::fun
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, void *data)
+VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data)
 {
-    VkBuffer buffer;
-    VkDeviceMemory memory;
     // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -191,6 +189,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
         .usage = createInfo.usage,
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
+    VkBuffer buffer;
     VK_CHECK_RESULT(vkCreateBuffer(getHandle(), &bufferInfo, nullptr, &buffer));
 
     // create memory
@@ -198,6 +197,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
     vkGetBufferMemoryRequirements(m_handle, buffer, &memRequirements);
     VkMemoryAllocateInfo allocInfo = aph::init::memoryAllocateInfo(
         memRequirements.size, m_physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property));
+    VkDeviceMemory memory;
     VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
 
     *ppBuffer = new VulkanBuffer(this, createInfo, buffer, memory);
@@ -421,7 +421,6 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
     // we now use all of the info structs we have been writing into into this one to create the pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo = {
         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = nullptr,
         .pVertexInputState = &createInfo.vertexInputInfo,
         .pInputAssemblyState = &createInfo.inputAssembly,
         .pViewportState = &viewportState,
@@ -466,12 +465,12 @@ void VulkanDevice::destroyPipeline(VulkanPipeline *pipeline)
     delete pipeline;
 }
 
-VkResult VulkanDevice::createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo,
+VkResult VulkanDevice::createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo &createInfo,
                                                  VulkanDescriptorSetLayout **ppDescriptorSetLayout)
 {
     VkDescriptorSetLayout setLayout;
-    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_handle, pCreateInfo, nullptr, &setLayout));
-    *ppDescriptorSetLayout = VulkanDescriptorSetLayout::Create(this, pCreateInfo, setLayout);
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
+    *ppDescriptorSetLayout = new VulkanDescriptorSetLayout(this, createInfo, setLayout);
     return VK_SUCCESS;
 }
 

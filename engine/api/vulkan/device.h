@@ -45,7 +45,7 @@ public:
     static void Destroy(VulkanDevice *pDevice);
 
 public:
-    VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, void *data = nullptr);
+    VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr);
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
     VkResult createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer);
@@ -54,7 +54,7 @@ public:
     VkResult createCommandPool(const CommandPoolCreateInfo&createInfo, VulkanCommandPool **ppPool);
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass, VulkanPipeline **ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
-    VkResult createDescriptorSetLayout(VkDescriptorSetLayoutCreateInfo *pCreateInfo, VulkanDescriptorSetLayout **ppDescriptorSetLayout);
+    VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo, VulkanDescriptorSetLayout **ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(VulkanBuffer *pBuffer);

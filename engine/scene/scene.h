@@ -61,11 +61,11 @@ public:
     MaterialList &getMaterials() { return m_materials; }
 
 private:
-    AABB m_aabb {};
+    AABB m_aabb{};
     glm::vec3 m_ambient{ 0.02f };
 
-    std::shared_ptr<SceneNode> m_rootNode{ nullptr };
-    std::shared_ptr<Camera> m_camera{ nullptr };
+    std::shared_ptr<SceneNode> m_rootNode{};
+    std::shared_ptr<Camera> m_camera{};
 
     CameraMap m_cameras{};
     LightMap m_lights{};

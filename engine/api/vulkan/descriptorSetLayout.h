@@ -9,13 +9,11 @@ namespace aph
 class VulkanDevice;
 class VulkanDescriptorPool;
 
-class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
+class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
 {
 public:
-    static VulkanDescriptorSetLayout *Create(VulkanDevice *device,
-                                             VkDescriptorSetLayoutCreateInfo *pCreateInfo,
-                                             VkDescriptorSetLayout handle);
-    VulkanDescriptorSetLayout();
+    VulkanDescriptorSetLayout(VulkanDevice *device, const VkDescriptorSetLayoutCreateInfo &createInfo,
+                              VkDescriptorSetLayout handle);
 
     ~VulkanDescriptorSetLayout();
 

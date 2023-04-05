@@ -146,10 +146,10 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
 
             // Vertices
             {
-                const float *positionBuffer{ nullptr };
-                const float *normalsBuffer{ nullptr };
-                const float *texCoordsBuffer{ nullptr };
-                const float *tangentsBuffer{ nullptr };
+                const float *positionBuffer{};
+                const float *normalsBuffer{};
+                const float *texCoordsBuffer{};
+                const float *tangentsBuffer{};
 
                 // Get buffer data for vertex normals
                 if(glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end())

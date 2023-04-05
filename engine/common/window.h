@@ -11,7 +11,7 @@ namespace aph
 
 struct WindowData
 {
-    GLFWwindow *window{ nullptr };
+    GLFWwindow *window{};
     uint32_t width{};
     uint32_t height{};
     bool resized{ false };
@@ -64,8 +64,8 @@ public:
     void pollEvents();
 
 private:
-    std::shared_ptr<WindowData> m_windowData{ nullptr };
-    std::shared_ptr<CursorData> m_cursorData{ nullptr };
+    std::shared_ptr<WindowData> m_windowData{};
+    std::shared_ptr<CursorData> m_cursorData{};
 
     FramebufferSizeFunc m_framebufferResizeCB;
     CursorPosFunc m_cursorPosCB;

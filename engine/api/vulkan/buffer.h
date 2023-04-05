@@ -7,6 +7,7 @@
 namespace aph
 {
 class VulkanDevice;
+class VulkanQueue;
 
 struct BufferCreateInfo
 {

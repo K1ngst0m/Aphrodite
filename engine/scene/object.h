@@ -51,7 +51,7 @@ public:
 
 protected:
     size_t dataSize{ 0 };
-    std::shared_ptr<void> data{ nullptr };
+    std::shared_ptr<void> data{};
 
     bool updated{ false };
 };

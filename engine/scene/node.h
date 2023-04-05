@@ -34,7 +34,7 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
     void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
     std::string name{};
     std::vector<std::shared_ptr<TNode>> children{};
-    std::shared_ptr<TNode> parent{ nullptr };
+    std::shared_ptr<TNode> parent{};
     glm::mat4 matrix{ 1.0f };
 };
 
@@ -81,7 +81,7 @@ struct SceneNode : Node<SceneNode>
                std::is_same<TObject, Mesh>::value;
     }
 
-    std::shared_ptr<Object> m_object{ nullptr };
+    std::shared_ptr<Object> m_object{};
     ObjectType m_attachType{ ObjectType::UNATTACHED };
 };
 }  // namespace aph
