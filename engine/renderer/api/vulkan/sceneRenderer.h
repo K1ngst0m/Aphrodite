@@ -86,7 +86,7 @@ private:
     {
         SAMP_TEXTURE,
         // SAMP_SHADOW,
-        SAMP_POSTFX,
+        // SAMP_POSTFX,
         // SAMP_CUBEMAP,
         SAMP_MAX,
     };
@@ -112,14 +112,6 @@ private:
         std::vector<VulkanImage *> colorAttachments;
         std::vector<VulkanImage *> depthAttachments;
     } m_forward;
-
-    // struct PASS_SHADOW
-    // {
-    //     const uint32_t dim{ 2048 };
-    //     const VkFilter filter{ VK_FILTER_LINEAR };
-    //     std::vector<VulkanImage *> depthAttachments;
-    //     std::vector<VkDescriptorSet> cameraSets;
-    // } m_shadow;
 
 private:
     std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;

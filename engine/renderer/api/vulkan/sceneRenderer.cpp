@@ -282,7 +282,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                              VK_IMAGE_LAYOUT_GENERAL);
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
         commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 0, 1, &m_postFxSets[imageIdx]);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);
+        // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);
         commandBuffer->dispatch(pColorAttachment->getImage()->getWidth(),
                                 pColorAttachment->getImage()->getHeight(),
                                 1);
@@ -522,7 +522,7 @@ void VulkanSceneRenderer::_initPostFx()
         // build Shader
         std::filesystem::path shaderDir = "assets/shaders/glsl/default";
         ComputePipelineCreateInfo pipelineCreateInfo{};
-        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_POSTFX], m_setLayouts[SET_LAYOUT_SAMP] };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_POSTFX] };
         pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_COMPUTE_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
         };
@@ -685,12 +685,6 @@ void VulkanSceneRenderer::_initSampler()
         // VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.shadow));
     }
 
-    // postFX
-    {
-        VkSamplerCreateInfo createInfo = aph::init::samplerCreateInfo();
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_samplers[SAMP_POSTFX]));
-    }
-
     // allocate set and update
     {
         auto &set = m_samplerSet;
@@ -699,10 +693,6 @@ void VulkanSceneRenderer::_initSampler()
         std::vector<VkDescriptorImageInfo> imageInfos{
             {
                 .sampler = m_samplers[SAMP_TEXTURE],
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
-            {
-                .sampler = m_samplers[SAMP_POSTFX],
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             },
         };
@@ -769,7 +759,6 @@ void VulkanSceneRenderer::_initSetLayout()
     {
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SAMP]);
