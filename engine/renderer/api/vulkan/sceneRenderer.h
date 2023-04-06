@@ -15,20 +15,11 @@ struct SceneInfo
     uint32_t lightCount{};
 };
 
-struct ObjectInfo
-{
-    glm::mat4 matrix{ 1.0f };
-};
-
-struct VulkanRenderData
-{
-    VulkanRenderData(std::shared_ptr<SceneNode> sceneNode) : m_node{ std::move(sceneNode) } {}
-    std::shared_ptr<SceneNode> m_node{};
-};
-
 struct VulkanUniformData
 {
-    VulkanUniformData(std::shared_ptr<SceneNode> node) : m_node{ std::move(node) } {}
+    VulkanUniformData(std::shared_ptr<SceneNode> node) : m_node{
+        std::move(node)
+    } {}
 
     void update() { m_buffer->copyTo(m_object->getData()); }
 
@@ -56,7 +47,7 @@ private:
     void _initForward();
     void _initPostFx();
     void _loadScene();
-    void _drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline,
+    void _drawNode(const std::shared_ptr<SceneNode> &node, VulkanPipeline *pipeline,
                          VulkanCommandBuffer *drawCmd);
 
 private:
@@ -110,7 +101,8 @@ private:
     } m_forward;
 
 private:
-    std::vector<std::shared_ptr<VulkanRenderData>> m_renderDataList;
+    std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
+
     std::deque<std::shared_ptr<VulkanUniformData>> m_uniformDataList;
 
     std::vector<VkDescriptorBufferInfo> m_cameraInfos{};

@@ -130,9 +130,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
-        for(auto &renderData : m_renderDataList)
+
+        for(auto &node : m_meshNodeList)
         {
-            _drawRenderData(renderData, m_pipelines[PIPELINE_GRAPHICS_FORWARD], commandBuffer);
+            _drawNode(node, m_pipelines[PIPELINE_GRAPHICS_FORWARD], commandBuffer);
         }
         commandBuffer->endRendering();
 
@@ -278,6 +279,7 @@ void VulkanSceneRenderer::_loadScene()
         m_textures.push_back(texture);
     }
 
+    // create index buffer
     {
         auto &indicesList = m_scene->m_indices;
         BufferCreateInfo createInfo{
@@ -288,6 +290,7 @@ void VulkanSceneRenderer::_loadScene()
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_INDEX], indicesList.data());
     }
 
+    // create vertex buffer
     {
         auto &verticesList = m_scene->m_vertices;
         BufferCreateInfo createInfo{
@@ -310,8 +313,7 @@ void VulkanSceneRenderer::_loadScene()
         {
         case ObjectType::MESH:
         {
-            auto renderData = std::make_shared<VulkanRenderData>(node);
-            m_renderDataList.push_back(renderData);
+            m_meshNodeList.push_back(node);
         }
         break;
         case ObjectType::CAMERA:
@@ -451,13 +453,13 @@ void VulkanSceneRenderer::_initForward()
     }
 }
 
-void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData> &renderData, VulkanPipeline *pipeline,
+void VulkanSceneRenderer::_drawNode(const std::shared_ptr<SceneNode>& node, VulkanPipeline *pipeline,
                                           VulkanCommandBuffer *drawCmd)
 {
-    auto mesh = renderData->m_node->getObject<Mesh>();
+    auto mesh = node->getObject<Mesh>();
     {
-        auto matrix = renderData->m_node->matrix;
-        auto currentNode = renderData->m_node->parent;
+        auto matrix = node->matrix;
+        auto currentNode = node->parent;
         while(currentNode)
         {
             matrix = currentNode->matrix * matrix;
