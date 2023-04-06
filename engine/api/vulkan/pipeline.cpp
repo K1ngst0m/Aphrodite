@@ -1,7 +1,5 @@
 #include "pipeline.h"
-#include "renderpass.h"
 #include "scene/mesh.h"
-#include "shader.h"
 
 namespace aph
 {
@@ -35,7 +33,7 @@ VkPipelineVertexInputStateCreateInfo &VertexInputBuilder::getPipelineVertexInput
 
 VulkanPipeline *VulkanPipeline::CreateGraphicsPipeline(VulkanDevice *pDevice,
                                                        const GraphicsPipelineCreateInfo &createInfo,
-                                                       VulkanRenderPass *pRenderPass, VkPipelineLayout layout,
+                                                       VkRenderPass renderPass, VkPipelineLayout layout,
                                                        VkPipeline handle)
 {
     auto *instance = new VulkanPipeline();

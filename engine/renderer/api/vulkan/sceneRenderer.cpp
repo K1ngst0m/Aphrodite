@@ -45,8 +45,8 @@ void VulkanSceneRenderer::cleanupResources()
 
     for(uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++)
     {
-        m_pDevice->destroyImage(m_forward.colorAttachments[idx]);
-        m_pDevice->destroyImage(m_forward.depthAttachments[idx]);
+        m_pDevice->destroyImage(m_forward.colorImages[idx]);
+        m_pDevice->destroyImage(m_forward.depthImages[idx]);
     }
 
     for(auto &sampler : m_samplers)
@@ -76,10 +76,6 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     VkViewport viewport = aph::init::viewport(extent);
     VkRect2D scissor = aph::init::rect2D(extent);
 
-    std::vector<VkClearValue> clearValues(2);
-    clearValues[0].color = { { 0.1f, 0.1f, 0.1f, 1.0f } };
-    clearValues[1].depthStencil = { 1.0f, 0 };
-
     VkCommandBufferBeginInfo beginInfo = aph::init::commandBufferBeginInfo();
 
     uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
@@ -95,24 +91,24 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
     // forward pass
     {
-        VulkanImageView *pColorAttachment = m_forward.colorAttachments[imageIdx]->getImageView();
+        VulkanImageView *pColorAttachment = m_forward.colorImages[imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue = clearValues[0],
+            .clearValue = {.color {{0.1f,0.1f,0.1f,1.0f}}},
         };
 
-        VulkanImageView *pDepthAttachment = m_forward.depthAttachments[imageIdx]->getImageView();
+        VulkanImageView *pDepthAttachment = m_forward.depthImages[imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pDepthAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue = clearValues[1],
+            .clearValue = {.depthStencil {1.0f, 0}},
         };
 
         VkRenderingInfo renderingInfo{
@@ -255,7 +251,7 @@ void VulkanSceneRenderer::_initRenderData()
         for(const auto &material : m_scene->getMaterials())
         {
             // write descriptor set
-            auto set = m_setLayouts[SET_LAYOUT_MATERIAL]->allocateSet();
+            auto *set = m_setLayouts[SET_LAYOUT_MATERIAL]->allocateSet();
             {
                 std::vector<VkWriteDescriptorSet> descriptorWrites{};
 
@@ -282,7 +278,7 @@ void VulkanSceneRenderer::_initRenderData()
                                        descriptorWrites.data(), 0, nullptr);
             }
 
-            m_materialSetMaps.push_back(set);
+            m_materialSets.push_back(set);
         }
     }
 }
@@ -413,11 +409,11 @@ void VulkanSceneRenderer::_initPostFx()
     // color attachment
     for(auto idx = 0; idx < imageCount; idx++)
     {
-        auto set = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet();
+        auto *set = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet();
 
         std::vector<VkWriteDescriptorSet> writes{
             aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
-                                          &m_forward.colorAttachments[idx]->getImageView()->getDescInfoMap(
+                                          &m_forward.colorImages[idx]->getImageView()->getDescInfoMap(
                                               VK_IMAGE_LAYOUT_GENERAL)),
 
             aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
@@ -435,14 +431,14 @@ void VulkanSceneRenderer::_initForward()
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
-    m_forward.colorAttachments.resize(imageCount);
-    m_forward.depthAttachments.resize(imageCount);
+    m_forward.colorImages.resize(imageCount);
+    m_forward.depthImages.resize(imageCount);
 
     // frame buffer
     for(auto idx = 0; idx < imageCount; idx++)
     {
-        auto &colorImage = m_forward.colorAttachments[idx];
-        auto &depthImage = m_forward.depthAttachments[idx];
+        auto &colorImage = m_forward.colorImages[idx];
+        auto &depthImage = m_forward.depthImages[idx];
 
         {
             ImageCreateInfo createInfo{
@@ -470,6 +466,7 @@ void VulkanSceneRenderer::_initForward()
             cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
         });
+
     }
 
     {
@@ -533,7 +530,7 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
     {
         if(subset.indexCount > 0)
         {
-            auto &materialSet = m_materialSetMaps[subset.materialIndex];
+            auto &materialSet = m_materialSets[subset.materialIndex];
             drawCmd->bindDescriptorSet(pipeline, 2, 1, &materialSet);
             if(subset.hasIndices)
             {

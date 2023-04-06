@@ -274,11 +274,6 @@ VulkanPhysicalDevice *VulkanDevice::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
-VkResult VulkanDevice::createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer)
-{
-    return VulkanFramebuffer::Create(this, createInfo, ppFramebuffer);
-}
-
 void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
@@ -304,15 +299,7 @@ void VulkanDevice::destroyImageView(VulkanImageView *pImageView)
     delete pImageView;
     pImageView = nullptr;
 }
-void VulkanDevice::destoryRenderPass(VulkanRenderPass *pRenderpass)
-{
-    vkDestroyRenderPass(m_handle, pRenderpass->getHandle(), nullptr);
-    delete pRenderpass;
-}
-void VulkanDevice::destroyFramebuffers(VulkanFramebuffer *pFramebuffer)
-{
-    delete pFramebuffer;
-}
+
 VkResult VulkanDevice::createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain **ppSwapchain)
 {
     *ppSwapchain = new VulkanSwapChain(createInfo, this);
@@ -387,7 +374,7 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo,
-                                              VulkanRenderPass *pRenderPass, VulkanPipeline **ppPipeline)
+                                              VkRenderPass renderPass, VulkanPipeline **ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
@@ -441,8 +428,8 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
         .basePipelineHandle = VK_NULL_HANDLE,
     };
 
-    if(pRenderPass){
-        pipelineInfo.renderPass = pRenderPass->getHandle();
+    if(renderPass){
+        pipelineInfo.renderPass = renderPass;
     }
     else{
         pipelineInfo.pNext = &createInfo.renderingCreateInfo;
@@ -460,7 +447,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo &
     VK_CHECK_RESULT(
         vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
 
-    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, createInfo, pRenderPass, pipelineLayout, handle);
+    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, createInfo, renderPass, pipelineLayout, handle);
 
     return VK_SUCCESS;
 }
@@ -514,68 +501,6 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo &cr
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass)
-{
-    std::vector<VkAttachmentDescription> attachments {};
-    std::vector<VkAttachmentReference> colorAttachmentRefs {};
-    VkAttachmentReference depthAttachmentRef {};
-
-    const auto &colorAttachments = createInfo.colorAttachments;
-    for(uint32_t idx = 0; idx < colorAttachments.size(); idx++)
-    {
-        attachments.push_back(colorAttachments[idx]);
-        VkAttachmentReference ref{
-            .attachment = idx,
-            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        };
-        colorAttachmentRefs.push_back(ref);
-    }
-
-    VkSubpassDescription subpassDescription{
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-        .colorAttachmentCount = static_cast<uint32_t>(colorAttachmentRefs.size()),
-        .pColorAttachments = colorAttachmentRefs.data(),
-    };
-
-    if (createInfo.depthAttachment.has_value())
-    {
-        depthAttachmentRef = {
-            .attachment = static_cast<uint32_t>(colorAttachments.size()),
-            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        };
-        attachments.push_back(createInfo.depthAttachment.value());
-        subpassDescription.pDepthStencilAttachment = &depthAttachmentRef;
-    }
-
-
-    std::array<VkSubpassDependency, 1> dependencies;
-
-    dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependencies[0].dstSubpass = 0;
-    dependencies[0].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependencies[0].srcAccessMask = VK_ACCESS_NONE_KHR;
-    dependencies[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    dependencies[0].dependencyFlags = 0;
-
-    VkRenderPassCreateInfo renderPassInfo{
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        .attachmentCount = static_cast<uint32_t>(attachments.size()),
-        .pAttachments = attachments.data(),
-        .subpassCount = 1,
-        .pSubpasses = &subpassDescription,
-        .dependencyCount = dependencies.size(),
-        .pDependencies = dependencies.data(),
-    };
-
-    VkRenderPass renderpass;
-    VK_CHECK_RESULT(vkCreateRenderPass(m_handle, &renderPassInfo, nullptr, &renderpass));
-
-    *ppRenderPass = new VulkanRenderPass(renderpass, colorAttachmentRefs.size());
-
-    return VK_SUCCESS;
-}
-
 VkResult VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool waitAll, uint32_t timeout)
 {
     return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
@@ -597,9 +522,9 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo &createInf
 
     VulkanBuffer *buffer = nullptr;
     {
-        auto ci = createInfo;
-        ci.usage |= BUFFER_USAGE_TRANSFER_DST_BIT;
-        VK_CHECK_RESULT(createBuffer(ci, &buffer));
+        auto bufferCI = createInfo;
+        bufferCI.usage |= BUFFER_USAGE_TRANSFER_DST_BIT;
+        VK_CHECK_RESULT(createBuffer(bufferCI, &buffer));
     }
 
     executeSingleCommands(QUEUE_GRAPHICS,

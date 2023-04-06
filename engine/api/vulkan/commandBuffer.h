@@ -17,7 +17,7 @@ class VulkanImage;
 
 struct RenderPassBeginInfo
 {
-    VulkanRenderPass *pRenderPass;
+    VkRenderPass renderPass;
     VulkanFramebuffer *pFramebuffer;
     VkRect2D renderArea;
     uint32_t clearValueCount;

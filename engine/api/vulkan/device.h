@@ -6,12 +6,10 @@
 #include "commandPool.h"
 #include "descriptorPool.h"
 #include "descriptorSetLayout.h"
-#include "framebuffer.h"
 #include "image.h"
 #include "physicalDevice.h"
 #include "pipeline.h"
 #include "queue.h"
-#include "renderpass.h"
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitivesPool.h"
@@ -49,16 +47,13 @@ public:
                                      const void *data);
     VkResult createDeviceLocalImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage,
                                     const std::vector<uint8_t> &data);
-
 public:
     VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr);
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
-    VkResult createFramebuffers(const FramebufferCreateInfo &createInfo, VulkanFramebuffer **ppFramebuffer);
-    VkResult createRenderPass(const RenderPassCreateInfo &createInfo, VulkanRenderPass **ppRenderPass);
     VkResult createSwapchain(const SwapChainCreateInfo &createInfo, VulkanSwapChain **ppSwapchain);
     VkResult createCommandPool(const CommandPoolCreateInfo&createInfo, VulkanCommandPool **ppPool);
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VulkanRenderPass *pRenderPass, VulkanPipeline **ppPipeline);
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo &createInfo, VkRenderPass renderPass, VulkanPipeline **ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo &createInfo, VulkanPipeline **ppPipeline);
     VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo, VulkanDescriptorSetLayout **ppDescriptorSetLayout);
 
@@ -66,7 +61,6 @@ public:
     void destroyBuffer(VulkanBuffer *pBuffer);
     void destroyImage(VulkanImage *pImage);
     void destroyImageView(VulkanImageView *pImageView);
-    void destroyFramebuffers(VulkanFramebuffer *pFramebuffer);
     void destoryRenderPass(VulkanRenderPass *pRenderpass);
     void destroySwapchain(VulkanSwapChain *pSwapchain);
     void destroyCommandPool(VulkanCommandPool *pPool);

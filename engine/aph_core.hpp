@@ -4,13 +4,9 @@
 #include "renderer/renderer.h"
 #include "renderer/sceneRenderer.h"
 
-#include "api/vulkan/buffer.h"
-#include "api/vulkan/image.h"
 #include "api/vulkan/device.h"
-#include "api/vulkan/pipeline.h"
 #include "api/vulkan/vkInit.hpp"
 #include "api/vulkan/vkUtils.h"
-#include "api/vulkan/swapChain.h"
 
 #include "common/common.h"
 #include "common/window.h"

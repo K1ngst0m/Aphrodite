@@ -1,11 +1,5 @@
 #include "commandBuffer.h"
-#include "buffer.h"
-#include "commandPool.h"
-#include "framebuffer.h"
-#include "image.h"
-#include "pipeline.h"
-#include "renderpass.h"
-#include "vkInit.hpp"
+#include "device.h"
 
 namespace aph
 {
@@ -70,14 +64,16 @@ VkResult VulkanCommandBuffer::reset()
 
 void VulkanCommandBuffer::beginRenderPass(const RenderPassBeginInfo *pBeginInfo)
 {
-    VkRenderPassBeginInfo renderPassBeginInfo = aph::init::renderPassBeginInfo();
-    renderPassBeginInfo.renderPass = pBeginInfo->pRenderPass->getHandle();
-    renderPassBeginInfo.renderArea = pBeginInfo->renderArea;
-    renderPassBeginInfo.clearValueCount = pBeginInfo->clearValueCount;
-    renderPassBeginInfo.pClearValues = pBeginInfo->pClearValues;
-    renderPassBeginInfo.framebuffer = pBeginInfo->pFramebuffer->getHandle(pBeginInfo->pRenderPass);
+    // TODO
+    assert("TODO: renderpass drawing");
+    // VkRenderPassBeginInfo renderPassBeginInfo = aph::init::renderPassBeginInfo();
+    // renderPassBeginInfo.renderPass = pBeginInfo->renderPass;
+    // renderPassBeginInfo.renderArea = pBeginInfo->renderArea;
+    // renderPassBeginInfo.clearValueCount = pBeginInfo->clearValueCount;
+    // renderPassBeginInfo.pClearValues = pBeginInfo->pClearValues;
+    // renderPassBeginInfo.framebuffer = pBeginInfo->pFramebuffer->getHandle(pBeginInfo->pRenderPass);
 
-    vkCmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    // vkCmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 }
 void VulkanCommandBuffer::endRenderPass()
 {

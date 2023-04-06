@@ -87,7 +87,7 @@ class VulkanPipeline : public ResourceHandle<VkPipeline>
 {
 public:
     static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice *pDevice, const GraphicsPipelineCreateInfo &createInfo,
-                                                  VulkanRenderPass *pRenderPass, VkPipelineLayout layout,
+                                                  VkRenderPass renderPass, VkPipelineLayout layout,
                                                   VkPipeline handle);
 
     static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const ComputePipelineCreateInfo &createInfo, VkPipelineLayout layout,

@@ -106,11 +106,12 @@ private:
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
     std::vector<VkDescriptorSet> m_postFxSets{};
+    std::vector<VkDescriptorSet> m_materialSets{};
 
-    struct PASS_FORWARD
+    struct
     {
-        std::vector<VulkanImage *> colorAttachments;
-        std::vector<VulkanImage *> depthAttachments;
+        std::vector<VulkanImage *> colorImages;
+        std::vector<VulkanImage *> depthImages;
     } m_forward;
 
 private:
@@ -124,7 +125,6 @@ private:
 private:
     VulkanDevice *m_pDevice{};
     std::shared_ptr<VulkanRenderer> m_pRenderer{};
-    std::vector<VkDescriptorSet> m_materialSetMaps{};
 };
 }  // namespace aph
 
