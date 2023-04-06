@@ -15,15 +15,6 @@ class VulkanPipeline;
 class VulkanBuffer;
 class VulkanImage;
 
-struct RenderPassBeginInfo
-{
-    VkRenderPass renderPass;
-    VulkanFramebuffer *pFramebuffer;
-    VkRect2D renderArea;
-    uint32_t clearValueCount;
-    const VkClearValue *pClearValues;
-};
-
 enum class CommandBufferState
 {
     INITIAL,
@@ -48,8 +39,6 @@ public:
 
     void beginRendering(const VkRenderingInfo &renderingInfo);
     void endRendering();
-    void beginRenderPass(const RenderPassBeginInfo *pBeginInfo);
-    void endRenderPass();
     void setViewport(VkViewport *viewport);
     void setSissor(VkRect2D *scissor);
     void bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,

@@ -148,7 +148,25 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_GENERAL);
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 0, 1, &m_postFxSets[imageIdx]);
+
+        // {
+            std::vector<VkWriteDescriptorSet> writes{
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
+                                            &m_forward.colorImages[imageIdx]->getImageView()->getDescInfoMap(
+                                                VK_IMAGE_LAYOUT_GENERAL)),
+
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+                                            &m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getDescInfoMap(
+                                                VK_IMAGE_LAYOUT_GENERAL)),
+            };
+
+            vkCmdPushDescriptorSetKHR(commandBuffer->getHandle(),
+                                      m_pipelines[PIPELINE_COMPUTE_POSTFX]->getBindPoint(),
+                                      m_pipelines[PIPELINE_COMPUTE_POSTFX]->getPipelineLayout(),
+                                      0, writes.size(), writes.data());
+            // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 0, 1, &m_postFxSets[imageIdx]);
+        // }
+
         // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);
         commandBuffer->dispatch(pColorAttachment->getImage()->getWidth(),
                                 pColorAttachment->getImage()->getHeight(),
@@ -176,7 +194,7 @@ void VulkanSceneRenderer::_initRenderData()
             .cameraCount = static_cast<uint32_t>(m_cameraInfos.size()),
             .lightCount = static_cast<uint32_t>(m_lightInfos.size()),
         };
-        VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
+        VkWriteDescriptorSetInlineUniformBlock writeDescriptorSetInlineUniformBlock{
             .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
             .dataSize = sizeof(SceneInfo),
             .pData = &info,
@@ -405,25 +423,6 @@ void VulkanSceneRenderer::_initPostFx()
         };
         VK_CHECK_RESULT(m_pDevice->createComputePipeline(pipelineCreateInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }
-
-    // color attachment
-    for(auto idx = 0; idx < imageCount; idx++)
-    {
-        auto *set = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet();
-
-        std::vector<VkWriteDescriptorSet> writes{
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
-                                          &m_forward.colorImages[idx]->getImageView()->getDescInfoMap(
-                                              VK_IMAGE_LAYOUT_GENERAL)),
-
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                          &m_pRenderer->getSwapChain()->getImage(idx)->getImageView()->getDescInfoMap(
-                                              VK_IMAGE_LAYOUT_GENERAL)),
-        };
-        m_postFxSets.push_back(set);
-
-        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-    }
 }
 
 void VulkanSceneRenderer::_initForward()
@@ -609,6 +608,7 @@ void VulkanSceneRenderer::_initSetLayout()
         };
 
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
+        createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_POSTFX]);
     }
 

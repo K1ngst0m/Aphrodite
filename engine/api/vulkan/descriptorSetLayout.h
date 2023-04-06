@@ -24,9 +24,9 @@ public:
     VkResult freeSet(VkDescriptorSet set);
 
 private:
-    VulkanDevice *m_device;
+    VulkanDevice *m_device{};
     std::vector<VkDescriptorSetLayoutBinding> m_bindings;
-    VulkanDescriptorPool *m_pool;
+    VulkanDescriptorPool *m_pool{};
 };
 
 }  // namespace aph

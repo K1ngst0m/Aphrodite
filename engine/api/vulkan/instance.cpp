@@ -155,7 +155,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
     volkLoadInstance(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto instance = new VulkanInstance();
+    auto *instance = new VulkanInstance();
     instance->getHandle() = handle;
 
     // Get the number of attached physical devices.

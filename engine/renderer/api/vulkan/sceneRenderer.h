@@ -105,7 +105,7 @@ private:
 
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
-    std::vector<VkDescriptorSet> m_postFxSets{};
+    // std::vector<VkDescriptorSet> m_postFxSets{};
     std::vector<VkDescriptorSet> m_materialSets{};
 
     struct

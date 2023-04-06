@@ -24,6 +24,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
             {
                 extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             }
+            extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         }
 
         InstanceCreateInfo instanceCreateInfo{ .enabledExtensions = extensions };
@@ -31,7 +32,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
         if(m_config.enableDebug)
         {
             const std::vector<const char *> validationLayers = {
-                "VK_LAYER_KHRONOS_validation"
+                "VK_LAYER_KHRONOS_validation",
             };
             instanceCreateInfo.flags = INSTANCE_CREATION_ENABLE_DEBUG;
             instanceCreateInfo.enabledLayers = validationLayers;
@@ -45,6 +46,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
         const std::vector<const char *> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
         };
 
         DeviceCreateInfo createInfo{

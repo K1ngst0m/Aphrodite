@@ -98,10 +98,10 @@ public:
     VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 
 protected:
-    VkPipelineCache m_cache = VK_NULL_HANDLE;
-    VulkanDevice *m_device = nullptr;
-    VkPipelineLayout m_layout = VK_NULL_HANDLE;
-    VkPipelineBindPoint m_bindPoint;
+    VkPipelineCache m_cache {};
+    VulkanDevice *m_device {};
+    VkPipelineLayout m_layout {};
+    VkPipelineBindPoint m_bindPoint {};
     std::vector<VkPushConstantRange> m_constants;
     std::vector<VulkanDescriptorSetLayout *> m_setLayouts;
     ShaderMapList m_shaderMapList;

@@ -21,6 +21,7 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet()
 {
     return m_pool->allocateSet();
 }
+
 VkResult VulkanDescriptorSetLayout::freeSet(VkDescriptorSet set)
 {
     return m_pool->freeSet(set);

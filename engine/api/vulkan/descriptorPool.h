@@ -27,8 +27,8 @@ private:
     std::vector<uint32_t> m_allocatedSets;
     uint32_t m_currentAllocationPoolIndex = 0;
     std::unordered_map<VkDescriptorSet, uint32_t> m_allocatedDescriptorSets;
-    std::unordered_map<VkDescriptorType, uint32_t> descriptorTypeCounts;
-    SpinLock _spinLock;
+    std::unordered_map<VkDescriptorType, uint32_t> m_descriptorTypeCounts;
+    SpinLock m_spinLock;
 };
 }  // namespace aph
 

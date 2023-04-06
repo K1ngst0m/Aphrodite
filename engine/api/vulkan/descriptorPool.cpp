@@ -9,12 +9,12 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : 
 
     for(auto &binding : bindings)
     {
-        descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
+        m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
     }
 
-    m_poolSizes.resize(descriptorTypeCounts.size());
+    m_poolSizes.resize(m_descriptorTypeCounts.size());
     uint32_t index = 0;
-    for(auto [type, count] : descriptorTypeCounts)
+    for(auto [type, count] : m_descriptorTypeCounts)
     {
         m_poolSizes[index].type = type;
         m_poolSizes[index].descriptorCount = count * m_maxSetsPerPool;
@@ -40,7 +40,7 @@ VulkanDescriptorPool::~VulkanDescriptorPool()
 VkDescriptorSet VulkanDescriptorPool::allocateSet()
 {
     // Safe guard access to internal resources across threads.
-    _spinLock.Lock();
+    m_spinLock.Lock();
 
     // Find the next pool to allocate from.
     while(true)
@@ -58,9 +58,9 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
             };
             VkDescriptorPoolInlineUniformBlockCreateInfo descriptorPoolInlineUniformBlockCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO,
-                .maxInlineUniformBlockBindings = static_cast<uint32_t>(descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
+                .maxInlineUniformBlockBindings = static_cast<uint32_t>(m_descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
             };
-            if (descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
+            if (m_descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
             {
                 createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
             }
@@ -104,7 +104,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
     m_allocatedDescriptorSets.emplace(handle, m_currentAllocationPoolIndex);
 
     // Unlock access to internal resources.
-    _spinLock.Unlock();
+    m_spinLock.Unlock();
 
     // Return descriptor set handle.
     return handle;
@@ -113,7 +113,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
 VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
 {
     // Safe guard access to internal resources across threads.
-    _spinLock.Lock();
+    m_spinLock.Lock();
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
     auto it = m_allocatedDescriptorSets.find(descriptorSet);
@@ -134,7 +134,7 @@ VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
     m_currentAllocationPoolIndex = poolIndex;
 
     // Unlock access to internal resources.
-    _spinLock.Unlock();
+    m_spinLock.Unlock();
 
     // Return success.
     return VK_SUCCESS;

@@ -62,23 +62,6 @@ VkResult VulkanCommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::beginRenderPass(const RenderPassBeginInfo *pBeginInfo)
-{
-    // TODO
-    assert("TODO: renderpass drawing");
-    // VkRenderPassBeginInfo renderPassBeginInfo = aph::init::renderPassBeginInfo();
-    // renderPassBeginInfo.renderPass = pBeginInfo->renderPass;
-    // renderPassBeginInfo.renderArea = pBeginInfo->renderArea;
-    // renderPassBeginInfo.clearValueCount = pBeginInfo->clearValueCount;
-    // renderPassBeginInfo.pClearValues = pBeginInfo->pClearValues;
-    // renderPassBeginInfo.framebuffer = pBeginInfo->pFramebuffer->getHandle(pBeginInfo->pRenderPass);
-
-    // vkCmdBeginRenderPass(m_handle, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
-}
-void VulkanCommandBuffer::endRenderPass()
-{
-    vkCmdEndRenderPass(m_handle);
-}
 void VulkanCommandBuffer::setViewport(VkViewport *viewport)
 {
     vkCmdSetViewport(m_handle, 0, 1, viewport);
