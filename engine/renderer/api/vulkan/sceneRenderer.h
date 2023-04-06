@@ -24,9 +24,6 @@ struct VulkanRenderData
 {
     VulkanRenderData(std::shared_ptr<SceneNode> sceneNode) : m_node{ std::move(sceneNode) } {}
 
-    VulkanBuffer *m_vertexBuffer{};
-    VulkanBuffer *m_indexBuffer{};
-
     VulkanBuffer *m_objectUB{};
     VkDescriptorSet m_objectSet{};
 
@@ -94,13 +91,20 @@ private:
         PIPELINE_MAX,
     };
 
+    enum BufferIndex
+    {
+        BUFFER_SCENE_VERTEX,
+        BUFFER_SCENE_INDEX,
+        BUFFER_MAX,
+    };
+
+    std::array<VulkanBuffer *, BUFFER_MAX> m_buffers;
     std::array<VulkanPipeline *, PIPELINE_MAX> m_pipelines;
     std::array<VulkanDescriptorSetLayout *, SET_LAYOUT_MAX> m_setLayouts;
     std::array<VkSampler, SAMP_MAX> m_samplers;
 
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
-    // std::vector<VkDescriptorSet> m_postFxSets{};
     std::vector<VkDescriptorSet> m_materialSets{};
 
     struct

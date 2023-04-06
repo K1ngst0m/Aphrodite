@@ -23,6 +23,7 @@ enum class SceneType
 
 class Scene
 {
+    friend class VulkanSceneRenderer;
 public:
     static std::unique_ptr<Scene> Create(SceneType type);
 
@@ -52,6 +53,9 @@ private:
 
     std::shared_ptr<SceneNode> m_rootNode{};
     std::shared_ptr<Camera> m_camera{};
+
+    std::vector<uint8_t> m_indices{};
+    std::vector<uint8_t> m_vertices{};
 
     std::unordered_map<IdType, std::shared_ptr<Camera>> m_cameras{};
     std::unordered_map<IdType, std::shared_ptr<Light>> m_lights{};

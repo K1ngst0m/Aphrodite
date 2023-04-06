@@ -83,8 +83,8 @@ struct Mesh : public Object
         ResourceIndex materialIndex{ -1 };
         bool hasIndices{ false };
     };
-    std::vector<Vertex> m_vertices{};
-    std::vector<uint8_t> m_indices{};
+    ResourceIndex m_indexOffset{ -1 };
+    ResourceIndex m_vertexOffset{ -1 };
     std::vector<Subset> m_subsets{};
     IndexType m_indexType{ IndexType::UINT32 };
     PrimitiveTopology m_topology{ PrimitiveTopology::TRI_LIST };

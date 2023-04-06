@@ -49,6 +49,11 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyImage(m_forward.depthImages[idx]);
     }
 
+    for (auto &buffer : m_buffers)
+    {
+        m_pDevice->destroyBuffer(buffer);
+    }
+
     for(auto &sampler : m_samplers)
     {
         vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
@@ -56,8 +61,6 @@ void VulkanSceneRenderer::cleanupResources()
 
     for(auto &renderData : m_renderDataList)
     {
-        m_pDevice->destroyBuffer(renderData->m_vertexBuffer);
-        m_pDevice->destroyBuffer(renderData->m_indexBuffer);
         m_pDevice->destroyBuffer(renderData->m_objectUB);
     }
 
@@ -132,9 +135,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
-        for(auto &renderable : m_renderDataList)
+        for(auto &renderData : m_renderDataList)
         {
-            _drawRenderData(renderable, m_pipelines[PIPELINE_GRAPHICS_FORWARD], commandBuffer);
+            _drawRenderData(renderData, m_pipelines[PIPELINE_GRAPHICS_FORWARD], commandBuffer);
         }
         commandBuffer->endRendering();
 
@@ -319,6 +322,26 @@ void VulkanSceneRenderer::_loadScene()
         m_textures.push_back(texture);
     }
 
+    {
+        auto &indicesList = m_scene->m_indices;
+        BufferCreateInfo createInfo{
+            .size = static_cast<uint32_t>(indicesList.size()),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_INDEX_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_INDEX], indicesList.data());
+    }
+
+    {
+        auto &verticesList = m_scene->m_vertices;
+        BufferCreateInfo createInfo{
+            .size = static_cast<uint32_t>(verticesList.size()),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_VERTEX], verticesList.data());
+    }
+
     std::queue<std::shared_ptr<SceneNode>> q;
     q.push(m_scene->getRootNode());
 
@@ -332,29 +355,6 @@ void VulkanSceneRenderer::_loadScene()
         case ObjectType::MESH:
         {
             auto renderData = std::make_shared<VulkanRenderData>(node);
-            {
-                auto mesh = node->getObject<Mesh>();
-                auto &vertices = mesh->m_vertices;
-                auto &indices = mesh->m_indices;
-                // load buffer
-                assert(!vertices.empty());
-                {
-                    BufferCreateInfo createInfo{
-                        .size = static_cast<uint32_t>(sizeof(vertices[0]) * vertices.size()),
-                        .alignment = 0,
-                        .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                    };
-                    m_pDevice->createDeviceLocalBuffer(createInfo, &renderData->m_vertexBuffer, vertices.data());
-                }
-                if(!indices.empty())
-                {
-                    BufferCreateInfo createInfo{
-                        .size = static_cast<uint32_t>(sizeof(indices[0]) * indices.size()),
-                        .alignment = 0,
-                        .usage = BUFFER_USAGE_INDEX_BUFFER_BIT,
-                    };
-                    m_pDevice->createDeviceLocalBuffer(createInfo, &renderData->m_indexBuffer, indices.data());}
-            }
             m_renderDataList.push_back(renderData);
         }
         break;
@@ -509,8 +509,8 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
         drawCmd->pushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                                &matrix);
     }
-    drawCmd->bindVertexBuffers(0, 1, renderData->m_vertexBuffer, { 0 });
-    if(renderData->m_indexBuffer)
+    drawCmd->bindVertexBuffers(mesh->m_vertexOffset, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
+    if(mesh->m_indexOffset > -1)
     {
         VkIndexType indexType = VK_INDEX_TYPE_UINT32;
         switch(mesh->m_indexType)
@@ -522,7 +522,7 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
             indexType = VK_INDEX_TYPE_UINT32;
             break;
         }
-        drawCmd->bindIndexBuffers(renderData->m_indexBuffer, 0, indexType);
+        drawCmd->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], mesh->m_indexOffset, indexType);
     }
     for(const auto &subset : mesh->m_subsets)
     {

@@ -100,7 +100,7 @@ void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uin
     }
 }
 
-void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, const std::shared_ptr<SceneNode> &parent,
+void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node &inputNode, const tinygltf::Model &input, const std::shared_ptr<SceneNode> &parent,
                uint32_t materialOffset)
 {
     auto node{ parent->createChildNode() };
@@ -131,9 +131,10 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
     if(inputNode.mesh > -1)
     {
         const tinygltf::Mesh gltfMesh{ input.meshes[inputNode.mesh] };
+        std::vector<uint8_t> indices;
+        std::vector<uint8_t> vertices;
+
         auto mesh{ Object::Create<Mesh>() };
-        auto &indices{ mesh->m_indices };
-        auto &vertices{ mesh->m_vertices };
         node->attachObject<Mesh>(mesh);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : gltfMesh.primitives)
@@ -198,7 +199,8 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
                     vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
                     vert.color = glm::vec3(1.0f);
                     vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
-                    vertices.push_back(vert);
+                    uint8_t* ptr = reinterpret_cast<uint8_t*>(&vert);
+                    std::copy(ptr, ptr + sizeof(vert), back_inserter(vertices));
                 }
             }
             // Indices
@@ -254,6 +256,10 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
             subset.hasIndices = indexCount > 0;
 
             mesh->m_subsets.push_back(subset);
+            mesh->m_indexOffset = indicesList.size();
+            mesh->m_vertexOffset = verticesList.size();
+            indicesList.insert(indicesList.cend(), indices.cbegin(), indices.cend());
+            verticesList.insert(verticesList.cend(), vertices.cbegin(), vertices.cend());
         }
     }
 
@@ -262,7 +268,7 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
     {
         for(int nodeIdx : inputNode.children)
         {
-            loadNodes(input.nodes[nodeIdx], input, node, materialOffset);
+            loadNodes(verticesList, indicesList, input.nodes[nodeIdx], input, node, materialOffset);
         }
     }
 }
@@ -344,7 +350,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node inputNode = inputModel.nodes[nodeIdx];
-            loadNodes(inputNode, inputModel, node, materialOffset);
+            loadNodes(m_vertices, m_indices, inputNode, inputModel, node, materialOffset);
         }
     }
     else
