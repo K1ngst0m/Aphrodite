@@ -575,8 +575,128 @@ VkResult VulkanDevice::createRenderPass(const RenderPassCreateInfo &createInfo, 
 
     return VK_SUCCESS;
 }
+
 VkResult VulkanDevice::waitForFence(const std::vector<VkFence> &fences, bool waitAll, uint32_t timeout)
 {
     return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
+}
+
+VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer,
+                                               const void *data)
+{
+    // using staging buffer
+    aph::VulkanBuffer *stagingBuffer{};
+    {
+        BufferCreateInfo stagingCI{
+            .size = static_cast<uint32_t>(createInfo.size),
+            .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        };
+        VK_CHECK_RESULT(createBuffer(stagingCI, &stagingBuffer, data));
+    }
+
+    VulkanBuffer *buffer = nullptr;
+    {
+        auto ci = createInfo;
+        ci.usage |= BUFFER_USAGE_TRANSFER_DST_BIT;
+        VK_CHECK_RESULT(createBuffer(ci, &buffer));
+    }
+
+    executeSingleCommands(QUEUE_GRAPHICS,
+                          [&](VulkanCommandBuffer *cmd) { cmd->copyBuffer(stagingBuffer, buffer, createInfo.size); });
+    *ppBuffer = buffer;
+    destroyBuffer(stagingBuffer);
+    return VK_SUCCESS;
+};
+
+VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage,
+                                              const std::vector<uint8_t> &data)
+{
+    bool genMipmap = createInfo.mipLevels > 1;
+    const uint32_t width = createInfo.extent.width;
+    const uint32_t height = createInfo.extent.height;
+
+    // Load texture from image buffer
+    VulkanBuffer *stagingBuffer;
+    {
+        BufferCreateInfo bufferCI{
+            .size = static_cast<uint32_t>(data.size()),
+            .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        };
+        createBuffer(bufferCI, &stagingBuffer, data.data());
+    }
+
+    VulkanImage *texture{};
+    {
+        auto imageCI = createInfo;
+        imageCI.property |= MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        imageCI.usage |= IMAGE_USAGE_TRANSFER_DST_BIT;
+        if(genMipmap)
+        {
+            imageCI.usage |= BUFFER_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        VK_CHECK_RESULT(createImage(imageCI, &texture));
+
+        executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd) {
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->copyBufferToImage(stagingBuffer, texture);
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        });
+
+        executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd) {
+            // generate mipmap chains
+            for(int32_t i = 1; i < imageCI.mipLevels; i++)
+            {
+                VkImageBlit imageBlit{};
+
+                // Source
+                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.srcSubresource.layerCount = 1;
+                imageBlit.srcSubresource.mipLevel = i - 1;
+                imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
+                imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
+                imageBlit.srcOffsets[1].z = 1;
+
+                // Destination
+                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                imageBlit.dstSubresource.layerCount = 1;
+                imageBlit.dstSubresource.mipLevel = i;
+                imageBlit.dstOffsets[1].x = int32_t(width >> i);
+                imageBlit.dstOffsets[1].y = int32_t(height >> i);
+                imageBlit.dstOffsets[1].z = 1;
+
+                VkImageSubresourceRange mipSubRange = {};
+                mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                mipSubRange.baseMipLevel = i;
+                mipSubRange.levelCount = 1;
+                mipSubRange.layerCount = 1;
+
+                // Prepare current mip level as image blit destination
+                cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                        VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
+
+                // Blit from previous level
+                cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+
+                // Prepare current mip level as image blit source for next level
+                cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
+            }
+
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        });
+    }
+
+    destroyBuffer(stagingBuffer);
+    *ppImage = texture;
+
+    return VK_SUCCESS;
 }
 }  // namespace aph

@@ -45,6 +45,12 @@ public:
     static void Destroy(VulkanDevice *pDevice);
 
 public:
+    VkResult createDeviceLocalBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer,
+                                     const void *data);
+    VkResult createDeviceLocalImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage,
+                                    const std::vector<uint8_t> &data);
+
+public:
     VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr);
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);

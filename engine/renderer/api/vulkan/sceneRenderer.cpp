@@ -11,135 +11,6 @@
 
 namespace aph
 {
-
-namespace
-{
-
-VulkanBuffer *createBuffer(VulkanDevice *pDevice, VulkanQueue *pQueue, const void *data, VkDeviceSize size,
-                           VkBufferUsageFlags usage)
-{
-    VulkanBuffer *buffer = nullptr;
-    // setup vertex buffer
-    {
-        // using staging buffer
-        aph::VulkanBuffer *stagingBuffer{};
-        {
-            BufferCreateInfo createInfo{
-                .size = static_cast<uint32_t>(size),
-                .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
-                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            };
-            pDevice->createBuffer(createInfo, &stagingBuffer, data);
-        }
-
-        {
-            BufferCreateInfo createInfo{
-                .size = static_cast<uint32_t>(size),
-                .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-                .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            };
-            pDevice->createBuffer(createInfo, &buffer);
-        }
-
-        pDevice->executeSingleCommands(QUEUE_GRAPHICS,
-                                       [&](VulkanCommandBuffer *cmd) { cmd->copyBuffer(stagingBuffer, buffer, size); });
-
-        pDevice->destroyBuffer(stagingBuffer);
-    }
-    return buffer;
-}
-
-VulkanImage *createTexture(VulkanDevice *pDevice, VulkanQueue *pQueue, uint32_t width, uint32_t height, void *data,
-                           uint32_t dataSize, bool genMipmap = false)
-{
-    uint32_t texMipLevels = genMipmap ? calculateFullMipLevels(width, height) : 1;
-
-    // Load texture from image buffer
-    VulkanBuffer *stagingBuffer;
-    {
-        BufferCreateInfo createInfo{
-            .size = dataSize,
-            .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        };
-        pDevice->createBuffer(createInfo, &stagingBuffer, data);
-    }
-
-    VulkanImage *texture{};
-    {
-        ImageCreateInfo createInfo{
-            .extent = { width, height, 1 },
-            .mipLevels = texMipLevels,
-            .usage = IMAGE_USAGE_TRANSFER_SRC_BIT | IMAGE_USAGE_TRANSFER_DST_BIT | IMAGE_USAGE_SAMPLED_BIT,
-            .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            .format = FORMAT_R8G8B8A8_UNORM,
-            .tiling = IMAGE_TILING_OPTIMAL,
-        };
-
-        pDevice->createImage(createInfo, &texture);
-
-        pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd) {
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            cmd->copyBufferToImage(stagingBuffer, texture);
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-        });
-
-        pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *cmd) {
-            // generate mipmap chains
-            for(int32_t i = 1; i < texMipLevels; i++)
-            {
-                VkImageBlit imageBlit{};
-
-                // Source
-                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.srcSubresource.layerCount = 1;
-                imageBlit.srcSubresource.mipLevel = i - 1;
-                imageBlit.srcOffsets[1].x = int32_t(width >> (i - 1));
-                imageBlit.srcOffsets[1].y = int32_t(height >> (i - 1));
-                imageBlit.srcOffsets[1].z = 1;
-
-                // Destination
-                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.dstSubresource.layerCount = 1;
-                imageBlit.dstSubresource.mipLevel = i;
-                imageBlit.dstOffsets[1].x = int32_t(width >> i);
-                imageBlit.dstOffsets[1].y = int32_t(height >> i);
-                imageBlit.dstOffsets[1].z = 1;
-
-                VkImageSubresourceRange mipSubRange = {};
-                mipSubRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                mipSubRange.baseMipLevel = i;
-                mipSubRange.levelCount = 1;
-                mipSubRange.layerCount = 1;
-
-                // Prepare current mip level as image blit destination
-                cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                        VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
-
-                // Blit from previous level
-                cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-
-                // Prepare current mip level as image blit source for next level
-                cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
-            }
-
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        });
-    }
-
-    pDevice->destroyBuffer(stagingBuffer);
-
-    return texture;
-}
-
-}  // namespace
-
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer) :
     m_pDevice(renderer->getDevice()),
     m_pRenderer(renderer)
@@ -421,14 +292,17 @@ void VulkanSceneRenderer::_loadScene()
     // load scene image to gpu
     for(auto &image : m_scene->getImages())
     {
-        // raw image data
-        uint8_t *imageData = image->data.data();
-        uint32_t imageDataSize = image->data.size();
-        uint32_t width = image->width;
-        uint32_t height = image->height;
 
-        auto texture =
-            createTexture(m_pDevice, m_pRenderer->getGraphicsQueue(), width, height, imageData, imageDataSize, true);
+        ImageCreateInfo ci{
+            .extent = {image->width, image->height, 1},
+            .mipLevels = calculateFullMipLevels(image->width, image->height),
+            .usage = IMAGE_USAGE_SAMPLED_BIT,
+            .format = FORMAT_R8G8B8A8_UNORM,
+            .tiling = IMAGE_TILING_OPTIMAL,
+        };
+
+        VulkanImage* texture {};
+        m_pDevice->createDeviceLocalImage(ci, &texture, image->data);
         m_textures.push_back(texture);
     }
 
@@ -451,15 +325,22 @@ void VulkanSceneRenderer::_loadScene()
                 auto &indices = mesh->m_indices;
                 // load buffer
                 assert(!vertices.empty());
-                renderData->m_vertexBuffer =
-                    createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), vertices.data(),
-                                 sizeof(vertices[0]) * vertices.size(), BUFFER_USAGE_VERTEX_BUFFER_BIT);
+                {
+                    BufferCreateInfo createInfo{
+                        .size = static_cast<uint32_t>(sizeof(vertices[0]) * vertices.size()),
+                        .alignment = 0,
+                        .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                    };
+                    m_pDevice->createDeviceLocalBuffer(createInfo, &renderData->m_vertexBuffer, vertices.data());
+                }
                 if(!indices.empty())
                 {
-                    renderData->m_indexBuffer =
-                        createBuffer(m_pDevice, m_pRenderer->getGraphicsQueue(), indices.data(),
-                                     sizeof(indices[0]) * indices.size(), BUFFER_USAGE_INDEX_BUFFER_BIT);
-                }
+                    BufferCreateInfo createInfo{
+                        .size = static_cast<uint32_t>(sizeof(indices[0]) * indices.size()),
+                        .alignment = 0,
+                        .usage = BUFFER_USAGE_INDEX_BUFFER_BIT,
+                    };
+                    m_pDevice->createDeviceLocalBuffer(createInfo, &renderData->m_indexBuffer, indices.data());}
             }
             m_renderDataList.push_back(renderData);
         }
