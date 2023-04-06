@@ -14,8 +14,6 @@ The Aphrodite Game Engine is licensed under the MIT license.
 
 Until now this engine has been developed for the GNU/Linux OS only.
 
-Editor UI in [Bspwm](https://wiki.gentoo.org/wiki/Bspwm): 
-
 ![editorUI](https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/screenshot.png)
 
 ***
