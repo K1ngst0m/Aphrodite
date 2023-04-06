@@ -23,10 +23,6 @@ struct ObjectInfo
 struct VulkanRenderData
 {
     VulkanRenderData(std::shared_ptr<SceneNode> sceneNode) : m_node{ std::move(sceneNode) } {}
-
-    VulkanBuffer *m_objectUB{};
-    VkDescriptorSet m_objectSet{};
-
     std::shared_ptr<SceneNode> m_node{};
 };
 
@@ -69,7 +65,7 @@ private:
         SET_LAYOUT_SAMP,
         SET_LAYOUT_MATERIAL,
         SET_LAYOUT_SCENE,
-        SET_LAYOUT_OBJECT,
+        // SET_LAYOUT_OBJECT,
         SET_LAYOUT_POSTFX,
         SET_LAYOUT_MAX,
     };

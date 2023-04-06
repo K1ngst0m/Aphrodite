@@ -44,8 +44,6 @@ public:
     virtual void load() = 0;
     virtual void update(float deltaTime) = 0;
 
-    virtual bool isUpdated() const { return updated; }
-    virtual void setUpdated(bool flag) { updated = flag; }
     virtual void *getData() { return data.get(); }
     virtual uint32_t getDataSize() { return dataSize; }
 

@@ -59,11 +59,6 @@ void VulkanSceneRenderer::cleanupResources()
         vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
     }
 
-    for(auto &renderData : m_renderDataList)
-    {
-        m_pDevice->destroyBuffer(renderData->m_objectUB);
-    }
-
     for(auto &ubData : m_uniformDataList)
     {
         m_pDevice->destroyBuffer(ubData->m_buffer);
@@ -128,7 +123,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
         commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 3, 1, &m_samplerSet);
+        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 2, 1, &m_samplerSet);
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -233,73 +228,34 @@ void VulkanSceneRenderer::_initRenderData()
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
-    for(auto &renderData : m_renderDataList)
+    // write material descriptor set
+    for(const auto &material : m_scene->m_materials)
     {
-        // object info
+        auto *set = m_setLayouts[SET_LAYOUT_MATERIAL]->allocateSet();
+        std::vector<VkWriteDescriptorSet> descriptorWrites{};
+
         {
-            ObjectInfo objInfo{
-                .matrix = renderData->m_node->matrix
-            };
-            BufferCreateInfo bufferCI{
-                .size = sizeof(ObjectInfo),
-                .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            };
-            VK_CHECK_RESULT(m_pDevice->createBuffer(bufferCI, &renderData->m_objectUB, &objInfo));
-
-            renderData->m_objectSet = m_setLayouts[SET_LAYOUT_OBJECT]->allocateSet();
-
-            VkDescriptorBufferInfo bufferInfo{
-                .buffer = renderData->m_objectUB->getHandle(),
-                .offset = 0,
-                .range = VK_WHOLE_SIZE,
+            VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
+                .dataSize = sizeof(Material),
+                .pData = &material,
             };
 
-            std::vector<VkWriteDescriptorSet> descriptorWrites{ aph::init::writeDescriptorSet(
-                renderData->m_objectSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &bufferInfo) };
+            VkWriteDescriptorSet writeDescriptorSet{
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = &writeDescriptorSetInlineUniformBlock,
+                .dstSet = set,
+                .dstBinding = 0,
+                .descriptorCount = sizeof(Material),
+                .descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
+            };
 
-            vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
-                                   descriptorWrites.data(), 0, nullptr);
+            descriptorWrites.push_back(writeDescriptorSet);
         }
 
-        auto writeDescInfo = [](VulkanImage *pImage, VkDescriptorSet set, uint32_t binding) -> VkWriteDescriptorSet {
-            return aph::init::writeDescriptorSet(
-                set, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, binding,
-                &pImage->getImageView()->getDescInfoMap(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
-        };
-
-        for(const auto &material : m_scene->getMaterials())
-        {
-            // write descriptor set
-            auto *set = m_setLayouts[SET_LAYOUT_MATERIAL]->allocateSet();
-            {
-                std::vector<VkWriteDescriptorSet> descriptorWrites{};
-
-                {
-                    VkWriteDescriptorSetInlineUniformBlockEXT writeDescriptorSetInlineUniformBlock{
-                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
-                        .dataSize = sizeof(Material),
-                        .pData = &material,
-                    };
-
-                    VkWriteDescriptorSet writeDescriptorSet{
-                        .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                        .pNext = &writeDescriptorSetInlineUniformBlock,
-                        .dstSet = set,
-                        .dstBinding = 0,
-                        .descriptorCount = sizeof(Material),
-                        .descriptorType = VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
-                    };
-
-                    descriptorWrites.push_back(writeDescriptorSet);
-                }
-
-                vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
-                                       descriptorWrites.data(), 0, nullptr);
-            }
-
-            m_materialSets.push_back(set);
-        }
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(descriptorWrites.size()),
+                                descriptorWrites.data(), 0, nullptr);
+        m_materialSets.push_back(set);
     }
 }
 
@@ -477,8 +433,9 @@ void VulkanSceneRenderer::_initForward()
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat = m_pDevice->getDepthFormat(),
         };
-        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_OBJECT],
-                                          m_setLayouts[SET_LAYOUT_MATERIAL], m_setLayouts[SET_LAYOUT_SAMP] };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE],
+                                          m_setLayouts[SET_LAYOUT_MATERIAL],
+                                          m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(glm::mat4), 0));
         pipelineCreateInfo.shaderMapList = {
@@ -529,7 +486,7 @@ void VulkanSceneRenderer::_drawRenderData(const std::shared_ptr<VulkanRenderData
         if(subset.indexCount > 0)
         {
             auto &materialSet = m_materialSets[subset.materialIndex];
-            drawCmd->bindDescriptorSet(pipeline, 2, 1, &materialSet);
+            drawCmd->bindDescriptorSet(pipeline, 1, 1, &materialSet);
             if(subset.hasIndices)
             {
                 drawCmd->drawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
@@ -620,16 +577,6 @@ void VulkanSceneRenderer::_initSetLayout()
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_MATERIAL]);
-    }
-
-    // object
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_OBJECT]);
     }
 
     // sampler

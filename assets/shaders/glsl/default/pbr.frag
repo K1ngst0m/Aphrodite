@@ -32,11 +32,7 @@ layout (set = 0, binding = 3) uniform texture2D textures[];
 
 const float PI = 3.14159265359;
 
-layout(set = 1, binding = 0) uniform ObjectUB{
-    mat4 matrix;
-};
-
-layout(set = 2, binding = 0) uniform MatInfoUB{
+layout(set = 1, binding = 0) uniform MatInfoUB{
     vec4 emissiveFactor;
     vec4 baseColorFactor;
     float     alphaCutoff;
@@ -50,7 +46,7 @@ layout(set = 2, binding = 0) uniform MatInfoUB{
     int specularGlossinessId;
 };
 
-layout(set = 3, binding = 0) uniform sampler samp;
+layout(set = 2, binding = 0) uniform sampler samp;
 
 vec3 getNormal()
 {
