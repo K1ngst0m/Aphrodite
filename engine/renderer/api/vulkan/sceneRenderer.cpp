@@ -130,6 +130,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
+        commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
 
         for(auto &node : m_meshNodeList)
         {
@@ -465,7 +466,6 @@ void VulkanSceneRenderer::_drawNode(const std::shared_ptr<SceneNode>& node, Vulk
         drawCmd->pushConstants(pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4),
                                &matrix);
     }
-    drawCmd->bindVertexBuffers(mesh->m_vertexOffset, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
     if(mesh->m_indexOffset > -1)
     {
         VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -478,7 +478,7 @@ void VulkanSceneRenderer::_drawNode(const std::shared_ptr<SceneNode>& node, Vulk
             indexType = VK_INDEX_TYPE_UINT32;
             break;
         }
-        drawCmd->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], mesh->m_indexOffset, indexType);
+        drawCmd->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
     }
     for(const auto &subset : mesh->m_subsets)
     {
@@ -488,7 +488,7 @@ void VulkanSceneRenderer::_drawNode(const std::shared_ptr<SceneNode>& node, Vulk
             drawCmd->bindDescriptorSet(pipeline, 1, 1, &materialSet);
             if(subset.hasIndices)
             {
-                drawCmd->drawIndexed(subset.indexCount, 1, subset.firstIndex, 0, 0);
+                drawCmd->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex, mesh->m_vertexOffset, 0);
             }
             else
             {
