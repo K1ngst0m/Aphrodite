@@ -56,20 +56,6 @@ Until now this engine has been developed for the GNU/Linux OS only.
 
 ## Installation
 
-Tested on Gentoo Base System, BSPWM
-
-<ins>*Tools required:*</ins>
-- CMake 3.17+
-- C++17 capable compiler:
-  - Clang 5
-  - GCC 7
-    
-
-<ins>*Supported IDEs:*</ins>
-* Clion 2021
-* Visual Studio 2019
-* Development Workflow: [dotfiles](https://github.com/npchitman/dotfiles)
-
 <ins>*Languages:*</ins>
 * C++17 (Core)
 * GLSL (Shader Language)
