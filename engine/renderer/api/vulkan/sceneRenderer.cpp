@@ -159,10 +159,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                                 VK_IMAGE_LAYOUT_GENERAL)),
             };
 
-            vkCmdPushDescriptorSetKHR(commandBuffer->getHandle(),
-                                      m_pipelines[PIPELINE_COMPUTE_POSTFX]->getBindPoint(),
-                                      m_pipelines[PIPELINE_COMPUTE_POSTFX]->getPipelineLayout(),
-                                      0, writes.size(), writes.data());
+            commandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
         }
 
         // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);

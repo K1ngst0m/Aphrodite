@@ -324,4 +324,9 @@ void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, u
 {
     vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
+void VulkanCommandBuffer::pushDescriptorSet(VulkanPipeline *pipeline, const std::vector<VkWriteDescriptorSet> &writes,
+                                            uint32_t setIdx)
+{
+    vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(), setIdx, writes.size(), writes.data());
+}
 }  // namespace aph
