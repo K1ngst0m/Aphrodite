@@ -149,7 +149,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                              VK_IMAGE_LAYOUT_GENERAL);
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
-        // {
+        {
             std::vector<VkWriteDescriptorSet> writes{
                 aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
                                             &m_forward.colorImages[imageIdx]->getImageView()->getDescInfoMap(
@@ -164,8 +164,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                       m_pipelines[PIPELINE_COMPUTE_POSTFX]->getBindPoint(),
                                       m_pipelines[PIPELINE_COMPUTE_POSTFX]->getPipelineLayout(),
                                       0, writes.size(), writes.data());
-            // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 0, 1, &m_postFxSets[imageIdx]);
-        // }
+        }
 
         // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);
         commandBuffer->dispatch(pColorAttachment->getImage()->getWidth(),

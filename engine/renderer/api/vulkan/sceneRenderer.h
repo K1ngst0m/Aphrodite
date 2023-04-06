@@ -8,10 +8,17 @@
 
 namespace aph
 {
-class ShaderPass;
-class VulkanRenderer;
-struct VulkanUniformData;
-struct VulkanRenderData;
+struct SceneInfo
+{
+    glm::vec4 ambient{ 0.04f };
+    uint32_t cameraCount{};
+    uint32_t lightCount{};
+};
+
+struct ObjectInfo
+{
+    glm::mat4 matrix{ 1.0f };
+};
 
 struct VulkanRenderData
 {
@@ -36,18 +43,6 @@ struct VulkanUniformData
 
     std::shared_ptr<SceneNode> m_node{};
     std::shared_ptr<UniformObject> m_object{};
-};
-
-struct SceneInfo
-{
-    glm::vec4 ambient{ 0.04f };
-    uint32_t cameraCount{};
-    uint32_t lightCount{};
-};
-
-struct ObjectInfo
-{
-    glm::mat4 matrix{ 1.0f };
 };
 
 class VulkanSceneRenderer : public SceneRenderer

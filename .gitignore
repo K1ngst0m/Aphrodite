@@ -8,3 +8,4 @@ tmp/
 build/
 .gdb_history
 .projectile
+/compile_commands.json
