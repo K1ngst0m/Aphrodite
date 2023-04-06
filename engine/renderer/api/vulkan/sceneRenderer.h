@@ -29,6 +29,11 @@ struct SceneInfo
 //     glm::vec3 direction {1.0f};
 // };
 
+struct PushConstantData{
+    glm::mat4 matrix {1.0f};
+    uint32_t id = 0;
+};
+
 struct VulkanUniformData
 {
     VulkanUniformData(std::shared_ptr<SceneNode> node) : m_node{
@@ -68,7 +73,7 @@ private:
     enum SetLayoutIndex
     {
         SET_LAYOUT_SAMP,
-        SET_LAYOUT_MATERIAL,
+        // SET_LAYOUT_MATERIAL,
         SET_LAYOUT_SCENE,
         // SET_LAYOUT_OBJECT,
         SET_LAYOUT_POSTFX,
@@ -96,6 +101,7 @@ private:
     {
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
+        BUFFER_SCENE_MATERIAL,
         BUFFER_MAX,
     };
 
@@ -106,7 +112,6 @@ private:
 
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
-    std::vector<VkDescriptorSet> m_materialSets{};
 
     struct
     {

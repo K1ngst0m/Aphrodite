@@ -76,10 +76,10 @@ void VulkanCommandBuffer::bindPipeline(VulkanPipeline *pPipeline)
 }
 void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet,
                                                uint32_t descriptorSetCount,
-                                               const VkDescriptorSet *pDescriptorSets)
+                                               const VkDescriptorSet *pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffset)
 {
     vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
-                            descriptorSetCount, pDescriptorSets, 0, nullptr);
+                            descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
 void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
                                                const VulkanBuffer *pBuffer, const std::vector<VkDeviceSize>& offsets)

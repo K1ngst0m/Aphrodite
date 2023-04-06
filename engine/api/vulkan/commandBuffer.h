@@ -42,7 +42,7 @@ public:
     void setViewport(VkViewport *viewport);
     void setSissor(VkRect2D *scissor);
     void bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
-                           const VkDescriptorSet *pDescriptorSets);
+                           const VkDescriptorSet *pDescriptorSets, uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(VulkanPipeline *pPipeline);
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer *pBuffer,
                            const std::vector<VkDeviceSize> &offsets);
