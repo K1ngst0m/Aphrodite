@@ -16,21 +16,15 @@ struct AABB
     glm::vec3 max;
 };
 
-enum class SceneManagerType
+enum class SceneType
 {
     DEFAULT,
 };
 
-using CameraMap = std::unordered_map<IdType, std::shared_ptr<Camera>>;
-using LightMap = std::unordered_map<IdType, std::shared_ptr<Light>>;
-using MeshMap = std::unordered_map<IdType, std::shared_ptr<Mesh>>;
-using ImageInfoList = std::vector<std::shared_ptr<ImageInfo>>;
-using MaterialList = std::vector<Material>;
-
 class Scene
 {
 public:
-    static std::unique_ptr<Scene> Create(SceneManagerType type);
+    static std::unique_ptr<Scene> Create(SceneType type);
 
     std::shared_ptr<Mesh> createMesh();
     std::shared_ptr<Light> createLight();
@@ -49,8 +43,8 @@ public:
 
     glm::vec3 getAmbient() { return m_ambient; }
 
-    ImageInfoList &getImages() { return m_images; }
-    MaterialList &getMaterials() { return m_materials; }
+    std::vector<std::shared_ptr<ImageInfo>> &getImages() { return m_images; }
+    std::vector<Material> &getMaterials() { return m_materials; }
 
 private:
     AABB m_aabb{};
@@ -59,11 +53,12 @@ private:
     std::shared_ptr<SceneNode> m_rootNode{};
     std::shared_ptr<Camera> m_camera{};
 
-    CameraMap m_cameras{};
-    LightMap m_lights{};
-    MeshMap m_meshes{};
-    ImageInfoList m_images{};
-    MaterialList m_materials{};
+    std::unordered_map<IdType, std::shared_ptr<Camera>> m_cameras{};
+    std::unordered_map<IdType, std::shared_ptr<Light>> m_lights{};
+    std::unordered_map<IdType, std::shared_ptr<Mesh>> m_meshes{};
+
+    std::vector<std::shared_ptr<ImageInfo>> m_images{};
+    std::vector<Material> m_materials{};
 };
 
 }  // namespace aph

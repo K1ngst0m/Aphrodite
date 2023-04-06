@@ -11,7 +11,6 @@ struct Material;
 struct Vertex;
 
 using ResourceIndex = int32_t;
-using ImageData = std::vector<uint8_t>;
 
 struct Vertex
 {
@@ -29,7 +28,7 @@ struct ImageInfo
     uint32_t mipLevels;
     uint32_t layerCount;
 
-    ImageData data;
+    std::vector<uint8_t> data;
 };
 
 enum class AlphaMode : uint32_t

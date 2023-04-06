@@ -59,7 +59,7 @@ void scene_manager::setupScene()
 {
     // scene global argument setup
     {
-        m_scene = aph::Scene::Create(aph::SceneManagerType::DEFAULT);
+        m_scene = aph::Scene::Create(aph::SceneType::DEFAULT);
         m_scene->setAmbient(glm::vec4(0.2f));
     }
 

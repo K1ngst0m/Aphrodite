@@ -9,8 +9,9 @@ namespace aph
 class SceneRenderer
 {
 public:
-    template <typename TSceneRenderer, typename ... Args>
-    static std::unique_ptr<TSceneRenderer> Create(Args && ...args){
+    template <typename TSceneRenderer, typename... Args>
+    static std::unique_ptr<TSceneRenderer> Create(Args &&...args)
+    {
         auto instance = std::make_unique<TSceneRenderer>(std::forward<Args>(args)...);
         return instance;
     }
@@ -28,8 +29,8 @@ public:
     void setScene(const std::shared_ptr<Scene> &scene) { m_scene = scene; }
 
 protected:
-    std::shared_ptr<Scene> m_scene = nullptr;
-    ShadingModel m_shadingModel = ShadingModel::PBR;
+    std::shared_ptr<Scene> m_scene;
+    ShadingModel m_shadingModel{ ShadingModel::PBR };
 };
 
 }  // namespace aph

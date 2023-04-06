@@ -268,11 +268,11 @@ void loadNodes(const tinygltf::Node &inputNode, const tinygltf::Model &input, co
 }
 }  // namespace
 
-std::unique_ptr<Scene> Scene::Create(SceneManagerType type)
+std::unique_ptr<Scene> Scene::Create(SceneType type)
 {
     switch(type)
     {
-    case SceneManagerType::DEFAULT:
+    case SceneType::DEFAULT:
     {
         auto instance{ std::make_unique<Scene>() };
         instance->m_rootNode = std::make_shared<SceneNode>(nullptr);

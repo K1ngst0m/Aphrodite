@@ -22,7 +22,7 @@ private:
     std::shared_ptr<aph::Window> m_window;
     std::shared_ptr<aph::VulkanRenderer> m_renderer;
 
-    aph::VulkanRenderPass * m_pRenderPass = nullptr;
+    aph::VulkanRenderPass *m_pRenderPass = nullptr;
     std::vector<aph::VulkanFramebuffer *> m_framebuffers;
     std::vector<aph::VulkanImage *> m_colorAttachments;
     std::vector<aph::VulkanImage *> m_depthAttachments;
