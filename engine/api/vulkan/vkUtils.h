@@ -31,11 +31,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <spirv_reflect/spirv_reflect.h>
-
 #include <stb_image.h>
 
-#include "vkInit.hpp"
+#include "vkInit.h"
 
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0
@@ -57,6 +55,7 @@ namespace aph::utils
 {
 std::string errorString(VkResult errorCode);
 std::vector<char> loadSpvFromFile(const std::string &filename);
+std::vector<char> loadGlslFromFile(const std::string &filename);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
 VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
 }  // namespace aph::utils

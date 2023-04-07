@@ -8,5 +8,6 @@ do
     rpath=$(realpath "$shader_src")
     dir="$(dirname -- "$rpath")"
     name="$(basename -- "$rpath")"
-    glslc "$rpath" -o "$dir/$name.spv"
+    # glslc "$rpath" -o "$dir/$name.spv"
+    glslangValidator --target-env vulkan1.3 "$rpath" -o "$dir/$name.spv"
 done

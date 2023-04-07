@@ -46,7 +46,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
         const std::vector<const char *> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME
+            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
+            VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
         };
 
         DeviceCreateInfo createInfo{

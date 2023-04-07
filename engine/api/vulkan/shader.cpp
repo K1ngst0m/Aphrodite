@@ -26,21 +26,34 @@ void VulkanShaderCache::destroy()
         delete shaderModule;
     }
 }
-VulkanShaderModule *VulkanShaderCache::getShaders(const std::string &path)
+
+VulkanShaderModule *VulkanShaderCache::getShaders(const std::filesystem::path &path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        std::vector<char> spvCode = aph::utils::loadSpvFromFile(path);
+        std::vector<char> spvCode;
+        if (path.extension() == ".spv")
+        {
+            spvCode = aph::utils::loadSpvFromFile(path);
+        }
+        else
+        {
+            spvCode = aph::utils::loadGlslFromFile(path);
+        }
         VkShaderModule shaderModule = createShaderModule(m_device, spvCode);
 
         shaderModuleCaches[path] = new VulkanShaderModule(spvCode, shaderModule);
     }
     return shaderModuleCaches[path];
 }
+
 VulkanShaderModule::VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
     m_entrypoint(std::move(entrypoint)),
     m_code(std::move(code))
 {
     getHandle() = shaderModule;
+}
+VulkanShaderCache::VulkanShaderCache(VulkanDevice *device) : m_device(device)
+{
 }
 }  // namespace aph

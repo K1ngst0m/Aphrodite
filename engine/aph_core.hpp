@@ -5,7 +5,7 @@
 #include "renderer/sceneRenderer.h"
 
 #include "api/vulkan/device.h"
-#include "api/vulkan/vkInit.hpp"
+#include "api/vulkan/vkInit.h"
 #include "api/vulkan/vkUtils.h"
 
 #include "common/common.h"

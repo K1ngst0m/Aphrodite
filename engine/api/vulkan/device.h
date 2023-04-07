@@ -13,7 +13,7 @@
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitivesPool.h"
-#include "vkInit.hpp"
+#include "vkInit.h"
 #include "vkUtils.h"
 
 namespace aph

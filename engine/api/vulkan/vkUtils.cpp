@@ -1,7 +1,14 @@
 #include "vkUtils.h"
+#include "spvgen/spvgen.h"
 
 namespace aph::utils
 {
+
+std::vector<char> loadGlslFromFile(const std::string &filename){
+    // TODO spvgen
+    return {};
+}
+
 std::string errorString(VkResult errorCode)
 {
     switch(errorCode)

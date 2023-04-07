@@ -49,9 +49,15 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
+    VkPhysicalDeviceMaintenance4Features maintenance4Features{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES,
+        .maintenance4 = VK_TRUE,
+    };
+
     // TODO manage features
     VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+        .pNext = &maintenance4Features,
         .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
         .runtimeDescriptorArray = VK_TRUE,
     };

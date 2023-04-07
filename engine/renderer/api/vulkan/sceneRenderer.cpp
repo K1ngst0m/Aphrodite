@@ -180,6 +180,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                              VK_IMAGE_LAYOUT_GENERAL);
     }
 
+    // post fx
     {
         VulkanImageView *pColorAttachment = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView();
 
@@ -224,8 +225,7 @@ void VulkanSceneRenderer::_initRenderData()
 {
     m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
-    SceneInfo info
-    {
+    SceneInfo info{
         .ambient = glm::vec4(m_scene->getAmbient(), 0.0f),
         .cameraCount = static_cast<uint32_t>(m_cameraInfos.size()),
         .lightCount = static_cast<uint32_t>(m_lightInfos.size()),
@@ -257,23 +257,23 @@ void VulkanSceneRenderer::_initRenderData()
     }
 
     VkDescriptorBufferInfo materialBufferInfo{ .buffer = m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(),
-                                                .offset = 0,
-                                                .range = VK_WHOLE_SIZE };
+                                               .offset = 0,
+                                               .range = VK_WHOLE_SIZE };
 
     VkDescriptorBufferInfo cameraBufferInfo{ .buffer = m_buffers[BUFFER_SCENE_CAMERA]->getHandle(),
-                                                .offset = 0,
-                                                .range = VK_WHOLE_SIZE };
+                                             .offset = 0,
+                                             .range = VK_WHOLE_SIZE };
 
     VkDescriptorBufferInfo lightBufferInfo{ .buffer = m_buffers[BUFFER_SCENE_LIGHT]->getHandle(),
-                                                .offset = 0,
-                                                .range = VK_WHOLE_SIZE };
+                                            .offset = 0,
+                                            .range = VK_WHOLE_SIZE };
 
     std::vector<VkWriteDescriptorSet> writes{
         sceneInfoSetWrite,
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &cameraBufferInfo, 1),
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &lightBufferInfo, 1),
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, m_textureInfos.data(),
-                                        m_textureInfos.size()),
+                                      m_textureInfos.size()),
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, &materialBufferInfo, 1),
         // aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo, 1),
     };
@@ -282,20 +282,87 @@ void VulkanSceneRenderer::_initRenderData()
 
 void VulkanSceneRenderer::_loadScene()
 {
-    // load scene image to gpu
-    for(const auto &image : m_scene->getImages())
-    {
-        ImageCreateInfo ci{
-            .extent = { image->width, image->height, 1 },
-            .mipLevels = calculateFullMipLevels(image->width, image->height),
-            .usage = IMAGE_USAGE_SAMPLED_BIT,
-            .format = FORMAT_R8G8B8A8_UNORM,
-            .tiling = IMAGE_TILING_OPTIMAL,
-        };
+    std::queue<std::shared_ptr<SceneNode>> q;
+    q.push(m_scene->getRootNode());
 
-        VulkanImage *texture{};
-        m_pDevice->createDeviceLocalImage(ci, &texture, image->data);
-        m_textures.push_back(texture);
+    std::vector<glm::mat4> transformInfos{};
+    while(!q.empty())
+    {
+        auto node = q.front();
+        q.pop();
+
+        switch(node->m_attachType)
+        {
+        case ObjectType::MESH:
+        {
+            transformInfos.push_back(node->matrix);
+            m_meshNodeList.push_back(node);
+        }
+        break;
+        case ObjectType::CAMERA:
+        {
+            auto object = node->getObject<Camera>();
+            object->load();
+            CameraInfo cameraData{
+                .view = object->getViewMatrix(),
+                .proj = object->getProjMatrix(),
+                .viewPos = object->getPosition(),
+            };
+            m_cameraInfos.push_back(cameraData);
+        }
+        break;
+        case ObjectType::LIGHT:
+        {
+            auto object = node->getObject<Light>();
+            object->load();
+            LightInfo lightData{
+                .color = object->getColor(),
+                .position = object->getPosition(),
+                .direction = object->getDirection(),
+            };
+            m_lightInfos.push_back(lightData);
+        }
+        break;
+        default:
+            assert("unattached scene node.");
+            break;
+        }
+
+        for(const auto &subNode : node->children)
+        {
+            q.push(subNode);
+        }
+    }
+
+    // create camera buffer
+    {
+        BufferCreateInfo createInfo{
+            .size = static_cast<uint32_t>(m_cameraInfos.size() * sizeof(CameraInfo)),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA], m_cameraInfos.data());
+    }
+
+    // create light buffer
+    {
+        BufferCreateInfo createInfo{
+            .size = static_cast<uint32_t>(m_lightInfos.size() * sizeof(LightInfo)),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT], m_cameraInfos.data());
+    }
+
+    // create transform buffer
+    {
+        BufferCreateInfo createInfo{
+            .size = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
+            .alignment = 0,
+            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM],
+        m_scene->m_materials.data());
     }
 
     // create index buffer
@@ -330,92 +397,21 @@ void VulkanSceneRenderer::_loadScene()
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_MATERIAL], m_scene->m_materials.data());
     }
 
-    std::queue<std::shared_ptr<SceneNode>> q;
-    q.push(m_scene->getRootNode());
-
-    std::vector<glm::mat4> transformInfos{};
-    while(!q.empty())
+    // load scene image to gpu
+    for(const auto &image : m_scene->getImages())
     {
-        auto node = q.front();
-        q.pop();
-
-        switch(node->m_attachType)
-        {
-        case ObjectType::MESH:
-        {
-            transformInfos.push_back(node->matrix);
-            m_meshNodeList.push_back(node);
-        }
-        break;
-        case ObjectType::CAMERA:
-        {
-            auto ubo = std::make_shared<VulkanUniformData>(node);
-            auto object = node->getObject<Camera>();
-            object->load();
-            CameraInfo cameraData{
-                .view = object->getViewMatrix(),
-                .proj = object->getProjMatrix(),
-                .viewPos = object->getPosition(),
-            };
-            m_cameraInfos.push_back(cameraData);
-        }
-        break;
-        case ObjectType::LIGHT:
-        {
-            auto ubo = std::make_shared<VulkanUniformData>(node);
-            auto object = node->getObject<Light>();
-            object->load();
-            LightInfo lightData{
-                .color = object->getColor(),
-                .position = object->getPosition(),
-                .direction = object->getDirection(),
-            };
-            m_lightInfos.push_back(lightData);
-        }
-        break;
-        default:
-            assert("unattached scene node.");
-            break;
-        }
-
-        for(const auto &subNode : node->children)
-        {
-            q.push(subNode);
-        }
-    }
-
-    // create camera buffer
-    {
-        BufferCreateInfo createInfo{
-            .size = static_cast<uint32_t>(m_cameraInfos.size() * sizeof(CameraInfo)),
-            .alignment = 0,
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        ImageCreateInfo createInfo{
+            .extent = { image->width, image->height, 1 },
+            .mipLevels = calculateFullMipLevels(image->width, image->height),
+            .usage = IMAGE_USAGE_SAMPLED_BIT,
+            .format = FORMAT_R8G8B8A8_UNORM,
+            .tiling = IMAGE_TILING_OPTIMAL,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA],
-        m_cameraInfos.data());
-    }
 
-    // create light buffer
-    {
-        BufferCreateInfo createInfo{
-            .size = static_cast<uint32_t>(m_lightInfos.size() * sizeof(LightInfo)),
-            .alignment = 0,
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT],
-        m_cameraInfos.data());
+        VulkanImage *texture{};
+        m_pDevice->createDeviceLocalImage(createInfo, &texture, image->data);
+        m_textures.push_back(texture);
     }
-
-    // create transform buffer
-    // {
-    //     BufferCreateInfo createInfo{
-    //         .size = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
-    //         .alignment = 0,
-    //         .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-    //     };
-    //     m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM],
-    //     m_scene->m_materials.data());
-    // }
 }
 
 void VulkanSceneRenderer::_initPostFx()
@@ -424,7 +420,7 @@ void VulkanSceneRenderer::_initPostFx()
 
     {
         // build Shader
-        std::filesystem::path shaderDir = "assets/shaders/glsl/default";
+        std::filesystem::path shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         ComputePipelineCreateInfo pipelineCreateInfo{};
         pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_POSTFX] };
         pipelineCreateInfo.shaderMapList = {
@@ -476,6 +472,7 @@ void VulkanSceneRenderer::_initForward()
         });
     }
 
+    // forward graphics pipeline
     {
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
@@ -513,8 +510,10 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                                   sizeof(SceneInfo)),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3,
                                                   m_textures.size()),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
