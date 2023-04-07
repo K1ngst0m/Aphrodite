@@ -12,11 +12,15 @@ layout(location = 2) out vec2 outUV;
 layout(location = 3) out vec3 outColor;
 layout(location = 4) out vec4 outTangent;
 
-layout (set = 0, binding = 1) uniform SceneUB{
+struct Camera{
     mat4 view;
     mat4 proj;
-    vec4 viewPos;
-} cameraData[];
+    vec3 viewPos;
+};
+
+layout (set = 0, binding = 1) uniform CameraUB{
+    Camera cameras[];
+};
 
 layout( push_constant ) uniform constants
 {
@@ -24,7 +28,7 @@ layout( push_constant ) uniform constants
 };
 
 void main() {
-    gl_Position = cameraData[0].proj * cameraData[0].view * modelMatrix * vec4(inPosition, 1.0f);
+    gl_Position = cameras[0].proj * cameras[0].view * modelMatrix * vec4(inPosition, 1.0f);
     outWorldPos = vec3(modelMatrix * vec4(inPosition, 1.0f));
     outUV = inTexCoord;
     outNormal = mat3(modelMatrix) * inNormal;

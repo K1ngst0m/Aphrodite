@@ -14,32 +14,18 @@ struct SceneInfo
     uint32_t lightCount{};
 };
 
-// struct CameraInfo
-// {
-//     glm::mat4 view {1.0f};
-//     glm::mat4 proj {1.0f};
-//     glm::vec3 viewPos {1.0f};
-// };
-
-// struct LightInfo
-// {
-//     glm::vec3 color {1.0f};
-//     glm::vec3 position {1.0f};
-//     glm::vec3 direction {1.0f};
-// };
-
-struct VulkanUniformData
+struct CameraInfo
 {
-    VulkanUniformData(std::shared_ptr<SceneNode> node) : m_node{
-        std::move(node)
-    } {}
+    glm::mat4 view {1.0f};
+    glm::mat4 proj {1.0f};
+    glm::vec3 viewPos {1.0f};
+};
 
-    void update() { m_buffer->copyTo(m_object->getData()); }
-
-    VulkanBuffer *m_buffer{};
-
-    std::shared_ptr<SceneNode> m_node{};
-    std::shared_ptr<UniformObject> m_object{};
+struct LightInfo
+{
+    glm::vec3 color {1.0f};
+    glm::vec3 position {1.0f};
+    glm::vec3 direction {1.0f};
 };
 
 class VulkanSceneRenderer : public SceneRenderer
@@ -93,8 +79,8 @@ private:
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
         BUFFER_SCENE_MATERIAL,
-        // BUFFER_SCENE_LIGHT,
-        // BUFFER_SCENE_CAMERA,
+        BUFFER_SCENE_LIGHT,
+        BUFFER_SCENE_CAMERA,
         // BUFFER_SCENE_TRANSFORM,
         BUFFER_MAX,
     };
@@ -105,7 +91,9 @@ private:
     std::array<VkSampler, SAMP_MAX> m_samplers;
 
     VkDescriptorSet m_sceneSet{};
-    VkDescriptorSet m_samplerSet{};
+
+    std::vector<CameraInfo> m_cameraInfos{};
+    std::vector<LightInfo> m_lightInfos{};
 
     struct
     {
@@ -115,11 +103,6 @@ private:
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
-
-    std::deque<std::shared_ptr<VulkanUniformData>> m_uniformDataList;
-
-    std::vector<VkDescriptorBufferInfo> m_cameraInfos{};
-    std::vector<VkDescriptorBufferInfo> m_lightInfos{};
     std::vector<VulkanImage *> m_textures{};
 
 private:

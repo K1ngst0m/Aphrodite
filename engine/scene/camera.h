@@ -51,6 +51,18 @@ public:
     void setMovement(Direction direction, bool flag) { m_keys[direction] = flag; }
     void setFlipY(bool val) { m_flipY = val; }
 
+    glm::vec3 getPosition() const{
+        return m_position;
+    }
+
+    glm::mat4 getProjMatrix() const{
+        return m_matrices.perspective;
+    }
+
+    glm::mat4 getViewMatrix() const{
+        return m_matrices.view;
+    }
+
 private:
     void updateViewMatrix();
     void processMovement(float deltaTime);

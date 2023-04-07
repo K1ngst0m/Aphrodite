@@ -22,6 +22,10 @@ public:
     void setPosition(glm::vec3 value) { m_position = value; }
     void setDirection(glm::vec3 value) { m_direction = value; }
 
+    glm::vec3 getColor() const {return m_color;}
+    glm::vec3 getPosition() const {return m_color;}
+    glm::vec3 getDirection() const {return m_color;}
+
     void setColor(glm::vec3 value) { m_color = value; }
     void setType(LightType type) { m_type = type; }
 

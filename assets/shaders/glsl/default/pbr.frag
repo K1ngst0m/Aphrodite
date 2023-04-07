@@ -16,26 +16,33 @@ layout (std140, set = 0, binding = 0) uniform SceneInfoUB{
     int lightCount;
 };
 
-layout (set = 0, binding = 1) uniform CameraUB{
+struct Camera{
     mat4 view;
     mat4 proj;
     vec3 viewPos;
-} cameraData[];
+};
 
-layout (set = 0, binding = 2) uniform LightUB{
+layout (set = 0, binding = 1) uniform CameraUB{
+    Camera cameras[];
+};
+
+struct Light{
     vec3 color;
     vec3 position;
     vec3 direction;
-} lightData[];
+};
+layout (set = 0, binding = 2) uniform LightUB{
+    Light lights[];
+};
 
 layout (set = 0, binding = 3) uniform texture2D textures[];
 
 struct Material{
     vec4 emissiveFactor;
     vec4 baseColorFactor;
-    float     alphaCutoff;
-    float     metallicFactor;
-    float     roughnessFactor;
+    float alphaCutoff;
+    float metallicFactor;
+    float roughnessFactor;
     int baseColorId;
     int normalId;
     int occlusionId;
@@ -124,7 +131,7 @@ void main() {
     vec3 emissive = mat.emissiveId > -1 ? texture(sampler2D(textures[mat.emissiveId], samp), inUV).rgb : mat.emissiveFactor.xyz;
 
     vec3 N = getNormal();
-    vec3 V = normalize(cameraData[0].viewPos - inWorldPos);
+    vec3 V = normalize(cameras[0].viewPos - inWorldPos);
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
@@ -133,7 +140,7 @@ void main() {
 
     for (int i = 0; i < lightCount; i++)
     {
-        vec3 L = normalize(-lightData[0].direction);
+        vec3 L = normalize(-lights[0].direction);
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
         vec3 radiance = vec3(3.0f).xyz;
