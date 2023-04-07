@@ -172,7 +172,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
         // Wrap native Vulkan handles in PhysicalDevice class.
         for(auto &pd : physicalDevices)
         {
-            auto pdImpl = new VulkanPhysicalDevice(instance, pd);
+            auto pdImpl = new VulkanPhysicalDevice(pd);
             instance->m_physicalDevices.push_back(pdImpl);
         }
     }

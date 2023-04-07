@@ -82,7 +82,7 @@ public:
     VkFormat getDepthFormat() const;
 
 private:
-    VulkanPhysicalDevice *m_physicalDevice;
+    VulkanPhysicalDevice *m_physicalDevice {};
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools m_commandPools;
 };

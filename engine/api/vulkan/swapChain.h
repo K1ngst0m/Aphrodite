@@ -21,6 +21,7 @@ class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInf
 {
 public:
     VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDevice *pDevice);
+    ~VulkanSwapChain();
 
     VkResult acquireNextImage(uint32_t *pImageIndex, VkSemaphore semaphore,
                               VkFence fence = VK_NULL_HANDLE) const;

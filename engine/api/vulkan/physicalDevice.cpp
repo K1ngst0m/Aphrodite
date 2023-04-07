@@ -3,8 +3,7 @@
 namespace aph
 {
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle) :
-    m_instance(instance)
+VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
 {
     getHandle() = handle;
 
@@ -110,5 +109,9 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &
 
     assert("failed to find supported format!");
     return {};
+}
+std::vector<uint32_t> VulkanPhysicalDevice::getQueueFamilyIndexByFlags(QueueTypeFlags flags)
+{
+    return m_queueFamilyMap.count(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
 }
 }  // namespace aph

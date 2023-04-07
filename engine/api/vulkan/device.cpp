@@ -20,7 +20,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
 {
     VulkanPhysicalDevice *physicalDevice = createInfo.pPhysicalDevice;
 
-    auto queueFamilyProperties = physicalDevice->getQueueFamilyProperties();
+    auto queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
     auto queueFamilyCount = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.

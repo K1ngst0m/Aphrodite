@@ -173,4 +173,11 @@ VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue *pQ
     return result;
 }
 
+VulkanSwapChain::~VulkanSwapChain()
+{
+    for(auto &image : m_images)
+    {
+        delete image;
+    }
+}
 }  // namespace aph

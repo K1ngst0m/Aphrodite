@@ -15,30 +15,19 @@ using QueueTypeFlags = uint32_t;
 
 class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 {
+    friend class VulkanDevice;
+
 public:
-    VulkanPhysicalDevice(VulkanInstance *instance, VkPhysicalDevice handle);
+    VulkanPhysicalDevice(VkPhysicalDevice handle);
 
-    VulkanInstance *getInstance() const { return m_instance; }
-    VkPhysicalDeviceProperties getDeviceProperties() { return m_properties; }
-    VkPhysicalDeviceMemoryProperties getMemoryProperties() { return m_memoryProperties; }
-    std::vector<std::string> getDeviceSupportedExtensions() { return m_supportedExtensions; }
-    std::vector<VkQueueFamilyProperties> getQueueFamilyProperties() { return m_queueFamilyProperties; }
-    std::vector<uint32_t> getQueueFamilyIndexByFlags(QueueTypeFlags flags)
-    {
-        return m_queueFamilyMap.count(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
-    }
-
+    std::vector<uint32_t> getQueueFamilyIndexByFlags(QueueTypeFlags flags);
     bool isExtensionSupported(std::string_view extension) const;
-
     uint32_t findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
                             VkBool32 *memTypeFound = nullptr) const;
-
     VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
                                  VkFormatFeatureFlags features) const;
 
 private:
-    VulkanInstance *m_instance {};
-
     VkPhysicalDeviceProperties m_properties;
     VkPhysicalDeviceMemoryProperties m_memoryProperties;
     std::vector<std::string> m_supportedExtensions;

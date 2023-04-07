@@ -4,7 +4,6 @@
 #include "api/vulkan/device.h"
 #include "renderer.h"
 #include "renderer/sceneRenderer.h"
-#include "scene/mesh.h"
 
 namespace aph
 {
@@ -28,11 +27,6 @@ struct SceneInfo
 //     glm::vec3 position {1.0f};
 //     glm::vec3 direction {1.0f};
 // };
-
-struct PushConstantData{
-    glm::mat4 matrix {1.0f};
-    uint32_t id = 0;
-};
 
 struct VulkanUniformData
 {
@@ -102,6 +96,7 @@ private:
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
         BUFFER_SCENE_MATERIAL,
+        BUFFER_SCENE_TRANSFORM,
         BUFFER_MAX,
     };
 

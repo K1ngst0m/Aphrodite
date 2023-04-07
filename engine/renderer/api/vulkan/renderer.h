@@ -22,7 +22,7 @@ public:
 public:
     VulkanInstance *getInstance() const { return m_instance; }
     VulkanDevice *getDevice() const { return m_device; }
-    uint32_t getCurrentFrameIndex() const { return m_currentFrameIdx; }
+    uint32_t getCurrentFrameIndex() const { return m_frameIdx; }
     uint32_t getCurrentImageIndex() const { return m_imageIdx; }
     VkPipelineCache getPipelineCache() { return m_pipelineCache; }
     VulkanSwapChain *getSwapChain() { return m_swapChain; }
@@ -33,25 +33,25 @@ public:
     VulkanShaderCache *getShaderCache() { return m_pShaderCache; }
 
 private:
-    VulkanSyncPrimitivesPool *m_pSyncPrimitivesPool = nullptr;
-    VulkanShaderCache *m_pShaderCache = nullptr;
+    VulkanSyncPrimitivesPool *m_pSyncPrimitivesPool {};
+    VulkanShaderCache *m_pShaderCache {};
 
 private:
-    VulkanInstance *m_instance = nullptr;
-    VulkanDevice *m_device = nullptr;
-    VulkanSwapChain *m_swapChain = nullptr;
-    VkSurfaceKHR m_surface;
+    VulkanInstance *m_instance {};
+    VulkanDevice *m_device {};
+    VulkanSwapChain *m_swapChain {};
+    VkSurfaceKHR m_surface {};
 
-    VkPipelineCache m_pipelineCache = VK_NULL_HANDLE;
+    VkPipelineCache m_pipelineCache {};
 
-    uint32_t m_currentFrameIdx = 0;
+    uint32_t m_frameIdx = 0;
     uint32_t m_imageIdx = 0;
 
     struct
     {
-        VulkanQueue *graphics = nullptr;
-        VulkanQueue *compute = graphics;
-        VulkanQueue *transfer = compute;
+        VulkanQueue *graphics {};
+        VulkanQueue *compute {};
+        VulkanQueue *transfer {};
     } m_queue;
 
     // default resource

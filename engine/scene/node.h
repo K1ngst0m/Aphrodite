@@ -1,9 +1,9 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
-#include "scene/mesh.h"
-#include "scene/light.h"
 #include "scene/camera.h"
+#include "scene/light.h"
+#include "scene/mesh.h"
 
 namespace aph
 {

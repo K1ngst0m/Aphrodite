@@ -121,9 +121,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
 void VulkanRenderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_device->waitForFence({m_frameFences[m_currentFrameIdx]}));
-    VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_currentFrameIdx]));
-    VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_currentFrameIdx]));
+    VK_CHECK_RESULT(m_device->waitForFence({m_frameFences[m_frameIdx]}));
+    VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
+    VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
 }
 
 void VulkanRenderer::endFrame()
@@ -131,16 +131,16 @@ void VulkanRenderer::endFrame()
     auto *queue = m_queue.graphics;
 
     QueueSubmitInfo submitInfo {
-        .commandBuffers = { m_commandBuffers[m_currentFrameIdx] },
+        .commandBuffers = { m_commandBuffers[m_frameIdx] },
         .waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-        .waitSemaphores = { m_renderSemaphore[m_currentFrameIdx] },
-        .signalSemaphores = { m_presentSemaphore[m_currentFrameIdx] },
+        .waitSemaphores = { m_renderSemaphore[m_frameIdx] },
+        .signalSemaphores = { m_presentSemaphore[m_frameIdx] },
     };
 
-    VK_CHECK_RESULT(queue->submit({ submitInfo }, m_frameFences[m_currentFrameIdx]));
-    VK_CHECK_RESULT(m_swapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_currentFrameIdx] }));
+    VK_CHECK_RESULT(queue->submit({ submitInfo }, m_frameFences[m_frameIdx]));
+    VK_CHECK_RESULT(m_swapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_frameIdx] }));
 
-    m_currentFrameIdx = (m_currentFrameIdx + 1) % m_config.maxFrames;
+    m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 }
 
 void VulkanRenderer::cleanup()

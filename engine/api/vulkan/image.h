@@ -46,11 +46,11 @@ public:
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:
-    VulkanDevice *m_device = nullptr;
-    VkDeviceMemory m_memory = VK_NULL_HANDLE;
+    VulkanDevice *m_device {};
+    VkDeviceMemory m_memory {};
     std::unordered_map<uint32_t, VulkanImageView*> m_imageViewMap;
 
-    void *m_mapped = nullptr;
+    void *m_mapped {};
 };
 
 struct ImageViewCreateInfo
