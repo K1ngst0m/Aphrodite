@@ -195,14 +195,17 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
+            VkDescriptorImageInfo inputImageInfo{
+                .imageView = m_forward.colorImages[imageIdx]->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+            };
+            VkDescriptorImageInfo outputImageInfo{
+                .imageView = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+            };
             std::vector<VkWriteDescriptorSet> writes{
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
-                                            &m_forward.colorImages[imageIdx]->getImageView()->getDescInfoMap(
-                                                VK_IMAGE_LAYOUT_GENERAL)),
-
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
-                                            &m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getDescInfoMap(
-                                                VK_IMAGE_LAYOUT_GENERAL)),
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
             };
 
             commandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
@@ -362,7 +365,7 @@ void VulkanSceneRenderer::_loadScene()
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
                 VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
-                ubo->m_buffer->map();
+                m_pDevice->mapMemory(ubo->m_buffer);
             }
             m_cameraInfos.push_back({ ubo->m_buffer->getHandle(), 0, VK_WHOLE_SIZE });
             m_uniformDataList.push_front(std::move(ubo));
@@ -381,7 +384,7 @@ void VulkanSceneRenderer::_loadScene()
                     .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 };
                 VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &ubo->m_buffer, object->getData()));
-                ubo->m_buffer->map();
+                m_pDevice->mapMemory(ubo->m_buffer);
             }
             m_lightInfos.push_back({ ubo->m_buffer->getHandle(), 0, VK_WHOLE_SIZE });
             m_uniformDataList.push_back(std::move(ubo));

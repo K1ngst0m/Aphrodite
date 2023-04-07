@@ -19,23 +19,18 @@ struct QueueSubmitInfo{
 class VulkanQueue : public ResourceHandle<VkQueue>
 {
 public:
-    VulkanQueue(VulkanDevice *device, VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
+    VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
                 const VkQueueFamilyProperties &properties);
 
     uint32_t getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t getIndex() const { return m_index; }
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
-    VkResult waitIdle() { return VkResult(vkQueueWaitIdle(getHandle())); }
-
+    VkResult waitIdle() { return vkQueueWaitIdle(getHandle()); }
     VkResult submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
-
 private:
-    VkResult acquireCommandBuffer(VulkanCommandBuffer **pCommandBuffer);
 
-    VulkanDevice *m_device = nullptr;
-
-    uint32_t m_queueFamilyIndex = 0;
-    uint32_t m_index = 0;
+    uint32_t m_queueFamilyIndex {};
+    uint32_t m_index {};
     VkQueueFamilyProperties m_properties;
 };
 

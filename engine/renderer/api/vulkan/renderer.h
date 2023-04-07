@@ -26,11 +26,14 @@ public:
     uint32_t getCurrentImageIndex() const { return m_imageIdx; }
     VkPipelineCache getPipelineCache() { return m_pipelineCache; }
     VulkanSwapChain *getSwapChain() { return m_swapChain; }
+
+    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
+    VulkanShaderCache *getShaderCache() { return m_pShaderCache; }
+    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
+    uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
     VulkanQueue *getGraphicsQueue() const { return m_queue.graphics; }
     VulkanQueue *getComputeQueue() const { return m_queue.compute; }
     VulkanQueue *getTransferQueue() const { return m_queue.transfer; }
-    VulkanSyncPrimitivesPool *getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
-    VulkanShaderCache *getShaderCache() { return m_pShaderCache; }
 
 private:
     VulkanSyncPrimitivesPool *m_pSyncPrimitivesPool {};
@@ -53,11 +56,6 @@ private:
         VulkanQueue *compute {};
         VulkanQueue *transfer {};
     } m_queue;
-
-    // default resource
-public:
-    VulkanCommandBuffer *getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
-    uint32_t getCommandBufferCount() const { return m_commandBuffers.size(); }
 
 private:
     std::vector<VkSemaphore> m_renderSemaphore;

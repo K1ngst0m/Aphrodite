@@ -2,8 +2,8 @@
 #define PIPELINE_H_
 
 #include "api/gpuResource.h"
-#include "vkUtils.h"
 #include "shader.h"
+#include "vkUtils.h"
 
 namespace aph
 {
@@ -49,16 +49,22 @@ struct GraphicsPipelineCreateInfo
     VkPipelineMultisampleStateCreateInfo multisampling;
     VertexInputBuilder vertexInputBuilder;
     VkPipelineDepthStencilStateCreateInfo depthStencil;
-    VkPipelineCache pipelineCache = VK_NULL_HANDLE;
+    VkPipelineCache pipelineCache {};
 
     std::vector<VulkanDescriptorSetLayout *> setLayouts;
     std::vector<VkPushConstantRange> constants;
     ShaderMapList shaderMapList;
 
-    GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component, VkExtent2D extent = { 0, 0 })
+    GraphicsPipelineCreateInfo(const std::vector<VertexComponent> &component = { VertexComponent::POSITION,
+                                                                                 VertexComponent::NORMAL,
+                                                                                 VertexComponent::UV,
+                                                                                 VertexComponent::COLOR,
+                                                                                 VertexComponent::TANGENT },
+                               VkExtent2D extent = { 0, 0 })
     {
         vertexInputInfo = vertexInputBuilder.getPipelineVertexInputState(component);
-        inputAssembly = aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+        inputAssembly =
+            aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
         dynamicStages = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
         dynamicState = aph::init::pipelineDynamicStateCreateInfo(dynamicStages.data(),
                                                                  static_cast<uint32_t>(dynamicStages.size()));
@@ -68,11 +74,6 @@ struct GraphicsPipelineCreateInfo
         colorBlendAttachment = aph::init::pipelineColorBlendAttachmentState();
         depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
     }
-
-    GraphicsPipelineCreateInfo() :
-        GraphicsPipelineCreateInfo({ VertexComponent::POSITION, VertexComponent::NORMAL, VertexComponent::UV,
-                                     VertexComponent::COLOR, VertexComponent::TANGENT })
-    {}
 };
 
 struct ComputePipelineCreateInfo
@@ -86,11 +87,10 @@ class VulkanPipeline : public ResourceHandle<VkPipeline>
 {
 public:
     static VulkanPipeline *CreateGraphicsPipeline(VulkanDevice *pDevice, const GraphicsPipelineCreateInfo &createInfo,
-                                                  VkRenderPass renderPass, VkPipelineLayout layout,
-                                                  VkPipeline handle);
+                                                  VkRenderPass renderPass, VkPipelineLayout layout, VkPipeline handle);
 
-    static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const ComputePipelineCreateInfo &createInfo, VkPipelineLayout layout,
-                                                 VkPipeline handle);
+    static VulkanPipeline *CreateComputePipeline(VulkanDevice *pDevice, const ComputePipelineCreateInfo &createInfo,
+                                                 VkPipelineLayout layout, VkPipeline handle);
 
     VulkanDescriptorSetLayout *getDescriptorSetLayout(uint32_t idx) { return m_setLayouts[idx]; }
     VkPipelineLayout getPipelineLayout() { return m_layout; }
@@ -98,10 +98,10 @@ public:
 
 protected:
     VkRenderPass m_renderPass{};
-    VkPipelineCache m_cache {};
-    VulkanDevice *m_device {};
-    VkPipelineLayout m_layout {};
-    VkPipelineBindPoint m_bindPoint {};
+    VkPipelineCache m_cache{};
+    VulkanDevice *m_device{};
+    VkPipelineLayout m_layout{};
+    VkPipelineBindPoint m_bindPoint{};
     std::vector<VkPushConstantRange> m_constants;
     std::vector<VulkanDescriptorSetLayout *> m_setLayouts;
     ShaderMapList m_shaderMapList;

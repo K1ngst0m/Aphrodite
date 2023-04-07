@@ -49,6 +49,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
+    // TODO manage features
     VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
         .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
@@ -96,7 +97,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
             VkQueue queue = VK_NULL_HANDLE;
             vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
             device->m_queues[queueFamilyIndex][queueIndex] =
-                new VulkanQueue(device, queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+                new VulkanQueue(queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
 
@@ -210,16 +211,16 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
     VkDeviceMemory memory;
     VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
 
-    *ppBuffer = new VulkanBuffer(this, createInfo, buffer, memory);
+    *ppBuffer = new VulkanBuffer(createInfo, buffer, memory);
 
     // bind buffer and memory
-    VK_CHECK_RESULT((*ppBuffer)->bind());
+    VK_CHECK_RESULT(bindMemory(*ppBuffer));
 
     if(data)
     {
-        (*ppBuffer)->map();
-        (*ppBuffer)->copyTo(data, (*ppBuffer)->getSize());
-        (*ppBuffer)->unmap();
+        mapMemory(*ppBuffer);
+        (*ppBuffer)->copyTo(data);
+        unMapMemory(*ppBuffer);
     }
 
     return VK_SUCCESS;
@@ -264,8 +265,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE)
     {
-        auto result = (*ppImage)->bind();
-        return result;
+        VK_CHECK_RESULT(bindMemory(*ppImage));
     }
 
     return VK_SUCCESS;
@@ -628,5 +628,48 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo &createInfo,
     *ppImage = texture;
 
     return VK_SUCCESS;
+}
+VkResult VulkanDevice::flushMemory(VkDeviceMemory memory, uint32_t offset, uint32_t size)
+{
+    VkMappedMemoryRange mappedRange = {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = memory,
+        .offset = offset,
+        .size = size,
+    };
+    return vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange);
+}
+VkResult VulkanDevice::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
+{
+    VkMappedMemoryRange mappedRange = {
+        .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = memory,
+        .offset = offset,
+        .size = size,
+    };
+    return vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange);
+}
+
+VkResult VulkanDevice::mapMemory(VulkanBuffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
+{
+    if (mapped == nullptr){
+        return vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &pBuffer->getMapped());
+    }
+    return vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped);
+}
+
+VkResult VulkanDevice::bindMemory(VulkanBuffer* pBuffer, VkDeviceSize offset)
+{
+    return vkBindBufferMemory(getHandle(), pBuffer->getHandle(), pBuffer->getMemory(), offset);
+}
+
+VkResult VulkanDevice::bindMemory(VulkanImage* pImage, VkDeviceSize offset)
+{
+    return vkBindImageMemory(getHandle(), pImage->getHandle(), pImage->getMemory(), offset);
+}
+
+void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer)
+{
+    vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
 }  // namespace aph

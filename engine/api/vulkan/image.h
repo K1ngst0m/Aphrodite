@@ -32,9 +32,6 @@ public:
     ~VulkanImage();
 
     VkDeviceMemory getMemory() { return m_memory; }
-    VulkanDevice *getDevice() { return m_device; }
-
-    VkResult bind(VkDeviceSize offset = 0) const;
 
     VulkanImageView *getImageView(Format imageFormat = FORMAT_UNDEFINED);
 
@@ -46,10 +43,10 @@ public:
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:
-    VulkanDevice *m_device {};
-    VkDeviceMemory m_memory {};
+    VulkanDevice *m_pDevice {};
     std::unordered_map<uint32_t, VulkanImageView*> m_imageViewMap;
 
+    VkDeviceMemory m_memory {};
     void *m_mapped {};
 };
 
@@ -66,34 +63,19 @@ class VulkanImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
 public:
     VulkanImageView(const ImageViewCreateInfo &createInfo, VulkanImage *pImage, VkImageView handle)
-        : m_device(pImage->getDevice()), m_image(pImage)
+        : m_image(pImage)
     {
         getHandle() = handle;
         getCreateInfo() = createInfo;
     }
 
-    ImageViewType getImageViewType() const { return m_createInfo.viewType; }
     Format getFormat() const { return m_createInfo.format; }
     ComponentMapping getComponentMapping() const { return m_createInfo.components; }
+    ImageViewType getImageViewType() const { return m_createInfo.viewType; }
+    ImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
 
-    const ImageSubresourceRange &GetSubresourceRange() const { return m_createInfo.subresourceRange; }
     VulkanImage *getImage() { return m_image; }
-    VulkanDevice *getDevice() { return m_device; }
-
-    VkDescriptorImageInfo & getDescInfoMap(VkImageLayout layout){
-        if(!m_descInfoMap.count(layout))
-        {
-            m_descInfoMap[layout] = {
-                .sampler = VK_NULL_HANDLE,
-                .imageView = getHandle(),
-                .imageLayout = layout,
-            };
-        }
-        return m_descInfoMap[layout];
-    }
-
 private:
-    VulkanDevice *m_device {};
     VulkanImage *m_image {};
     std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap;
 };

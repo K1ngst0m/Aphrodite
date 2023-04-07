@@ -3,10 +3,9 @@
 
 namespace aph {
 
-VulkanQueue::VulkanQueue(VulkanDevice *device,
-                         VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
+VulkanQueue::VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
                          const VkQueueFamilyProperties &propertiesd)
-    : m_device(device), m_queueFamilyIndex(queueFamilyIndex), m_index(index), m_properties(propertiesd) {
+    : m_queueFamilyIndex(queueFamilyIndex), m_index(index), m_properties(propertiesd) {
     getHandle() = queue;
 }
 
