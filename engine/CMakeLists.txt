@@ -40,9 +40,16 @@ file(GLOB base_src
 
 add_library(engine STATIC ${base_src})
 
+add_library(spvgen SHARED IMPORTED)
+set_target_properties(spvgen PROPERTIES
+  IMPORTED_LOCATION "${CMAKE_SOURCE_DIR}/external/libs/spvgen.so"
+  INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/external/spvgen/"
+)
+
 target_link_libraries(engine
   glfw
   ${xcb_libraries}
   ${cmake_thread_libs_init}
   dl
+  spvgen
   )
