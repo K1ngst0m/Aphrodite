@@ -21,7 +21,6 @@ void VulkanSceneRenderer::loadResources()
 {
     _loadScene();
     _initSetLayout();
-    _initSampler();
     _initForward();
     _initPostFx();
     _initRenderData();
@@ -123,7 +122,6 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
         commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -482,8 +480,7 @@ void VulkanSceneRenderer::_initForward()
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat = m_pDevice->getDepthFormat(),
         };
-        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE],
-                                          m_setLayouts[SET_LAYOUT_SAMP] };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE] };
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4) + sizeof(uint32_t), 0));
         pipelineCreateInfo.shaderMapList = {
@@ -495,46 +492,16 @@ void VulkanSceneRenderer::_initForward()
     }
 }
 
-void VulkanSceneRenderer::_initSampler()
-{
-    // texture
-    {
-        VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-        samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
-    }
-
-    // shadow
-    {
-        // VkSamplerCreateInfo createInfo = aph::init::samplerCreateInfo();
-        // createInfo.magFilter = m_shadowPass.filter;
-        // createInfo.minFilter = m_shadowPass.filter;
-        // VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &createInfo, nullptr, &m_sampler.shadow));
-    }
-
-    // allocate set and update
-    {
-        auto &set = m_samplerSet;
-        set = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
-
-        std::vector<VkDescriptorImageInfo> imageInfos{
-            {
-                .sampler = m_samplers[SAMP_TEXTURE],
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            },
-        };
-        std::vector<VkWriteDescriptorSet> writes{
-            aph::init::writeDescriptorSet(set, VK_DESCRIPTOR_TYPE_SAMPLER, 0, imageInfos.data(), imageInfos.size()),
-        };
-        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
-    }
-}
 void VulkanSceneRenderer::_initSetLayout()
 {
     // scene
     {
+        {
+            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
+            samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
+        }
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -548,6 +515,7 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3,
                                                   m_textures.size()),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4, 1),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1, m_samplers.data()),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SCENE]);
@@ -563,15 +531,6 @@ void VulkanSceneRenderer::_initSetLayout()
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
         createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_POSTFX]);
-    }
-
-    // sampler
-    {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-        };
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
 }
 }  // namespace aph

@@ -46,10 +46,9 @@ struct Material{
 layout (set = 0, binding = 4) uniform MaterialUB{
     Material materials[100];
 };
+layout (set = 0, binding = 5) uniform sampler samp;
 
 const float PI = 3.14159265359;
-
-layout(set = 1, binding = 0) uniform sampler samp;
 
 layout( push_constant ) uniform constants
 {

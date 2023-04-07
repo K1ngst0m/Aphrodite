@@ -247,13 +247,15 @@ inline VkDescriptorPoolSize descriptorPoolSize(VkDescriptorType type, uint32_t d
 }
 
 inline VkDescriptorSetLayoutBinding descriptorSetLayoutBinding(VkDescriptorType type, VkShaderStageFlags stageFlags,
-                                                               uint32_t binding, uint32_t descriptorCount = 1)
+                                                               uint32_t binding, uint32_t descriptorCount = 1,
+                                                               VkSampler *pImmutableSampler = nullptr)
 {
     VkDescriptorSetLayoutBinding setLayoutBinding{};
     setLayoutBinding.descriptorType = type;
     setLayoutBinding.stageFlags = stageFlags;
     setLayoutBinding.binding = binding;
     setLayoutBinding.descriptorCount = descriptorCount;
+    setLayoutBinding.pImmutableSamplers = pImmutableSampler;
     return setLayoutBinding;
 }
 

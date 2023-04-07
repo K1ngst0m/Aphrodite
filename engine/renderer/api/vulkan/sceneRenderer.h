@@ -55,7 +55,6 @@ public:
 
 private:
     void _initSetLayout();
-    void _initSampler();
     void _initRenderData();
     void _initForward();
     void _initPostFx();
@@ -64,7 +63,7 @@ private:
 private:
     enum SetLayoutIndex
     {
-        SET_LAYOUT_SAMP,
+        // SET_LAYOUT_SAMP,
         // SET_LAYOUT_MATERIAL,
         SET_LAYOUT_SCENE,
         // SET_LAYOUT_OBJECT,
