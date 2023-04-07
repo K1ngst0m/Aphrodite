@@ -22,7 +22,7 @@ struct Camera{
     vec3 viewPos;
 };
 
-layout (set = 0, binding = 1) uniform CameraUB{
+layout (set = 0, binding = 2) uniform CameraUB{
     Camera cameras[];
 };
 
@@ -31,11 +31,11 @@ struct Light{
     vec3 position;
     vec3 direction;
 };
-layout (set = 0, binding = 2) uniform LightUB{
+layout (set = 0, binding = 3) uniform LightUB{
     Light lights[];
 };
 
-layout (set = 0, binding = 3) uniform texture2D textures[];
+layout (set = 0, binding = 4) uniform texture2D textures[];
 
 struct Material{
     vec4 emissiveFactor;
@@ -50,16 +50,16 @@ struct Material{
     int metallicRoughnessId;
     int specularGlossinessId;
 };
-layout (set = 0, binding = 4) uniform MaterialUB{
+layout (set = 0, binding = 5) uniform MaterialUB{
     Material materials[100];
 };
-layout (set = 0, binding = 5) uniform sampler samp;
+layout (set = 0, binding = 6) uniform sampler samp;
 
 const float PI = 3.14159265359;
 
 layout( push_constant ) uniform constants
 {
-    mat4 modelMatrix;
+    int objId;
     int matId;
 };
 

@@ -16,16 +16,22 @@ struct SceneInfo
 
 struct CameraInfo
 {
-    glm::mat4 view {1.0f};
-    glm::mat4 proj {1.0f};
-    glm::vec3 viewPos {1.0f};
+    glm::mat4 view{ 1.0f };
+    glm::mat4 proj{ 1.0f };
+    glm::vec3 viewPos{ 1.0f };
 };
 
 struct LightInfo
 {
-    glm::vec3 color {1.0f};
-    glm::vec3 position {1.0f};
-    glm::vec3 direction {1.0f};
+    glm::vec3 color{ 1.0f };
+    glm::vec3 position{ 1.0f };
+    glm::vec3 direction{ 1.0f };
+};
+
+struct ObjectInfo
+{
+    uint32_t nodeId;
+    uint32_t materialId;
 };
 
 class VulkanSceneRenderer : public SceneRenderer

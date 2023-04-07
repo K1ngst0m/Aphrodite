@@ -126,20 +126,15 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->beginRendering(renderingInfo);
         commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
 
-        for(auto &node : m_meshNodeList)
+        uint32_t objectId = 0;
+        for(const auto &node : m_meshNodeList)
         {
             auto mesh = node->getObject<Mesh>();
             {
-                auto matrix = node->matrix;
-                auto currentNode = node->parent;
-                while(currentNode)
-                {
-                    matrix = currentNode->matrix * matrix;
-                    currentNode = currentNode->parent;
-                }
                 commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
                                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                                             sizeof(glm::mat4), &matrix);
+                                             sizeof(uint32_t), &objectId);
+                ++objectId;
             }
             if(mesh->m_indexOffset > -1)
             {
@@ -161,7 +156,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                 {
                     commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                 sizeof(glm::mat4), sizeof(uint32_t), &subset.materialIndex);
+                                                 sizeof(uint32_t), sizeof(uint32_t), &subset.materialIndex);
                     if(subset.hasIndices)
                     {
                         commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
@@ -204,7 +199,6 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
             commandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
         }
 
-        // commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], 1, 1, &m_samplerSet);
         commandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(), 1);
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
                                              VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -268,14 +262,18 @@ void VulkanSceneRenderer::_initRenderData()
                                             .offset = 0,
                                             .range = VK_WHOLE_SIZE };
 
+    VkDescriptorBufferInfo transformBufferInfo{ .buffer = m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(),
+                                                .offset = 0,
+                                                .range = VK_WHOLE_SIZE };
+
     std::vector<VkWriteDescriptorSet> writes{
         sceneInfoSetWrite,
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &cameraBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &lightBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, m_textureInfos.data(),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo, 1),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo, 1),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo, 1),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, m_textureInfos.data(),
                                       m_textureInfos.size()),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 4, &materialBufferInfo, 1),
-        // aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo, 1),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo, 1),
     };
     vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
 }
@@ -288,14 +286,21 @@ void VulkanSceneRenderer::_loadScene()
     std::vector<glm::mat4> transformInfos{};
     while(!q.empty())
     {
-        auto node = q.front();
+        const auto node = q.front();
         q.pop();
 
         switch(node->m_attachType)
         {
         case ObjectType::MESH:
         {
-            transformInfos.push_back(node->matrix);
+            auto matrix = node->matrix;
+            auto currentNode = node->parent;
+            while(currentNode)
+            {
+                matrix = currentNode->matrix * matrix;
+                currentNode = currentNode->parent;
+            }
+            transformInfos.push_back(matrix);
             m_meshNodeList.push_back(node);
         }
         break;
@@ -357,12 +362,11 @@ void VulkanSceneRenderer::_loadScene()
     // create transform buffer
     {
         BufferCreateInfo createInfo{
-            .size = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
+            .size = static_cast<uint32_t>(transformInfos.size() * sizeof(glm::mat4)),
             .alignment = 0,
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM],
-        m_scene->m_materials.data());
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], transformInfos.data());
     }
 
     // create index buffer
@@ -485,7 +489,7 @@ void VulkanSceneRenderer::_initForward()
         };
         pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE] };
         pipelineCreateInfo.constants.push_back(aph::init::pushConstantRange(
-            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(glm::mat4) + sizeof(uint32_t), 0));
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectInfo), 0));
         pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
             { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
@@ -514,11 +518,13 @@ void VulkanSceneRenderer::_initSetLayout()
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2, 1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 3,
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 3, 1),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
                                                   m_textures.size()),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 5,
                                                   1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 5, 1,
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6, 1,
                                                   m_samplers.data()),
         };
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
