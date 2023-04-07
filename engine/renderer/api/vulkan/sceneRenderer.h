@@ -60,8 +60,6 @@ private:
     void _initForward();
     void _initPostFx();
     void _loadScene();
-    void _drawNode(const std::shared_ptr<SceneNode> &node, VulkanPipeline *pipeline,
-                         VulkanCommandBuffer *drawCmd);
 
 private:
     enum SetLayoutIndex
@@ -96,7 +94,9 @@ private:
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
         BUFFER_SCENE_MATERIAL,
-        BUFFER_SCENE_TRANSFORM,
+        // BUFFER_SCENE_LIGHT,
+        // BUFFER_SCENE_CAMERA,
+        // BUFFER_SCENE_TRANSFORM,
         BUFFER_MAX,
     };
 

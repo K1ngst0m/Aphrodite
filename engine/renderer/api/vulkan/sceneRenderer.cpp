@@ -134,7 +134,52 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         for(auto &node : m_meshNodeList)
         {
-            _drawNode(node, m_pipelines[PIPELINE_GRAPHICS_FORWARD], commandBuffer);
+            auto mesh = node->getObject<Mesh>();
+            {
+                auto matrix = node->matrix;
+                auto currentNode = node->parent;
+                while(currentNode)
+                {
+                    matrix = currentNode->matrix * matrix;
+                    currentNode = currentNode->parent;
+                }
+                commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
+                                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                    0, sizeof(glm::mat4),
+                                    &matrix);
+            }
+            if(mesh->m_indexOffset > -1)
+            {
+                VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+                switch(mesh->m_indexType)
+                {
+                case IndexType::UINT16:
+                    indexType = VK_INDEX_TYPE_UINT16;
+                    break;
+                case IndexType::UINT32:
+                    indexType = VK_INDEX_TYPE_UINT32;
+                    break;
+                }
+                commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
+            }
+            for(const auto &subset : mesh->m_subsets)
+            {
+                if(subset.indexCount > 0)
+                {
+                    commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
+                                        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                        sizeof(glm::mat4), sizeof(uint32_t),
+                                        &subset.materialIndex);
+                    if(subset.hasIndices)
+                    {
+                        commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex, mesh->m_vertexOffset, 0);
+                    }
+                    else
+                    {
+                        commandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                    }
+                }
+            }
         }
         commandBuffer->endRendering();
 
@@ -223,12 +268,6 @@ void VulkanSceneRenderer::_initRenderData()
             .range = VK_WHOLE_SIZE
         };
 
-        VkDescriptorBufferInfo matrixInfo{
-            .buffer = m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(),
-            .offset = 0,
-            .range = VK_WHOLE_SIZE
-        };
-
         std::vector<VkWriteDescriptorSet> writes{
             sceneInfoSetWrite,
             aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, m_cameraInfos.data(),
@@ -247,7 +286,7 @@ void VulkanSceneRenderer::_initRenderData()
 void VulkanSceneRenderer::_loadScene()
 {
     // load scene image to gpu
-    for(auto &image : m_scene->getImages())
+    for(const auto &image : m_scene->getImages())
     {
         ImageCreateInfo ci{
             .extent = {image->width, image->height, 1},
@@ -360,14 +399,14 @@ void VulkanSceneRenderer::_loadScene()
     }
 
     // create transform buffer
-    {
-        BufferCreateInfo createInfo{
-            .size = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
-            .alignment = 0,
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_scene->m_materials.data());
-    }
+    // {
+    //     BufferCreateInfo createInfo{
+    //         .size = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
+    //         .alignment = 0,
+    //         .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+    //     };
+    //     m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_scene->m_materials.data());
+    // }
 
 }
 
@@ -450,57 +489,6 @@ void VulkanSceneRenderer::_initForward()
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
-    }
-}
-
-void VulkanSceneRenderer::_drawNode(const std::shared_ptr<SceneNode>& node, VulkanPipeline *pipeline,
-                                          VulkanCommandBuffer *drawCmd)
-{
-    auto mesh = node->getObject<Mesh>();
-    {
-        auto matrix = node->matrix;
-        auto currentNode = node->parent;
-        while(currentNode)
-        {
-            matrix = currentNode->matrix * matrix;
-            currentNode = currentNode->parent;
-        }
-        drawCmd->pushConstants(pipeline->getPipelineLayout(),
-                               VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                               0, sizeof(glm::mat4),
-                               &matrix);
-    }
-    if(mesh->m_indexOffset > -1)
-    {
-        VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-        switch(mesh->m_indexType)
-        {
-        case IndexType::UINT16:
-            indexType = VK_INDEX_TYPE_UINT16;
-            break;
-        case IndexType::UINT32:
-            indexType = VK_INDEX_TYPE_UINT32;
-            break;
-        }
-        drawCmd->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-    }
-    for(const auto &subset : mesh->m_subsets)
-    {
-        if(subset.indexCount > 0)
-        {
-            drawCmd->pushConstants(pipeline->getPipelineLayout(),
-                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                   sizeof(glm::mat4), sizeof(uint32_t),
-                                   &subset.materialIndex);
-            if(subset.hasIndices)
-            {
-                drawCmd->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex, mesh->m_vertexOffset, 0);
-            }
-            else
-            {
-                drawCmd->draw(subset.vertexCount, 1, subset.firstVertex, 0);
-            }
-        }
     }
 }
 
