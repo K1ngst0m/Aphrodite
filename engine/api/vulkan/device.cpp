@@ -16,6 +16,13 @@ namespace aph
         } \
     }
 
+VulkanDevice::VulkanDevice(const DeviceCreateInfo &createInfo, VulkanPhysicalDevice *pPhysicalDevice, VkDevice handle) :
+    m_physicalDevice(pPhysicalDevice)
+{
+    getHandle() = handle;
+    getCreateInfo() = createInfo;
+}
+
 VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice **ppDevice)
 {
     VulkanPhysicalDevice *physicalDevice = createInfo.pPhysicalDevice;
@@ -77,10 +84,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     VK_CHECK_RESULT(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
 
     // Initialize Device class.
-    auto *device = new VulkanDevice();
-    device->m_handle = handle;
-    device->m_createInfo = createInfo;
-    device->m_physicalDevice = physicalDevice;
+    auto *device = new VulkanDevice(createInfo, physicalDevice, handle);
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);
@@ -141,7 +145,6 @@ VkFormat VulkanDevice::getDepthFormat() const
 VkResult VulkanDevice::createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView,
                                        VulkanImage *pImage)
 {
-    // Create a new Vulkan image view.
     VkImageViewCreateInfo info {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = nullptr,
@@ -224,9 +227,6 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
 
 VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage)
 {
-    VkImage image;
-    VkDeviceMemory memory;
-
     VkImageCreateInfo imageCreateInfo{
         .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags = createInfo.flags,
@@ -245,6 +245,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
     imageCreateInfo.extent.height = createInfo.extent.height;
     imageCreateInfo.extent.depth = createInfo.extent.depth;
 
+    VkImage image;
     VK_CHECK_RESULT(vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
 
     VkMemoryRequirements memRequirements;
@@ -256,6 +257,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
         .memoryTypeIndex = m_physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property),
     };
 
+    VkDeviceMemory memory;
     VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
 
     *ppImage = new VulkanImage(this, createInfo, image, memory);
@@ -282,7 +284,9 @@ void VulkanDevice::destroyBuffer(VulkanBuffer *pBuffer)
     }
     vkDestroyBuffer(m_handle, pBuffer->getHandle(), nullptr);
     delete pBuffer;
+    pBuffer = nullptr;
 }
+
 void VulkanDevice::destroyImage(VulkanImage *pImage)
 {
     if(pImage->getMemory() != VK_NULL_HANDLE)
@@ -293,6 +297,7 @@ void VulkanDevice::destroyImage(VulkanImage *pImage)
     delete pImage;
     pImage = nullptr;
 }
+
 void VulkanDevice::destroyImageView(VulkanImageView *pImageView)
 {
     vkDestroyImageView(m_handle, pImageView->getHandle(), nullptr);

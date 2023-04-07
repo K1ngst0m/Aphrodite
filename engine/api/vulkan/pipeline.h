@@ -8,7 +8,6 @@
 namespace aph
 {
 class VulkanDevice;
-class VulkanRenderPass;
 class VulkanDescriptorSetLayout;
 
 enum class VertexComponent
@@ -98,6 +97,7 @@ public:
     VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 
 protected:
+    VkRenderPass m_renderPass{};
     VkPipelineCache m_cache {};
     VulkanDevice *m_device {};
     VkPipelineLayout m_layout {};

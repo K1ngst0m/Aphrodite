@@ -35,7 +35,7 @@ struct DeviceCreateInfo
 class VulkanDevice : public ResourceHandle<VkDevice, DeviceCreateInfo>
 {
 private:
-    VulkanDevice() = default;
+    VulkanDevice(const DeviceCreateInfo &createInfo, VulkanPhysicalDevice *pPhysicalDevice, VkDevice handle);
 
 public:
     static VkResult Create(const DeviceCreateInfo &createInfo, VulkanDevice **ppDevice);
