@@ -9,10 +9,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <tinygltf/tiny_gltf.h>
 
-namespace aph
-{
-
-namespace
+namespace aph::gltf
 {
 void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model &input)
 {
@@ -130,12 +127,14 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
     // In glTF this is done via accessors and buffer views
     if(inputNode.mesh > -1)
     {
+        auto mesh{ Object::Create<Mesh>() };
+        node->attachObject<Mesh>(mesh);
+
         const tinygltf::Mesh gltfMesh{ input.meshes[inputNode.mesh] };
         std::vector<uint8_t> indices;
         std::vector<uint8_t> vertices;
+        auto indexType {IndexType::UINT16};
 
-        auto mesh{ Object::Create<Mesh>() };
-        node->attachObject<Mesh>(mesh);
         // Iterate through all primitives of this node's mesh
         for(const auto &glTFPrimitive : gltfMesh.primitives)
         {
@@ -219,7 +218,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 {
                     indices.resize(indices.size() + accessor.count * 4);
                     auto *dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
-                    mesh->m_indexType = IndexType::UINT32;
+                    indexType = IndexType::UINT32;
                     const auto *buf =
                         reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
@@ -232,7 +231,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 {
                     indices.resize(indices.size() + accessor.count * 2);
                     auto *dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
-                    mesh->m_indexType = IndexType::UINT16;
+                    indexType = IndexType::UINT16;
                     const auto *buf =
                         reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
@@ -247,32 +246,53 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 }
             }
 
-            Mesh::Subset subset{};
-            subset.firstVertex = vertexStart;
-            subset.vertexCount = vertexCount;
-            subset.firstIndex = firstIndex;
-            subset.indexCount = indexCount;
-            subset.materialIndex = glTFPrimitive.material + materialOffset;
-            subset.hasIndices = indexCount > 0;
+            mesh->m_subsets.push_back(Mesh::Subset{
+                .firstIndex = firstIndex,
+                .firstVertex = vertexStart,
+                .vertexCount = vertexCount,
+                .indexCount = indexCount,
+                .materialIndex = static_cast<ResourceIndex>(glTFPrimitive.material + materialOffset),
+                .hasIndices = indexCount > 0,
+            });
+        }
 
-            mesh->m_subsets.push_back(subset);
-            mesh->m_indexOffset = indicesList.size();
-            mesh->m_vertexOffset = verticesList.size();
-            indicesList.insert(indicesList.cend(), indices.cbegin(), indices.cend());
-            verticesList.insert(verticesList.cend(), vertices.cbegin(), vertices.cend());
+        static float indexSizeScaling = 1.0f;
+
+        mesh->m_indexType = indexType;
+        mesh->m_indexOffset = indicesList.size() * indexSizeScaling;
+        // TODO variable vertex form
+        mesh->m_vertexOffset = verticesList.size() / sizeof(Vertex);
+
+        indicesList.insert(indicesList.cend(), indices.cbegin(), indices.cend());
+        verticesList.insert(verticesList.cend(), vertices.cbegin(), vertices.cend());
+
+        switch (indexType)
+        {
+        case IndexType::UINT16:
+            indexSizeScaling = 0.5f;
+            break;
+        case IndexType::UINT32:
+            indexSizeScaling = 0.25f;
+            break;
+        default:
+            indexSizeScaling = 1.0f;
+            break;
         }
     }
 
     // Load node's children
     if(!inputNode.children.empty())
     {
-        for(int nodeIdx : inputNode.children)
+        for(const int nodeIdx : inputNode.children)
         {
             loadNodes(verticesList, indicesList, input.nodes[nodeIdx], input, node, materialOffset);
         }
     }
 }
 }  // namespace
+
+namespace aph
+{
 
 std::unique_ptr<Scene> Scene::Create(SceneType type)
 {
@@ -339,8 +359,8 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         uint32_t materialOffset = m_materials.size();
         std::vector<std::shared_ptr<ImageInfo>> images;
         std::vector<Material> materials;
-        loadImages(m_images, inputModel);
-        loadMaterials(m_materials, inputModel, imageOffset);
+        gltf::loadImages(m_images, inputModel);
+        gltf::loadMaterials(m_materials, inputModel, imageOffset);
         m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
                         std::make_move_iterator(images.cend()));
         m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()),
@@ -350,7 +370,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node inputNode = inputModel.nodes[nodeIdx];
-            loadNodes(m_vertices, m_indices, inputNode, inputModel, node, materialOffset);
+            gltf::loadNodes(m_vertices, m_indices, inputNode, inputModel, node, materialOffset);
         }
     }
     else

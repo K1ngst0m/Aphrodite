@@ -29,9 +29,6 @@ public:
     void setColor(glm::vec3 value) { m_color = value; }
     void setType(LightType type) { m_type = type; }
 
-    void load() override;
-    void update(float deltaTime) override;
-
 private:
     glm::vec3 m_color{ 1.0f };
     glm::vec3 m_position{ 1.2f, 1.0f, 2.0f };

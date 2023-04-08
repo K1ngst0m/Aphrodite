@@ -130,12 +130,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         for(const auto &node : m_meshNodeList)
         {
             auto mesh = node->getObject<Mesh>();
-            {
-                commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
-                                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                                             sizeof(uint32_t), &objectId);
-                ++objectId;
-            }
+            commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
+                                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
+                                            sizeof(uint32_t), &objectId);
             if(mesh->m_indexOffset > -1)
             {
                 VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -147,6 +144,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                 case IndexType::UINT32:
                     indexType = VK_INDEX_TYPE_UINT32;
                     break;
+                default:
+                    assert("undefined behavior.");
+                    break;
                 }
                 commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
             }
@@ -154,7 +154,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
             {
                 if(subset.indexCount > 0)
                 {
-                    commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD]->getPipelineLayout(),
+                    commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                                  sizeof(uint32_t), sizeof(uint32_t), &subset.materialIndex);
                     if(subset.hasIndices)
@@ -168,6 +168,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                     }
                 }
             }
+            ++objectId;
         }
         commandBuffer->endRendering();
 
@@ -283,7 +284,6 @@ void VulkanSceneRenderer::_loadScene()
     std::queue<std::shared_ptr<SceneNode>> q;
     q.push(m_scene->getRootNode());
 
-    std::vector<glm::mat4> transformInfos{};
     while(!q.empty())
     {
         const auto node = q.front();
@@ -300,14 +300,13 @@ void VulkanSceneRenderer::_loadScene()
                 matrix = currentNode->matrix * matrix;
                 currentNode = currentNode->parent;
             }
-            transformInfos.push_back(matrix);
+            m_transformInfos.push_back(matrix);
             m_meshNodeList.push_back(node);
         }
         break;
         case ObjectType::CAMERA:
         {
             auto object = node->getObject<Camera>();
-            object->load();
             CameraInfo cameraData{
                 .view = object->getViewMatrix(),
                 .proj = object->getProjMatrix(),
@@ -319,7 +318,6 @@ void VulkanSceneRenderer::_loadScene()
         case ObjectType::LIGHT:
         {
             auto object = node->getObject<Light>();
-            object->load();
             LightInfo lightData{
                 .color = object->getColor(),
                 .position = object->getPosition(),
@@ -362,11 +360,11 @@ void VulkanSceneRenderer::_loadScene()
     // create transform buffer
     {
         BufferCreateInfo createInfo{
-            .size = static_cast<uint32_t>(transformInfos.size() * sizeof(glm::mat4)),
+            .size = static_cast<uint32_t>(m_transformInfos.size() * sizeof(glm::mat4)),
             .alignment = 0,
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], transformInfos.data());
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_transformInfos.data());
     }
 
     // create index buffer
@@ -420,18 +418,14 @@ void VulkanSceneRenderer::_loadScene()
 
 void VulkanSceneRenderer::_initPostFx()
 {
-    uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
-
-    {
-        // build Shader
-        std::filesystem::path shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        ComputePipelineCreateInfo pipelineCreateInfo{};
-        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_POSTFX] };
-        pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_COMPUTE_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
-        };
-        VK_CHECK_RESULT(m_pDevice->createComputePipeline(pipelineCreateInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
-    }
+    // build pipeline
+    std::filesystem::path shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+    ComputePipelineCreateInfo pipelineCreateInfo{};
+    pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_POSTFX] };
+    pipelineCreateInfo.shaderMapList = {
+        { VK_SHADER_STAGE_COMPUTE_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
+    };
+    VK_CHECK_RESULT(m_pDevice->createComputePipeline(pipelineCreateInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
 }
 
 void VulkanSceneRenderer::_initForward()

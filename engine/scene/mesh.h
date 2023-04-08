@@ -6,9 +6,6 @@
 namespace aph
 {
 struct SceneNode;
-struct ImageInfo;
-struct Material;
-struct Vertex;
 
 using ResourceIndex = int32_t;
 
@@ -61,6 +58,7 @@ struct Material
 
 enum class IndexType
 {
+    NONE,
     UINT16,
     UINT32,
 };

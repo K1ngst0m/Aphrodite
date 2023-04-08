@@ -41,9 +41,6 @@ public:
     UniformObject(IdType id, ObjectType type) : Object{ id, type } {}
     ~UniformObject() override = default;
 
-    virtual void load() = 0;
-    virtual void update(float deltaTime) = 0;
-
     virtual void *getData() { return data.get(); }
     virtual uint32_t getDataSize() { return dataSize; }
 

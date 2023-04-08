@@ -47,6 +47,8 @@ public:
                                      const void *data);
     VkResult createDeviceLocalImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage,
                                     const std::vector<uint8_t> &data);
+    VkResult executeSingleCommands(QueueTypeFlags type,
+                                   const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
 public:
     VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr);
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
@@ -81,8 +83,6 @@ public:
     VkResult allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers,
                                     VulkanQueue *pQueue);
     void freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer **ppCommandBuffers);
-    VkResult executeSingleCommands(QueueTypeFlags type,
-                                   const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
 
     VkResult waitIdle();
     VkResult waitForFence(const std::vector<VkFence> &fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);

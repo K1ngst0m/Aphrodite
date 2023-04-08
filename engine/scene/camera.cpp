@@ -1,39 +1,7 @@
 #include "camera.h"
 
-#include <glm/gtx/string_cast.hpp>
-
 namespace aph
 {
-
-struct CameraDataLayout
-{
-    glm::mat4 view{ 1.0f };
-    glm::mat4 proj{ 1.0f };
-    glm::vec4 position{ 1.0f };
-};
-
-void Camera::load()
-{
-    updateViewMatrix();
-    dataSize = sizeof(CameraDataLayout);
-    data = std::make_shared<CameraDataLayout>();
-    auto pData{ std::static_pointer_cast<CameraDataLayout>(data) };
-    pData->view = m_matrices.view;
-    pData->proj = m_matrices.perspective;
-    pData->position = glm::vec4(m_position, 1.0f);
-}
-
-void Camera::update(float deltaTime)
-{
-    processMovement(deltaTime);
-    updateViewMatrix();
-
-    updated = true;
-    auto pData{ std::static_pointer_cast<CameraDataLayout>(data) };
-    pData->view = m_matrices.view;
-    pData->proj = m_matrices.perspective;
-    pData->position = glm::vec4(m_position, 1.0f);
-}
 
 void Camera::setAspectRatio(float aspect)
 {

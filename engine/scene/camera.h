@@ -28,9 +28,6 @@ public:
     Camera() : UniformObject{ Id::generateNewId<Camera>(), ObjectType::CAMERA } {}
     ~Camera() override = default;
 
-    void load() override;
-    void update(float deltaTime) override;
-
     void setAspectRatio(float aspectRatio);
     void setPerspective(float fov, float aspect, float znear, float zfar);
     bool isMoving() const;
@@ -51,15 +48,21 @@ public:
     void setMovement(Direction direction, bool flag) { m_keys[direction] = flag; }
     void setFlipY(bool val) { m_flipY = val; }
 
-    glm::vec3 getPosition() const{
+    glm::vec3 getPosition()
+    {
+        updateViewMatrix();
         return m_position;
     }
 
-    glm::mat4 getProjMatrix() const{
+    glm::mat4 getProjMatrix()
+    {
+        updateViewMatrix();
         return m_matrices.perspective;
     }
 
-    glm::mat4 getViewMatrix() const{
+    glm::mat4 getViewMatrix()
+    {
+        updateViewMatrix();
         return m_matrices.view;
     }
 
@@ -70,10 +73,7 @@ private:
 
 private:
     std::unordered_map<Direction, bool> m_keys{
-        { Direction::LEFT, false },
-        { Direction::RIGHT, false },
-        { Direction::UP, false },
-        { Direction::DOWN, false }
+        { Direction::LEFT, false }, { Direction::RIGHT, false }, { Direction::UP, false }, { Direction::DOWN, false }
     };
 
     CameraType m_cameraType{ CameraType::FIRSTPERSON };

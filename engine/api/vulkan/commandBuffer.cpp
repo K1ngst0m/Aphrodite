@@ -91,10 +91,10 @@ void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer *pBuffer, VkDevice
 {
     vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void VulkanCommandBuffer::pushConstants(VkPipelineLayout layout, VkShaderStageFlags stage,
+void VulkanCommandBuffer::pushConstants(VulkanPipeline * pPipeline, VkShaderStageFlags stage,
                                            uint32_t offset, uint32_t size, const void *pValues)
 {
-    vkCmdPushConstants(m_handle, layout, stage, offset, size, pValues);
+    vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), stage, offset, size, pValues);
 }
 void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                          uint32_t firstIndex, uint32_t vertexOffset,

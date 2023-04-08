@@ -98,6 +98,7 @@ private:
 
     VkDescriptorSet m_sceneSet{};
 
+    std::vector<glm::mat4> m_transformInfos{};
     std::vector<CameraInfo> m_cameraInfos{};
     std::vector<LightInfo> m_lightInfos{};
 
