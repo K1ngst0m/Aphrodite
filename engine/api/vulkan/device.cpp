@@ -197,7 +197,7 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags type, const std::fun
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data)
+VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data, bool persistmentMap)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -226,7 +226,10 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo &createInfo, VulkanBu
     {
         mapMemory(*ppBuffer);
         (*ppBuffer)->copyTo(data);
-        unMapMemory(*ppBuffer);
+        if (!persistmentMap)
+        {
+            unMapMemory(*ppBuffer);
+        }
     }
 
     return VK_SUCCESS;

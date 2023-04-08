@@ -62,13 +62,13 @@ VkResult VulkanCommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::setViewport(VkViewport *viewport)
+void VulkanCommandBuffer::setViewport(const VkViewport &viewport)
 {
-    vkCmdSetViewport(m_handle, 0, 1, viewport);
+    vkCmdSetViewport(m_handle, 0, 1, &viewport);
 }
-void VulkanCommandBuffer::setSissor(VkRect2D *scissor)
+void VulkanCommandBuffer::setSissor(const VkRect2D &scissor)
 {
-    vkCmdSetScissor(m_handle, 0, 1, scissor);
+    vkCmdSetScissor(m_handle, 0, 1, &scissor);
 }
 void VulkanCommandBuffer::bindPipeline(VulkanPipeline *pPipeline)
 {
@@ -280,10 +280,7 @@ void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uin
 {
     vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
-VulkanCommandPool *VulkanCommandBuffer::getPool()
-{
-    return m_pool;
-}
+
 void VulkanCommandBuffer::imageMemoryBarrier(
     VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
     VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,

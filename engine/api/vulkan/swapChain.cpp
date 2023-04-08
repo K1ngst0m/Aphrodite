@@ -1,8 +1,7 @@
 #include "swapChain.h"
 #include "device.h"
 
-namespace aph
-{
+namespace {
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -14,24 +13,24 @@ struct SwapChainSupportDetails
     VkExtent2D preferedExtent;
 };
 
-SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalDevice device, GLFWwindow * windowHandle)
+SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, GLFWwindow * windowHandle)
 {
     SwapChainSupportDetails details;
 
     // surface cap
     {
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
     }
 
     // surface format
     {
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
         if(formatCount != 0)
         {
             details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
         }
 
         details.preferedSurfaceFormat = details.formats[0];
@@ -48,12 +47,12 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     // surface present mode
     {
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 
         if(presentModeCount != 0)
         {
             details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount,
+            vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount,
                                                     details.presentModes.data());
         }
 
@@ -91,6 +90,10 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR _surface, VkPhysicalD
     return details;
 }
 
+}
+
+namespace aph
+{
 VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo &createInfo, VulkanDevice *pDevice)
     :m_device(pDevice), m_surface(createInfo.surface)
 {

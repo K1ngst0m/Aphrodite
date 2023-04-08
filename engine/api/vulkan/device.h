@@ -50,7 +50,7 @@ public:
     VkResult executeSingleCommands(QueueTypeFlags type,
                                    const std::function<void(VulkanCommandBuffer *pCmdBuffer)> &&func);
 public:
-    VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr);
+    VkResult createBuffer(const BufferCreateInfo &createInfo, VulkanBuffer **ppBuffer, const void *data = nullptr, bool persistmentMap = false);
     VkResult createImage(const ImageCreateInfo &createInfo, VulkanImage **ppImage);
     VkResult createImageView(const ImageViewCreateInfo &createInfo, VulkanImageView **ppImageView, VulkanImage *pImage);
     VkResult createSwapchain(const SwapChainCreateInfo &createInfo, VulkanSwapChain **ppSwapchain);

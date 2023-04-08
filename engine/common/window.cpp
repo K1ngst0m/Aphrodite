@@ -20,7 +20,7 @@ Window::Window(uint32_t width, uint32_t height)
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     m_windowData->window =
-        glfwCreateWindow(m_windowData->width, m_windowData->height, "Centimani Engine", nullptr, nullptr);
+        glfwCreateWindow(m_windowData->width, m_windowData->height, "Aphrodite Engine", nullptr, nullptr);
     assert(m_windowData->window);
     glfwSetWindowUserPointer(getHandle(), this);
 }

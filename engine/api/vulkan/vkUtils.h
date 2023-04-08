@@ -3,6 +3,7 @@
 
 #include <volk.h>
 
+#include <variant>
 #include <optional>
 #include <algorithm>
 #include <array>

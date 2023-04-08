@@ -9,6 +9,8 @@
 
 #include "api/vulkan/device.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace aph
 {
 VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer) :
@@ -20,10 +22,12 @@ VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &
 void VulkanSceneRenderer::loadResources()
 {
     _loadScene();
+
     _initSetLayout();
+    _initSet();
+
     _initForward();
     _initPostFx();
-    _initRenderData();
 }
 
 void VulkanSceneRenderer::cleanupResources()
@@ -38,23 +42,25 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyDescriptorSetLayout(setLayout);
     }
 
-    for(auto &texture : m_textures)
+    for(auto *texture : m_textures)
     {
         m_pDevice->destroyImage(texture);
     }
 
-    for(uint32_t idx = 0; idx < m_pRenderer->getSwapChain()->getImageCount(); idx++)
+    for(const auto &images : m_images)
     {
-        m_pDevice->destroyImage(m_forward.colorImages[idx]);
-        m_pDevice->destroyImage(m_forward.depthImages[idx]);
+        for(auto *image : images)
+        {
+            m_pDevice->destroyImage(image);
+        }
     }
 
-    for(auto &buffer : m_buffers)
+    for(auto *buffer : m_buffers)
     {
         m_pDevice->destroyBuffer(buffer);
     }
 
-    for(auto &sampler : m_samplers)
+    for(const auto sampler : m_samplers)
     {
         vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
     }
@@ -79,12 +85,12 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     commandBuffer->begin();
 
     // dynamic state
-    commandBuffer->setViewport(&viewport);
-    commandBuffer->setSissor(&scissor);
+    commandBuffer->setViewport(viewport);
+    commandBuffer->setSissor(scissor);
 
     // forward pass
     {
-        VulkanImageView *pColorAttachment = m_forward.colorImages[imageIdx]->getImageView();
+        VulkanImageView *pColorAttachment = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pColorAttachment->getHandle(),
@@ -94,7 +100,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
             .clearValue = { .color{ { 0.1f, 0.1f, 0.1f, 1.0f } } },
         };
 
-        VulkanImageView *pDepthAttachment = m_forward.depthImages[imageIdx]->getImageView();
+        VulkanImageView *pDepthAttachment = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView = pDepthAttachment->getHandle(),
@@ -126,13 +132,13 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->beginRendering(renderingInfo);
         commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
 
-        uint32_t objectId = 0;
-        for(const auto &node : m_meshNodeList)
+        for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
         {
+            const auto &node = m_meshNodeList[nodeId];
             auto mesh = node->getObject<Mesh>();
             commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
-                                            sizeof(uint32_t), &objectId);
+                                         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                         offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
             if(mesh->m_indexOffset > -1)
             {
                 VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -156,7 +162,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                 {
                     commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                 sizeof(uint32_t), sizeof(uint32_t), &subset.materialIndex);
+                                                 offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                 &subset.materialIndex);
                     if(subset.hasIndices)
                     {
                         commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
@@ -168,7 +175,6 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                     }
                 }
             }
-            ++objectId;
         }
         commandBuffer->endRendering();
 
@@ -185,9 +191,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
-            VkDescriptorImageInfo inputImageInfo{ .imageView =
-                                                      m_forward.colorImages[imageIdx]->getImageView()->getHandle(),
-                                                  .imageLayout = VK_IMAGE_LAYOUT_GENERAL };
+            VkDescriptorImageInfo inputImageInfo{
+                .imageView = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+            };
             VkDescriptorImageInfo outputImageInfo{
                 .imageView = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL
@@ -210,13 +217,42 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
 void VulkanSceneRenderer::update(float deltaTime)
 {
-    // for(auto &ubo : m_uniformDataList)
+    for (uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
+    {
+        const auto& node = m_meshNodeList[nodeId];
+        m_transformInfos[nodeId] = node->getTransform();
+    }
+
+    for (uint32_t idx = 0; idx < m_cameraList.size(); idx++)
+    {
+        const auto& camera = m_cameraList[idx];
+        CameraInfo cameraData{
+            .view = camera->getViewMatrix(),
+            .proj = camera->getProjMatrix(),
+            .viewPos = camera->getPosition(),
+        };
+        m_cameraInfos[idx] = cameraData;
+    }
+
+    // for (uint32_t idx = 0; idx < m_lightList.size(); idx++)
     // {
-    //     ubo->update();
+    //     const auto& light = m_lightList[idx];
+    //     LightInfo lightData{
+    //         .color = light->getColor(),
+    //         .position = light->getPosition(),
+    //         .direction = light->getDirection(),
+    //     };
+    //     m_lightInfos[idx] = lightData;
     // }
+
+    {
+        m_buffers[BUFFER_SCENE_TRANSFORM]->copyTo(m_transformInfos.data());
+        m_buffers[BUFFER_SCENE_CAMERA]->copyTo(m_cameraInfos.data());
+        // m_buffers[BUFFER_SCENE_LIGHT]->copyTo(m_lightInfos.data());
+    }
 }
 
-void VulkanSceneRenderer::_initRenderData()
+void VulkanSceneRenderer::_initSet()
 {
     m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
@@ -293,14 +329,7 @@ void VulkanSceneRenderer::_loadScene()
         {
         case ObjectType::MESH:
         {
-            auto matrix = node->matrix;
-            auto currentNode = node->parent;
-            while(currentNode)
-            {
-                matrix = currentNode->matrix * matrix;
-                currentNode = currentNode->parent;
-            }
-            m_transformInfos.push_back(matrix);
+            m_transformInfos.push_back(node->getTransform());
             m_meshNodeList.push_back(node);
         }
         break;
@@ -312,6 +341,7 @@ void VulkanSceneRenderer::_loadScene()
                 .proj = object->getProjMatrix(),
                 .viewPos = object->getPosition(),
             };
+            m_cameraList.push_back(object);
             m_cameraInfos.push_back(cameraData);
         }
         break;
@@ -323,6 +353,7 @@ void VulkanSceneRenderer::_loadScene()
                 .position = object->getPosition(),
                 .direction = object->getDirection(),
             };
+            m_lightList.push_back(object);
             m_lightInfos.push_back(lightData);
         }
         break;
@@ -343,8 +374,9 @@ void VulkanSceneRenderer::_loadScene()
             .size = static_cast<uint32_t>(m_cameraInfos.size() * sizeof(CameraInfo)),
             .alignment = 0,
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA], m_cameraInfos.data());
+        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA], m_cameraInfos.data(), true);
     }
 
     // create light buffer
@@ -363,8 +395,9 @@ void VulkanSceneRenderer::_loadScene()
             .size = static_cast<uint32_t>(m_transformInfos.size() * sizeof(glm::mat4)),
             .alignment = 0,
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_transformInfos.data());
+        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_transformInfos.data(), true);
     }
 
     // create index buffer
@@ -400,7 +433,7 @@ void VulkanSceneRenderer::_loadScene()
     }
 
     // load scene image to gpu
-    for(const auto &image : m_scene->getImages())
+    for(const auto &image : m_scene->m_images)
     {
         ImageCreateInfo createInfo{
             .extent = { image->width, image->height, 1 },
@@ -433,14 +466,14 @@ void VulkanSceneRenderer::_initForward()
     uint32_t imageCount = m_pRenderer->getSwapChain()->getImageCount();
     VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
 
-    m_forward.colorImages.resize(imageCount);
-    m_forward.depthImages.resize(imageCount);
+    m_images[IMAGE_FORWARD_COLOR].resize(imageCount);
+    m_images[IMAGE_FORWARD_DEPTH].resize(imageCount);
 
     // frame buffer
     for(auto idx = 0; idx < imageCount; idx++)
     {
-        auto &colorImage = m_forward.colorImages[idx];
-        auto &depthImage = m_forward.depthImages[idx];
+        auto &colorImage = m_images[IMAGE_FORWARD_COLOR][idx];
+        auto &depthImage = m_images[IMAGE_FORWARD_DEPTH][idx];
 
         {
             ImageCreateInfo createInfo{

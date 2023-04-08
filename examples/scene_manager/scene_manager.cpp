@@ -22,7 +22,7 @@ void scene_manager::run()
         m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
-        // m_cameraNode->getObject<aph::Camera>()->update(m_deltaTime);
+        m_cameraNode->getObject<aph::Camera>()->processMovement(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
         // m_uiRenderer->update(m_deltaTime);
 

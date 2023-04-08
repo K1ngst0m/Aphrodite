@@ -50,7 +50,6 @@ public:
 
     glm::vec3 getPosition()
     {
-        updateViewMatrix();
         return m_position;
     }
 
@@ -66,9 +65,9 @@ public:
         return m_matrices.view;
     }
 
+    void processMovement(float deltaTime);
 private:
     void updateViewMatrix();
-    void processMovement(float deltaTime);
     void updateAspectRatio(float aspect);
 
 private:

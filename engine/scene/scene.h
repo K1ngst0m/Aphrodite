@@ -38,15 +38,12 @@ public:
     std::shared_ptr<Camera> getMainCamera() { return m_camera; }
 
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }
+
     std::shared_ptr<Light> getLightWithId(IdType id) { return m_lights[id]; }
     std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
     std::shared_ptr<Mesh> getMeshWithId(IdType id) { return m_meshes[id]; }
 
     glm::vec3 getAmbient() { return m_ambient; }
-
-    std::vector<std::shared_ptr<ImageInfo>> &getImages() { return m_images; }
-    std::vector<Material> &getMaterials() { return m_materials; }
-
 private:
     AABB m_aabb{};
     glm::vec3 m_ambient{ 0.02f };

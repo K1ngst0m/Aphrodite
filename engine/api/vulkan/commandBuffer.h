@@ -31,16 +31,14 @@ public:
 
     ~VulkanCommandBuffer();
 
-    VulkanCommandPool *getPool();
-
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
     VkResult end();
     VkResult reset();
 
     void beginRendering(const VkRenderingInfo &renderingInfo);
     void endRendering();
-    void setViewport(VkViewport *viewport);
-    void setSissor(VkRect2D *scissor);
+    void setViewport(const VkViewport &viewport);
+    void setSissor(const VkRect2D &scissor);
     void bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
                            const VkDescriptorSet *pDescriptorSets, uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(VulkanPipeline *pPipeline);

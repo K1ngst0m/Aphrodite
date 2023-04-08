@@ -33,6 +33,17 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
         children.push_back(childNode);
         return childNode;
     }
+    glm::mat4 getTransform()
+    {
+        glm::mat4 res = matrix;
+        auto currentNode = parent;
+        while(currentNode)
+        {
+            res = currentNode->matrix * res;
+            currentNode = currentNode->parent;
+        }
+        return res;
+    }
     void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
     std::string name{};
     std::vector<std::shared_ptr<TNode>> children{};

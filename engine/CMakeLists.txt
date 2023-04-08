@@ -30,12 +30,8 @@ file(GLOB base_src
   app/*.h
   app/*.hpp
 
-  # ../external/spirv_reflect/*.cpp
-  # ../external/spirv_reflect/*.h
-  # ../external/imgui/*.cpp
-  # ../external/imgui/*.h
-  ../external/volk/volk.h
-  ../external/volk/volk.c
+  ${CMAKE_SOURCE_DIR}/external/volk/volk.h
+  ${CMAKE_SOURCE_DIR}/external/volk/volk.c
   )
 
 add_library(engine STATIC ${base_src})
