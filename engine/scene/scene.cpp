@@ -355,12 +355,12 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
 
     if(fileLoaded)
     {
-        uint32_t imageOffset = m_images.size();
-        uint32_t materialOffset = m_materials.size();
+        const uint32_t imageOffset = m_images.size();
+        const uint32_t materialOffset = m_materials.size();
         std::vector<std::shared_ptr<ImageInfo>> images;
         std::vector<Material> materials;
-        gltf::loadImages(m_images, inputModel);
-        gltf::loadMaterials(m_materials, inputModel, imageOffset);
+        gltf::loadImages(images, inputModel);
+        gltf::loadMaterials(materials, inputModel, imageOffset);
         m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
                         std::make_move_iterator(images.cend()));
         m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()),
