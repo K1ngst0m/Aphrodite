@@ -5,8 +5,6 @@
 
 namespace aph
 {
-struct SceneNode;
-
 using ResourceIndex = int32_t;
 
 struct Vertex

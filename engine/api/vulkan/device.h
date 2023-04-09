@@ -70,7 +70,7 @@ public:
     void destroyDescriptorSetLayout(VulkanDescriptorSetLayout *pLayout);
 
 public:
-    VkResult flushMemory(VkDeviceMemory memory, uint32_t offset, uint32_t size);
+    VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size);
     VkResult invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset);
     VkResult bindMemory(VulkanBuffer* pBuffer, VkDeviceSize offset = 0);
     VkResult bindMemory(VulkanImage* pImage, VkDeviceSize offset = 0);

@@ -10,12 +10,13 @@ VulkanBuffer::VulkanBuffer(const BufferCreateInfo &createInfo, VkBuffer buffer, 
     getCreateInfo() = createInfo;
 }
 
-void VulkanBuffer::copyTo(const void *data, VkDeviceSize size) const {
+void VulkanBuffer::copyTo(const void *data, size_t offset, VkDeviceSize size) const {
     assert(mapped);
     if (size == VK_WHOLE_SIZE){
         size = getSize();
     }
-    memcpy(mapped, data, size);
+    uint8_t* pData = (uint8_t*)data;
+    memcpy(mapped, pData + offset, size);
 }
 
 }  // namespace aph

@@ -5,9 +5,9 @@
 
 namespace aph {
 class WindowData;
-class UIRenderer {
+class IUIRenderer {
 public:
-    UIRenderer(std::shared_ptr<WindowData>  windowData)
+    IUIRenderer(std::shared_ptr<WindowData>  windowData)
         : _windowData(std::move(windowData)) {
     }
 

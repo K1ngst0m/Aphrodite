@@ -24,6 +24,9 @@ enum class SceneType
 class Scene
 {
     friend class VulkanSceneRenderer;
+private:
+    Scene() = default;
+
 public:
     static std::unique_ptr<Scene> Create(SceneType type);
 

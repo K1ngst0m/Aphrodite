@@ -16,7 +16,7 @@ struct RenderConfig
     uint32_t maxFrames = 2;
 };
 
-class Renderer
+class IRenderer
 {
 public:
     template <typename TRenderer>
@@ -26,7 +26,7 @@ public:
         auto instance = std::make_shared<TRenderer>(windowData, config);
         return instance;
     }
-    Renderer(std::shared_ptr<WindowData>  windowData, const RenderConfig &config) :
+    IRenderer(std::shared_ptr<WindowData>  windowData, const RenderConfig &config) :
         m_windowData(std::move(windowData)),
         m_config(config)
     {

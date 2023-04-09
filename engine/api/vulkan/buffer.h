@@ -7,7 +7,6 @@
 namespace aph
 {
 class VulkanDevice;
-class VulkanQueue;
 
 struct BufferCreateInfo
 {
@@ -27,8 +26,7 @@ public:
     VkDeviceMemory getMemory() { return memory; }
     void *&getMapped() { return mapped; };
 
-public:
-    void copyTo(const void *data, VkDeviceSize size = VK_WHOLE_SIZE) const;
+    void copyTo(const void *data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
 
 private:
     VkDeviceMemory memory {};

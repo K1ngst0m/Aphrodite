@@ -7,34 +7,7 @@
 
 namespace aph
 {
-struct SceneInfo
-{
-    glm::vec4 ambient{ 0.04f };
-    uint32_t cameraCount{};
-    uint32_t lightCount{};
-};
-
-struct CameraInfo
-{
-    glm::mat4 view{ 1.0f };
-    glm::mat4 proj{ 1.0f };
-    glm::vec3 viewPos{ 1.0f };
-};
-
-struct LightInfo
-{
-    glm::vec3 color{ 1.0f };
-    glm::vec3 position{ 1.0f };
-    glm::vec3 direction{ 1.0f };
-};
-
-struct ObjectInfo
-{
-    uint32_t nodeId;
-    uint32_t materialId;
-};
-
-class VulkanSceneRenderer : public SceneRenderer
+class VulkanSceneRenderer : public ISceneRenderer
 {
 public:
     VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
@@ -51,6 +24,7 @@ private:
     void _initForward();
     void _initPostFx();
     void _loadScene();
+    void _initGpuResources();
 
 private:
     enum SetLayoutIndex
@@ -95,6 +69,7 @@ private:
     {
         IMAGE_FORWARD_COLOR,
         IMAGE_FORWARD_DEPTH,
+        IMAGE_SCENE_TEXTURES,
         IMAGE_MAX
     };
 
@@ -107,14 +82,9 @@ private:
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
-
-    std::vector<std::shared_ptr<Camera>> m_cameraList;
-    std::vector<std::shared_ptr<Light>> m_lightList;
-
-    std::vector<VulkanImage *> m_textures{};
+    std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
+    std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
     std::vector<glm::mat4> m_transformInfos{};
-    std::vector<CameraInfo> m_cameraInfos{};
-    std::vector<LightInfo> m_lightInfos{};
 
 private:
     VulkanDevice *m_pDevice{};

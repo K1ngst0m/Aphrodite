@@ -100,28 +100,27 @@ void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uin
 void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node &inputNode, const tinygltf::Model &input, const std::shared_ptr<SceneNode> &parent,
                uint32_t materialOffset)
 {
-    auto node{ parent->createChildNode() };
-    node->matrix = glm::mat4(1.0f);
-    node->parent = parent;
-    node->name = inputNode.name;
+    auto matrix {glm::mat4(1.0f)};
 
     if(inputNode.translation.size() == 3)
     {
-        node->matrix = glm::translate(node->matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
+        matrix = glm::translate(matrix, glm::vec3(glm::make_vec3(inputNode.translation.data())));
     }
     if(inputNode.rotation.size() == 4)
     {
         glm::quat q = glm::make_quat(inputNode.rotation.data());
-        node->matrix *= glm::mat4(q);
+        matrix *= glm::mat4(q);
     }
     if(inputNode.scale.size() == 3)
     {
-        node->matrix = glm::scale(node->matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+        matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
     }
     if(inputNode.matrix.size() == 16)
     {
-        node->matrix = glm::make_mat4x4(inputNode.matrix.data());
+        matrix = glm::make_mat4x4(inputNode.matrix.data());
     };
+
+    auto node{ parent->createChildNode(matrix, inputNode.name) };
 
     // If the node contains mesh data, we load vertices and indices from the buffers
     // In glTF this is done via accessors and buffer views
@@ -300,7 +299,7 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     {
     case SceneType::DEFAULT:
     {
-        auto instance{ std::make_unique<Scene>() };
+        auto instance{ std::unique_ptr<Scene>(new Scene()) };
         instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
         return instance;
     }

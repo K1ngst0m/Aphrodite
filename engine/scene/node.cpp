@@ -7,8 +7,8 @@
 
 namespace aph
 {
-SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix) :
-    Node<SceneNode>{ std::move(parent), Id::generateNewId<SceneNode>(), ObjectType::SCENENODE, matrix }
+SceneNode::SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix, std::string name) :
+    Node<SceneNode>{ std::move(parent), Id::generateNewId<SceneNode>(), ObjectType::SCENENODE, matrix , std::move(name)}
 {
 }
 }  // namespace aph

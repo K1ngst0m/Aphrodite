@@ -6,7 +6,7 @@
 
 namespace aph
 {
-class SceneRenderer
+class ISceneRenderer
 {
 public:
     template <typename TSceneRenderer, typename... Args>
@@ -15,8 +15,8 @@ public:
         auto instance = std::make_unique<TSceneRenderer>(std::forward<Args>(args)...);
         return instance;
     }
-    SceneRenderer() = default;
-    virtual ~SceneRenderer() = default;
+    ISceneRenderer() = default;
+    virtual ~ISceneRenderer() = default;
 
     virtual void loadResources() = 0;
     virtual void update(float deltaTime) = 0;

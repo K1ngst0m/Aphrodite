@@ -8,12 +8,15 @@
 namespace aph
 {
 template <typename TNode>
-struct Node : public Object, std::enable_shared_from_this<TNode>
+class Node : public Object, public std::enable_shared_from_this<TNode>
 {
-    Node(std::shared_ptr<TNode> parent, IdType id, ObjectType type, glm::mat4 transform = glm::mat4(1.0f)) :
+public:
+    Node(std::shared_ptr<TNode> parent, IdType id, ObjectType type, glm::mat4 transform = glm::mat4(1.0f),
+         std::string name = "") :
         Object{ id, type },
         parent{ std::move(parent) },
-        matrix{ transform }
+        matrix{ transform },
+        name{ std::move(name) }
     {
         if constexpr(std::is_same<TNode, Node>::value)
         {
@@ -27,12 +30,14 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
             }
         }
     }
-    std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f))
+
+    std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f), std::string name = "")
     {
-        auto childNode = std::make_shared<TNode>(this->shared_from_this(), transform);
+        auto childNode = std::shared_ptr<TNode>(new TNode(this->shared_from_this(), transform, std::move(name)));
         children.push_back(childNode);
         return childNode;
     }
+
     glm::mat4 getTransform()
     {
         glm::mat4 res = matrix;
@@ -44,16 +49,42 @@ struct Node : public Object, std::enable_shared_from_this<TNode>
         }
         return res;
     }
+
     void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
+    std::vector<std::shared_ptr<TNode>> getChildren() const { return children; }
+
+    Node<TNode> &rotate(float angle, glm::vec3 axis)
+    {
+        matrix = glm::rotate(matrix, angle, axis);
+        return *this;
+    }
+
+    Node<TNode> &translate(glm::vec3 value)
+    {
+        matrix = glm::translate(matrix, value);
+        return *this;
+    }
+
+    Node<TNode> &scale(glm::vec3 value)
+    {
+        matrix = glm::scale(matrix, value);
+        return *this;
+    }
+
+protected:
     std::string name{};
     std::vector<std::shared_ptr<TNode>> children{};
     std::shared_ptr<TNode> parent{};
     glm::mat4 matrix{ 1.0f };
 };
 
-struct SceneNode : Node<SceneNode>
+class SceneNode : public Node<SceneNode>
 {
-    SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix = glm::mat4(1.0f));
+    friend class Scene;
+
+public:
+    SceneNode(std::shared_ptr<SceneNode> parent, glm::mat4 matrix = glm::mat4(1.0f), std::string name = "");
+    ObjectType getAttachType() const { return m_attachType; };
     IdType getAttachObjectId() { return m_object->getId(); }
 
     template <typename TObject>
@@ -90,8 +121,9 @@ struct SceneNode : Node<SceneNode>
                std::is_same<TObject, Mesh>::value;
     }
 
-    std::shared_ptr<Object> m_object{};
+private:
     ObjectType m_attachType{ ObjectType::UNATTACHED };
+    std::shared_ptr<Object> m_object{};
 };
 }  // namespace aph
 

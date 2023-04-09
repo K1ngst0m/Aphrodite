@@ -7,7 +7,7 @@
 namespace aph
 {
 VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
-    Renderer(std::move(windowData), config)
+    IRenderer(std::move(windowData), config)
 {
     // create instance
     {

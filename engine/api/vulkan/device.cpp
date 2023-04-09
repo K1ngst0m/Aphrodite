@@ -537,6 +537,7 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo &createInf
     VulkanBuffer *buffer = nullptr;
     {
         auto bufferCI = createInfo;
+        bufferCI.property |= MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         bufferCI.usage |= BUFFER_USAGE_TRANSFER_DST_BIT;
         VK_CHECK_RESULT(createBuffer(bufferCI, &buffer));
     }
@@ -638,7 +639,7 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo &createInfo,
 
     return VK_SUCCESS;
 }
-VkResult VulkanDevice::flushMemory(VkDeviceMemory memory, uint32_t offset, uint32_t size)
+VkResult VulkanDevice::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
 {
     VkMappedMemoryRange mappedRange = {
         .sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,

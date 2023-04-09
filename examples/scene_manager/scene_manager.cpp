@@ -19,10 +19,9 @@ void scene_manager::run()
         m_window->pollEvents();
 
         // update scene object
-        m_modelNode->matrix = glm::rotate(m_modelNode->matrix, 1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
+        m_modelNode->rotate(1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
-        m_cameraNode->getObject<aph::Camera>()->processMovement(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
         // m_uiRenderer->update(m_deltaTime);
 
@@ -103,12 +102,12 @@ void scene_manager::setupScene()
     {
         m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
                                                     "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        m_modelNode->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, { 0.0f, 1.0f, 0.0f });
+        m_modelNode->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
 
         auto model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
                                                     "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-        model2->matrix = glm::rotate(glm::mat4(1.0f), 180.0f, { 0.0f, 1.0f, 0.0f });
-        model2->matrix = glm::translate(model2->matrix, {3.0, 1.0, 1.0});
+        model2->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
+        model2->translate({3.0, 1.0, 1.0});
     }
 
     {
@@ -126,8 +125,8 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
-    m_renderer = aph::Renderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
-    m_sceneRenderer = aph::SceneRenderer::Create<aph::VulkanSceneRenderer>(m_renderer);
+    m_renderer = aph::IRenderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
+    m_sceneRenderer = aph::ISceneRenderer::Create<aph::VulkanSceneRenderer>(m_renderer);
     // m_uiRenderer    = aph::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
 }
 

@@ -13,7 +13,7 @@ layout(location = 2) out vec2 outUV;
 layout(location = 3) out vec3 outColor;
 layout(location = 4) out vec4 outTangent;
 
-layout (set = 0, binding = 1) uniform MatUB{
+layout (set = 0, binding = 1) uniform modelMatUB{
     mat4 modelMats[100];
 };
 
@@ -23,12 +23,12 @@ struct Camera{
     vec3 viewPos;
 };
 layout (set = 0, binding = 2) uniform CameraUB{
-    Camera cameras[];
+    Camera cameras[100];
 };
 
 layout( push_constant ) uniform constants
 {
-    int id;
+    uint id;
 };
 
 void main() {

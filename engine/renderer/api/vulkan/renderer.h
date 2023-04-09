@@ -7,7 +7,7 @@
 
 namespace aph
 {
-class VulkanRenderer : public Renderer
+class VulkanRenderer : public IRenderer
 {
 public:
     VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config);

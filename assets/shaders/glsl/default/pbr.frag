@@ -12,8 +12,8 @@ layout(location = 0) out vec4 outColor;
 // set 0: per scene binding
 layout (std140, set = 0, binding = 0) uniform SceneInfoUB{
     vec4 ambientColor;
-    int cameraCount;
-    int lightCount;
+    uint cameraCount;
+    uint lightCount;
 };
 
 struct Camera{
@@ -23,7 +23,7 @@ struct Camera{
 };
 
 layout (set = 0, binding = 2) uniform CameraUB{
-    Camera cameras[];
+    Camera cameras[100];
 };
 
 struct Light{
@@ -32,7 +32,7 @@ struct Light{
     vec3 direction;
 };
 layout (set = 0, binding = 3) uniform LightUB{
-    Light lights[];
+    Light lights[100];
 };
 
 layout (set = 0, binding = 4) uniform texture2D textures[];
@@ -59,8 +59,8 @@ const float PI = 3.14159265359;
 
 layout( push_constant ) uniform constants
 {
-    int objId;
-    int matId;
+    uint objId;
+    uint matId;
 };
 
 Material mat = materials[matId];
