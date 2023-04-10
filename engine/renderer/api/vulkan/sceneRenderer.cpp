@@ -152,6 +152,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
 
         commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
         commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
+        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -249,8 +250,6 @@ void VulkanSceneRenderer::update(float deltaTime)
     {
         const auto &node = m_meshNodeList[idx];
         m_transformInfos[idx] = node->getTransform();
-        // auto transform = node->getTransform();
-        // m_buffers[BUFFER_SCENE_TRANSFORM]->copyTo(&transform, sizeof(glm::mat4) * idx, sizeof(glm::mat4));
     }
     m_buffers[BUFFER_SCENE_TRANSFORM]->copyTo(m_transformInfos.data(), 0, m_buffers[BUFFER_SCENE_TRANSFORM]->getSize());
 
@@ -280,6 +279,7 @@ void VulkanSceneRenderer::update(float deltaTime)
 
 void VulkanSceneRenderer::_initSet()
 {
+    m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
     m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
     SceneInfo info{
@@ -446,7 +446,7 @@ void VulkanSceneRenderer::_initForward()
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat = m_pDevice->getDepthFormat(),
         };
-        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE] };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.constants.push_back(aph::init::pushConstantRange(
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectInfo), 0));
         pipelineCreateInfo.shaderMapList = {
@@ -463,12 +463,6 @@ void VulkanSceneRenderer::_initSetLayout()
 {
     // scene
     {
-        {
-            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-            samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
-            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
-        }
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK,
                                                   VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0,
@@ -482,12 +476,27 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
                                                   m_images[IMAGE_SCENE_TEXTURES].size()),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 6, 1,
-                                                  m_samplers.data()),
         };
 
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
         m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SCENE]);
+    }
+
+    // sampler
+    {
+        {
+            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
+            samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
+        }
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1,
+                                                  m_samplers.data()),
+        };
+
+        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
+        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
 
     // off screen texture

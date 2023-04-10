@@ -29,7 +29,7 @@ private:
 private:
     enum SetLayoutIndex
     {
-        // SET_LAYOUT_SAMP,
+        SET_LAYOUT_SAMP,
         // SET_LAYOUT_MATERIAL,
         SET_LAYOUT_SCENE,
         // SET_LAYOUT_OBJECT,
@@ -79,6 +79,7 @@ private:
     std::array<VkSampler, SAMP_MAX> m_samplers;
     std::array<std::vector<VulkanImage*>, IMAGE_MAX> m_images;
     VkDescriptorSet m_sceneSet{};
+    VkDescriptorSet m_samplerSet{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
