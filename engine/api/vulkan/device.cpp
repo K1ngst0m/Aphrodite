@@ -49,6 +49,8 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo &createInfo, VulkanDevice *
     VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
+    supportedFeatures.samplerAnisotropy = VK_TRUE;
+
     // TODO manage features
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures{
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
@@ -252,7 +254,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo &createInfo, VulkanImag
         .imageType = static_cast<VkImageType>(createInfo.imageType),
         .format = static_cast<VkFormat>(createInfo.format),
         .mipLevels = createInfo.mipLevels,
-        .arrayLayers = createInfo.layerCount,
+        .arrayLayers = createInfo.arrayLayers,
         .samples = VK_SAMPLE_COUNT_1_BIT,
         .tiling = static_cast<VkImageTiling>(createInfo.tiling),
         .usage = createInfo.usage,

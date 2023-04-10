@@ -110,9 +110,12 @@ void VulkanCommandBuffer::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstB
     vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout,
-                                                   VkImageLayout newLayout,
-                                                   VkPipelineStageFlags srcStageMask,
-                                                   VkPipelineStageFlags dstStageMask)
+                                                VkImageLayout newLayout,
+                                                VkImageSubresourceRange * pSubResourceRange,
+                                                VkPipelineStageFlags srcStageMask,
+                                                VkPipelineStageFlags dstStageMask
+
+    )
 {
     VkImageMemoryBarrier imageMemoryBarrier{
         .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -124,13 +127,20 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayou
     };
 
     const auto &imageCreateInfo = image->getCreateInfo();
-    imageMemoryBarrier.subresourceRange = {
-        .aspectMask = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
-        .baseMipLevel = 0,
-        .levelCount = imageCreateInfo.mipLevels,
-        .baseArrayLayer = 0,
-        .layerCount = imageCreateInfo.arrayLayers,
-    };
+    if (pSubResourceRange)
+    {
+        imageMemoryBarrier.subresourceRange = *pSubResourceRange;
+    }
+    else
+    {
+        imageMemoryBarrier.subresourceRange = {
+            .aspectMask = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+            .baseMipLevel = 0,
+            .levelCount = imageCreateInfo.mipLevels,
+            .baseArrayLayer = 0,
+            .layerCount = imageCreateInfo.arrayLayers,
+        };
+    }
 
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
@@ -231,26 +241,32 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayou
     vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                          &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image)
+void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image, const std::vector<VkBufferImageCopy>& regions)
 {
-    VkBufferImageCopy region{
-        .bufferOffset = 0,
-        .bufferRowLength = 0,
-        .bufferImageHeight = 0,
-    };
+    if (regions.empty())
+    {
+        VkBufferImageCopy region{
+            .bufferOffset = 0,
+            .bufferRowLength = 0,
+            .bufferImageHeight = 0,
+        };
 
-    region.imageSubresource = {
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel = 0,
-        .baseArrayLayer = 0,
-        .layerCount = 1,
-    };
-
-    region.imageOffset = { 0, 0, 0 };
-    region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
-
-    vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        region.imageSubresource = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = 1,
+        };
+        region.imageOffset = { 0, 0, 0 };
+        region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
+        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    }
+    else
+    {
+        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
+    }
 }
 void VulkanCommandBuffer::copyImage(VulkanImage *srcImage, VulkanImage *dstImage)
 {

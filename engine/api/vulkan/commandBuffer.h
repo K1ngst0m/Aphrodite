@@ -54,9 +54,11 @@ public:
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer, VkDeviceSize size);
     void transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout, VkImageLayout newLayout,
+                               VkImageSubresourceRange* subResourcesRange = nullptr,
                                VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-    void copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image);
+                               VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
+                               );
+    void copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image, const std::vector<VkBufferImageCopy>& regions = {});
     void copyImage(VulkanImage *srcImage, VulkanImage *dstImage);
     void imageMemoryBarrier(VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
                             VkImageLayout oldImageLayout, VkImageLayout newImageLayout,

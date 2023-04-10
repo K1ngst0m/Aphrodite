@@ -44,7 +44,7 @@ public:
 
 private:
     VulkanDevice *m_pDevice {};
-    std::unordered_map<uint32_t, VulkanImageView*> m_imageViewMap;
+    std::unordered_map<Format, VulkanImageView*> m_imageViewFormatMap;
 
     VkDeviceMemory m_memory {};
     void *m_mapped {};

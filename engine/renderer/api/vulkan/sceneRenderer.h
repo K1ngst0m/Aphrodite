@@ -22,6 +22,7 @@ private:
     void _initSetLayout();
     void _initSet();
     void _initForward();
+    void _initSkybox();
     void _initPostFx();
     void _loadScene();
     void _initGpuResources();
@@ -42,7 +43,7 @@ private:
         SAMP_TEXTURE,
         // SAMP_SHADOW,
         // SAMP_POSTFX,
-        // SAMP_CUBEMAP,
+        SAMP_CUBEMAP,
         SAMP_MAX,
     };
 
@@ -50,6 +51,7 @@ private:
     {
         PIPELINE_GRAPHICS_FORWARD,
         // PIPELINE_GRAPHICS_SHADOW,
+        PIPELINE_GRAPHICS_SKYBOX,
         PIPELINE_COMPUTE_POSTFX,
         PIPELINE_MAX,
     };
@@ -69,6 +71,7 @@ private:
     {
         IMAGE_FORWARD_COLOR,
         IMAGE_FORWARD_DEPTH,
+        IMAGE_SCENE_SKYBOX,
         IMAGE_SCENE_TEXTURES,
         IMAGE_MAX
     };
@@ -80,6 +83,7 @@ private:
     std::array<std::vector<VulkanImage*>, IMAGE_MAX> m_images;
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
+    VkImageView m_cubeMapView{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;

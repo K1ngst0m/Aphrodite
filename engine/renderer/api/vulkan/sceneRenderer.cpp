@@ -313,6 +313,12 @@ void VulkanSceneRenderer::_initSet()
         textureInfos.push_back(info);
     }
 
+    VkDescriptorImageInfo skyBoxInfo{
+        .sampler = nullptr,
+        .imageView = m_cubeMapView,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
+
     VkDescriptorBufferInfo materialBufferInfo{ .buffer = m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(),
                                                .offset = 0,
                                                .range = VK_WHOLE_SIZE };
@@ -337,6 +343,7 @@ void VulkanSceneRenderer::_initSet()
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
                                       textureInfos.size()),
         aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo, 1),
+        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxInfo, 1),
     };
     vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
 }
@@ -476,6 +483,7 @@ void VulkanSceneRenderer::_initSetLayout()
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
                                                   m_images[IMAGE_SCENE_TEXTURES].size()),
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
         };
 
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
@@ -485,6 +493,28 @@ void VulkanSceneRenderer::_initSetLayout()
     // sampler
     {
         {
+            // Create sampler
+            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
+            samplerInfo.magFilter = VK_FILTER_LINEAR;
+            samplerInfo.minFilter = VK_FILTER_LINEAR;
+            samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+            samplerInfo.addressModeV = samplerInfo.addressModeU;
+            samplerInfo.addressModeW = samplerInfo.addressModeU;
+            samplerInfo.mipLodBias = 0.0f;
+            samplerInfo.compareOp = VK_COMPARE_OP_NEVER;
+            samplerInfo.minLod = 0.0f;
+            samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
+            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.maxAnisotropy = 1.0f;
+            // if (m_pDevice->features.samplerAnisotropy)
+            // {
+            //     sampler.maxAnisotropy = 100;
+            //     sampler.anisotropyEnable = VK_TRUE;
+            // }
+            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_CUBEMAP]));
+        }
+        {
             VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
             samplerInfo.maxLod = calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
@@ -492,7 +522,9 @@ void VulkanSceneRenderer::_initSetLayout()
         }
         std::vector<VkDescriptorSetLayoutBinding> bindings{
             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1,
-                                                  m_samplers.data()),
+                                                  &m_samplers[SAMP_TEXTURE]),
+            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1,
+                                                  &m_samplers[SAMP_CUBEMAP]),
         };
 
         VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
@@ -592,6 +624,102 @@ void VulkanSceneRenderer::_initGpuResources()
         VulkanImage *texture{};
         m_pDevice->createDeviceLocalImage(createInfo, &texture, image->data);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
+    }
+
+}
+
+void VulkanSceneRenderer::_initSkybox()
+{
+    // create skybox cubemap
+    {
+        uint32_t cubeMapWidth {}, cubeMapHeight {};
+        VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+        uint32_t mipLevels = 0;
+
+        std::array<VulkanBuffer*, 6> stagingBuffers;
+        for (auto idx = 0; idx < 6; idx++)
+        {
+            auto image = m_scene->m_images[0];
+            cubeMapWidth = image->width;
+            cubeMapHeight = image->height;
+
+            {
+                BufferCreateInfo createInfo{
+                    .size = static_cast<uint32_t>(image->data.size()),
+                    .usage = BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                };
+
+                m_pDevice->createBuffer(createInfo, &stagingBuffers[idx]);
+                m_pDevice->mapMemory(stagingBuffers[idx]);
+                stagingBuffers[idx]->copyTo(image->data.data());
+                m_pDevice->unMapMemory(stagingBuffers[idx]);
+            }
+        }
+        mipLevels = calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
+
+        std::vector<VkBufferImageCopy> bufferCopyRegions;
+        for (uint32_t face = 0; face < 6; face++)
+        {
+            for (uint32_t level = 0; level < mipLevels; level++)
+            {
+                VkBufferImageCopy bufferCopyRegion = {};
+                bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                bufferCopyRegion.imageSubresource.mipLevel = level;
+                bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+                bufferCopyRegion.imageSubresource.layerCount = 1;
+                bufferCopyRegion.imageExtent.width = cubeMapWidth >> level;
+                bufferCopyRegion.imageExtent.height = cubeMapHeight >> level;
+                bufferCopyRegion.imageExtent.depth = 1;
+                bufferCopyRegion.bufferOffset = 0;
+                bufferCopyRegions.push_back(bufferCopyRegion);
+            }
+        }
+
+        // Image barrier for optimal image (target)
+        // Set initial layout for all array layers (faces) of the optimal (target) tiled texture
+        VkImageSubresourceRange subresourceRange = {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = mipLevels,
+            .layerCount = 6,
+        };
+
+        VulkanImage * cubeMap {};
+        ImageCreateInfo imageCI{
+            .extent = {cubeMapWidth, cubeMapHeight, 1},
+            .flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+            .imageType = IMAGE_TYPE_2D,
+            .mipLevels = mipLevels,
+            .arrayLayers = 6,
+            .usage = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
+            .property = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            .format = FORMAT_R8G8B8A8_UNORM,
+        };
+        m_pDevice->createImage(imageCI, &cubeMap);
+
+        m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer){
+            pCommandBuffer->transitionImageLayout(cubeMap, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                  &subresourceRange);
+            // Copy the cube map faces from the staging buffer to the optimal tiled image
+            for(uint32_t idx = 0; idx < 6; idx++)
+            {
+                pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMap, { bufferCopyRegions[idx] });
+            }
+            pCommandBuffer->transitionImageLayout(cubeMap, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                  &subresourceRange);
+        });
+
+        // Create image view
+        VkImageViewCreateInfo view = aph::init::imageViewCreateInfo();
+        // Cube map view type
+        view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        view.format = imageFormat;
+        view.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+        view.subresourceRange.layerCount = 6;
+        view.subresourceRange.levelCount = mipLevels;
+        view.image = cubeMap->getHandle();
+        VK_CHECK_RESULT(vkCreateImageView(m_pDevice->getHandle(), &view, nullptr, &m_cubeMapView));
     }
 }
 }  // namespace aph

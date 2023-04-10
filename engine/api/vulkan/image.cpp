@@ -15,7 +15,7 @@ VulkanImage::VulkanImage(VulkanDevice *pDevice, const ImageCreateInfo &createInf
 
 VulkanImage::~VulkanImage()
 {
-    for(auto &[_, imageView] : m_imageViewMap)
+    for(auto &[_, imageView] : m_imageViewFormatMap)
     {
         m_pDevice->destroyImageView(imageView);
     }
@@ -28,7 +28,7 @@ VulkanImageView *VulkanImage::getImageView(Format imageFormat)
         imageFormat = m_createInfo.format;
     }
 
-    if(!m_imageViewMap.count(imageFormat))
+    if(!m_imageViewFormatMap.count(imageFormat))
     {
         std::unordered_map<ImageType, ImageViewType> imageTypeMap{
             { IMAGE_TYPE_1D, IMAGE_VIEW_TYPE_1D },
@@ -40,9 +40,9 @@ VulkanImageView *VulkanImage::getImageView(Format imageFormat)
             .format = imageFormat,
             .subresourceRange = { .levelCount = m_createInfo.mipLevels },
         };
-        m_pDevice->createImageView(createInfo, &m_imageViewMap[imageFormat], this);
+        m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }
 
-    return m_imageViewMap[imageFormat];
+    return m_imageViewFormatMap[imageFormat];
 }
 }  // namespace aph
