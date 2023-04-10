@@ -60,6 +60,7 @@ void VulkanSceneRenderer::loadResources()
     _initSet();
 
     _initForward();
+    _initSkybox();
     _initPostFx();
 }
 
@@ -150,61 +151,77 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
             .pDepthAttachment = &forwardDepthAttachmentInfo,
         };
 
-        commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
-        commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
-        commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
 
-        for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
+
+        // TODO skybox
         {
-            const auto &node = m_meshNodeList[nodeId];
-            auto mesh = node->getObject<Mesh>();
-            commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                         VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                         offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
-            if(mesh->m_indexOffset > -1)
+            commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
+            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
+            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
+            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
+            commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT16);
+            commandBuffer->drawIndexed(36, 1, 0, 0, 0);
+        }
+
+        // draw scene object
+        {
+            commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
+            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
+            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
+            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
+
+            for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
-                VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-                switch(mesh->m_indexType)
+                const auto &node = m_meshNodeList[nodeId];
+                auto mesh = node->getObject<Mesh>();
+                commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
+                                            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                            offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
+                if(mesh->m_indexOffset > -1)
                 {
-                case IndexType::UINT16:
-                    indexType = VK_INDEX_TYPE_UINT16;
-                    break;
-                case IndexType::UINT32:
-                    indexType = VK_INDEX_TYPE_UINT32;
-                    break;
-                default:
-                    assert("undefined behavior.");
-                    break;
-                }
-                commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-            }
-            for(const auto &subset : mesh->m_subsets)
-            {
-                if(subset.indexCount > 0)
-                {
-                    commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                                 VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                 offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
-                                                 &subset.materialIndex);
-                    if(subset.hasIndices)
+                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+                    switch(mesh->m_indexType)
                     {
-                        commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
-                                                   mesh->m_vertexOffset, 0);
+                    case IndexType::UINT16:
+                        indexType = VK_INDEX_TYPE_UINT16;
+                        break;
+                    case IndexType::UINT32:
+                        indexType = VK_INDEX_TYPE_UINT32;
+                        break;
+                    default:
+                        assert("undefined behavior.");
+                        break;
                     }
-                    else
+                    commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
+                }
+                for(const auto &subset : mesh->m_subsets)
+                {
+                    if(subset.indexCount > 0)
                     {
-                        commandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
+                                                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                    offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                    &subset.materialIndex);
+                        if(subset.hasIndices)
+                        {
+                            commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
+                                                    mesh->m_vertexOffset, 0);
+                        }
+                        else
+                        {
+                            commandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        }
                     }
                 }
             }
         }
+
         commandBuffer->endRendering();
 
         commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -626,10 +643,6 @@ void VulkanSceneRenderer::_initGpuResources()
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }
 
-}
-
-void VulkanSceneRenderer::_initSkybox()
-{
     // create skybox cubemap
     {
         uint32_t cubeMapWidth {}, cubeMapHeight {};
@@ -720,6 +733,31 @@ void VulkanSceneRenderer::_initSkybox()
         view.subresourceRange.levelCount = mipLevels;
         view.image = cubeMap->getHandle();
         VK_CHECK_RESULT(vkCreateImageView(m_pDevice->getHandle(), &view, nullptr, &m_cubeMapView));
+    }
+
+}
+
+void VulkanSceneRenderer::_initSkybox()
+{
+    // skybox graphics pipeline
+    {
+        GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        std::vector<VkFormat> colorFormats = { m_pRenderer->getSwapChain()->getSurfaceFormat() };
+        pipelineCreateInfo.renderingCreateInfo = VkPipelineRenderingCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .colorAttachmentCount = static_cast<uint32_t>(colorFormats.size()),
+            .pColorAttachmentFormats = colorFormats.data(),
+            .depthAttachmentFormat = m_pDevice->getDepthFormat(),
+        };
+        pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
+        pipelineCreateInfo.shaderMapList = {
+            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "skybox.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "skybox.frag.spv") },
+        };
+
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
     }
 }
 }  // namespace aph

@@ -53,9 +53,7 @@ struct Material{
 layout (set = 0, binding = 5) uniform MaterialUB{
     Material materials[100];
 };
-layout (set = 0, binding = 6) uniform textureCube skybox;
 layout (set = 1, binding = 0) uniform sampler samp;
-layout (set = 1, binding = 1) uniform sampler sampCubeMap;
 
 const float PI = 3.14159265359;
 
@@ -118,8 +116,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 }
 
 void main() {
-    vec3 uvw = vec3(1.0f);
-	vec4 outFragColor = texture(samplerCube(skybox, sampCubeMap), uvw);
     vec3 albedo = mat.baseColorId > -1 ? texture(sampler2D(textures[mat.baseColorId], samp), inUV).rgb : mat.baseColorFactor.xyz;
     float metallic = mat.metallicRoughnessId > -1 ? texture(sampler2D(textures[mat.metallicRoughnessId], samp), inUV).r : mat.metallicFactor;
     float roughness = mat.metallicRoughnessId > -1 ? texture(sampler2D(textures[mat.metallicRoughnessId], samp), inUV).g : mat.roughnessFactor;
