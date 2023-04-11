@@ -1,6 +1,7 @@
 ﻿---
 BasedOnStyle: Google
 AlignAfterOpenBracket: Align
+NamespaceIndentation: All
 #AlignConsecutiveAssignments: 'true'
 AlignEscapedNewlines: DontAlign
 AllowAllConstructorInitializersOnNextLine: false
@@ -17,9 +18,12 @@ ContinuationIndentWidth: '4'
 Cpp11BracedListStyle: 'false'
 DerivePointerAlignment: 'false'
 IncludeBlocks: 'Preserve'
+SortIncludes: false
 IndentCaseLabels: 'false'
 IndentWidth: '4'
 PointerAlignment: Right
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: true
 SpaceBeforeParens: Never
 SpaceInEmptyParentheses: 'false'
 SpacesInParentheses: 'false'
