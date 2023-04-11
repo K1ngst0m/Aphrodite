@@ -6,19 +6,19 @@
 
 namespace aph
 {
-VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig &config) :
+VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig& config) :
     IRenderer(std::move(windowData), config)
 {
     // create instance
     {
         volkInitialize();
 
-        std::vector<const char *> extensions{};
+        std::vector<const char*> extensions{};
         {
-            uint32_t glfwExtensionCount = 0;
-            const char **glfwExtensions;
+            uint32_t     glfwExtensionCount = 0;
+            const char** glfwExtensions;
             glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            extensions = std::vector<const char *>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+            extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
             if(m_config.enableDebug)
             {
@@ -31,10 +31,10 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         if(m_config.enableDebug)
         {
-            const std::vector<const char *> validationLayers = {
+            const std::vector<const char*> validationLayers = {
                 "VK_LAYER_KHRONOS_validation",
             };
-            instanceCreateInfo.flags = INSTANCE_CREATION_ENABLE_DEBUG;
+            instanceCreateInfo.flags         = INSTANCE_CREATION_ENABLE_DEBUG;
             instanceCreateInfo.enabledLayers = validationLayers;
         }
 
@@ -43,7 +43,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
     // create device
     {
-        const std::vector<const char *> deviceExtensions = {
+        const std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,
             VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
@@ -60,7 +60,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         // get 3 type queue
         m_queue.graphics = m_device->getQueueByFlags(QUEUE_GRAPHICS);
-        m_queue.compute = m_device->getQueueByFlags(QUEUE_COMPUTE);
+        m_queue.compute  = m_device->getQueueByFlags(QUEUE_COMPUTE);
         m_queue.transfer = m_device->getQueueByFlags(QUEUE_TRANSFER);
         if(!m_queue.compute)
         {
@@ -76,7 +76,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
     {
         VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_windowData->window, nullptr, &m_surface));
         SwapChainCreateInfo createInfo{
-            .surface = m_surface,
+            .surface      = m_surface,
             .windowHandle = m_windowData->window,
         };
         VK_CHECK_RESULT(m_device->createSwapchain(createInfo, &m_swapChain));
@@ -92,7 +92,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         {
             m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_device);
-            m_pShaderCache = new VulkanShaderCache(m_device);
+            m_pShaderCache        = new VulkanShaderCache(m_device);
         }
 
         {
@@ -101,7 +101,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
         {
             VkSemaphoreCreateInfo semaphoreInfo = aph::init::semaphoreCreateInfo();
-            VkFenceCreateInfo fenceInfo = aph::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
+            VkFenceCreateInfo     fenceInfo     = aph::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
 
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
@@ -122,19 +122,19 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
 void VulkanRenderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_device->waitForFence({m_frameFences[m_frameIdx]}));
+    VK_CHECK_RESULT(m_device->waitForFence({ m_frameFences[m_frameIdx] }));
     VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
     VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
 }
 
 void VulkanRenderer::endFrame()
 {
-    auto *queue = m_queue.graphics;
+    auto* queue = m_queue.graphics;
 
-    QueueSubmitInfo submitInfo {
-        .commandBuffers = { m_commandBuffers[m_frameIdx] },
-        .waitStages = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-        .waitSemaphores = { m_renderSemaphore[m_frameIdx] },
+    QueueSubmitInfo submitInfo{
+        .commandBuffers   = { m_commandBuffers[m_frameIdx] },
+        .waitStages       = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
+        .waitSemaphores   = { m_renderSemaphore[m_frameIdx] },
         .signalSemaphores = { m_presentSemaphore[m_frameIdx] },
     };
 

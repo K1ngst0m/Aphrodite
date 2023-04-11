@@ -10,38 +10,37 @@ namespace aph
 {
 struct RenderConfig
 {
-    bool enableDebug = true;
-    bool enableUI = false;
-    bool initDefaultResource = true;
-    uint32_t maxFrames = 2;
+    bool     enableDebug         = true;
+    bool     enableUI            = false;
+    bool     initDefaultResource = true;
+    uint32_t maxFrames           = 2;
 };
 
 class IRenderer
 {
 public:
     template <typename TRenderer>
-    static std::shared_ptr<TRenderer> Create(const std::shared_ptr<WindowData> &windowData,
-                                             const RenderConfig &config)
+    static std::shared_ptr<TRenderer> Create(const std::shared_ptr<WindowData>& windowData, const RenderConfig& config)
     {
         auto instance = std::make_shared<TRenderer>(windowData, config);
         return instance;
     }
-    IRenderer(std::shared_ptr<WindowData>  windowData, const RenderConfig &config) :
+    IRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig& config) :
         m_windowData(std::move(windowData)),
         m_config(config)
     {
     }
-    void setWindowData(const std::shared_ptr<WindowData> &windowData) { m_windowData = windowData; }
+    void     setWindowData(const std::shared_ptr<WindowData>& windowData) { m_windowData = windowData; }
     uint32_t getWindowHeight() { return m_windowData->height; };
     uint32_t getWindowWidth() { return m_windowData->width; };
     uint32_t getWindowAspectRation() { return m_windowData->getAspectRatio(); }
 
-    virtual void cleanup() = 0;
+    virtual void cleanup()    = 0;
     virtual void idleDevice() = 0;
 
 protected:
     std::shared_ptr<WindowData> m_windowData = nullptr;
-    RenderConfig m_config;
+    RenderConfig                m_config;
 };
 }  // namespace aph
 

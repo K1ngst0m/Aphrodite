@@ -3,11 +3,11 @@
 namespace aph
 {
 
-static const std::filesystem::path assetDir = "assets";
+static const std::filesystem::path assetDir      = "assets";
 static const std::filesystem::path glslShaderDir = assetDir / "shaders/glsl";
-static const std::filesystem::path textureDir = assetDir / "textures";
-static const std::filesystem::path modelDir = assetDir / "models";
-static const std::filesystem::path fontDir = assetDir / "fonts";
+static const std::filesystem::path textureDir    = assetDir / "textures";
+static const std::filesystem::path modelDir      = assetDir / "models";
+static const std::filesystem::path fontDir       = assetDir / "fonts";
 
 std::filesystem::path AssetManager::GetAssertDir()
 {

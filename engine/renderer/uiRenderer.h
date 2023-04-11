@@ -3,17 +3,17 @@
 
 #include "common/common.h"
 
-namespace aph {
+namespace aph
+{
 class WindowData;
-class IUIRenderer {
+class IUIRenderer
+{
 public:
-    IUIRenderer(std::shared_ptr<WindowData>  windowData)
-        : _windowData(std::move(windowData)) {
-    }
+    IUIRenderer(std::shared_ptr<WindowData> windowData) : _windowData(std::move(windowData)) {}
 
 protected:
     std::shared_ptr<WindowData> _windowData = nullptr;
 };
-} // namespace aph
+}  // namespace aph
 
-#endif // UIRENDERER_H_
+#endif  // UIRENDERER_H_

@@ -16,23 +16,23 @@ public:
     std::vector<char> getCode() { return m_code; }
 
 private:
-    std::string m_entrypoint;
+    std::string       m_entrypoint;
     std::vector<char> m_code;
 };
 
 class VulkanShaderCache
 {
 public:
-    VulkanShaderCache(VulkanDevice *device);
-    VulkanShaderModule *getShaders(const std::filesystem::path &path);
-    void destroy();
+    VulkanShaderCache(VulkanDevice* device);
+    VulkanShaderModule* getShaders(const std::filesystem::path& path);
+    void                destroy();
 
 private:
-    VulkanDevice *m_device;
-    std::unordered_map<std::string, VulkanShaderModule *> shaderModuleCaches;
+    VulkanDevice*                                        m_device;
+    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches;
 };
 
-using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule *>;
+using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule*>;
 
 }  // namespace aph
 

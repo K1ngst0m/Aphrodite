@@ -9,8 +9,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer()
     m_pool->freeCommandBuffers(1, &m_handle);
 }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool *pool, VkCommandBuffer handle,
-                                         uint32_t queueFamilyIndices) :
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pool(pool),
     m_state(CommandBufferState::INITIAL),
     m_queueFamilyType(queueFamilyIndices)
@@ -62,83 +61,78 @@ VkResult VulkanCommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::setViewport(const VkViewport &viewport)
+void VulkanCommandBuffer::setViewport(const VkViewport& viewport)
 {
     vkCmdSetViewport(m_handle, 0, 1, &viewport);
 }
-void VulkanCommandBuffer::setSissor(const VkRect2D &scissor)
+void VulkanCommandBuffer::setSissor(const VkRect2D& scissor)
 {
     vkCmdSetScissor(m_handle, 0, 1, &scissor);
 }
-void VulkanCommandBuffer::bindPipeline(VulkanPipeline *pPipeline)
+void VulkanCommandBuffer::bindPipeline(VulkanPipeline* pPipeline)
 {
     vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
-void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline *pPipeline, uint32_t firstSet,
-                                               uint32_t descriptorSetCount,
-                                               const VkDescriptorSet *pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffset)
+void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
+                                            const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
+                                            const uint32_t* pDynamicOffset)
 {
     vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
                             descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
-void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount,
-                                               const VulkanBuffer *pBuffer, const std::vector<VkDeviceSize>& offsets)
+void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer* pBuffer,
+                                            const std::vector<VkDeviceSize>& offsets)
 {
     vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
 }
-void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer *pBuffer, VkDeviceSize offset,
-                                              VkIndexType indexType)
+void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
     vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void VulkanCommandBuffer::pushConstants(VulkanPipeline * pPipeline, VkShaderStageFlags stage,
-                                           uint32_t offset, uint32_t size, const void *pValues)
+void VulkanCommandBuffer::pushConstants(VulkanPipeline* pPipeline, VkShaderStageFlags stage, uint32_t offset,
+                                        uint32_t size, const void* pValues)
 {
     vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), stage, offset, size, pValues);
 }
-void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
-                                         uint32_t firstIndex, uint32_t vertexOffset,
-                                         uint32_t firstInstance)
+void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
+                                      uint32_t vertexOffset, uint32_t firstInstance)
 {
     vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
-void VulkanCommandBuffer::copyBuffer(VulkanBuffer *srcBuffer, VulkanBuffer *dstBuffer,
-                                        VkDeviceSize size)
+void VulkanCommandBuffer::copyBuffer(VulkanBuffer* srcBuffer, VulkanBuffer* dstBuffer, VkDeviceSize size)
 {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayout oldLayout,
-                                                VkImageLayout newLayout,
-                                                VkImageSubresourceRange * pSubResourceRange,
-                                                VkPipelineStageFlags srcStageMask,
-                                                VkPipelineStageFlags dstStageMask
+void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout,
+                                                VkImageSubresourceRange* pSubResourceRange,
+                                                VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask
 
-    )
+)
 {
     VkImageMemoryBarrier imageMemoryBarrier{
-        .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .oldLayout = oldLayout,
-        .newLayout = newLayout,
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .oldLayout           = oldLayout,
+        .newLayout           = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image = image->getHandle(),
+        .image               = image->getHandle(),
     };
 
-    const auto &imageCreateInfo = image->getCreateInfo();
-    if (pSubResourceRange)
+    const auto& imageCreateInfo = image->getCreateInfo();
+    if(pSubResourceRange)
     {
         imageMemoryBarrier.subresourceRange = *pSubResourceRange;
     }
     else
     {
         imageMemoryBarrier.subresourceRange = {
-            .aspectMask = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
-            .baseMipLevel = 0,
-            .levelCount = imageCreateInfo.mipLevels,
+            .aspectMask     = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+            .baseMipLevel   = 0,
+            .levelCount     = imageCreateInfo.mipLevels,
             .baseArrayLayer = 0,
-            .layerCount = imageCreateInfo.arrayLayers,
+            .layerCount     = imageCreateInfo.arrayLayers,
         };
     }
 
@@ -238,94 +232,93 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage *image, VkImageLayou
         break;
     }
 
-    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
-                         &imageMemoryBarrier);
+    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer *buffer, VulkanImage *image, const std::vector<VkBufferImageCopy>& regions)
+void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* image,
+                                            const std::vector<VkBufferImageCopy>& regions)
 {
-    if (regions.empty())
+    if(regions.empty())
     {
         VkBufferImageCopy region{
-            .bufferOffset = 0,
-            .bufferRowLength = 0,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
             .bufferImageHeight = 0,
         };
 
         region.imageSubresource = {
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-            .mipLevel = 0,
+            .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+            .mipLevel       = 0,
             .baseArrayLayer = 0,
-            .layerCount = 1,
+            .layerCount     = 1,
         };
         region.imageOffset = { 0, 0, 0 };
         region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
-        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
-                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               1, &region);
     }
     else
     {
-        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
-                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
+        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               regions.size(), regions.data());
     }
 }
-void VulkanCommandBuffer::copyImage(VulkanImage *srcImage, VulkanImage *dstImage)
+void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage)
 {
     // Copy region for transfer from framebuffer to cube face
     VkImageCopy copyRegion = {};
-    copyRegion.srcOffset = { 0, 0, 0 };
-    copyRegion.dstOffset = { 0, 0, 0 };
+    copyRegion.srcOffset   = { 0, 0, 0 };
+    copyRegion.dstOffset   = { 0, 0, 0 };
 
     VkImageSubresourceLayers subresourceLayers{
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel = 0,
+        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+        .mipLevel       = 0,
         .baseArrayLayer = 0,
-        .layerCount = 1,
+        .layerCount     = 1,
     };
 
     copyRegion.srcSubresource = subresourceLayers;
     copyRegion.dstSubresource = subresourceLayers;
-    copyRegion.extent.width = srcImage->getWidth();
-    copyRegion.extent.height = srcImage->getHeight();
-    copyRegion.extent.depth = 1;
+    copyRegion.extent.width   = srcImage->getWidth();
+    copyRegion.extent.height  = srcImage->getHeight();
+    copyRegion.extent.depth   = 1;
 
-    vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                   dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage->getHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
 void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-                                  uint32_t firstInstance)
+                               uint32_t firstInstance)
 {
     vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void VulkanCommandBuffer::imageMemoryBarrier(
-    VulkanImage *image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-    VkImageLayout oldImageLayout, VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
-    VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
+void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags srcAccessMask,
+                                             VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout,
+                                             VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+                                             VkPipelineStageFlags    dstStageMask,
+                                             VkImageSubresourceRange subresourceRange)
 {
     VkImageMemoryBarrier imageMemoryBarrier = aph::init::imageMemoryBarrier();
-    imageMemoryBarrier.srcAccessMask = srcAccessMask;
-    imageMemoryBarrier.dstAccessMask = dstAccessMask;
-    imageMemoryBarrier.oldLayout = oldImageLayout;
-    imageMemoryBarrier.newLayout = newImageLayout;
-    imageMemoryBarrier.image = image->getHandle();
-    imageMemoryBarrier.subresourceRange = subresourceRange;
+    imageMemoryBarrier.srcAccessMask        = srcAccessMask;
+    imageMemoryBarrier.dstAccessMask        = dstAccessMask;
+    imageMemoryBarrier.oldLayout            = oldImageLayout;
+    imageMemoryBarrier.newLayout            = newImageLayout;
+    imageMemoryBarrier.image                = image->getHandle();
+    imageMemoryBarrier.subresourceRange     = subresourceRange;
 
-    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
-                         &imageMemoryBarrier);
+    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::blitImage(VulkanImage *srcImage, VkImageLayout srcImageLayout,
-                                       VulkanImage *dstImage, VkImageLayout dstImageLayout,
-                                       uint32_t regionCount, const VkImageBlit *pRegions,
-                                       VkFilter filter)
+void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage,
+                                    VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
+                                    VkFilter filter)
 {
-    vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout,
-                   1, pRegions, filter);
+    vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions,
+                   filter);
 }
 uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const
 {
     return m_queueFamilyType;
 };
-void VulkanCommandBuffer::beginRendering(const VkRenderingInfo &renderingInfo)
+void VulkanCommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
     vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
@@ -337,9 +330,10 @@ void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, u
 {
     vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
-void VulkanCommandBuffer::pushDescriptorSet(VulkanPipeline *pipeline, const std::vector<VkWriteDescriptorSet> &writes,
+void VulkanCommandBuffer::pushDescriptorSet(VulkanPipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes,
                                             uint32_t setIdx)
 {
-    vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(), setIdx, writes.size(), writes.data());
+    vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(), setIdx,
+                              writes.size(), writes.data());
 }
 }  // namespace aph

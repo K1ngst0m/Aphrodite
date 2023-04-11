@@ -5,4 +5,4 @@
 #include "renderer/api/vulkan/sceneRenderer.h"
 // #include "renderer/api/vulkan/uiRenderer.h"
 
-#endif // HELPER_H_
+#endif  // HELPER_H_

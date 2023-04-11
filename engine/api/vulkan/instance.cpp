@@ -5,7 +5,7 @@ namespace aph
 {
 
 #ifdef VK_CHECK_RESULT
-#undef VK_CHECK_RESULT
+#    undef VK_CHECK_RESULT
 #endif
 
 #define VK_CHECK_RESULT(f) \
@@ -27,11 +27,11 @@ bool checkValidationLayerSupport(const std::vector<const char*>& validationLayer
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for(const char *layerName : validationLayers)
+    for(const char* layerName : validationLayers)
     {
         bool layerFound = false;
 
-        for(const auto &layerProperties : availableLayers)
+        for(const auto& layerProperties : availableLayers)
         {
             if(strcmp(layerName, layerProperties.layerName) == 0)
             {
@@ -49,10 +49,9 @@ bool checkValidationLayerSupport(const std::vector<const char*>& validationLayer
     return true;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                             VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                                             void *pUserData)
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+                                             VkDebugUtilsMessageTypeFlagsEXT             messageType,
+                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
     switch(messageSeverity)
     {
@@ -74,13 +73,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
     return VK_FALSE;
 }
 
-VkResult createDebugUtilsMessengerEXT(VkInstance instance,
-                                      const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                      const VkAllocationCallbacks *pAllocator,
-                                      VkDebugUtilsMessengerEXT *pDebugMessenger)
+VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                      const VkAllocationCallbacks* pAllocator,
+                                      VkDebugUtilsMessengerEXT*    pDebugMessenger)
 {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-        instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if(func != nullptr)
     {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -90,10 +87,9 @@ VkResult createDebugUtilsMessengerEXT(VkInstance instance,
 }
 
 void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                   const VkAllocationCallbacks *pAllocator)
+                                   const VkAllocationCallbacks* pAllocator)
 {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
-        instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if(func != nullptr)
     {
         func(instance, debugMessenger, pAllocator);
@@ -102,8 +98,8 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
-    createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo                 = {};
+    createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                  VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
@@ -115,29 +111,29 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 }  // namespace
 
-VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInstance **ppInstance)
+VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInstance** ppInstance)
 {
     // Fill out VkApplicationInfo struct.
     // TODO check version with supports
     VkApplicationInfo appInfo = {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .sType            = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pApplicationName = createInfo.pApplicationName,
-        .pEngineName = "Aphrodite",
-        .engineVersion = VK_MAKE_VERSION(1,0,0),
-        .apiVersion = VK_API_VERSION_1_3,
+        .pEngineName      = "Aphrodite",
+        .engineVersion    = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion       = VK_API_VERSION_1_3,
     };
 
     // Create VkInstance.
     VkInstanceCreateInfo instanceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pApplicationInfo = &appInfo,
-        .enabledLayerCount = static_cast<uint32_t>(createInfo.enabledLayers.size()),
-        .ppEnabledLayerNames = createInfo.enabledLayers.data(),
-        .enabledExtensionCount = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
+        .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo        = &appInfo,
+        .enabledLayerCount       = static_cast<uint32_t>(createInfo.enabledLayers.size()),
+        .ppEnabledLayerNames     = createInfo.enabledLayers.data(),
+        .enabledExtensionCount   = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
         .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
     };
 
-    if (createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
+    if(createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
     {
         if(!checkValidationLayerSupport(createInfo.enabledLayers))
         {
@@ -146,7 +142,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
         populateDebugMessengerCreateInfo(debugCreateInfo);
-        instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
+        instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
     }
 
     VkInstance handle = VK_NULL_HANDLE;
@@ -155,7 +151,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
     volkLoadInstance(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto *instance = new VulkanInstance();
+    auto* instance        = new VulkanInstance();
     instance->getHandle() = handle;
 
     // Get the number of attached physical devices.
@@ -170,7 +166,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
         VK_CHECK_RESULT(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
 
         // Wrap native Vulkan handles in PhysicalDevice class.
-        for(auto &pd : physicalDevices)
+        for(auto& pd : physicalDevices)
         {
             auto pdImpl = new VulkanPhysicalDevice(pd);
             instance->m_physicalDevices.push_back(pdImpl);
@@ -199,7 +195,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
     // Copy address of object instance.
     *ppInstance = instance;
 
-    if (createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
+    if(createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         populateDebugMessengerCreateInfo(createInfo);
@@ -210,7 +206,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo &createInfo, VulkanInst
     return VK_SUCCESS;
 }
 
-void VulkanInstance::Destroy(VulkanInstance *pInstance)
+void VulkanInstance::Destroy(VulkanInstance* pInstance)
 {
     delete pInstance->m_threadPool;
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);

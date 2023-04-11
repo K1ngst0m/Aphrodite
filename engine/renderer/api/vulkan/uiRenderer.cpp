@@ -9,9 +9,11 @@
 #include <imgui_impl_glfw.h>
 #include <type_traits>
 
-namespace aph {
+namespace aph
+{
 
-// VulkanUIRenderer::VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData)
+// VulkanUIRenderer::VulkanUIRenderer(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData>
+// &windowData)
 //     : UIRenderer(windowData), m_renderer(renderer), m_device(renderer->getDevice()) {
 //     // Init ImGui
 //     ImGui::CreateContext();
@@ -100,9 +102,10 @@ namespace aph {
 
 //         // Copy buffer data to font image
 //         m_device->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer *copyCmd){
-//             copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-//             copyCmd->cmdCopyBufferToImage(stagingBuffer, m_fontData.image);
-//             copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+//             copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_UNDEFINED,
+//             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL); copyCmd->cmdCopyBufferToImage(stagingBuffer, m_fontData.image);
+//             copyCmd->cmdTransitionImageLayout(m_fontData.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+//             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 //         });
 //         m_device->destroyBuffer(stagingBuffer);
 //     }
@@ -222,18 +225,20 @@ namespace aph {
 //     return updateCmdBuffers;
 // }
 
-// void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat colorFormat, VkFormat depthFormat) {
+// void VulkanUIRenderer::initPipeline(VkPipelineCache pipelineCache, VulkanRenderPass *renderPass, VkFormat
+// colorFormat, VkFormat depthFormat) {
 //     GraphicsPipelineCreateInfo pipelineCI{};
 //     // Setup graphics pipeline for UI rendering
-//     pipelineCI.inputAssembly = aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
-//     pipelineCI.rasterizer    = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+//     pipelineCI.inputAssembly = aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+//     0, VK_FALSE); pipelineCI.rasterizer    = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL,
+//     VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
 //     // Enable blending
 //     VkPipelineColorBlendAttachmentState blendAttachmentState{};
 //     blendAttachmentState.blendEnable         = VK_TRUE;
-//     blendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-//     blendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-//     blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+//     blendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+//     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT; blendAttachmentState.srcColorBlendFactor =
+//     VK_BLEND_FACTOR_SRC_ALPHA; blendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 //     blendAttachmentState.colorBlendOp        = VK_BLEND_OP_ADD;
 //     blendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 //     blendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
@@ -241,8 +246,9 @@ namespace aph {
 
 //     pipelineCI.colorBlendAttachment = blendAttachmentState;
 
-//     pipelineCI.depthStencil  = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_ALWAYS);
-//     pipelineCI.multisampling = aph::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
+//     pipelineCI.depthStencil  = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE,
+//     VK_COMPARE_OP_ALWAYS); pipelineCI.multisampling =
+//     aph::init::pipelineMultisampleStateCreateInfo(VK_SAMPLE_COUNT_1_BIT);
 
 //     VkPipelineViewportStateCreateInfo viewportState =
 //         aph::init::pipelineViewportStateCreateInfo(1, 1, 0);
@@ -257,9 +263,10 @@ namespace aph {
 //         aph::init::vertexInputBindingDescription(0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX),
 //     };
 //     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-//         aph::init::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)), // Location 0: Position
-//         aph::init::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)), // Location 1: UV
-//         aph::init::vertexInputAttributeDescription(0, 2, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)), // Location 0: Color
+//         aph::init::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)), //
+//         Location 0: Position aph::init::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT,
+//         offsetof(ImDrawVert, uv)), // Location 1: UV aph::init::vertexInputAttributeDescription(0, 2,
+//         VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)), // Location 0: Color
 //     };
 
 //     VkPipelineVertexInputStateCreateInfo &vertexInputState = pipelineCI.vertexInputInfo;
@@ -269,21 +276,23 @@ namespace aph {
 //     vertexInputState.vertexAttributeDescriptionCount       = static_cast<uint32_t>(vertexInputAttributes.size());
 //     vertexInputState.pVertexAttributeDescriptions          = vertexInputAttributes.data();
 
-
 //     // build effect
 //     {
 //         VulkanDescriptorSetLayout * pLayout = nullptr;
 //         std::vector<VkDescriptorSetLayoutBinding> bindings {
-//             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+//             aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+//             VK_SHADER_STAGE_FRAGMENT_BIT, 0),
 //         };
 //         VkDescriptorSetLayoutCreateInfo layoutCreateInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
 //         VK_CHECK_RESULT(m_device->createDescriptorSetLayout(&layoutCreateInfo, &pLayout));
 
 //         auto shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
 //         pipelineCI.setLayouts.push_back(pLayout);
-//         pipelineCI.constants.push_back(aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
-//         pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
-//         pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv");
+//         pipelineCI.constants.push_back(aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT,
+//         sizeof(PushConstBlock), 0)); pipelineCI.shaderMapList[VK_SHADER_STAGE_VERTEX_BIT] =
+//         m_renderer->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv");
+//         pipelineCI.shaderMapList[VK_SHADER_STAGE_FRAGMENT_BIT] = m_renderer->getShaderCache()->getShaders(shaderDir /
+//         "uioverlay.frag.spv");
 
 //         VK_CHECK_RESULT(m_device->createGraphicsPipeline(pipelineCI, renderPass, &m_pipeline));
 //     }
@@ -294,18 +303,22 @@ namespace aph {
 //             aph::init::descriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)};
 
 //         VkDescriptorPoolCreateInfo descriptorPoolInfo = aph::init::descriptorPoolCreateInfo(poolSizes, 2);
-//         VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getHandle(), &descriptorPoolInfo, nullptr, &m_descriptorPool));
+//         VK_CHECK_RESULT(vkCreateDescriptorPool(m_device->getHandle(), &descriptorPoolInfo, nullptr,
+//         &m_descriptorPool));
 
 //         // Descriptor set
-//         VkDescriptorSetAllocateInfo allocInfo = aph::init::descriptorSetAllocateInfo(m_descriptorPool, &m_pipeline->getDescriptorSetLayout(0)->getHandle(), 1);
+//         VkDescriptorSetAllocateInfo allocInfo = aph::init::descriptorSetAllocateInfo(m_descriptorPool,
+//         &m_pipeline->getDescriptorSetLayout(0)->getHandle(), 1);
 //         VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device->getHandle(), &allocInfo, &m_descriptorSet));
 //         VkDescriptorImageInfo fontDescriptor = aph::init::descriptorImageInfo(
 //             m_fontData.sampler,
 //             m_fontData.view->getHandle(),
 //             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 //         std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-//             aph::init::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-//         vkUpdateDescriptorSets(m_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()), writeDescriptorSets.data(), 0, nullptr);
+//             aph::init::writeDescriptorSet(m_descriptorSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
+//             &fontDescriptor)};
+//         vkUpdateDescriptorSets(m_device->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()),
+//         writeDescriptorSets.data(), 0, nullptr);
 //     }
 // }
 
@@ -320,11 +333,8 @@ namespace aph {
 //         ImGui::NewFrame();
 
 //         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-//         ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-//         ImGui::ShowDemoWindow();
-//         ImGui::End();
-//         ImGui::PopStyleVar();
-//         ImGui::Render();
+//         ImGui::Begin("Vulkan Example", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize |
+//         ImGuiWindowFlags_NoMove); ImGui::ShowDemoWindow(); ImGui::End(); ImGui::PopStyleVar(); ImGui::Render();
 
 //         // TODO
 //         updated = update(0.0f);
@@ -344,7 +354,8 @@ namespace aph {
 //     command->cmdBindDescriptorSet(m_pipeline, 0, 1, &m_descriptorSet);
 //     m_pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
 //     m_pushConstBlock.translate = glm::vec2(-1.0f);
-//     command->cmdPushConstants(m_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(m_pushConstBlock), &m_pushConstBlock);
+//     command->cmdPushConstants(m_pipeline->getPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+//     sizeof(m_pushConstBlock), &m_pushConstBlock);
 
 //     VkDeviceSize offsets[1] = {0};
 //     command->cmdBindVertexBuffers(0, 1, m_vertexBuffer, offsets);
@@ -366,8 +377,9 @@ namespace aph {
 //         vertexOffset += cmd_list->VtxBuffer.Size;
 //     }
 // }
-// std::unique_ptr<VulkanUIRenderer> VulkanUIRenderer::Create(const std::shared_ptr<VulkanRenderer>& renderer, const std::shared_ptr<WindowData> &windowData) {
+// std::unique_ptr<VulkanUIRenderer> VulkanUIRenderer::Create(const std::shared_ptr<VulkanRenderer>& renderer, const
+// std::shared_ptr<WindowData> &windowData) {
 //     auto instance = std::make_unique<VulkanUIRenderer>(renderer, windowData);
 //     return instance;
 // }
-} // namespace aph
+}  // namespace aph

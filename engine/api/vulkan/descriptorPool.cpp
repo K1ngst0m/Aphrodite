@@ -3,11 +3,11 @@
 
 namespace aph
 {
-VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : m_layout(layout)
+VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout* layout) : m_layout(layout)
 {
-    const auto &bindings = layout->getBindings();
+    const auto& bindings = layout->getBindings();
 
-    for(auto &binding : bindings)
+    for(auto& binding : bindings)
     {
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
     }
@@ -16,7 +16,7 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout *layout) : 
     uint32_t index = 0;
     for(auto [type, count] : m_descriptorTypeCounts)
     {
-        m_poolSizes[index].type = type;
+        m_poolSizes[index].type            = type;
         m_poolSizes[index].descriptorCount = count * m_maxSetsPerPool;
         ++index;
     }
@@ -50,23 +50,23 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
         {
             // Create the Vulkan descriptor pool.
             VkDescriptorPoolCreateInfo createInfo = {
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                .maxSets = m_maxSetsPerPool,
+                .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                .maxSets       = m_maxSetsPerPool,
                 .poolSizeCount = static_cast<uint32_t>(m_poolSizes.size()),
-                .pPoolSizes = m_poolSizes.data(),
+                .pPoolSizes    = m_poolSizes.data(),
             };
             VkDescriptorPoolInlineUniformBlockCreateInfo descriptorPoolInlineUniformBlockCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO,
-                .maxInlineUniformBlockBindings = static_cast<uint32_t>(m_descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
+                .maxInlineUniformBlockBindings =
+                    static_cast<uint32_t>(m_descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
             };
-            if (m_descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
+            if(m_descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
             {
                 createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
-            auto result =
-                vkCreateDescriptorPool(m_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
+            auto result = vkCreateDescriptorPool(m_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
             if(result != VK_SUCCESS)
                 return VK_NULL_HANDLE;
 
@@ -90,12 +90,12 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
     VkDescriptorSetLayout setLayout = m_layout->getHandle();
 
     VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = m_pools[m_currentAllocationPoolIndex];
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &setLayout;
-    VkDescriptorSet handle = VK_NULL_HANDLE;
-    auto result = vkAllocateDescriptorSets(m_layout->getDevice()->getHandle(), &allocInfo, &handle);
+    allocInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool              = m_pools[m_currentAllocationPoolIndex];
+    allocInfo.descriptorSetCount          = 1;
+    allocInfo.pSetLayouts                 = &setLayout;
+    VkDescriptorSet handle                = VK_NULL_HANDLE;
+    auto            result = vkAllocateDescriptorSets(m_layout->getDevice()->getHandle(), &allocInfo, &handle);
     if(result != VK_SUCCESS)
         return VK_NULL_HANDLE;
 

@@ -1,15 +1,19 @@
 #include "threadPool.h"
 
-namespace aph {
-ThreadPool::ThreadPool(uint32_t threadCount) {
+namespace aph
+{
+ThreadPool::ThreadPool(uint32_t threadCount)
+{
     // Spawn maxThreadCount threads to execute tasks.
-    for (auto i = 0U; i < threadCount; ++i) {
+    for(auto i = 0U; i < threadCount; ++i)
+    {
         // All threads execute until task queue becomes invalidated.
         m_threads.emplace([this]() {
-            while (true) {
+            while(true)
+            {
                 // Pop the next task off of the queue.
                 std::packaged_task<void()> packagedTask;
-                if (!m_tasks.Pop(packagedTask))
+                if(!m_tasks.Pop(packagedTask))
                     break;
 
                 // Increment the number of active threads.
@@ -28,35 +32,41 @@ ThreadPool::ThreadPool(uint32_t threadCount) {
     }
 }
 
-ThreadPool::~ThreadPool() {
+ThreadPool::~ThreadPool()
+{
     // Invalidate task queue so threads stop waiting on new tasks but finish remaining tasks in queue.
     m_tasks.Invalidate();
 
     // Join all active threads.
-    while (!m_threads.empty()) {
-        auto &thread = m_threads.top();
+    while(!m_threads.empty())
+    {
+        auto& thread = m_threads.top();
         thread.join();
         m_threads.pop();
     }
 }
 
-std::shared_future<void> ThreadPool::AddTask(Task &&task) {
+std::shared_future<void> ThreadPool::AddTask(Task&& task)
+{
     std::packaged_task<void()> packagedTask(std::move(task));
     auto                       future = packagedTask.get_future();
     m_tasks.Push(std::move(packagedTask));
     return future.share();
 }
 
-void ThreadPool::ClearPendingTasks() {
+void ThreadPool::ClearPendingTasks()
+{
     m_tasks.Clear();
 }
 
-void ThreadPool::Wait() {
+void ThreadPool::Wait()
+{
     std::unique_lock<std::mutex> lock(m_threadsCompleteMutex);
     m_threadsCompleteCondition.wait(lock, [this]() { return !m_activeThreads && m_tasks.Empty(); });
 }
 
-void ThreadPool::Abort() {
+void ThreadPool::Abort()
+{
     // Clear any pending items.
     m_tasks.Clear();
 
@@ -66,4 +76,4 @@ void ThreadPool::Abort() {
     // Wait for running threads to complete.
     Wait();
 }
-} // namespace aph
+}  // namespace aph

@@ -12,14 +12,13 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
         vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, nullptr);
         assert(queueFamilyCount > 0);
         m_queueFamilyProperties.resize(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount,
-                                                m_queueFamilyProperties.data());
-        for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
+        vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, m_queueFamilyProperties.data());
+        for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
-            auto &queueFamily = m_queueFamilyProperties[queueFamilyIndex];
-            auto queueFlags = queueFamily.queueFlags;
+            auto& queueFamily = m_queueFamilyProperties[queueFamilyIndex];
+            auto  queueFlags  = queueFamily.queueFlags;
             // universal queue
-            if (queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
                 m_queueFamilyMap[QUEUE_GRAPHICS].push_back(queueFamilyIndex);
             }
@@ -44,8 +43,7 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
     if(extCount > 0)
     {
         std::vector<VkExtensionProperties> extensions(extCount);
-        if(vkEnumerateDeviceExtensionProperties(getHandle(), nullptr, &extCount, &extensions.front()) ==
-           VK_SUCCESS)
+        if(vkEnumerateDeviceExtensionProperties(getHandle(), nullptr, &extCount, &extensions.front()) == VK_SUCCESS)
         {
             for(auto ext : extensions)
             {
@@ -62,7 +60,7 @@ bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) cons
 }
 
 uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
-                                              VkBool32 *memTypeFound) const
+                                              VkBool32* memTypeFound) const
 {
     for(uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; i++)
     {
@@ -88,8 +86,7 @@ uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropert
 
     throw std::runtime_error("Could not find a matching memory type");
 }
-VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat> &candidates,
-                                                   VkImageTiling tiling,
+VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
                                                    VkFormatFeatureFlags features) const
 {
     for(VkFormat format : candidates)

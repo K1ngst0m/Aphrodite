@@ -31,31 +31,31 @@ Window::~Window()
     glfwTerminate();
 }
 
-void Window::setFramebufferSizeCallback(const FramebufferSizeFunc &cbFunc)
+void Window::setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc)
 {
     m_framebufferResizeCB = cbFunc;
-    glfwSetFramebufferSizeCallback(getHandle(), [](GLFWwindow *window, int width, int height) {
-        auto *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    glfwSetFramebufferSizeCallback(getHandle(), [](GLFWwindow* window, int width, int height) {
+        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         ptr->setWidth(width);
         ptr->setHeight(height);
         ptr->m_framebufferResizeCB(width, height);
     });
 }
 
-void Window::setCursorPosCallback(const CursorPosFunc &cbFunc)
+void Window::setCursorPosCallback(const CursorPosFunc& cbFunc)
 {
     m_cursorPosCB = cbFunc;
 
-    glfwSetCursorPosCallback(getHandle(), [](GLFWwindow *window, double xposIn, double yposIn) {
-        Window *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    glfwSetCursorPosCallback(getHandle(), [](GLFWwindow* window, double xposIn, double yposIn) {
+        Window* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 
         auto xpos{ static_cast<float>(xposIn) };
         auto ypos{ static_cast<float>(yposIn) };
 
         if(ptr->m_cursorData->firstMouse)
         {
-            ptr->m_cursorData->lastX = xpos;
-            ptr->m_cursorData->lastY = ypos;
+            ptr->m_cursorData->lastX      = xpos;
+            ptr->m_cursorData->lastY      = ypos;
             ptr->m_cursorData->firstMouse = false;
         }
 
@@ -66,11 +66,11 @@ void Window::setCursorPosCallback(const CursorPosFunc &cbFunc)
     });
 }
 
-void Window::setKeyCallback(const KeyFunc &cbFunc)
+void Window::setKeyCallback(const KeyFunc& cbFunc)
 {
     m_keyCB = cbFunc;
-    glfwSetKeyCallback(getHandle(), [](GLFWwindow *window, int key, int scancode, int action, int mods) {
-        auto *ptr = reinterpret_cast<Window *>(glfwGetWindowUserPointer(window));
+    glfwSetKeyCallback(getHandle(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         ptr->m_keyCB(key, scancode, action, mods);
     });
 }

@@ -3,14 +3,17 @@
 
 #include "common.h"
 
-namespace aph {
+namespace aph
+{
 
-enum class ShaderAssetType {
+enum class ShaderAssetType
+{
     GLSL,
     HLSL,
 };
 
-class AssetManager {
+class AssetManager
+{
 public:
     static std::filesystem::path GetAssertDir();
     static std::filesystem::path GetShaderDir(ShaderAssetType type);
@@ -18,6 +21,6 @@ public:
     static std::filesystem::path GetModelDir();
     static std::filesystem::path GetFontDir();
 };
-} // namespace aph
+}  // namespace aph
 
-#endif // ASSETMANAGER_H_
+#endif  // ASSETMANAGER_H_

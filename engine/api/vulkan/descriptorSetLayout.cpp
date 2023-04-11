@@ -4,17 +4,18 @@
 namespace aph
 {
 
-VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice *device, const VkDescriptorSetLayoutCreateInfo &createInfo,
-                                                     VkDescriptorSetLayout handle)
-    : m_device(device)
+VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice*                          device,
+                                                     const VkDescriptorSetLayoutCreateInfo& createInfo,
+                                                     VkDescriptorSetLayout                  handle) :
+    m_device(device)
 {
     for(auto i = 0; i < createInfo.bindingCount; i++)
     {
         m_bindings.push_back(createInfo.pBindings[i]);
     }
-    getHandle() = handle;
+    getHandle()     = handle;
     getCreateInfo() = createInfo;
-    m_pool = new VulkanDescriptorPool(this);
+    m_pool          = new VulkanDescriptorPool(this);
 }
 
 VkDescriptorSet VulkanDescriptorSetLayout::allocateSet()

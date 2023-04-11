@@ -3,29 +3,35 @@
 
 #include "common/common.h"
 
-namespace aph {
+namespace aph
+{
 // A thread-safe queue class.
 template <typename T>
-class ThreadSafeQueue {
+class ThreadSafeQueue
+{
 public:
-    bool Empty() {
+    bool Empty()
+    {
         std::lock_guard<std::mutex> lock(m_mutex);
         return m_queue.empty();
     }
 
-    void Clear() {
+    void Clear()
+    {
         std::lock_guard<std::mutex> lock(m_mutex);
-        while (!m_queue.empty())
+        while(!m_queue.empty())
             m_queue.pop();
         m_condition.notify_all();
     }
 
-    void Invalidate() {
+    void Invalidate()
+    {
         m_valid = false;
         m_condition.notify_all();
     }
 
-    void Push(const T &item) {
+    void Push(const T& item)
+    {
         std::unique_lock<std::mutex> lock(m_mutex);
         assert(m_valid);
         m_queue.push(item);
@@ -33,7 +39,8 @@ public:
         m_condition.notify_one();
     }
 
-    void Push(T &&item) {
+    void Push(T&& item)
+    {
         std::unique_lock<std::mutex> lock(m_mutex);
         assert(m_valid);
         m_queue.push(std::move(item));
@@ -41,13 +48,14 @@ public:
         m_condition.notify_one();
     }
 
-    bool Pop(T &item) {
+    bool Pop(T& item)
+    {
         // Wait for an item to be in the queue or the queue to be invalidated.
         std::unique_lock<std::mutex> lock(m_mutex);
         m_condition.wait(lock, [this](void) { return !m_queue.empty() || !m_valid; });
 
         // Ensure queue is still valid since above predicate could fall through.
-        if (!m_valid)
+        if(!m_valid)
             return false;
 
         // Get the item out of the queue.
@@ -57,14 +65,15 @@ public:
     }
 
 private:
-    std::atomic_bool        m_valid{true};
+    std::atomic_bool        m_valid{ true };
     std::queue<T>           m_queue;
     std::mutex              m_mutex;
     std::condition_variable m_condition;
 };
 
 // A ThreadPool class for parallel executions of tasks on across one or more threads.
-class ThreadPool {
+class ThreadPool
+{
 public:
     // Task definition for code simplicity purposes.
     using Task = std::function<void()>;
@@ -77,7 +86,7 @@ public:
     ~ThreadPool();
 
     // Adds a new task to the thread pool and returns a future handle.
-    std::shared_future<void> AddTask(Task &&task);
+    std::shared_future<void> AddTask(Task&& task);
 
     // Clear any pending tasks.
     void ClearPendingTasks();
@@ -91,10 +100,10 @@ public:
 private:
     std::stack<std::thread>                     m_threads;
     ThreadSafeQueue<std::packaged_task<void()>> m_tasks;
-    std::atomic<uint32_t>                       m_activeThreads{0U};
+    std::atomic<uint32_t>                       m_activeThreads{ 0U };
     std::mutex                                  m_threadsCompleteMutex;
     std::condition_variable                     m_threadsCompleteCondition;
 };
-} // namespace aph
+}  // namespace aph
 
-#endif // THREADPOOL_H_
+#endif  // THREADPOOL_H_

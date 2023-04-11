@@ -10,7 +10,7 @@ namespace aph
 class VulkanSceneRenderer : public ISceneRenderer
 {
 public:
-    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer> &renderer);
+    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer);
     ~VulkanSceneRenderer() override = default;
 
     void loadResources() override;
@@ -76,23 +76,23 @@ private:
         IMAGE_MAX
     };
 
-    std::array<VulkanBuffer *, BUFFER_MAX> m_buffers;
-    std::array<VulkanPipeline *, PIPELINE_MAX> m_pipelines;
-    std::array<VulkanDescriptorSetLayout *, SET_LAYOUT_MAX> m_setLayouts;
-    std::array<VkSampler, SAMP_MAX> m_samplers;
-    std::array<std::vector<VulkanImage*>, IMAGE_MAX> m_images;
-    VkDescriptorSet m_sceneSet{};
-    VkDescriptorSet m_samplerSet{};
-    VkImageView m_cubeMapView{};
+    std::array<VulkanBuffer*, BUFFER_MAX>                  m_buffers;
+    std::array<VulkanPipeline*, PIPELINE_MAX>              m_pipelines;
+    std::array<VulkanDescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
+    std::array<VkSampler, SAMP_MAX>                        m_samplers;
+    std::array<std::vector<VulkanImage*>, IMAGE_MAX>       m_images;
+    VkDescriptorSet                                        m_sceneSet{};
+    VkDescriptorSet                                        m_samplerSet{};
+    VkImageView                                            m_cubeMapView{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
-    std::vector<glm::mat4> m_transformInfos{};
+    std::vector<glm::mat4>                  m_transformInfos{};
 
 private:
-    VulkanDevice *m_pDevice{};
+    VulkanDevice*                   m_pDevice{};
     std::shared_ptr<VulkanRenderer> m_pRenderer{};
 };
 }  // namespace aph

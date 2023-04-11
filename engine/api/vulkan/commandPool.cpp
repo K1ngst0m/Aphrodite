@@ -3,24 +3,25 @@
 
 namespace aph
 {
-VulkanCommandPool::VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice *device, VkCommandPool pool)
-    :m_device(device)
+VulkanCommandPool::VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice* device,
+                                     VkCommandPool pool) :
+    m_device(device)
 {
-    getHandle() = pool;
+    getHandle()     = pool;
     getCreateInfo() = m_createInfo;
 }
 
-VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer *pCommandBuffers)
+VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer* pCommandBuffers)
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();
 
     // Allocate a new command buffer.
     VkCommandBufferAllocateInfo allocInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext = nullptr,
-        .commandPool = getHandle(),
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext              = nullptr,
+        .commandPool        = getHandle(),
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = commandBufferCount,
     };
     auto result = vkAllocateCommandBuffers(m_device->getHandle(), &allocInfo, pCommandBuffers);
@@ -31,7 +32,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, 
     // Return result.
     return result;
 }
-void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer *pCommandBuffers)
+void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers)
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();

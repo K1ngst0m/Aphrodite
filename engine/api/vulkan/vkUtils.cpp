@@ -4,7 +4,8 @@
 namespace aph::utils
 {
 
-std::vector<char> loadGlslFromFile(const std::string &filename){
+std::vector<char> loadGlslFromFile(const std::string& filename)
+{
     // TODO spvgen
     return {};
 }
@@ -45,13 +46,13 @@ std::string errorString(VkResult errorCode)
     }
 }
 
-std::vector<char> loadSpvFromFile(const std::string &filename)
+std::vector<char> loadSpvFromFile(const std::string& filename)
 {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     assert(file.is_open() && "failed to open file!");
 
-    size_t fileSize = (size_t)file.tellg();
+    size_t            fileSize = (size_t)file.tellg();
     std::vector<char> buffer(fileSize);
     file.seekg(0);
     file.read(buffer.data(), fileSize);

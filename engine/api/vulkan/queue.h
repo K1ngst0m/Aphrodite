@@ -9,32 +9,32 @@ namespace aph
 class VulkanDevice;
 class VulkanCommandBuffer;
 
-struct QueueSubmitInfo{
+struct QueueSubmitInfo
+{
     std::vector<VulkanCommandBuffer*> commandBuffers;
     std::vector<VkPipelineStageFlags> waitStages;
-    std::vector<VkSemaphore> waitSemaphores;
-    std::vector<VkSemaphore> signalSemaphores;
+    std::vector<VkSemaphore>          waitSemaphores;
+    std::vector<VkSemaphore>          signalSemaphores;
 };
 
 class VulkanQueue : public ResourceHandle<VkQueue>
 {
 public:
-    VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
-                const VkQueueFamilyProperties &properties);
+    VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
 
-    uint32_t getFamilyIndex() const { return m_queueFamilyIndex; }
-    uint32_t getIndex() const { return m_index; }
+    uint32_t     getFamilyIndex() const { return m_queueFamilyIndex; }
+    uint32_t     getIndex() const { return m_index; }
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
-    VkResult waitIdle() { return vkQueueWaitIdle(getHandle()); }
-    VkResult submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
-private:
+    VkResult     waitIdle() { return vkQueueWaitIdle(getHandle()); }
+    VkResult     submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
 
-    uint32_t m_queueFamilyIndex {};
-    uint32_t m_index {};
+private:
+    uint32_t                m_queueFamilyIndex{};
+    uint32_t                m_index{};
     VkQueueFamilyProperties m_properties;
 };
 
-using QueueFamily = std::vector<VulkanQueue *>;
+using QueueFamily = std::vector<VulkanQueue*>;
 
 }  // namespace aph
 

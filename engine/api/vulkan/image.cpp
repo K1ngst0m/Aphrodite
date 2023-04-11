@@ -4,24 +4,24 @@
 namespace aph
 {
 
-VulkanImage::VulkanImage(VulkanDevice *pDevice, const ImageCreateInfo &createInfo, VkImage image,
+VulkanImage::VulkanImage(VulkanDevice* pDevice, const ImageCreateInfo& createInfo, VkImage image,
                          VkDeviceMemory memory) :
     m_pDevice(pDevice),
     m_memory(memory)
 {
-    getHandle() = image;
+    getHandle()     = image;
     getCreateInfo() = createInfo;
 }
 
 VulkanImage::~VulkanImage()
 {
-    for(auto &[_, imageView] : m_imageViewFormatMap)
+    for(auto& [_, imageView] : m_imageViewFormatMap)
     {
         m_pDevice->destroyImageView(imageView);
     }
 }
 
-VulkanImageView *VulkanImage::getImageView(Format imageFormat)
+VulkanImageView* VulkanImage::getImageView(Format imageFormat)
 {
     if(imageFormat == FORMAT_UNDEFINED)
     {
@@ -36,8 +36,8 @@ VulkanImageView *VulkanImage::getImageView(Format imageFormat)
             { IMAGE_TYPE_2D, IMAGE_VIEW_TYPE_3D },
         };
         ImageViewCreateInfo createInfo{
-            .viewType = imageTypeMap[m_createInfo.imageType],
-            .format = imageFormat,
+            .viewType         = imageTypeMap[m_createInfo.imageType],
+            .format           = imageFormat,
             .subresourceRange = { .levelCount = m_createInfo.mipLevels },
         };
         m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);

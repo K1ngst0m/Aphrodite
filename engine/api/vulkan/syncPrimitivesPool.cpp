@@ -3,22 +3,22 @@
 
 namespace aph
 {
-VulkanSyncPrimitivesPool::VulkanSyncPrimitivesPool(VulkanDevice *device) : m_device(device)
+VulkanSyncPrimitivesPool::VulkanSyncPrimitivesPool(VulkanDevice* device) : m_device(device)
 {
 }
 
 VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool()
 {
     // Destroy all created fences.
-    for(auto *fence : m_allFences)
+    for(auto* fence : m_allFences)
         vkDestroyFence(m_device->getHandle(), fence, nullptr);
 
     // Destroy all created semaphores.
-    for(auto *semaphore : m_allSemaphores)
+    for(auto* semaphore : m_allSemaphores)
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 
-VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence &fence, bool isSignaled)
+VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
 {
     VkResult result = VK_SUCCESS;
 
@@ -33,7 +33,7 @@ VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence &fence, bool isSignaled)
     else
     {
         VkFenceCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        createInfo.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         if(isSignaled)
         {
             createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
@@ -53,7 +53,7 @@ VkResult VulkanSyncPrimitivesPool::releaseFence(VkFence fence)
     if(m_allFences.count(fence))
     {
         VkResult result = vkResetFences(m_device->getHandle(), 1, &fence);
-        if (result != VK_SUCCESS)
+        if(result != VK_SUCCESS)
         {
             m_fenceLock.Unlock();
             return result;
@@ -72,7 +72,7 @@ bool VulkanSyncPrimitivesPool::Exists(VkFence fence)
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemaphore *pSemaphores)
+VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores)
 {
     VkResult result = VK_SUCCESS;
 
@@ -91,7 +91,7 @@ VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkS
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
         VkSemaphoreCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
         if(result != VK_SUCCESS)
             break;
@@ -103,7 +103,7 @@ VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkS
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore *pSemaphores)
+VkResult VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore* pSemaphores)
 {
     m_semaphoreLock.Lock();
     for(auto i = 0U; i < semaphoreCount; ++i)

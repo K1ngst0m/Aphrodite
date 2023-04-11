@@ -1,7 +1,6 @@
 ﻿---
 BasedOnStyle: Google
 AlignAfterOpenBracket: Align
-NamespaceIndentation: All
 #AlignConsecutiveAssignments: 'true'
 AlignEscapedNewlines: DontAlign
 AllowAllConstructorInitializersOnNextLine: false
@@ -21,7 +20,7 @@ IncludeBlocks: 'Preserve'
 SortIncludes: false
 IndentCaseLabels: 'false'
 IndentWidth: '4'
-PointerAlignment: Right
+PointerAlignment: Left
 AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveDeclarations: true
 SpaceBeforeParens: Never
