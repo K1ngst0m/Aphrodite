@@ -1,5 +1,7 @@
 #include "scene_manager.h"
 
+const char * modelPath = {};
+
 scene_manager::scene_manager() : aph::BaseApp("scene_manager")
 {
 }
@@ -100,12 +102,17 @@ void scene_manager::setupScene()
 
     // load from gltf file
     {
-        m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
-                                                    "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+        if (modelPath){
+            m_modelNode = m_scene->createMeshesFromFile(modelPath);
+        }
+        else{
+            m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
+                                                        "DamagedHelmet.glb");
+        }
         m_modelNode->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
 
         auto model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
-                                                    "DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+                                                    "DamagedHelmet.glb");
         model2->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
         model2->translate({3.0, 1.0, 1.0});
     }
@@ -188,9 +195,14 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
     camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});
 }
 
-int main()
+int main(int argc, char** argv)
 {
     scene_manager app;
+
+    if (argc > 1)
+    {
+        modelPath = argv[1];
+    }
 
     app.init();
     app.run();
