@@ -1,40 +1,14 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#define VK_NO_PROTOTYPES
 #include <volk.h>
-
-#include <variant>
-#include <optional>
-#include <algorithm>
-#include <array>
-#include <cassert>
-#include <cstring>
-#include <deque>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <optional>
-#include <set>
-#include <type_traits>
-#include <unordered_map>
-#include <vector>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "vkInit.h"
+#include "common/common.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-
-#include <stb_image.h>
-
-#include "vkInit.h"
 
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0

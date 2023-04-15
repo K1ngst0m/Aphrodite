@@ -478,9 +478,9 @@ struct ComponentMapping
 
 struct ImageSubresourceRange
 {
-    uint32_t baseMipLevel;
+    uint32_t baseMipLevel = 0;
     uint32_t levelCount = 1;
-    uint32_t baseArrayLayer;
+    uint32_t baseArrayLayer = 0;
     uint32_t layerCount = 1;
 };
 
@@ -617,8 +617,8 @@ public:
     T_CreateInfo&   getCreateInfo() { return m_createInfo; }
 
 protected:
-    T_Handle     m_handle = nullptr;
-    T_CreateInfo m_createInfo;
+    T_Handle     m_handle{};
+    T_CreateInfo m_createInfo{};
 };
 
 }  // namespace aph

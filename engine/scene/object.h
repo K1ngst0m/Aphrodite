@@ -32,7 +32,7 @@ public:
     ObjectType getType() { return m_type; }
 
 protected:
-    ObjectType m_type{};
+   ObjectType m_type{};
 };
 
 class UniformObject : public Object

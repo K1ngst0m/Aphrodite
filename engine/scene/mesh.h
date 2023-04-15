@@ -16,16 +16,6 @@ struct Vertex
     glm::vec4 tangent;
 };
 
-struct ImageInfo
-{
-    uint32_t width;
-    uint32_t height;
-    uint32_t mipLevels;
-    uint32_t layerCount;
-
-    std::vector<uint8_t> data;
-};
-
 enum class AlphaMode : uint32_t
 {
     OPAQUE = 0,

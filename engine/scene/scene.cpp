@@ -1,8 +1,6 @@
 #include "scene.h"
-#include "camera.h"
 #include "common/assetManager.h"
-#include "light.h"
-#include "mesh.h"
+#include "common/common.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_STB_IMAGE_WRITE
@@ -11,27 +9,24 @@
 
 namespace aph::gltf
 {
-void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model &input)
+void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model& input)
 {
     images.clear();
-    for(auto &glTFImage : input.images)
+    for(auto& glTFImage : input.images)
     {
         // We convert RGB-only images to RGBA, as most devices don't support RGB-formats in Vulkan
-        auto newImage = std::make_shared<ImageInfo>();
-        newImage->width = glTFImage.width;
+        auto newImage    = std::make_shared<ImageInfo>();
+        newImage->width  = glTFImage.width;
         newImage->height = glTFImage.height;
         newImage->data.resize(glTFImage.width * glTFImage.height * 4);
         if(glTFImage.component == 3)
         {
-            unsigned char *rgba = new unsigned char[newImage->data.size()];
-            unsigned char *rgb = glTFImage.image.data();
+            std::vector<uint8_t> rgba(newImage->data.size());
             for(size_t i = 0; i < glTFImage.width * glTFImage.height; ++i)
             {
-                memcpy(rgba, rgb, sizeof(unsigned char) * 3);
-                rgba += 4;
-                rgb += 3;
+                memcpy(&rgba[4 * i], &glTFImage.image[3 * i], 3);
             }
-            memcpy(newImage->data.data(), rgba, glTFImage.image.size());
+            memcpy(newImage->data.data(), rgba.data(), glTFImage.image.size());
         }
         else
         {
@@ -41,20 +36,20 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>> &images, tinygltf::Model
     }
 }
 
-void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uint32_t offset)
+void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uint32_t offset)
 {
     materials.clear();
     materials.resize(input.materials.size());
     for(size_t i = 0; i < input.materials.size(); i++)
     {
-        auto &material = materials[i];
-        material.id = i;
+        auto& material = materials[i];
+        material.id    = i;
         tinygltf::Material glTFMaterial{ input.materials[i] };
 
         // factor
-        material.emissiveFactor = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
+        material.emissiveFactor  = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
         material.baseColorFactor = glm::make_vec4(glTFMaterial.pbrMetallicRoughness.baseColorFactor.data());
-        material.metallicFactor = glTFMaterial.pbrMetallicRoughness.metallicFactor;
+        material.metallicFactor  = glTFMaterial.pbrMetallicRoughness.metallicFactor;
         material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
         material.doubleSided = glTFMaterial.doubleSided;
@@ -65,7 +60,7 @@ void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uin
         if(glTFMaterial.alphaMode == "MASK")
         {
             material.alphaCutoff = 0.5f;
-            material.alphaMode = AlphaMode::MASK;
+            material.alphaMode   = AlphaMode::MASK;
         }
         material.alphaCutoff = glTFMaterial.alphaCutoff;
 
@@ -97,10 +92,10 @@ void loadMaterials(std::vector<Material> &materials, tinygltf::Model &input, uin
     }
 }
 
-void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node &inputNode, const tinygltf::Model &input, const std::shared_ptr<SceneNode> &parent,
-               uint32_t materialOffset)
+void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node& inputNode,
+               const tinygltf::Model& input, const std::shared_ptr<SceneNode>& parent, uint32_t materialOffset)
 {
-    auto matrix {glm::mat4(1.0f)};
+    auto matrix{ glm::mat4(1.0f) };
 
     if(inputNode.translation.size() == 3)
     {
@@ -132,10 +127,10 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
         const tinygltf::Mesh gltfMesh{ input.meshes[inputNode.mesh] };
         std::vector<uint8_t> indices;
         std::vector<uint8_t> vertices;
-        auto indexType {IndexType::UINT16};
+        auto                 indexType{ IndexType::UINT16 };
 
         // Iterate through all primitives of this node's mesh
-        for(const auto &glTFPrimitive : gltfMesh.primitives)
+        for(const auto& glTFPrimitive : gltfMesh.primitives)
         {
             auto firstIndex{ static_cast<int32_t>(indices.size()) };
             auto vertexStart{ static_cast<int32_t>(vertices.size()) };
@@ -144,46 +139,46 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
 
             // Vertices
             {
-                const float *positionBuffer{};
-                const float *normalsBuffer{};
-                const float *texCoordsBuffer{};
-                const float *tangentsBuffer{};
+                const float* positionBuffer{};
+                const float* normalsBuffer{};
+                const float* texCoordsBuffer{};
+                const float* tangentsBuffer{};
 
                 // Get buffer data for vertex normals
                 if(glTFPrimitive.attributes.find("POSITION") != glTFPrimitive.attributes.end())
                 {
-                    const tinygltf::Accessor &accessor =
+                    const tinygltf::Accessor& accessor =
                         input.accessors[glTFPrimitive.attributes.find("POSITION")->second];
-                    const tinygltf::BufferView &view = input.bufferViews[accessor.bufferView];
-                    positionBuffer = reinterpret_cast<const float *>(
+                    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+                    positionBuffer                   = reinterpret_cast<const float*>(
                         &(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                     vertexCount = accessor.count;
                 }
                 // Get buffer data for vertex normals
                 if(glTFPrimitive.attributes.find("NORMAL") != glTFPrimitive.attributes.end())
                 {
-                    const tinygltf::Accessor &accessor =
+                    const tinygltf::Accessor& accessor =
                         input.accessors[glTFPrimitive.attributes.find("NORMAL")->second];
-                    const tinygltf::BufferView &view = input.bufferViews[accessor.bufferView];
-                    normalsBuffer = reinterpret_cast<const float *>(
+                    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+                    normalsBuffer                    = reinterpret_cast<const float*>(
                         &(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
                 // Get buffer data for vertex texture coordinates
                 // glTF supports multiple sets, we only load the first one
                 if(glTFPrimitive.attributes.find("TEXCOORD_0") != glTFPrimitive.attributes.end())
                 {
-                    const tinygltf::Accessor &accessor =
+                    const tinygltf::Accessor& accessor =
                         input.accessors[glTFPrimitive.attributes.find("TEXCOORD_0")->second];
-                    const tinygltf::BufferView &view = input.bufferViews[accessor.bufferView];
-                    texCoordsBuffer = reinterpret_cast<const float *>(
+                    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+                    texCoordsBuffer                  = reinterpret_cast<const float*>(
                         &(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
                 if(glTFPrimitive.attributes.find("TANGENT") != glTFPrimitive.attributes.end())
                 {
-                    const tinygltf::Accessor &accessor =
+                    const tinygltf::Accessor& accessor =
                         input.accessors[glTFPrimitive.attributes.find("TANGENT")->second];
-                    const tinygltf::BufferView &view = input.bufferViews[accessor.bufferView];
-                    tangentsBuffer = reinterpret_cast<const float *>(
+                    const tinygltf::BufferView& view = input.bufferViews[accessor.bufferView];
+                    tangentsBuffer                   = reinterpret_cast<const float*>(
                         &(input.buffers[view.buffer].data[accessor.byteOffset + view.byteOffset]));
                 }
 
@@ -191,11 +186,11 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 for(size_t v = 0; v < vertexCount; v++)
                 {
                     Vertex vert{};
-                    vert.pos = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
+                    vert.pos    = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
                     vert.normal = glm::normalize(
                         glm::vec3(normalsBuffer ? glm::make_vec3(&normalsBuffer[v * 3]) : glm::vec3(0.0f)));
-                    vert.uv = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
-                    vert.color = glm::vec3(1.0f);
+                    vert.uv      = texCoordsBuffer ? glm::make_vec2(&texCoordsBuffer[v * 2]) : glm::vec3(0.0f);
+                    vert.color   = glm::vec3(1.0f);
                     vert.tangent = tangentsBuffer ? glm::make_vec4(&tangentsBuffer[v * 4]) : glm::vec4(0.0f);
                     uint8_t* ptr = reinterpret_cast<uint8_t*>(&vert);
                     std::copy(ptr, ptr + sizeof(vert), back_inserter(vertices));
@@ -203,9 +198,9 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
             }
             // Indices
             {
-                const tinygltf::Accessor &accessor = input.accessors[glTFPrimitive.indices];
-                const tinygltf::BufferView &bufferView = input.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer &buffer = input.buffers[bufferView.buffer];
+                const tinygltf::Accessor&   accessor   = input.accessors[glTFPrimitive.indices];
+                const tinygltf::BufferView& bufferView = input.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer&     buffer     = input.buffers[bufferView.buffer];
 
                 indexCount += static_cast<uint32_t>(accessor.count);
 
@@ -216,10 +211,10 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
                 {
                     indices.resize(indices.size() + accessor.count * 4);
-                    auto *dataPtr = reinterpret_cast<uint32_t *>(&indices[idxOffset]);
-                    indexType = IndexType::UINT32;
-                    const auto *buf =
-                        reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                    auto* dataPtr = reinterpret_cast<uint32_t*>(&indices[idxOffset]);
+                    indexType     = IndexType::UINT32;
+                    const auto* buf =
+                        reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
                         dataPtr[index] = buf[index] + vertexStart;
@@ -229,10 +224,10 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                 {
                     indices.resize(indices.size() + accessor.count * 2);
-                    auto *dataPtr = reinterpret_cast<uint16_t *>(&indices[idxOffset]);
-                    indexType = IndexType::UINT16;
-                    const auto *buf =
-                        reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                    auto* dataPtr = reinterpret_cast<uint16_t*>(&indices[idxOffset]);
+                    indexType     = IndexType::UINT16;
+                    const auto* buf =
+                        reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                     for(size_t index = 0; index < accessor.count; index++)
                     {
                         dataPtr[index] = buf[index] + vertexStart;
@@ -246,18 +241,18 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
             }
 
             mesh->m_subsets.push_back(Mesh::Subset{
-                .firstIndex = firstIndex,
-                .firstVertex = vertexStart,
-                .vertexCount = vertexCount,
-                .indexCount = indexCount,
+                .firstIndex    = firstIndex,
+                .firstVertex   = vertexStart,
+                .vertexCount   = vertexCount,
+                .indexCount    = indexCount,
                 .materialIndex = static_cast<ResourceIndex>(glTFPrimitive.material + materialOffset),
-                .hasIndices = indexCount > 0,
+                .hasIndices    = indexCount > 0,
             });
         }
 
         static float indexSizeScaling = 1.0f;
 
-        mesh->m_indexType = indexType;
+        mesh->m_indexType   = indexType;
         mesh->m_indexOffset = indicesList.size() * indexSizeScaling;
         // TODO variable vertex form
         mesh->m_vertexOffset = verticesList.size() / sizeof(Vertex);
@@ -265,7 +260,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
         indicesList.insert(indicesList.cend(), indices.cbegin(), indices.cend());
         verticesList.insert(verticesList.cend(), vertices.cbegin(), vertices.cend());
 
-        switch (indexType)
+        switch(indexType)
         {
         case IndexType::UINT16:
             indexSizeScaling = 0.5f;
@@ -288,7 +283,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
         }
     }
 }
-}  // namespace
+}  // namespace aph::gltf
 
 namespace aph
 {
@@ -321,26 +316,26 @@ std::shared_ptr<Camera> Scene::createCamera(float aspectRatio)
 
 std::shared_ptr<Light> Scene::createLight()
 {
-    auto light = Object::Create<Light>();
+    auto light               = Object::Create<Light>();
     m_lights[light->getId()] = light;
     return light;
 }
 
 std::shared_ptr<Mesh> Scene::createMesh()
 {
-    auto mesh = Object::Create<Mesh>();
+    auto mesh               = Object::Create<Mesh>();
     m_meshes[mesh->getId()] = mesh;
     return mesh;
 }
 
-std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
-                                                       const std::shared_ptr<SceneNode> &parent)
+std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&                path,
+                                                       const std::shared_ptr<SceneNode>& parent)
 {
     auto node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
 
-    tinygltf::Model inputModel;
+    tinygltf::Model    inputModel;
     tinygltf::TinyGLTF gltfContext;
-    std::string error, warning;
+    std::string        error, warning;
 
     bool fileLoaded = false;
     if(path.find(".glb") != std::string::npos)
@@ -354,10 +349,10 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
 
     if(fileLoaded)
     {
-        const uint32_t imageOffset = m_images.size();
-        const uint32_t materialOffset = m_materials.size();
+        const uint32_t                          imageOffset    = m_images.size();
+        const uint32_t                          materialOffset = m_materials.size();
         std::vector<std::shared_ptr<ImageInfo>> images;
-        std::vector<Material> materials;
+        std::vector<Material>                   materials;
         gltf::loadImages(images, inputModel);
         gltf::loadMaterials(materials, inputModel, imageOffset);
         m_images.insert(m_images.cend(), std::make_move_iterator(images.cbegin()),
@@ -365,7 +360,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
         m_materials.insert(m_materials.cend(), std::make_move_iterator(materials.cbegin()),
                            std::make_move_iterator(materials.cend()));
 
-        const tinygltf::Scene &scene = inputModel.scenes[0];
+        const tinygltf::Scene& scene = inputModel.scenes[0];
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node inputNode = inputModel.nodes[nodeIdx];
@@ -381,5 +376,4 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string &path,
 
     return node;
 }
-
 }  // namespace aph

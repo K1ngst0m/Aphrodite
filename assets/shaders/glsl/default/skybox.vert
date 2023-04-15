@@ -1,10 +1,6 @@
 #version 450
 
 layout (location = 0) in vec3 inPos;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inTexCoord;
-layout(location = 3) in vec3 inColor;
-layout(location = 4) in vec4 inTangent;
 
 struct Camera{
     mat4 view;
@@ -26,5 +22,6 @@ out gl_PerVertex
 void main()
 {
     outUVW = inPos;
-    gl_Position = cameras[0].proj * cameras[0].view * vec4(inPos.xyz, 1.0);
+    vec4 pos = cameras[0].proj * mat4(mat3(cameras[0].view)) * vec4(inPos.xyz, 1.0);
+    gl_Position = pos.xyww;
 }

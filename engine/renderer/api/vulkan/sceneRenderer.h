@@ -58,6 +58,7 @@ private:
 
     enum BufferIndex
     {
+        BUFFER_CUBE_VERTEX,
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
         BUFFER_SCENE_MATERIAL,
@@ -83,13 +84,13 @@ private:
     std::array<std::vector<VulkanImage*>, IMAGE_MAX>       m_images;
     VkDescriptorSet                                        m_sceneSet{};
     VkDescriptorSet                                        m_samplerSet{};
-    VkImageView                                            m_cubeMapView{};
+    VulkanImageView*                                       m_pCubeMapView{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
-    std::vector<glm::mat4>                  m_transformInfos{};
+    std::vector<glm::mat4>                  m_transformInfos;
 
 private:
     VulkanDevice*                   m_pDevice{};

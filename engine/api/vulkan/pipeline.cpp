@@ -12,20 +12,30 @@ std::unordered_map<VertexComponent, VkVertexInputAttributeDescription> vertexCom
     { VertexComponent::COLOR, { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color) } },
     { VertexComponent::TANGENT, { 0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent) } },
 };
+
+std::unordered_map<VertexComponent, size_t> vertexComponentSizeMap{
+    { VertexComponent::POSITION, {sizeof(Vertex::pos)} },
+    { VertexComponent::NORMAL, {sizeof(Vertex::normal)} },
+    { VertexComponent::UV, {sizeof(Vertex::uv)} },
+    { VertexComponent::COLOR, {sizeof(Vertex::color)} },
+    { VertexComponent::TANGENT, {sizeof(Vertex::tangent)} },
+};
 }
 
 VkPipelineVertexInputStateCreateInfo& VertexInputBuilder::getPipelineVertexInputState(
     const std::vector<VertexComponent>& components)
 {
     uint32_t location = 0;
+    uint32_t bindingSize = 0;
     for(VertexComponent component : components)
     {
         VkVertexInputAttributeDescription desc = vertexComponmentMap[component];
         desc.location                          = location;
         inputAttribute.push_back(desc);
         location++;
+        bindingSize += vertexComponentSizeMap[component];
     }
-    inputBinding     = { { 0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX } };
+    inputBinding     = { { 0, bindingSize, VK_VERTEX_INPUT_RATE_VERTEX } };
     vertexInputState = aph::init::pipelineVertexInputStateCreateInfo(inputBinding, inputAttribute);
     return vertexInputState;
 }

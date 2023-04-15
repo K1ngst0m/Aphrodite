@@ -76,6 +76,8 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyDescriptorSetLayout(setLayout);
     }
 
+    m_pDevice->destroyImageView(m_pCubeMapView);
+
     for(const auto& images : m_images)
     {
         for(auto* image : images)
@@ -157,14 +159,13 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         commandBuffer->beginRendering(renderingInfo);
 
-        // TODO skybox
+        // skybox
         {
             commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
             commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
             commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
-            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
-            commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT16);
-            commandBuffer->drawIndexed(36, 1, 0, 0, 0);
+            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], { 0 });
+            commandBuffer->draw(36, 1, 0, 0);
         }
 
         // draw scene object
@@ -330,7 +331,7 @@ void VulkanSceneRenderer::_initSet()
 
     VkDescriptorImageInfo skyBoxInfo{
         .sampler     = nullptr,
-        .imageView   = m_cubeMapView,
+        .imageView   = m_pCubeMapView->getHandle(),
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 
@@ -519,9 +520,9 @@ void VulkanSceneRenderer::_initSetLayout()
             samplerInfo.mipLodBias          = 0.0f;
             samplerInfo.compareOp           = VK_COMPARE_OP_NEVER;
             samplerInfo.minLod              = 0.0f;
-            samplerInfo.maxLod              = calculateFullMipLevels(2048, 2048);
-            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            samplerInfo.maxAnisotropy       = 1.0f;
+            // samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
+            samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.maxAnisotropy = 1.0f;
             // if (m_pDevice->features.samplerAnisotropy)
             // {
             //     sampler.maxAnisotropy = 100;
@@ -531,7 +532,7 @@ void VulkanSceneRenderer::_initSetLayout()
         }
         {
             VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-            samplerInfo.maxLod              = calculateFullMipLevels(2048, 2048);
+            samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
         }
@@ -598,7 +599,7 @@ void VulkanSceneRenderer::_initGpuResources()
 
     // create index buffer
     {
-        auto&            indicesList = m_scene->m_indices;
+        auto             indicesList = m_scene->getIndices();
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(indicesList.size()),
             .usage = BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -608,7 +609,7 @@ void VulkanSceneRenderer::_initGpuResources()
 
     // create vertex buffer
     {
-        auto&            verticesList = m_scene->m_vertices;
+        auto             verticesList = m_scene->getVertices();
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(verticesList.size()),
             .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -618,19 +619,21 @@ void VulkanSceneRenderer::_initGpuResources()
 
     // create material buffer
     {
+        auto             materials = m_scene->getMaterials();
         BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(m_scene->m_materials.size() * sizeof(Material)),
+            .size  = static_cast<uint32_t>(materials.size() * sizeof(Material)),
             .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_MATERIAL], m_scene->m_materials.data());
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_MATERIAL], materials.data());
     }
 
     // load scene image to gpu
-    for(const auto& image : m_scene->m_images)
+    auto images = m_scene->getImages();
+    for(const auto& image : images)
     {
         ImageCreateInfo createInfo{
             .extent    = { image->width, image->height, 1 },
-            .mipLevels = calculateFullMipLevels(image->width, image->height),
+            .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
             .usage     = IMAGE_USAGE_SAMPLED_BIT,
             .format    = FORMAT_R8G8B8A8_UNORM,
             .tiling    = IMAGE_TILING_OPTIMAL,
@@ -647,10 +650,20 @@ void VulkanSceneRenderer::_initGpuResources()
         VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
         uint32_t mipLevels   = 0;
 
+        auto skyboxDir    = AssetManager::GetTextureDir() / "skybox";
+        auto skyboxImages = aph::utils::loadSkyboxFromFile({
+            (skyboxDir / "front.jpg").c_str(),
+            (skyboxDir / "back.jpg").c_str(),
+            (skyboxDir / "top_rotate_left_90.jpg").c_str(),
+            (skyboxDir / "bottom_rotate_right_90.jpg").c_str(),
+            (skyboxDir / "left.jpg").c_str(),
+            (skyboxDir / "right.jpg").c_str(),
+        });
+
         std::array<VulkanBuffer*, 6> stagingBuffers;
         for(auto idx = 0; idx < 6; idx++)
         {
-            auto image    = m_scene->m_images[0];
+            auto image    = skyboxImages[idx];
             cubeMapWidth  = image->width;
             cubeMapHeight = image->height;
 
@@ -667,24 +680,25 @@ void VulkanSceneRenderer::_initGpuResources()
                 m_pDevice->unMapMemory(stagingBuffers[idx]);
             }
         }
-        mipLevels = calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
+        mipLevels = aph::utils::calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
 
         std::vector<VkBufferImageCopy> bufferCopyRegions;
         for(uint32_t face = 0; face < 6; face++)
         {
-            for(uint32_t level = 0; level < mipLevels; level++)
-            {
-                VkBufferImageCopy bufferCopyRegion               = {};
-                bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-                bufferCopyRegion.imageSubresource.mipLevel       = level;
-                bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-                bufferCopyRegion.imageSubresource.layerCount     = 1;
-                bufferCopyRegion.imageExtent.width               = cubeMapWidth >> level;
-                bufferCopyRegion.imageExtent.height              = cubeMapHeight >> level;
-                bufferCopyRegion.imageExtent.depth               = 1;
-                bufferCopyRegion.bufferOffset                    = 0;
-                bufferCopyRegions.push_back(bufferCopyRegion);
-            }
+            auto level = 0;
+            // for(uint32_t level = 0; level < mipLevels; level++)
+            // {
+            VkBufferImageCopy bufferCopyRegion               = {};
+            bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            bufferCopyRegion.imageSubresource.mipLevel       = level;
+            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+            bufferCopyRegion.imageSubresource.layerCount     = 1;
+            bufferCopyRegion.imageExtent.width               = cubeMapWidth >> level;
+            bufferCopyRegion.imageExtent.height              = cubeMapHeight >> level;
+            bufferCopyRegion.imageExtent.depth               = 1;
+            bufferCopyRegion.bufferOffset                    = 0;
+            bufferCopyRegions.push_back(bufferCopyRegion);
+            // }
         }
 
         // Image barrier for optimal image (target)
@@ -721,32 +735,65 @@ void VulkanSceneRenderer::_initGpuResources()
                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
         });
 
-        // Create image view
-        VkImageViewCreateInfo view = aph::init::imageViewCreateInfo();
-        // Cube map view type
-        view.viewType                    = VK_IMAGE_VIEW_TYPE_CUBE;
-        view.format                      = imageFormat;
-        view.subresourceRange            = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-        view.subresourceRange.layerCount = 6;
-        view.subresourceRange.levelCount = mipLevels;
-        view.image                       = cubeMap->getHandle();
-        VK_CHECK_RESULT(vkCreateImageView(m_pDevice->getHandle(), &view, nullptr, &m_cubeMapView));
+        for (auto *buffer : stagingBuffers)
+        {
+            m_pDevice->destroyBuffer(buffer);
+        }
+
+        ImageViewCreateInfo createInfo{
+            .viewType = IMAGE_VIEW_TYPE_CUBE,
+            .format   = static_cast<Format>(imageFormat),
+            .subresourceRange{ 0, mipLevels, 0, 6 },
+        };
+        VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &m_pCubeMapView, cubeMap));
+        m_images[IMAGE_SCENE_SKYBOX].push_back(cubeMap);
     }
 }
 
 void VulkanSceneRenderer::_initSkybox()
 {
+    // skybox vertex
+    {
+        constexpr std::array skyboxVertices = { -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
+                                                1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f,
+
+                                                -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f,
+                                                -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,
+
+                                                1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,
+                                                1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f,
+
+                                                -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+                                                1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+
+                                                -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,
+                                                1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f,
+
+                                                -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+                                                1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f };
+        // create vertex buffer
+        {
+            BufferCreateInfo createInfo{
+                .size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(float)),
+                .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            };
+            m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_CUBE_VERTEX], skyboxVertices.data());
+        }
+    }
+
     // skybox graphics pipeline
     {
-        GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        GraphicsPipelineCreateInfo pipelineCreateInfo{ { VertexComponent::POSITION } };
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = { m_pRenderer->getSwapChain()->getSurfaceFormat() };
-        pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
+        pipelineCreateInfo.renderingCreateInfo  = {
              .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
              .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
              .pColorAttachmentFormats = colorFormats.data(),
              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
+        pipelineCreateInfo.depthStencil =
+            aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.shaderMapList = {
             { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "skybox.vert.spv") },

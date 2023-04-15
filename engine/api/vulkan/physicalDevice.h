@@ -16,7 +16,6 @@ using QueueTypeFlags = uint32_t;
 class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 {
     friend class VulkanDevice;
-
 public:
     VulkanPhysicalDevice(VkPhysicalDevice handle);
 

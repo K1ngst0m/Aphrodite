@@ -99,4 +99,5 @@ VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage)
 
     return VK_IMAGE_LAYOUT_GENERAL;
 }
+
 }  // namespace aph::utils
