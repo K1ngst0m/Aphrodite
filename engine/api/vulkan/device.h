@@ -43,6 +43,7 @@ public:
     static void Destroy(VulkanDevice* pDevice);
 
 public:
+    VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage ** ppImage, VulkanImageView **ppImageView);
     VkResult createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data);
     VkResult createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
                                     const std::vector<uint8_t>& data);

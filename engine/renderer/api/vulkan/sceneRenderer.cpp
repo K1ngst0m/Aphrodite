@@ -646,13 +646,9 @@ void VulkanSceneRenderer::_initGpuResources()
 
     // create skybox cubemap
     {
-        uint32_t cubeMapWidth{}, cubeMapHeight{};
-        VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        uint32_t mipLevels   = 0;
-
         auto skyboxDir    = AssetManager::GetTextureDir() / "skybox";
         auto skyboxImages = aph::utils::loadSkyboxFromFile({
-            (skyboxDir / "front.jpg").c_str(),
+            (skyboxDir / "front.jpg").string(),
             (skyboxDir / "back.jpg").c_str(),
             (skyboxDir / "top_rotate_left_90.jpg").c_str(),
             (skyboxDir / "bottom_rotate_right_90.jpg").c_str(),
@@ -660,93 +656,9 @@ void VulkanSceneRenderer::_initGpuResources()
             (skyboxDir / "right.jpg").c_str(),
         });
 
-        std::array<VulkanBuffer*, 6> stagingBuffers;
-        for(auto idx = 0; idx < 6; idx++)
-        {
-            auto image    = skyboxImages[idx];
-            cubeMapWidth  = image->width;
-            cubeMapHeight = image->height;
-
-            {
-                BufferCreateInfo createInfo{
-                    .size     = static_cast<uint32_t>(image->data.size()),
-                    .usage    = BUFFER_USAGE_TRANSFER_SRC_BIT,
-                    .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                };
-
-                m_pDevice->createBuffer(createInfo, &stagingBuffers[idx]);
-                m_pDevice->mapMemory(stagingBuffers[idx]);
-                stagingBuffers[idx]->copyTo(image->data.data());
-                m_pDevice->unMapMemory(stagingBuffers[idx]);
-            }
-        }
-        mipLevels = aph::utils::calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
-
-        std::vector<VkBufferImageCopy> bufferCopyRegions;
-        for(uint32_t face = 0; face < 6; face++)
-        {
-            auto level = 0;
-            // for(uint32_t level = 0; level < mipLevels; level++)
-            // {
-            VkBufferImageCopy bufferCopyRegion               = {};
-            bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-            bufferCopyRegion.imageSubresource.mipLevel       = level;
-            bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-            bufferCopyRegion.imageSubresource.layerCount     = 1;
-            bufferCopyRegion.imageExtent.width               = cubeMapWidth >> level;
-            bufferCopyRegion.imageExtent.height              = cubeMapHeight >> level;
-            bufferCopyRegion.imageExtent.depth               = 1;
-            bufferCopyRegion.bufferOffset                    = 0;
-            bufferCopyRegions.push_back(bufferCopyRegion);
-            // }
-        }
-
-        // Image barrier for optimal image (target)
-        // Set initial layout for all array layers (faces) of the optimal (target) tiled texture
-        VkImageSubresourceRange subresourceRange = {
-            .aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT,
-            .baseMipLevel = 0,
-            .levelCount   = mipLevels,
-            .layerCount   = 6,
-        };
-
-        VulkanImage*    cubeMap{};
-        ImageCreateInfo imageCI{
-            .extent      = { cubeMapWidth, cubeMapHeight, 1 },
-            .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-            .imageType   = IMAGE_TYPE_2D,
-            .mipLevels   = mipLevels,
-            .arrayLayers = 6,
-            .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
-            .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-            .format      = FORMAT_R8G8B8A8_UNORM,
-        };
-        m_pDevice->createImage(imageCI, &cubeMap);
-
-        m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer) {
-            pCommandBuffer->transitionImageLayout(cubeMap, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
-            // Copy the cube map faces from the staging buffer to the optimal tiled image
-            for(uint32_t idx = 0; idx < 6; idx++)
-            {
-                pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMap, { bufferCopyRegions[idx] });
-            }
-            pCommandBuffer->transitionImageLayout(cubeMap, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
-        });
-
-        for (auto *buffer : stagingBuffers)
-        {
-            m_pDevice->destroyBuffer(buffer);
-        }
-
-        ImageViewCreateInfo createInfo{
-            .viewType = IMAGE_VIEW_TYPE_CUBE,
-            .format   = static_cast<Format>(imageFormat),
-            .subresourceRange{ 0, mipLevels, 0, 6 },
-        };
-        VK_CHECK_RESULT(m_pDevice->createImageView(createInfo, &m_pCubeMapView, cubeMap));
-        m_images[IMAGE_SCENE_SKYBOX].push_back(cubeMap);
+        VulkanImage* pImage {};
+        m_pDevice->createCubeMap(skyboxImages, &pImage, &m_pCubeMapView);
+        m_images[IMAGE_SCENE_SKYBOX].push_back(pImage);
     }
 }
 

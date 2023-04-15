@@ -95,7 +95,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
 void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node& inputNode,
                const tinygltf::Model& input, const std::shared_ptr<SceneNode>& parent, uint32_t materialOffset)
 {
-    auto matrix{ glm::mat4(1.0f) };
+    glm::mat4 matrix{ 1.0f };
 
     if(inputNode.translation.size() == 3)
     {

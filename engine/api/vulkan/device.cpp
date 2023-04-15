@@ -698,4 +698,99 @@ void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer)
 {
     vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
+
+VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage ** ppImage, VulkanImageView **ppImageView)
+{
+    uint32_t cubeMapWidth{}, cubeMapHeight{};
+    VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    uint32_t mipLevels   = 0;
+    std::array<VulkanBuffer*, 6> stagingBuffers;
+    for(auto idx = 0; idx < 6; idx++)
+    {
+        auto image    = images[idx];
+        cubeMapWidth  = image->width;
+        cubeMapHeight = image->height;
+
+        {
+            BufferCreateInfo createInfo{
+                .size     = static_cast<uint32_t>(image->data.size()),
+                .usage    = BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            };
+
+            createBuffer(createInfo, &stagingBuffers[idx]);
+            mapMemory(stagingBuffers[idx]);
+            stagingBuffers[idx]->copyTo(image->data.data());
+            unMapMemory(stagingBuffers[idx]);
+        }
+    }
+    mipLevels = aph::utils::calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
+
+    std::vector<VkBufferImageCopy> bufferCopyRegions;
+    for(uint32_t face = 0; face < 6; face++)
+    {
+        auto level = 0;
+        // for(uint32_t level = 0; level < mipLevels; level++)
+        // {
+        VkBufferImageCopy bufferCopyRegion               = {};
+        bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        bufferCopyRegion.imageSubresource.mipLevel       = level;
+        bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+        bufferCopyRegion.imageSubresource.layerCount     = 1;
+        bufferCopyRegion.imageExtent.width               = cubeMapWidth >> level;
+        bufferCopyRegion.imageExtent.height              = cubeMapHeight >> level;
+        bufferCopyRegion.imageExtent.depth               = 1;
+        bufferCopyRegion.bufferOffset                    = 0;
+        bufferCopyRegions.push_back(bufferCopyRegion);
+        // }
+    }
+
+    // Image barrier for optimal image (target)
+    // Set initial layout for all array layers (faces) of the optimal (target) tiled texture
+    VkImageSubresourceRange subresourceRange = {
+        .aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT,
+        .baseMipLevel = 0,
+        .levelCount   = mipLevels,
+        .layerCount   = 6,
+    };
+
+    VulkanImage*    cubeMapImage{};
+    ImageCreateInfo imageCI{
+        .extent      = { cubeMapWidth, cubeMapHeight, 1 },
+        .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+        .imageType   = IMAGE_TYPE_2D,
+        .mipLevels   = mipLevels,
+        .arrayLayers = 6,
+        .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
+        .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .format      = FORMAT_R8G8B8A8_UNORM,
+    };
+    createImage(imageCI, &cubeMapImage);
+
+    executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer) {
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
+        // Copy the cube map faces from the staging buffer to the optimal tiled image
+        for(uint32_t idx = 0; idx < 6; idx++)
+        {
+            pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, { bufferCopyRegions[idx] });
+        }
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
+    });
+
+    for (auto *buffer : stagingBuffers)
+    {
+        destroyBuffer(buffer);
+    }
+
+    ImageViewCreateInfo createInfo{
+        .viewType = IMAGE_VIEW_TYPE_CUBE,
+        .format   = static_cast<Format>(imageFormat),
+        .subresourceRange{ 0, mipLevels, 0, 6 },
+    };
+    VK_CHECK_RESULT(createImageView(createInfo, ppImageView, cubeMapImage));
+    *ppImage = cubeMapImage;
+    return VK_SUCCESS;
+}
 }  // namespace aph
