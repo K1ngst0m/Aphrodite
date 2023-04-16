@@ -10,10 +10,10 @@ class VulkanDevice;
 
 struct BufferCreateInfo
 {
-    uint32_t            size      = 0;
-    uint32_t            alignment = 0;
-    BufferUsageFlags    usage;
-    MemoryPropertyFlags property;
+    uint32_t            size      = { 0 };
+    uint32_t            alignment = { 0 };
+    BufferUsageFlags    usage     = { 0 };
+    MemoryPropertyFlags property  = { 0 };
 };
 
 class VulkanBuffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
@@ -29,8 +29,8 @@ public:
     void copyTo(const void* data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
 
 private:
-    VkDeviceMemory memory{};
-    void*          mapped{};
+    VkDeviceMemory memory = {};
+    void*          mapped = {};
 };
 }  // namespace aph
 

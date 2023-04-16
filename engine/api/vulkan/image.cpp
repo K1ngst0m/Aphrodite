@@ -23,7 +23,7 @@ VulkanImage::~VulkanImage()
 
 VulkanImageView* VulkanImage::getImageView(Format imageFormat)
 {
-    if(imageFormat == FORMAT_UNDEFINED)
+    if(imageFormat == Format::UNDEFINED)
     {
         imageFormat = m_createInfo.format;
     }
@@ -31,9 +31,9 @@ VulkanImageView* VulkanImage::getImageView(Format imageFormat)
     if(!m_imageViewFormatMap.count(imageFormat))
     {
         std::unordered_map<ImageType, ImageViewType> imageTypeMap{
-            { IMAGE_TYPE_1D, IMAGE_VIEW_TYPE_1D },
-            { IMAGE_TYPE_2D, IMAGE_VIEW_TYPE_2D },
-            { IMAGE_TYPE_2D, IMAGE_VIEW_TYPE_3D },
+            { ImageType::_1D, ImageViewType::_1D },
+            { ImageType::_2D, ImageViewType::_2D },
+            { ImageType::_2D, ImageViewType::_3D },
         };
         ImageViewCreateInfo createInfo{
             .viewType         = imageTypeMap[m_createInfo.imageType],

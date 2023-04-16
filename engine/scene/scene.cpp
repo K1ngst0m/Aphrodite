@@ -3,8 +3,8 @@
 #include "common/common.h"
 
 #define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_INCLUDE_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-#define STB_IMAGE_IMPLEMENTATION
 #include <tinygltf/tiny_gltf.h>
 
 namespace aph::gltf
@@ -19,6 +19,7 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model
         newImage->width  = glTFImage.width;
         newImage->height = glTFImage.height;
         newImage->data.resize(glTFImage.width * glTFImage.height * 4);
+        newImage->format = Format::R8G8B8A8_UNORM;
         if(glTFImage.component == 3)
         {
             std::vector<uint8_t> rgba(newImage->data.size());

@@ -261,7 +261,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
         .tiling        = static_cast<VkImageTiling>(createInfo.tiling),
         .usage         = createInfo.usage,
         .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .initialLayout = static_cast<VkImageLayout>(createInfo.initialLayout),
     };
 
     imageCreateInfo.extent.width  = createInfo.extent.width;
@@ -476,7 +476,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
     VK_CHECK_RESULT(
         vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
 
-    *ppPipeline = VulkanPipeline::CreateGraphicsPipeline(this, createInfo, renderPass, pipelineLayout, handle);
+    *ppPipeline = new VulkanPipeline(this, createInfo, renderPass, pipelineLayout, handle);
 
     return VK_SUCCESS;
 }
@@ -526,7 +526,7 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& cr
     ci.stage                       = shaderStages[0];
     VkPipeline handle              = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
-    *ppPipeline = VulkanPipeline::CreateComputePipeline(this, createInfo, pipelineLayout, handle);
+    *ppPipeline = new VulkanPipeline(this, createInfo, pipelineLayout, handle);
     return VK_SUCCESS;
 }
 
@@ -758,12 +758,12 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     ImageCreateInfo imageCI{
         .extent      = { cubeMapWidth, cubeMapHeight, 1 },
         .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-        .imageType   = IMAGE_TYPE_2D,
         .mipLevels   = mipLevels,
         .arrayLayers = 6,
         .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
         .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        .format      = FORMAT_R8G8B8A8_UNORM,
+        .imageType   = ImageType::_2D,
+        .format      = Format::R8G8B8A8_UNORM,
     };
     createImage(imageCI, &cubeMapImage);
 
@@ -785,7 +785,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     }
 
     ImageViewCreateInfo createInfo{
-        .viewType = IMAGE_VIEW_TYPE_CUBE,
+        .viewType = ImageViewType::_CUBE,
         .format   = static_cast<Format>(imageFormat),
         .subresourceRange{ 0, mipLevels, 0, 6 },
     };

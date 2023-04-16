@@ -35,11 +35,11 @@ public:
     uint32_t   getHeight() const { return m_extent.height; }
 
     uint32_t     getImageCount() const { return m_images.size(); }
-    VulkanImage* getImage(uint32_t idx) const { return m_images[idx]; }
+    VulkanImage* getImage(uint32_t idx) const { return m_images[idx].get(); }
 
 private:
     VulkanDevice*             m_device{};
-    std::vector<VulkanImage*> m_images{};
+    std::vector<std::unique_ptr<VulkanImage>> m_images{};
 
     VkSurfaceKHR       m_surface{};
     VkSurfaceFormatKHR m_surfaceFormat{};

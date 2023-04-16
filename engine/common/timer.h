@@ -8,17 +8,17 @@ namespace aph
 class Timer
 {
 public:
-    Timer(float& interval) : _interval(interval) { start = std::chrono::steady_clock::now(); }
+    Timer(float& interval) : m_interval(interval) { m_start = std::chrono::steady_clock::now(); }
     ~Timer()
     {
-        using ms  = std::chrono::duration<float, std::milli>;
-        auto end  = std::chrono::steady_clock::now();
-        _interval = std::chrono::duration_cast<ms>(start - end).count() / 1000.0f;
+        using ms   = std::chrono::duration<float, std::milli>;
+        auto end   = std::chrono::steady_clock::now();
+        m_interval = std::chrono::duration_cast<ms>(m_start - end).count() / 1000.0f;
     }
 
 private:
-    std::chrono::steady_clock::time_point start;
-    float&                                _interval;
+    std::chrono::steady_clock::time_point m_start;
+    float&                                m_interval;
 };
 
 }  // namespace aph

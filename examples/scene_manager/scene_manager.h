@@ -4,7 +4,8 @@
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
 
-class scene_manager : public aph::BaseApp {
+class scene_manager : public aph::BaseApp
+{
 public:
     scene_manager();
 
@@ -22,19 +23,19 @@ private:
     void setupScene();
 
 private:
-    std::shared_ptr<aph::SceneNode> m_modelNode;
-    std::shared_ptr<aph::SceneNode> m_pointLightNode;
-    std::shared_ptr<aph::SceneNode> m_directionalLightNode;
-    std::shared_ptr<aph::SceneNode> m_cameraNode;
+    std::shared_ptr<aph::SceneNode> m_modelNode = {};
+    std::shared_ptr<aph::SceneNode> m_pointLightNode = {};
+    std::shared_ptr<aph::SceneNode> m_directionalLightNode = {};
+    std::shared_ptr<aph::SceneNode> m_cameraNode = {};
 
-    std::shared_ptr<aph::Scene> m_scene;
+    std::shared_ptr<aph::Scene> m_scene = {};
 
-    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer;
+    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
     // std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer;
-    std::shared_ptr<aph::VulkanRenderer>      m_renderer;
+    std::unique_ptr<aph::VulkanRenderer> m_renderer = {};
 
-    std::shared_ptr<aph::Window> m_window;
-    float                        m_deltaTime {};
+    std::shared_ptr<aph::Window> m_window = {};
+    float                        m_deltaTime= {};
 };
 
-#endif // SCENE_MANAGER_H_
+#endif  // SCENE_MANAGER_H_

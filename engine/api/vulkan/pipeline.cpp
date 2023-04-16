@@ -14,18 +14,16 @@ std::unordered_map<VertexComponent, VkVertexInputAttributeDescription> vertexCom
 };
 
 std::unordered_map<VertexComponent, size_t> vertexComponentSizeMap{
-    { VertexComponent::POSITION, {sizeof(Vertex::pos)} },
-    { VertexComponent::NORMAL, {sizeof(Vertex::normal)} },
-    { VertexComponent::UV, {sizeof(Vertex::uv)} },
-    { VertexComponent::COLOR, {sizeof(Vertex::color)} },
-    { VertexComponent::TANGENT, {sizeof(Vertex::tangent)} },
+    { VertexComponent::POSITION, { sizeof(Vertex::pos) } },    { VertexComponent::NORMAL, { sizeof(Vertex::normal) } },
+    { VertexComponent::UV, { sizeof(Vertex::uv) } },           { VertexComponent::COLOR, { sizeof(Vertex::color) } },
+    { VertexComponent::TANGENT, { sizeof(Vertex::tangent) } },
 };
-}
+}  // namespace
 
 VkPipelineVertexInputStateCreateInfo& VertexInputBuilder::getPipelineVertexInputState(
     const std::vector<VertexComponent>& components)
 {
-    uint32_t location = 0;
+    uint32_t location    = 0;
     uint32_t bindingSize = 0;
     for(VertexComponent component : components)
     {
@@ -40,35 +38,28 @@ VkPipelineVertexInputStateCreateInfo& VertexInputBuilder::getPipelineVertexInput
     return vertexInputState;
 }
 
-VulkanPipeline* VulkanPipeline::CreateGraphicsPipeline(VulkanDevice*                     pDevice,
-                                                       const GraphicsPipelineCreateInfo& createInfo,
-                                                       VkRenderPass renderPass, VkPipelineLayout layout,
-                                                       VkPipeline handle)
+VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const ComputePipelineCreateInfo& createInfo,
+                               VkPipelineLayout layout, VkPipeline handle) :
+    m_pDevice(pDevice),
+    m_pipelineLayout(layout),
+    m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE),
+    m_constants(createInfo.constants),
+    m_setLayouts(createInfo.setLayouts),
+    m_shaderMapList(createInfo.shaderMapList)
 {
-    auto* instance            = new VulkanPipeline();
-    instance->getHandle()     = handle;
-    instance->m_device        = pDevice;
-    instance->m_layout        = layout;
-    instance->m_setLayouts    = createInfo.setLayouts;
-    instance->m_constants     = createInfo.constants;
-    instance->m_shaderMapList = createInfo.shaderMapList;
-    instance->m_bindPoint     = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    return instance;
+    getHandle() = handle;
 }
 
-VulkanPipeline* VulkanPipeline::CreateComputePipeline(VulkanDevice*                    pDevice,
-                                                      const ComputePipelineCreateInfo& createInfo,
-                                                      VkPipelineLayout layout, VkPipeline handle)
+VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const GraphicsPipelineCreateInfo& createInfo,
+                               VkRenderPass renderPass, VkPipelineLayout layout, VkPipeline handle):
+    m_pDevice(pDevice),
+    m_renderPass(renderPass),
+    m_pipelineLayout(layout),
+    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS),
+    m_constants(createInfo.constants),
+    m_setLayouts(createInfo.setLayouts),
+    m_shaderMapList(createInfo.shaderMapList)
 {
-    auto* instance            = new VulkanPipeline();
-    instance->getHandle()     = handle;
-    instance->m_device        = pDevice;
-    instance->m_layout        = layout;
-    instance->m_setLayouts    = createInfo.setLayouts;
-    instance->m_constants     = createInfo.constants;
-    instance->m_shaderMapList = createInfo.shaderMapList;
-    instance->m_bindPoint     = VK_PIPELINE_BIND_POINT_COMPUTE;
-    return instance;
+    getHandle()     = handle;
 }
-
 }  // namespace aph

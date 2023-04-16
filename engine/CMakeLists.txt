@@ -30,6 +30,9 @@ file(GLOB base_src
   app/*.h
   app/*.hpp
 
+  ${CMAKE_SOURCE_DIR}/external/imgui/*.cpp
+  ${CMAKE_SOURCE_DIR}/external/imgui/*.h
+
   ${CMAKE_SOURCE_DIR}/external/volk/volk.h
   ${CMAKE_SOURCE_DIR}/external/volk/volk.c
   )

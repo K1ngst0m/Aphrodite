@@ -1,3 +1,4 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include "common.h"
 
 namespace aph::utils {
@@ -12,7 +13,7 @@ std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY
         printf("Error in loading the image\n");
         exit(0);
     }
-    printf("Loaded image with a width of %dpx, a height of %dpx and %d channels\n", width, height, channels);
+    // printf("Loaded image with a width of %dpx, a height of %dpx and %d channels\n", width, height, channels);
     image->width  = width;
     image->height = height;
 

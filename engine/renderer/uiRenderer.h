@@ -9,10 +9,10 @@ class WindowData;
 class IUIRenderer
 {
 public:
-    IUIRenderer(std::shared_ptr<WindowData> windowData) : _windowData(std::move(windowData)) {}
+    IUIRenderer(std::shared_ptr<WindowData> windowData) : m_windowData(std::move(windowData)) {}
 
 protected:
-    std::shared_ptr<WindowData> _windowData = nullptr;
+    std::shared_ptr<WindowData> m_windowData = {};
 };
 }  // namespace aph
 

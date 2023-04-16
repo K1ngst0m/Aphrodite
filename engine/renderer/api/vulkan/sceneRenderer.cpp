@@ -45,9 +45,9 @@ struct ObjectInfo
 
 namespace aph
 {
-VulkanSceneRenderer::VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer) :
+VulkanSceneRenderer::VulkanSceneRenderer(const std::unique_ptr<VulkanRenderer>& renderer) :
     m_pDevice{ renderer->getDevice() },
-    m_pRenderer{ renderer }
+    m_pRenderer{ renderer.get() }
 {
 }
 
@@ -433,10 +433,10 @@ void VulkanSceneRenderer::_initForward()
         {
             ImageCreateInfo createInfo{
                 .extent    = { imageExtent.width, imageExtent.height, 1 },
-                .imageType = IMAGE_TYPE_2D,
                 .usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_STORAGE_BIT | IMAGE_USAGE_SAMPLED_BIT,
                 .property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                .format    = FORMAT_B8G8R8A8_UNORM,
+                .imageType = ImageType::_2D,
+                .format    = Format::B8G8R8A8_UNORM,
             };
             m_pDevice->createImage(createInfo, &colorImage);
         }
@@ -447,7 +447,7 @@ void VulkanSceneRenderer::_initForward()
                 .usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 .format   = static_cast<Format>(m_pDevice->getDepthFormat()),
-                .tiling   = IMAGE_TILING_OPTIMAL,
+                .tiling   = ImageTiling::OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
         }
@@ -566,7 +566,6 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size      = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
-            .alignment = 0,
             .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
@@ -578,7 +577,6 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size      = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
-            .alignment = 0,
             .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
@@ -590,7 +588,6 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size      = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
-            .alignment = 0,
             .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
@@ -635,8 +632,8 @@ void VulkanSceneRenderer::_initGpuResources()
             .extent    = { image->width, image->height, 1 },
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
             .usage     = IMAGE_USAGE_SAMPLED_BIT,
-            .format    = FORMAT_R8G8B8A8_UNORM,
-            .tiling    = IMAGE_TILING_OPTIMAL,
+            .format    = Format::R8G8B8A8_UNORM,
+            .tiling    = ImageTiling::OPTIMAL,
         };
 
         VulkanImage* texture{};

@@ -10,7 +10,7 @@ namespace aph
 class VulkanSceneRenderer : public ISceneRenderer
 {
 public:
-    VulkanSceneRenderer(const std::shared_ptr<VulkanRenderer>& renderer);
+    VulkanSceneRenderer(const std::unique_ptr<VulkanRenderer>& renderer);
     ~VulkanSceneRenderer() override = default;
 
     void loadResources() override;
@@ -93,8 +93,8 @@ private:
     std::vector<glm::mat4>                  m_transformInfos;
 
 private:
-    VulkanDevice*                   m_pDevice{};
-    std::shared_ptr<VulkanRenderer> m_pRenderer{};
+    VulkanDevice*   m_pDevice   = {};
+    VulkanRenderer* m_pRenderer = {};
 };
 }  // namespace aph
 

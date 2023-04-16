@@ -11,18 +11,19 @@ class VulkanImageView;
 
 struct ImageCreateInfo
 {
-    Extent3D            extent;
-    uint32_t            flags       = 0;
-    ImageType           imageType   = IMAGE_TYPE_2D;
-    uint32_t            alignment   = 0;
-    uint32_t            mipLevels   = 1;
-    uint32_t            layerCount  = 1;
-    uint32_t            arrayLayers = 1;
-    ImageUsageFlags     usage;
-    MemoryPropertyFlags property;
-    Format              format;
-    SampleCountFlags    samples = SAMPLE_COUNT_1_BIT;
-    ImageTiling         tiling  = IMAGE_TILING_OPTIMAL;
+    Extent3D            extent        = {};
+    uint32_t            flags         = { 0 };
+    uint32_t            alignment     = { 0 };
+    uint32_t            mipLevels     = { 1 };
+    uint32_t            layerCount    = { 1 };
+    uint32_t            arrayLayers   = { 1 };
+    ImageUsageFlags     usage         = { 0 };
+    MemoryPropertyFlags property      = { 0 };
+    SampleCountFlags    samples       = { SAMPLE_COUNT_1_BIT };
+    ImageType           imageType     = { ImageType::_2D };
+    Format              format        = { Format::UNDEFINED };
+    ImageTiling         tiling        = { ImageTiling::OPTIMAL };
+    ImageLayout         initialLayout = { ImageLayout::UNDEFINED };
 };
 
 class VulkanImage : public ResourceHandle<VkImage, ImageCreateInfo>
@@ -34,7 +35,7 @@ public:
 
     VkDeviceMemory getMemory() { return m_memory; }
 
-    VulkanImageView* getImageView(Format imageFormat = FORMAT_UNDEFINED);
+    VulkanImageView* getImageView(Format imageFormat = Format::UNDEFINED);
 
     Extent3D getExtent() const { return m_createInfo.extent; }
     uint32_t getWidth() const { return m_createInfo.extent.width; }
@@ -44,20 +45,18 @@ public:
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:
-    VulkanDevice*                                m_pDevice{};
-    std::unordered_map<Format, VulkanImageView*> m_imageViewFormatMap;
-
-    VkDeviceMemory m_memory{};
-    void*          m_mapped{};
+    VulkanDevice*                                m_pDevice            = {};
+    std::unordered_map<Format, VulkanImageView*> m_imageViewFormatMap = {};
+    VkDeviceMemory                               m_memory             = {};
 };
 
 struct ImageViewCreateInfo
 {
-    ImageViewType         viewType;
-    ImageViewDimension    dimension;
-    Format                format;
-    ComponentMapping      components;
-    ImageSubresourceRange subresourceRange;
+    ImageViewType         viewType         = { ImageViewType::_2D };
+    ImageViewDimension    dimension        = { ImageViewDimension::_2D };
+    Format                format           = { Format::UNDEFINED };
+    ComponentMapping      components       = {};
+    ImageSubresourceRange subresourceRange = {};
 };
 
 class VulkanImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
@@ -77,8 +76,8 @@ public:
     VulkanImage* getImage() { return m_image; }
 
 private:
-    VulkanImage*                                             m_image{};
-    std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap;
+    VulkanImage*                                             m_image       = {};
+    std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
 };
 
 }  // namespace aph

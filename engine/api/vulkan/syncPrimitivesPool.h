@@ -24,12 +24,12 @@ public:
     bool     Exists(VkSemaphore semaphore);
 
 private:
-    VulkanDevice*           m_device = nullptr;
-    std::set<VkFence>       m_allFences;
-    std::set<VkSemaphore>   m_allSemaphores;
-    std::queue<VkFence>     m_availableFences;
-    std::queue<VkSemaphore> m_availableSemaphores;
-    SpinLock                m_fenceLock, m_semaphoreLock;
+    VulkanDevice*           m_device              = {};
+    std::set<VkFence>       m_allFences           = {};
+    std::set<VkSemaphore>   m_allSemaphores       = {};
+    std::queue<VkFence>     m_availableFences     = {};
+    std::queue<VkSemaphore> m_availableSemaphores = {};
+    SpinLock                m_fenceLock = {}, m_semaphoreLock = {};
 };
 }  // namespace aph
 

@@ -21,7 +21,7 @@ class Object : public IdObject
 {
 public:
     template <typename TObject, typename... Args>
-    static std::shared_ptr<TObject> Create(Args &&...args)
+    static std::shared_ptr<TObject> Create(Args&&... args)
     {
         auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
         return instance;
@@ -32,7 +32,7 @@ public:
     ObjectType getType() { return m_type; }
 
 protected:
-   ObjectType m_type{};
+    ObjectType m_type{};
 };
 
 class UniformObject : public Object
@@ -41,11 +41,11 @@ public:
     UniformObject(IdType id, ObjectType type) : Object{ id, type } {}
     ~UniformObject() override = default;
 
-    virtual void *getData() { return data.get(); }
+    virtual void*    getData() { return data.get(); }
     virtual uint32_t getDataSize() { return dataSize; }
 
 protected:
-    size_t dataSize{ 0 };
+    size_t                dataSize{ 0 };
     std::shared_ptr<void> data{};
 
     bool updated{ false };

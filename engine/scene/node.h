@@ -72,10 +72,10 @@ public:
     }
 
 protected:
-    std::string                         name{};
-    std::vector<std::shared_ptr<TNode>> children{};
-    TNode*                              parent{};
-    glm::mat4                           matrix{ 1.0f };
+    std::string                         name     = {};
+    std::vector<std::shared_ptr<TNode>> children = {};
+    TNode*                              parent   = {};
+    glm::mat4                           matrix   = { glm::mat4(1.0f) };
 };
 
 class SceneNode : public Node<SceneNode>

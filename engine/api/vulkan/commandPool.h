@@ -11,8 +11,8 @@ class VulkanDevice;
 
 struct CommandPoolCreateInfo
 {
-    uint32_t                 queueFamilyIndex;
-    VkCommandPoolCreateFlags flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    uint32_t                 queueFamilyIndex = {};
+    VkCommandPoolCreateFlags flags            = { VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT };
 };
 
 class VulkanCommandPool : public ResourceHandle<VkCommandPool, CommandPoolCreateInfo>
@@ -24,8 +24,8 @@ public:
     uint32_t getQueueFamilyIndex() const;
 
 private:
-    VulkanDevice* m_device = nullptr;
-    SpinLock      m_spinLock;
+    VulkanDevice* m_device   = {};
+    SpinLock      m_spinLock = {};
 };
 
 using QueueFamilyCommandPools = std::unordered_map<uint32_t, VulkanCommandPool*>;

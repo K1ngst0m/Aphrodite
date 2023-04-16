@@ -140,16 +140,16 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
     {
         ImageCreateInfo imageCreateInfo = {
             .extent      = { m_extent.width, m_extent.height, 1 },
-            .imageType   = IMAGE_TYPE_2D,
             .mipLevels   = 1,
             .arrayLayers = 1,
             .usage       = swapChainCreateInfo.imageUsage,
-            .format      = static_cast<Format>(getSurfaceFormat()),
             .samples     = VK_SAMPLE_COUNT_1_BIT,
-            .tiling      = IMAGE_TILING_OPTIMAL,
+            .imageType   = ImageType::_2D,
+            .format      = static_cast<Format>(getSurfaceFormat()),
+            .tiling      = ImageTiling::OPTIMAL,
         };
 
-        m_images.push_back(new VulkanImage(m_device, imageCreateInfo, handle));
+        m_images.push_back(std::make_unique<VulkanImage>(m_device, imageCreateInfo, handle));
     }
 }
 
@@ -175,11 +175,5 @@ VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue* pQ
     return result;
 }
 
-VulkanSwapChain::~VulkanSwapChain()
-{
-    for(auto& image : m_images)
-    {
-        delete image;
-    }
-}
+VulkanSwapChain::~VulkanSwapChain() = default;
 }  // namespace aph

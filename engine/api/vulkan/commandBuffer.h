@@ -72,10 +72,10 @@ public:
     uint32_t getQueueFamilyIndices() const;
 
 private:
-    VulkanCommandPool* m_pool;
-    CommandBufferState m_state;
-    bool               m_submittedToQueue = false;
-    uint32_t           m_queueFamilyType;
+    VulkanCommandPool* m_pool             = {};
+    CommandBufferState m_state            = {};
+    bool               m_submittedToQueue = { false };
+    uint32_t           m_queueFamilyType  = {};
 };
 }  // namespace aph
 

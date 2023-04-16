@@ -12,8 +12,8 @@ enum class ShadingModel
 
 struct AABB
 {
-    glm::vec3 min;
-    glm::vec3 max;
+    glm::vec3 min = {};
+    glm::vec3 max = {};
 };
 
 enum class SceneType
@@ -45,29 +45,29 @@ public:
     std::shared_ptr<Camera> getCameraWithId(IdType id) { return m_cameras[id]; }
     std::shared_ptr<Mesh>   getMeshWithId(IdType id) { return m_meshes[id]; }
 
-    std::vector<uint8_t>  getIndices() const { return m_indices; }
-    std::vector<uint8_t>  getVertices() const { return m_vertices; }
-    std::vector<Material> getMaterials() const { return m_materials; }
+    std::vector<uint8_t>                    getIndices() const { return m_indices; }
+    std::vector<uint8_t>                    getVertices() const { return m_vertices; }
+    std::vector<Material>                   getMaterials() const { return m_materials; }
     std::vector<std::shared_ptr<ImageInfo>> getImages() const { return m_images; }
 
     glm::vec3 getAmbient() { return m_ambient; }
 
 private:
-    AABB      m_aabb{};
-    glm::vec3 m_ambient{ 0.02f };
+    AABB      m_aabb    = {};
+    glm::vec3 m_ambient = { 0.02f, 0.02f, 0.02f };
 
-    std::shared_ptr<SceneNode> m_rootNode{};
-    std::shared_ptr<Camera>    m_camera{};
+    std::shared_ptr<SceneNode> m_rootNode = {};
+    std::shared_ptr<Camera>    m_camera   = {};
 
-    std::vector<uint8_t> m_indices{};
-    std::vector<uint8_t> m_vertices{};
+    std::vector<uint8_t> m_indices  = {};
+    std::vector<uint8_t> m_vertices = {};
 
-    std::unordered_map<IdType, std::shared_ptr<Camera>> m_cameras{};
-    std::unordered_map<IdType, std::shared_ptr<Light>>  m_lights{};
-    std::unordered_map<IdType, std::shared_ptr<Mesh>>   m_meshes{};
+    std::unordered_map<IdType, std::shared_ptr<Camera>> m_cameras = {};
+    std::unordered_map<IdType, std::shared_ptr<Light>>  m_lights  = {};
+    std::unordered_map<IdType, std::shared_ptr<Mesh>>   m_meshes  = {};
 
-    std::vector<std::shared_ptr<ImageInfo>> m_images{};
-    std::vector<Material>                   m_materials{};
+    std::vector<std::shared_ptr<ImageInfo>> m_images    = {};
+    std::vector<Material>                   m_materials = {};
 };
 
 }  // namespace aph
