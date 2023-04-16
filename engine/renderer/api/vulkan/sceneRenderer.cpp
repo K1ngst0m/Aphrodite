@@ -99,163 +99,13 @@ void VulkanSceneRenderer::cleanupResources()
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
 {
-    VkExtent2D extent{
-        .width  = m_pRenderer->getWindowWidth(),
-        .height = m_pRenderer->getWindowHeight(),
-    };
-    VkViewport viewport = aph::init::viewport(extent);
-    VkRect2D   scissor  = aph::init::rect2D(extent);
-
-    VkCommandBufferBeginInfo beginInfo = aph::init::commandBufferBeginInfo();
-
-    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
     uint32_t frameIdx = m_pRenderer->getCurrentFrameIndex();
-
     auto* commandBuffer = m_pRenderer->getDefaultCommandBuffer(frameIdx);
 
     commandBuffer->begin();
 
-    // dynamic state
-    commandBuffer->setViewport(viewport);
-    commandBuffer->setSissor(scissor);
-
-    // forward pass
-    {
-        VulkanImageView*          pColorAttachment = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView();
-        VkRenderingAttachmentInfo forwardColorAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pColorAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = { .color{ { 0.1f, 0.1f, 0.1f, 1.0f } } },
-        };
-
-        VulkanImageView*          pDepthAttachment = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getImageView();
-        VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pDepthAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue  = { .depthStencil{ 1.0f, 0 } },
-        };
-
-        VkRenderingInfo renderingInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .renderArea{
-                .offset{ 0, 0 },
-                .extent{ extent },
-            },
-            .layerCount           = 1,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &forwardColorAttachmentInfo,
-            .pDepthAttachment     = &forwardDepthAttachmentInfo,
-        };
-
-        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        commandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-        commandBuffer->beginRendering(renderingInfo);
-
-        // skybox
-        {
-            commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
-            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
-            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], { 0 });
-            commandBuffer->draw(36, 1, 0, 0);
-        }
-
-        // draw scene object
-        {
-            commandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
-            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
-            commandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
-            commandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
-
-            for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
-            {
-                const auto& node = m_meshNodeList[nodeId];
-                auto        mesh = node->getObject<Mesh>();
-                commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                             offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
-                if(mesh->m_indexOffset > -1)
-                {
-                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-                    switch(mesh->m_indexType)
-                    {
-                    case IndexType::UINT16:
-                        indexType = VK_INDEX_TYPE_UINT16;
-                        break;
-                    case IndexType::UINT32:
-                        indexType = VK_INDEX_TYPE_UINT32;
-                        break;
-                    default:
-                        assert("undefined behavior.");
-                        break;
-                    }
-                    commandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-                }
-                for(const auto& subset : mesh->m_subsets)
-                {
-                    if(subset.indexCount > 0)
-                    {
-                        commandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                     offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
-                                                     &subset.materialIndex);
-                        if(subset.hasIndices)
-                        {
-                            commandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
-                                                       mesh->m_vertexOffset, 0);
-                        }
-                        else
-                        {
-                            commandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
-                        }
-                    }
-                }
-            }
-        }
-
-        commandBuffer->endRendering();
-
-        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                             VK_IMAGE_LAYOUT_GENERAL);
-    }
-
-    // post fx
-    {
-        VulkanImageView* pColorAttachment = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView();
-
-        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_GENERAL);
-        commandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
-
-        {
-            VkDescriptorImageInfo inputImageInfo{
-                .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
-            };
-            VkDescriptorImageInfo outputImageInfo{
-                .imageView   = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
-            };
-            std::vector<VkWriteDescriptorSet> writes{
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
-            };
-
-            commandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
-        }
-
-        commandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(), 1);
-        commandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
-                                             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-    }
+    recordDrawSceneCommands(commandBuffer);
+    recordPostFxCommands(commandBuffer);
 
     commandBuffer->end();
 }
@@ -711,6 +561,172 @@ void VulkanSceneRenderer::_initSkybox()
 
         VK_CHECK_RESULT(
             m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+    }
+}
+
+void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer)
+{
+    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
+
+    VkExtent2D extent{
+        .width  = m_pRenderer->getWindowWidth(),
+        .height = m_pRenderer->getWindowHeight(),
+    };
+    VkViewport viewport = aph::init::viewport(extent);
+    VkRect2D   scissor  = aph::init::rect2D(extent);
+
+    // dynamic state
+    pCommandBuffer->setViewport(viewport);
+    pCommandBuffer->setSissor(scissor);
+
+    // forward pass
+    {
+        VulkanImageView*          pColorAttachment = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView();
+        VkRenderingAttachmentInfo forwardColorAttachmentInfo{
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = pColorAttachment->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue  = { .color{ { 0.1f, 0.1f, 0.1f, 1.0f } } },
+        };
+
+        VulkanImageView*          pDepthAttachment = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getImageView();
+        VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = pDepthAttachment->getHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue  = { .depthStencil{ 1.0f, 0 } },
+        };
+
+        VkRenderingInfo renderingInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .renderArea{
+                .offset{ 0, 0 },
+                .extent{ extent },
+            },
+            .layerCount           = 1,
+            .colorAttachmentCount = 1,
+            .pColorAttachments    = &forwardColorAttachmentInfo,
+            .pDepthAttachment     = &forwardDepthAttachmentInfo,
+        };
+
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        pCommandBuffer->beginRendering(renderingInfo);
+
+        // skybox
+        {
+            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
+            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
+            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
+            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], { 0 });
+            pCommandBuffer->draw(36, 1, 0, 0);
+        }
+
+        // draw scene object
+        {
+            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
+            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
+            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
+            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], { 0 });
+
+            for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
+            {
+                const auto& node = m_meshNodeList[nodeId];
+                auto        mesh = node->getObject<Mesh>();
+                pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
+                                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                             offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
+                if(mesh->m_indexOffset > -1)
+                {
+                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+                    switch(mesh->m_indexType)
+                    {
+                    case IndexType::UINT16:
+                        indexType = VK_INDEX_TYPE_UINT16;
+                        break;
+                    case IndexType::UINT32:
+                        indexType = VK_INDEX_TYPE_UINT32;
+                        break;
+                    default:
+                        assert("undefined behavior.");
+                        break;
+                    }
+                    pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
+                }
+                for(const auto& subset : mesh->m_subsets)
+                {
+                    if(subset.indexCount > 0)
+                    {
+                        pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
+                                                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                     offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                     &subset.materialIndex);
+                        if(subset.hasIndices)
+                        {
+                            pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
+                                                       mesh->m_vertexOffset, 0);
+                        }
+                        else
+                        {
+                            pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        // draw ui
+        {
+            if(m_pUIRenderer)
+            {
+                m_pUIRenderer->draw(pCommandBuffer);
+            }
+        }
+
+        pCommandBuffer->endRendering();
+
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                             VK_IMAGE_LAYOUT_GENERAL);
+    }
+
+}
+void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer)
+{
+    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
+    // post fx
+    {
+        VulkanImageView* pColorAttachment = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView();
+
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                             VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
+
+        {
+            VkDescriptorImageInfo inputImageInfo{
+                .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+            };
+            VkDescriptorImageInfo outputImageInfo{
+                .imageView   = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
+            };
+            std::vector<VkWriteDescriptorSet> writes{
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
+                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
+            };
+
+            pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
+        }
+
+        pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(), 1);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
+                                             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }
 }  // namespace aph

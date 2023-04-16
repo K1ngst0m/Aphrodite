@@ -11,7 +11,7 @@ namespace aph
 struct RenderConfig
 {
     bool     enableDebug         = { true };
-    bool     enableUI            = { false };
+    bool     enableUI            = { true };
     bool     initDefaultResource = { true };
     uint32_t maxFrames           = { 2 };
 };
@@ -21,12 +21,12 @@ class IRenderer
 {
 public:
     template <typename TRenderer>
-    static std::unique_ptr<TRenderer> Create(const std::shared_ptr<WindowData>& windowData, const RenderConfig& config)
+    static std::unique_ptr<TRenderer> Create(const std::shared_ptr<Window>& window, const RenderConfig& config)
     {
         std::unique_ptr<TRenderer> renderer = {};
         if constexpr(std::is_same<TRenderer, VulkanRenderer>::value)
         {
-            renderer = std::make_unique<VulkanRenderer>(windowData, config);
+            renderer = std::make_unique<VulkanRenderer>(window, config);
         }
         else
         {
@@ -34,22 +34,23 @@ public:
         }
         return renderer;
     }
-    IRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig& config) :
-        m_windowData(std::move(windowData)),
+    IRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
+        m_window(std::move(window)),
         m_config(config)
     {
     }
-    void     setWindowData(const std::shared_ptr<WindowData>& windowData) { m_windowData = windowData; }
-    uint32_t getWindowHeight() { return m_windowData->height; };
-    uint32_t getWindowWidth() { return m_windowData->width; };
-    uint32_t getWindowAspectRation() { return m_windowData->getAspectRatio(); }
+
+    std::shared_ptr<Window> getWindow() { return m_window; }
+    uint32_t                getWindowWidth() { return m_window->getWidth(); };
+    uint32_t                getWindowHeight() { return m_window->getHeight(); };
+    uint32_t                getWindowAspectRation() { return m_window->getAspectRatio(); }
 
     virtual void cleanup()    = 0;
     virtual void idleDevice() = 0;
 
 protected:
-    std::shared_ptr<WindowData> m_windowData = {};
-    RenderConfig                m_config     = {};
+    std::shared_ptr<Window> m_window = {};
+    RenderConfig            m_config = {};
 };
 }  // namespace aph
 

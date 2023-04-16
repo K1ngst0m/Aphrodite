@@ -597,55 +597,67 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
         executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
             cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->copyBufferToImage(stagingBuffer, texture);
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            if(genMipmap)
+            {
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            }
         });
 
         executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-            // generate mipmap chains
-            for(int32_t i = 1; i < imageCI.mipLevels; i++)
+            if(genMipmap)
             {
-                VkImageBlit imageBlit{};
+                // generate mipmap chains
+                for(int32_t i = 1; i < imageCI.mipLevels; i++)
+                {
+                    VkImageBlit imageBlit{};
 
-                // Source
-                imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.srcSubresource.layerCount = 1;
-                imageBlit.srcSubresource.mipLevel   = i - 1;
-                imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-                imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-                imageBlit.srcOffsets[1].z           = 1;
+                    // Source
+                    imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    imageBlit.srcSubresource.layerCount = 1;
+                    imageBlit.srcSubresource.mipLevel   = i - 1;
+                    imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+                    imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+                    imageBlit.srcOffsets[1].z           = 1;
 
-                // Destination
-                imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                imageBlit.dstSubresource.layerCount = 1;
-                imageBlit.dstSubresource.mipLevel   = i;
-                imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-                imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-                imageBlit.dstOffsets[1].z           = 1;
+                    // Destination
+                    imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    imageBlit.dstSubresource.layerCount = 1;
+                    imageBlit.dstSubresource.mipLevel   = i;
+                    imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+                    imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+                    imageBlit.dstOffsets[1].z           = 1;
 
-                VkImageSubresourceRange mipSubRange = {};
-                mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-                mipSubRange.baseMipLevel            = i;
-                mipSubRange.levelCount              = 1;
-                mipSubRange.layerCount              = 1;
+                    VkImageSubresourceRange mipSubRange = {};
+                    mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+                    mipSubRange.baseMipLevel            = i;
+                    mipSubRange.levelCount              = 1;
+                    mipSubRange.layerCount              = 1;
 
-                // Prepare current mip level as image blit destination
-                cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                        VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
+                    // Prepare current mip level as image blit destination
+                    cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                            VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
-                // Blit from previous level
-                cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+                    // Blit from previous level
+                    cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
-                // Prepare current mip level as image blit source for next level
-                cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
+                    // Prepare current mip level as image blit source for next level
+                    cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                            mipSubRange);
+                }
+
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
-
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            else
+            {
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
         });
     }
 
@@ -699,11 +711,12 @@ void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer)
     vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
 
-VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage ** ppImage, VulkanImageView **ppImageView)
+VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage** ppImage,
+                                     VulkanImageView** ppImageView)
 {
-    uint32_t cubeMapWidth{}, cubeMapHeight{};
-    VkFormat imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    uint32_t mipLevels   = 0;
+    uint32_t                     cubeMapWidth{}, cubeMapHeight{};
+    VkFormat                     imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    uint32_t                     mipLevels   = 0;
     std::array<VulkanBuffer*, 6> stagingBuffers;
     for(auto idx = 0; idx < 6; idx++)
     {
@@ -769,17 +782,17 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
 
     executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer) {
         pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
+                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
         // Copy the cube map faces from the staging buffer to the optimal tiled image
         for(uint32_t idx = 0; idx < 6; idx++)
         {
             pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, { bufferCopyRegions[idx] });
         }
         pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
+                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
     });
 
-    for (auto *buffer : stagingBuffers)
+    for(auto* buffer : stagingBuffers)
     {
         destroyBuffer(buffer);
     }

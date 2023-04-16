@@ -12,11 +12,11 @@ file(GLOB base_src
 
   renderer/api/vulkan/sceneRenderer.h
   renderer/api/vulkan/renderer.h
-  # renderer/api/vulkan/uiRenderer.cpp
+  renderer/api/vulkan/uiRenderer.h
 
   renderer/api/vulkan/sceneRenderer.cpp
   renderer/api/vulkan/renderer.cpp
-  # renderer/api/vulkan/uiRenderer.cpp
+  renderer/api/vulkan/uiRenderer.cpp
 
   api/vulkan/*.cpp
   api/vulkan/*.h

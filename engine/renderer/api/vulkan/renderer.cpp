@@ -1,4 +1,6 @@
 #include "renderer.h"
+
+#include <utility>
 #include "sceneRenderer.h"
 #include "api/vulkan/device.h"
 
@@ -6,8 +8,8 @@
 
 namespace aph
 {
-VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const RenderConfig& config) :
-    IRenderer(std::move(windowData), config)
+VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
+    IRenderer(std::move(window), config)
 {
     // create instance
     {
@@ -74,10 +76,10 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<WindowData> windowData, const Ren
 
     // setup swapchain
     {
-        VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_windowData->window, nullptr, &m_surface));
+        VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_window->getHandle(), nullptr, &m_surface));
         SwapChainCreateInfo createInfo{
             .surface      = m_surface,
-            .windowHandle = m_windowData->window,
+            .windowHandle = m_window->getHandle(),
         };
         VK_CHECK_RESULT(m_device->createSwapchain(createInfo, &m_swapChain));
     }

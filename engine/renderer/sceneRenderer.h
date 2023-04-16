@@ -38,8 +38,8 @@ public:
     void         setScene(const std::shared_ptr<Scene>& scene) { m_scene = scene; }
 
 protected:
-    std::shared_ptr<Scene> m_scene;
-    ShadingModel           m_shadingModel{ ShadingModel::PBR };
+    std::shared_ptr<Scene> m_scene        = {};
+    ShadingModel           m_shadingModel = { ShadingModel::PBR };
 };
 
 }  // namespace aph

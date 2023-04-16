@@ -1,6 +1,6 @@
 #include "scene_manager.h"
 
-const char * modelPath = {};
+const char* modelPath = {};
 
 scene_manager::scene_manager() : aph::BaseApp("scene_manager")
 {
@@ -24,8 +24,8 @@ void scene_manager::run()
         m_modelNode->rotate(1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
+        m_uiRenderer->update(m_deltaTime);
         m_sceneRenderer->update(m_deltaTime);
-        // m_uiRenderer->update(m_deltaTime);
 
         // draw and submit
         m_renderer->beginFrame();
@@ -38,7 +38,7 @@ void scene_manager::finish()
 {
     m_renderer->idleDevice();
     m_sceneRenderer->cleanupResources();
-    // m_uiRenderer->cleanup();
+    m_uiRenderer->cleanup();
     m_renderer->cleanup();
 }
 
@@ -102,23 +102,24 @@ void scene_manager::setupScene()
 
     // load from gltf file
     {
-        if (modelPath){
+        if(modelPath)
+        {
             m_modelNode = m_scene->createMeshesFromFile(modelPath);
         }
-        else{
-            m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
-                                                        "DamagedHelmet.glb");
+        else
+        {
+            m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
         }
         m_modelNode->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
 
-        auto model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() /
-                                                    "DamagedHelmet.glb");
+        auto model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
         model2->rotate(180.0f, { 0.0f, 1.0f, 0.0f });
-        model2->translate({3.0, 1.0, 1.0});
+        model2->translate({ 3.0, 1.0, 1.0 });
     }
 
     {
         m_sceneRenderer->setScene(m_scene);
+        m_sceneRenderer->setUIRenderer(m_uiRenderer);
         m_sceneRenderer->setShadingModel(aph::ShadingModel::PBR);
         m_sceneRenderer->loadResources();
     }
@@ -128,13 +129,14 @@ void scene_manager::setupRenderer()
 {
     aph::RenderConfig config{
         .enableDebug = true,
-        .enableUI = false,
-        .maxFrames = 2,
+        .enableUI    = false,
+        .maxFrames   = 2,
     };
 
-    m_renderer = aph::IRenderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
+    m_renderer      = aph::IRenderer::Create<aph::VulkanRenderer>(m_window, config);
     m_sceneRenderer = aph::ISceneRenderer::Create<aph::VulkanSceneRenderer>(m_renderer);
-    // m_uiRenderer    = aph::VulkanUIRenderer::Create(m_renderer, m_window->getWindowData());
+    m_uiRenderer    = std::make_unique<aph::VulkanUIRenderer>(m_renderer);
+    m_uiRenderer->init();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
@@ -192,14 +194,14 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
     const float dy = m_window->getCursorYpos() - yposIn;
 
     auto camera = m_cameraNode->getObject<aph::Camera>();
-    camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});
+    camera->rotate({ dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f });
 }
 
 int main(int argc, char** argv)
 {
     scene_manager app;
 
-    if (argc > 1)
+    if(argc > 1)
     {
         modelPath = argv[1];
     }

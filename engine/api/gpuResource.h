@@ -78,7 +78,6 @@ enum class ImageTiling
 {
     OPTIMAL               = 0,
     LINEAR                = 1,
-    IMAGE_TILING_MAX_ENUM = 0x7FFFFFFF
 };
 
 enum class ImageViewType
@@ -90,7 +89,6 @@ enum class ImageViewType
     _1D_ARRAY                = 4,
     _2D_ARRAY                = 5,
     _CUBE_ARRAY              = 6,
-    IMAGE_VIEW_TYPE_MAX_ENUM = 0x7FFFFFFF
 };
 
 enum class ImageViewDimension
@@ -102,7 +100,6 @@ enum class ImageViewDimension
     _1D_ARRAY                     = 4,
     _2D_ARRAY                     = 5,
     _CUBE_ARRAY                   = 6,
-    IMAGE_VIEW_DIMENSION_MAX_ENUM = 0x7FFFFFFF
 };
 
 enum class ImageType
@@ -110,7 +107,6 @@ enum class ImageType
     _1D                 = 0,
     _2D                 = 1,
     _3D                 = 2,
-    IMAGE_TYPE_MAX_ENUM = 0x7FFFFFFF
 };
 
 enum class ImageLayout
@@ -124,22 +120,6 @@ enum class ImageLayout
     TRANSFER_SRC_OPTIMAL                       = 6,
     TRANSFER_DST_OPTIMAL                       = 7,
     PREINITIALIZED                             = 8,
-    DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL = 1000117000,
-    DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL = 1000117001,
-    DEPTH_ATTACHMENT_OPTIMAL                   = 1000241000,
-    DEPTH_READ_ONLY_OPTIMAL                    = 1000241001,
-    STENCIL_ATTACHMENT_OPTIMAL                 = 1000241002,
-    STENCIL_READ_ONLY_OPTIMAL                  = 1000241003,
-    READ_ONLY_OPTIMAL                          = 1000314000,
-    ATTACHMENT_OPTIMAL                         = 1000314001,
-    PRESENT_SRC                                = 1000001002,
-    VIDEO_DECODE_DST                           = 1000024000,
-    VIDEO_DECODE_SRC                           = 1000024001,
-    VIDEO_DECODE_DPB                           = 1000024002,
-    SHARED_PRESENT                             = 1000111000,
-    FRAGMENT_DENSITY_MAP_OPTIMAL               = 1000218000,
-    FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL   = 1000164003,
-    VK_IMAGE_LAYOUT_MAX_ENUM                   = 0x7FFFFFFF
 };
 
 enum class ComponentSwizzle
@@ -151,15 +131,14 @@ enum class ComponentSwizzle
     G        = 4,
     B        = 5,
     A        = 6,
-    MAX_ENUM = 0x7FFFFFFF
 };
 
 struct ComponentMapping
 {
-    ComponentSwizzle r = { ComponentSwizzle::R };
-    ComponentSwizzle g = { ComponentSwizzle::G };
-    ComponentSwizzle b = { ComponentSwizzle::B };
-    ComponentSwizzle a = { ComponentSwizzle::A };
+    ComponentSwizzle r = { ComponentSwizzle::IDENTITY };
+    ComponentSwizzle g = { ComponentSwizzle::IDENTITY };
+    ComponentSwizzle b = { ComponentSwizzle::IDENTITY };
+    ComponentSwizzle a = { ComponentSwizzle::IDENTITY };
 };
 
 struct ImageSubresourceRange
@@ -193,6 +172,10 @@ public:
             m_createInfo.typeId = typeid(T_Handle).hash_code();
         }
     }
+    operator T_Handle() { return m_handle; }
+    operator T_Handle&() { return m_handle; }
+    operator T_Handle&() const { return m_handle; }
+
     T_Handle&       getHandle() { return m_handle; }
     const T_Handle& getHandle() const { return m_handle; }
     T_CreateInfo&   getCreateInfo() { return m_createInfo; }

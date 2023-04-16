@@ -1,18 +1,20 @@
 #ifndef UIRENDERER_H_
 #define UIRENDERER_H_
 
+#include <utility>
+
 #include "common/common.h"
 
 namespace aph
 {
-class WindowData;
+class Window;
 class IUIRenderer
 {
 public:
-    IUIRenderer(std::shared_ptr<WindowData> windowData) : m_windowData(std::move(windowData)) {}
+    IUIRenderer(std::shared_ptr<Window> window) : m_window(std::move(window)) {}
 
 protected:
-    std::shared_ptr<WindowData> m_windowData = {};
+    std::shared_ptr<Window> m_window = {};
 };
 }  // namespace aph
 

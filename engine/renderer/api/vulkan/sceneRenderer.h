@@ -3,6 +3,7 @@
 
 #include "api/vulkan/device.h"
 #include "renderer.h"
+#include "uiRenderer.h"
 #include "renderer/sceneRenderer.h"
 
 namespace aph
@@ -17,6 +18,9 @@ public:
     void cleanupResources() override;
     void update(float deltaTime) override;
     void recordDrawSceneCommands() override;
+    void recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer);
+    void recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer);
+    void setUIRenderer(const std::unique_ptr<VulkanUIRenderer>& renderer) { m_pUIRenderer = renderer.get(); }
 
 private:
     void _initSetLayout();
@@ -93,8 +97,9 @@ private:
     std::vector<glm::mat4>                  m_transformInfos;
 
 private:
-    VulkanDevice*   m_pDevice   = {};
-    VulkanRenderer* m_pRenderer = {};
+    VulkanDevice*     m_pDevice     = {};
+    VulkanRenderer*   m_pRenderer   = {};
+    VulkanUIRenderer* m_pUIRenderer = {};
 };
 }  // namespace aph
 
