@@ -32,6 +32,7 @@ struct CursorData
 using FramebufferSizeFunc = std::function<void(int width, int height)>;
 using CursorPosFunc       = std::function<void(double xposIn, double yposIn)>;
 using KeyFunc             = std::function<void(int key, int scancode, int action, int mods)>;
+using MouseButtonFunc     = std::function<void(int button, int action, int mods)>;
 
 class Window
 {
@@ -58,6 +59,7 @@ public:
     void setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc);
     void setCursorPosCallback(const CursorPosFunc& cbFunc);
     void setKeyCallback(const KeyFunc& cbFunc);
+    void setMouseButtonCallback(const MouseButtonFunc& cbFunc);
     void setCursorVisibility(bool flag);
     void close();
     bool shouldClose();
@@ -70,6 +72,7 @@ private:
     FramebufferSizeFunc m_framebufferResizeCB;
     CursorPosFunc       m_cursorPosCB;
     KeyFunc             m_keyCB;
+    MouseButtonFunc     m_mouseButtonCB;
 };
 }  // namespace aph
 

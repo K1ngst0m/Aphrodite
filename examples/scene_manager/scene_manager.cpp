@@ -17,29 +17,30 @@ void scene_manager::run()
 {
     while(!m_window->shouldClose())
     {
-        auto timer = aph::Timer(m_deltaTime);
+        static float deltaTime = {};
+        auto         timer     = aph::Timer(deltaTime);
         m_window->pollEvents();
 
         // update scene object
-        m_modelNode->rotate(1.0f * m_deltaTime, { 0.0f, 1.0f, 0.0f });
+        m_modelNode->rotate(1.0f * deltaTime, { 0.0f, 1.0f, 0.0f });
 
         // update resource data
-        m_uiRenderer->update(m_deltaTime);
-        m_sceneRenderer->update(m_deltaTime);
+        m_sceneRenderer->update(deltaTime);
+        m_uiRenderer->update(deltaTime);
 
         // draw and submit
-        m_renderer->beginFrame();
+        m_sceneRenderer->beginFrame();
         m_sceneRenderer->recordDrawSceneCommands();
-        m_renderer->endFrame();
+        m_sceneRenderer->endFrame();
     }
 }
 
 void scene_manager::finish()
 {
-    m_renderer->idleDevice();
+    m_sceneRenderer->idleDevice();
     m_sceneRenderer->cleanupResources();
     m_uiRenderer->cleanup();
-    m_renderer->cleanup();
+    m_sceneRenderer->cleanup();
 }
 
 void scene_manager::setupWindow()
@@ -129,13 +130,12 @@ void scene_manager::setupRenderer()
 {
     aph::RenderConfig config{
         .enableDebug = true,
-        .enableUI    = false,
+        .enableUI    = true,
         .maxFrames   = 2,
     };
 
-    m_renderer      = aph::IRenderer::Create<aph::VulkanRenderer>(m_window, config);
-    m_sceneRenderer = aph::ISceneRenderer::Create<aph::VulkanSceneRenderer>(m_renderer);
-    m_uiRenderer    = std::make_unique<aph::VulkanUIRenderer>(m_renderer);
+    m_sceneRenderer = aph::IRenderer::Create<aph::VulkanSceneRenderer>(m_window, config);
+    m_uiRenderer    = std::make_unique<aph::VulkanUIRenderer>(m_sceneRenderer.get());
     m_uiRenderer->init();
 }
 

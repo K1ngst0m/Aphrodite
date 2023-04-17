@@ -20,12 +20,12 @@ public:
     void endFrame();
 
 public:
-    VulkanInstance*  getInstance() const { return m_instance; }
-    VulkanDevice*    getDevice() const { return m_device; }
+    VulkanInstance*  getInstance() const { return m_pInstance; }
+    VulkanDevice*    getDevice() const { return m_pDevice; }
     uint32_t         getCurrentFrameIndex() const { return m_frameIdx; }
     uint32_t         getCurrentImageIndex() const { return m_imageIdx; }
     VkPipelineCache  getPipelineCache() { return m_pipelineCache; }
-    VulkanSwapChain* getSwapChain() { return m_swapChain; }
+    VulkanSwapChain* getSwapChain() { return m_pSwapChain; }
 
     VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
     VulkanShaderCache*        getShaderCache() { return m_pShaderCache; }
@@ -35,20 +35,17 @@ public:
     VulkanQueue*              getComputeQueue() const { return m_queue.compute; }
     VulkanQueue*              getTransferQueue() const { return m_queue.transfer; }
 
-private:
+protected:
     VulkanSyncPrimitivesPool* m_pSyncPrimitivesPool{};
     VulkanShaderCache*        m_pShaderCache{};
 
-private:
-    VulkanInstance*  m_instance{};
-    VulkanDevice*    m_device{};
-    VulkanSwapChain* m_swapChain{};
+protected:
+    VulkanInstance*  m_pInstance{};
+    VulkanDevice*    m_pDevice{};
+    VulkanSwapChain* m_pSwapChain{};
     VkSurfaceKHR     m_surface{};
 
     VkPipelineCache m_pipelineCache{};
-
-    uint32_t m_frameIdx = 0;
-    uint32_t m_imageIdx = 0;
 
     struct
     {
@@ -57,12 +54,24 @@ private:
         VulkanQueue* transfer{};
     } m_queue;
 
-private:
+protected:
     std::vector<VkSemaphore> m_renderSemaphore;
     std::vector<VkSemaphore> m_presentSemaphore;
     std::vector<VkFence>     m_frameFences;
 
     std::vector<VulkanCommandBuffer*> m_commandBuffers;
+
+protected:
+    uint32_t m_frameIdx = {};
+    uint32_t m_imageIdx = {};
+
+protected:
+    float    m_frameTimer   = {};
+    uint32_t m_lastFPS      = {};
+    uint32_t m_frameCounter = {};
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_timer = {};
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
 };
 }  // namespace aph
 

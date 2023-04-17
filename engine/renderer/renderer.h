@@ -16,6 +16,7 @@ struct RenderConfig
     uint32_t maxFrames           = { 2 };
 };
 
+class VulkanSceneRenderer;
 class VulkanRenderer;
 class IRenderer
 {
@@ -27,6 +28,10 @@ public:
         if constexpr(std::is_same<TRenderer, VulkanRenderer>::value)
         {
             renderer = std::make_unique<VulkanRenderer>(window, config);
+        }
+        else if constexpr(std::is_same<TRenderer, VulkanSceneRenderer>::value)
+        {
+            renderer = std::make_unique<VulkanSceneRenderer>(window, config);
         }
         else
         {

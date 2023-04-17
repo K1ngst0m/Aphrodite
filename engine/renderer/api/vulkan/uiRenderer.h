@@ -13,14 +13,17 @@ namespace aph
 class VulkanUIRenderer : IUIRenderer
 {
 public:
-    VulkanUIRenderer(const std::unique_ptr<VulkanRenderer>& renderer);
+    VulkanUIRenderer(VulkanRenderer* pRenderer);
     ~VulkanUIRenderer();
 
     void init();
-    void update(float deltaTime);
+    bool update(float deltaTime);
     void draw(VulkanCommandBuffer* pCommandBuffer);
     void resize(uint32_t width, uint32_t height);
     void cleanup();
+
+public:
+    float getScaleFactor() const { return m_scale; }
 
 public:
     bool header(const char* caption);
@@ -36,7 +39,6 @@ public:
     void text(const char* formatstr, ...);
 
 private:
-    bool update();
 
     struct PushConstBlock
     {

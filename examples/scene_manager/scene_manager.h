@@ -30,11 +30,9 @@ private:
 
     std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
     std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};
-    std::unique_ptr<aph::VulkanRenderer>      m_renderer      = {};
 
     std::shared_ptr<aph::Scene>  m_scene     = {};
     std::shared_ptr<aph::Window> m_window    = {};
-    float                        m_deltaTime = {};
 };
 
 #endif  // SCENE_MANAGER_H_

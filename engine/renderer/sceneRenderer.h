@@ -10,23 +10,6 @@ class VulkanSceneRenderer;
 class ISceneRenderer
 {
 public:
-    template <typename TSceneRenderer, typename... Args>
-    static std::unique_ptr<TSceneRenderer> Create(Args&&... args)
-    {
-        std::unique_ptr<TSceneRenderer> renderer = {};
-        if constexpr(std::is_same<TSceneRenderer, VulkanSceneRenderer>::value)
-        {
-            renderer = std::make_unique<VulkanSceneRenderer>(std::forward<Args>(args)...);
-        }
-        else
-        {
-            assert("current type of the renderer is not supported.");
-        }
-        return renderer;
-    }
-    ISceneRenderer()          = default;
-    virtual ~ISceneRenderer() = default;
-
     virtual void loadResources()           = 0;
     virtual void update(float deltaTime)   = 0;
     virtual void recordDrawSceneCommands() = 0;

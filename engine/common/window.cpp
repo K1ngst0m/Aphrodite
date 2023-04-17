@@ -75,6 +75,15 @@ void Window::setKeyCallback(const KeyFunc& cbFunc)
     });
 }
 
+void Window::setMouseButtonCallback(const MouseButtonFunc& cbFunc)
+{
+    m_mouseButtonCB = cbFunc;
+    glfwSetMouseButtonCallback(getHandle(), [](GLFWwindow* window, int button, int action, int mods) {
+        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        ptr->m_mouseButtonCB(button, action, mods);
+    });
+}
+
 void Window::setCursorVisibility(bool flag)
 {
     glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);

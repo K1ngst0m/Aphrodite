@@ -16,15 +16,17 @@ using QueueTypeFlags = uint32_t;
 class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 {
     friend class VulkanDevice;
+
 public:
     VulkanPhysicalDevice(VkPhysicalDevice handle);
 
-    std::vector<uint32_t> getQueueFamilyIndexByFlags(QueueTypeFlags flags);
-    bool                  isExtensionSupported(std::string_view extension) const;
-    uint32_t              findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
-                                         VkBool32* memTypeFound = nullptr) const;
-    VkFormat              findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-                                              VkFormatFeatureFlags features) const;
+    std::vector<uint32_t>      getQueueFamilyIndexByFlags(QueueTypeFlags flags);
+    bool                       isExtensionSupported(std::string_view extension) const;
+    uint32_t                   findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
+                                              VkBool32* memTypeFound = nullptr) const;
+    VkFormat                   findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                                   VkFormatFeatureFlags features) const;
+    VkPhysicalDeviceProperties getProperties() const { return m_properties; }
 
 private:
     VkPhysicalDeviceProperties                                m_properties;

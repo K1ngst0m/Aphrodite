@@ -11,32 +11,32 @@
 
 namespace aph
 {
-VulkanUIRenderer::VulkanUIRenderer(const std::unique_ptr<VulkanRenderer>& renderer) :
+VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer* renderer) :
     IUIRenderer(renderer->getWindow()),
-    m_pRenderer(renderer.get()),
+    m_pRenderer(renderer),
     m_pDevice(renderer->getDevice())
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
     // Setup Dear ImGui style
-    ImGuiStyle& style                       = ImGui::GetStyle();
-    style.Colors[ImGuiCol_TitleBg]          = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-    style.Colors[ImGuiCol_TitleBgActive]    = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
-    style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.0f, 0.0f, 0.0f, 0.1f);
-    style.Colors[ImGuiCol_MenuBarBg]        = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_Header]           = ImVec4(0.8f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_HeaderActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_HeaderHovered]    = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_FrameBg]          = ImVec4(0.0f, 0.0f, 0.0f, 0.8f);
-    style.Colors[ImGuiCol_CheckMark]        = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-    style.Colors[ImGuiCol_SliderGrab]       = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-    style.Colors[ImGuiCol_FrameBgHovered]   = ImVec4(1.0f, 1.0f, 1.0f, 0.1f);
-    style.Colors[ImGuiCol_FrameBgActive]    = ImVec4(1.0f, 1.0f, 1.0f, 0.2f);
-    style.Colors[ImGuiCol_Button]           = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
-    style.Colors[ImGuiCol_ButtonHovered]    = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
-    style.Colors[ImGuiCol_ButtonActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+    // ImGuiStyle& style                       = ImGui::GetStyle();
+    // style.Colors[ImGuiCol_TitleBg]          = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    // style.Colors[ImGuiCol_TitleBgActive]    = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
+    // style.Colors[ImGuiCol_TitleBgCollapsed] = ImVec4(1.0f, 0.0f, 0.0f, 0.1f);
+    // style.Colors[ImGuiCol_MenuBarBg]        = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_Header]           = ImVec4(0.8f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_HeaderActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_HeaderHovered]    = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_FrameBg]          = ImVec4(0.0f, 0.0f, 0.0f, 0.8f);
+    // style.Colors[ImGuiCol_CheckMark]        = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+    // style.Colors[ImGuiCol_SliderGrab]       = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_SliderGrabActive] = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
+    // style.Colors[ImGuiCol_FrameBgHovered]   = ImVec4(1.0f, 1.0f, 1.0f, 0.1f);
+    // style.Colors[ImGuiCol_FrameBgActive]    = ImVec4(1.0f, 1.0f, 1.0f, 0.2f);
+    // style.Colors[ImGuiCol_Button]           = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
+    // style.Colors[ImGuiCol_ButtonHovered]    = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
+    // style.Colors[ImGuiCol_ButtonActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
     io.FontGlobalScale                      = m_scale;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 }
@@ -123,6 +123,7 @@ void VulkanUIRenderer::init()
              .pColorAttachmentFormats = colorFormats.data(),
              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
+        pipelineCreateInfo.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         pipelineCreateInfo.setLayouts = { m_pSetLayout };
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
@@ -170,8 +171,13 @@ void VulkanUIRenderer::init()
     }
 }
 
-bool VulkanUIRenderer::update()
+bool VulkanUIRenderer::update(float deltaTime)
 {
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
+    io.DeltaTime   = deltaTime;
+
     ImDrawData* imDrawData       = ImGui::GetDrawData();
     bool        updateCmdBuffers = false;
 
@@ -263,7 +269,6 @@ void VulkanUIRenderer::draw(VulkanCommandBuffer* pCommandBuffer)
 
     m_pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
     m_pushConstBlock.translate = glm::vec2(-1.0f);
-
     pCommandBuffer->pushConstants(m_pPipeline, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock),
                                   &m_pushConstBlock);
 
@@ -306,6 +311,7 @@ void VulkanUIRenderer::cleanup()
     m_pDevice->destroyDescriptorSetLayout(m_pSetLayout);
     m_pDevice->destroyPipeline(m_pPipeline);
 }
+
 void VulkanUIRenderer::text(const char* formatstr, ...)
 {
     va_list args;
@@ -313,6 +319,7 @@ void VulkanUIRenderer::text(const char* formatstr, ...)
     ImGui::TextV(formatstr, args);
     va_end(args);
 }
+
 bool VulkanUIRenderer::colorPicker(const char* caption, float* color)
 {
     bool res = ImGui::ColorEdit4(caption, color, ImGuiColorEditFlags_NoInputs);
@@ -411,40 +418,5 @@ bool VulkanUIRenderer::radioButton(const char* caption, bool value)
 bool VulkanUIRenderer::header(const char* caption)
 {
     return ImGui::CollapsingHeader(caption, ImGuiTreeNodeFlags_DefaultOpen);
-}
-
-void VulkanUIRenderer::update(float deltaTime)
-{
-    ImGuiIO& io = ImGui::GetIO();
-
-    io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
-    io.DeltaTime   = 0.1f;
-
-    io.MousePos = ImVec2(m_window->getCursorXpos(), m_window->getCursorYpos());
-    // io.MouseDown[0] = mouseButtons.left && UIOverlay.visible;
-    // io.MouseDown[1] = mouseButtons.right && UIOverlay.visible;
-    // io.MouseDown[2] = mouseButtons.middle && UIOverlay.visible;
-
-    ImGui::NewFrame();
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    ImGui::SetNextWindowPos(ImVec2(10 * m_scale, 10 * m_scale));
-    ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Aphrodite", nullptr,
-                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-    ImGui::TextUnformatted("TITLE");
-    ImGui::TextUnformatted("DEVICE_NAME");
-    // ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / lastFPS), lastFPS);
-    ImGui::Text("%.2f ms/frame (%.1d fps) TODO", (1000.0f / 100), 100);
-
-    // ImGui::PushItemWidth(110.0f * m_scale);
-    // OnUpdateUIOverlay(&UIOverlay);
-    // ImGui::PopItemWidth();
-
-    ImGui::End();
-    ImGui::PopStyleVar();
-    ImGui::Render();
-
-    update();
 }
 }  // namespace aph

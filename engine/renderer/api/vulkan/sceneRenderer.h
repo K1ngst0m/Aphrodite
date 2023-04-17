@@ -8,11 +8,10 @@
 
 namespace aph
 {
-class VulkanSceneRenderer : public ISceneRenderer
+class VulkanSceneRenderer : public ISceneRenderer, public VulkanRenderer
 {
 public:
-    VulkanSceneRenderer(const std::unique_ptr<VulkanRenderer>& renderer);
-    ~VulkanSceneRenderer() override = default;
+    VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
 
     void loadResources() override;
     void cleanupResources() override;
@@ -23,6 +22,7 @@ public:
     void setUIRenderer(const std::unique_ptr<VulkanUIRenderer>& renderer) { m_pUIRenderer = renderer.get(); }
 
 private:
+    void _updateUI();
     void _initSetLayout();
     void _initSet();
     void _initForward();
@@ -97,8 +97,6 @@ private:
     std::vector<glm::mat4>                  m_transformInfos;
 
 private:
-    VulkanDevice*     m_pDevice     = {};
-    VulkanRenderer*   m_pRenderer   = {};
     VulkanUIRenderer* m_pUIRenderer = {};
 };
 }  // namespace aph

@@ -10,6 +10,11 @@
 #include "api/vulkan/device.h"
 
 #include <glm/gtx/string_cast.hpp>
+#include <utility>
+
+#include <imgui/imgui.h>
+#include <imgui/imgui_impl_vulkan.h>
+#include <imgui_impl_glfw.h>
 
 namespace aph
 {
@@ -45,9 +50,8 @@ struct ObjectInfo
 
 namespace aph
 {
-VulkanSceneRenderer::VulkanSceneRenderer(const std::unique_ptr<VulkanRenderer>& renderer) :
-    m_pDevice{ renderer->getDevice() },
-    m_pRenderer{ renderer.get() }
+VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
+    VulkanRenderer(std::move(window), config)
 {
 }
 
@@ -99,8 +103,8 @@ void VulkanSceneRenderer::cleanupResources()
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
 {
-    uint32_t frameIdx = m_pRenderer->getCurrentFrameIndex();
-    auto* commandBuffer = m_pRenderer->getDefaultCommandBuffer(frameIdx);
+    uint32_t frameIdx      = getCurrentFrameIndex();
+    auto*    commandBuffer = getDefaultCommandBuffer(frameIdx);
 
     commandBuffer->begin();
 
@@ -141,6 +145,8 @@ void VulkanSceneRenderer::update(float deltaTime)
         };
         m_buffers[BUFFER_SCENE_LIGHT]->copyTo(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
+
+    _updateUI();
 }
 
 void VulkanSceneRenderer::_initSet()
@@ -261,15 +267,15 @@ void VulkanSceneRenderer::_initPostFx()
     ComputePipelineCreateInfo pipelineCreateInfo{};
     pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_POSTFX] };
     pipelineCreateInfo.shaderMapList = {
-        { VK_SHADER_STAGE_COMPUTE_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
+        { VK_SHADER_STAGE_COMPUTE_BIT, getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
     };
     VK_CHECK_RESULT(m_pDevice->createComputePipeline(pipelineCreateInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
 }
 
 void VulkanSceneRenderer::_initForward()
 {
-    uint32_t   imageCount  = m_pRenderer->getSwapChain()->getImageCount();
-    VkExtent2D imageExtent = m_pRenderer->getSwapChain()->getExtent();
+    uint32_t   imageCount  = getSwapChain()->getImageCount();
+    VkExtent2D imageExtent = getSwapChain()->getExtent();
 
     m_images[IMAGE_FORWARD_COLOR].resize(imageCount);
     m_images[IMAGE_FORWARD_DEPTH].resize(imageCount);
@@ -312,7 +318,7 @@ void VulkanSceneRenderer::_initForward()
     {
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = { m_pRenderer->getSwapChain()->getSurfaceFormat() };
+        std::vector<VkFormat>      colorFormats = { getSwapChain()->getSurfaceFormat() };
         pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
              .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
              .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -323,8 +329,8 @@ void VulkanSceneRenderer::_initForward()
         pipelineCreateInfo.constants.push_back(aph::init::pushConstantRange(
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectInfo), 0));
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
         };
 
         VK_CHECK_RESULT(
@@ -415,9 +421,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create camera buffer
     {
         BufferCreateInfo createInfo{
-            .size      = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
-            .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size     = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
+            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_CAMERA]);
@@ -426,9 +432,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create light buffer
     {
         BufferCreateInfo createInfo{
-            .size      = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
-            .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size     = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
+            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_LIGHT]);
@@ -437,9 +443,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create transform buffer
     {
         BufferCreateInfo createInfo{
-            .size      = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
-            .usage     = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property  = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size     = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
+            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM], m_transformInfos.data(), true);
     }
@@ -503,7 +509,7 @@ void VulkanSceneRenderer::_initGpuResources()
             (skyboxDir / "right.jpg").c_str(),
         });
 
-        VulkanImage* pImage {};
+        VulkanImage* pImage{};
         m_pDevice->createCubeMap(skyboxImages, &pImage, &m_pCubeMapView);
         m_images[IMAGE_SCENE_SKYBOX].push_back(pImage);
     }
@@ -544,7 +550,7 @@ void VulkanSceneRenderer::_initSkybox()
     {
         GraphicsPipelineCreateInfo pipelineCreateInfo{ { VertexComponent::POSITION } };
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = { m_pRenderer->getSwapChain()->getSurfaceFormat() };
+        std::vector<VkFormat>      colorFormats = { getSwapChain()->getSurfaceFormat() };
         pipelineCreateInfo.renderingCreateInfo  = {
              .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
              .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -555,8 +561,8 @@ void VulkanSceneRenderer::_initSkybox()
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "skybox.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "skybox.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, getShaderCache()->getShaders(shaderDir / "skybox.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaderCache()->getShaders(shaderDir / "skybox.frag.spv") },
         };
 
         VK_CHECK_RESULT(
@@ -566,11 +572,11 @@ void VulkanSceneRenderer::_initSkybox()
 
 void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer)
 {
-    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
+    uint32_t imageIdx = getCurrentImageIndex();
 
     VkExtent2D extent{
-        .width  = m_pRenderer->getWindowWidth(),
-        .height = m_pRenderer->getWindowHeight(),
+        .width  = getWindowWidth(),
+        .height = getWindowHeight(),
     };
     VkViewport viewport = aph::init::viewport(extent);
     VkRect2D   scissor  = aph::init::rect2D(extent);
@@ -614,9 +620,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         };
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         pCommandBuffer->beginRendering(renderingInfo);
 
         // skybox
@@ -640,8 +646,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
                 pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                             offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
+                                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                              offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
                 if(mesh->m_indexOffset > -1)
                 {
                     VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -664,13 +670,13 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
                     if(subset.indexCount > 0)
                     {
                         pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                                     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                     offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
-                                                     &subset.materialIndex);
+                                                      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                      offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                      &subset.materialIndex);
                         if(subset.hasIndices)
                         {
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
-                                                       mesh->m_vertexOffset, 0);
+                                                        mesh->m_vertexOffset, 0);
                         }
                         else
                         {
@@ -692,19 +698,18 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         pCommandBuffer->endRendering();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                             VK_IMAGE_LAYOUT_GENERAL);
+                                              VK_IMAGE_LAYOUT_GENERAL);
     }
-
 }
 void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer)
 {
-    uint32_t imageIdx = m_pRenderer->getCurrentImageIndex();
+    uint32_t imageIdx = getCurrentImageIndex();
     // post fx
     {
-        VulkanImageView* pColorAttachment = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView();
+        VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getImageView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                             VK_IMAGE_LAYOUT_GENERAL);
+                                              VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
@@ -713,7 +718,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL
             };
             VkDescriptorImageInfo outputImageInfo{
-                .imageView   = m_pRenderer->getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
+                .imageView   = getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL
             };
             std::vector<VkWriteDescriptorSet> writes{
@@ -724,9 +729,39 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
             pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
         }
 
-        pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(), 1);
+        pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(),
+                                 1);
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
-                                             VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+                                              VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
+}
+
+void VulkanSceneRenderer::_updateUI()
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
+    io.DeltaTime   = 1.0f;
+
+    io.MousePos = ImVec2(m_window->getCursorXpos(), m_window->getCursorYpos());
+    // io.MouseDown[0] = mouseButtons.left;
+    // io.MouseDown[1] = mouseButtons.right;
+    // io.MouseDown[2] = mouseButtons.middle;
+
+    ImGui::NewFrame();
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+    ImGui::SetNextWindowPos(ImVec2(10 * m_pUIRenderer->getScaleFactor(), 10 * m_pUIRenderer->getScaleFactor()));
+    ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
+    ImGui::Begin("Aphrodite - Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    ImGui::TextUnformatted(m_pDevice->getPhysicalDevice()->getProperties().deviceName);
+	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
+
+    ImGui::PushItemWidth(110.0f * m_pUIRenderer->getScaleFactor());
+    ImGui::PopItemWidth();
+
+    ImGui::End();
+    ImGui::PopStyleVar();
+    ImGui::Render();
 }
 }  // namespace aph

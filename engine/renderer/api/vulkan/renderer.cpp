@@ -40,7 +40,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             instanceCreateInfo.enabledLayers = validationLayers;
         }
 
-        VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_instance));
+        VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
@@ -55,15 +55,15 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         DeviceCreateInfo createInfo{
             .enabledExtensions = deviceExtensions,
             // TODO select physical device
-            .pPhysicalDevice = m_instance->getPhysicalDevices(0),
+            .pPhysicalDevice = m_pInstance->getPhysicalDevices(0),
         };
 
-        VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_device));
+        VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_pDevice));
 
         // get 3 type queue
-        m_queue.graphics = m_device->getQueueByFlags(QUEUE_GRAPHICS);
-        m_queue.compute  = m_device->getQueueByFlags(QUEUE_COMPUTE);
-        m_queue.transfer = m_device->getQueueByFlags(QUEUE_TRANSFER);
+        m_queue.graphics = m_pDevice->getQueueByFlags(QUEUE_GRAPHICS);
+        m_queue.compute  = m_pDevice->getQueueByFlags(QUEUE_COMPUTE);
+        m_queue.transfer = m_pDevice->getQueueByFlags(QUEUE_TRANSFER);
         if(!m_queue.compute)
         {
             m_queue.compute = m_queue.graphics;
@@ -76,12 +76,12 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
     // setup swapchain
     {
-        VK_CHECK_RESULT(glfwCreateWindowSurface(m_instance->getHandle(), m_window->getHandle(), nullptr, &m_surface));
+        VK_CHECK_RESULT(glfwCreateWindowSurface(m_pInstance->getHandle(), m_window->getHandle(), nullptr, &m_surface));
         SwapChainCreateInfo createInfo{
             .surface      = m_surface,
             .windowHandle = m_window->getHandle(),
         };
-        VK_CHECK_RESULT(m_device->createSwapchain(createInfo, &m_swapChain));
+        VK_CHECK_RESULT(m_pDevice->createSwapchain(createInfo, &m_pSwapChain));
     }
 
     // init default resources
@@ -93,12 +93,12 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         m_presentSemaphore.resize(m_config.maxFrames);
 
         {
-            m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_device);
-            m_pShaderCache        = new VulkanShaderCache(m_device);
+            m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_pDevice);
+            m_pShaderCache        = new VulkanShaderCache(m_pDevice);
         }
 
         {
-            m_device->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), m_queue.graphics);
+            m_pDevice->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), m_queue.graphics);
         }
 
         {
@@ -117,16 +117,20 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         {
             VkPipelineCacheCreateInfo pipelineCacheCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
             VK_CHECK_RESULT(
-                vkCreatePipelineCache(m_device->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+                vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
         }
     }
 }
 
 void VulkanRenderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_device->waitForFence({ m_frameFences[m_frameIdx] }));
-    VK_CHECK_RESULT(m_swapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
+    VK_CHECK_RESULT(m_pDevice->waitForFence({ m_frameFences[m_frameIdx] }));
+    VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
     VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
+
+    {
+        m_timer = std::chrono::high_resolution_clock::now();
+    }
 }
 
 void VulkanRenderer::endFrame()
@@ -141,9 +145,24 @@ void VulkanRenderer::endFrame()
     };
 
     VK_CHECK_RESULT(queue->submit({ submitInfo }, m_frameFences[m_frameIdx]));
-    VK_CHECK_RESULT(m_swapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_frameIdx] }));
+    VK_CHECK_RESULT(m_pSwapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_frameIdx] }));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
+
+    {
+        m_frameCounter++;
+        auto tEnd      = std::chrono::high_resolution_clock::now();
+        auto tDiff     = std::chrono::duration<double, std::milli>(tEnd - m_timer).count();
+        m_frameTimer   = (float)tDiff / 1000.0f;
+        float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - m_lastTimestamp).count());
+        if(fpsTimer > 1000.0f)
+        {
+            m_lastFPS       = static_cast<uint32_t>((float)m_frameCounter * (1000.0f / fpsTimer));
+            m_frameCounter  = 0;
+            m_lastTimestamp = tEnd;
+        }
+        m_tPrevEnd = tEnd;
+    }
 }
 
 void VulkanRenderer::cleanup()
@@ -158,17 +177,17 @@ void VulkanRenderer::cleanup()
         delete m_pSyncPrimitivesPool;
     }
 
-    vkDestroyPipelineCache(m_device->getHandle(), m_pipelineCache, nullptr);
+    vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
 
-    m_device->destroySwapchain(m_swapChain);
-    VulkanDevice::Destroy(m_device);
-    vkDestroySurfaceKHR(m_instance->getHandle(), m_surface, nullptr);
-    VulkanInstance::Destroy(m_instance);
+    m_pDevice->destroySwapchain(m_pSwapChain);
+    VulkanDevice::Destroy(m_pDevice);
+    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+    VulkanInstance::Destroy(m_pInstance);
 }
 
 void VulkanRenderer::idleDevice()
 {
-    m_device->waitIdle();
+    m_pDevice->waitIdle();
 }
 
 }  // namespace aph
