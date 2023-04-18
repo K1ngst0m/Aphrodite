@@ -48,10 +48,7 @@ public:
     void setMovement(Direction direction, bool flag) { m_keys[direction] = flag; }
     void setFlipY(bool val) { m_flipY = val; }
 
-    glm::vec3 getPosition()
-    {
-        return m_position;
-    }
+    glm::vec3 getPosition() { return m_position; }
 
     glm::mat4 getProjMatrix()
     {
@@ -66,6 +63,7 @@ public:
     }
 
     void processMovement(float deltaTime);
+
 private:
     void updateViewMatrix();
     void updateAspectRatio(float aspect);

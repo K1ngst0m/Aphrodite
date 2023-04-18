@@ -39,7 +39,6 @@ public:
     void text(const char* formatstr, ...);
 
 private:
-
     struct PushConstBlock
     {
         glm::vec2 scale;

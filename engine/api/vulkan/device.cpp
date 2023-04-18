@@ -222,13 +222,47 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     VkBuffer buffer;
     VK_CHECK_RESULT(vkCreateBuffer(getHandle(), &bufferInfo, nullptr, &buffer));
 
+    VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+        nullptr,
+    };
+
+    VkMemoryRequirements2 memRequirements{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
+    const VkBufferMemoryRequirementsInfo2 bufferRequirementsInfo{ VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+                                                                  nullptr, buffer };
+
     // create memory
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_handle, buffer, &memRequirements);
-    VkMemoryAllocateInfo allocInfo = aph::init::memoryAllocateInfo(
-        memRequirements.size, m_physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property));
+    vkGetBufferMemoryRequirements2(m_handle, &bufferRequirementsInfo, &memRequirements);
+
     VkDeviceMemory memory;
-    VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+
+    if(dedicatedRequirements.prefersDedicatedAllocation)
+    {
+        // Allocate memory with VkMemoryDedicatedAllocateInfoKHR::image
+        // pointing to the image we are allocating the memory for
+        VkMemoryDedicatedAllocateInfo dedicatedInfo{
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+            nullptr,
+            VK_NULL_HANDLE,
+            buffer,
+        };
+
+        VkMemoryAllocateInfo memoryAllocateInfo{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            &dedicatedInfo,
+            memRequirements.memoryRequirements.size,
+            m_physicalDevice->findMemoryType(memRequirements.memoryRequirements.memoryTypeBits, createInfo.property),
+        };
+
+        VK_CHECK_RESULT(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+    }
+    else
+    {
+        VkMemoryAllocateInfo allocInfo = aph::init::memoryAllocateInfo(
+            memRequirements.memoryRequirements.size,
+            m_physicalDevice->findMemoryType(memRequirements.memoryRequirements.memoryTypeBits, createInfo.property));
+        VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+    }
 
     *ppBuffer = new VulkanBuffer(createInfo, buffer, memory);
 
@@ -257,7 +291,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
         .format        = static_cast<VkFormat>(createInfo.format),
         .mipLevels     = createInfo.mipLevels,
         .arrayLayers   = createInfo.arrayLayers,
-        .samples       = VK_SAMPLE_COUNT_1_BIT,
+        .samples       = static_cast<VkSampleCountFlagBits>(createInfo.samples),
         .tiling        = static_cast<VkImageTiling>(createInfo.tiling),
         .usage         = createInfo.usage,
         .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
@@ -271,17 +305,49 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
     VkImage image;
     VK_CHECK_RESULT(vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
 
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(m_handle, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize  = memRequirements.size,
-        .memoryTypeIndex = m_physicalDevice->findMemoryType(memRequirements.memoryTypeBits, createInfo.property),
+    VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
+        nullptr,
     };
 
+    VkMemoryRequirements2 memRequirements{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
+    const VkImageMemoryRequirementsInfo2 imageRequirementsInfo{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+                                                                nullptr,  // pNext
+                                                                image };
+    vkGetImageMemoryRequirements2(m_handle, &imageRequirementsInfo, &memRequirements);
+
     VkDeviceMemory memory;
-    VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+    if(dedicatedRequirements.prefersDedicatedAllocation)
+    {
+        // Allocate memory with VkMemoryDedicatedAllocateInfoKHR::image
+        // pointing to the image we are allocating the memory for
+        VkMemoryDedicatedAllocateInfo dedicatedInfo{
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR,
+            nullptr,
+            image,
+            VK_NULL_HANDLE,
+        };
+
+        VkMemoryAllocateInfo memoryAllocateInfo{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            &dedicatedInfo,
+            memRequirements.memoryRequirements.size,
+            m_physicalDevice->findMemoryType(memRequirements.memoryRequirements.memoryTypeBits, createInfo.property),
+        };
+
+        VK_CHECK_RESULT(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+    }
+    else
+    {
+        VkMemoryAllocateInfo allocInfo{
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize  = memRequirements.memoryRequirements.size,
+            .memoryTypeIndex = m_physicalDevice->findMemoryType(memRequirements.memoryRequirements.memoryTypeBits,
+                                                                createInfo.property),
+        };
+
+        VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+    }
 
     *ppImage = new VulkanImage(this, createInfo, image, memory);
 

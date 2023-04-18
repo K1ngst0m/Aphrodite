@@ -18,38 +18,6 @@
 
 namespace aph
 {
-
-struct SceneInfo
-{
-    glm::vec4 ambient{ 0.04f };
-    uint32_t  cameraCount{};
-    uint32_t  lightCount{};
-};
-
-struct CameraInfo
-{
-    glm::mat4 view{ 1.0f };
-    glm::mat4 proj{ 1.0f };
-    glm::vec3 viewPos{ 1.0f };
-};
-
-struct LightInfo
-{
-    glm::vec3 color{ 1.0f };
-    glm::vec3 position{ 1.0f };
-    glm::vec3 direction{ 1.0f };
-};
-
-struct ObjectInfo
-{
-    uint32_t nodeId{};
-    uint32_t materialId{};
-};
-
-}  // namespace aph
-
-namespace aph
-{
 VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
     VulkanRenderer(std::move(window), config)
 {
@@ -154,7 +122,7 @@ void VulkanSceneRenderer::_initSet()
     m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
     m_sceneSet   = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
-    SceneInfo info{
+    m_sceneInfo = {
         .ambient     = glm::vec4(m_scene->getAmbient(), 0.0f),
         .cameraCount = static_cast<uint32_t>(m_cameraNodeList.size()),
         .lightCount  = static_cast<uint32_t>(m_lightNodeList.size()),
@@ -163,7 +131,7 @@ void VulkanSceneRenderer::_initSet()
     VkWriteDescriptorSetInlineUniformBlock writeDescriptorSetInlineUniformBlock{
         .sType    = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
         .dataSize = sizeof(SceneInfo),
-        .pData    = &info,
+        .pData    = &m_sceneInfo,
     };
 
     VkWriteDescriptorSet sceneInfoSetWrite{
@@ -758,6 +726,14 @@ void VulkanSceneRenderer::_updateUI()
 	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
 
     ImGui::PushItemWidth(110.0f * m_pUIRenderer->getScaleFactor());
+    m_pUIRenderer->header("Scene Info");
+    m_pUIRenderer->text("ambient: [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y, m_sceneInfo.ambient.z);
+    m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
+    m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
+    m_pUIRenderer->header("Main Camera Info");
+    m_pUIRenderer->text("position : [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y, m_sceneInfo.ambient.z);
+    m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
+    m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
     ImGui::PopItemWidth();
 
     ImGui::End();
