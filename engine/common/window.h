@@ -49,11 +49,13 @@ public:
     float                       getCursorYpos() { return m_cursorData->lastY; }
     float                       getCursorXpos() { return m_cursorData->lastX; }
     float                       getAspectRatio() { return m_windowData->getAspectRatio(); }
-    GLFWwindow*                 getHandle() { return m_windowData->window; }
     void                        setHeight(uint32_t h) { m_windowData->height = h; }
     void                        setWidth(uint32_t w) { m_windowData->width = w; }
     uint32_t                    getWidth() { return m_windowData->width; }
     uint32_t                    getHeight() { return m_windowData->height; }
+    GLFWwindow*                 getHandle() { return m_windowData->window; }
+    uint32_t                    getKeyInputStatus(KeyCodeType keycode);
+    uint32_t                    getMouseButtonStatus(KeyCodeType mouseButton);
 
 public:
     void setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc);

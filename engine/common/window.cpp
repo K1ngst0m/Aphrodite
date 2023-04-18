@@ -102,4 +102,17 @@ void Window::pollEvents()
 {
     glfwPollEvents();
 }
+uint32_t Window::getKeyInputStatus(KeyCodeType keycode)
+{
+    auto status = glfwGetKey(getHandle(), keycode);
+    // std::cout << "input status: " << keycode << " " << status << std::endl;
+    return status;
+}
+
+uint32_t Window::getMouseButtonStatus(KeyCodeType mouseButton)
+{
+    auto status = glfwGetMouseButton(getHandle(), GLFW_MOUSE_BUTTON_LEFT);
+    // std::cout << "input status: " << mouseButton << " " << status << std::endl;
+    return status;
+}
 }  // namespace aph

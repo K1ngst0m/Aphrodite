@@ -37,7 +37,7 @@ VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer* renderer) :
     // style.Colors[ImGuiCol_Button]           = ImVec4(1.0f, 0.0f, 0.0f, 0.4f);
     // style.Colors[ImGuiCol_ButtonHovered]    = ImVec4(1.0f, 0.0f, 0.0f, 0.6f);
     // style.Colors[ImGuiCol_ButtonActive]     = ImVec4(1.0f, 0.0f, 0.0f, 0.8f);
-    io.FontGlobalScale                      = m_scale;
+    io.FontGlobalScale = m_scale;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 }
 
@@ -123,7 +123,8 @@ void VulkanUIRenderer::init()
              .pColorAttachmentFormats = colorFormats.data(),
              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
-        pipelineCreateInfo.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
+        pipelineCreateInfo.depthStencil =
+            aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         pipelineCreateInfo.setLayouts = { m_pSetLayout };
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
@@ -418,5 +419,25 @@ bool VulkanUIRenderer::radioButton(const char* caption, bool value)
 bool VulkanUIRenderer::header(const char* caption)
 {
     return ImGui::CollapsingHeader(caption, ImGuiTreeNodeFlags_DefaultOpen);
+}
+
+void VulkanUIRenderer::drawWithItemWidth(float itemWidth, std::function<void()>&& drawFunc) const
+{
+    ImGui::PushItemWidth(itemWidth * getScaleFactor());
+    drawFunc();
+    ImGui::PopItemWidth();
+}
+
+void VulkanUIRenderer::drawWindow(std::string_view title, glm::vec2 pos, glm::vec2 size,
+                                  std::function<void()>&& drawFunc) const
+{
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+    ImGui::SetNextWindowPos(ImVec2(pos.x * getScaleFactor(), pos.y * getScaleFactor()));
+    ImGui::SetNextWindowSize(ImVec2(size.x, size.y), ImGuiCond_FirstUseEver);
+    ImGui::Begin(title.data(), nullptr,
+                 ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+    drawFunc();
+    ImGui::End();
+    ImGui::PopStyleVar();
 }
 }  // namespace aph

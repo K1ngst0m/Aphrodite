@@ -26,6 +26,10 @@ public:
     float getScaleFactor() const { return m_scale; }
 
 public:
+    void drawWithItemWidth(float itemWidth, std::function<void()>&& drawFunc) const;
+    void drawWindow(std::string_view title, glm::vec2 pos, glm::vec2 size, std::function<void()>&& drawFunc) const;
+
+public:
     bool header(const char* caption);
     bool checkBox(const char* caption, bool* value);
     bool checkBox(const char* caption, int32_t* value);

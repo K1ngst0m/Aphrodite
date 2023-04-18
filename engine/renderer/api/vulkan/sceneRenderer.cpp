@@ -685,10 +685,9 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
                 .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL
             };
-            VkDescriptorImageInfo outputImageInfo{
-                .imageView   = getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_GENERAL
-            };
+            VkDescriptorImageInfo             outputImageInfo{ .imageView =
+                                                       getSwapChain()->getImage(imageIdx)->getImageView()->getHandle(),
+                                                               .imageLayout = VK_IMAGE_LAYOUT_GENERAL };
             std::vector<VkWriteDescriptorSet> writes{
                 aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
                 aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
@@ -711,33 +710,37 @@ void VulkanSceneRenderer::_updateUI()
     io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
     io.DeltaTime   = 1.0f;
 
-    io.MousePos = ImVec2(m_window->getCursorXpos(), m_window->getCursorYpos());
-    // io.MouseDown[0] = mouseButtons.left;
-    // io.MouseDown[1] = mouseButtons.right;
-    // io.MouseDown[2] = mouseButtons.middle;
+    io.AddMousePosEvent(m_window->getCursorXpos(), m_window->getCursorYpos());
+    io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_LEFT) == APH_PRESS);
+    io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_RIGHT) == APH_PRESS);
+    io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_MIDDLE) == APH_PRESS);
 
     ImGui::NewFrame();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    ImGui::SetNextWindowPos(ImVec2(10 * m_pUIRenderer->getScaleFactor(), 10 * m_pUIRenderer->getScaleFactor()));
-    ImGui::SetNextWindowSize(ImVec2(0, 0), ImGuiCond_FirstUseEver);
-    ImGui::Begin("Aphrodite - Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
-    ImGui::TextUnformatted(m_pDevice->getPhysicalDevice()->getProperties().deviceName);
-	ImGui::Text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
+    m_pUIRenderer->drawWindow("Aphrodite - Info", { 10, 10 }, { 0, 0 }, [this]() {
+        m_pUIRenderer->text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
+        m_pUIRenderer->text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
+        m_pUIRenderer->drawWithItemWidth(110.0f, [this]() {
+            {
+                m_pUIRenderer->header("Scene");
+                m_pUIRenderer->text("ambient: [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y,
+                                    m_sceneInfo.ambient.z);
+                m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
+                m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
+            }
 
-    ImGui::PushItemWidth(110.0f * m_pUIRenderer->getScaleFactor());
-    m_pUIRenderer->header("Scene Info");
-    m_pUIRenderer->text("ambient: [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y, m_sceneInfo.ambient.z);
-    m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
-    m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
-    m_pUIRenderer->header("Main Camera Info");
-    m_pUIRenderer->text("position : [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y, m_sceneInfo.ambient.z);
-    m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
-    m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
-    ImGui::PopItemWidth();
+            {
+                auto camera = m_scene->getMainCamera();
+                m_pUIRenderer->header("Camera");
+                m_pUIRenderer->text("position : [%.2f, %.2f, %.2f]", camera->getPosition().x, camera->getPosition().y,
+                                    camera->getPosition().z);
+                m_pUIRenderer->text("fov : %f", camera->getFov());
+            }
+        });
+    });
 
-    ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::ShowDemoWindow();
+
     ImGui::Render();
 }
 }  // namespace aph

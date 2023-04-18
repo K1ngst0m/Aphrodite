@@ -7,9 +7,9 @@ namespace aph
 {
 using KeyCodeType = uint32_t;
 
-constexpr KeyCodeType APH_RELEASE = 0;
-constexpr KeyCodeType APH_PRESS   = 1;
-constexpr KeyCodeType APH_REPEAT  = 2;
+constexpr uint32_t APH_RELEASE = 0;
+constexpr uint32_t APH_PRESS   = 1;
+constexpr uint32_t APH_REPEAT  = 2;
 
 /* The unknown key */
 constexpr KeyCodeType APH_KEY_UNKNOWN = -1;

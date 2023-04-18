@@ -48,7 +48,8 @@ public:
     void setMovement(Direction direction, bool flag) { m_keys[direction] = flag; }
     void setFlipY(bool val) { m_flipY = val; }
 
-    glm::vec3 getPosition() { return m_position; }
+    glm::vec3 getPosition() const { return m_position; }
+    float     getFov() const { return m_fov; }
 
     glm::mat4 getProjMatrix()
     {

@@ -235,7 +235,6 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     vkGetBufferMemoryRequirements2(m_handle, &bufferRequirementsInfo, &memRequirements);
 
     VkDeviceMemory memory;
-
     if(dedicatedRequirements.prefersDedicatedAllocation)
     {
         // Allocate memory with VkMemoryDedicatedAllocateInfoKHR::image
