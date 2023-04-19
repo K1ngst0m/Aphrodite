@@ -93,8 +93,12 @@ public:
     VkResult waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
     VulkanPhysicalDevice* getPhysicalDevice() const;
     VkFormat              getDepthFormat() const;
+    VkPhysicalDeviceFeatures getFeatures() const{
+        return m_supportedFeatures;
+    }
 
 private:
+    VkPhysicalDeviceFeatures m_supportedFeatures = {};
     VulkanPhysicalDevice*    m_physicalDevice{};
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools  m_commandPools;

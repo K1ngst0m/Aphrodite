@@ -103,6 +103,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
 
     // Initialize Device class.
     auto* device = new VulkanDevice(createInfo, physicalDevice, handle);
+    device->m_supportedFeatures = supportedFeatures;
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);

@@ -8,33 +8,6 @@
 
 namespace aph
 {
-struct SceneInfo
-{
-    glm::vec4 ambient{ 0.04f };
-    uint32_t  cameraCount{};
-    uint32_t  lightCount{};
-};
-
-struct CameraInfo
-{
-    glm::mat4 view{ 1.0f };
-    glm::mat4 proj{ 1.0f };
-    glm::vec3 viewPos{ 1.0f };
-};
-
-struct LightInfo
-{
-    glm::vec3 color{ 1.0f };
-    glm::vec3 position{ 1.0f };
-    glm::vec3 direction{ 1.0f };
-};
-
-struct ObjectInfo
-{
-    uint32_t nodeId{};
-    uint32_t materialId{};
-};
-
 class VulkanSceneRenderer final: public ISceneRenderer, public VulkanRenderer
 {
 public:
@@ -49,7 +22,7 @@ public:
     void setUIRenderer(const std::unique_ptr<VulkanUIRenderer>& renderer) { m_pUIRenderer = renderer.get(); }
 
 private:
-    void _updateUI();
+    void _updateUI(float deltaTime);
     void _initSetLayout();
     void _initSet();
     void _initForward();
@@ -122,8 +95,6 @@ private:
     std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
     std::vector<glm::mat4>                  m_transformInfos;
-
-    SceneInfo m_sceneInfo {};
 
 private:
     VulkanUIRenderer* m_pUIRenderer = {};

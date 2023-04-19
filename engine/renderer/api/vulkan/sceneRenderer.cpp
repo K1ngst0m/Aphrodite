@@ -18,6 +18,36 @@
 
 namespace aph
 {
+struct SceneInfo
+{
+    glm::vec4 ambient{ 0.04f };
+    uint32_t  cameraCount{};
+    uint32_t  lightCount{};
+};
+
+struct CameraInfo
+{
+    glm::mat4 view{ 1.0f };
+    glm::mat4 proj{ 1.0f };
+    glm::vec3 viewPos{ 1.0f };
+};
+
+struct LightInfo
+{
+    glm::vec3 color{ 1.0f };
+    glm::vec3 position{ 1.0f };
+    glm::vec3 direction{ 1.0f };
+};
+
+struct ObjectInfo
+{
+    uint32_t nodeId{};
+    uint32_t materialId{};
+};
+}  // namespace aph
+
+namespace aph
+{
 VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
     VulkanRenderer(std::move(window), config)
 {
@@ -114,7 +144,7 @@ void VulkanSceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_LIGHT]->copyTo(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
 
-    _updateUI();
+    _updateUI(deltaTime);
 }
 
 void VulkanSceneRenderer::_initSet()
@@ -122,7 +152,7 @@ void VulkanSceneRenderer::_initSet()
     m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
     m_sceneSet   = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
-    m_sceneInfo = {
+    SceneInfo sceneInfo = {
         .ambient     = glm::vec4(m_scene->getAmbient(), 0.0f),
         .cameraCount = static_cast<uint32_t>(m_cameraNodeList.size()),
         .lightCount  = static_cast<uint32_t>(m_lightNodeList.size()),
@@ -131,7 +161,7 @@ void VulkanSceneRenderer::_initSet()
     VkWriteDescriptorSetInlineUniformBlock writeDescriptorSetInlineUniformBlock{
         .sType    = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_INLINE_UNIFORM_BLOCK_EXT,
         .dataSize = sizeof(SceneInfo),
-        .pData    = &m_sceneInfo,
+        .pData    = &sceneInfo,
     };
 
     VkWriteDescriptorSet sceneInfoSetWrite{
@@ -347,11 +377,11 @@ void VulkanSceneRenderer::_initSetLayout()
             // samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             samplerInfo.maxAnisotropy = 1.0f;
-            // if (m_pDevice->features.samplerAnisotropy)
-            // {
-            //     sampler.maxAnisotropy = 100;
-            //     sampler.anisotropyEnable = VK_TRUE;
-            // }
+            if (m_pDevice->getFeatures().samplerAnisotropy)
+            {
+                samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
+                samplerInfo.anisotropyEnable = VK_TRUE;
+            }
             VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_CUBEMAP]));
         }
         {
@@ -703,12 +733,13 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
     }
 }
 
-void VulkanSceneRenderer::_updateUI()
+void VulkanSceneRenderer::_updateUI(float deltaTime)
 {
     ImGuiIO& io = ImGui::GetIO();
 
     io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
-    io.DeltaTime   = 1.0f;
+    // TODO deltaTime in seconds
+    io.DeltaTime = 0.1f;
 
     io.AddMousePosEvent(m_window->getCursorXpos(), m_window->getCursorYpos());
     io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_LEFT) == APH_PRESS);
@@ -723,10 +754,10 @@ void VulkanSceneRenderer::_updateUI()
         m_pUIRenderer->drawWithItemWidth(110.0f, [this]() {
             {
                 m_pUIRenderer->header("Scene");
-                m_pUIRenderer->text("ambient: [%.2f, %.2f, %.2f]", m_sceneInfo.ambient.x, m_sceneInfo.ambient.y,
-                                    m_sceneInfo.ambient.z);
-                m_pUIRenderer->text("camera count : %d", m_sceneInfo.cameraCount);
-                m_pUIRenderer->text("light count : %d", m_sceneInfo.lightCount);
+                m_pUIRenderer->text("ambient: [%.2f, %.2f, %.2f]", m_scene->getAmbient().x, m_scene->getAmbient().y,
+                                    m_scene->getAmbient().z);
+                m_pUIRenderer->text("camera count : %d", m_cameraNodeList.size());
+                m_pUIRenderer->text("light count : %d", m_lightNodeList.size());
             }
 
             {
