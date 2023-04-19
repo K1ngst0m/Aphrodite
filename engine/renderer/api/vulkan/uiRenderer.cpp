@@ -129,9 +129,9 @@ void VulkanUIRenderer::init()
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaderCache()->getShaders(shaderDir / "uioverlay.vert.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv") },
             { VK_SHADER_STAGE_FRAGMENT_BIT,
-              m_pRenderer->getShaderCache()->getShaders(shaderDir / "uioverlay.frag.spv") },
+              m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv") },
         };
         pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
         pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;

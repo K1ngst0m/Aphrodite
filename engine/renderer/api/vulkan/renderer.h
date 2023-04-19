@@ -20,46 +20,45 @@ public:
     void endFrame();
 
 public:
-    VulkanInstance*  getInstance() const { return m_pInstance; }
-    VulkanDevice*    getDevice() const { return m_pDevice; }
-    uint32_t         getCurrentFrameIndex() const { return m_frameIdx; }
-    uint32_t         getCurrentImageIndex() const { return m_imageIdx; }
-    VkPipelineCache  getPipelineCache() { return m_pipelineCache; }
-    VulkanSwapChain* getSwapChain() { return m_pSwapChain; }
+    VulkanInstance*     getInstance() const { return m_pInstance; }
+    VulkanDevice*       getDevice() const { return m_pDevice; }
+    uint32_t            getCurrentFrameIndex() const { return m_frameIdx; }
+    uint32_t            getCurrentImageIndex() const { return m_imageIdx; }
+    VkPipelineCache     getPipelineCache() { return m_pipelineCache; }
+    VulkanSwapChain*    getSwapChain() { return m_pSwapChain; }
+    VulkanShaderModule* getShaders(const std::filesystem::path& path);
 
     VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
-    VulkanShaderCache*        getShaderCache() { return m_pShaderCache; }
     VulkanCommandBuffer*      getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
     uint32_t                  getCommandBufferCount() const { return m_commandBuffers.size(); }
-    VulkanQueue*              getGraphicsQueue() const { return m_queue.graphics; }
-    VulkanQueue*              getComputeQueue() const { return m_queue.compute; }
-    VulkanQueue*              getTransferQueue() const { return m_queue.transfer; }
+
+    VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }
+    VulkanQueue* getComputeQueue() const { return m_queue.compute; }
+    VulkanQueue* getTransferQueue() const { return m_queue.transfer; }
 
 protected:
-    VulkanSyncPrimitivesPool* m_pSyncPrimitivesPool{};
-    VulkanShaderCache*        m_pShaderCache{};
+    VulkanSyncPrimitivesPool* m_pSyncPrimitivesPool = {};
 
 protected:
-    VulkanInstance*  m_pInstance{};
-    VulkanDevice*    m_pDevice{};
-    VulkanSwapChain* m_pSwapChain{};
-    VkSurfaceKHR     m_surface{};
+    VulkanInstance*  m_pInstance  = {};
+    VulkanDevice*    m_pDevice    = {};
+    VulkanSwapChain* m_pSwapChain = {};
 
-    VkPipelineCache m_pipelineCache{};
+    VkSurfaceKHR    m_surface       = {};
+    VkPipelineCache m_pipelineCache = {};
 
     struct
     {
-        VulkanQueue* graphics{};
-        VulkanQueue* compute{};
-        VulkanQueue* transfer{};
+        VulkanQueue* graphics = {};
+        VulkanQueue* compute  = {};
+        VulkanQueue* transfer = {};
     } m_queue;
 
 protected:
-    std::vector<VkSemaphore> m_renderSemaphore;
-    std::vector<VkSemaphore> m_presentSemaphore;
-    std::vector<VkFence>     m_frameFences;
-
-    std::vector<VulkanCommandBuffer*> m_commandBuffers;
+    std::vector<VkSemaphore>          m_renderSemaphore  = {};
+    std::vector<VkSemaphore>          m_presentSemaphore = {};
+    std::vector<VkFence>              m_frameFences      = {};
+    std::vector<VulkanCommandBuffer*> m_commandBuffers   = {};
 
 protected:
     uint32_t m_frameIdx = {};
@@ -72,6 +71,8 @@ protected:
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_timer = {};
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
+
+    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
 };
 }  // namespace aph
 

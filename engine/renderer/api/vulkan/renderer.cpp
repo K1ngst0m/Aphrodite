@@ -94,11 +94,11 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
         {
             m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_pDevice);
-            m_pShaderCache        = new VulkanShaderCache(m_pDevice);
         }
 
+        // command buffer
         {
-            m_pDevice->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), m_queue.graphics);
+            m_pDevice->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), getGraphicsQueue());
         }
 
         {
@@ -114,6 +114,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             }
         }
 
+        // pipeline cache
         {
             VkPipelineCacheCreateInfo pipelineCacheCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
             VK_CHECK_RESULT(
@@ -135,7 +136,7 @@ void VulkanRenderer::beginFrame()
 
 void VulkanRenderer::endFrame()
 {
-    auto* queue = m_queue.graphics;
+    auto* queue = getGraphicsQueue();
 
     QueueSubmitInfo submitInfo{
         .commandBuffers   = { m_commandBuffers[m_frameIdx] },
@@ -167,9 +168,10 @@ void VulkanRenderer::endFrame()
 
 void VulkanRenderer::cleanup()
 {
-    if(m_pShaderCache)
+    for(auto& [key, shaderModule] : shaderModuleCaches)
     {
-        m_pShaderCache->destroy();
+        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
+        delete shaderModule;
     }
 
     if(m_pSyncPrimitivesPool)
@@ -190,4 +192,22 @@ void VulkanRenderer::idleDevice()
     m_pDevice->waitIdle();
 }
 
+VulkanShaderModule* VulkanRenderer::getShaders(const std::filesystem::path& path)
+{
+    if(!shaderModuleCaches.count(path))
+    {
+        std::vector<char> spvCode;
+        if(path.extension() == ".spv")
+        {
+            spvCode = aph::utils::loadSpvFromFile(path);
+        }
+        else
+        {
+            spvCode = aph::utils::loadGlslFromFile(path);
+        }
+        auto shaderModule        = VulkanShaderModule::Create(m_pDevice, spvCode);
+        shaderModuleCaches[path] = shaderModule;
+    }
+    return shaderModuleCaches[path];
+}
 }  // namespace aph

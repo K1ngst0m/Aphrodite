@@ -23,10 +23,10 @@ public:
 
     uint32_t       getSize() const { return m_createInfo.size; }
     uint32_t       getOffset() const { return m_createInfo.alignment; }
-    VkDeviceMemory getMemory() { return memory; }
+    VkDeviceMemory getMemory() const { return memory; }
     void*&         getMapped() { return mapped; };
 
-    void copyTo(const void* data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
+    void write(const void* data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
 
 private:
     VkDeviceMemory memory = {};

@@ -119,7 +119,7 @@ void VulkanSceneRenderer::update(float deltaTime)
         const auto& node      = m_meshNodeList[idx];
         m_transformInfos[idx] = node->getTransform();
     }
-    m_buffers[BUFFER_SCENE_TRANSFORM]->copyTo(m_transformInfos.data(), 0, m_buffers[BUFFER_SCENE_TRANSFORM]->getSize());
+    m_buffers[BUFFER_SCENE_TRANSFORM]->write(m_transformInfos.data(), 0, m_buffers[BUFFER_SCENE_TRANSFORM]->getSize());
 
     for(uint32_t idx = 0; idx < m_cameraNodeList.size(); idx++)
     {
@@ -130,7 +130,7 @@ void VulkanSceneRenderer::update(float deltaTime)
             .proj    = camera->getProjMatrix(),
             .viewPos = camera->getPosition(),
         };
-        m_buffers[BUFFER_SCENE_CAMERA]->copyTo(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
+        m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
 
     for(uint32_t idx = 0; idx < m_lightNodeList.size(); idx++)
@@ -141,7 +141,7 @@ void VulkanSceneRenderer::update(float deltaTime)
               .position  = light->getPosition(),
               .direction = light->getDirection(),
         };
-        m_buffers[BUFFER_SCENE_LIGHT]->copyTo(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
+        m_buffers[BUFFER_SCENE_LIGHT]->write(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
 
     _updateUI(deltaTime);
@@ -265,7 +265,7 @@ void VulkanSceneRenderer::_initPostFx()
     ComputePipelineCreateInfo pipelineCreateInfo{};
     pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_POSTFX] };
     pipelineCreateInfo.shaderMapList = {
-        { VK_SHADER_STAGE_COMPUTE_BIT, getShaderCache()->getShaders(shaderDir / "postFX.comp.spv") },
+        { VK_SHADER_STAGE_COMPUTE_BIT, getShaders(shaderDir / "postFX.comp.spv") },
     };
     VK_CHECK_RESULT(m_pDevice->createComputePipeline(pipelineCreateInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
 }
@@ -327,8 +327,8 @@ void VulkanSceneRenderer::_initForward()
         pipelineCreateInfo.constants.push_back(aph::init::pushConstantRange(
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectInfo), 0));
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, getShaderCache()->getShaders(shaderDir / "pbr.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaderCache()->getShaders(shaderDir / "pbr.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, getShaders(shaderDir / "pbr.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaders(shaderDir / "pbr.frag.spv") },
         };
 
         VK_CHECK_RESULT(
@@ -559,8 +559,8 @@ void VulkanSceneRenderer::_initSkybox()
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, getShaderCache()->getShaders(shaderDir / "skybox.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaderCache()->getShaders(shaderDir / "skybox.frag.spv") },
+            { VK_SHADER_STAGE_VERTEX_BIT, getShaders(shaderDir / "skybox.vert.spv") },
+            { VK_SHADER_STAGE_FRAGMENT_BIT, getShaders(shaderDir / "skybox.frag.spv") },
         };
 
         VK_CHECK_RESULT(

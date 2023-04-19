@@ -10,7 +10,7 @@ VulkanBuffer::VulkanBuffer(const BufferCreateInfo& createInfo, VkBuffer buffer, 
     getCreateInfo() = createInfo;
 }
 
-void VulkanBuffer::copyTo(const void* data, size_t offset, VkDeviceSize size) const
+void VulkanBuffer::write(const void* data, size_t offset, VkDeviceSize size) const
 {
     assert(mapped);
     if(size == VK_WHOLE_SIZE)

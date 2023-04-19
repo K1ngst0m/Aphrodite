@@ -29,12 +29,12 @@ public:
     VkResult     submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
 
 private:
-    uint32_t                m_queueFamilyIndex{};
-    uint32_t                m_index{};
-    VkQueueFamilyProperties m_properties;
+    uint32_t                m_queueFamilyIndex = {};
+    uint32_t                m_index            = {};
+    VkQueueFamilyProperties m_properties       = {};
 };
 
-using QueueFamily = std::vector<VulkanQueue*>;
+using QueueFamily = std::vector<std::unique_ptr<VulkanQueue>>;
 
 }  // namespace aph
 

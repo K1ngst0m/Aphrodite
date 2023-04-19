@@ -11,25 +11,15 @@ class VulkanDevice;
 class VulkanShaderModule : public ResourceHandle<VkShaderModule>
 {
 public:
+    static VulkanShaderModule* Create(VulkanDevice* pDevice, const std::vector<char>& code,
+                                      const std::string& entrypoint = "main");
     VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
 
     std::vector<char> getCode() { return m_code; }
 
 private:
-    std::string       m_entrypoint = {};
+    std::string          m_entrypoint = {};
     std::vector<char> m_code       = {};
-};
-
-class VulkanShaderCache
-{
-public:
-    VulkanShaderCache(VulkanDevice* device);
-    VulkanShaderModule* getShaders(const std::filesystem::path& path);
-    void                destroy();
-
-private:
-    VulkanDevice*                                        m_device           = {};
-    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
 };
 
 using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule*>;

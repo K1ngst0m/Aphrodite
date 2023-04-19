@@ -13,6 +13,7 @@ struct RenderConfig
     bool     enableDebug         = { true };
     bool     enableUI            = { true };
     bool     initDefaultResource = { true };
+    uint32_t sampleCount         = { 8 };
     uint32_t maxFrames           = { 2 };
 };
 

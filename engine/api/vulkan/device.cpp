@@ -102,7 +102,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     VK_CHECK_RESULT(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
 
     // Initialize Device class.
-    auto* device = new VulkanDevice(createInfo, physicalDevice, handle);
+    auto* device                = new VulkanDevice(createInfo, physicalDevice, handle);
     device->m_supportedFeatures = supportedFeatures;
 
     // Get handles to all of the previously enumerated and created queues.
@@ -114,8 +114,8 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
         {
             VkQueue queue = VK_NULL_HANDLE;
             vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            device->m_queues[queueFamilyIndex][queueIndex] =
-                new VulkanQueue(queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+            device->m_queues[queueFamilyIndex][queueIndex] = std::make_unique<VulkanQueue>(
+                queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
 
@@ -138,6 +138,7 @@ void VulkanDevice::Destroy(VulkanDevice* pDevice)
         vkDestroyDevice(pDevice->m_handle, nullptr);
     }
     delete pDevice;
+    pDevice = nullptr;
 }
 
 VkResult VulkanDevice::createCommandPool(const CommandPoolCreateInfo& createInfo, VulkanCommandPool** ppPool)
@@ -199,7 +200,7 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags                     
     VK_CHECK_RESULT(cmd->end());
 
     uint32_t queueFamilyIndex = getQueueByFlags(type)->getFamilyIndex();
-    auto*    queue            = m_queues[queueFamilyIndex][0];
+    auto&    queue            = m_queues[queueFamilyIndex][0];
 
     QueueSubmitInfo submitInfo{ .commandBuffers = { cmd } };
     VK_CHECK_RESULT(queue->submit({ submitInfo }, VK_NULL_HANDLE));
@@ -272,7 +273,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     if(data)
     {
         mapMemory(*ppBuffer);
-        (*ppBuffer)->copyTo(data);
+        (*ppBuffer)->write(data);
         if(!persistmentMap)
         {
             unMapMemory(*ppBuffer);
@@ -403,6 +404,7 @@ void VulkanDevice::destroySwapchain(VulkanSwapChain* pSwapchain)
 {
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
+    pSwapchain = nullptr;
 }
 
 VulkanQueue* VulkanDevice::getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex)
@@ -412,7 +414,7 @@ VulkanQueue* VulkanDevice::getQueueByFlags(QueueTypeFlags flags, uint32_t queueI
     {
         return nullptr;
     }
-    return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
+    return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
 }
 
 VkResult VulkanDevice::waitIdle()
@@ -440,6 +442,7 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool* pPool)
 {
     vkDestroyCommandPool(getHandle(), pPool->getHandle(), nullptr);
     delete pPool;
+    pPool = nullptr;
 }
 
 VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
@@ -464,8 +467,10 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     for(auto i = 0U; i < commandBufferCount; ++i)
     {
         delete ppCommandBuffers[i];
+        ppCommandBuffers = nullptr;
     }
 }
+
 VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
                                               VulkanPipeline** ppPipeline)
 {
@@ -552,6 +557,7 @@ void VulkanDevice::destroyPipeline(VulkanPipeline* pipeline)
     vkDestroyPipelineLayout(getHandle(), pipeline->getPipelineLayout(), nullptr);
     vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
+    pipeline = nullptr;
 }
 
 VkResult VulkanDevice::createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
@@ -799,7 +805,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
 
             createBuffer(createInfo, &stagingBuffers[idx]);
             mapMemory(stagingBuffers[idx]);
-            stagingBuffers[idx]->copyTo(image->data.data());
+            stagingBuffers[idx]->write(image->data.data());
             unMapMemory(stagingBuffers[idx]);
         }
     }
