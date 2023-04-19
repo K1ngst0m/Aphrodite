@@ -23,16 +23,17 @@ struct Camera{
 };
 
 layout (set = 0, binding = 2) uniform CameraUB{
-    Camera cameras[100];
+    Camera cameras[10];
 };
 
 struct Light{
     vec3 color;
     vec3 position;
     vec3 direction;
+    uint lightType;
 };
 layout (set = 0, binding = 3) uniform LightUB{
-    Light lights[100];
+    Light lights[10];
 };
 
 layout (set = 0, binding = 4) uniform texture2D textures[];
@@ -141,10 +142,18 @@ void main() {
 
     for (int i = 0; i < lightCount; i++)
     {
-        vec3 L = normalize(-lights[0].direction);
+        vec3 L = vec3(1.0f);
+        if (lights[i].lightType == 0)
+        {
+            L = normalize(-lights[i].direction);
+        }
+        else if (lights[i].lightType == 1)
+        {
+            L = normalize(lights[i].position - inWorldPos);
+        }
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
-        vec3 radiance = vec3(3.0f).xyz;
+        vec3 radiance = lights[i].color;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -164,7 +173,7 @@ void main() {
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = ambientColor.xyz * albedo * ao * 2.0f;
+    vec3 ambient = ambientColor.xyz * albedo * ao;
     vec3 color = emissive + Lo + ambient;
 
     outColor = vec4(color, 1.0f);

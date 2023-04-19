@@ -1,17 +1,17 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "object.h"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-
-#include "object.h"
 
 namespace aph
 {
 enum class CameraType
 {
     LOOKAT,
-    FIRSTPERSON,
+    FIRST_PERSON,
 };
 
 enum class Direction
@@ -22,10 +22,10 @@ enum class Direction
     DOWN,
 };
 
-class Camera : public UniformObject
+class Camera : public Object
 {
 public:
-    Camera() : UniformObject{ Id::generateNewId<Camera>(), ObjectType::CAMERA } {}
+    Camera() : Object{Id::generateNewId<Camera>(), ObjectType::CAMERA} {}
     ~Camera() override = default;
 
     void setAspectRatio(float aspectRatio);
@@ -54,7 +54,7 @@ public:
     glm::mat4 getProjMatrix()
     {
         updateViewMatrix();
-        return m_matrices.perspective;
+        return m_matrices.proj;
     }
 
     glm::mat4 getViewMatrix()
@@ -71,28 +71,27 @@ private:
 
 private:
     std::unordered_map<Direction, bool> m_keys{
-        { Direction::LEFT, false }, { Direction::RIGHT, false }, { Direction::UP, false }, { Direction::DOWN, false }
-    };
+        {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};
 
-    CameraType m_cameraType{ CameraType::FIRSTPERSON };
+    CameraType m_cameraType{CameraType::FIRST_PERSON};
 
     glm::vec3 m_rotation{};
     glm::vec3 m_position{};
 
-    float m_rotationSpeed{ 1.0f };
-    float m_movementSpeed{ 1.0f };
-
-    bool m_flipY = false;
+    float m_rotationSpeed{1.0f};
+    float m_movementSpeed{1.0f};
 
     struct
     {
-        glm::mat4 perspective;
+        glm::mat4 proj;
         glm::mat4 view;
     } m_matrices;
 
-    float m_fov{ 60.0f };
-    float m_znear{ 96.0f };
-    float m_zfar{ 0.01f };
+    bool  m_flipY{false};
+    float m_fov{60.0f};
+    float m_znear{96.0f};
+    float m_zfar{0.01f};
+    bool  m_updated{false};
 };
 }  // namespace aph
 #endif

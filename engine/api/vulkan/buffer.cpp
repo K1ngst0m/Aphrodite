@@ -17,8 +17,8 @@ void VulkanBuffer::write(const void* data, size_t offset, VkDeviceSize size) con
     {
         size = getSize();
     }
-    uint8_t* pData = (uint8_t*)data;
-    memcpy(mapped, pData + offset, size);
+    uint8_t* pMapped = (uint8_t*)mapped;
+    memcpy(pMapped + offset, data, size);
 }
 
 }  // namespace aph

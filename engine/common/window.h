@@ -14,8 +14,8 @@ struct WindowData
     GLFWwindow* window  = {};
     uint32_t    width   = {};
     uint32_t    height  = {};
-    bool        resized = { false };
-    WindowData(uint32_t w, uint32_t h) : width{ w }, height{ h } {}
+    bool        resized = {false};
+    WindowData(uint32_t w, uint32_t h) : width{w}, height{h} {}
     float getAspectRatio() const { return static_cast<float>(width) / height; }
 };
 
@@ -23,10 +23,10 @@ struct CursorData
 {
     float lastX           = {};
     float lastY           = {};
-    bool  firstMouse      = { true };
-    bool  isCursorDisable = { false };
-    bool  isCursorVisible = { false };
-    CursorData(float lastXin, float lastYin) : lastX{ lastXin }, lastY{ lastYin } {}
+    bool  firstMouse      = {true};
+    bool  isCursorDisable = {false};
+    bool  isCursorVisible = {false};
+    CursorData(float lastXin, float lastYin) : lastX{lastXin}, lastY{lastYin} {}
 };
 
 using FramebufferSizeFunc = std::function<void(int width, int height)>;

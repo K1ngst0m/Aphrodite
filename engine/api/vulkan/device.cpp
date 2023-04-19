@@ -10,10 +10,7 @@ namespace aph
 #define VK_CHECK_RESULT(f) \
     { \
         VkResult res = (f); \
-        if(res != VK_SUCCESS) \
-        { \
-            return res; \
-        } \
+        if(res != VK_SUCCESS) { return res; } \
     }
 
 VulkanDevice::VulkanDevice(const DeviceCreateInfo& createInfo, VulkanPhysicalDevice* pPhysicalDevice, VkDevice handle) :
@@ -46,7 +43,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     // Enable all physical device available features.
     VkPhysicalDeviceFeatures supportedFeatures = {};
     vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
-    VkPhysicalDeviceFeatures2 supportedFeatures2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+    VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
     supportedFeatures.samplerAnisotropy = VK_TRUE;
@@ -133,10 +130,7 @@ void VulkanDevice::Destroy(VulkanDevice* pDevice)
         pDevice->destroyCommandPool(commandpool);
     }
 
-    if(pDevice->m_handle)
-    {
-        vkDestroyDevice(pDevice->m_handle, nullptr);
-    }
+    if(pDevice->m_handle) { vkDestroyDevice(pDevice->m_handle, nullptr); }
     delete pDevice;
     pDevice = nullptr;
 }
@@ -158,12 +152,13 @@ VkResult VulkanDevice::createCommandPool(const CommandPoolCreateInfo& createInfo
 VkFormat VulkanDevice::getDepthFormat() const
 {
     return m_physicalDevice->findSupportedFormat(
-        { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL,
+        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, VulkanImageView** ppImageView,
-                                       VulkanImage* pImage)
+VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo,
+                                       VulkanImageView**          ppImageView,
+                                       VulkanImage*               pImage)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -202,8 +197,8 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags                     
     uint32_t queueFamilyIndex = getQueueByFlags(type)->getFamilyIndex();
     auto&    queue            = m_queues[queueFamilyIndex][0];
 
-    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd } };
-    VK_CHECK_RESULT(queue->submit({ submitInfo }, VK_NULL_HANDLE));
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    VK_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
     VK_CHECK_RESULT(queue->waitIdle());
 
     freeCommandBuffers(1, &cmd);
@@ -211,8 +206,10 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags                     
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data,
-                                    bool persistmentMap)
+VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo,
+                                    VulkanBuffer**          ppBuffer,
+                                    const void*             data,
+                                    bool                    persistmentMap)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -229,9 +226,9 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
         nullptr,
     };
 
-    VkMemoryRequirements2 memRequirements{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
-    const VkBufferMemoryRequirementsInfo2 bufferRequirementsInfo{ VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-                                                                  nullptr, buffer };
+    VkMemoryRequirements2 memRequirements{VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements};
+    const VkBufferMemoryRequirementsInfo2 bufferRequirementsInfo{VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+                                                                 nullptr, buffer};
 
     // create memory
     vkGetBufferMemoryRequirements2(m_handle, &bufferRequirementsInfo, &memRequirements);
@@ -274,10 +271,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     {
         mapMemory(*ppBuffer);
         (*ppBuffer)->write(data);
-        if(!persistmentMap)
-        {
-            unMapMemory(*ppBuffer);
-        }
+        if(!persistmentMap) { unMapMemory(*ppBuffer); }
     }
 
     return VK_SUCCESS;
@@ -311,10 +305,10 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
         nullptr,
     };
 
-    VkMemoryRequirements2 memRequirements{ VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements };
-    const VkImageMemoryRequirementsInfo2 imageRequirementsInfo{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                                                                nullptr,  // pNext
-                                                                image };
+    VkMemoryRequirements2 memRequirements{VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, &dedicatedRequirements};
+    const VkImageMemoryRequirementsInfo2 imageRequirementsInfo{VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+                                                               nullptr,  // pNext
+                                                               image};
     vkGetImageMemoryRequirements2(m_handle, &imageRequirementsInfo, &memRequirements);
 
     VkDeviceMemory memory;
@@ -352,25 +346,16 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
 
     *ppImage = new VulkanImage(this, createInfo, image, memory);
 
-    if((*ppImage)->getMemory() != VK_NULL_HANDLE)
-    {
-        VK_CHECK_RESULT(bindMemory(*ppImage));
-    }
+    if((*ppImage)->getMemory() != VK_NULL_HANDLE) { VK_CHECK_RESULT(bindMemory(*ppImage)); }
 
     return VK_SUCCESS;
 }
 
-VulkanPhysicalDevice* VulkanDevice::getPhysicalDevice() const
-{
-    return m_physicalDevice;
-}
+VulkanPhysicalDevice* VulkanDevice::getPhysicalDevice() const { return m_physicalDevice; }
 
 void VulkanDevice::destroyBuffer(VulkanBuffer* pBuffer)
 {
-    if(pBuffer->getMemory() != VK_NULL_HANDLE)
-    {
-        vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr);
-    }
+    if(pBuffer->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr); }
     vkDestroyBuffer(m_handle, pBuffer->getHandle(), nullptr);
     delete pBuffer;
     pBuffer = nullptr;
@@ -378,10 +363,7 @@ void VulkanDevice::destroyBuffer(VulkanBuffer* pBuffer)
 
 void VulkanDevice::destroyImage(VulkanImage* pImage)
 {
-    if(pImage->getMemory() != VK_NULL_HANDLE)
-    {
-        vkFreeMemory(m_handle, pImage->getMemory(), nullptr);
-    }
+    if(pImage->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pImage->getMemory(), nullptr); }
     vkDestroyImage(m_handle, pImage->getHandle(), nullptr);
     delete pImage;
     pImage = nullptr;
@@ -410,28 +392,19 @@ void VulkanDevice::destroySwapchain(VulkanSwapChain* pSwapchain)
 VulkanQueue* VulkanDevice::getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex)
 {
     std::vector<uint32_t> supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
-    if(supportedQueueFamilyIndexList.empty())
-    {
-        return nullptr;
-    }
+    if(supportedQueueFamilyIndexList.empty()) { return nullptr; }
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
 }
 
-VkResult VulkanDevice::waitIdle()
-{
-    return vkDeviceWaitIdle(getHandle());
-}
+VkResult VulkanDevice::waitIdle() { return vkDeviceWaitIdle(getHandle()); }
 
 VulkanCommandPool* VulkanDevice::getCommandPoolWithQueue(VulkanQueue* queue)
 {
     auto queueIndices = queue->getFamilyIndex();
 
-    if(m_commandPools.count(queueIndices))
-    {
-        return m_commandPools.at(queueIndices);
-    }
+    if(m_commandPools.count(queueIndices)) { return m_commandPools.at(queueIndices); }
 
-    CommandPoolCreateInfo createInfo{ .queueFamilyIndex = queueIndices };
+    CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
     VulkanCommandPool*    pool = nullptr;
     createCommandPool(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
@@ -445,8 +418,9 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool* pPool)
     pPool = nullptr;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
-                                              VulkanQueue* pQueue)
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t              commandBufferCount,
+                                              VulkanCommandBuffer** ppCommandBuffers,
+                                              VulkanQueue*          pQueue)
 {
     auto* queue = pQueue;
     auto* pool  = getCommandPoolWithQueue(queue);
@@ -471,8 +445,9 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 
-VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
-                                              VulkanPipeline** ppPipeline)
+VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo,
+                                              VkRenderPass                      renderPass,
+                                              VulkanPipeline**                  ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
@@ -526,14 +501,8 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
         .basePipelineHandle  = VK_NULL_HANDLE,
     };
 
-    if(renderPass)
-    {
-        pipelineInfo.renderPass = renderPass;
-    }
-    else
-    {
-        pipelineInfo.pNext = &createInfo.renderingCreateInfo;
-    }
+    if(renderPass) { pipelineInfo.renderPass = renderPass; }
+    else { pipelineInfo.pNext = &createInfo.renderingCreateInfo; }
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
@@ -607,8 +576,9 @@ VkResult VulkanDevice::waitForFence(const std::vector<VkFence>& fences, bool wai
     return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 
-VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer,
-                                               const void* data)
+VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInfo,
+                                               VulkanBuffer**          ppBuffer,
+                                               const void*             data)
 {
     // using staging buffer
     aph::VulkanBuffer* stagingBuffer{};
@@ -636,7 +606,8 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
     return VK_SUCCESS;
 };
 
-VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
+VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo&      createInfo,
+                                              VulkanImage**               ppImage,
                                               const std::vector<uint8_t>& data)
 {
     bool           genMipmap = createInfo.mipLevels > 1;
@@ -659,10 +630,7 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
         auto imageCI = createInfo;
         imageCI.property |= MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         imageCI.usage |= IMAGE_USAGE_TRANSFER_DST_BIT;
-        if(genMipmap)
-        {
-            imageCI.usage |= BUFFER_USAGE_TRANSFER_SRC_BIT;
-        }
+        if(genMipmap) { imageCI.usage |= BUFFER_USAGE_TRANSFER_SRC_BIT; }
 
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
@@ -778,13 +746,11 @@ VkResult VulkanDevice::bindMemory(VulkanImage* pImage, VkDeviceSize offset)
     return vkBindImageMemory(getHandle(), pImage->getHandle(), pImage->getMemory(), offset);
 }
 
-void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer)
-{
-    vkUnmapMemory(getHandle(), pBuffer->getMemory());
-}
+void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer) { vkUnmapMemory(getHandle(), pBuffer->getMemory()); }
 
-VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage** ppImage,
-                                     VulkanImageView** ppImageView)
+VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images,
+                                     VulkanImage**                                    ppImage,
+                                     VulkanImageView**                                ppImageView)
 {
     uint32_t                     cubeMapWidth{}, cubeMapHeight{};
     VkFormat                     imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
@@ -841,7 +807,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
 
     VulkanImage*    cubeMapImage{};
     ImageCreateInfo imageCI{
-        .extent      = { cubeMapWidth, cubeMapHeight, 1 },
+        .extent      = {cubeMapWidth, cubeMapHeight, 1},
         .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
         .mipLevels   = mipLevels,
         .arrayLayers = 6,
@@ -858,7 +824,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
         // Copy the cube map faces from the staging buffer to the optimal tiled image
         for(uint32_t idx = 0; idx < 6; idx++)
         {
-            pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, { bufferCopyRegions[idx] });
+            pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, {bufferCopyRegions[idx]});
         }
         pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
@@ -872,7 +838,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     ImageViewCreateInfo createInfo{
         .viewType = ImageViewType::_CUBE,
         .format   = static_cast<Format>(imageFormat),
-        .subresourceRange{ 0, mipLevels, 0, 6 },
+        .subresourceRange{0, mipLevels, 0, 6},
     };
     VK_CHECK_RESULT(createImageView(createInfo, ppImageView, cubeMapImage));
     *ppImage = cubeMapImage;

@@ -31,8 +31,8 @@ private:
     std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
     std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};
 
-    std::shared_ptr<aph::Scene>  m_scene     = {};
-    std::shared_ptr<aph::Window> m_window    = {};
+    std::shared_ptr<aph::Scene>  m_scene  = {};
+    std::shared_ptr<aph::Window> m_window = {};
 };
 
 #endif  // SCENE_MANAGER_H_

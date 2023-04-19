@@ -21,7 +21,7 @@ namespace aph
 
 enum DeviceCreateFlagBits
 {
-
+    // TODO
 };
 using DeviceCreateFlags = uint32_t;
 
@@ -43,7 +43,8 @@ public:
     static void Destroy(VulkanDevice* pDevice);
 
 public:
-    VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage ** ppImage, VulkanImageView **ppImageView);
+    VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage** ppImage,
+                           VulkanImageView** ppImageView);
     VkResult createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data);
     VkResult createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
                                     const std::vector<uint8_t>& data);
@@ -91,14 +92,12 @@ public:
 
     VkResult waitIdle();
     VkResult waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
-    VulkanPhysicalDevice* getPhysicalDevice() const;
-    VkFormat              getDepthFormat() const;
-    VkPhysicalDeviceFeatures getFeatures() const{
-        return m_supportedFeatures;
-    }
+    VulkanPhysicalDevice*    getPhysicalDevice() const;
+    VkFormat                 getDepthFormat() const;
+    VkPhysicalDeviceFeatures getFeatures() const { return m_supportedFeatures; }
 
 private:
-    VkPhysicalDeviceFeatures m_supportedFeatures = {};
+    VkPhysicalDeviceFeatures m_supportedFeatures{};
     VulkanPhysicalDevice*    m_physicalDevice{};
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools  m_commandPools;

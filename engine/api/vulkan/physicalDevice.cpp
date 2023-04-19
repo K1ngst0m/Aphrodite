@@ -18,15 +18,9 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
             auto& queueFamily = m_queueFamilyProperties[queueFamilyIndex];
             auto  queueFlags  = queueFamily.queueFlags;
             // universal queue
-            if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            {
-                m_queueFamilyMap[QUEUE_GRAPHICS].push_back(queueFamilyIndex);
-            }
+            if(queueFlags & VK_QUEUE_GRAPHICS_BIT) { m_queueFamilyMap[QUEUE_GRAPHICS].push_back(queueFamilyIndex); }
             // compute queue
-            else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
-            {
-                m_queueFamilyMap[QUEUE_COMPUTE].push_back(queueFamilyIndex);
-            }
+            else if(queueFlags & VK_QUEUE_COMPUTE_BIT) { m_queueFamilyMap[QUEUE_COMPUTE].push_back(queueFamilyIndex); }
             // transfer queue
             else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
             {
@@ -59,8 +53,9 @@ bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) cons
             m_supportedExtensions.end());
 }
 
-uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
-                                              VkBool32* memTypeFound) const
+uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t              typeBits,
+                                              VkMemoryPropertyFlags properties,
+                                              VkBool32*             memTypeFound) const
 {
     for(uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; i++)
     {
@@ -68,10 +63,7 @@ uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropert
         {
             if((m_memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
             {
-                if(memTypeFound)
-                {
-                    *memTypeFound = true;
-                }
+                if(memTypeFound) { *memTypeFound = true; }
                 return i;
             }
         }
@@ -86,22 +78,17 @@ uint32_t VulkanPhysicalDevice::findMemoryType(uint32_t typeBits, VkMemoryPropert
 
     throw std::runtime_error("Could not find a matching memory type");
 }
-VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-                                                   VkFormatFeatureFlags features) const
+VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates,
+                                                   VkImageTiling                tiling,
+                                                   VkFormatFeatureFlags         features) const
 {
     for(VkFormat format : candidates)
     {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(getHandle(), format, &props);
-        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-        {
-            return format;
-        }
+        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) { return format; }
 
-        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
-        {
-            return format;
-        }
+        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) { return format; }
     }
 
     assert("failed to find supported format!");
@@ -110,5 +97,13 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& 
 std::vector<uint32_t> VulkanPhysicalDevice::getQueueFamilyIndexByFlags(QueueTypeFlags flags)
 {
     return m_queueFamilyMap.count(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
+}
+size_t VulkanPhysicalDevice::padUniformBufferSize(size_t originalSize) const
+{
+    // Calculate required alignment based on minimum device offset alignment
+    size_t minUboAlignment = m_properties.limits.minUniformBufferOffsetAlignment;
+    size_t alignedSize     = originalSize;
+    if(minUboAlignment > 0) { alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1); }
+    return alignedSize;
 }
 }  // namespace aph

@@ -5,22 +5,22 @@ namespace aph
 
 void Camera::setAspectRatio(float aspect)
 {
-    m_matrices.perspective = glm::perspective(glm::radians(m_fov), aspect, m_znear, m_zfar);
+    m_matrices.proj = glm::perspective(glm::radians(m_fov), aspect, m_znear, m_zfar);
     if(m_flipY)
     {
-        m_matrices.perspective[1][1] *= -1.0f;
+        m_matrices.proj[1][1] *= -1.0f;
     }
 }
 
 void Camera::setPerspective(float fov, float aspect, float znear, float zfar)
 {
-    m_fov = fov;
-    m_znear = znear;
-    m_zfar = zfar;
-    m_matrices.perspective = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+    m_fov           = fov;
+    m_znear         = znear;
+    m_zfar          = zfar;
+    m_matrices.proj = glm::perspective(glm::radians(fov), aspect, znear, zfar);
     if(m_flipY)
     {
-        m_matrices.perspective[1][1] *= -1.0f;
+        m_matrices.proj[1][1] *= -1.0f;
     }
 };
 
@@ -40,7 +40,7 @@ void Camera::updateViewMatrix()
     }
     transM = glm::translate(glm::mat4(1.0f), translation);
 
-    if(m_cameraType == CameraType::FIRSTPERSON)
+    if(m_cameraType == CameraType::FIRST_PERSON)
     {
         m_matrices.view = rotM * transM;
     }
@@ -49,18 +49,18 @@ void Camera::updateViewMatrix()
         m_matrices.view = transM * rotM;
     }
 
-    updated = true;
+    m_updated = true;
 };
 
 bool Camera::isMoving() const
 {
-    return std::any_of(m_keys.begin(), m_keys.end(), [](const auto &key) -> bool { return key.second; });
+    return std::any_of(m_keys.begin(), m_keys.end(), [](const auto& key) -> bool { return key.second; });
 }
 
 void Camera::processMovement(float deltaTime)
 {
-    updated = false;
-    if(m_cameraType == CameraType::FIRSTPERSON)
+    m_updated = false;
+    if(m_cameraType == CameraType::FIRST_PERSON)
     {
         if(isMoving())
         {
@@ -68,7 +68,7 @@ void Camera::processMovement(float deltaTime)
             camFront.x = -cos(glm::radians(m_rotation.x)) * sin(glm::radians(m_rotation.y));
             camFront.y = sin(glm::radians(m_rotation.x));
             camFront.z = cos(glm::radians(m_rotation.x)) * cos(glm::radians(m_rotation.y));
-            camFront = glm::normalize(camFront);
+            camFront   = glm::normalize(camFront);
 
             float moveSpeed{ deltaTime * m_movementSpeed };
 

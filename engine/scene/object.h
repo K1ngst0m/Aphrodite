@@ -35,22 +35,6 @@ protected:
     ObjectType m_type{};
 };
 
-class UniformObject : public Object
-{
-public:
-    UniformObject(IdType id, ObjectType type) : Object{ id, type } {}
-    ~UniformObject() override = default;
-
-    virtual void*    getData() { return data.get(); }
-    virtual uint32_t getDataSize() { return dataSize; }
-
-protected:
-    size_t                dataSize{ 0 };
-    std::shared_ptr<void> data{};
-
-    bool updated{ false };
-};
-
 }  // namespace aph
 
 #endif  // VKLMODEL_H_

@@ -65,6 +65,7 @@ private:
         BUFFER_CUBE_VERTEX,
         BUFFER_SCENE_VERTEX,
         BUFFER_SCENE_INDEX,
+        BUFFER_SCENE_INFO,
         BUFFER_SCENE_MATERIAL,
         BUFFER_SCENE_LIGHT,
         BUFFER_SCENE_CAMERA,
@@ -74,6 +75,9 @@ private:
 
     enum ImageIndex
     {
+        IMAGE_GBUFFER_POSITION,
+        IMAGE_GBUFFER_NORMAL,
+        IMAGE_GBUFFER_ALBEDO,
         IMAGE_FORWARD_COLOR,
         IMAGE_FORWARD_DEPTH,
         IMAGE_FORWARD_COLOR_MS,
@@ -91,13 +95,12 @@ private:
     VkDescriptorSet                                        m_sceneSet{};
     VkDescriptorSet                                        m_samplerSet{};
 
-    VulkanImageView*              m_pCubeMapView{};
+    VulkanImageView* m_pCubeMapView{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
     std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
-    std::vector<glm::mat4>                  m_transformInfos;
 
 private:
     VulkanUIRenderer* m_pUIRenderer = {};

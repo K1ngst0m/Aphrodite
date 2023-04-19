@@ -49,8 +49,8 @@ void Window::setCursorPosCallback(const CursorPosFunc& cbFunc)
     glfwSetCursorPosCallback(getHandle(), [](GLFWwindow* window, double xposIn, double yposIn) {
         Window* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
 
-        auto xpos{ static_cast<float>(xposIn) };
-        auto ypos{ static_cast<float>(yposIn) };
+        auto xpos{static_cast<float>(xposIn)};
+        auto ypos{static_cast<float>(yposIn)};
 
         if(ptr->m_cursorData->firstMouse)
         {
@@ -90,18 +90,9 @@ void Window::setCursorVisibility(bool flag)
     m_cursorData->isCursorVisible = flag;
 }
 
-void Window::close()
-{
-    glfwSetWindowShouldClose(getHandle(), true);
-}
-bool Window::shouldClose()
-{
-    return glfwWindowShouldClose(getHandle());
-}
-void Window::pollEvents()
-{
-    glfwPollEvents();
-}
+void     Window::close() { glfwSetWindowShouldClose(getHandle(), true); }
+bool     Window::shouldClose() { return glfwWindowShouldClose(getHandle()); }
+void     Window::pollEvents() { glfwPollEvents(); }
 uint32_t Window::getKeyInputStatus(KeyCodeType keycode)
 {
     auto status = glfwGetKey(getHandle(), keycode);

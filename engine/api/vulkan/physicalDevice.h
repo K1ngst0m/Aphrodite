@@ -26,6 +26,7 @@ public:
                                               VkBool32* memTypeFound = nullptr) const;
     VkFormat                   findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
                                                    VkFormatFeatureFlags features) const;
+    size_t                     padUniformBufferSize(size_t originalSize) const;
     VkPhysicalDeviceProperties getProperties() const { return m_properties; }
 
 private:

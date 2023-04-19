@@ -33,6 +33,8 @@ std::vector<char>  loadSpvFromFile(const std::string& filename);
 std::vector<char>  loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
 VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
+
+
 }  // namespace aph::utils
 
 #endif  // VKLUTILS_H_
