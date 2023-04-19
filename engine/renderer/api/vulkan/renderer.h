@@ -20,6 +20,7 @@ public:
     void endFrame();
 
 public:
+    RenderConfig        getConfig() const { return m_config; }
     VulkanInstance*     getInstance() const { return m_pInstance; }
     VulkanDevice*       getDevice() const { return m_pDevice; }
     uint32_t            getCurrentFrameIndex() const { return m_frameIdx; }

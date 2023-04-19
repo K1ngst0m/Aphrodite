@@ -72,6 +72,17 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         {
             m_queue.transfer = m_queue.compute;
         }
+
+        // check sample count support
+        {
+            auto limit = createInfo.pPhysicalDevice->getProperties().limits;
+            auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
+            if (!(counts & m_config.sampleCount))
+            {
+                m_config.sampleCount = SAMPLE_COUNT_1_BIT;
+            }
+        }
+
     }
 
     // setup swapchain

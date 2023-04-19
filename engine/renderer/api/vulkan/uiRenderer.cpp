@@ -148,6 +148,8 @@ void VulkanUIRenderer::init()
                               VK_COLOR_COMPONENT_A_BIT,
         };
         pipelineCreateInfo.colorBlendAttachment = blendAttachmentState;
+        pipelineCreateInfo.multisampling =
+            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_pRenderer->getConfig().sampleCount));
 
         // Vertex bindings an attributes based on ImGui vertex definition
         std::vector<VkVertexInputBindingDescription> vertexInputBindings = {

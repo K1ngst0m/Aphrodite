@@ -8,7 +8,7 @@
 
 namespace aph
 {
-class VulkanSceneRenderer final: public ISceneRenderer, public VulkanRenderer
+class VulkanSceneRenderer final : public ISceneRenderer, public VulkanRenderer
 {
 public:
     VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
@@ -76,6 +76,8 @@ private:
     {
         IMAGE_FORWARD_COLOR,
         IMAGE_FORWARD_DEPTH,
+        IMAGE_FORWARD_COLOR_MS,
+        IMAGE_FORWARD_DEPTH_MS,
         IMAGE_SCENE_SKYBOX,
         IMAGE_SCENE_TEXTURES,
         IMAGE_MAX
@@ -88,7 +90,8 @@ private:
     std::array<std::vector<VulkanImage*>, IMAGE_MAX>       m_images;
     VkDescriptorSet                                        m_sceneSet{};
     VkDescriptorSet                                        m_samplerSet{};
-    VulkanImageView*                                       m_pCubeMapView{};
+
+    VulkanImageView*              m_pCubeMapView{};
 
 private:
     std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;

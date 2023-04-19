@@ -278,13 +278,16 @@ void VulkanSceneRenderer::_initForward()
     m_images[IMAGE_FORWARD_COLOR].resize(imageCount);
     m_images[IMAGE_FORWARD_DEPTH].resize(imageCount);
 
+    m_images[IMAGE_FORWARD_COLOR_MS].resize(imageCount);
+    m_images[IMAGE_FORWARD_DEPTH_MS].resize(imageCount);
+
     // frame buffer
     for(auto idx = 0; idx < imageCount; idx++)
     {
-        auto& colorImage = m_images[IMAGE_FORWARD_COLOR][idx];
-        auto& depthImage = m_images[IMAGE_FORWARD_DEPTH][idx];
 
         {
+            auto& colorImage = m_images[IMAGE_FORWARD_COLOR][idx];
+            auto& colorImageResolve = m_images[IMAGE_FORWARD_COLOR_MS][idx];
             ImageCreateInfo createInfo{
                 .extent    = { imageExtent.width, imageExtent.height, 1 },
                 .usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_STORAGE_BIT | IMAGE_USAGE_SAMPLED_BIT,
@@ -292,10 +295,14 @@ void VulkanSceneRenderer::_initForward()
                 .imageType = ImageType::_2D,
                 .format    = Format::B8G8R8A8_UNORM,
             };
-            m_pDevice->createImage(createInfo, &colorImage);
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
+            createInfo.samples = m_config.sampleCount;
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImageResolve));
         }
 
         {
+            auto& depthImage = m_images[IMAGE_FORWARD_DEPTH][idx];
+            auto& depthImageResolve = m_images[IMAGE_FORWARD_DEPTH_MS][idx];
             ImageCreateInfo createInfo{
                 .extent   = { imageExtent.width, imageExtent.height, 1 },
                 .usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -304,12 +311,16 @@ void VulkanSceneRenderer::_initForward()
                 .tiling   = ImageTiling::OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
+            createInfo.samples = m_config.sampleCount;
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageResolve));
+            m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
+                cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depthImageResolve, VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+            });
         }
 
-        m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-            cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                       VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-        });
     }
 
     // forward graphics pipeline
@@ -323,6 +334,8 @@ void VulkanSceneRenderer::_initForward()
              .pColorAttachmentFormats = colorFormats.data(),
              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
+        pipelineCreateInfo.multisampling =
+            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_config.sampleCount));
         pipelineCreateInfo.setLayouts = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
         pipelineCreateInfo.constants.push_back(aph::init::pushConstantRange(
             VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(ObjectInfo), 0));
@@ -377,7 +390,7 @@ void VulkanSceneRenderer::_initSetLayout()
             // samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             samplerInfo.maxAnisotropy = 1.0f;
-            if (m_pDevice->getFeatures().samplerAnisotropy)
+            if(m_pDevice->getFeatures().samplerAnisotropy)
             {
                 samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
                 samplerInfo.anisotropyEnable = VK_TRUE;
@@ -555,6 +568,8 @@ void VulkanSceneRenderer::_initSkybox()
              .pColorAttachmentFormats = colorFormats.data(),
              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
+        pipelineCreateInfo.multisampling =
+            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_config.sampleCount));
         pipelineCreateInfo.depthStencil =
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         pipelineCreateInfo.setLayouts    = { m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP] };
@@ -586,24 +601,43 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
     // forward pass
     {
         VulkanImageView*          pColorAttachment = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView();
+        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_FORWARD_COLOR_MS][imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pColorAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = { .color{ { 0.1f, 0.1f, 0.1f, 1.0f } } },
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView          = pColorAttachmentMS->getHandle(),
+            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
+            .resolveImageView   = pColorAttachment->getHandle(),
+            .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = { .color{ { 0.1f, 0.1f, 0.1f, 1.0f } } },
         };
 
+        if(m_config.sampleCount == SAMPLE_COUNT_1_BIT)
+        {
+            forwardColorAttachmentInfo.imageView = pColorAttachment->getHandle();
+            forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+        }
+
         VulkanImageView*          pDepthAttachment = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getImageView();
+        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_FORWARD_DEPTH_MS][imageIdx]->getImageView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pDepthAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue  = { .depthStencil{ 1.0f, 0 } },
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView          = pDepthAttachmentMS->getHandle(),
+            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
+            .resolveImageView   = pDepthAttachment->getHandle(),
+            .resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue         = { .depthStencil{ 1.0f, 0 } },
         };
+        if(m_config.sampleCount == SAMPLE_COUNT_1_BIT)
+        {
+            forwardDepthAttachmentInfo.imageView = pDepthAttachment->getHandle();
+            forwardDepthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
+        }
 
         VkRenderingInfo renderingInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -617,10 +651,13 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             .pDepthAttachment     = &forwardDepthAttachmentInfo,
         };
 
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        {
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        }
+
         pCommandBuffer->beginRendering(renderingInfo);
 
         // skybox
@@ -695,8 +732,12 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
 
         pCommandBuffer->endRendering();
 
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                              VK_IMAGE_LAYOUT_GENERAL);
+        {
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                VK_IMAGE_LAYOUT_GENERAL);
+        }
     }
 }
 void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer)

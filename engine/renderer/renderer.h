@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include "api/gpuResource.h"
 #include "common/common.h"
 #include "common/window.h"
 
@@ -10,11 +11,11 @@ namespace aph
 {
 struct RenderConfig
 {
-    bool     enableDebug         = { true };
-    bool     enableUI            = { true };
-    bool     initDefaultResource = { true };
-    uint32_t sampleCount         = { 8 };
-    uint32_t maxFrames           = { 2 };
+    bool             enableDebug         = { true };
+    bool             enableUI            = { true };
+    bool             initDefaultResource = { true };
+    uint32_t         maxFrames           = { 2 };
+    SampleCountFlags sampleCount         = { SAMPLE_COUNT_1_BIT };
 };
 
 class VulkanSceneRenderer;

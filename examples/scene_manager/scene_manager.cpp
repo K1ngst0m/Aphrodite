@@ -132,6 +132,7 @@ void scene_manager::setupRenderer()
         .enableDebug = true,
         .enableUI    = true,
         .maxFrames   = 2,
+        .sampleCount = aph::SAMPLE_COUNT_8_BIT,
     };
 
     m_sceneRenderer = aph::IRenderer::Create<aph::VulkanSceneRenderer>(m_window, config);
