@@ -102,9 +102,9 @@ class OrthoCamera : public Camera
 public:
     OrthoCamera(): Camera(CameraType::ORTHO){}
     ~OrthoCamera() override = default;
+    void updateProj(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax);
 
 private:
-    void updatePerspective(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax);
     struct
     {
         float left{};

@@ -13,9 +13,9 @@ class Node : public Object
 public:
     Node(TNode* parent, IdType id, ObjectType type, glm::mat4 transform = glm::mat4(1.0f), std::string name = "") :
         Object{id, type},
+        name{std::move(name)},
         parent{parent},
-        matrix{transform},
-        name{std::move(name)}
+        matrix{transform}
     {
         if constexpr(std::is_same<TNode, Node>::value)
         {

@@ -9,7 +9,7 @@ VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice*              
                                                      VkDescriptorSetLayout                  handle) :
     m_device(device)
 {
-    for(auto i = 0; i < createInfo.bindingCount; i++)
+    for(uint32_t i = 0; i < createInfo.bindingCount; i++)
     {
         m_bindings.push_back(createInfo.pBindings[i]);
     }

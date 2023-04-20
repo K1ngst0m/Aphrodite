@@ -68,7 +68,7 @@ void PerspectiveCamera::updatePerspective(float fov, float aspect, float znear, 
     if(m_flipY) { m_projection[1][1] *= -1.0f; }
 };
 
-void OrthoCamera::updatePerspective(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
+void OrthoCamera::updateProj(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
 {
     m_ortho.left   = xmin;
     m_ortho.right  = xmax;

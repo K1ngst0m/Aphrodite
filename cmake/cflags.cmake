@@ -1,7 +1,7 @@
 set(CMAKE_C_FLAGS "")
 set(CMAKE_CXX_FLAGS "")
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g -ggdb")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g -ggdb -Wall -Wno-sign-compare")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3")
 
 set(CMAKE_CXX_STANDARD 17)

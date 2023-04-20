@@ -43,19 +43,12 @@ public:
     template <typename CameraType>
     std::shared_ptr<CameraType> getMainCamera()
     {
-        if constexpr(std::is_same<CameraType, PerspectiveCamera>::value)
+        if constexpr(std::is_same<CameraType, PerspectiveCamera>::value ||
+                     std::is_same<CameraType, OrthoCamera>::value || std::is_same<CameraType, Camera>::value)
         {
             return std::static_pointer_cast<CameraType>(m_camera);
         }
-        else if constexpr(std::is_same<CameraType, OrthoCamera>::value)
-        {
-            return std::static_pointer_cast<CameraType>(m_camera);
-        }
-        else
-        {
-            assert("camera type not supported.");
-            return {};
-        }
+        else { static_assert("invalid camera type."); }
     }
 
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }

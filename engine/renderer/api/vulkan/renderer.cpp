@@ -113,9 +113,6 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         }
 
         {
-            VkSemaphoreCreateInfo semaphoreInfo = aph::init::semaphoreCreateInfo();
-            VkFenceCreateInfo     fenceInfo     = aph::init::fenceCreateInfo(VK_FENCE_CREATE_SIGNALED_BIT);
-
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
 
