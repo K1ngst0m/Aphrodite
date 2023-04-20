@@ -25,14 +25,10 @@ enum class Direction
 
 struct Camera : public Object
 {
-    Camera(CameraType cameraType = CameraType::UNDEFINED) :
-        Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
-        m_cameraType(cameraType)
-    {
-    }
+    Camera(CameraType cameraType = CameraType::UNDEFINED);
     ~Camera() override = default;
 
-    void move(Direction direction, bool flag) { m_keys[direction] = flag; }
+    void move(Direction direction, bool flag) { m_directions[direction] = flag; }
     void rotate(glm::vec3 delta) { m_rotation += delta * m_rotationSpeed; }
     void translate(glm::vec3 delta) { m_position += delta * m_movementSpeed; }
 
@@ -53,13 +49,13 @@ struct Camera : public Object
     float m_aspect{0.0f};
 
 protected:
-    std::unordered_map<Direction, bool> m_keys{
+    std::unordered_map<Direction, bool> m_directions{
         {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};
 };
 
 struct PerspectiveCamera : public Camera
 {
-    PerspectiveCamera() : Camera(CameraType::PERSPECTIVE) {}
+    PerspectiveCamera();
     ~PerspectiveCamera() override = default;
     void updateProj() override;
 
@@ -73,7 +69,7 @@ struct PerspectiveCamera : public Camera
 
 struct OrthoCamera : public Camera
 {
-    OrthoCamera() : Camera(CameraType::ORTHO) {}
+    OrthoCamera();
     ~OrthoCamera() override = default;
     void updateProj() override;
 

@@ -2,6 +2,13 @@
 
 namespace aph
 {
+Camera::Camera(CameraType cameraType) :
+    Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
+    m_cameraType(cameraType)
+{
+}
+PerspectiveCamera::PerspectiveCamera() : Camera(CameraType::PERSPECTIVE) {}
+OrthoCamera::OrthoCamera() : Camera(CameraType::ORTHO) {}
 
 void Camera::updateView()
 {
@@ -29,7 +36,7 @@ void Camera::updateMovement(float deltaTime)
 {
     if(m_cameraType == CameraType::PERSPECTIVE)
     {
-        if(std::any_of(m_keys.begin(), m_keys.end(), [](const auto& key) -> bool { return key.second; }))
+        if(std::any_of(m_directions.begin(), m_directions.end(), [](const auto& key) -> bool { return key.second; }))
         {
             glm::vec3 camFront{-cos(glm::radians(m_rotation.x)) * sin(glm::radians(m_rotation.y)),
                                sin(glm::radians(m_rotation.x)),
@@ -38,11 +45,11 @@ void Camera::updateMovement(float deltaTime)
 
             float moveSpeed{deltaTime * m_movementSpeed};
 
-            if(m_keys[Direction::UP]) m_position += camFront * moveSpeed;
-            if(m_keys[Direction::DOWN]) m_position -= camFront * moveSpeed;
-            if(m_keys[Direction::LEFT])
+            if(m_directions[Direction::UP]) m_position += camFront * moveSpeed;
+            if(m_directions[Direction::DOWN]) m_position -= camFront * moveSpeed;
+            if(m_directions[Direction::LEFT])
                 m_position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
-            if(m_keys[Direction::RIGHT])
+            if(m_directions[Direction::RIGHT])
                 m_position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
         }
     }
