@@ -93,7 +93,7 @@ public:
         {
             if constexpr(std::is_same<TObject, Camera>::value)
             {
-                auto type = std::static_pointer_cast<Camera>(m_object)->getType();
+                auto type = std::static_pointer_cast<Camera>(m_object)->m_cameraType;
                 if(type == CameraType::PERSPECTIVE) { return std::static_pointer_cast<PerspectiveCamera>(m_object); }
                 if(type == CameraType::ORTHO) { return std::static_pointer_cast<OrthoCamera>(m_object); }
             }

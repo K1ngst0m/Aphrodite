@@ -73,7 +73,6 @@ struct Mesh : public Object
     ResourceIndex       m_vertexOffset{-1};
     std::vector<Subset> m_subsets{};
     IndexType           m_indexType{IndexType::UINT32};
-    PrimitiveTopology   m_topology{PrimitiveTopology::TRI_LIST};
 };
 }  // namespace aph
 

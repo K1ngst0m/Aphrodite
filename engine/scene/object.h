@@ -26,13 +26,13 @@ public:
         auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
         return instance;
     }
-    Object(IdType id, ObjectType type) : IdObject{ id }, m_type{ type } {}
+    Object(IdType id, ObjectType type) : IdObject{ id }, m_ObjectType{ type } {}
     virtual ~Object() = default;
 
-    ObjectType getType() { return m_type; }
+    ObjectType getType() { return m_ObjectType; }
 
 protected:
-    ObjectType m_type{};
+    ObjectType m_ObjectType{};
 };
 
 }  // namespace aph

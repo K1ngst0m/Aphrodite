@@ -29,10 +29,7 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model
             }
             memcpy(newImage->data.data(), rgba.data(), glTFImage.image.size());
         }
-        else
-        {
-            memcpy(newImage->data.data(), glTFImage.image.data(), glTFImage.image.size());
-        }
+        else { memcpy(newImage->data.data(), glTFImage.image.data(), glTFImage.image.size()); }
         images.push_back(newImage);
     }
 }
@@ -45,7 +42,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
     {
         auto& material = materials[i];
         material.id    = i;
-        tinygltf::Material glTFMaterial{ input.materials[i] };
+        tinygltf::Material glTFMaterial{input.materials[i]};
 
         // factor
         material.emissiveFactor  = glm::vec4(glm::make_vec3(glTFMaterial.emissiveFactor.data()), 1.0f);
@@ -54,10 +51,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
         material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
         material.doubleSided = glTFMaterial.doubleSided;
-        if(glTFMaterial.alphaMode == "BLEND")
-        {
-            material.alphaMode = AlphaMode::BLEND;
-        }
+        if(glTFMaterial.alphaMode == "BLEND") { material.alphaMode = AlphaMode::BLEND; }
         if(glTFMaterial.alphaMode == "MASK")
         {
             material.alphaCutoff = 0.5f;
@@ -96,7 +90,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
 void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node& inputNode,
                const tinygltf::Model& input, const std::shared_ptr<SceneNode>& parent, uint32_t materialOffset)
 {
-    glm::mat4 matrix{ 1.0f };
+    glm::mat4 matrix{1.0f};
 
     if(inputNode.translation.size() == 3)
     {
@@ -107,36 +101,30 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
         glm::quat q = glm::make_quat(inputNode.rotation.data());
         matrix *= glm::mat4(q);
     }
-    if(inputNode.scale.size() == 3)
-    {
-        matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
-    }
-    if(inputNode.matrix.size() == 16)
-    {
-        matrix = glm::make_mat4x4(inputNode.matrix.data());
-    };
+    if(inputNode.scale.size() == 3) { matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data()))); }
+    if(inputNode.matrix.size() == 16) { matrix = glm::make_mat4x4(inputNode.matrix.data()); };
 
-    auto node{ parent->createChildNode(matrix, inputNode.name) };
+    auto node{parent->createChildNode(matrix, inputNode.name)};
 
     // If the node contains mesh data, we load vertices and indices from the buffers
     // In glTF this is done via accessors and buffer views
     if(inputNode.mesh > -1)
     {
-        auto mesh{ Object::Create<Mesh>() };
+        auto mesh{Object::Create<Mesh>()};
         node->attachObject<Mesh>(mesh);
 
-        const tinygltf::Mesh gltfMesh{ input.meshes[inputNode.mesh] };
+        const tinygltf::Mesh gltfMesh{input.meshes[inputNode.mesh]};
         std::vector<uint8_t> indices;
         std::vector<uint8_t> vertices;
-        auto                 indexType{ IndexType::UINT16 };
+        auto                 indexType{IndexType::UINT16};
 
         // Iterate through all primitives of this node's mesh
         for(const auto& glTFPrimitive : gltfMesh.primitives)
         {
-            auto firstIndex{ static_cast<int32_t>(indices.size()) };
-            auto vertexStart{ static_cast<int32_t>(vertices.size()) };
-            auto indexCount{ static_cast<int32_t>(0) };
-            auto vertexCount{ 0 };
+            auto firstIndex{static_cast<int32_t>(indices.size())};
+            auto vertexStart{static_cast<int32_t>(vertices.size())};
+            auto indexCount{static_cast<int32_t>(0)};
+            auto vertexCount{0};
 
             // Vertices
             {
@@ -206,7 +194,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
                 indexCount += static_cast<uint32_t>(accessor.count);
 
                 // glTF supports different component types of indices
-                uint32_t idxOffset{ static_cast<uint32_t>(indices.size()) };
+                uint32_t idxOffset{static_cast<uint32_t>(indices.size())};
                 switch(accessor.componentType)
                 {
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT:
@@ -263,15 +251,9 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
 
         switch(indexType)
         {
-        case IndexType::UINT16:
-            indexSizeScaling = 0.5f;
-            break;
-        case IndexType::UINT32:
-            indexSizeScaling = 0.25f;
-            break;
-        default:
-            indexSizeScaling = 1.0f;
-            break;
+        case IndexType::UINT16: indexSizeScaling = 0.5f; break;
+        case IndexType::UINT32: indexSizeScaling = 0.25f; break;
+        default: indexSizeScaling = 1.0f; break;
         }
     }
 
@@ -295,7 +277,7 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     {
     case SceneType::DEFAULT:
     {
-        auto instance{ std::unique_ptr<Scene>(new Scene()) };
+        auto instance{std::unique_ptr<Scene>(new Scene())};
         instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
         return instance;
     }
@@ -305,14 +287,6 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
         return {};
     }
     }
-}
-
-std::shared_ptr<Camera> Scene::createCamera(float aspectRatio)
-{
-    auto camera = Object::Create<Camera>();
-    camera->setAspectRatio(aspectRatio);
-    m_cameras[camera->getId()] = camera;
-    return camera;
 }
 
 std::shared_ptr<Light> Scene::createLight()
@@ -343,10 +317,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
     {
         fileLoaded = gltfContext.LoadBinaryFromFile(&inputModel, &error, &warning, path);
     }
-    else
-    {
-        fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path);
-    }
+    else { fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path); }
 
     if(fileLoaded)
     {
@@ -377,18 +348,25 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
 
     return node;
 }
-std::shared_ptr<OrthoCamera> Scene::createOrthoCamera(float aspectRatio) {
-    auto camera = Object::Create<OrthoCamera>();
-    camera->setAspectRatio(aspectRatio);
-    camera->setType(CameraType::ORTHO);
+std::shared_ptr<OrthoCamera> Scene::createOrthoCamera(float aspectRatio)
+{
+    auto camera                = Object::Create<OrthoCamera>();
+    camera->m_aspect           = {aspectRatio};
     m_cameras[camera->getId()] = camera;
     return camera;
 }
-std::shared_ptr<PerspectiveCamera> Scene::createPerspectiveCamera(float aspectRatio) {
-    auto camera = Object::Create<PerspectiveCamera>();
-    camera->setAspectRatio(aspectRatio);
-    camera->setType(CameraType::PERSPECTIVE);
+std::shared_ptr<PerspectiveCamera> Scene::createPerspectiveCamera(float aspectRatio)
+{
+    auto camera                = Object::Create<PerspectiveCamera>();
+    camera->m_aspect           = {aspectRatio};
     m_cameras[camera->getId()] = camera;
     return camera;
+}
+void Scene::update(float deltaTime)
+{
+    auto camera = getMainCamera();
+    camera->updateProj();
+    camera->updateView();
+    camera->updateMovement(deltaTime);
 }
 }  // namespace aph

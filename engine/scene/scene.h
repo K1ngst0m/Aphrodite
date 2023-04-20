@@ -33,14 +33,13 @@ public:
     std::shared_ptr<Light>             createLight();
     std::shared_ptr<PerspectiveCamera> createPerspectiveCamera(float aspectRatio);
     std::shared_ptr<OrthoCamera>       createOrthoCamera(float aspectRatio);
-    std::shared_ptr<Camera>            createCamera(float aspectRatio);
     std::shared_ptr<SceneNode>         createMeshesFromFile(const std::string&                path,
                                                             const std::shared_ptr<SceneNode>& parent = nullptr);
 
     void setAmbient(glm::vec3 value) { m_ambient = value; }
     void setMainCamera(const std::shared_ptr<Camera>& camera) { m_camera = camera; }
 
-    template <typename CameraType>
+    template <typename CameraType = Camera>
     std::shared_ptr<CameraType> getMainCamera()
     {
         if constexpr(std::is_same<CameraType, PerspectiveCamera>::value ||
@@ -63,6 +62,8 @@ public:
     std::vector<std::shared_ptr<ImageInfo>> getImages() const { return m_images; }
 
     glm::vec3 getAmbient() { return m_ambient; }
+
+    void update(float deltaTime);
 
 private:
     AABB      m_aabb    = {};

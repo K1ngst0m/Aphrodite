@@ -3,7 +3,7 @@
 namespace aph
 {
 
-void Camera::updateViewMatrix()
+void Camera::updateView()
 {
     // rotation
     glm::mat4 rotM = glm::mat4(1.0f);
@@ -48,34 +48,14 @@ void Camera::updateMovement(float deltaTime)
     }
 };
 
-void PerspectiveCamera::setAspectRatio(float aspect)
+void PerspectiveCamera::updateProj()
 {
-    updatePerspective(m_perspective.fov, aspect, m_perspective.znear, m_perspective.zfar);
-}
-void PerspectiveCamera::setFov(float value)
-{
-    updatePerspective(value, m_aspect, m_perspective.znear, m_perspective.zfar);
-}
-void PerspectiveCamera::setZFar(float value) { m_perspective.zfar = value; }
-void PerspectiveCamera::setZNear(float value) { m_perspective.znear = value; }
-void PerspectiveCamera::updatePerspective(float fov, float aspect, float znear, float zfar)
-{
-    m_perspective.fov   = fov;
-    m_perspective.znear = znear;
-    m_perspective.zfar  = zfar;
-    m_aspect            = aspect;
-    m_projection        = glm::perspective(glm::radians(fov), aspect, znear, zfar);
+    m_projection        = glm::perspective(glm::radians(m_perspective.fov), m_aspect, m_perspective.znear, m_perspective.zfar);
     if(m_flipY) { m_projection[1][1] *= -1.0f; }
 };
 
-void OrthoCamera::updateProj(float xmin, float xmax, float ymin, float ymax, float zmin, float zmax)
+void OrthoCamera::updateProj()
 {
-    m_ortho.left   = xmin;
-    m_ortho.right  = xmax;
-    m_ortho.top    = ymax;
-    m_ortho.bottom = ymin;
-    m_ortho.front  = zmin;
-    m_ortho.back   = zmax;
-    m_projection   = glm::ortho(xmin, xmax, ymin, ymax, zmin, zmax);
+    m_projection   = glm::ortho(m_ortho.left, m_ortho.right, m_ortho.bottom, m_ortho.top, m_ortho.front, m_ortho.back);
 }
 }  // namespace aph

@@ -65,16 +65,15 @@ void scene_manager::setupScene()
 
     // scene camera
     {
-        auto camera = m_scene->createPerspectiveCamera(m_window->getAspectRatio());
-        camera->setPosition({0.0f, 0.0f, -3.0f});
-        camera->setFlipY(true);
-        // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
+        auto camera        = m_scene->createPerspectiveCamera(m_window->getAspectRatio());
+        camera->m_position = {0.0f, 0.0f, -3.0f};
+        camera->m_flipY    = true;
         camera->rotate({0.0f, 180.0f, 0.0f});
-        camera->setZFar(96.0f);
-        camera->setZNear(0.1f);
-        camera->setFov(60.0f);
-        camera->setMovementSpeed(2.5f);
-        camera->setRotationSpeed(0.1f);
+        camera->m_perspective.zfar  = {96.0f};
+        camera->m_perspective.znear = {0.1f};
+        camera->m_perspective.fov   = {60.0f};
+        camera->m_movementSpeed     = {2.5f};
+        camera->m_rotationSpeed     = {0.1f};
 
         // camera 1 (main)
         m_cameraNode = m_scene->getRootNode()->createChildNode();
@@ -87,20 +86,20 @@ void scene_manager::setupScene()
 
     // lights
     {
-        auto dirLight = m_scene->createLight();
-        dirLight->setColor({1.0f, 0.5f, 0.5f});
-        dirLight->setDirection({0.2f, 1.0f, 0.3f});
-        dirLight->setType(aph::LightType::DIRECTIONAL);
+        auto dirLight         = m_scene->createLight();
+        dirLight->m_color     = {1.0f, 0.5f, 0.5f};
+        dirLight->m_direction = {0.2f, 1.0f, 0.3f};
+        dirLight->m_type      = {aph::LightType::DIRECTIONAL};
 
         // light1
         m_directionalLightNode = m_scene->getRootNode()->createChildNode();
         m_directionalLightNode->attachObject<aph::Light>(dirLight);
 
         // #light 2
-        auto pointLight = m_scene->createLight();
-        pointLight->setColor({9.0f, 0.5f, 0.5f});
-        pointLight->setPosition({0.0f, 0.0f, 0.0f});
-        pointLight->setType(aph::LightType::POINT);
+        auto pointLight        = m_scene->createLight();
+        pointLight->m_color    = {9.0f, 0.5f, 0.5f};
+        pointLight->m_position = {0.0f, 0.0f, 0.0f};
+        pointLight->m_type     = {aph::LightType::POINT};
 
         m_pointLightNode = m_scene->getRootNode()->createChildNode();
         m_pointLightNode->attachObject<aph::Light>(pointLight);
