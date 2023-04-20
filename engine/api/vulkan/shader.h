@@ -13,12 +13,12 @@ class VulkanShaderModule : public ResourceHandle<VkShaderModule>
 public:
     static VulkanShaderModule* Create(VulkanDevice* pDevice, const std::vector<char>& code,
                                       const std::string& entrypoint = "main");
-    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
 
     std::vector<char> getCode() { return m_code; }
 
 private:
-    std::string          m_entrypoint = {};
+    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
+    std::string       m_entrypoint = {};
     std::vector<char> m_code       = {};
 };
 

@@ -183,7 +183,7 @@ bool VulkanUIRenderer::update(float deltaTime)
     }
 
     // Vertex buffer
-    if(m_pVertexBuffer == nullptr || (vertexCount != imDrawData->TotalVtxCount))
+    if(m_pVertexBuffer == nullptr || (m_vertexCount != imDrawData->TotalVtxCount))
     {
         BufferCreateInfo createInfo = { .size     = static_cast<uint32_t>(vertexBufferSize),
                                         .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
@@ -195,12 +195,12 @@ bool VulkanUIRenderer::update(float deltaTime)
             m_pDevice->destroyBuffer(m_pVertexBuffer);
         }
         VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_pVertexBuffer));
-        vertexCount = imDrawData->TotalVtxCount;
+        m_vertexCount = imDrawData->TotalVtxCount;
         m_pDevice->mapMemory(m_pVertexBuffer);
         updateCmdBuffers = true;
     }
 
-    if(m_pIndexBuffer == nullptr || (indexCount != imDrawData->TotalVtxCount))
+    if(m_pIndexBuffer == nullptr || (m_indexCount != imDrawData->TotalVtxCount))
     {
         BufferCreateInfo createInfo = { .size     = static_cast<uint32_t>(vertexBufferSize),
                                         .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
@@ -212,7 +212,7 @@ bool VulkanUIRenderer::update(float deltaTime)
             m_pDevice->destroyBuffer(m_pIndexBuffer);
         }
         VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_pIndexBuffer));
-        indexCount = imDrawData->TotalIdxCount;
+        m_indexCount = imDrawData->TotalIdxCount;
         m_pDevice->mapMemory(m_pIndexBuffer);
         updateCmdBuffers = true;
     }
@@ -408,7 +408,7 @@ bool VulkanUIRenderer::header(const char* caption)
 
 void VulkanUIRenderer::drawWithItemWidth(float itemWidth, std::function<void()>&& drawFunc) const
 {
-    ImGui::PushItemWidth(itemWidth * getScaleFactor());
+    ImGui::PushItemWidth(itemWidth * m_scale);
     drawFunc();
     ImGui::PopItemWidth();
 }
@@ -417,7 +417,7 @@ void VulkanUIRenderer::drawWindow(std::string_view title, glm::vec2 pos, glm::ve
                                   std::function<void()>&& drawFunc) const
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-    ImGui::SetNextWindowPos(ImVec2(pos.x * getScaleFactor(), pos.y * getScaleFactor()));
+    ImGui::SetNextWindowPos(ImVec2(pos.x * m_scale, pos.y * m_scale));
     ImGui::SetNextWindowSize(ImVec2(size.x, size.y), ImGuiCond_FirstUseEver);
     ImGui::Begin(title.data(), nullptr,
                  ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);

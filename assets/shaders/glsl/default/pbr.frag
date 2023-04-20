@@ -19,7 +19,7 @@ layout (std140, set = 0, binding = 0) uniform SceneInfoUB{
 struct Camera{
     mat4 view;
     mat4 proj;
-    vec3 viewPos;
+    vec4 viewPos;
 };
 
 layout (set = 0, binding = 2) uniform CameraUB{
@@ -27,9 +27,9 @@ layout (set = 0, binding = 2) uniform CameraUB{
 };
 
 struct Light{
-    vec3 color;
-    vec3 position;
-    vec3 direction;
+    vec4 color;
+    vec4 position;
+    vec4 direction;
     uint lightType;
 };
 layout (set = 0, binding = 3) uniform LightUB{
@@ -68,12 +68,17 @@ Material mat = materials[matId];
 
 vec3 getNormal()
 {
-    vec3 N = normalize(inNormal);
-    vec3 T = normalize(inTangent.xyz);
-    vec3 B = cross(inNormal, inTangent.xyz) * inTangent.w;
-    mat3 TBN = mat3(T, B, N);
     vec3 normal = mat.normalId > -1 ? texture(sampler2D(textures[mat.normalId], samp), inUV).rgb : inNormal;
-    return TBN * normalize(normal);
+    vec3 Q1 = dFdx(inWorldPos);
+    vec3 Q2 = dFdy(inWorldPos);
+    vec2 st1 = dFdx(inUV);
+    vec2 st2 = dFdy(inUV);
+
+    vec3 N = normalize(inNormal);
+    vec3 T = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+    return normalize(TBN * normalize(normal * 2.0 - 1.0));
 }
 
 // ----------------------------------------------------------------------------
@@ -122,18 +127,21 @@ void main() {
     float roughness = mat.metallicRoughnessId > -1 ? texture(sampler2D(textures[mat.metallicRoughnessId], samp), inUV).g : mat.roughnessFactor;
     vec3 ao = vec3(1.0f);
 
-    if (mat.occlusionId > -1){
-        if (mat.occlusionId == mat.metallicRoughnessId){
+    if (mat.occlusionId > -1)
+    {
+        if (mat.occlusionId == mat.metallicRoughnessId)
+        {
             ao = texture(sampler2D(textures[mat.occlusionId], samp), inUV).aaa;
         }
-        else{
+        else
+        {
             ao = texture(sampler2D(textures[mat.occlusionId], samp), inUV).rgb;
         }
     }
     vec3 emissive = mat.emissiveId > -1 ? texture(sampler2D(textures[mat.emissiveId], samp), inUV).rgb : mat.emissiveFactor.xyz;
 
     vec3 N = getNormal();
-    vec3 V = normalize(cameras[0].viewPos - inWorldPos);
+    vec3 V = normalize(cameras[0].viewPos.xyz - inWorldPos);
 
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
@@ -145,15 +153,18 @@ void main() {
         vec3 L = vec3(1.0f);
         if (lights[i].lightType == 0)
         {
-            L = normalize(-lights[i].direction);
+            L = normalize(-lights[i].direction.xyz);
         }
         else if (lights[i].lightType == 1)
         {
-            L = normalize(lights[i].position - inWorldPos);
+            L = normalize(lights[i].position.xyz - inWorldPos);
+        }
+        else {
+            L = vec3(-1.0f);
         }
         vec3 H = normalize(V + L);
         vec3 R = reflect(L, N);
-        vec3 radiance = lights[i].color;
+        vec3 radiance = lights[i].color.xyz;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);

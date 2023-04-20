@@ -83,7 +83,7 @@ public:
     void attachObject(const std::shared_ptr<Object>& object)
     {
         if constexpr(isObjectTypeValid<TObject>()) { m_object = object; }
-        else { assert("Invalid type of the object."); }
+        else { static_assert("Invalid type of the object."); }
     }
 
     template <typename TObject>
@@ -96,10 +96,11 @@ public:
                 auto type = std::static_pointer_cast<Camera>(m_object)->m_cameraType;
                 if(type == CameraType::PERSPECTIVE) { return std::static_pointer_cast<PerspectiveCamera>(m_object); }
                 if(type == CameraType::ORTHO) { return std::static_pointer_cast<OrthoCamera>(m_object); }
+                assert("unexpective error.");
             }
             return std::static_pointer_cast<TObject>(m_object);
         }
-        else { assert("Invalid type of the object."); }
+        else { static_assert("Invalid type of the object."); }
     }
 
     template <typename TObject>

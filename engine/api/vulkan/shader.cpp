@@ -15,7 +15,7 @@ VulkanShaderModule* VulkanShaderModule::Create(VulkanDevice* pDevice, const std:
     VkShaderModule handle;
     VK_CHECK_RESULT(vkCreateShaderModule(pDevice->getHandle(), &createInfo, nullptr, &handle));
 
-    auto instance = new VulkanShaderModule(code, handle, entrypoint);
+    auto *instance = new VulkanShaderModule(code, handle, entrypoint);
     return instance;
 }
 

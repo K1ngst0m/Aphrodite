@@ -18,6 +18,7 @@ struct Light : public Object
     Light();
     ~Light() override = default;
 
+    float     m_intensity{1.0f};
     glm::vec3 m_color{1.0f};
     glm::vec3 m_position{1.2f, 1.0f, 2.0f};
     glm::vec3 m_direction{-0.2f, -1.0f, -0.3f};

@@ -37,7 +37,7 @@ struct LightInfo
     glm::vec4 color{1.0f};
     glm::vec4 position{1.0f};
     glm::vec4 direction{1.0f};
-    LightType lightType{LightType::DIRECTIONAL};
+    uint32_t  lightType{};
 };
 
 struct ObjectInfo
@@ -136,10 +136,10 @@ void VulkanSceneRenderer::update(float deltaTime)
     for(uint32_t idx = 0; idx < m_cameraNodeList.size(); idx++)
     {
         const auto& camera = m_cameraNodeList[idx]->getObject<Camera>();
-        CameraInfo cameraData{
-            .view    = camera->m_view,
-            .proj    = camera->m_projection,
-            .viewPos = camera->m_position,
+        CameraInfo  cameraData{
+             .view    = camera->m_view,
+             .proj    = camera->m_projection,
+             .viewPos = camera->m_position,
         };
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
@@ -148,10 +148,10 @@ void VulkanSceneRenderer::update(float deltaTime)
     {
         const auto& light = m_lightNodeList[idx]->getObject<Light>();
         LightInfo   lightData{
-              .color     = {light->m_color, 1.0f},
+              .color     = {light->m_color * light->m_intensity, 1.0f},
               .position  = {light->m_position, 1.0f},
               .direction = {light->m_direction, 1.0f},
-              .lightType = light->m_type,
+              .lightType = utils::getUnderLyingType(light->m_type),
         };
         m_buffers[BUFFER_SCENE_LIGHT]->write(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
@@ -759,81 +759,88 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
     io.DisplaySize = ImVec2(m_window->getWidth(), m_window->getHeight());
     io.DeltaTime   = 1.0f;
 
-    io.AddMousePosEvent(m_window->getCursorXpos(), m_window->getCursorYpos());
+    io.AddMousePosEvent((float)m_window->getCursorXpos(), (float)m_window->getCursorYpos());
     io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_LEFT) == APH_PRESS);
     io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_RIGHT) == APH_PRESS);
     io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_MIDDLE) == APH_PRESS);
 
     ImGui::NewFrame();
 
-    m_pUIRenderer->drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, [this]() {
+    m_pUIRenderer->drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, [&]() {
         m_pUIRenderer->text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
         m_pUIRenderer->text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
-        m_pUIRenderer->drawWithItemWidth(110.0f, [this]() {
+        m_pUIRenderer->text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
+        m_pUIRenderer->drawWithItemWidth(110.0f, [&]() {
+            if(m_pUIRenderer->header("Input"))
+            {
+                m_pUIRenderer->text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorXpos(),
+                                    m_window->getCursorYpos());
+                auto cursorVisibility = m_window->getCursorVisibility();
+                m_pUIRenderer->checkBox("cursor visibility", &cursorVisibility);
+                m_window->setCursorVisibility(cursorVisibility);
+            }
             if(m_pUIRenderer->header("Scene"))
             {
-                auto ambient = m_scene->getAmbient();
-                m_pUIRenderer->colorPicker("ambient", &ambient[0]);
-                m_scene->setAmbient(ambient);
+                {
+                    auto ambient = m_scene->getAmbient();
+                    m_pUIRenderer->colorPicker("ambient", &ambient[0]);
+                    m_scene->setAmbient(ambient);
+                    m_pUIRenderer->text("camera count : %d", m_cameraNodeList.size());
+                    m_pUIRenderer->text("light count : %d", m_lightNodeList.size());
+                }
 
-                m_pUIRenderer->text("camera count : %d", m_cameraNodeList.size());
-                m_pUIRenderer->text("light count : %d", m_lightNodeList.size());
+                if(m_pUIRenderer->header("Main Camera"))
+                {
+                    auto camType = m_scene->getMainCamera<Camera>()->m_cameraType;
+                    if(camType == CameraType::PERSPECTIVE)
+                    {
+                        auto camera = m_scene->getMainCamera<PerspectiveCamera>();
+
+                        m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                                            camera->m_position.y, camera->m_position.z);
+                        m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                                            camera->m_rotation.y, camera->m_rotation.z);
+                        m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
+                        m_pUIRenderer->sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
+                        m_pUIRenderer->sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
+                        m_pUIRenderer->sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
+                        m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                    }
+                    else if(camType == CameraType::ORTHO)
+                    {
+                        auto camera = m_scene->getMainCamera<OrthoCamera>();
+                        m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                                            camera->m_position.y, camera->m_position.z);
+                        m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                                            camera->m_rotation.y, camera->m_rotation.z);
+                        m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
+                        m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                    }
+                }
 
                 for(uint32_t idx = 0; idx < m_lightNodeList.size(); idx++)
                 {
-                    auto light = m_lightNodeList[idx]->getObject<Light>();
                     char lightName[100];
-                    sprintf(lightName, "light[%d]", idx);
+                    sprintf(lightName, "light [%d]", idx);
                     if(m_pUIRenderer->header(lightName))
                     {
-                        auto type = light->m_type;
+                        auto light = m_lightNodeList[idx]->getObject<Light>();
+                        auto type  = light->m_type;
                         if(type == LightType::POINT)
                         {
                             m_pUIRenderer->text("type : point");
-                            m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", light->m_position.x,
-                                                light->m_position.y, light->m_position.z);
+                            ImGui::SliderFloat3("position", &light->m_position[0], 0.0f, 1.0f);
                         }
                         else if(type == LightType::DIRECTIONAL)
                         {
                             m_pUIRenderer->text("type : directional");
-                            m_pUIRenderer->text("direction : [ %.2f, %.2f, %.2f ]", light->m_direction.x,
-                                                light->m_direction.y, light->m_direction.z);
+                            ImGui::SliderFloat3("direction", &light->m_direction[0], 0.0f, 1.0f);
                         }
-                        m_pUIRenderer->text("color : [ %.2f, %.2f, %.2f ]", light->m_color.x, light->m_color.y,
-                                            light->m_color.z);
+                        ImGui::SliderFloat3("color", &light->m_color[0], 0.0f, 1.0f);
+                        ImGui::SliderFloat("intensity", &light->m_intensity, 0.0f, 10.0f);
                     }
-                }
-            }
-
-            if(m_pUIRenderer->header("Main Camera"))
-            {
-                auto camType = m_scene->getMainCamera<Camera>()->m_cameraType;
-                if(camType == CameraType::PERSPECTIVE)
-                {
-                    auto camera = m_scene->getMainCamera<PerspectiveCamera>();
-
-                    m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x, camera->m_position.y,
-                                        camera->m_position.z);
-                    m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x, camera->m_rotation.y,
-                                        camera->m_rotation.z);
-                    m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
-                    m_pUIRenderer->sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
-                    m_pUIRenderer->sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
-                    m_pUIRenderer->sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
-                    m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                    m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
-                }
-                else if(camType == CameraType::ORTHO)
-                {
-                    auto camera = m_scene->getMainCamera<OrthoCamera>();
-                    // TODO
-                    m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x, camera->m_position.y,
-                                        camera->m_position.z);
-                    m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x, camera->m_rotation.y,
-                                        camera->m_rotation.z);
-                    m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
-                    m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                    m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                 }
             }
         });

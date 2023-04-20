@@ -45,7 +45,6 @@ enum class Result
     TIMEOUT         = 2,
     INCOMPLETE      = 5,
     ERROR_UNKNOWN   = -1,
-    RESULT_MAX_ENUM = 0x7FFFFFFF
 };
 
 enum class Format
@@ -192,7 +191,7 @@ struct ImageInfo
     uint32_t             width  = {};
     uint32_t             height = {};
     std::vector<uint8_t> data   = {};
-    Format               format = { Format::UNDEFINED };
+    Format               format = {Format::UNDEFINED};
 };
 }  // namespace aph
 
@@ -204,6 +203,11 @@ constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint3
 }
 std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
+template <typename T>
+typename std::underlying_type<T>::type getUnderLyingType(T value)
+{
+    return static_cast<typename std::underlying_type<T>::type>(value);
+}
 }  // namespace aph::utils
 
 #endif  // VKLCOMMON_H_

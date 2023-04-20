@@ -45,17 +45,23 @@ public:
 public:
     std::shared_ptr<CursorData> getMouseData() { return m_cursorData; }
     std::shared_ptr<WindowData> getWindowData() { return m_windowData; }
-    void                        toggleCurosrVisibility() { setCursorVisibility(!m_cursorData->isCursorVisible); }
-    float                       getCursorYpos() { return m_cursorData->lastY; }
-    float                       getCursorXpos() { return m_cursorData->lastX; }
-    float                       getAspectRatio() { return m_windowData->getAspectRatio(); }
-    void                        setHeight(uint32_t h) { m_windowData->height = h; }
-    void                        setWidth(uint32_t w) { m_windowData->width = w; }
-    uint32_t                    getWidth() { return m_windowData->width; }
-    uint32_t                    getHeight() { return m_windowData->height; }
-    GLFWwindow*                 getHandle() { return m_windowData->window; }
-    uint32_t                    getKeyInputStatus(KeyCodeType keycode);
-    uint32_t                    getMouseButtonStatus(KeyCodeType mouseButton);
+
+    bool  getCursorVisibility() { return m_cursorData->isCursorVisible; }
+    void  toggleCurosrVisibility() { setCursorVisibility(!m_cursorData->isCursorVisible); }
+    float getCursorYpos() { return m_cursorData->lastY; }
+    float getCursorXpos() { return m_cursorData->lastX; }
+    float getAspectRatio() { return m_windowData->getAspectRatio(); }
+
+    uint32_t getWidth() { return m_windowData->width; }
+    uint32_t getHeight() { return m_windowData->height; }
+
+    uint32_t getKeyInputStatus(KeyCodeType keycode);
+    uint32_t getMouseButtonStatus(KeyCodeType mouseButton);
+
+    void setHeight(uint32_t h) { m_windowData->height = h; }
+    void setWidth(uint32_t w) { m_windowData->width = w; }
+
+    GLFWwindow* getHandle() { return m_windowData->window; }
 
 public:
     void setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc);

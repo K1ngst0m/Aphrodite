@@ -23,9 +23,6 @@ public:
     void cleanup();
 
 public:
-    float getScaleFactor() const { return m_scale; }
-
-public:
     void drawWithItemWidth(float itemWidth, std::function<void()>&& drawFunc) const;
     void drawWindow(std::string_view title, glm::vec2 pos, glm::vec2 size, std::function<void()>&& drawFunc) const;
 
@@ -63,13 +60,13 @@ private:
 
     VulkanBuffer* m_pVertexBuffer = {};
     VulkanBuffer* m_pIndexBuffer  = {};
-    uint32_t      vertexCount     = {};
-    uint32_t      indexCount      = {};
+    uint32_t      m_vertexCount     = {};
+    uint32_t      m_indexCount      = {};
 
     VulkanDescriptorSetLayout* m_pSetLayout = {};
     VkDescriptorSet            m_set        = {};
 
-    float m_scale = { 1.0f };
+    float m_scale = { 1.1f };
 };
 }  // namespace aph
 
