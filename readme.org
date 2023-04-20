@@ -1,4 +1,11 @@
+[[logo][file:https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/aph-logo.png]]
+
 * Aphrodite-next
+
+A pet engine written in C++, work in progress.
+
+[[editorUI][https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/screenshot.png]]
+
 ** Cloning
 
 #+BEGIN_SRC bash
