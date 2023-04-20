@@ -377,4 +377,18 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
 
     return node;
 }
+std::shared_ptr<OrthoCamera> Scene::createOrthoCamera(float aspectRatio) {
+    auto camera = Object::Create<OrthoCamera>();
+    camera->setAspectRatio(aspectRatio);
+    camera->setType(CameraType::ORTHO);
+    m_cameras[camera->getId()] = camera;
+    return camera;
+}
+std::shared_ptr<PerspectiveCamera> Scene::createPerspectiveCamera(float aspectRatio) {
+    auto camera = Object::Create<PerspectiveCamera>();
+    camera->setAspectRatio(aspectRatio);
+    camera->setType(CameraType::PERSPECTIVE);
+    m_cameras[camera->getId()] = camera;
+    return camera;
+}
 }  // namespace aph

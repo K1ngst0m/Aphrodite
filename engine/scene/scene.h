@@ -29,15 +29,34 @@ private:
 public:
     static std::unique_ptr<Scene> Create(SceneType type);
 
-    std::shared_ptr<Mesh>      createMesh();
-    std::shared_ptr<Light>     createLight();
-    std::shared_ptr<Camera>    createCamera(float aspectRatio);
-    std::shared_ptr<SceneNode> createMeshesFromFile(const std::string&                path,
-                                                    const std::shared_ptr<SceneNode>& parent = nullptr);
+    std::shared_ptr<Mesh>              createMesh();
+    std::shared_ptr<Light>             createLight();
+    std::shared_ptr<PerspectiveCamera> createPerspectiveCamera(float aspectRatio);
+    std::shared_ptr<OrthoCamera>       createOrthoCamera(float aspectRatio);
+    std::shared_ptr<Camera>            createCamera(float aspectRatio);
+    std::shared_ptr<SceneNode>         createMeshesFromFile(const std::string&                path,
+                                                            const std::shared_ptr<SceneNode>& parent = nullptr);
 
-    void                    setAmbient(glm::vec3 value) { m_ambient = value; }
-    void                    setMainCamera(const std::shared_ptr<Camera>& camera) { m_camera = camera; }
-    std::shared_ptr<Camera> getMainCamera() { return m_camera; }
+    void setAmbient(glm::vec3 value) { m_ambient = value; }
+    void setMainCamera(const std::shared_ptr<Camera>& camera) { m_camera = camera; }
+
+    template <typename CameraType>
+    std::shared_ptr<CameraType> getMainCamera()
+    {
+        if constexpr(std::is_same<CameraType, PerspectiveCamera>::value)
+        {
+            return std::static_pointer_cast<CameraType>(m_camera);
+        }
+        else if constexpr(std::is_same<CameraType, OrthoCamera>::value)
+        {
+            return std::static_pointer_cast<CameraType>(m_camera);
+        }
+        else
+        {
+            assert("camera type not supported.");
+            return {};
+        }
+    }
 
     std::shared_ptr<SceneNode> getRootNode() { return m_rootNode; }
 
@@ -54,7 +73,7 @@ public:
 
 private:
     AABB      m_aabb    = {};
-    glm::vec3 m_ambient = { 0.02f, 0.02f, 0.02f };
+    glm::vec3 m_ambient = {0.02f, 0.02f, 0.02f};
 
     std::shared_ptr<SceneNode> m_rootNode = {};
     std::shared_ptr<Camera>    m_camera   = {};

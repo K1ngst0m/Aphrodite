@@ -65,19 +65,20 @@ void scene_manager::setupScene()
 
     // scene camera
     {
-        auto camera = m_scene->createCamera(m_window->getAspectRatio());
-        camera->setType(aph::CameraType::FIRST_PERSON);
+        auto camera = m_scene->createPerspectiveCamera(m_window->getAspectRatio());
         camera->setPosition({0.0f, 0.0f, -3.0f});
         camera->setFlipY(true);
         // camera->setRotation(glm::vec3(0.0f, 90.0f, 0.0f));
         camera->rotate({0.0f, 180.0f, 0.0f});
-        camera->setPerspective(60.0f, m_window->getAspectRatio(), 0.01f, 96.0f);
+        camera->setZFar(96.0f);
+        camera->setZNear(0.1f);
+        camera->setFov(60.0f);
         camera->setMovementSpeed(2.5f);
         camera->setRotationSpeed(0.1f);
 
         // camera 1 (main)
         m_cameraNode = m_scene->getRootNode()->createChildNode();
-        m_cameraNode->attachObject<aph::Camera>(camera);
+        m_cameraNode->attachObject<aph::PerspectiveCamera>(camera);
         m_scene->setMainCamera(camera);
 
         // // camera 2
@@ -148,10 +149,10 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
         {
         case APH_KEY_ESCAPE: m_window->close(); break;
         case APH_KEY_1: m_window->toggleCurosrVisibility(); break;
-        case APH_KEY_W: camera->setMovement(aph::Direction::UP, true); break;
-        case APH_KEY_A: camera->setMovement(aph::Direction::LEFT, true); break;
-        case APH_KEY_S: camera->setMovement(aph::Direction::DOWN, true); break;
-        case APH_KEY_D: camera->setMovement(aph::Direction::RIGHT, true); break;
+        case APH_KEY_W: camera->move(aph::Direction::UP, true); break;
+        case APH_KEY_A: camera->move(aph::Direction::LEFT, true); break;
+        case APH_KEY_S: camera->move(aph::Direction::DOWN, true); break;
+        case APH_KEY_D: camera->move(aph::Direction::RIGHT, true); break;
         }
     }
 
@@ -159,10 +160,10 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     {
         switch(key)
         {
-        case APH_KEY_W: camera->setMovement(aph::Direction::UP, false); break;
-        case APH_KEY_A: camera->setMovement(aph::Direction::LEFT, false); break;
-        case APH_KEY_S: camera->setMovement(aph::Direction::DOWN, false); break;
-        case APH_KEY_D: camera->setMovement(aph::Direction::RIGHT, false); break;
+        case APH_KEY_W: camera->move(aph::Direction::UP, false); break;
+        case APH_KEY_A: camera->move(aph::Direction::LEFT, false); break;
+        case APH_KEY_S: camera->move(aph::Direction::DOWN, false); break;
+        case APH_KEY_D: camera->move(aph::Direction::RIGHT, false); break;
         }
     }
 }
@@ -173,7 +174,7 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
     const float dy = m_window->getCursorYpos() - yposIn;
 
     auto camera = m_cameraNode->getObject<aph::Camera>();
-    camera->rotate({dy * camera->getRotationSpeed(), -dx * camera->getRotationSpeed(), 0.0f});
+    camera->rotate({dy, -dx, 0.0f});
 }
 
 int main(int argc, char** argv)

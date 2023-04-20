@@ -94,7 +94,7 @@ void VulkanSceneRenderer::cleanupResources()
         m_pDevice->destroyBuffer(buffer);
     }
 
-    for(const auto sampler : m_samplers)
+    for(auto* const sampler : m_samplers)
     {
         vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
     }
@@ -134,7 +134,8 @@ void VulkanSceneRenderer::update(float deltaTime)
     for(uint32_t idx = 0; idx < m_cameraNodeList.size(); idx++)
     {
         const auto& camera = m_cameraNodeList[idx]->getObject<Camera>();
-        camera->processMovement(deltaTime);
+        camera->updateViewMatrix();
+        camera->updateMovement(deltaTime);
         CameraInfo cameraData{
             .view    = camera->getViewMatrix(),
             .proj    = camera->getProjMatrix(),
@@ -271,7 +272,7 @@ void VulkanSceneRenderer::_initForward()
     for(auto idx = 0; idx < imageCount; idx++)
     {
         {
-            auto&           colorImage        = m_images[IMAGE_FORWARD_COLOR][idx];
+            auto&           colorImage   = m_images[IMAGE_FORWARD_COLOR][idx];
             auto&           colorImageMS = m_images[IMAGE_FORWARD_COLOR_MS][idx];
             ImageCreateInfo createInfo{
                 .extent    = {imageExtent.width, imageExtent.height, 1},
@@ -286,7 +287,7 @@ void VulkanSceneRenderer::_initForward()
         }
 
         {
-            auto&           depthImage        = m_images[IMAGE_FORWARD_DEPTH][idx];
+            auto&           depthImage   = m_images[IMAGE_FORWARD_DEPTH][idx];
             auto&           depthImageMS = m_images[IMAGE_FORWARD_DEPTH_MS][idx];
             ImageCreateInfo createInfo{
                 .extent   = {imageExtent.width, imageExtent.height, 1},
@@ -772,10 +773,9 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
             if(m_pUIRenderer->header("Scene"))
             {
                 auto ambient = m_scene->getAmbient();
-                m_pUIRenderer->sliderFloat("ambient [X]", &ambient.x, 0.0f, 1.0f);
-                m_pUIRenderer->sliderFloat("ambient [Y]", &ambient.y, 0.0f, 1.0f);
-                m_pUIRenderer->sliderFloat("ambient [Z]", &ambient.z, 0.0f, 1.0f);
+                m_pUIRenderer->colorPicker("ambient", &ambient[0]);
                 m_scene->setAmbient(ambient);
+
                 m_pUIRenderer->text("camera count : %d", m_cameraNodeList.size());
                 m_pUIRenderer->text("light count : %d", m_lightNodeList.size());
 
@@ -790,27 +790,49 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
                         if(type == LightType::POINT)
                         {
                             m_pUIRenderer->text("type : point");
-                            m_pUIRenderer->text("position : [%.2f, %.2f, %.2f]", light->getPosition().x,
+                            m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", light->getPosition().x,
                                                 light->getPosition().y, light->getPosition().z);
                         }
                         else if(type == LightType::DIRECTIONAL)
                         {
                             m_pUIRenderer->text("type : directional");
-                            m_pUIRenderer->text("direction : [%.2f, %.2f, %.2f]", light->getDirection().x,
+                            m_pUIRenderer->text("direction : [ %.2f, %.2f, %.2f ]", light->getDirection().x,
                                                 light->getDirection().y, light->getDirection().z);
                         }
-                        m_pUIRenderer->text("color : [%.2f, %.2f, %.2f]", light->getColor().x, light->getColor().y,
+                        m_pUIRenderer->text("color : [ %.2f, %.2f, %.2f ]", light->getColor().x, light->getColor().y,
                                             light->getColor().z);
                     }
                 }
             }
 
-            if(m_pUIRenderer->header("Camera"))
+            if(m_pUIRenderer->header("Main Camera"))
             {
-                auto camera = m_scene->getMainCamera();
-                m_pUIRenderer->text("position : [%.2f, %.2f, %.2f]", camera->getPosition().x, camera->getPosition().y,
+                auto  camera        = m_scene->getMainCamera<PerspectiveCamera>();
+
+                bool  flipY         = camera->getFlipY();
+                float fov           = camera->getFov();
+                float zfar          = camera->getZFar();
+                float znear         = camera->getZNear();
+                float rotationSpeed = camera->getRotationSpeed();
+                float moveSpeed     = camera->getMovementSpeed();
+
+                m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->getPosition().x, camera->getPosition().y,
                                     camera->getPosition().z);
-                m_pUIRenderer->text("fov : %f", camera->getFov());
+                m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->getRotation().x, camera->getRotation().y,
+                                    camera->getRotation().z);
+                m_pUIRenderer->checkBox("flipY", &flipY);
+                m_pUIRenderer->sliderFloat("fov", &fov, 30.0f, 120.0f);
+                m_pUIRenderer->sliderFloat("znear", &znear, 0.01f, 60.0f);
+                m_pUIRenderer->sliderFloat("zfar", &zfar, 60.0f, 200.0f);
+                m_pUIRenderer->sliderFloat("rotation speed", &rotationSpeed, 0.1f, 1.0f);
+                m_pUIRenderer->sliderFloat("move speed", &moveSpeed, 0.1f, 5.0f);
+
+                camera->setFov(fov);
+                camera->setFlipY(flipY);
+                camera->setZNear(znear);
+                camera->setZFar(zfar);
+                camera->setMovementSpeed(moveSpeed);
+                camera->setRotationSpeed(rotationSpeed);
             }
         });
     });

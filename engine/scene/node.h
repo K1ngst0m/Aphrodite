@@ -12,21 +12,15 @@ class Node : public Object
 {
 public:
     Node(TNode* parent, IdType id, ObjectType type, glm::mat4 transform = glm::mat4(1.0f), std::string name = "") :
-        Object{ id, type },
-        parent{ parent },
-        matrix{ transform },
-        name{ std::move(name) }
+        Object{id, type},
+        parent{parent},
+        matrix{transform},
+        name{std::move(name)}
     {
         if constexpr(std::is_same<TNode, Node>::value)
         {
-            if(parent->parent)
-            {
-                name = parent->name + "-" + std::to_string(id);
-            }
-            else
-            {
-                name = std::to_string(id);
-            }
+            if(parent->parent) { name = parent->name + "-" + std::to_string(id); }
+            else { name = std::to_string(id); }
         }
     }
 
@@ -75,7 +69,7 @@ protected:
     std::string                         name     = {};
     std::vector<std::shared_ptr<TNode>> children = {};
     TNode*                              parent   = {};
-    glm::mat4                           matrix   = { glm::mat4(1.0f) };
+    glm::mat4                           matrix   = {glm::mat4(1.0f)};
 };
 
 class SceneNode : public Node<SceneNode>
@@ -88,14 +82,8 @@ public:
     template <typename TObject>
     void attachObject(const std::shared_ptr<Object>& object)
     {
-        if constexpr(isObjectTypeValid<TObject>())
-        {
-            m_object = object;
-        }
-        else
-        {
-            assert("Invalid type of the object.");
-        }
+        if constexpr(isObjectTypeValid<TObject>()) { m_object = object; }
+        else { assert("Invalid type of the object."); }
     }
 
     template <typename TObject>
@@ -103,18 +91,22 @@ public:
     {
         if constexpr(isObjectTypeValid<TObject>())
         {
+            if constexpr(std::is_same<TObject, Camera>::value)
+            {
+                auto type = std::static_pointer_cast<Camera>(m_object)->getType();
+                if(type == CameraType::PERSPECTIVE) { return std::static_pointer_cast<PerspectiveCamera>(m_object); }
+                if(type == CameraType::ORTHO) { return std::static_pointer_cast<OrthoCamera>(m_object); }
+            }
             return std::static_pointer_cast<TObject>(m_object);
         }
-        else
-        {
-            assert("Invalid type of the object.");
-        }
+        else { assert("Invalid type of the object."); }
     }
 
     template <typename TObject>
     constexpr static bool isObjectTypeValid()
     {
-        return std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
+        return std::is_same<TObject, PerspectiveCamera>::value || std::is_same<TObject, OrthoCamera>::value ||
+               std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
                std::is_same<TObject, Mesh>::value;
     }
 
