@@ -29,7 +29,7 @@ struct CameraInfo
 {
     glm::mat4 view{1.0f};
     glm::mat4 proj{1.0f};
-    glm::vec3 viewPos{1.0f};
+    glm::vec4 viewPos{1.0f};
 };
 
 struct LightInfo
@@ -139,7 +139,7 @@ void VulkanSceneRenderer::update(float deltaTime)
         CameraInfo  cameraData{
              .view    = camera->m_view,
              .proj    = camera->m_projection,
-             .viewPos = camera->m_position,
+             .viewPos = {camera->m_view[3][0], camera->m_view[3][1], camera->m_view[3][2], 1.0f},
         };
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
@@ -791,32 +791,32 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
 
                 if(m_pUIRenderer->header("Main Camera"))
                 {
-                    auto camType = m_scene->getMainCamera<Camera>()->m_cameraType;
+                    auto camera  = m_scene->getMainCamera();
+                    auto camType = camera->m_cameraType;
+
                     if(camType == CameraType::PERSPECTIVE)
                     {
-                        auto camera = m_scene->getMainCamera<PerspectiveCamera>();
-
-                        m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
-                                            camera->m_position.y, camera->m_position.z);
-                        m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
-                                            camera->m_rotation.y, camera->m_rotation.z);
-                        m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
+                        // m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                        //                     camera->m_position.y, camera->m_position.z);
+                        // m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                        //                     camera->m_rotation.y, camera->m_rotation.z);
+                        // m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
                         m_pUIRenderer->sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
                         m_pUIRenderer->sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
                         m_pUIRenderer->sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
-                        m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        // m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                     else if(camType == CameraType::ORTHO)
                     {
-                        auto camera = m_scene->getMainCamera<OrthoCamera>();
-                        m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
-                                            camera->m_position.y, camera->m_position.z);
-                        m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
-                                            camera->m_rotation.y, camera->m_rotation.z);
-                        m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
-                        m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        auto camera = m_scene->getMainCamera();
+                        // m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                        //                     camera->m_position.y, camera->m_position.z);
+                        // m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                        //                     camera->m_rotation.y, camera->m_rotation.z);
+                        // m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
+                        // m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                 }
 

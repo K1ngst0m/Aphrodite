@@ -153,11 +153,11 @@ void main() {
         vec3 L = vec3(1.0f);
         if (lights[i].lightType == 0)
         {
-            L = normalize(-lights[i].direction.xyz);
+            L = normalize(lights[i].position.xyz - inWorldPos);
         }
         else if (lights[i].lightType == 1)
         {
-            L = normalize(lights[i].position.xyz - inWorldPos);
+            L = normalize(-lights[i].direction.xyz);
         }
         else {
             L = vec3(-1.0f);

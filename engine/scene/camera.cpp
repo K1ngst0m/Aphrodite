@@ -7,17 +7,15 @@ Camera::Camera(CameraType cameraType) :
     m_cameraType(cameraType)
 {
 }
-PerspectiveCamera::PerspectiveCamera() : Camera(CameraType::PERSPECTIVE) {}
-OrthoCamera::OrthoCamera() : Camera(CameraType::ORTHO) {}
 
-void Camera::updateView()
+void CameraController::updateView()
 {
     // rotation
     glm::mat4 rotM = glm::mat4(1.0f);
     {
-        rotM = glm::rotate(rotM, glm::radians(m_rotation.x * (m_flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(m_rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(m_rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        rotM = glm::rotate(rotM, glm::radians(m_direction.x * (m_flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
+        rotM = glm::rotate(rotM, glm::radians(m_direction.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        rotM = glm::rotate(rotM, glm::radians(m_direction.z), glm::vec3(0.0f, 0.0f, 1.0f));
     }
 
     // translation
@@ -28,19 +26,19 @@ void Camera::updateView()
         transM = glm::translate(transM, translation);
     }
 
-    if(m_cameraType == CameraType::PERSPECTIVE) { m_view = rotM * transM; }
-    else if(m_cameraType == CameraType::ORTHO) { m_view = transM * rotM; }
+    if(m_camera->m_cameraType == CameraType::PERSPECTIVE) { m_camera->m_view = rotM * transM; }
+    else if(m_camera->m_cameraType == CameraType::ORTHO) { m_camera->m_view = transM * rotM; }
 };
 
-void Camera::updateMovement(float deltaTime)
+void CameraController::updateMovement(float deltaTime)
 {
-    if(m_cameraType == CameraType::PERSPECTIVE)
+    if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
     {
         if(std::any_of(m_directions.begin(), m_directions.end(), [](const auto& key) -> bool { return key.second; }))
         {
-            glm::vec3 camFront{-cos(glm::radians(m_rotation.x)) * sin(glm::radians(m_rotation.y)),
-                               sin(glm::radians(m_rotation.x)),
-                               cos(glm::radians(m_rotation.x)) * cos(glm::radians(m_rotation.y))};
+            glm::vec3 camFront{-cos(glm::radians(m_direction.x)) * sin(glm::radians(m_direction.y)),
+                               sin(glm::radians(m_direction.x)),
+                               cos(glm::radians(m_direction.x)) * cos(glm::radians(m_direction.y))};
             camFront = glm::normalize(camFront);
 
             float moveSpeed{deltaTime * m_movementSpeed};
@@ -55,14 +53,18 @@ void Camera::updateMovement(float deltaTime)
     }
 };
 
-void PerspectiveCamera::updateProj()
+void CameraController::updateProj()
 {
-    m_projection        = glm::perspective(glm::radians(m_perspective.fov), m_aspect, m_perspective.znear, m_perspective.zfar);
-    if(m_flipY) { m_projection[1][1] *= -1.0f; }
-};
-
-void OrthoCamera::updateProj()
-{
-    m_projection   = glm::ortho(m_ortho.left, m_ortho.right, m_ortho.bottom, m_ortho.top, m_ortho.front, m_ortho.back);
+    if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
+    {
+        m_camera->m_projection = glm::perspective(glm::radians(m_camera->m_perspective.fov), m_camera->m_aspect,
+                                                  m_camera->m_perspective.znear, m_camera->m_perspective.zfar);
+        if(m_flipY) { m_camera->m_projection[1][1] *= -1.0f; }
+    }
+    else if(m_camera->m_cameraType == CameraType::ORTHO)
+    {
+        m_camera->m_projection = glm::ortho(m_camera->m_ortho.left, m_camera->m_ortho.right, m_camera->m_ortho.bottom,
+                                            m_camera->m_ortho.top, m_camera->m_ortho.front, m_camera->m_ortho.back);
+    }
 }
 }  // namespace aph

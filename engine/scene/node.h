@@ -1,6 +1,8 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
+#include <utility>
+
 #include "scene/camera.h"
 #include "scene/light.h"
 #include "scene/mesh.h"
@@ -89,25 +91,14 @@ public:
     template <typename TObject>
     std::shared_ptr<TObject> getObject()
     {
-        if constexpr(isObjectTypeValid<TObject>())
-        {
-            if constexpr(std::is_same<TObject, Camera>::value)
-            {
-                auto type = std::static_pointer_cast<Camera>(m_object)->m_cameraType;
-                if(type == CameraType::PERSPECTIVE) { return std::static_pointer_cast<PerspectiveCamera>(m_object); }
-                if(type == CameraType::ORTHO) { return std::static_pointer_cast<OrthoCamera>(m_object); }
-                assert("unexpective error.");
-            }
-            return std::static_pointer_cast<TObject>(m_object);
-        }
+        if constexpr(isObjectTypeValid<TObject>()) { return std::static_pointer_cast<TObject>(m_object); }
         else { static_assert("Invalid type of the object."); }
     }
 
     template <typename TObject>
     constexpr static bool isObjectTypeValid()
     {
-        return std::is_same<TObject, PerspectiveCamera>::value || std::is_same<TObject, OrthoCamera>::value ||
-               std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
+        return std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
                std::is_same<TObject, Mesh>::value;
     }
 

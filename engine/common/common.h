@@ -201,13 +201,13 @@ constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint3
 {
     return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
-std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
-std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
 template <typename T>
 typename std::underlying_type<T>::type getUnderLyingType(T value)
 {
     return static_cast<typename std::underlying_type<T>::type>(value);
 }
+std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
+std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
 }  // namespace aph::utils
 
 #endif  // VKLCOMMON_H_

@@ -15,6 +15,37 @@ enum class CameraType
     PERSPECTIVE,
 };
 
+struct Camera : public Object
+{
+    Camera(CameraType cameraType);
+    ~Camera() override = default;
+
+    CameraType m_cameraType{CameraType::UNDEFINED};
+
+    float     m_aspect{0.0f};
+    glm::mat4 m_projection{1.0f};
+    glm::mat4 m_view{1.0f};
+
+    union{
+        struct
+        {
+            float left{};
+            float right{};
+            float bottom{};
+            float top{};
+            float front{};
+            float back{};
+        } m_ortho;
+
+        struct
+        {
+            float fov{60.0f};
+            float znear{96.0f};
+            float zfar{0.01f};
+        } m_perspective;
+    };
+};
+
 enum class Direction
 {
     LEFT,
@@ -23,65 +54,37 @@ enum class Direction
     DOWN,
 };
 
-struct Camera : public Object
+class CameraController
 {
-    Camera(CameraType cameraType = CameraType::UNDEFINED);
-    ~Camera() override = default;
+public:
+    static std::shared_ptr<CameraController> Create(const std::shared_ptr<Camera>& camera)
+    {
+        auto instance = std::shared_ptr<CameraController>(new CameraController(camera));
+        return instance;
+    }
 
     void move(Direction direction, bool flag) { m_directions[direction] = flag; }
-    void rotate(glm::vec3 delta) { m_rotation += delta * m_rotationSpeed; }
+    void rotate(glm::vec3 delta) { m_direction += delta * m_rotationSpeed; }
     void translate(glm::vec3 delta) { m_position += delta * m_movementSpeed; }
+    void updateMovement(float deltaTime);
 
-    virtual void updateProj() = 0;
-    virtual void updateView();
-    void         updateMovement(float deltaTime);
+    void updateProj();
+    void updateView();
 
-    CameraType m_cameraType{CameraType::UNDEFINED};
-    glm::mat4  m_projection{1.0f};
-    glm::vec3  m_rotation{1.0f};
-    glm::vec3  m_position{1.0f};
-    glm::mat4  m_view{1.0f};
+public:
+    CameraController(std::shared_ptr<Camera> camera) : m_camera{std::move(camera)} {}
 
-    float m_rotationSpeed{1.0f};
-    float m_movementSpeed{1.0f};
+    std::shared_ptr<Camera> m_camera{};
 
-    bool  m_flipY{false};
-    float m_aspect{0.0f};
+    bool      m_flipY{false};
+    glm::vec3 m_direction{1.0f};
+    glm::vec3 m_position{1.0f};
+    float     m_rotationSpeed{1.0f};
+    float     m_movementSpeed{1.0f};
 
-protected:
     std::unordered_map<Direction, bool> m_directions{
         {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};
 };
 
-struct PerspectiveCamera : public Camera
-{
-    PerspectiveCamera();
-    ~PerspectiveCamera() override = default;
-    void updateProj() override;
-
-    struct
-    {
-        float fov{60.0f};
-        float znear{96.0f};
-        float zfar{0.01f};
-    } m_perspective;
-};
-
-struct OrthoCamera : public Camera
-{
-    OrthoCamera();
-    ~OrthoCamera() override = default;
-    void updateProj() override;
-
-    struct
-    {
-        float left{};
-        float right{};
-        float bottom{};
-        float top{};
-        float front{};
-        float back{};
-    } m_ortho;
-};
 }  // namespace aph
 #endif

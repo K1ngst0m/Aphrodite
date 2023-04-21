@@ -21,6 +21,9 @@ void scene_manager::run()
 
         // update scene object
         m_modelNode->rotate(1.0f * deltaTime, {0.0f, 1.0f, 0.0f});
+        m_camController->updateProj();
+        m_camController->updateView();
+        m_camController->updateMovement(deltaTime);
 
         // update resource data
         m_sceneRenderer->update(deltaTime);
@@ -65,19 +68,18 @@ void scene_manager::setupScene()
 
     // scene camera
     {
-        auto camera        = m_scene->createPerspectiveCamera(m_window->getAspectRatio());
-        camera->m_position = {0.0f, 0.0f, -3.0f};
-        camera->m_flipY    = true;
-        camera->rotate({0.0f, 180.0f, 0.0f});
-        camera->m_perspective.zfar  = {96.0f};
-        camera->m_perspective.znear = {0.1f};
-        camera->m_perspective.fov   = {60.0f};
-        camera->m_movementSpeed     = {2.5f};
-        camera->m_rotationSpeed     = {0.1f};
+        auto camera = m_scene->createPerspectiveCamera(m_window->getAspectRatio(), 60.0f, 0.1f, 60.0f);
+
+        m_camController = aph::CameraController::Create(camera);
+        m_camController->rotate({0.0f, 180.0f, 0.0f});
+        m_camController->m_position      = {0.0f, 0.0f, -3.0f};
+        m_camController->m_flipY         = true;
+        m_camController->m_movementSpeed = {2.5f};
+        m_camController->m_rotationSpeed = {0.1f};
 
         // camera 1 (main)
         m_cameraNode = m_scene->getRootNode()->createChildNode();
-        m_cameraNode->attachObject<aph::PerspectiveCamera>(camera);
+        m_cameraNode->attachObject<aph::Camera>(camera);
         m_scene->setMainCamera(camera);
 
         // // camera 2
@@ -87,7 +89,7 @@ void scene_manager::setupScene()
     // lights
     {
         auto dirLight         = m_scene->createLight();
-        dirLight->m_color     = {1.0f, 0.5f, 0.5f};
+        dirLight->m_color     = {1.0f, 1.0f, 1.0f};
         dirLight->m_direction = {0.2f, 1.0f, 0.3f};
         dirLight->m_type      = {aph::LightType::DIRECTIONAL};
 
@@ -97,7 +99,7 @@ void scene_manager::setupScene()
 
         // #light 2
         auto pointLight        = m_scene->createLight();
-        pointLight->m_color    = {9.0f, 0.5f, 0.5f};
+        pointLight->m_color    = {1.0f, 0.7f, 0.7f};
         pointLight->m_position = {0.0f, 0.0f, 0.0f};
         pointLight->m_type     = {aph::LightType::POINT};
 
@@ -135,7 +137,6 @@ void scene_manager::setupRenderer()
 
     m_sceneRenderer = aph::IRenderer::Create<aph::VulkanSceneRenderer>(m_window, config);
     m_uiRenderer    = std::make_unique<aph::VulkanUIRenderer>(m_sceneRenderer.get());
-    m_uiRenderer->init();
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
@@ -148,10 +149,10 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
         {
         case APH_KEY_ESCAPE: m_window->close(); break;
         case APH_KEY_1: m_window->toggleCurosrVisibility(); break;
-        case APH_KEY_W: camera->move(aph::Direction::UP, true); break;
-        case APH_KEY_A: camera->move(aph::Direction::LEFT, true); break;
-        case APH_KEY_S: camera->move(aph::Direction::DOWN, true); break;
-        case APH_KEY_D: camera->move(aph::Direction::RIGHT, true); break;
+        case APH_KEY_W: m_camController->move(aph::Direction::UP, true); break;
+        case APH_KEY_A: m_camController->move(aph::Direction::LEFT, true); break;
+        case APH_KEY_S: m_camController->move(aph::Direction::DOWN, true); break;
+        case APH_KEY_D: m_camController->move(aph::Direction::RIGHT, true); break;
         }
     }
 
@@ -159,10 +160,10 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
     {
         switch(key)
         {
-        case APH_KEY_W: camera->move(aph::Direction::UP, false); break;
-        case APH_KEY_A: camera->move(aph::Direction::LEFT, false); break;
-        case APH_KEY_S: camera->move(aph::Direction::DOWN, false); break;
-        case APH_KEY_D: camera->move(aph::Direction::RIGHT, false); break;
+        case APH_KEY_W: m_camController->move(aph::Direction::UP, false); break;
+        case APH_KEY_A: m_camController->move(aph::Direction::LEFT, false); break;
+        case APH_KEY_S: m_camController->move(aph::Direction::DOWN, false); break;
+        case APH_KEY_D: m_camController->move(aph::Direction::RIGHT, false); break;
         }
     }
 }
@@ -173,7 +174,7 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
     const float dy = m_window->getCursorYpos() - yposIn;
 
     auto camera = m_cameraNode->getObject<aph::Camera>();
-    camera->rotate({dy, -dx, 0.0f});
+    m_camController->rotate({dy, -dx, 0.0f});
 }
 
 int main(int argc, char** argv)

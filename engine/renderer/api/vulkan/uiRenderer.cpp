@@ -22,6 +22,9 @@ VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer* renderer) :
     // Setup Dear ImGui style
     io.FontGlobalScale = m_scale;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+
+    // TODO
+    init();
 }
 
 VulkanUIRenderer::~VulkanUIRenderer()

@@ -348,25 +348,25 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
 
     return node;
 }
-std::shared_ptr<OrthoCamera> Scene::createOrthoCamera(float aspectRatio)
-{
-    auto camera                = Object::Create<OrthoCamera>();
-    camera->m_aspect           = {aspectRatio};
-    m_cameras[camera->getId()] = camera;
-    return camera;
-}
-std::shared_ptr<PerspectiveCamera> Scene::createPerspectiveCamera(float aspectRatio)
-{
-    auto camera                = Object::Create<PerspectiveCamera>();
-    camera->m_aspect           = {aspectRatio};
-    m_cameras[camera->getId()] = camera;
-    return camera;
-}
+
 void Scene::update(float deltaTime)
 {
     auto camera = getMainCamera();
-    camera->updateProj();
-    camera->updateView();
-    camera->updateMovement(deltaTime);
+}
+
+std::shared_ptr<Camera> Scene::createCamera(float aspectRatio, CameraType type) {
+    auto camera                = Object::Create<Camera>(type);
+    camera->m_aspect           = {aspectRatio};
+    m_cameras[camera->getId()] = camera;
+    return camera;
+}
+
+std::shared_ptr<Camera> Scene::createPerspectiveCamera(float aspectRatio, float fov, float znear, float zfar)
+{
+    auto camera = createCamera(aspectRatio, CameraType::PERSPECTIVE);
+    camera->m_perspective.zfar  = zfar;
+    camera->m_perspective.znear = znear;
+    camera->m_perspective.fov   = fov;
+    return camera;
 }
 }  // namespace aph
