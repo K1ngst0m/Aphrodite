@@ -1,6 +1,5 @@
 #include "scene_manager.h"
-
-const char* modelPath = {};
+#include <argparse/argparse.hpp>
 
 scene_manager::scene_manager() : aph::BaseApp("scene_manager") {}
 
@@ -44,7 +43,7 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = aph::Window::Create(1440, 768);
+    m_window = aph::Window::Create(m_options.windowWidth, m_options.windowHeight);
 
     m_window->setCursorPosCallback([=](double xposIn, double yposIn) { this->mouseHandleDerive(xposIn, yposIn); });
 
@@ -66,7 +65,7 @@ void scene_manager::setupScene()
 
     // scene camera
     {
-        auto camera     = m_scene->createPerspectiveCamera(m_window->getAspectRatio(), 60.0f, 0.1f, 60.0f);
+        auto camera        = m_scene->createPerspectiveCamera(m_window->getAspectRatio(), 60.0f, 0.1f, 60.0f);
         m_cameraController = aph::CameraController::Create(camera);
 
         // camera 1 (main)
@@ -93,7 +92,7 @@ void scene_manager::setupScene()
 
     // load from gltf file
     {
-        if(modelPath) { m_modelNode = m_scene->createMeshesFromFile(modelPath); }
+        if(!m_options.modelPath.empty()) { m_modelNode = m_scene->createMeshesFromFile(m_options.modelPath); }
         else { m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb"); }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
@@ -153,14 +152,15 @@ void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int 
 
 void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
 {
-    if(m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_RIGHT) != aph::input::STATUS_PRESS) {
+    if(m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_RIGHT) != aph::input::STATUS_PRESS)
+    {
         m_window->setCursorVisibility(true);
         return;
     }
 
     m_window->setCursorVisibility(false);
-    const float dx = m_window->getCursorXpos() - xposIn;
-    const float dy = m_window->getCursorYpos() - yposIn;
+    const float dx = m_window->getCursorX() - xposIn;
+    const float dy = m_window->getCursorY() - yposIn;
 
     auto camera = m_cameraNode->getObject<aph::Camera>();
     m_cameraController->rotate({dy, -dx, 0.0f});
@@ -168,9 +168,27 @@ void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
 
 int main(int argc, char** argv)
 {
+    argparse::ArgumentParser program("program_name");
+
+    program.add_argument("--width").help("window width").scan<'u', uint32_t>().default_value(1440U);
+    program.add_argument("--height").help("window height").scan<'u', uint32_t>().default_value(900U);
+    program.add_argument("--model").help("load model from files.").default_value("");
+    try
+    {
+        program.parse_args(argc, argv);
+    }
+    catch(const std::runtime_error& err)
+    {
+        std::cerr << err.what() << std::endl;
+        std::cerr << program;
+        return 1;
+    }
+
     scene_manager app;
 
-    if(argc > 1) { modelPath = argv[1]; }
+    app.m_options.modelPath    = program.get<std::string>("--model");
+    app.m_options.windowWidth  = program.get<uint32_t>("--width");
+    app.m_options.windowHeight = program.get<uint32_t>("--height");
 
     app.init();
     app.run();

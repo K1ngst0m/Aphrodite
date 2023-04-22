@@ -16,17 +16,16 @@ struct WindowData
     uint32_t    height  = {};
     bool        resized = {false};
     WindowData(uint32_t w, uint32_t h) : width{w}, height{h} {}
-    float getAspectRatio() const { return static_cast<float>(width) / height; }
 };
 
 struct CursorData
 {
-    float lastX           = {};
-    float lastY           = {};
+    float xPos            = {};
+    float yPos            = {};
     bool  firstMouse      = {true};
     bool  isCursorDisable = {false};
     bool  isCursorVisible = {false};
-    CursorData(float lastXin, float lastYin) : lastX{lastXin}, lastY{lastYin} {}
+    CursorData(float x, float y) : xPos{x}, yPos{y} {}
 };
 
 using FramebufferSizeFunc = std::function<void(int width, int height)>;
@@ -46,29 +45,23 @@ public:
     std::shared_ptr<CursorData> getMouseData() { return m_cursorData; }
     std::shared_ptr<WindowData> getWindowData() { return m_windowData; }
 
-    bool  getCursorVisibility() { return m_cursorData->isCursorVisible; }
-    void  toggleCurosrVisibility() { setCursorVisibility(!m_cursorData->isCursorVisible); }
-    float getCursorYpos() { return m_cursorData->lastY; }
-    float getCursorXpos() { return m_cursorData->lastX; }
-    float getAspectRatio() { return m_windowData->getAspectRatio(); }
-
-    uint32_t getWidth() { return m_windowData->width; }
-    uint32_t getHeight() { return m_windowData->height; }
-
+    float    getAspectRatio() const { return static_cast<float>(m_windowData->width) / m_windowData->height; }
+    uint32_t getCursorX() const { return m_cursorData->xPos; }
+    uint32_t getCursorY() const { return m_cursorData->yPos; }
+    uint32_t getWidth() const { return m_windowData->width; }
+    uint32_t getHeight() const { return m_windowData->height; }
     uint32_t getKeyInputStatus(KeyId keycode);
     uint32_t getMouseButtonStatus(KeyId mouseButton);
-
-    void setHeight(uint32_t h) { m_windowData->height = h; }
-    void setWidth(uint32_t w) { m_windowData->width = w; }
 
     GLFWwindow* getHandle() { return m_windowData->window; }
 
 public:
+    void toggleCursorVisibility();
+    void setCursorVisibility(bool flag);
     void setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc);
     void setCursorPosCallback(const CursorPosFunc& cbFunc);
     void setKeyCallback(const KeyFunc& cbFunc);
     void setMouseButtonCallback(const MouseButtonFunc& cbFunc);
-    void setCursorVisibility(bool flag);
     void close();
     bool shouldClose();
     void pollEvents();

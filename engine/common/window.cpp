@@ -36,8 +36,8 @@ void Window::setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc)
     m_framebufferResizeCB = cbFunc;
     glfwSetFramebufferSizeCallback(getHandle(), [](GLFWwindow* window, int width, int height) {
         auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        ptr->setWidth(width);
-        ptr->setHeight(height);
+        ptr->m_windowData->width = {static_cast<uint32_t>(width)};
+        ptr->m_windowData->height = {static_cast<uint32_t>(height)};
         ptr->m_framebufferResizeCB(width, height);
     });
 }
@@ -54,15 +54,15 @@ void Window::setCursorPosCallback(const CursorPosFunc& cbFunc)
 
         if(ptr->m_cursorData->firstMouse)
         {
-            ptr->m_cursorData->lastX      = xpos;
-            ptr->m_cursorData->lastY      = ypos;
+            ptr->m_cursorData->xPos       = xpos;
+            ptr->m_cursorData->yPos       = ypos;
             ptr->m_cursorData->firstMouse = false;
         }
 
         ptr->m_cursorPosCB(xposIn, yposIn);
 
-        ptr->m_cursorData->lastX = xpos;
-        ptr->m_cursorData->lastY = ypos;
+        ptr->m_cursorData->xPos = xpos;
+        ptr->m_cursorData->yPos = ypos;
     });
 }
 
@@ -86,7 +86,7 @@ void Window::setMouseButtonCallback(const MouseButtonFunc& cbFunc)
 
 void Window::setCursorVisibility(bool flag)
 {
-    glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
     m_cursorData->isCursorVisible = flag;
 }
 
@@ -106,4 +106,5 @@ uint32_t Window::getMouseButtonStatus(KeyId mouseButton)
     // std::cout << "input status: " << mouseButton << " " << status << std::endl;
     return status;
 }
+void Window::toggleCursorVisibility() { m_cursorData->isCursorVisible = !m_cursorData->isCursorVisible; }
 }  // namespace aph

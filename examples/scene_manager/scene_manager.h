@@ -13,6 +13,13 @@ public:
     void run() override;
     void finish() override;
 
+    struct
+    {
+        std::string modelPath    = {};
+        uint32_t    windowWidth  = {};
+        uint32_t    windowHeight = {};
+    } m_options;
+
 private:
     void setupWindow();
     void setupRenderer();
@@ -34,6 +41,7 @@ private:
 
     std::shared_ptr<aph::Scene>  m_scene  = {};
     std::shared_ptr<aph::Window> m_window = {};
+
 };
 
 #endif  // SCENE_MANAGER_H_

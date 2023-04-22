@@ -27,7 +27,7 @@ private:
     void _initSet();
     void _initForward();
     void _initSkybox();
-    void _initPostFx();
+    void _initPipeline();
     void _loadScene();
     void _initGpuResources();
 
