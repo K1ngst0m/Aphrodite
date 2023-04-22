@@ -26,7 +26,8 @@ struct Camera : public Object
     glm::mat4 m_projection{1.0f};
     glm::mat4 m_view{1.0f};
 
-    union{
+    union
+    {
         struct
         {
             float left{};
@@ -64,23 +65,23 @@ public:
     }
 
     void move(Direction direction, bool flag) { m_directions[direction] = flag; }
+
     void rotate(glm::vec3 delta) { m_direction += delta * m_rotationSpeed; }
     void translate(glm::vec3 delta) { m_position += delta * m_movementSpeed; }
-    void updateMovement(float deltaTime);
+    void update(float deltaTime);
 
+private:
+    CameraController(std::shared_ptr<Camera> camera) : m_camera{std::move(camera)} {}
     void updateProj();
     void updateView();
 
-public:
-    CameraController(std::shared_ptr<Camera> camera) : m_camera{std::move(camera)} {}
-
     std::shared_ptr<Camera> m_camera{};
 
-    bool      m_flipY{false};
-    glm::vec3 m_direction{1.0f};
-    glm::vec3 m_position{1.0f};
-    float     m_rotationSpeed{1.0f};
-    float     m_movementSpeed{1.0f};
+    bool      m_flipY{true};
+    glm::vec3 m_direction{0.0f, 180.0f, 0.0f};
+    glm::vec3 m_position{0.0f, 0.0f, -3.0f};
+    float     m_rotationSpeed{0.1f};
+    float     m_movementSpeed{2.5f};
 
     std::unordered_map<Direction, bool> m_directions{
         {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};

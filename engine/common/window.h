@@ -55,8 +55,8 @@ public:
     uint32_t getWidth() { return m_windowData->width; }
     uint32_t getHeight() { return m_windowData->height; }
 
-    uint32_t getKeyInputStatus(KeyCodeType keycode);
-    uint32_t getMouseButtonStatus(KeyCodeType mouseButton);
+    uint32_t getKeyInputStatus(KeyId keycode);
+    uint32_t getMouseButtonStatus(KeyId mouseButton);
 
     void setHeight(uint32_t h) { m_windowData->height = h; }
     void setWidth(uint32_t w) { m_windowData->width = w; }

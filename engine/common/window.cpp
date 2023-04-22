@@ -93,16 +93,16 @@ void Window::setCursorVisibility(bool flag)
 void     Window::close() { glfwSetWindowShouldClose(getHandle(), true); }
 bool     Window::shouldClose() { return glfwWindowShouldClose(getHandle()); }
 void     Window::pollEvents() { glfwPollEvents(); }
-uint32_t Window::getKeyInputStatus(KeyCodeType keycode)
+uint32_t Window::getKeyInputStatus(KeyId keycode)
 {
     auto status = glfwGetKey(getHandle(), keycode);
     // std::cout << "input status: " << keycode << " " << status << std::endl;
     return status;
 }
 
-uint32_t Window::getMouseButtonStatus(KeyCodeType mouseButton)
+uint32_t Window::getMouseButtonStatus(KeyId mouseButton)
 {
-    auto status = glfwGetMouseButton(getHandle(), GLFW_MOUSE_BUTTON_LEFT);
+    auto status = glfwGetMouseButton(getHandle(), mouseButton);
     // std::cout << "input status: " << mouseButton << " " << status << std::endl;
     return status;
 }

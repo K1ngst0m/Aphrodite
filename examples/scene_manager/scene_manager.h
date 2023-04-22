@@ -27,7 +27,7 @@ private:
     std::shared_ptr<aph::SceneNode>        m_pointLightNode       = {};
     std::shared_ptr<aph::SceneNode>        m_directionalLightNode = {};
     std::shared_ptr<aph::SceneNode>        m_cameraNode           = {};
-    std::shared_ptr<aph::CameraController> m_camController        = {};
+    std::shared_ptr<aph::CameraController> m_cameraController     = {};
 
     std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
     std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};

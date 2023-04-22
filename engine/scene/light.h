@@ -20,9 +20,12 @@ struct Light : public Object
 
     float     m_intensity{1.0f};
     glm::vec3 m_color{1.0f};
-    glm::vec3 m_position{1.2f, 1.0f, 2.0f};
-    glm::vec3 m_direction{-0.2f, -1.0f, -0.3f};
     LightType m_type{LightType::DIRECTIONAL};
+    union
+    {
+        glm::vec3 m_position;
+        glm::vec3 m_direction;
+    };
 };
 }  // namespace aph
 

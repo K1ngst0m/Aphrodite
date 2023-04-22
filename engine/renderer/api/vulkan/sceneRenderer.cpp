@@ -139,7 +139,7 @@ void VulkanSceneRenderer::update(float deltaTime)
         CameraInfo  cameraData{
              .view    = camera->m_view,
              .proj    = camera->m_projection,
-             .viewPos = {camera->m_view[3][0], camera->m_view[3][1], camera->m_view[3][2], 1.0f},
+             .viewPos = {camera->m_view[3]},
         };
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
@@ -321,6 +321,8 @@ void VulkanSceneRenderer::_initForward()
         };
         ci.multisampling =
             aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_config.sampleCount));
+        ci.multisampling.sampleShadingEnable = VK_TRUE;
+        ci.multisampling.minSampleShading = 0.2f;
         ci.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         ci.constants.push_back(aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                                             sizeof(ObjectInfo), 0));
@@ -760,9 +762,9 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
     io.DeltaTime   = 1.0f;
 
     io.AddMousePosEvent((float)m_window->getCursorXpos(), (float)m_window->getCursorYpos());
-    io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_LEFT) == APH_PRESS);
-    io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_RIGHT) == APH_PRESS);
-    io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(APH_MOUSE_BUTTON_MIDDLE) == APH_PRESS);
+    io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_LEFT) == aph::input::STATUS_PRESS);
+    io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_RIGHT) == aph::input::STATUS_PRESS);
+    io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_MIDDLE) == aph::input::STATUS_PRESS);
 
     ImGui::NewFrame();
 

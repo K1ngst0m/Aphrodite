@@ -289,9 +289,25 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     }
 }
 
-std::shared_ptr<Light> Scene::createLight()
+std::shared_ptr<Light> Scene::createDirLight(glm::vec3 dir, glm::vec3 color, float intensity)
+{
+    auto light = createLight(LightType::DIRECTIONAL, color, intensity);
+    light->m_direction = dir;
+    return light;
+}
+std::shared_ptr<Light> Scene::createPointLight(glm::vec3 pos, glm::vec3 color, float intensity)
+{
+    auto light = createLight(LightType::DIRECTIONAL, color, intensity);
+    light->m_position = pos;
+    return light;
+}
+
+std::shared_ptr<Light> Scene::createLight(LightType type, glm::vec3 color, float intensity)
 {
     auto light               = Object::Create<Light>();
+    light->m_type = type;
+    light->m_color = color;
+    light->m_intensity = intensity;
     m_lights[light->getId()] = light;
     return light;
 }

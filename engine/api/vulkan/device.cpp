@@ -46,6 +46,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
 
+    supportedFeatures.sampleRateShading = VK_TRUE;
     supportedFeatures.samplerAnisotropy = VK_TRUE;
 
     // TODO manage features

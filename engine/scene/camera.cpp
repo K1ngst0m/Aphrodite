@@ -13,9 +13,9 @@ void CameraController::updateView()
     // rotation
     glm::mat4 rotM = glm::mat4(1.0f);
     {
-        rotM = glm::rotate(rotM, glm::radians(m_direction.x * (m_flipY ? -1.0f : 1.0f)), glm::vec3(1.0f, 0.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(m_direction.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        rotM = glm::rotate(rotM, glm::radians(m_direction.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        rotM = glm::rotate(rotM, glm::radians(m_direction.x * (m_flipY ? -1.0f : 1.0f)), {1.0f, 0.0f, 0.0f});
+        rotM = glm::rotate(rotM, glm::radians(m_direction.y), {0.0f, 1.0f, 0.0f});
+        rotM = glm::rotate(rotM, glm::radians(m_direction.z), {0.0f, 0.0f, 1.0f});
     }
 
     // translation
@@ -30,8 +30,10 @@ void CameraController::updateView()
     else if(m_camera->m_cameraType == CameraType::ORTHO) { m_camera->m_view = transM * rotM; }
 };
 
-void CameraController::updateMovement(float deltaTime)
+void CameraController::update(float deltaTime)
 {
+    updateView();
+    updateProj();
     if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
     {
         if(std::any_of(m_directions.begin(), m_directions.end(), [](const auto& key) -> bool { return key.second; }))
@@ -46,9 +48,9 @@ void CameraController::updateMovement(float deltaTime)
             if(m_directions[Direction::UP]) m_position += camFront * moveSpeed;
             if(m_directions[Direction::DOWN]) m_position -= camFront * moveSpeed;
             if(m_directions[Direction::LEFT])
-                m_position -= glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                m_position -= glm::normalize(glm::cross(camFront, {0.0f, 1.0f, 0.0f})) * moveSpeed;
             if(m_directions[Direction::RIGHT])
-                m_position += glm::normalize(glm::cross(camFront, glm::vec3(0.0f, 1.0f, 0.0f))) * moveSpeed;
+                m_position += glm::normalize(glm::cross(camFront, {0.0f, 1.0f, 0.0f})) * moveSpeed;
         }
     }
 };
