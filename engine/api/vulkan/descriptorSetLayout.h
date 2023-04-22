@@ -6,6 +6,8 @@
 
 namespace aph
 {
+class VulkanImageView;
+class VulkanBuffer;
 class VulkanDevice;
 class VulkanDescriptorPool;
 
@@ -17,6 +19,13 @@ struct ResourcesBinding
     const VkSampler*         pImmutableSampler{};
 };
 
+struct ResourceWrite
+{
+    VkDescriptorImageInfo*  imageInfos{};
+    VkDescriptorBufferInfo* bufferInfos{};
+    size_t count {1};
+};
+
 class VulkanDescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 {
 public:
@@ -25,13 +34,13 @@ public:
 
     ~VulkanDescriptorSetLayout();
 
-    VulkanDevice*                 getDevice() { return m_device; }
+    VulkanDevice*                 getDevice() { return m_pDevice; }
     std::vector<ResourcesBinding> getBindings() { return m_bindings; }
-    VkDescriptorSet               allocateSet();
+    VkDescriptorSet               allocateSet(const std::vector<ResourceWrite>& writes = {});
     VkResult                      freeSet(VkDescriptorSet set);
 
 private:
-    VulkanDevice*                 m_device   = {};
+    VulkanDevice*                 m_pDevice   = {};
     std::vector<ResourcesBinding> m_bindings = {};
     VulkanDescriptorPool*         m_pool     = {};
 };

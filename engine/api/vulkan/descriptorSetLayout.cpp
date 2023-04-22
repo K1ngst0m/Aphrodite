@@ -1,4 +1,5 @@
 #include "descriptorSetLayout.h"
+#include "device.h"
 #include "descriptorPool.h"
 
 namespace aph
@@ -7,14 +8,58 @@ namespace aph
 VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice*                        device,
                                                      const std::vector<ResourcesBinding>& bindings,
                                                      VkDescriptorSetLayout                handle) :
-    m_device(device)
+    m_pDevice(device)
 {
     m_bindings  = bindings;
     m_pool      = new VulkanDescriptorPool(this);
     getHandle() = handle;
 }
 
-VkDescriptorSet VulkanDescriptorSetLayout::allocateSet() { return m_pool->allocateSet(); }
+VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<ResourceWrite>& writes)
+{
+    auto set = m_pool->allocateSet();
+    if(writes.empty()) { return set; }
+
+    std::vector<VkWriteDescriptorSet> vkWrites;
+    for(uint32_t idx = 0; idx < writes.size(); idx++)
+    {
+        const auto& write   = writes[idx];
+        const auto& binding = m_bindings[idx];
+
+        VkWriteDescriptorSet vkWrite{
+            .sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet         = set,
+            .dstBinding     = idx,
+            .descriptorType = utils::VkCast(binding.resType),
+        };
+
+        switch(binding.resType)
+        {
+        case ResourceType::SAMPLER:
+        case ResourceType::SAMPLED_IMAGE:
+        case ResourceType::COMBINE_SAMPLER_IMAGE:
+        case ResourceType::STORAGE_IMAGE:
+        {
+            vkWrite.pImageInfo      = write.imageInfos;
+            vkWrite.descriptorCount = static_cast<uint32_t>(write.count);
+        }
+        break;
+        case ResourceType::UNIFORM_BUFFER:
+        case ResourceType::STORAGE_BUFFER:
+        {
+            vkWrite.pBufferInfo     = write.bufferInfos;
+            vkWrite.descriptorCount = static_cast<uint32_t>(write.count);
+        }
+        break;
+        default: break;
+        }
+
+        vkWrites.push_back(vkWrite);
+    }
+    vkUpdateDescriptorSets(m_pDevice->getHandle(), vkWrites.size(), vkWrites.data(), 0, nullptr);
+
+    return set;
+}
 
 VkResult VulkanDescriptorSetLayout::freeSet(VkDescriptorSet set) { return m_pool->freeSet(set); }
 

@@ -163,8 +163,14 @@ void VulkanSceneRenderer::update(float deltaTime)
 void VulkanSceneRenderer::_initSet()
 {
     m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
-    m_sceneSet   = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
 
+    VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_pCubeMapView->getHandle(),
+                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     std::vector<VkDescriptorImageInfo> textureInfos{};
     for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
     {
@@ -175,29 +181,17 @@ void VulkanSceneRenderer::_initSet()
         textureInfos.push_back(info);
     }
 
-    VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
-
-    VkDescriptorImageInfo skyBoxInfo{
-        nullptr,
-        m_pCubeMapView->getHandle(),
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    std::vector<ResourceWrite> writes{
+        {{}, &sceneBufferInfo},
+        {{}, &transformBufferInfo},
+        {{}, &cameraBufferInfo},
+        {{}, &lightBufferInfo},
+        {textureInfos.data(), {}, textureInfos.size()},
+        {{}, &materialBufferInfo},
+        {&skyBoxImageInfo, {}},
     };
 
-    std::vector<VkWriteDescriptorSet> writes{
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
-                                      textureInfos.size()),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo, 1),
-        aph::init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxInfo, 1),
-    };
-    vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+    m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
 }
 
 void VulkanSceneRenderer::_loadScene()
@@ -310,8 +304,8 @@ void VulkanSceneRenderer::_initSetLayout()
         {
             // Create sampler
             VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-            samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            samplerInfo.maxAnisotropy = 1.0f;
+            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            samplerInfo.maxAnisotropy       = 1.0f;
             if(m_pDevice->getFeatures().samplerAnisotropy)
             {
                 samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
