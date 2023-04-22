@@ -157,9 +157,8 @@ VkFormat VulkanDevice::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo,
-                                       VulkanImageView**          ppImageView,
-                                       VulkanImage*               pImage)
+VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, VulkanImageView** ppImageView,
+                                       VulkanImage* pImage)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -207,10 +206,8 @@ VkResult VulkanDevice::executeSingleCommands(QueueTypeFlags                     
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo,
-                                    VulkanBuffer**          ppBuffer,
-                                    const void*             data,
-                                    bool                    persistmentMap)
+VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data,
+                                    bool persistmentMap)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -419,9 +416,8 @@ void VulkanDevice::destroyCommandPool(VulkanCommandPool* pPool)
     pPool = nullptr;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t              commandBufferCount,
-                                              VulkanCommandBuffer** ppCommandBuffers,
-                                              VulkanQueue*          pQueue)
+VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
+                                              VulkanQueue* pQueue)
 {
     auto* queue = pQueue;
     auto* pool  = getCommandPoolWithQueue(queue);
@@ -446,9 +442,8 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 
-VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo,
-                                              VkRenderPass                      renderPass,
-                                              VulkanPipeline**                  ppPipeline)
+VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+                                              VulkanPipeline** ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
@@ -508,7 +503,8 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(aph::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
+        shaderStages.push_back(
+            aph::init::pipelineShaderStageCreateInfo(aph::utils::VkCast(stage), sModule->getHandle()));
     }
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages    = shaderStages.data();
@@ -530,12 +526,31 @@ void VulkanDevice::destroyPipeline(VulkanPipeline* pipeline)
     pipeline = nullptr;
 }
 
-VkResult VulkanDevice::createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
-                                                 VulkanDescriptorSetLayout**            ppDescriptorSetLayout)
+VkResult VulkanDevice::createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
+                                                 VulkanDescriptorSetLayout**          ppDescriptorSetLayout,
+                                                 bool                                 enablePushDescriptor)
 {
+    std::vector<VkDescriptorSetLayoutBinding> vkBindings;
+    uint32_t                                  bindingIdx = 0;
+    for(const auto& binding : bindings)
+    {
+        auto vkBinding = aph::init::descriptorSetLayoutBinding(
+            utils::VkCast(binding.resType), utils::VkCast(binding.stages), bindingIdx, binding.count);
+        vkBinding.pImmutableSamplers = binding.pImmutableSampler;
+        vkBindings.push_back(vkBinding);
+        bindingIdx++;
+    }
+    VkDescriptorSetLayoutCreateInfo createInfo{
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = static_cast<uint32_t>(vkBindings.size()),
+        .pBindings    = vkBindings.data(),
+    };
+
+    if(enablePushDescriptor) { createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR; }
+
     VkDescriptorSetLayout setLayout;
     VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
-    *ppDescriptorSetLayout = new VulkanDescriptorSetLayout(this, createInfo, setLayout);
+    *ppDescriptorSetLayout = new VulkanDescriptorSetLayout(this, bindings, setLayout);
     return VK_SUCCESS;
 }
 
@@ -561,7 +576,8 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& cr
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(aph::init::pipelineShaderStageCreateInfo(stage, sModule->getHandle()));
+        shaderStages.push_back(
+            aph::init::pipelineShaderStageCreateInfo(aph::utils::VkCast(stage), sModule->getHandle()));
     }
 
     VkComputePipelineCreateInfo ci = aph::init::computePipelineCreateInfo(pipelineLayout);
@@ -577,9 +593,8 @@ VkResult VulkanDevice::waitForFence(const std::vector<VkFence>& fences, bool wai
     return vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 
-VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInfo,
-                                               VulkanBuffer**          ppBuffer,
-                                               const void*             data)
+VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer,
+                                               const void* data)
 {
     // using staging buffer
     aph::VulkanBuffer* stagingBuffer{};
@@ -607,8 +622,7 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
     return VK_SUCCESS;
 };
 
-VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo&      createInfo,
-                                              VulkanImage**               ppImage,
+VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
                                               const std::vector<uint8_t>& data)
 {
     bool           genMipmap = createInfo.mipLevels > 1;
@@ -749,9 +763,8 @@ VkResult VulkanDevice::bindMemory(VulkanImage* pImage, VkDeviceSize offset)
 
 void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer) { vkUnmapMemory(getHandle(), pBuffer->getMemory()); }
 
-VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images,
-                                     VulkanImage**                                    ppImage,
-                                     VulkanImageView**                                ppImageView)
+VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage** ppImage,
+                                     VulkanImageView** ppImageView)
 {
     uint32_t                     cubeMapWidth{}, cubeMapHeight{};
     VkFormat                     imageFormat = VK_FORMAT_R8G8B8A8_UNORM;

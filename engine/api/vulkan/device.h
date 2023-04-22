@@ -61,8 +61,8 @@ public:
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
                                     VulkanPipeline** ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, VulkanPipeline** ppPipeline);
-    VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
-                                       VulkanDescriptorSetLayout**            ppDescriptorSetLayout);
+    VkResult createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
+                                       VulkanDescriptorSetLayout**          ppDescriptorSetLayout, bool enablePushDescriptor = false);
 
 public:
     void destroyBuffer(VulkanBuffer* pBuffer);

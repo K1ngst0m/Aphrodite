@@ -34,7 +34,7 @@ public:
 
     static void Destroy(VulkanInstance* pInstance);
 
-    ThreadPool*           GetThreadPool() { return m_threadPool; }
+    ThreadPool*           getThreadPool() { return m_threadPool; }
     VulkanPhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx]; }
 
 private:

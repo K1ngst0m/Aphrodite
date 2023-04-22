@@ -22,7 +22,7 @@ private:
     std::vector<char> m_code       = {};
 };
 
-using ShaderMapList = std::unordered_map<VkShaderStageFlagBits, VulkanShaderModule*>;
+using ShaderMapList = std::unordered_map<ShaderStage, VulkanShaderModule*>;
 
 }  // namespace aph
 

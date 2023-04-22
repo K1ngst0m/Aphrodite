@@ -1,6 +1,7 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
+#include "api/gpuResource.h"
 #define VK_NO_PROTOTYPES
 #include <volk.h>
 #include "vkInit.h"
@@ -34,7 +35,14 @@ std::vector<char>  loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags getImageAspectFlags(VkFormat format);
 VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
 
+}  // namespace aph::utils
 
+// convert
+namespace aph::utils
+{
+VkShaderStageFlagBits VkCast(ShaderStage stage);
+VkDescriptorType      VkCast(ResourceType type);
+VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 }  // namespace aph::utils
 
 #endif  // VKLUTILS_H_

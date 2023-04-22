@@ -60,66 +60,75 @@ enum SampleCountFlagBits
 };
 using SampleCountFlags = uint32_t;
 
-enum ShaderStageFlagBits
+enum class ShaderStage
 {
-    SHADER_STAGE_VS_BIT             = 0x00000001,
-    SHADER_STAGE_TCS_BIT            = 0x00000002,
-    SHADER_STAGE_TES_BIT            = 0x00000004,
-    SHADER_STAGE_GS_BIT             = 0x00000008,
-    SHADER_STAGE_FS_BIT             = 0x00000010,
-    SHADER_STAGE_CS_BIT             = 0x00000020,
-    SHADER_STAGE_ALL_GRAPHICS       = 0x0000001F,
-    SHADER_STAGE_ALL                = 0x7FFFFFFF,
-    SHADER_STAGE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
+    VS  = 0,
+    TCS = 1,
+    TES = 2,
+    GS  = 3,
+    FS  = 4,
+    CS  = 5,
+    TS  = 6,
+    MS  = 7,
 };
-using ShaderStageFlags = uint32_t;
 
 enum class ImageTiling
 {
-    OPTIMAL               = 0,
-    LINEAR                = 1,
+    OPTIMAL = 0,
+    LINEAR  = 1,
 };
 
 enum class ImageViewType
 {
-    _1D                      = 0,
-    _2D                      = 1,
-    _3D                      = 2,
-    _CUBE                    = 3,
-    _1D_ARRAY                = 4,
-    _2D_ARRAY                = 5,
-    _CUBE_ARRAY              = 6,
+    _1D         = 0,
+    _2D         = 1,
+    _3D         = 2,
+    _CUBE       = 3,
+    _1D_ARRAY   = 4,
+    _2D_ARRAY   = 5,
+    _CUBE_ARRAY = 6,
 };
 
 enum class ImageViewDimension
 {
-    _1D                           = 0,
-    _2D                           = 1,
-    _3D                           = 2,
-    _CUBE                         = 3,
-    _1D_ARRAY                     = 4,
-    _2D_ARRAY                     = 5,
-    _CUBE_ARRAY                   = 6,
+    _1D         = 0,
+    _2D         = 1,
+    _3D         = 2,
+    _CUBE       = 3,
+    _1D_ARRAY   = 4,
+    _2D_ARRAY   = 5,
+    _CUBE_ARRAY = 6,
 };
 
 enum class ImageType
 {
-    _1D                 = 0,
-    _2D                 = 1,
-    _3D                 = 2,
+    _1D = 0,
+    _2D = 1,
+    _3D = 2,
 };
 
 enum class ImageLayout
 {
-    UNDEFINED                                  = 0,
-    GENERAL                                    = 1,
-    COLOR_ATTACHMENT_OPTIMAL                   = 2,
-    DEPTH_STENCIL_ATTACHMENT_OPTIMAL           = 3,
-    DEPTH_STENCIL_READ_ONLY_OPTIMAL            = 4,
-    SHADER_READ_ONLY_OPTIMAL                   = 5,
-    TRANSFER_SRC_OPTIMAL                       = 6,
-    TRANSFER_DST_OPTIMAL                       = 7,
-    PREINITIALIZED                             = 8,
+    UNDEFINED                        = 0,
+    GENERAL                          = 1,
+    COLOR_ATTACHMENT_OPTIMAL         = 2,
+    DEPTH_STENCIL_ATTACHMENT_OPTIMAL = 3,
+    DEPTH_STENCIL_READ_ONLY_OPTIMAL  = 4,
+    SHADER_READ_ONLY_OPTIMAL         = 5,
+    TRANSFER_SRC_OPTIMAL             = 6,
+    TRANSFER_DST_OPTIMAL             = 7,
+    PREINITIALIZED                   = 8,
+};
+
+enum class ResourceType
+{
+    UNDEFINED = 0,
+    SAMPLER = 1,
+    SAMPLED_IMAGE = 2,
+    COMBINE_SAMPLER_IMAGE = 3,
+    STORAGE_IMAGE = 4,
+    UNIFORM_BUFFER = 5,
+    STORAGE_BUFFER = 6,
 };
 
 enum class ComponentSwizzle
@@ -135,25 +144,25 @@ enum class ComponentSwizzle
 
 struct ComponentMapping
 {
-    ComponentSwizzle r = { ComponentSwizzle::IDENTITY };
-    ComponentSwizzle g = { ComponentSwizzle::IDENTITY };
-    ComponentSwizzle b = { ComponentSwizzle::IDENTITY };
-    ComponentSwizzle a = { ComponentSwizzle::IDENTITY };
+    ComponentSwizzle r = {ComponentSwizzle::IDENTITY};
+    ComponentSwizzle g = {ComponentSwizzle::IDENTITY};
+    ComponentSwizzle b = {ComponentSwizzle::IDENTITY};
+    ComponentSwizzle a = {ComponentSwizzle::IDENTITY};
 };
 
 struct ImageSubresourceRange
 {
-    uint32_t baseMipLevel   = { 0 };
-    uint32_t levelCount     = { 1 };
-    uint32_t baseArrayLayer = { 0 };
-    uint32_t layerCount     = { 1 };
+    uint32_t baseMipLevel   = {0};
+    uint32_t levelCount     = {1};
+    uint32_t baseArrayLayer = {0};
+    uint32_t layerCount     = {1};
 };
 
 struct Extent3D
 {
-    uint32_t width  = { 0 };
-    uint32_t height = { 0 };
-    uint32_t depth  = { 0 };
+    uint32_t width  = {0};
+    uint32_t height = {0};
+    uint32_t depth  = {0};
 };
 
 struct DummyCreateInfo

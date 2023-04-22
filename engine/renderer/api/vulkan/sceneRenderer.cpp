@@ -175,25 +175,16 @@ void VulkanSceneRenderer::_initSet()
         textureInfos.push_back(info);
     }
 
-    VkDescriptorBufferInfo sceneBufferInfo{
-        .buffer = m_buffers[BUFFER_SCENE_INFO]->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-
-    VkDescriptorBufferInfo materialBufferInfo{
-        .buffer = m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-
-    VkDescriptorBufferInfo cameraBufferInfo{
-        .buffer = m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-
-    VkDescriptorBufferInfo lightBufferInfo{
-        .buffer = m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
-
-    VkDescriptorBufferInfo transformBufferInfo{
-        .buffer = m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
+    VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
 
     VkDescriptorImageInfo skyBoxInfo{
-        .sampler     = nullptr,
-        .imageView   = m_pCubeMapView->getHandle(),
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        nullptr,
+        m_pCubeMapView->getHandle(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
 
     std::vector<VkWriteDescriptorSet> writes{
@@ -302,23 +293,16 @@ void VulkanSceneRenderer::_initSetLayout()
 {
     // scene
     {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                                  VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 3),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 4,
-                                                  m_images[IMAGE_SCENE_TEXTURES].size()),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT, 5),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT, 6),
+        std::vector<ResourcesBinding> bindings{
+            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
+            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
+            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
+            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}, m_images[IMAGE_SCENE_TEXTURES].size()},
+            {ResourceType::UNIFORM_BUFFER, {ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
         };
-
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SCENE]);
+        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SCENE]);
     }
 
     // sampler
@@ -326,16 +310,6 @@ void VulkanSceneRenderer::_initSetLayout()
         {
             // Create sampler
             VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-            samplerInfo.magFilter           = VK_FILTER_LINEAR;
-            samplerInfo.minFilter           = VK_FILTER_LINEAR;
-            samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            samplerInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            samplerInfo.addressModeV        = samplerInfo.addressModeU;
-            samplerInfo.addressModeW        = samplerInfo.addressModeU;
-            samplerInfo.mipLodBias          = 0.0f;
-            samplerInfo.compareOp           = VK_COMPARE_OP_NEVER;
-            samplerInfo.minLod              = 0.0f;
-            // samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             samplerInfo.maxAnisotropy = 1.0f;
             if(m_pDevice->getFeatures().samplerAnisotropy)
@@ -351,26 +325,21 @@ void VulkanSceneRenderer::_initSetLayout()
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
         }
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0, 1,
-                                                  &m_samplers[SAMP_TEXTURE]),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1, 1,
-                                                  &m_samplers[SAMP_CUBEMAP]),
-        };
 
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_SAMP]);
+        std::vector<ResourcesBinding> bindings{
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_TEXTURE]},
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_CUBEMAP]},
+        };
+        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
 
     // off screen texture
     {
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 0),
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT, 1)};
-
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(bindings);
-        createInfo.flags                           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_setLayouts[SET_LAYOUT_POSTFX]);
+        std::vector<ResourcesBinding> bindings{
+            {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
+            {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
+        };
+        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_POSTFX], true);
     }
 }
 
@@ -810,8 +779,8 @@ void VulkanSceneRenderer::_initPipeline()
         ci.constants.push_back(aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                                                             sizeof(ObjectInfo), 0));
         ci.shaderMapList = {
-            {VK_SHADER_STAGE_VERTEX_BIT, getShaders(shaderDir / "pbr.vert.spv")},
-            {VK_SHADER_STAGE_FRAGMENT_BIT, getShaders(shaderDir / "pbr.frag.spv")},
+            {ShaderStage::VS, getShaders(shaderDir / "pbr.vert.spv")},
+            {ShaderStage::FS, getShaders(shaderDir / "pbr.frag.spv")},
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
@@ -833,8 +802,8 @@ void VulkanSceneRenderer::_initPipeline()
         ci.depthStencil  = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         ci.setLayouts    = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         ci.shaderMapList = {
-            {VK_SHADER_STAGE_VERTEX_BIT, getShaders(shaderDir / "skybox.vert.spv")},
-            {VK_SHADER_STAGE_FRAGMENT_BIT, getShaders(shaderDir / "skybox.frag.spv")},
+            {ShaderStage::VS, getShaders(shaderDir / "skybox.vert.spv")},
+            {ShaderStage::FS, getShaders(shaderDir / "skybox.frag.spv")},
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
@@ -846,7 +815,7 @@ void VulkanSceneRenderer::_initPipeline()
         ComputePipelineCreateInfo ci{};
         ci.setLayouts    = {m_setLayouts[SET_LAYOUT_POSTFX]};
         ci.shaderMapList = {
-            {VK_SHADER_STAGE_COMPUTE_BIT, getShaders(shaderDir / "postFX.comp.spv")},
+            {ShaderStage::CS, getShaders(shaderDir / "postFX.comp.spv")},
         };
         VK_CHECK_RESULT(m_pDevice->createComputePipeline(ci, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }

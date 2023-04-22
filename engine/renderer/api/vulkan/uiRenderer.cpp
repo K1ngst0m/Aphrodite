@@ -29,10 +29,7 @@ VulkanUIRenderer::VulkanUIRenderer(VulkanRenderer* renderer) :
 
 VulkanUIRenderer::~VulkanUIRenderer()
 {
-    if(ImGui::GetCurrentContext())
-    {
-        ImGui::DestroyContext();
-    }
+    if(ImGui::GetCurrentContext()) { ImGui::DestroyContext(); }
 }
 
 void VulkanUIRenderer::init()
@@ -54,7 +51,7 @@ void VulkanUIRenderer::init()
 
         std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
         ImageCreateInfo      creatInfo{
-                 .extent = { static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1 },
+                 .extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
                  .usage  = IMAGE_USAGE_SAMPLED_BIT,
                  .format = Format::R8G8B8A8_UNORM,
                  .tiling = ImageTiling::OPTIMAL,
@@ -81,19 +78,17 @@ void VulkanUIRenderer::init()
 
     // setup descriptor
     {
-        std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings = {
-            aph::init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                                  VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+        std::vector<ResourcesBinding> bindings{
+            {ResourceType::COMBINE_SAMPLER_IMAGE, {ShaderStage::FS}},
         };
-        VkDescriptorSetLayoutCreateInfo createInfo = aph::init::descriptorSetLayoutCreateInfo(setLayoutBindings);
-        m_pDevice->createDescriptorSetLayout(createInfo, &m_pSetLayout);
+        m_pDevice->createDescriptorSetLayout(bindings, &m_pSetLayout);
 
         m_set = m_pSetLayout->allocateSet();
 
         VkDescriptorImageInfo fontDescriptor = aph::init::descriptorImageInfo(
             m_fontSampler, m_pFontImage->getImageView()->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets = { aph::init::writeDescriptorSet(
-            m_set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor) };
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
+            aph::init::writeDescriptorSet(m_set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
         vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()),
                                writeDescriptorSets.data(), 0, nullptr);
     }
@@ -102,7 +97,7 @@ void VulkanUIRenderer::init()
     {
         GraphicsPipelineCreateInfo pipelineCreateInfo{};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-        std::vector<VkFormat>      colorFormats = { m_pRenderer->getSwapChain()->getSurfaceFormat() };
+        std::vector<VkFormat>      colorFormats = {m_pRenderer->getSwapChain()->getSurfaceFormat()};
         pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
              .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
              .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -111,13 +106,12 @@ void VulkanUIRenderer::init()
         };
         pipelineCreateInfo.depthStencil =
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
-        pipelineCreateInfo.setLayouts = { m_pSetLayout };
+        pipelineCreateInfo.setLayouts = {m_pSetLayout};
         pipelineCreateInfo.constants.push_back(
             aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
         pipelineCreateInfo.shaderMapList = {
-            { VK_SHADER_STAGE_VERTEX_BIT, m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv") },
-            { VK_SHADER_STAGE_FRAGMENT_BIT,
-              m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv") },
+            {ShaderStage::VS, m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv")},
+            {ShaderStage::FS, m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv")},
         };
         pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
         pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -134,8 +128,8 @@ void VulkanUIRenderer::init()
                               VK_COLOR_COMPONENT_A_BIT,
         };
         pipelineCreateInfo.colorBlendAttachment = blendAttachmentState;
-        pipelineCreateInfo.multisampling =
-            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_pRenderer->getConfig().sampleCount));
+        pipelineCreateInfo.multisampling        = aph::init::pipelineMultisampleStateCreateInfo(
+            static_cast<VkSampleCountFlagBits>(m_pRenderer->getConfig().sampleCount));
 
         // Vertex bindings an attributes based on ImGui vertex definition
         std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -170,27 +164,21 @@ bool VulkanUIRenderer::update(float deltaTime)
     ImDrawData* imDrawData       = ImGui::GetDrawData();
     bool        updateCmdBuffers = false;
 
-    if(!imDrawData)
-    {
-        return false;
-    };
+    if(!imDrawData) { return false; };
 
     // Note: Alignment is done inside buffer creation
     VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
     VkDeviceSize indexBufferSize  = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
 
     // Update buffers only if vertex or index count has been changed compared to current buffer size
-    if((vertexBufferSize == 0) || (indexBufferSize == 0))
-    {
-        return false;
-    }
+    if((vertexBufferSize == 0) || (indexBufferSize == 0)) { return false; }
 
     // Vertex buffer
     if(m_pVertexBuffer == nullptr || (m_vertexCount != imDrawData->TotalVtxCount))
     {
-        BufferCreateInfo createInfo = { .size     = static_cast<uint32_t>(vertexBufferSize),
-                                        .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                        .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT };
+        BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
+                                       .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                       .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT};
         if(m_pVertexBuffer)
         {
             m_pDevice->waitIdle();
@@ -205,9 +193,9 @@ bool VulkanUIRenderer::update(float deltaTime)
 
     if(m_pIndexBuffer == nullptr || (m_indexCount != imDrawData->TotalVtxCount))
     {
-        BufferCreateInfo createInfo = { .size     = static_cast<uint32_t>(vertexBufferSize),
-                                        .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                        .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT };
+        BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
+                                       .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                       .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT};
         if(m_pIndexBuffer)
         {
             m_pDevice->waitIdle();
@@ -246,10 +234,7 @@ void VulkanUIRenderer::draw(VulkanCommandBuffer* pCommandBuffer)
     int32_t     vertexOffset = 0;
     int32_t     indexOffset  = 0;
 
-    if((!imDrawData) || (imDrawData->CmdListsCount == 0))
-    {
-        return;
-    }
+    if((!imDrawData) || (imDrawData->CmdListsCount == 0)) { return; }
 
     ImGuiIO& io = ImGui::GetIO();
 
@@ -261,7 +246,7 @@ void VulkanUIRenderer::draw(VulkanCommandBuffer* pCommandBuffer)
     pCommandBuffer->pushConstants(m_pPipeline, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock),
                                   &m_pushConstBlock);
 
-    pCommandBuffer->bindVertexBuffers(0, 1, m_pVertexBuffer, { 0 });
+    pCommandBuffer->bindVertexBuffers(0, 1, m_pVertexBuffer, {0});
     pCommandBuffer->bindIndexBuffers(m_pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
     for(int32_t i = 0; i < imDrawData->CmdListsCount; i++)
@@ -312,27 +297,18 @@ void VulkanUIRenderer::text(const char* formatstr, ...)
 bool VulkanUIRenderer::colorPicker(const char* caption, float* color)
 {
     bool res = ImGui::ColorEdit4(caption, color, ImGuiColorEditFlags_NoInputs);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::button(const char* caption)
 {
     bool res = ImGui::Button(caption);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::comboBox(const char* caption, int32_t* itemindex, std::vector<std::string> items)
 {
-    if(items.empty())
-    {
-        return false;
-    }
+    if(items.empty()) { return false; }
     std::vector<const char*> charitems;
     charitems.reserve(items.size());
     for(auto& item : items)
@@ -341,19 +317,13 @@ bool VulkanUIRenderer::comboBox(const char* caption, int32_t* itemindex, std::ve
     }
     uint32_t itemCount = static_cast<uint32_t>(charitems.size());
     bool     res       = ImGui::Combo(caption, itemindex, &charitems[0], itemCount, itemCount);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::sliderInt(const char* caption, int32_t* value, int32_t min, int32_t max)
 {
     bool res = ImGui::SliderInt(caption, value, min, max);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::inputFloat(const char* caption, float* value, float step, uint32_t precision)
@@ -369,10 +339,7 @@ bool VulkanUIRenderer::inputFloat(const char* caption, float* value, float step,
 bool VulkanUIRenderer::sliderFloat(const char* caption, float* value, float min, float max)
 {
     bool res = ImGui::SliderFloat(caption, value, min, max);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::checkBox(const char* caption, int32_t* value)
@@ -380,28 +347,19 @@ bool VulkanUIRenderer::checkBox(const char* caption, int32_t* value)
     bool val = (*value == 1);
     bool res = ImGui::Checkbox(caption, &val);
     *value   = val;
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::checkBox(const char* caption, bool* value)
 {
     bool res = ImGui::Checkbox(caption, value);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::radioButton(const char* caption, bool value)
 {
     bool res = ImGui::RadioButton(caption, value);
-    if(res)
-    {
-        updated = true;
-    };
+    if(res) { updated = true; };
     return res;
 }
 bool VulkanUIRenderer::header(const char* caption)

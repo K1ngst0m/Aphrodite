@@ -9,7 +9,7 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout* layout) : 
 
     for(auto& binding : bindings)
     {
-        m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
+        m_descriptorTypeCounts[utils::VkCast(binding.resType)] += binding.count;
     }
 
     m_poolSizes.resize(m_descriptorTypeCounts.size());
