@@ -73,7 +73,7 @@ void VulkanUIRenderer::init()
         samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_fontSampler));
+        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_fontSampler));
     }
 
     // setup descriptor
@@ -279,7 +279,7 @@ void VulkanUIRenderer::cleanup()
 
     m_pDevice->destroyImage(m_pFontImage);
 
-    vkDestroySampler(m_pDevice->getHandle(), m_fontSampler, nullptr);
+    m_pDevice->destroySampler(m_fontSampler);
     m_pDevice->destroyDescriptorSetLayout(m_pSetLayout);
     m_pDevice->destroyPipeline(m_pPipeline);
 }

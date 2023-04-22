@@ -97,7 +97,7 @@ void VulkanSceneRenderer::cleanupResources()
 
     for(auto* const sampler : m_samplers)
     {
-        vkDestroySampler(m_pDevice->getHandle(), sampler, nullptr);
+        m_pDevice->destroySampler(sampler);
     }
 }
 
@@ -311,13 +311,13 @@ void VulkanSceneRenderer::_initSetLayout()
                 samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
                 samplerInfo.anisotropyEnable = VK_TRUE;
             }
-            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_CUBEMAP]));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
         }
         {
             VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
             samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(vkCreateSampler(m_pDevice->getHandle(), &samplerInfo, nullptr, &m_samplers[SAMP_TEXTURE]));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE]));
         }
 
         std::vector<ResourcesBinding> bindings{
