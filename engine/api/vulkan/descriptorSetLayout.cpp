@@ -30,6 +30,7 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<Resourc
             .sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .dstSet         = set,
             .dstBinding     = idx,
+            .descriptorCount = static_cast<uint32_t>(write.count),
             .descriptorType = utils::VkCast(binding.resType),
         };
 
@@ -41,17 +42,19 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<Resourc
         case ResourceType::STORAGE_IMAGE:
         {
             vkWrite.pImageInfo      = write.imageInfos;
-            vkWrite.descriptorCount = static_cast<uint32_t>(write.count);
         }
         break;
         case ResourceType::UNIFORM_BUFFER:
         case ResourceType::STORAGE_BUFFER:
         {
             vkWrite.pBufferInfo     = write.bufferInfos;
-            vkWrite.descriptorCount = static_cast<uint32_t>(write.count);
         }
         break;
-        default: break;
+        default:
+        {
+            assert("invalid resource type.");
+            return set;
+        }
         }
 
         vkWrites.push_back(vkWrite);

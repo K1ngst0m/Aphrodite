@@ -83,14 +83,13 @@ void VulkanUIRenderer::init()
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_pSetLayout);
 
-        m_set = m_pSetLayout->allocateSet();
+        VkDescriptorImageInfo      fontDescriptor = {m_fontSampler, m_pFontImage->getImageView()->getHandle(),
+                                                     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        std::vector<ResourceWrite> writes{
+            {&fontDescriptor, {}},
+        };
 
-        VkDescriptorImageInfo fontDescriptor = aph::init::descriptorImageInfo(
-            m_fontSampler, m_pFontImage->getImageView()->getHandle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets = {
-            aph::init::writeDescriptorSet(m_set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-        vkUpdateDescriptorSets(m_pDevice->getHandle(), static_cast<uint32_t>(writeDescriptorSets.size()),
-                               writeDescriptorSets.data(), 0, nullptr);
+        m_set = m_pSetLayout->allocateSet(writes);
     }
 
     // setup pipeline
@@ -106,12 +105,12 @@ void VulkanUIRenderer::init()
         };
         pipelineCreateInfo.depthStencil =
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
+
         pipelineCreateInfo.setLayouts = {m_pSetLayout};
-        pipelineCreateInfo.constants.push_back({utils::VkCast(ShaderStage::VS), 0, sizeof(PushConstBlock)});
-        pipelineCreateInfo.shaderMapList = {
-            {ShaderStage::VS, m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv")},
-            {ShaderStage::FS, m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv")},
-        };
+        pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(PushConstBlock)}};
+        pipelineCreateInfo.shaderMapList[ShaderStage::VS] = m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv");
+        pipelineCreateInfo.shaderMapList[ShaderStage::FS] = m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv");
+
         pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
         pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
@@ -132,15 +131,12 @@ void VulkanUIRenderer::init()
 
         // Vertex bindings an attributes based on ImGui vertex definition
         std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-            aph::init::vertexInputBindingDescription(0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX),
+            {0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX},
         };
         std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-            aph::init::vertexInputAttributeDescription(0, 0, VK_FORMAT_R32G32_SFLOAT,
-                                                       offsetof(ImDrawVert, pos)),  // Location 0: Position
-            aph::init::vertexInputAttributeDescription(0, 1, VK_FORMAT_R32G32_SFLOAT,
-                                                       offsetof(ImDrawVert, uv)),  // Location 1: UV
-            aph::init::vertexInputAttributeDescription(0, 2, VK_FORMAT_R8G8B8A8_UNORM,
-                                                       offsetof(ImDrawVert, col)),  // Location 0: Color
+            {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},   // Location 0: Position
+            {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},    // Location 1: UV
+            {2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},  // Location 0: Color
         };
         VkPipelineVertexInputStateCreateInfo vertexInputInfo = aph::init::pipelineVertexInputStateCreateInfo();
         vertexInputInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindings.size());

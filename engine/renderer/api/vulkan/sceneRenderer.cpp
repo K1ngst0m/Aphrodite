@@ -162,8 +162,6 @@ void VulkanSceneRenderer::update(float deltaTime)
 
 void VulkanSceneRenderer::_initSet()
 {
-    m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
-
     VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
@@ -191,7 +189,8 @@ void VulkanSceneRenderer::_initSet()
         {&skyBoxImageInfo, {}},
     };
 
-    m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
+    m_sceneSet   = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
+    m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
 }
 
 void VulkanSceneRenderer::_loadScene()
@@ -764,16 +763,15 @@ void VulkanSceneRenderer::_initPipeline()
                         .pColorAttachmentFormats = colorFormats.data(),
                         .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
-        ci.multisampling =
-            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_config.sampleCount));
-        ci.multisampling.sampleShadingEnable = VK_TRUE;
-        ci.multisampling.minSampleShading    = 0.2f;
-        ci.setLayouts                        = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        ci.constants.push_back({utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)});
-        ci.shaderMapList = {
-            {ShaderStage::VS, getShaders(shaderDir / "pbr.vert.spv")},
-            {ShaderStage::FS, getShaders(shaderDir / "pbr.frag.spv")},
-        };
+
+        ci.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        ci.multisampling.sampleShadingEnable  = VK_TRUE;
+        ci.multisampling.minSampleShading     = 0.2f;
+
+        ci.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        ci.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
+        ci.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
+        ci.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
     }
@@ -789,14 +787,15 @@ void VulkanSceneRenderer::_initPipeline()
                              .pColorAttachmentFormats = colorFormats.data(),
                              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
-        ci.multisampling =
-            aph::init::pipelineMultisampleStateCreateInfo(static_cast<VkSampleCountFlagBits>(m_config.sampleCount));
-        ci.depthStencil  = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        ci.setLayouts    = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        ci.shaderMapList = {
-            {ShaderStage::VS, getShaders(shaderDir / "skybox.vert.spv")},
-            {ShaderStage::FS, getShaders(shaderDir / "skybox.frag.spv")},
-        };
+
+        ci.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        ci.multisampling.sampleShadingEnable  = VK_TRUE;
+        ci.multisampling.minSampleShading     = 0.2f;
+
+        ci.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        ci.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        ci.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
+        ci.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
     }
@@ -805,10 +804,8 @@ void VulkanSceneRenderer::_initPipeline()
     {
         std::filesystem::path     shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         ComputePipelineCreateInfo ci{};
-        ci.setLayouts    = {m_setLayouts[SET_LAYOUT_POSTFX]};
-        ci.shaderMapList = {
-            {ShaderStage::CS, getShaders(shaderDir / "postFX.comp.spv")},
-        };
+        ci.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
+        ci.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
         VK_CHECK_RESULT(m_pDevice->createComputePipeline(ci, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }
 }

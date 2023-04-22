@@ -52,7 +52,7 @@ public:
                                    const std::function<void(VulkanCommandBuffer* pCmdBuffer)>&& func);
 
 public:
-    VkResult createSampler(const VkSamplerCreateInfo& createInfo, VkSampler * pSampler);
+    VkResult createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler);
     VkResult createBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data = nullptr,
                           bool persistmentMap = false);
     VkResult createImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage);
@@ -63,7 +63,8 @@ public:
                                     VulkanPipeline** ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, VulkanPipeline** ppPipeline);
     VkResult createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                       VulkanDescriptorSetLayout**          ppDescriptorSetLayout, bool enablePushDescriptor = false);
+                                       VulkanDescriptorSetLayout**          ppDescriptorSetLayout,
+                                       bool                                 enablePushDescriptor = false);
 
 public:
     void destroyBuffer(VulkanBuffer* pBuffer);

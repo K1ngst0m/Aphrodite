@@ -3,7 +3,11 @@
 
 namespace aph::utils
 {
-VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages)
+VkSampleCountFlagBits VkCast(SampleCountFlagBits sampleCount)
+{
+    return static_cast<VkSampleCountFlagBits>(sampleCount);
+}
+VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {
     VkShaderStageFlags flags{};
     for(const auto& stage : stages)
@@ -17,13 +21,15 @@ VkDescriptorType VkCast(ResourceType type)
 {
     switch(type)
     {
-    case ResourceType::UNDEFINED:
     case ResourceType::SAMPLER: return VK_DESCRIPTOR_TYPE_SAMPLER;
     case ResourceType::SAMPLED_IMAGE: return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     case ResourceType::COMBINE_SAMPLER_IMAGE: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     case ResourceType::STORAGE_IMAGE: return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     case ResourceType::UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case ResourceType::STORAGE_BUFFER: break; return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    case ResourceType::STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    default:
+        assert("Invalid resource type.");
+        return {};
     }
 }
 

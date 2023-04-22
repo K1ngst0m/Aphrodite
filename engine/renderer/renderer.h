@@ -11,11 +11,11 @@ namespace aph
 {
 struct RenderConfig
 {
-    bool             enableDebug         = { true };
-    bool             enableUI            = { true };
-    bool             initDefaultResource = { true };
-    uint32_t         maxFrames           = { 2 };
-    SampleCountFlags sampleCount         = { SAMPLE_COUNT_1_BIT };
+    bool                enableDebug         = {true};
+    bool                enableUI            = {true};
+    bool                initDefaultResource = {true};
+    uint32_t            maxFrames           = {2};
+    SampleCountFlagBits sampleCount         = {SAMPLE_COUNT_1_BIT};
 };
 
 class VulkanSceneRenderer;
@@ -35,10 +35,7 @@ public:
         {
             renderer = std::make_unique<VulkanSceneRenderer>(window, config);
         }
-        else
-        {
-            assert("current type of the renderer is not supported.");
-        }
+        else { assert("current type of the renderer is not supported."); }
         return renderer;
     }
     IRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
