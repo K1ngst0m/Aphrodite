@@ -577,8 +577,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
                 pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                              VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                              offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
+                                              {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, nodeId),
+                                              sizeof(ObjectInfo::nodeId), &nodeId);
                 if(mesh->m_indexOffset > -1)
                 {
                     VkIndexType indexType = VK_INDEX_TYPE_UINT32;
@@ -594,10 +594,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
                 {
                     if(subset.indexCount > 0)
                     {
-                        pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                                      VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                      offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
-                                                      &subset.materialIndex);
+                        pCommandBuffer->pushConstants(
+                            m_pipelines[PIPELINE_GRAPHICS_FORWARD], {ShaderStage::VS, ShaderStage::FS},
+                            offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
                         if(subset.hasIndices)
                         {
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
@@ -770,8 +769,7 @@ void VulkanSceneRenderer::_initPipeline()
         ci.multisampling.sampleShadingEnable = VK_TRUE;
         ci.multisampling.minSampleShading    = 0.2f;
         ci.setLayouts                        = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        ci.constants.push_back(aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                            sizeof(ObjectInfo), 0));
+        ci.constants.push_back({utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)});
         ci.shaderMapList = {
             {ShaderStage::VS, getShaders(shaderDir / "pbr.vert.spv")},
             {ShaderStage::FS, getShaders(shaderDir / "pbr.frag.spv")},

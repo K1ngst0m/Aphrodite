@@ -52,6 +52,7 @@ public:
                                    const std::function<void(VulkanCommandBuffer* pCmdBuffer)>&& func);
 
 public:
+    VkResult createSampler(const VkSamplerCreateInfo& createInfo, VkSampler * pSampler);
     VkResult createBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data = nullptr,
                           bool persistmentMap = false);
     VkResult createImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage);
@@ -73,6 +74,7 @@ public:
     void destroyCommandPool(VulkanCommandPool* pPool);
     void destroyPipeline(VulkanPipeline* pipeline);
     void destroyDescriptorSetLayout(VulkanDescriptorSetLayout* pLayout);
+    void destroySampler(VkSampler sampler);
 
 public:
     VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);

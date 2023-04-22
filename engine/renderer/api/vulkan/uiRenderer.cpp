@@ -107,8 +107,7 @@ void VulkanUIRenderer::init()
         pipelineCreateInfo.depthStencil =
             aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
         pipelineCreateInfo.setLayouts = {m_pSetLayout};
-        pipelineCreateInfo.constants.push_back(
-            aph::init::pushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, sizeof(PushConstBlock), 0));
+        pipelineCreateInfo.constants.push_back({utils::VkCast(ShaderStage::VS), 0, sizeof(PushConstBlock)});
         pipelineCreateInfo.shaderMapList = {
             {ShaderStage::VS, m_pRenderer->getShaders(shaderDir / "uioverlay.vert.spv")},
             {ShaderStage::FS, m_pRenderer->getShaders(shaderDir / "uioverlay.frag.spv")},
@@ -243,8 +242,7 @@ void VulkanUIRenderer::draw(VulkanCommandBuffer* pCommandBuffer)
 
     m_pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
     m_pushConstBlock.translate = glm::vec2(-1.0f);
-    pCommandBuffer->pushConstants(m_pPipeline, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstBlock),
-                                  &m_pushConstBlock);
+    pCommandBuffer->pushConstants(m_pPipeline, {ShaderStage::VS}, 0, sizeof(PushConstBlock), &m_pushConstBlock);
 
     pCommandBuffer->bindVertexBuffers(0, 1, m_pVertexBuffer, {0});
     pCommandBuffer->bindIndexBuffers(m_pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);

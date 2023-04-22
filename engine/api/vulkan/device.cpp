@@ -858,4 +858,14 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     *ppImage = cubeMapImage;
     return VK_SUCCESS;
 }
+
+VkResult VulkanDevice::createSampler(const VkSamplerCreateInfo& createInfo, VkSampler * pSampler){
+        VK_CHECK_RESULT(vkCreateSampler(getHandle(), &createInfo, nullptr, pSampler));
+        return VK_SUCCESS;
+}
+
+void VulkanDevice::destroySampler(VkSampler sampler)
+{
+    vkDestroySampler(getHandle(), sampler, nullptr);
+}
 }  // namespace aph

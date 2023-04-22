@@ -46,7 +46,7 @@ public:
     void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer* pBuffer,
                            const std::vector<VkDeviceSize>& offsets);
     void bindIndexBuffers(const VulkanBuffer* pBuffer, VkDeviceSize offset, VkIndexType indexType);
-    void pushConstants(VulkanPipeline* pPipeline, VkShaderStageFlags stage, uint32_t offset, uint32_t size,
+    void pushConstants(VulkanPipeline* pPipeline, const std::vector<ShaderStage>& stages, uint32_t offset, uint32_t size,
                        const void* pValues);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                      uint32_t firstInstance);

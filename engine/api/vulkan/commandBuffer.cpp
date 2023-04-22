@@ -4,10 +4,7 @@
 namespace aph
 {
 
-VulkanCommandBuffer::~VulkanCommandBuffer()
-{
-    m_pool->freeCommandBuffers(1, &m_handle);
-}
+VulkanCommandBuffer::~VulkanCommandBuffer() { m_pool->freeCommandBuffers(1, &m_handle); }
 
 VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pool(pool),
@@ -19,10 +16,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool* pool, VkCommandBuffe
 
 VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
-    if(m_state == CommandBufferState::RECORDING)
-    {
-        return VK_NOT_READY;
-    }
+    if(m_state == CommandBufferState::RECORDING) { return VK_NOT_READY; }
 
     // Begin command recording.
     VkCommandBufferBeginInfo beginInfo = {
@@ -30,10 +24,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
         .flags = static_cast<VkCommandBufferUsageFlags>(flags),
     };
     auto result = vkBeginCommandBuffer(m_handle, &beginInfo);
-    if(result != VK_SUCCESS)
-    {
-        return result;
-    }
+    if(result != VK_SUCCESS) { return result; }
 
     // Mark CommandBuffer as recording and reset internal state.
     m_state = CommandBufferState::RECORDING;
@@ -43,10 +34,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
 
 VkResult VulkanCommandBuffer::end()
 {
-    if(m_state != CommandBufferState::RECORDING)
-    {
-        return VK_NOT_READY;
-    }
+    if(m_state != CommandBufferState::RECORDING) { return VK_NOT_READY; }
 
     m_state = CommandBufferState::EXECUTABLE;
 
@@ -55,20 +43,13 @@ VkResult VulkanCommandBuffer::end()
 
 VkResult VulkanCommandBuffer::reset()
 {
-    if(m_handle != VK_NULL_HANDLE)
-        return vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    if(m_handle != VK_NULL_HANDLE) return vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
     m_state = CommandBufferState::INITIAL;
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::setViewport(const VkViewport& viewport)
-{
-    vkCmdSetViewport(m_handle, 0, 1, &viewport);
-}
-void VulkanCommandBuffer::setSissor(const VkRect2D& scissor)
-{
-    vkCmdSetScissor(m_handle, 0, 1, &scissor);
-}
+void VulkanCommandBuffer::setViewport(const VkViewport& viewport) { vkCmdSetViewport(m_handle, 0, 1, &viewport); }
+void VulkanCommandBuffer::setSissor(const VkRect2D& scissor) { vkCmdSetScissor(m_handle, 0, 1, &scissor); }
 void VulkanCommandBuffer::bindPipeline(VulkanPipeline* pPipeline)
 {
     vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
@@ -89,10 +70,10 @@ void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer* pBuffer, VkDevice
 {
     vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void VulkanCommandBuffer::pushConstants(VulkanPipeline* pPipeline, VkShaderStageFlags stage, uint32_t offset,
-                                        uint32_t size, const void* pValues)
+void VulkanCommandBuffer::pushConstants(VulkanPipeline* pPipeline, const std::vector<ShaderStage>& stages,
+                                        uint32_t offset, uint32_t size, const void* pValues)
 {
-    vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), stage, offset, size, pValues);
+    vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), utils::VkCast(stages), offset, size, pValues);
 }
 void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                       uint32_t vertexOffset, uint32_t firstInstance)
@@ -121,10 +102,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     };
 
     const auto& imageCreateInfo = image->getCreateInfo();
-    if(pSubResourceRange)
-    {
-        imageMemoryBarrier.subresourceRange = *pSubResourceRange;
-    }
+    if(pSubResourceRange) { imageMemoryBarrier.subresourceRange = *pSubResourceRange; }
     else
     {
         imageMemoryBarrier.subresourceRange = {
@@ -251,8 +229,8 @@ void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* i
             .baseArrayLayer = 0,
             .layerCount     = 1,
         };
-        region.imageOffset = { 0, 0, 0 };
-        region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
+        region.imageOffset = {0, 0, 0};
+        region.imageExtent = {image->getWidth(), image->getHeight(), 1};
         vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                1, &region);
     }
@@ -266,8 +244,8 @@ void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage
 {
     // Copy region for transfer from framebuffer to cube face
     VkImageCopy copyRegion = {};
-    copyRegion.srcOffset   = { 0, 0, 0 };
-    copyRegion.dstOffset   = { 0, 0, 0 };
+    copyRegion.srcOffset   = {0, 0, 0};
+    copyRegion.dstOffset   = {0, 0, 0};
 
     VkImageSubresourceLayers subresourceLayers{
         .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -314,18 +292,12 @@ void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, VkImageLayout srcImag
     vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions,
                    filter);
 }
-uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const
-{
-    return m_queueFamilyType;
-};
-void VulkanCommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
+uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };
+void     VulkanCommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
     vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
-void VulkanCommandBuffer::endRendering()
-{
-    vkCmdEndRendering(getHandle());
-}
+void VulkanCommandBuffer::endRendering() { vkCmdEndRendering(getHandle()); }
 void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
