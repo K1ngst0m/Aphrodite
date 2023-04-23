@@ -58,9 +58,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_pDevice));
 
         // get 3 type queue
-        m_queue.graphics = m_pDevice->getQueueByFlags(QUEUE_GRAPHICS);
-        m_queue.compute  = m_pDevice->getQueueByFlags(QUEUE_COMPUTE);
-        m_queue.transfer = m_pDevice->getQueueByFlags(QUEUE_TRANSFER);
+        m_queue.graphics = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
+        m_queue.compute  = m_pDevice->getQueueByFlags(QueueType::COMPUTE);
+        m_queue.transfer = m_pDevice->getQueueByFlags(QueueType::TRANSFER);
         if(!m_queue.compute) { m_queue.compute = m_queue.graphics; }
         if(!m_queue.transfer) { m_queue.transfer = m_queue.compute; }
 
@@ -91,7 +91,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         m_presentSemaphore.resize(m_config.maxFrames);
 
         {
-            m_pSyncPrimitivesPool = new VulkanSyncPrimitivesPool(m_pDevice);
+            m_pSyncPrimitivesPool = std::make_unique<VulkanSyncPrimitivesPool>(m_pDevice);
         }
 
         // command buffer
@@ -163,19 +163,20 @@ void VulkanRenderer::endFrame()
 
 void VulkanRenderer::cleanup()
 {
+    // TODO
+    m_pSyncPrimitivesPool.reset(nullptr);
+
     for(auto& [key, shaderModule] : shaderModuleCaches)
     {
         vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
         delete shaderModule;
     }
 
-    if(m_pSyncPrimitivesPool) { delete m_pSyncPrimitivesPool; }
-
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
 
     m_pDevice->destroySwapchain(m_pSwapChain);
-    VulkanDevice::Destroy(m_pDevice);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+    VulkanDevice::Destroy(m_pDevice);
     VulkanInstance::Destroy(m_pInstance);
 }
 

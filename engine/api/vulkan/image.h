@@ -37,7 +37,7 @@ public:
 
     VkDeviceMemory getMemory() { return m_memory; }
 
-    VulkanImageView* getImageView(Format imageFormat = Format::UNDEFINED);
+    VulkanImageView* getView(Format imageFormat = Format::UNDEFINED);
 
     Extent3D getExtent() const { return m_createInfo.extent; }
     uint32_t getWidth() const { return m_createInfo.extent.width; }

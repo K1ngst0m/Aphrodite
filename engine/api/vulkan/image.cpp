@@ -21,7 +21,7 @@ VulkanImage::~VulkanImage()
     }
 }
 
-VulkanImageView* VulkanImage::getImageView(Format imageFormat)
+VulkanImageView* VulkanImage::getView(Format imageFormat)
 {
     if(imageFormat == Format::UNDEFINED)
     {

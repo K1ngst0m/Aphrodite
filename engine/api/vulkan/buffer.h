@@ -13,7 +13,7 @@ struct BufferCreateInfo
     uint32_t              size      = {0};
     uint32_t              alignment = {0};
     VkBufferUsageFlags    usage     = {0};
-    VkMemoryPropertyFlags property  = {0};
+    BufferDomain          domain    = {BufferDomain::Device};
 };
 
 class VulkanBuffer : public ResourceHandle<VkBuffer, BufferCreateInfo>

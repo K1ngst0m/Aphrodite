@@ -48,8 +48,7 @@ public:
     VkResult createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data);
     VkResult createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
                                     const std::vector<uint8_t>& data);
-    VkResult executeSingleCommands(QueueTypeFlags                                               type,
-                                   const std::function<void(VulkanCommandBuffer* pCmdBuffer)>&& func);
+    VkResult executeSingleCommands(QueueType type, const std::function<void(VulkanCommandBuffer* pCmdBuffer)>&& func);
 
 public:
     VkResult createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler);
@@ -88,7 +87,7 @@ public:
 
 public:
     VulkanCommandPool* getCommandPoolWithQueue(VulkanQueue* queue);
-    VulkanQueue*       getQueueByFlags(QueueTypeFlags flags, uint32_t queueIndex = 0);
+    VulkanQueue*       getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
     VkResult           allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
                                               VulkanQueue* pQueue);
     void               freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers);

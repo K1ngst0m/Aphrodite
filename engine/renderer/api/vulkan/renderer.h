@@ -30,7 +30,7 @@ public:
     VulkanSwapChain*      getSwapChain() { return m_pSwapChain; }
     VulkanShaderModule*   getShaders(const std::filesystem::path& path);
 
-    VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
+    VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool.get(); }
     VulkanCommandBuffer*      getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
     uint32_t                  getCommandBufferCount() const { return m_commandBuffers.size(); }
 
@@ -39,7 +39,7 @@ public:
     VulkanQueue* getTransferQueue() const { return m_queue.transfer; }
 
 protected:
-    VulkanSyncPrimitivesPool* m_pSyncPrimitivesPool = {};
+    std::unique_ptr<VulkanSyncPrimitivesPool> m_pSyncPrimitivesPool = {};
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_8_BIT};

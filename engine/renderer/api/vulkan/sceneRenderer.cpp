@@ -176,7 +176,7 @@ void VulkanSceneRenderer::_initSet()
     for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
     {
         VkDescriptorImageInfo info{
-            .imageView   = texture->getImageView()->getHandle(),
+            .imageView   = texture->getView()->getHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
         textureInfos.push_back(info);
@@ -251,8 +251,8 @@ void VulkanSceneRenderer::_initForward()
             auto&           colorImage   = m_images[IMAGE_FORWARD_COLOR][idx];
             auto&           colorImageMS = m_images[IMAGE_FORWARD_COLOR_MS][idx];
             ImageCreateInfo createInfo{
-                .extent    = {imageExtent.width, imageExtent.height, 1},
-                .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .extent = {imageExtent.width, imageExtent.height, 1},
+                .usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 .property  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 .imageType = ImageType::_2D,
                 .format    = Format::B8G8R8A8_UNORM,
@@ -275,11 +275,9 @@ void VulkanSceneRenderer::_initForward()
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
             createInfo.samples = getSampleCount();
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
-            m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-                cmd->transitionImageLayout(depthImage, ImageLayout::UNDEFINED,
-                                           ImageLayout::DEPTH_STENCIL_ATTACHMENT);
-                cmd->transitionImageLayout(depthImageMS, ImageLayout::UNDEFINED,
-                                           ImageLayout::DEPTH_STENCIL_ATTACHMENT);
+            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* cmd) {
+                cmd->transitionImageLayout(depthImage, ImageLayout::UNDEFINED, ImageLayout::DEPTH_STENCIL_ATTACHMENT);
+                cmd->transitionImageLayout(depthImageMS, ImageLayout::UNDEFINED, ImageLayout::DEPTH_STENCIL_ATTACHMENT);
             });
         }
     }
@@ -344,9 +342,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create scene info buffer
     {
         BufferCreateInfo createInfo{
-            .size     = static_cast<uint32_t>(sizeof(SceneInfo)),
-            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size   = static_cast<uint32_t>(sizeof(SceneInfo)),
+            .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .domain = BufferDomain::Host,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_INFO]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_INFO]);
@@ -354,9 +352,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create camera buffer
     {
         BufferCreateInfo createInfo{
-            .size     = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
-            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size   = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
+            .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .domain = BufferDomain::Host,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_CAMERA]);
@@ -365,9 +363,9 @@ void VulkanSceneRenderer::_initGpuResources()
     // create light buffer
     {
         BufferCreateInfo createInfo{
-            .size     = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
-            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .size   = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
+            .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .domain = BufferDomain::Host,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_LIGHT]);
@@ -375,11 +373,9 @@ void VulkanSceneRenderer::_initGpuResources()
 
     // create transform buffer
     {
-        BufferCreateInfo createInfo{
-            .size     = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
-            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        };
+        BufferCreateInfo createInfo{.size   = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
+                                    .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                    .domain = BufferDomain::Host};
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_TRANSFORM]);
     }
@@ -498,8 +494,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
 
     // forward pass
     {
-        VulkanImageView*          pColorAttachment   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView();
-        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_FORWARD_COLOR_MS][imageIdx]->getImageView();
+        VulkanImageView*          pColorAttachment   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getView();
+        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_FORWARD_COLOR_MS][imageIdx]->getView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pColorAttachmentMS->getHandle(),
@@ -518,8 +514,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
         }
 
-        VulkanImageView*          pDepthAttachment   = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getImageView();
-        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_FORWARD_DEPTH_MS][imageIdx]->getImageView();
+        VulkanImageView*          pDepthAttachment   = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getView();
+        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_FORWARD_DEPTH_MS][imageIdx]->getView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pDepthAttachmentMS->getHandle(),
@@ -618,10 +614,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(),
-                                                  ImageLayout::COLOR_ATTACHMENT, ImageLayout::GENERAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(),
-                                                  ImageLayout::COLOR_ATTACHMENT, ImageLayout::GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::COLOR_ATTACHMENT,
+                                                  ImageLayout::GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), ImageLayout::COLOR_ATTACHMENT,
+                                                  ImageLayout::GENERAL);
         }
     }
 }
@@ -630,7 +626,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
     uint32_t imageIdx = getCurrentImageIndex();
     // post fx
     {
-        VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getImageView();
+        VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::UNDEFINED,
                                               ImageLayout::GENERAL);
@@ -638,7 +634,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 
         {
             VkDescriptorImageInfo inputImageInfo{
-                .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getImageView()->getHandle(),
+                .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             VkDescriptorImageInfo outputImageInfo{.imageView   = pColorAttachment->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
@@ -760,11 +756,11 @@ void VulkanSceneRenderer::_initPipeline()
 
         auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {getSwapChain()->getSurfaceFormat()};
-        createInfo.renderingCreateInfo             = VkPipelineRenderingCreateInfo{
-                        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                        .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                        .pColorAttachmentFormats = colorFormats.data(),
-                        .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        createInfo.renderingCreateInfo     = VkPipelineRenderingCreateInfo{
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+                .pColorAttachmentFormats = colorFormats.data(),
+                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
         createInfo.multisampling.rasterizationSamples = getSampleCount();
@@ -776,7 +772,8 @@ void VulkanSceneRenderer::_initPipeline()
         createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
         createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
     }
 
     // skybox graphics pipeline
@@ -784,19 +781,20 @@ void VulkanSceneRenderer::_initPipeline()
         GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = {getSwapChain()->getSurfaceFormat()};
-        createInfo.renderingCreateInfo                  = {
-                             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                             .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                             .pColorAttachmentFormats = colorFormats.data(),
-                             .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        createInfo.renderingCreateInfo          = {
+                     .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                     .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+                     .pColorAttachmentFormats = colorFormats.data(),
+                     .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
         createInfo.multisampling.rasterizationSamples = getSampleCount();
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 
-        createInfo.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.depthStencil =
+            aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
         createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
 

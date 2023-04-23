@@ -46,8 +46,8 @@ private:
         glm::vec2 translate;
     } m_pushConstBlock;
 
-    bool visible = true;
-    bool updated = false;
+    bool visible = {true};
+    bool updated = {false};
 
     VulkanRenderer* m_pRenderer = {};
     VulkanDevice*   m_pDevice   = {};
@@ -60,13 +60,13 @@ private:
 
     VulkanBuffer* m_pVertexBuffer = {};
     VulkanBuffer* m_pIndexBuffer  = {};
-    uint32_t      m_vertexCount     = {};
-    uint32_t      m_indexCount      = {};
+    uint32_t      m_vertexCount   = {};
+    uint32_t      m_indexCount    = {};
 
     VulkanDescriptorSetLayout* m_pSetLayout = {};
     VkDescriptorSet            m_set        = {};
 
-    float m_scale = { 1.1f };
+    float m_scale = {1.1f};
 };
 }  // namespace aph
 

@@ -2,16 +2,16 @@
 #define PHYSICALDEVICE_H_
 
 #include "instance.h"
+#include "api/gpuResource.h"
 
 namespace aph
 {
-enum QueueTypeBits
+enum class QueueType
 {
-    QUEUE_GRAPHICS = 1 << 0,
-    QUEUE_COMPUTE  = 1 << 1,
-    QUEUE_TRANSFER = 1 << 2,
+    GRAPHICS = 0,
+    COMPUTE  = 1,
+    TRANSFER = 2,
 };
-using QueueTypeFlags = uint32_t;
 
 class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 {
@@ -20,21 +20,21 @@ class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 public:
     VulkanPhysicalDevice(VkPhysicalDevice handle);
 
-    std::vector<uint32_t>      getQueueFamilyIndexByFlags(QueueTypeFlags flags);
+    std::vector<uint32_t>      getQueueFamilyIndexByFlags(QueueType flags);
     bool                       isExtensionSupported(std::string_view extension) const;
-    uint32_t                   findMemoryType(uint32_t typeBits, VkMemoryPropertyFlags properties,
-                                              VkBool32* memTypeFound = nullptr) const;
+    uint32_t                   findMemoryType(BufferDomain domain, uint32_t mask) const;
+    uint32_t                   findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const;
     VkFormat                   findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
                                                    VkFormatFeatureFlags features) const;
     size_t                     padUniformBufferSize(size_t originalSize) const;
     VkPhysicalDeviceProperties getProperties() const { return m_properties; }
 
 private:
-    VkPhysicalDeviceProperties                                m_properties;
-    VkPhysicalDeviceMemoryProperties                          m_memoryProperties;
-    std::vector<std::string>                                  m_supportedExtensions;
-    std::vector<VkQueueFamilyProperties>                      m_queueFamilyProperties;
-    std::unordered_map<QueueTypeFlags, std::vector<uint32_t>> m_queueFamilyMap;
+    VkPhysicalDeviceProperties                           m_properties;
+    VkPhysicalDeviceMemoryProperties                     m_memoryProperties;
+    std::vector<std::string>                             m_supportedExtensions;
+    std::vector<VkQueueFamilyProperties>                 m_queueFamilyProperties;
+    std::unordered_map<QueueType, std::vector<uint32_t>> m_queueFamilyMap;
 };
 }  // namespace aph
 

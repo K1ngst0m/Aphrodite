@@ -1,5 +1,6 @@
 #include "uiRenderer.h"
 
+#include "api/gpuResource.h"
 #include "common/assetManager.h"
 
 #include "api/vulkan/device.h"
@@ -57,7 +58,7 @@ void VulkanUIRenderer::init()
                  .tiling = ImageTiling::OPTIMAL,
         };
         m_pDevice->createDeviceLocalImage(creatInfo, &m_pFontImage, imageData);
-        m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
+        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
             pCmd->transitionImageLayout(m_pFontImage, ImageLayout::UNDEFINED, ImageLayout::SHADER_RO);
         });
     }
@@ -82,7 +83,7 @@ void VulkanUIRenderer::init()
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_pSetLayout);
 
-        VkDescriptorImageInfo      fontDescriptor = {m_fontSampler, m_pFontImage->getImageView()->getHandle(),
+        VkDescriptorImageInfo      fontDescriptor = {m_fontSampler, m_pFontImage->getView()->getHandle(),
                                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         std::vector<ResourceWrite> writes{
             {&fontDescriptor, {}},
@@ -169,9 +170,9 @@ bool VulkanUIRenderer::update(float deltaTime)
     // Vertex buffer
     if(m_pVertexBuffer == nullptr || (m_vertexCount != imDrawData->TotalVtxCount))
     {
-        BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
-                                       .usage    = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                       .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT};
+        BufferCreateInfo createInfo = {.size   = static_cast<uint32_t>(vertexBufferSize),
+                                       .usage  = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                       .domain = BufferDomain::Host};
         if(m_pVertexBuffer)
         {
             m_pDevice->waitIdle();
@@ -186,9 +187,9 @@ bool VulkanUIRenderer::update(float deltaTime)
 
     if(m_pIndexBuffer == nullptr || (m_indexCount != imDrawData->TotalVtxCount))
     {
-        BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
-                                       .usage    = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                       .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT};
+        BufferCreateInfo createInfo = {.size   = static_cast<uint32_t>(vertexBufferSize),
+                                       .usage  = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                       .domain = BufferDomain::Host};
         if(m_pIndexBuffer)
         {
             m_pDevice->waitIdle();
