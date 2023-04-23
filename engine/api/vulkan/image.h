@@ -18,9 +18,9 @@ struct ImageCreateInfo
     uint32_t layerCount  = {1};
     uint32_t arrayLayers = {1};
 
-    VkImageUsageFlags     usage    = {0};
-    VkMemoryPropertyFlags property = {0};
-    VkSampleCountFlags    samples  = {VK_SAMPLE_COUNT_1_BIT};
+    VkImageUsageFlags  usage   = {};
+    ImageDomain        domain  = {ImageDomain::Device};
+    VkSampleCountFlags samples = {VK_SAMPLE_COUNT_1_BIT};
 
     ImageType   imageType     = {ImageType::_2D};
     Format      format        = {Format::UNDEFINED};

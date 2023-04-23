@@ -326,7 +326,7 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             &dedicatedInfo,
             memRequirements.memoryRequirements.size,
-            m_physicalDevice->findMemoryType(createInfo.property, memRequirements.memoryRequirements.memoryTypeBits),
+            m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
         VK_CHECK_RESULT(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
@@ -334,9 +334,10 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
     else
     {
         VkMemoryAllocateInfo allocInfo{
-            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .allocationSize  = memRequirements.memoryRequirements.size,
-            .memoryTypeIndex = m_physicalDevice->findMemoryType(createInfo.property, memRequirements.memoryRequirements.memoryTypeBits),
+            .sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memRequirements.memoryRequirements.size,
+            .memoryTypeIndex =
+                m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
         VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
@@ -643,8 +644,8 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
     VulkanImage* texture{};
     {
         auto imageCI = createInfo;
-        imageCI.property |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCI.domain = ImageDomain::Device;
         if(genMipmap) { imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT; }
 
         VK_CHECK_RESULT(createImage(imageCI, &texture));
@@ -763,9 +764,9 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     std::array<VulkanBuffer*, 6> stagingBuffers;
     for(auto idx = 0; idx < 6; idx++)
     {
-        const auto& image    = images[idx];
-        cubeMapWidth  = image->width;
-        cubeMapHeight = image->height;
+        const auto& image = images[idx];
+        cubeMapWidth      = image->width;
+        cubeMapHeight     = image->height;
 
         {
             BufferCreateInfo createInfo{
@@ -817,7 +818,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
         .mipLevels   = mipLevels,
         .arrayLayers = 6,
         .usage       = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        .property    = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .domain      = ImageDomain::Device,
         .imageType   = ImageType::_2D,
         .format      = Format::R8G8B8A8_UNORM,
     };

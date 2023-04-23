@@ -23,6 +23,7 @@ public:
     std::vector<uint32_t>      getQueueFamilyIndexByFlags(QueueType flags);
     bool                       isExtensionSupported(std::string_view extension) const;
     uint32_t                   findMemoryType(BufferDomain domain, uint32_t mask) const;
+    uint32_t                   findMemoryType(ImageDomain domain, uint32_t mask) const;
     uint32_t                   findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const;
     VkFormat                   findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
                                                    VkFormatFeatureFlags features) const;

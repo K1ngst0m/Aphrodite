@@ -253,7 +253,7 @@ void VulkanSceneRenderer::_initForward()
             ImageCreateInfo createInfo{
                 .extent = {imageExtent.width, imageExtent.height, 1},
                 .usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                .property  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                .domain = ImageDomain::Device,
                 .imageType = ImageType::_2D,
                 .format    = Format::B8G8R8A8_UNORM,
             };
@@ -266,11 +266,11 @@ void VulkanSceneRenderer::_initForward()
             auto&           depthImage   = m_images[IMAGE_FORWARD_DEPTH][idx];
             auto&           depthImageMS = m_images[IMAGE_FORWARD_DEPTH_MS][idx];
             ImageCreateInfo createInfo{
-                .extent   = {imageExtent.width, imageExtent.height, 1},
-                .usage    = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                .format   = static_cast<Format>(m_pDevice->getDepthFormat()),
-                .tiling   = ImageTiling::OPTIMAL,
+                .extent = {imageExtent.width, imageExtent.height, 1},
+                .usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                .domain = ImageDomain::Device,
+                .format = static_cast<Format>(m_pDevice->getDepthFormat()),
+                .tiling = ImageTiling::OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
             createInfo.samples = getSampleCount();

@@ -16,6 +16,14 @@ enum class BufferDomain
     CachedCoherentHostPreferCached,    // Aim for both cached and coherent, but prefer CACHED
 };
 
+enum class ImageDomain
+{
+	Device,
+	Transient,
+	LinearHostCached,
+	LinearHost
+};
+
 enum class ShaderStage
 {
     VS  = 0,

@@ -59,60 +59,97 @@ bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) cons
             m_supportedExtensions.end());
 }
 
-uint32_t VulkanPhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) const {
-	uint32_t prio[3] = {};
+uint32_t VulkanPhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
+{
+    uint32_t desired = 0, fallback = 0;
+    switch(domain)
+    {
+    case ImageDomain::Device:
+        desired  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        fallback = 0;
+        break;
 
-	switch (domain)
-	{
-	case BufferDomain::Device:
-		prio[0] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		break;
+    case ImageDomain::Transient:
+        desired  = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+        fallback = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        break;
 
-	case BufferDomain::LinkedDeviceHost:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[2] = prio[1];
-		break;
+    case ImageDomain::LinearHostCached:
+        desired  = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        fallback = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        break;
 
-	case BufferDomain::LinkedDeviceHostPreferDevice:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-		prio[2] = prio[1];
-		break;
+    case ImageDomain::LinearHost:
+        desired  = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        fallback = 0;
+        break;
+    }
 
-	case BufferDomain::Host:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		prio[2] = prio[1];
-		break;
+    uint32_t index = findMemoryType(desired, mask);
+    if(index != UINT32_MAX) return index;
 
-	case BufferDomain::CachedHost:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		prio[2] = prio[1];
-		break;
+    index = findMemoryType(fallback, mask);
+    if(index != UINT32_MAX) return index;
 
-	case BufferDomain::CachedCoherentHostPreferCached:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-		prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		break;
+    return UINT32_MAX;
+}
 
-	case BufferDomain::CachedCoherentHostPreferCoherent:
-		prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-		prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-		break;
-	}
+uint32_t VulkanPhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) const
+{
+    uint32_t prio[3] = {};
 
-	for (auto &p : prio)
-	{
-		uint32_t index = findMemoryType(p, mask);
-		if (index != UINT32_MAX)
-			return index;
-	}
+    switch(domain)
+    {
+    case BufferDomain::Device: prio[0] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; break;
 
-	return UINT32_MAX;
+    case BufferDomain::LinkedDeviceHost:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[2] = prio[1];
+        break;
+
+    case BufferDomain::LinkedDeviceHostPreferDevice:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        prio[2] = prio[1];
+        break;
+
+    case BufferDomain::Host:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        prio[2] = prio[1];
+        break;
+
+    case BufferDomain::CachedHost:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        prio[2] = prio[1];
+        break;
+
+    case BufferDomain::CachedCoherentHostPreferCached:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        break;
+
+    case BufferDomain::CachedCoherentHostPreferCoherent:
+        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        break;
+    }
+
+    for(auto& p : prio)
+    {
+        uint32_t index = findMemoryType(p, mask);
+        if(index != UINT32_MAX) return index;
+    }
+
+    return UINT32_MAX;
 }
 
 uint32_t VulkanPhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const
