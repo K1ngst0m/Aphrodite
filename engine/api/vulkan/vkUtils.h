@@ -43,7 +43,6 @@ namespace aph::utils
 VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
-VkImageLayout         VkCast(ImageLayout layout);
 }  // namespace aph::utils
 
 #endif  // VKLUTILS_H_

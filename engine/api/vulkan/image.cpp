@@ -21,28 +21,32 @@ VulkanImage::~VulkanImage()
     }
 }
 
-VulkanImageView* VulkanImage::getView(Format imageFormat)
+VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
 {
-    if(imageFormat == Format::UNDEFINED)
-    {
-        imageFormat = m_createInfo.format;
-    }
+    if(imageFormat == VK_FORMAT_UNDEFINED) { imageFormat = m_createInfo.format; }
 
     if(!m_imageViewFormatMap.count(imageFormat))
     {
-        std::unordered_map<ImageType, ImageViewType> imageTypeMap{
-            { ImageType::_1D, ImageViewType::_1D },
-            { ImageType::_2D, ImageViewType::_2D },
-            { ImageType::_2D, ImageViewType::_3D },
+        std::unordered_map<VkImageType, VkImageViewType> imageTypeMap{
+            {VK_IMAGE_TYPE_1D, VK_IMAGE_VIEW_TYPE_1D},
+            {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D},
+            {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D},
         };
         ImageViewCreateInfo createInfo{
             .viewType         = imageTypeMap[m_createInfo.imageType],
             .format           = imageFormat,
-            .subresourceRange = { .levelCount = m_createInfo.mipLevels },
+            .subresourceRange = {.levelCount = m_createInfo.mipLevels},
         };
         m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }
 
     return m_imageViewFormatMap[imageFormat];
+}
+
+VulkanImageView::VulkanImageView(const ImageViewCreateInfo& createInfo, VulkanImage* pImage, VkImageView handle) :
+    m_image(pImage)
+{
+    getHandle()     = handle;
+    getCreateInfo() = createInfo;
 }
 }  // namespace aph

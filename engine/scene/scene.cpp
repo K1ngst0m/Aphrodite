@@ -19,7 +19,6 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model
         newImage->width  = glTFImage.width;
         newImage->height = glTFImage.height;
         newImage->data.resize(glTFImage.width * glTFImage.height * 4);
-        newImage->format = Format::R8G8B8A8_UNORM;
         if(glTFImage.component == 3)
         {
             std::vector<uint8_t> rgba(newImage->data.size());

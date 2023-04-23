@@ -144,9 +144,9 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
             .arrayLayers = 1,
             .usage       = swapChainCreateInfo.imageUsage,
             .samples     = VK_SAMPLE_COUNT_1_BIT,
-            .imageType   = ImageType::_2D,
-            .format      = static_cast<Format>(getSurfaceFormat()),
-            .tiling      = ImageTiling::OPTIMAL,
+            .imageType   = VK_IMAGE_TYPE_2D,
+            .format      = getSurfaceFormat(),
+            .tiling      = VK_IMAGE_TILING_OPTIMAL,
         };
 
         m_images.push_back(std::make_unique<VulkanImage>(m_device, imageCreateInfo, handle));

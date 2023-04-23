@@ -4,7 +4,6 @@
 #include "api/vulkan/vkUtils.h"
 #include "common/assetManager.h"
 
-#include "glm/detail/type_mat.hpp"
 #include "scene/camera.h"
 #include "scene/light.h"
 #include "scene/mesh.h"
@@ -12,8 +11,8 @@
 
 #include "api/vulkan/device.h"
 
+#include <glm/detail/type_mat.hpp>
 #include <glm/gtx/string_cast.hpp>
-#include <utility>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
@@ -254,8 +253,8 @@ void VulkanSceneRenderer::_initForward()
                 .extent = {imageExtent.width, imageExtent.height, 1},
                 .usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 .domain = ImageDomain::Device,
-                .imageType = ImageType::_2D,
-                .format    = Format::B8G8R8A8_UNORM,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format    = VK_FORMAT_B8G8R8A8_UNORM,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
             createInfo.samples = getSampleCount();
@@ -269,15 +268,17 @@ void VulkanSceneRenderer::_initForward()
                 .extent = {imageExtent.width, imageExtent.height, 1},
                 .usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .domain = ImageDomain::Device,
-                .format = static_cast<Format>(m_pDevice->getDepthFormat()),
-                .tiling = ImageTiling::OPTIMAL,
+                .format = m_pDevice->getDepthFormat(),
+                .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
             createInfo.samples = getSampleCount();
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-                cmd->transitionImageLayout(depthImage, ImageLayout::UNDEFINED, ImageLayout::DEPTH_STENCIL_ATTACHMENT);
-                cmd->transitionImageLayout(depthImageMS, ImageLayout::UNDEFINED, ImageLayout::DEPTH_STENCIL_ATTACHMENT);
+                cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depthImageMS, VK_IMAGE_LAYOUT_UNDEFINED,
+                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
             });
         }
     }
@@ -418,8 +419,8 @@ void VulkanSceneRenderer::_initGpuResources()
             .extent    = {image->width, image->height, 1},
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
             .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
-            .format    = Format::R8G8B8A8_UNORM,
-            .tiling    = ImageTiling::OPTIMAL,
+            .format    = VK_FORMAT_R8G8B8A8_UNORM,
+            .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
         VulkanImage* texture{};
@@ -546,10 +547,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         };
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::UNDEFINED,
-                                                  ImageLayout::COLOR_ATTACHMENT);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), ImageLayout::UNDEFINED,
-                                                  ImageLayout::COLOR_ATTACHMENT);
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         }
 
         pCommandBuffer->beginRendering(renderingInfo);
@@ -614,10 +615,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::COLOR_ATTACHMENT,
-                                                  ImageLayout::GENERAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), ImageLayout::COLOR_ATTACHMENT,
-                                                  ImageLayout::GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(),
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(),
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
         }
     }
 }
@@ -628,8 +629,8 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
     {
         VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getView();
 
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::UNDEFINED,
-                                              ImageLayout::GENERAL);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                              VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
@@ -649,8 +650,8 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 
         pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(),
                                  1);
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::GENERAL,
-                                              ImageLayout::PRESENT_SRC);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
+                                              VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }
 

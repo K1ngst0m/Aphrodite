@@ -18,10 +18,10 @@ enum class BufferDomain
 
 enum class ImageDomain
 {
-	Device,
-	Transient,
-	LinearHostCached,
-	LinearHost
+    Device,
+    Transient,
+    LinearHostCached,
+    LinearHost
 };
 
 enum class ShaderStage
@@ -36,54 +36,6 @@ enum class ShaderStage
     MS  = 7,
 };
 
-enum class ImageTiling
-{
-    OPTIMAL = 0,
-    LINEAR  = 1,
-};
-
-enum class ImageViewType
-{
-    _1D         = 0,
-    _2D         = 1,
-    _3D         = 2,
-    _CUBE       = 3,
-    _1D_ARRAY   = 4,
-    _2D_ARRAY   = 5,
-    _CUBE_ARRAY = 6,
-};
-
-enum class ImageViewDimension
-{
-    _1D         = 0,
-    _2D         = 1,
-    _3D         = 2,
-    _CUBE       = 3,
-    _1D_ARRAY   = 4,
-    _2D_ARRAY   = 5,
-    _CUBE_ARRAY = 6,
-};
-
-enum class ImageType
-{
-    _1D = 0,
-    _2D = 1,
-    _3D = 2,
-};
-
-enum class ImageLayout
-{
-    UNDEFINED                = 0,
-    GENERAL                  = 1,
-    COLOR_ATTACHMENT         = 2,
-    DEPTH_STENCIL_ATTACHMENT = 3,
-    DEPTH_STENCIL_RO         = 4,
-    SHADER_RO                = 5,
-    TRANSFER_SRC             = 6,
-    TRANSFER_DST             = 7,
-    PRESENT_SRC              = 8,
-};
-
 enum class ResourceType
 {
     UNDEFINED             = 0,
@@ -93,33 +45,6 @@ enum class ResourceType
     STORAGE_IMAGE         = 4,
     UNIFORM_BUFFER        = 5,
     STORAGE_BUFFER        = 6,
-};
-
-enum class ComponentSwizzle
-{
-    IDENTITY = 0,
-    ZERO     = 1,
-    ONE      = 2,
-    R        = 3,
-    G        = 4,
-    B        = 5,
-    A        = 6,
-};
-
-struct ComponentMapping
-{
-    ComponentSwizzle r = {ComponentSwizzle::IDENTITY};
-    ComponentSwizzle g = {ComponentSwizzle::IDENTITY};
-    ComponentSwizzle b = {ComponentSwizzle::IDENTITY};
-    ComponentSwizzle a = {ComponentSwizzle::IDENTITY};
-};
-
-struct ImageSubresourceRange
-{
-    uint32_t baseMipLevel   = {0};
-    uint32_t levelCount     = {1};
-    uint32_t baseArrayLayer = {0};
-    uint32_t layerCount     = {1};
 };
 
 struct Extent3D

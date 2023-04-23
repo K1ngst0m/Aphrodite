@@ -22,10 +22,10 @@ struct ImageCreateInfo
     ImageDomain        domain  = {ImageDomain::Device};
     VkSampleCountFlags samples = {VK_SAMPLE_COUNT_1_BIT};
 
-    ImageType   imageType     = {ImageType::_2D};
-    Format      format        = {Format::UNDEFINED};
-    ImageTiling tiling        = {ImageTiling::OPTIMAL};
-    ImageLayout initialLayout = {ImageLayout::UNDEFINED};
+    VkImageType   imageType     = {VK_IMAGE_TYPE_2D};
+    VkFormat      format        = {VK_FORMAT_UNDEFINED};
+    VkImageTiling tiling        = {VK_IMAGE_TILING_OPTIMAL};
+    VkImageLayout initialLayout = {VK_IMAGE_LAYOUT_UNDEFINED};
 };
 
 class VulkanImage : public ResourceHandle<VkImage, ImageCreateInfo>
@@ -37,7 +37,7 @@ public:
 
     VkDeviceMemory getMemory() { return m_memory; }
 
-    VulkanImageView* getView(Format imageFormat = Format::UNDEFINED);
+    VulkanImageView* getView(VkFormat imageFormat = VK_FORMAT_UNDEFINED);
 
     Extent3D getExtent() const { return m_createInfo.extent; }
     uint32_t getWidth() const { return m_createInfo.extent.width; }
@@ -47,33 +47,29 @@ public:
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:
-    VulkanDevice*                                m_pDevice            = {};
-    std::unordered_map<Format, VulkanImageView*> m_imageViewFormatMap = {};
-    VkDeviceMemory                               m_memory             = {};
+    VulkanDevice*                                  m_pDevice            = {};
+    std::unordered_map<VkFormat, VulkanImageView*> m_imageViewFormatMap = {};
+    VkDeviceMemory                                 m_memory             = {};
 };
 
 struct ImageViewCreateInfo
 {
-    ImageViewType         viewType         = {ImageViewType::_2D};
-    ImageViewDimension    dimension        = {ImageViewDimension::_2D};
-    Format                format           = {Format::UNDEFINED};
-    ComponentMapping      components       = {};
-    ImageSubresourceRange subresourceRange = {};
+    VkImageViewType         viewType         = {VK_IMAGE_VIEW_TYPE_2D};
+    VkFormat                format           = {VK_FORMAT_UNDEFINED};
+    VkComponentMapping      components       = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
+    VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_NONE, 0, 1, 0, 1};
 };
 
 class VulkanImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
 public:
-    VulkanImageView(const ImageViewCreateInfo& createInfo, VulkanImage* pImage, VkImageView handle) : m_image(pImage)
-    {
-        getHandle()     = handle;
-        getCreateInfo() = createInfo;
-    }
+    VulkanImageView(const ImageViewCreateInfo& createInfo, VulkanImage* pImage, VkImageView handle);
 
-    Format                getFormat() const { return m_createInfo.format; }
-    ComponentMapping      getComponentMapping() const { return m_createInfo.components; }
-    ImageViewType         getImageViewType() const { return m_createInfo.viewType; }
-    ImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
+    VkFormat                getFormat() const { return m_createInfo.format; }
+    VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
+    VkImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
+    VkComponentMapping      getComponentMapping() const { return m_createInfo.components; }
 
     VulkanImage* getImage() { return m_image; }
 

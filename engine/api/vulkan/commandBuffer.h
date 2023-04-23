@@ -54,7 +54,7 @@ public:
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
     void copyBuffer(VulkanBuffer* srcBuffer, VulkanBuffer* dstBuffer, VkDeviceSize size);
-    void transitionImageLayout(VulkanImage* image, ImageLayout oldLayout, ImageLayout newLayout,
+    void transitionImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout,
                                VkImageSubresourceRange* pSubResourceRange = nullptr,
                                VkPipelineStageFlags     srcStageMask      = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                VkPipelineStageFlags     dstStageMask      = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
@@ -62,11 +62,11 @@ public:
                            const std::vector<VkBufferImageCopy>& regions = {});
     void copyImage(VulkanImage* srcImage, VulkanImage* dstImage);
     void imageMemoryBarrier(VulkanImage* image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-                            ImageLayout oldImageLayout, ImageLayout newImageLayout,
+                            VkImageLayout oldImageLayout, VkImageLayout newImageLayout,
                             VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
                             VkImageSubresourceRange subresourceRange);
-    void blitImage(VulkanImage* srcImage, ImageLayout srcImageLayout, VulkanImage* dstImage,
-                   ImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
+    void blitImage(VulkanImage* srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage,
+                   VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
                    VkFilter filter = VK_FILTER_LINEAR);
 
     uint32_t getQueueFamilyIndices() const;

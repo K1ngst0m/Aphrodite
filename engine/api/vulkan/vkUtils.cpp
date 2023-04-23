@@ -4,21 +4,6 @@
 
 namespace aph::utils
 {
-VkImageLayout VkCast(ImageLayout layout)
-{
-    switch(layout)
-    {
-    case ImageLayout::GENERAL: return VK_IMAGE_LAYOUT_GENERAL;
-    case ImageLayout::COLOR_ATTACHMENT: return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    case ImageLayout::DEPTH_STENCIL_ATTACHMENT: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    case ImageLayout::DEPTH_STENCIL_RO: return VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    case ImageLayout::SHADER_RO: return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    case ImageLayout::TRANSFER_SRC: return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-    case ImageLayout::TRANSFER_DST: return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    case ImageLayout::PRESENT_SRC: return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    default: return VK_IMAGE_LAYOUT_UNDEFINED;
-    }
-}
 
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {

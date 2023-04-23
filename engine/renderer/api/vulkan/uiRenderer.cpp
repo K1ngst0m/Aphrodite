@@ -8,6 +8,7 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
+#include <vulkan/vulkan_core.h>
 #include <type_traits>
 
 namespace aph
@@ -54,12 +55,13 @@ void VulkanUIRenderer::init()
         ImageCreateInfo      creatInfo{
                  .extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
                  .usage  = VK_IMAGE_USAGE_SAMPLED_BIT,
-                 .format = Format::R8G8B8A8_UNORM,
-                 .tiling = ImageTiling::OPTIMAL,
+                 .format = VK_FORMAT_R8G8B8A8_UNORM,
+                 .tiling = VK_IMAGE_TILING_OPTIMAL,
         };
         m_pDevice->createDeviceLocalImage(creatInfo, &m_pFontImage, imageData);
         m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
-            pCmd->transitionImageLayout(m_pFontImage, ImageLayout::UNDEFINED, ImageLayout::SHADER_RO);
+            pCmd->transitionImageLayout(m_pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         });
     }
 
