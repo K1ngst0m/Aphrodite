@@ -22,14 +22,11 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
             extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-            if(m_config.enableDebug)
-            {
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            }
+            if(m_config.enableDebug) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
             extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         }
 
-        InstanceCreateInfo instanceCreateInfo{ .enabledExtensions = extensions };
+        InstanceCreateInfo instanceCreateInfo{.enabledExtensions = extensions};
 
         if(m_config.enableDebug)
         {
@@ -64,25 +61,15 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         m_queue.graphics = m_pDevice->getQueueByFlags(QUEUE_GRAPHICS);
         m_queue.compute  = m_pDevice->getQueueByFlags(QUEUE_COMPUTE);
         m_queue.transfer = m_pDevice->getQueueByFlags(QUEUE_TRANSFER);
-        if(!m_queue.compute)
-        {
-            m_queue.compute = m_queue.graphics;
-        }
-        if(!m_queue.transfer)
-        {
-            m_queue.transfer = m_queue.compute;
-        }
+        if(!m_queue.compute) { m_queue.compute = m_queue.graphics; }
+        if(!m_queue.transfer) { m_queue.transfer = m_queue.compute; }
 
         // check sample count support
         {
-            auto limit = createInfo.pPhysicalDevice->getProperties().limits;
+            auto limit  = createInfo.pPhysicalDevice->getProperties().limits;
             auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
-            if (!(counts & m_config.sampleCount))
-            {
-                m_config.sampleCount = SAMPLE_COUNT_1_BIT;
-            }
+            if(!(counts & m_sampleCount)) { m_sampleCount = VK_SAMPLE_COUNT_1_BIT; }
         }
-
     }
 
     // setup swapchain
@@ -124,7 +111,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
         // pipeline cache
         {
-            VkPipelineCacheCreateInfo pipelineCacheCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO };
+            VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
             VK_CHECK_RESULT(
                 vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
         }
@@ -133,7 +120,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
 void VulkanRenderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_pDevice->waitForFence({ m_frameFences[m_frameIdx] }));
+    VK_CHECK_RESULT(m_pDevice->waitForFence({m_frameFences[m_frameIdx]}));
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
     VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
 
@@ -147,14 +134,14 @@ void VulkanRenderer::endFrame()
     auto* queue = getGraphicsQueue();
 
     QueueSubmitInfo submitInfo{
-        .commandBuffers   = { m_commandBuffers[m_frameIdx] },
-        .waitStages       = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-        .waitSemaphores   = { m_renderSemaphore[m_frameIdx] },
-        .signalSemaphores = { m_presentSemaphore[m_frameIdx] },
+        .commandBuffers   = {m_commandBuffers[m_frameIdx]},
+        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .waitSemaphores   = {m_renderSemaphore[m_frameIdx]},
+        .signalSemaphores = {m_presentSemaphore[m_frameIdx]},
     };
 
-    VK_CHECK_RESULT(queue->submit({ submitInfo }, m_frameFences[m_frameIdx]));
-    VK_CHECK_RESULT(m_pSwapChain->presentImage(m_imageIdx, queue, { m_presentSemaphore[m_frameIdx] }));
+    VK_CHECK_RESULT(queue->submit({submitInfo}, m_frameFences[m_frameIdx]));
+    VK_CHECK_RESULT(m_pSwapChain->presentImage(m_imageIdx, queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 
@@ -182,10 +169,7 @@ void VulkanRenderer::cleanup()
         delete shaderModule;
     }
 
-    if(m_pSyncPrimitivesPool)
-    {
-        delete m_pSyncPrimitivesPool;
-    }
+    if(m_pSyncPrimitivesPool) { delete m_pSyncPrimitivesPool; }
 
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
 
@@ -195,24 +179,15 @@ void VulkanRenderer::cleanup()
     VulkanInstance::Destroy(m_pInstance);
 }
 
-void VulkanRenderer::idleDevice()
-{
-    m_pDevice->waitIdle();
-}
+void VulkanRenderer::idleDevice() { m_pDevice->waitIdle(); }
 
 VulkanShaderModule* VulkanRenderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
         std::vector<char> spvCode;
-        if(path.extension() == ".spv")
-        {
-            spvCode = aph::utils::loadSpvFromFile(path);
-        }
-        else
-        {
-            spvCode = aph::utils::loadGlslFromFile(path);
-        }
+        if(path.extension() == ".spv") { spvCode = aph::utils::loadSpvFromFile(path); }
+        else { spvCode = aph::utils::loadGlslFromFile(path); }
         auto shaderModule        = VulkanShaderModule::Create(m_pDevice, spvCode);
         shaderModuleCaches[path] = shaderModule;
     }

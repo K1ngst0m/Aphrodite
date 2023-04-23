@@ -252,13 +252,13 @@ void VulkanSceneRenderer::_initForward()
             auto&           colorImageMS = m_images[IMAGE_FORWARD_COLOR_MS][idx];
             ImageCreateInfo createInfo{
                 .extent    = {imageExtent.width, imageExtent.height, 1},
-                .usage     = IMAGE_USAGE_COLOR_ATTACHMENT_BIT | IMAGE_USAGE_STORAGE_BIT | IMAGE_USAGE_SAMPLED_BIT,
-                .property  = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                .property  = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 .imageType = ImageType::_2D,
                 .format    = Format::B8G8R8A8_UNORM,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
-            createInfo.samples = m_config.sampleCount;
+            createInfo.samples = getSampleCount();
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImageMS));
         }
 
@@ -267,13 +267,13 @@ void VulkanSceneRenderer::_initForward()
             auto&           depthImageMS = m_images[IMAGE_FORWARD_DEPTH_MS][idx];
             ImageCreateInfo createInfo{
                 .extent   = {imageExtent.width, imageExtent.height, 1},
-                .usage    = IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                .usage    = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .property = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                 .format   = static_cast<Format>(m_pDevice->getDepthFormat()),
                 .tiling   = ImageTiling::OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
-            createInfo.samples = m_config.sampleCount;
+            createInfo.samples = getSampleCount();
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
             m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
                 cmd->transitionImageLayout(depthImage, ImageLayout::UNDEFINED,
@@ -345,8 +345,8 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size     = static_cast<uint32_t>(sizeof(SceneInfo)),
-            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_INFO]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_INFO]);
@@ -355,8 +355,8 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size     = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
-            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_CAMERA]);
@@ -366,8 +366,8 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size     = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
-            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_LIGHT]);
@@ -377,8 +377,8 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         BufferCreateInfo createInfo{
             .size     = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
-            .usage    = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_TRANSFORM]);
@@ -389,7 +389,7 @@ void VulkanSceneRenderer::_initGpuResources()
         auto             indicesList = m_scene->getIndices();
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(indicesList.size()),
-            .usage = BUFFER_USAGE_INDEX_BUFFER_BIT,
+            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         };
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_INDEX], indicesList.data());
     }
@@ -399,7 +399,7 @@ void VulkanSceneRenderer::_initGpuResources()
         auto             verticesList = m_scene->getVertices();
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(verticesList.size()),
-            .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         };
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_VERTEX], verticesList.data());
     }
@@ -409,7 +409,7 @@ void VulkanSceneRenderer::_initGpuResources()
         auto             materials = m_scene->getMaterials();
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(materials.size() * sizeof(Material)),
-            .usage = BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
         };
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_MATERIAL], materials.data());
     }
@@ -421,7 +421,7 @@ void VulkanSceneRenderer::_initGpuResources()
         ImageCreateInfo createInfo{
             .extent    = {image->width, image->height, 1},
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
-            .usage     = IMAGE_USAGE_SAMPLED_BIT,
+            .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
             .format    = Format::R8G8B8A8_UNORM,
             .tiling    = ImageTiling::OPTIMAL,
         };
@@ -474,7 +474,7 @@ void VulkanSceneRenderer::_initSkybox()
         {
             BufferCreateInfo createInfo{
                 .size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(float)),
-                .usage = BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
             };
             m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_CUBE_VERTEX], skyboxVertices.data());
         }
@@ -512,7 +512,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             .clearValue         = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
         };
 
-        if(m_config.sampleCount == SAMPLE_COUNT_1_BIT)
+        if(m_sampleCount == VK_SAMPLE_COUNT_1_BIT)
         {
             forwardColorAttachmentInfo.imageView   = pColorAttachment->getHandle();
             forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
@@ -531,7 +531,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .clearValue         = {.depthStencil{1.0f, 0}},
         };
-        if(m_config.sampleCount == SAMPLE_COUNT_1_BIT)
+        if(getSampleCount() == VK_SAMPLE_COUNT_1_BIT)
         {
             forwardDepthAttachmentInfo.imageView   = pDepthAttachment->getHandle();
             forwardDepthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
@@ -767,7 +767,7 @@ void VulkanSceneRenderer::_initPipeline()
                         .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        createInfo.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        createInfo.multisampling.rasterizationSamples = getSampleCount();
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 
@@ -791,7 +791,7 @@ void VulkanSceneRenderer::_initPipeline()
                              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        createInfo.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        createInfo.multisampling.rasterizationSamples = getSampleCount();
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 

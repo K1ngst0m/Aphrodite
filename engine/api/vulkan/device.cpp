@@ -601,8 +601,8 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
     {
         BufferCreateInfo stagingCI{
             .size     = static_cast<uint32_t>(createInfo.size),
-            .usage    = BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         VK_CHECK_RESULT(createBuffer(stagingCI, &stagingBuffer, data));
     }
@@ -610,8 +610,8 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
     VulkanBuffer* buffer = nullptr;
     {
         auto bufferCI = createInfo;
-        bufferCI.property |= MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        bufferCI.usage |= BUFFER_USAGE_TRANSFER_DST_BIT;
+        bufferCI.property |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         VK_CHECK_RESULT(createBuffer(bufferCI, &buffer));
     }
 
@@ -634,8 +634,8 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
     {
         BufferCreateInfo bufferCI{
             .size     = static_cast<uint32_t>(data.size()),
-            .usage    = BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            .usage    = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         };
         createBuffer(bufferCI, &stagingBuffer, data.data());
     }
@@ -643,9 +643,9 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
     VulkanImage* texture{};
     {
         auto imageCI = createInfo;
-        imageCI.property |= MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        imageCI.usage |= IMAGE_USAGE_TRANSFER_DST_BIT;
-        if(genMipmap) { imageCI.usage |= BUFFER_USAGE_TRANSFER_SRC_BIT; }
+        imageCI.property |= VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        if(genMipmap) { imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT; }
 
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
@@ -779,8 +779,8 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
         {
             BufferCreateInfo createInfo{
                 .size     = static_cast<uint32_t>(image->data.size()),
-                .usage    = BUFFER_USAGE_TRANSFER_SRC_BIT,
-                .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT | MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                .usage    = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             };
 
             createBuffer(createInfo, &stagingBuffers[idx]);
@@ -825,8 +825,8 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
         .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
         .mipLevels   = mipLevels,
         .arrayLayers = 6,
-        .usage       = IMAGE_USAGE_SAMPLED_BIT | IMAGE_USAGE_TRANSFER_DST_BIT,
-        .property    = MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        .usage       = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .property    = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         .imageType   = ImageType::_2D,
         .format      = Format::R8G8B8A8_UNORM,
     };

@@ -52,7 +52,7 @@ void VulkanUIRenderer::init()
         std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
         ImageCreateInfo      creatInfo{
                  .extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-                 .usage  = IMAGE_USAGE_SAMPLED_BIT,
+                 .usage  = VK_IMAGE_USAGE_SAMPLED_BIT,
                  .format = Format::R8G8B8A8_UNORM,
                  .tiling = ImageTiling::OPTIMAL,
         };
@@ -125,8 +125,7 @@ void VulkanUIRenderer::init()
                               VK_COLOR_COMPONENT_A_BIT,
         };
         pipelineCreateInfo.colorBlendAttachment = blendAttachmentState;
-        pipelineCreateInfo.multisampling        = aph::init::pipelineMultisampleStateCreateInfo(
-            static_cast<VkSampleCountFlagBits>(m_pRenderer->getConfig().sampleCount));
+        pipelineCreateInfo.multisampling = aph::init::pipelineMultisampleStateCreateInfo(m_pRenderer->getSampleCount());
 
         // Vertex bindings an attributes based on ImGui vertex definition
         std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -171,8 +170,8 @@ bool VulkanUIRenderer::update(float deltaTime)
     if(m_pVertexBuffer == nullptr || (m_vertexCount != imDrawData->TotalVtxCount))
     {
         BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
-                                       .usage    = BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                       .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT};
+                                       .usage    = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                       .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT};
         if(m_pVertexBuffer)
         {
             m_pDevice->waitIdle();
@@ -188,8 +187,8 @@ bool VulkanUIRenderer::update(float deltaTime)
     if(m_pIndexBuffer == nullptr || (m_indexCount != imDrawData->TotalVtxCount))
     {
         BufferCreateInfo createInfo = {.size     = static_cast<uint32_t>(vertexBufferSize),
-                                       .usage    = BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                       .property = MEMORY_PROPERTY_HOST_VISIBLE_BIT};
+                                       .usage    = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                                       .property = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT};
         if(m_pIndexBuffer)
         {
             m_pDevice->waitIdle();

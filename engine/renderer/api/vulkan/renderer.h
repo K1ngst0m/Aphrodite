@@ -20,14 +20,15 @@ public:
     void endFrame();
 
 public:
-    RenderConfig        getConfig() const { return m_config; }
-    VulkanInstance*     getInstance() const { return m_pInstance; }
-    VulkanDevice*       getDevice() const { return m_pDevice; }
-    uint32_t            getCurrentFrameIndex() const { return m_frameIdx; }
-    uint32_t            getCurrentImageIndex() const { return m_imageIdx; }
-    VkPipelineCache     getPipelineCache() { return m_pipelineCache; }
-    VulkanSwapChain*    getSwapChain() { return m_pSwapChain; }
-    VulkanShaderModule* getShaders(const std::filesystem::path& path);
+    VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
+    RenderConfig          getConfig() const { return m_config; }
+    VulkanInstance*       getInstance() const { return m_pInstance; }
+    VulkanDevice*         getDevice() const { return m_pDevice; }
+    uint32_t              getCurrentFrameIndex() const { return m_frameIdx; }
+    uint32_t              getCurrentImageIndex() const { return m_imageIdx; }
+    VkPipelineCache       getPipelineCache() { return m_pipelineCache; }
+    VulkanSwapChain*      getSwapChain() { return m_pSwapChain; }
+    VulkanShaderModule*   getShaders(const std::filesystem::path& path);
 
     VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool; }
     VulkanCommandBuffer*      getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
@@ -41,6 +42,8 @@ protected:
     VulkanSyncPrimitivesPool* m_pSyncPrimitivesPool = {};
 
 protected:
+    VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_8_BIT};
+
     VulkanInstance*  m_pInstance  = {};
     VulkanDevice*    m_pDevice    = {};
     VulkanSwapChain* m_pSwapChain = {};

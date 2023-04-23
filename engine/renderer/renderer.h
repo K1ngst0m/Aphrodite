@@ -15,7 +15,6 @@ struct RenderConfig
     bool                enableUI            = {true};
     bool                initDefaultResource = {true};
     uint32_t            maxFrames           = {2};
-    SampleCountFlagBits sampleCount         = {SAMPLE_COUNT_1_BIT};
 };
 
 class VulkanSceneRenderer;

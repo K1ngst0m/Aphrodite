@@ -11,19 +11,21 @@ class VulkanImageView;
 
 struct ImageCreateInfo
 {
-    Extent3D            extent        = {};
-    uint32_t            flags         = { 0 };
-    uint32_t            alignment     = { 0 };
-    uint32_t            mipLevels     = { 1 };
-    uint32_t            layerCount    = { 1 };
-    uint32_t            arrayLayers   = { 1 };
-    ImageUsageFlags     usage         = { 0 };
-    MemoryPropertyFlags property      = { 0 };
-    SampleCountFlags    samples       = { SAMPLE_COUNT_1_BIT };
-    ImageType           imageType     = { ImageType::_2D };
-    Format              format        = { Format::UNDEFINED };
-    ImageTiling         tiling        = { ImageTiling::OPTIMAL };
-    ImageLayout         initialLayout = { ImageLayout::UNDEFINED };
+    Extent3D extent      = {};
+    uint32_t flags       = {0};
+    uint32_t alignment   = {0};
+    uint32_t mipLevels   = {1};
+    uint32_t layerCount  = {1};
+    uint32_t arrayLayers = {1};
+
+    VkImageUsageFlags     usage    = {0};
+    VkMemoryPropertyFlags property = {0};
+    VkSampleCountFlags    samples  = {VK_SAMPLE_COUNT_1_BIT};
+
+    ImageType   imageType     = {ImageType::_2D};
+    Format      format        = {Format::UNDEFINED};
+    ImageTiling tiling        = {ImageTiling::OPTIMAL};
+    ImageLayout initialLayout = {ImageLayout::UNDEFINED};
 };
 
 class VulkanImage : public ResourceHandle<VkImage, ImageCreateInfo>
@@ -52,9 +54,9 @@ private:
 
 struct ImageViewCreateInfo
 {
-    ImageViewType         viewType         = { ImageViewType::_2D };
-    ImageViewDimension    dimension        = { ImageViewDimension::_2D };
-    Format                format           = { Format::UNDEFINED };
+    ImageViewType         viewType         = {ImageViewType::_2D};
+    ImageViewDimension    dimension        = {ImageViewDimension::_2D};
+    Format                format           = {Format::UNDEFINED};
     ComponentMapping      components       = {};
     ImageSubresourceRange subresourceRange = {};
 };

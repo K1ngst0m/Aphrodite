@@ -20,11 +20,6 @@ VkImageLayout VkCast(ImageLayout layout)
     }
 }
 
-VkSampleCountFlagBits VkCast(SampleCountFlagBits sampleCount)
-{
-    return static_cast<VkSampleCountFlagBits>(sampleCount);
-}
-
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {
     VkShaderStageFlags flags{};
