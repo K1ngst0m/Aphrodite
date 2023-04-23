@@ -44,6 +44,7 @@ VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 VkSampleCountFlagBits VkCast(SampleCountFlagBits sampleCount);
+VkImageLayout         VkCast(ImageLayout layout);
 }  // namespace aph::utils
 
 #endif  // VKLUTILS_H_

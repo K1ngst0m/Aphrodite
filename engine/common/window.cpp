@@ -1,5 +1,6 @@
 #include "window.h"
 #include <GLFW/glfw3.h>
+#include "common/inputCode.h"
 
 namespace aph
 {
@@ -100,10 +101,9 @@ uint32_t Window::getKeyInputStatus(KeyId keycode)
     return status;
 }
 
-uint32_t Window::getMouseButtonStatus(KeyId mouseButton)
+uint32_t Window::getMouseButtonStatus(MouseButtonId mouseButton)
 {
     auto status = glfwGetMouseButton(getHandle(), mouseButton);
-    // std::cout << "input status: " << mouseButton << " " << status << std::endl;
     return status;
 }
 void Window::toggleCursorVisibility() { m_cursorData->isCursorVisible = !m_cursorData->isCursorVisible; }

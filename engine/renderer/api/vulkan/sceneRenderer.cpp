@@ -1,7 +1,10 @@
 #include "sceneRenderer.h"
 
+#include "api/gpuResource.h"
+#include "api/vulkan/vkUtils.h"
 #include "common/assetManager.h"
 
+#include "glm/detail/type_mat.hpp"
 #include "scene/camera.h"
 #include "scene/light.h"
 #include "scene/mesh.h"
@@ -273,10 +276,10 @@ void VulkanSceneRenderer::_initForward()
             createInfo.samples = m_config.sampleCount;
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
             m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-                cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-                cmd->transitionImageLayout(depthImageMS, VK_IMAGE_LAYOUT_UNDEFINED,
-                                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depthImage, ImageLayout::UNDEFINED,
+                                           ImageLayout::DEPTH_STENCIL_ATTACHMENT);
+                cmd->transitionImageLayout(depthImageMS, ImageLayout::UNDEFINED,
+                                           ImageLayout::DEPTH_STENCIL_ATTACHMENT);
             });
         }
     }
@@ -547,10 +550,10 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         };
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::UNDEFINED,
+                                                  ImageLayout::COLOR_ATTACHMENT);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), ImageLayout::UNDEFINED,
+                                                  ImageLayout::COLOR_ATTACHMENT);
         }
 
         pCommandBuffer->beginRendering(renderingInfo);
@@ -616,9 +619,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
 
         {
             pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+                                                  ImageLayout::COLOR_ATTACHMENT, ImageLayout::GENERAL);
             pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+                                                  ImageLayout::COLOR_ATTACHMENT, ImageLayout::GENERAL);
         }
     }
 }
@@ -629,8 +632,8 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
     {
         VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getImageView();
 
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::UNDEFINED,
+                                              ImageLayout::GENERAL);
         pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
@@ -650,8 +653,8 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 
         pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(),
                                  1);
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
-                                              VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), ImageLayout::GENERAL,
+                                              ImageLayout::PRESENT_SRC);
     }
 }
 
@@ -753,60 +756,60 @@ void VulkanSceneRenderer::_initPipeline()
 {
     // forward graphics pipeline
     {
-        GraphicsPipelineCreateInfo ci{};
+        GraphicsPipelineCreateInfo createInfo{};
 
         auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {getSwapChain()->getSurfaceFormat()};
-        ci.renderingCreateInfo             = VkPipelineRenderingCreateInfo{
+        createInfo.renderingCreateInfo             = VkPipelineRenderingCreateInfo{
                         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                         .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
                         .pColorAttachmentFormats = colorFormats.data(),
                         .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        ci.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
-        ci.multisampling.sampleShadingEnable  = VK_TRUE;
-        ci.multisampling.minSampleShading     = 0.2f;
+        createInfo.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        createInfo.multisampling.minSampleShading     = 0.2f;
 
-        ci.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        ci.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        ci.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
-        ci.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
+        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
     }
 
     // skybox graphics pipeline
     {
-        GraphicsPipelineCreateInfo ci{{VertexComponent::POSITION}};
+        GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = {getSwapChain()->getSurfaceFormat()};
-        ci.renderingCreateInfo                  = {
+        createInfo.renderingCreateInfo                  = {
                              .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                              .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
                              .pColorAttachmentFormats = colorFormats.data(),
                              .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        ci.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
-        ci.multisampling.sampleShadingEnable  = VK_TRUE;
-        ci.multisampling.minSampleShading     = 0.2f;
+        createInfo.multisampling.rasterizationSamples = utils::VkCast(m_config.sampleCount);
+        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        createInfo.multisampling.minSampleShading     = 0.2f;
 
-        ci.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        ci.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        ci.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
-        ci.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
+        createInfo.depthStencil = aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(ci, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
     }
 
     // postfx compute pipeline
     {
         std::filesystem::path     shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        ComputePipelineCreateInfo ci{};
-        ci.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
-        ci.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
-        VK_CHECK_RESULT(m_pDevice->createComputePipeline(ci, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+        ComputePipelineCreateInfo createInfo{};
+        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
+        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
+        VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }
 }
 }  // namespace aph

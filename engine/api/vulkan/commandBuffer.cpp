@@ -1,4 +1,5 @@
 #include "commandBuffer.h"
+#include "api/gpuResource.h"
 #include "device.h"
 
 namespace aph
@@ -86,16 +87,14 @@ void VulkanCommandBuffer::copyBuffer(VulkanBuffer* srcBuffer, VulkanBuffer* dstB
     copyRegion.size = size;
     vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout,
+void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, ImageLayout oldLayout, ImageLayout newLayout,
                                                 VkImageSubresourceRange* pSubResourceRange,
-                                                VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask
-
-)
+                                                VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
 {
     VkImageMemoryBarrier imageMemoryBarrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .oldLayout           = oldLayout,
-        .newLayout           = newLayout,
+        .oldLayout           = utils::VkCast(oldLayout),
+        .newLayout           = utils::VkCast(newLayout),
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .image               = image->getHandle(),
@@ -117,7 +116,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
     // before it will be transitioned to the new layout
-    switch(oldLayout)
+    switch(utils::VkCast(oldLayout))
     {
     case VK_IMAGE_LAYOUT_UNDEFINED:
         // Image layout is undefined (or does not matter)
@@ -169,7 +168,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
 
     // Target layouts (new)
     // Destination access mask controls the dependency for the new image layout
-    switch(newLayout)
+    switch(utils::VkCast(newLayout))
     {
     case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
         // Image will be used as a transfer destination
@@ -270,26 +269,26 @@ void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uin
 }
 
 void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags srcAccessMask,
-                                             VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout,
-                                             VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+                                             VkAccessFlags dstAccessMask, ImageLayout oldImageLayout,
+                                             ImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
                                              VkPipelineStageFlags    dstStageMask,
                                              VkImageSubresourceRange subresourceRange)
 {
     VkImageMemoryBarrier imageMemoryBarrier = aph::init::imageMemoryBarrier();
     imageMemoryBarrier.srcAccessMask        = srcAccessMask;
     imageMemoryBarrier.dstAccessMask        = dstAccessMask;
-    imageMemoryBarrier.oldLayout            = oldImageLayout;
-    imageMemoryBarrier.newLayout            = newImageLayout;
+    imageMemoryBarrier.oldLayout            = utils::VkCast(oldImageLayout);
+    imageMemoryBarrier.newLayout            = utils::VkCast(newImageLayout);
     imageMemoryBarrier.image                = image->getHandle();
     imageMemoryBarrier.subresourceRange     = subresourceRange;
 
     vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage,
-                                    VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
+void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, ImageLayout srcImageLayout, VulkanImage* dstImage,
+                                    ImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
                                     VkFilter filter)
 {
-    vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions,
+    vkCmdBlitImage(m_handle, srcImage->getHandle(), utils::VkCast(srcImageLayout), dstImage->getHandle(), utils::VkCast(dstImageLayout), 1, pRegions,
                    filter);
 }
 uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };

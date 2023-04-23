@@ -125,7 +125,6 @@ void scene_manager::setupRenderer()
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
 {
     using namespace aph;
-    auto camera = m_cameraNode->getObject<aph::Camera>();
     if(action == aph::input::STATUS_PRESS)
     {
         switch(key)

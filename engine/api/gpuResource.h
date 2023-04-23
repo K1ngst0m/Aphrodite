@@ -109,26 +109,26 @@ enum class ImageType
 
 enum class ImageLayout
 {
-    UNDEFINED                        = 0,
-    GENERAL                          = 1,
-    COLOR_ATTACHMENT_OPTIMAL         = 2,
-    DEPTH_STENCIL_ATTACHMENT_OPTIMAL = 3,
-    DEPTH_STENCIL_READ_ONLY_OPTIMAL  = 4,
-    SHADER_READ_ONLY_OPTIMAL         = 5,
-    TRANSFER_SRC_OPTIMAL             = 6,
-    TRANSFER_DST_OPTIMAL             = 7,
-    PREINITIALIZED                   = 8,
+    UNDEFINED                = 0,
+    GENERAL                  = 1,
+    COLOR_ATTACHMENT         = 2,
+    DEPTH_STENCIL_ATTACHMENT = 3,
+    DEPTH_STENCIL_RO         = 4,
+    SHADER_RO                = 5,
+    TRANSFER_SRC             = 6,
+    TRANSFER_DST             = 7,
+    PRESENT_SRC              = 8,
 };
 
 enum class ResourceType
 {
-    UNDEFINED = 0,
-    SAMPLER = 1,
-    SAMPLED_IMAGE = 2,
+    UNDEFINED             = 0,
+    SAMPLER               = 1,
+    SAMPLED_IMAGE         = 2,
     COMBINE_SAMPLER_IMAGE = 3,
-    STORAGE_IMAGE = 4,
-    UNIFORM_BUFFER = 5,
-    STORAGE_BUFFER = 6,
+    STORAGE_IMAGE         = 4,
+    UNIFORM_BUFFER        = 5,
+    STORAGE_BUFFER        = 6,
 };
 
 enum class ComponentSwizzle

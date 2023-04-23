@@ -58,8 +58,7 @@ void VulkanUIRenderer::init()
         };
         m_pDevice->createDeviceLocalImage(creatInfo, &m_pFontImage, imageData);
         m_pDevice->executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
-            pCmd->transitionImageLayout(m_pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            pCmd->transitionImageLayout(m_pFontImage, ImageLayout::UNDEFINED, ImageLayout::SHADER_RO);
         });
     }
 

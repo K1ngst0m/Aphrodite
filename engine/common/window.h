@@ -51,7 +51,7 @@ public:
     uint32_t getWidth() const { return m_windowData->width; }
     uint32_t getHeight() const { return m_windowData->height; }
     uint32_t getKeyInputStatus(KeyId keycode);
-    uint32_t getMouseButtonStatus(KeyId mouseButton);
+    uint32_t getMouseButtonStatus(MouseButtonId mouseButton);
 
     GLFWwindow* getHandle() { return m_windowData->window; }
 

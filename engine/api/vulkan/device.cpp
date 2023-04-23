@@ -650,12 +650,12 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
         executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* cmd) {
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->transitionImageLayout(texture, ImageLayout::UNDEFINED, ImageLayout::TRANSFER_DST);
             cmd->copyBufferToImage(stagingBuffer, texture);
             if(genMipmap)
             {
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                cmd->transitionImageLayout(texture, ImageLayout::TRANSFER_DST,
+                                           ImageLayout::TRANSFER_SRC);
             }
         });
 
@@ -690,28 +690,28 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
                     mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
-                    cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, ImageLayout::UNDEFINED,
+                                            ImageLayout::TRANSFER_DST, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                             VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
                     // Blit from previous level
-                    cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+                    cmd->blitImage(texture, ImageLayout::TRANSFER_SRC, texture,
+                                   ImageLayout::TRANSFER_DST, 1, &imageBlit, VK_FILTER_LINEAR);
 
                     // Prepare current mip level as image blit source for next level
                     cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                            ImageLayout::TRANSFER_DST, ImageLayout::TRANSFER_SRC,
                                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                             mipSubRange);
                 }
 
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                cmd->transitionImageLayout(texture, ImageLayout::TRANSFER_SRC,
+                                           ImageLayout::SHADER_RO);
             }
             else
             {
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                cmd->transitionImageLayout(texture, ImageLayout::TRANSFER_DST,
+                                           ImageLayout::SHADER_RO);
             }
         });
     }
@@ -833,15 +833,15 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     createImage(imageCI, &cubeMapImage);
 
     executeSingleCommands(QUEUE_GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer) {
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
+        pCommandBuffer->transitionImageLayout(cubeMapImage, ImageLayout::UNDEFINED,
+                                              ImageLayout::TRANSFER_DST, &subresourceRange);
         // Copy the cube map faces from the staging buffer to the optimal tiled image
         for(uint32_t idx = 0; idx < 6; idx++)
         {
             pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, {bufferCopyRegions[idx]});
         }
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
+        pCommandBuffer->transitionImageLayout(cubeMapImage, ImageLayout::TRANSFER_DST,
+                                              ImageLayout::SHADER_RO, &subresourceRange);
     });
 
     for(auto* buffer : stagingBuffers)
