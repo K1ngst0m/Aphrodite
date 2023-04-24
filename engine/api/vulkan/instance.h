@@ -35,14 +35,14 @@ public:
     static void Destroy(VulkanInstance* pInstance);
 
     ThreadPool*           getThreadPool() { return m_threadPool; }
-    VulkanPhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx]; }
+    VulkanPhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
 
 private:
-    VkDebugUtilsMessengerEXT           m_debugMessenger{};
-    std::vector<const char*>           m_supportedInstanceExtensions{};
-    std::vector<std::string>           m_validationLayers{};
-    std::vector<VulkanPhysicalDevice*> m_physicalDevices{};
-    ThreadPool*                        m_threadPool{};
+    VkDebugUtilsMessengerEXT                           m_debugMessenger{};
+    std::vector<const char*>                           m_supportedInstanceExtensions{};
+    std::vector<std::string>                           m_validationLayers{};
+    std::vector<std::unique_ptr<VulkanPhysicalDevice>> m_physicalDevices{};
+    ThreadPool*                                        m_threadPool{};
 };
 }  // namespace aph
 

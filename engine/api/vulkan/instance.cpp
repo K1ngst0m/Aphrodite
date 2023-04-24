@@ -11,10 +11,7 @@ namespace aph
 #define VK_CHECK_RESULT(f) \
     { \
         VkResult res = (f); \
-        if(res != VK_SUCCESS) \
-        { \
-            return res; \
-        } \
+        if(res != VK_SUCCESS) { return res; } \
     }
 
 namespace
@@ -40,10 +37,7 @@ bool checkValidationLayerSupport(const std::vector<const char*>& validationLayer
             }
         }
 
-        if(!layerFound)
-        {
-            return false;
-        }
+        if(!layerFound) { return false; }
     }
 
     return true;
@@ -67,8 +61,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         std::cerr << "[ERROR] >>> " << pCallbackData->pMessage << std::endl;
         break;
-    default:
-        break;
+    default: break;
     }
     return VK_FALSE;
 }
@@ -78,10 +71,7 @@ VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
                                       VkDebugUtilsMessengerEXT*    pDebugMessenger)
 {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if(func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
+    if(func != nullptr) { return func(instance, pCreateInfo, pAllocator, pDebugMessenger); }
 
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
@@ -90,10 +80,7 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
                                    const VkAllocationCallbacks* pAllocator)
 {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if(func != nullptr)
-    {
-        func(instance, debugMessenger, pAllocator);
-    }
+    if(func != nullptr) { func(instance, debugMessenger, pAllocator); }
 }
 
 void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
@@ -135,10 +122,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
 
     if(createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
     {
-        if(!checkValidationLayerSupport(createInfo.enabledLayers))
-        {
-            return VK_ERROR_EXTENSION_NOT_PRESENT;
-        }
+        if(!checkValidationLayerSupport(createInfo.enabledLayers)) { return VK_ERROR_EXTENSION_NOT_PRESENT; }
 
         VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
         populateDebugMessengerCreateInfo(debugCreateInfo);
@@ -168,8 +152,8 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
         // Wrap native Vulkan handles in PhysicalDevice class.
         for(auto& pd : physicalDevices)
         {
-            auto pdImpl = new VulkanPhysicalDevice(pd);
-            instance->m_physicalDevices.push_back(pdImpl);
+            auto pdImpl = std::make_unique<VulkanPhysicalDevice>(pd);
+            instance->m_physicalDevices.push_back(std::move(pdImpl));
         }
     }
 

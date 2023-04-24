@@ -15,6 +15,7 @@
 #include <future>
 #include <iostream>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <queue>
@@ -40,11 +41,11 @@ namespace aph
 {
 enum class Result
 {
-    SUCCESS         = 0,
-    NOT_READY       = 1,
-    TIMEOUT         = 2,
-    INCOMPLETE      = 5,
-    ERROR_UNKNOWN   = -1,
+    SUCCESS       = 0,
+    NOT_READY     = 1,
+    TIMEOUT       = 2,
+    INCOMPLETE    = 5,
+    ERROR_UNKNOWN = -1,
 };
 
 enum class BaseType

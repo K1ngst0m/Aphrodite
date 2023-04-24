@@ -162,7 +162,7 @@ void VulkanRenderer::cleanup()
     // TODO
     m_pSyncPrimitivesPool.reset(nullptr);
 
-    for(auto& [key, shaderModule] : shaderModuleCaches)
+    for(const auto& [key, shaderModule] : shaderModuleCaches)
     {
         vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
         delete shaderModule;
@@ -185,7 +185,7 @@ VulkanShaderModule* VulkanRenderer::getShaders(const std::filesystem::path& path
         std::vector<char> spvCode;
         if(path.extension() == ".spv") { spvCode = aph::utils::loadSpvFromFile(path); }
         else { spvCode = aph::utils::loadGlslFromFile(path); }
-        auto *shaderModule        = VulkanShaderModule::Create(m_pDevice, spvCode);
+        auto* shaderModule       = VulkanShaderModule::Create(m_pDevice, spvCode);
         shaderModuleCaches[path] = shaderModule;
     }
     return shaderModuleCaches[path];

@@ -56,9 +56,9 @@ VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const R
 {
 }
 
-void VulkanSceneRenderer::load(std::shared_ptr<Scene> scene)
+void VulkanSceneRenderer::load(Scene* scene)
 {
-    m_scene = std::move(scene);
+    m_scene = scene;
 
     _loadScene();
     _initGpuResources();
@@ -199,14 +199,7 @@ void VulkanSceneRenderer::_initSet()
 
 void VulkanSceneRenderer::_loadScene()
 {
-    std::queue<SceneNode*> q;
-    q.push(m_scene->getRootNode());
-
-    while(!q.empty())
-    {
-        auto* node = q.front();
-        q.pop();
-
+    m_scene->getRootNode()->traversalChildren([&](SceneNode* node) {
         switch(node->getAttachType())
         {
         case ObjectType::MESH:
@@ -226,12 +219,7 @@ void VulkanSceneRenderer::_loadScene()
         break;
         default: assert("unattached scene node."); break;
         }
-
-        for(auto* subNode : node->getChildren())
-        {
-            q.push(subNode);
-        }
-    }
+    });
 }
 
 void VulkanSceneRenderer::_initForward()

@@ -1,7 +1,7 @@
 #ifndef SCENENODE_H_
 #define SCENENODE_H_
 
-#include <utility>
+#include <functional>
 
 #include "scene/camera.h"
 #include "scene/light.h"
@@ -47,16 +47,6 @@ public:
 
     void addChild(std::unique_ptr<TNode>&& childNode) { children.push_back(std::move(childNode)); }
 
-    std::vector<TNode*> getChildren() const
-    {
-        // TODO
-        std::vector<TNode*> result;
-        for(auto& n : children)
-        {
-            result.push_back(n.get());
-        }
-        return result;
-    }
     std::string_view getName() const { return name; }
 
     void rotate(float angle, glm::vec3 axis) { matrix = glm::rotate(matrix, angle, axis); }
@@ -97,6 +87,26 @@ public:
         return std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
                std::is_same<TObject, Mesh>::value;
     }
+
+    void traversalChildren(std::function<void(SceneNode* node)>&& func)
+    {
+        std::queue<SceneNode*> q;
+        q.push(this);
+
+        while(!q.empty())
+        {
+            auto* node = q.front();
+            q.pop();
+
+            func(node);
+
+            for(const auto& subNode : children)
+            {
+                q.push(subNode.get());
+            }
+        }
+    }
+
 
 private:
     Object* m_object{};

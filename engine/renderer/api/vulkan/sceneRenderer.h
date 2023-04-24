@@ -12,9 +12,8 @@ class VulkanSceneRenderer : public VulkanRenderer
 {
 public:
     VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
-    void setScene(const std::shared_ptr<Scene>& scene) { m_scene = scene; }
 
-    void load(std::shared_ptr<Scene> scene);
+    void load(Scene* scene);
     void cleanup();
     void update(float deltaTime);
     void recordDrawSceneCommands();
@@ -99,15 +98,13 @@ private:
     VulkanImageView* m_pCubeMapView{};
 
 private:
+    Scene*                  m_scene = {};
     std::vector<SceneNode*> m_meshNodeList;
     std::vector<SceneNode*> m_cameraNodeList;
     std::vector<SceneNode*> m_lightNodeList;
 
 private:
     VulkanUIRenderer* m_pUIRenderer = {};
-
-private:
-    std::shared_ptr<Scene> m_scene = {};
 };
 }  // namespace aph
 

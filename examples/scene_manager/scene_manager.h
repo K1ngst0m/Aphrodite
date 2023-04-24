@@ -23,11 +23,10 @@ public:
 private:
     void setupWindow();
     void setupRenderer();
+    void setupScene();
 
     void keyboardHandleDerive(int key, int scancode, int action, int mods);
     void mouseHandleDerive(double xposIn, double yposIn);
-
-    void setupScene();
 
 private:
     std::shared_ptr<aph::Scene> m_scene                = {};
@@ -36,9 +35,10 @@ private:
     aph::SceneNode*             m_directionalLightNode = {};
     aph::SceneNode*             m_cameraNode           = {};
 
-    std::unique_ptr<aph::CameraController>    m_cameraController = {};
-    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer    = {};
-    std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer       = {};
+    std::unique_ptr<aph::CameraController> m_cameraController = {};
+
+    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
+    std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};
 
     std::shared_ptr<aph::Window> m_window = {};
 };

@@ -102,8 +102,7 @@ void scene_manager::setupScene()
     }
 
     {
-        m_sceneRenderer->setUIRenderer(m_uiRenderer);
-        m_sceneRenderer->load(m_scene);
+        m_sceneRenderer->load(m_scene.get());
     }
 }
 
