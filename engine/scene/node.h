@@ -30,7 +30,7 @@ public:
     {
         auto childNode = std::unique_ptr<TNode>(new TNode(static_cast<TNode*>(this), transform, std::move(name)));
         children.push_back(std::move(childNode));
-        return childNode.get();
+        return children.back().get();
     }
 
     glm::mat4 getTransform()
@@ -68,7 +68,7 @@ public:
     IdType     getAttachObjectId() { return m_object->getId(); }
 
     template <typename TObject>
-    void attachObject(Object* object)
+    void attachObject(TObject* object)
     {
         if constexpr(isObjectTypeValid<TObject>()) { m_object = object; }
         else { static_assert("Invalid type of the object."); }
@@ -100,7 +100,7 @@ public:
 
             func(node);
 
-            for(const auto& subNode : children)
+            for(const auto& subNode : node->children)
             {
                 q.push(subNode.get());
             }

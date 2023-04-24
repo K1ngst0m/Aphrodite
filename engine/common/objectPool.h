@@ -15,7 +15,7 @@ public:
         if(vacants.empty())
         {
             unsigned num_objects = 64u << memory.size();
-            T*       ptr = static_cast<T*>(memalignAlloc(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
+            T*       ptr = static_cast<T*>(memAlignAlloc(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
             if(!ptr) return nullptr;
 
             for(unsigned i = 0; i < num_objects; i++)

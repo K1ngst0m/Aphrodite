@@ -103,6 +103,7 @@ void VulkanSceneRenderer::cleanup()
     {
         m_pDevice->destroySampler(sampler);
     }
+    VulkanRenderer::cleanup();
 }
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
@@ -700,7 +701,8 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
                     }
                     else if(camType == CameraType::ORTHO)
                     {
-                        auto camera = m_scene->getMainCamera();
+                        assert("TODO");
+                        // auto camera = m_scene->getMainCamera();
                         // m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
                         //                     camera->m_position.y, camera->m_position.z);
                         // m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,

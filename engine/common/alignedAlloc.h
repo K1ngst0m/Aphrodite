@@ -5,13 +5,13 @@
 
 namespace aph
 {
-void* memalignAlloc(size_t boundary, size_t size);
-void* memalignCalloc(size_t boundary, size_t size);
-void  memalignFree(void* ptr);
+void* memAlignAlloc(size_t boundary, size_t size);
+void* memAlignCalloc(size_t boundary, size_t size);
+void  memAlignFree(void* ptr);
 
 struct AlignedDeleter
 {
-    void operator()(void* ptr) { memalignFree(ptr); }
+    void operator()(void* ptr) { memAlignFree(ptr); }
 };
 
 template <typename T>
@@ -19,20 +19,20 @@ struct AlignedAllocation
 {
     static void* operator new(size_t size)
     {
-        void* ret = ::aph::memalignAlloc(alignof(T), size);
+        void* ret = ::aph::memAlignAlloc(alignof(T), size);
         if(!ret) throw std::bad_alloc();
         return ret;
     }
 
     static void* operator new[](size_t size)
     {
-        void* ret = ::aph::memalignAlloc(alignof(T), size);
+        void* ret = ::aph::memAlignAlloc(alignof(T), size);
         if(!ret) throw std::bad_alloc();
         return ret;
     }
 
-    static void operator delete(void* ptr) { return ::aph::memalignFree(ptr); }
-    static void operator delete[](void* ptr) { return ::aph::memalignFree(ptr); }
+    static void operator delete(void* ptr) { return ::aph::memAlignFree(ptr); }
+    static void operator delete[](void* ptr) { return ::aph::memAlignFree(ptr); }
 };
 
 }  // namespace aph

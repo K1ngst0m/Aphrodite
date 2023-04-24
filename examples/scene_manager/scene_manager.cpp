@@ -36,7 +36,6 @@ void scene_manager::run()
 void scene_manager::finish()
 {
     m_sceneRenderer->idleDevice();
-    m_sceneRenderer->cleanup();
     m_uiRenderer->cleanup();
     m_sceneRenderer->cleanup();
 }
@@ -72,6 +71,7 @@ void scene_manager::setupScene()
         m_cameraNode = m_scene->getRootNode()->createChildNode();
         m_cameraNode->attachObject<aph::Camera>(camera);
         m_scene->setMainCamera(camera);
+
 
         // // camera 2
         // m_scene->getRootNode()->createChildNode()->attachObject(camera);
@@ -116,6 +116,7 @@ void scene_manager::setupRenderer()
 
     m_sceneRenderer = aph::IRenderer::Create<aph::VulkanSceneRenderer>(m_window, config);
     m_uiRenderer    = std::make_unique<aph::VulkanUIRenderer>(m_sceneRenderer.get());
+    m_sceneRenderer->setUIRenderer(m_uiRenderer);
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)

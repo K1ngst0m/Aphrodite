@@ -2,7 +2,7 @@
 
 namespace aph
 {
-void* memalignAlloc(size_t boundary, size_t size)
+void* memAlignAlloc(size_t boundary, size_t size)
 {
 #if defined(_WIN32)
     return _aligned_malloc(size, boundary);
@@ -28,14 +28,14 @@ void* memalignAlloc(size_t boundary, size_t size)
 #endif
 }
 
-void* memalignCalloc(size_t boundary, size_t size)
+void* memAlignCalloc(size_t boundary, size_t size)
 {
-    void* ret = memalignAlloc(boundary, size);
+    void* ret = memAlignAlloc(boundary, size);
     if(ret) memset(ret, 0, size);
     return ret;
 }
 
-void memalignFree(void* ptr)
+void memAlignFree(void* ptr)
 {
 #if defined(_WIN32)
     _aligned_free(ptr);

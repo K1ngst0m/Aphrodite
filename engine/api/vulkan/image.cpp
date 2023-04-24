@@ -1,4 +1,5 @@
 #include "image.h"
+#include "api/vulkan/vkUtils.h"
 #include "device.h"
 
 namespace aph
@@ -27,15 +28,20 @@ VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
 
     if(!m_imageViewFormatMap.count(imageFormat))
     {
-        std::unordered_map<VkImageType, VkImageViewType> imageTypeMap{
+        static const std::unordered_map<VkImageType, VkImageViewType> imageTypeMap{
             {VK_IMAGE_TYPE_1D, VK_IMAGE_VIEW_TYPE_1D},
             {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D},
             {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D},
         };
         ImageViewCreateInfo createInfo{
-            .viewType         = imageTypeMap[m_createInfo.imageType],
+            .viewType         = imageTypeMap.at(m_createInfo.imageType),
             .format           = imageFormat,
-            .subresourceRange = {.levelCount = m_createInfo.mipLevels},
+            .subresourceRange = {
+                .aspectMask = utils::getImageAspectFlags(m_createInfo.format),
+                .baseMipLevel = 0,
+                .levelCount = m_createInfo.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount = m_createInfo.layerCount},
         };
         m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }

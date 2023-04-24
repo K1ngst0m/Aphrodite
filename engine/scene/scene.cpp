@@ -304,19 +304,21 @@ Light* Scene::createPointLight(glm::vec3 pos, glm::vec3 color, float intensity)
 
 Light* Scene::createLight(LightType type, glm::vec3 color, float intensity)
 {
-    auto light               = Object::Create<Light>();
-    light->m_type            = type;
-    light->m_color           = color;
-    light->m_intensity       = intensity;
-    m_lights[light->getId()] = std::move(light);
-    return m_lights[light->getId()].get();
+    auto   light       = Object::Create<Light>();
+    IdType id          = light->getId();
+    light->m_type      = type;
+    light->m_color     = color;
+    light->m_intensity = intensity;
+    m_lights[id]       = std::move(light);
+    return m_lights[id].get();
 }
 
 Mesh* Scene::createMesh()
 {
-    auto mesh               = Object::Create<Mesh>();
-    m_meshes[mesh->getId()] = std::move(mesh);
-    return m_meshes[mesh->getId()].get();
+    auto   mesh  = Object::Create<Mesh>();
+    IdType id    = mesh->getId();
+    m_meshes[id] = std::move(mesh);
+    return m_meshes[id].get();
 }
 
 SceneNode* Scene::createMeshesFromFile(const std::string& path, const std::shared_ptr<SceneNode>& parent)
@@ -368,10 +370,11 @@ void Scene::update(float deltaTime) {}
 
 Camera* Scene::createCamera(float aspectRatio, CameraType type)
 {
-    auto camera                = Object::Create<Camera>(type);
-    camera->m_aspect           = {aspectRatio};
-    m_cameras[camera->getId()] = std::move(camera);
-    return m_cameras[camera->getId()].get();
+    auto   camera    = Object::Create<Camera>(type);
+    IdType id        = camera->getId();
+    camera->m_aspect = {aspectRatio};
+    m_cameras[id]    = std::move(camera);
+    return m_cameras[id].get();
 }
 
 Camera* Scene::createPerspectiveCamera(float aspectRatio, float fov, float znear, float zfar)

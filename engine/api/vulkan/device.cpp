@@ -166,11 +166,11 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, Vu
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext    = nullptr,
         .image    = pImage->getHandle(),
-        .viewType = static_cast<VkImageViewType>(createInfo.viewType),
-        .format   = static_cast<VkFormat>(createInfo.format),
+        .viewType = createInfo.viewType,
+        .format   = createInfo.format,
     };
     info.subresourceRange = {
-        .aspectMask     = aph::utils::getImageAspectFlags(static_cast<VkFormat>(createInfo.format)),
+        .aspectMask     = aph::utils::getImageAspectFlags(createInfo.format),
         .baseMipLevel   = createInfo.subresourceRange.baseMipLevel,
         .levelCount     = createInfo.subresourceRange.levelCount,
         .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
@@ -845,7 +845,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     ImageViewCreateInfo createInfo{
         .viewType = VK_IMAGE_VIEW_TYPE_CUBE,
         .format   = imageFormat,
-        .subresourceRange{0, mipLevels, 0, 6},
+        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, mipLevels, 0, 6},
     };
     VK_CHECK_RESULT(createImageView(createInfo, ppImageView, cubeMapImage));
     *ppImage = cubeMapImage;
