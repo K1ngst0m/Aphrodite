@@ -1,6 +1,7 @@
 #ifndef VKLMODEL_H_
 #define VKLMODEL_H_
 
+#include <memory>
 #include "idObject.h"
 
 namespace aph
@@ -21,9 +22,9 @@ class Object : public IdObject
 {
 public:
     template <typename TObject, typename... Args>
-    static std::shared_ptr<TObject> Create(Args&&... args)
+    static std::unique_ptr<TObject> Create(Args&&... args)
     {
-        auto instance = std::make_shared<TObject>(std::forward<Args>(args)...);
+        auto instance = std::make_unique<TObject>(std::forward<Args>(args)...);
         return instance;
     }
     Object(IdType id, ObjectType type) : IdObject{ id }, m_ObjectType{ type } {}

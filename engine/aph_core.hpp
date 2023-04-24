@@ -2,7 +2,6 @@
 #define APH_H_
 
 #include "renderer/renderer.h"
-#include "renderer/sceneRenderer.h"
 
 #include "api/vulkan/device.h"
 #include "api/vulkan/vkInit.h"

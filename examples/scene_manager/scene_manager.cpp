@@ -36,7 +36,7 @@ void scene_manager::run()
 void scene_manager::finish()
 {
     m_sceneRenderer->idleDevice();
-    m_sceneRenderer->cleanupResources();
+    m_sceneRenderer->cleanup();
     m_uiRenderer->cleanup();
     m_sceneRenderer->cleanup();
 }
@@ -96,16 +96,14 @@ void scene_manager::setupScene()
         else { m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb"); }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
-        auto model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
+        auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
         model2->rotate(180.0f, {0.0f, 1.0f, 0.0f});
         model2->translate({3.0, 1.0, 1.0});
     }
 
     {
-        m_sceneRenderer->setScene(m_scene);
         m_sceneRenderer->setUIRenderer(m_uiRenderer);
-        m_sceneRenderer->setShadingModel(aph::ShadingModel::PBR);
-        m_sceneRenderer->loadResources();
+        m_sceneRenderer->load(m_scene);
     }
 }
 

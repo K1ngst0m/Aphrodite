@@ -56,8 +56,10 @@ VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const R
 {
 }
 
-void VulkanSceneRenderer::loadResources()
+void VulkanSceneRenderer::load(std::shared_ptr<Scene> scene)
 {
+    m_scene = std::move(scene);
+
     _loadScene();
     _initGpuResources();
 
@@ -70,7 +72,7 @@ void VulkanSceneRenderer::loadResources()
     _initPipeline();
 }
 
-void VulkanSceneRenderer::cleanupResources()
+void VulkanSceneRenderer::cleanup()
 {
     for(auto* pipeline : m_pipelines)
     {
@@ -197,12 +199,12 @@ void VulkanSceneRenderer::_initSet()
 
 void VulkanSceneRenderer::_loadScene()
 {
-    std::queue<std::shared_ptr<SceneNode>> q;
+    std::queue<SceneNode*> q;
     q.push(m_scene->getRootNode());
 
     while(!q.empty())
     {
-        const auto node = q.front();
+        auto* node = q.front();
         q.pop();
 
         switch(node->getAttachType())
@@ -225,7 +227,7 @@ void VulkanSceneRenderer::_loadScene()
         default: assert("unattached scene node."); break;
         }
 
-        for(const auto& subNode : node->getChildren())
+        for(auto* subNode : node->getChildren())
         {
             q.push(subNode);
         }

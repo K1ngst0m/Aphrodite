@@ -4,19 +4,20 @@
 #include "api/vulkan/device.h"
 #include "renderer.h"
 #include "uiRenderer.h"
-#include "renderer/sceneRenderer.h"
+#include "scene/scene.h"
 
 namespace aph
 {
-class VulkanSceneRenderer final : public ISceneRenderer, public VulkanRenderer
+class VulkanSceneRenderer : public VulkanRenderer
 {
 public:
     VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
+    void setScene(const std::shared_ptr<Scene>& scene) { m_scene = scene; }
 
-    void loadResources() override;
-    void cleanupResources() override;
-    void update(float deltaTime) override;
-    void recordDrawSceneCommands() override;
+    void load(std::shared_ptr<Scene> scene);
+    void cleanup();
+    void update(float deltaTime);
+    void recordDrawSceneCommands();
     void recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer);
     void recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer);
     void setUIRenderer(const std::unique_ptr<VulkanUIRenderer>& renderer) { m_pUIRenderer = renderer.get(); }
@@ -98,12 +99,15 @@ private:
     VulkanImageView* m_pCubeMapView{};
 
 private:
-    std::vector<std::shared_ptr<SceneNode>> m_meshNodeList;
-    std::vector<std::shared_ptr<SceneNode>> m_cameraNodeList;
-    std::vector<std::shared_ptr<SceneNode>> m_lightNodeList;
+    std::vector<SceneNode*> m_meshNodeList;
+    std::vector<SceneNode*> m_cameraNodeList;
+    std::vector<SceneNode*> m_lightNodeList;
 
 private:
     VulkanUIRenderer* m_pUIRenderer = {};
+
+private:
+    std::shared_ptr<Scene> m_scene = {};
 };
 }  // namespace aph
 

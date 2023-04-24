@@ -30,18 +30,17 @@ private:
     void setupScene();
 
 private:
-    std::shared_ptr<aph::SceneNode>        m_modelNode            = {};
-    std::shared_ptr<aph::SceneNode>        m_pointLightNode       = {};
-    std::shared_ptr<aph::SceneNode>        m_directionalLightNode = {};
-    std::shared_ptr<aph::SceneNode>        m_cameraNode           = {};
-    std::shared_ptr<aph::CameraController> m_cameraController     = {};
+    std::shared_ptr<aph::Scene> m_scene                = {};
+    aph::SceneNode*             m_modelNode            = {};
+    aph::SceneNode*             m_pointLightNode       = {};
+    aph::SceneNode*             m_directionalLightNode = {};
+    aph::SceneNode*             m_cameraNode           = {};
 
-    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
-    std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};
+    std::unique_ptr<aph::CameraController>    m_cameraController = {};
+    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer    = {};
+    std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer       = {};
 
-    std::shared_ptr<aph::Scene>  m_scene  = {};
     std::shared_ptr<aph::Window> m_window = {};
-
 };
 
 #endif  // SCENE_MANAGER_H_

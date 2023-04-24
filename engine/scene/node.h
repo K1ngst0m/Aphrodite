@@ -26,11 +26,11 @@ public:
         }
     }
 
-    std::shared_ptr<TNode> createChildNode(glm::mat4 transform = glm::mat4(1.0f), std::string name = "")
+    TNode* createChildNode(glm::mat4 transform = glm::mat4(1.0f), std::string name = "")
     {
-        auto childNode = std::shared_ptr<TNode>(new TNode(static_cast<TNode*>(this), transform, std::move(name)));
-        children.push_back(childNode);
-        return childNode;
+        auto childNode = std::unique_ptr<TNode>(new TNode(static_cast<TNode*>(this), transform, std::move(name)));
+        children.push_back(std::move(childNode));
+        return childNode.get();
     }
 
     glm::mat4 getTransform()
@@ -45,31 +45,27 @@ public:
         return res;
     }
 
-    void addChild(std::shared_ptr<TNode> childNode) { children.push_back(std::move(childNode)); }
-    std::vector<std::shared_ptr<TNode>> getChildren() const { return children; }
-    std::string_view                    getName() const { return name; }
+    void addChild(std::unique_ptr<TNode>&& childNode) { children.push_back(std::move(childNode)); }
 
-    Node<TNode>& rotate(float angle, glm::vec3 axis)
+    std::vector<TNode*> getChildren() const
     {
-        matrix = glm::rotate(matrix, angle, axis);
-        return *this;
+        // TODO
+        std::vector<TNode*> result;
+        for(auto& n : children)
+        {
+            result.push_back(n.get());
+        }
+        return result;
     }
+    std::string_view getName() const { return name; }
 
-    Node<TNode>& translate(glm::vec3 value)
-    {
-        matrix = glm::translate(matrix, value);
-        return *this;
-    }
-
-    Node<TNode>& scale(glm::vec3 value)
-    {
-        matrix = glm::scale(matrix, value);
-        return *this;
-    }
+    void rotate(float angle, glm::vec3 axis) { matrix = glm::rotate(matrix, angle, axis); }
+    void translate(glm::vec3 value) { matrix = glm::translate(matrix, value); }
+    void scale(glm::vec3 value) { matrix = glm::scale(matrix, value); }
 
 protected:
     std::string                         name     = {};
-    std::vector<std::shared_ptr<TNode>> children = {};
+    std::vector<std::unique_ptr<TNode>> children = {};
     TNode*                              parent   = {};
     glm::mat4                           matrix   = {glm::mat4(1.0f)};
 };
@@ -82,16 +78,16 @@ public:
     IdType     getAttachObjectId() { return m_object->getId(); }
 
     template <typename TObject>
-    void attachObject(const std::shared_ptr<Object>& object)
+    void attachObject(Object* object)
     {
         if constexpr(isObjectTypeValid<TObject>()) { m_object = object; }
         else { static_assert("Invalid type of the object."); }
     }
 
     template <typename TObject>
-    std::shared_ptr<TObject> getObject()
+    TObject* getObject()
     {
-        if constexpr(isObjectTypeValid<TObject>()) { return std::static_pointer_cast<TObject>(m_object); }
+        if constexpr(isObjectTypeValid<TObject>()) { return static_cast<TObject*>(m_object); }
         else { static_assert("Invalid type of the object."); }
     }
 
@@ -103,7 +99,7 @@ public:
     }
 
 private:
-    std::shared_ptr<Object> m_object{};
+    Object* m_object{};
 };
 }  // namespace aph
 

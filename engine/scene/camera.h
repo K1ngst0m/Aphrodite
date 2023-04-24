@@ -58,9 +58,9 @@ enum class Direction
 class CameraController
 {
 public:
-    static std::shared_ptr<CameraController> Create(const std::shared_ptr<Camera>& camera)
+    static std::unique_ptr<CameraController> Create(Camera* camera)
     {
-        auto instance = std::shared_ptr<CameraController>(new CameraController(camera));
+        auto instance = std::unique_ptr<CameraController>(new CameraController(camera));
         return instance;
     }
 
@@ -71,11 +71,11 @@ public:
     void update(float deltaTime);
 
 private:
-    CameraController(std::shared_ptr<Camera> camera) : m_camera{std::move(camera)} {}
+    CameraController(Camera* camera) : m_camera{camera} {}
     void updateProj();
     void updateView();
 
-    std::shared_ptr<Camera> m_camera{};
+    Camera* m_camera{};
 
     bool      m_flipY{true};
     glm::vec3 m_direction{0.0f, 180.0f, 0.0f};

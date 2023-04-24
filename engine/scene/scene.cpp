@@ -86,8 +86,9 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
     }
 }
 
-void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList, const tinygltf::Node& inputNode,
-               const tinygltf::Model& input, const std::shared_ptr<SceneNode>& parent, uint32_t materialOffset)
+void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList,
+               const tinygltf::Node& inputNode, const tinygltf::Model& input, SceneNode* parent,
+               uint32_t materialOffset)
 {
     glm::mat4 matrix{1.0f};
 
@@ -103,13 +104,13 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
     if(inputNode.scale.size() == 3) { matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data()))); }
     if(inputNode.matrix.size() == 16) { matrix = glm::make_mat4x4(inputNode.matrix.data()); };
 
-    auto node{parent->createChildNode(matrix, inputNode.name)};
+    SceneNode* node{parent->createChildNode(matrix, inputNode.name)};
 
     // If the node contains mesh data, we load vertices and indices from the buffers
     // In glTF this is done via accessors and buffer views
     if(inputNode.mesh > -1)
     {
-        auto mesh{Object::Create<Mesh>()};
+        auto* mesh = scene->createMesh();
         node->attachObject<Mesh>(mesh);
 
         const tinygltf::Mesh gltfMesh{input.meshes[inputNode.mesh]};
@@ -261,7 +262,7 @@ void loadNodes(std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indices
     {
         for(const int nodeIdx : inputNode.children)
         {
-            loadNodes(verticesList, indicesList, input.nodes[nodeIdx], input, node, materialOffset);
+            loadNodes(scene, verticesList, indicesList, input.nodes[nodeIdx], input, node, materialOffset);
         }
     }
 }
@@ -277,7 +278,7 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     case SceneType::DEFAULT:
     {
         auto instance{std::unique_ptr<Scene>(new Scene())};
-        instance->m_rootNode = std::make_shared<SceneNode>(nullptr);
+        instance->m_rootNode = std::make_unique<SceneNode>(nullptr);
         return instance;
     }
     default:
@@ -288,40 +289,39 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     }
 }
 
-std::shared_ptr<Light> Scene::createDirLight(glm::vec3 dir, glm::vec3 color, float intensity)
+Light* Scene::createDirLight(glm::vec3 dir, glm::vec3 color, float intensity)
 {
-    auto light = createLight(LightType::DIRECTIONAL, color, intensity);
+    Light* light       = createLight(LightType::DIRECTIONAL, color, intensity);
     light->m_direction = dir;
     return light;
 }
-std::shared_ptr<Light> Scene::createPointLight(glm::vec3 pos, glm::vec3 color, float intensity)
+Light* Scene::createPointLight(glm::vec3 pos, glm::vec3 color, float intensity)
 {
-    auto light = createLight(LightType::DIRECTIONAL, color, intensity);
+    auto* light       = createLight(LightType::DIRECTIONAL, color, intensity);
     light->m_position = pos;
     return light;
 }
 
-std::shared_ptr<Light> Scene::createLight(LightType type, glm::vec3 color, float intensity)
+Light* Scene::createLight(LightType type, glm::vec3 color, float intensity)
 {
     auto light               = Object::Create<Light>();
-    light->m_type = type;
-    light->m_color = color;
-    light->m_intensity = intensity;
-    m_lights[light->getId()] = light;
-    return light;
+    light->m_type            = type;
+    light->m_color           = color;
+    light->m_intensity       = intensity;
+    m_lights[light->getId()] = std::move(light);
+    return m_lights[light->getId()].get();
 }
 
-std::shared_ptr<Mesh> Scene::createMesh()
+Mesh* Scene::createMesh()
 {
     auto mesh               = Object::Create<Mesh>();
-    m_meshes[mesh->getId()] = mesh;
-    return mesh;
+    m_meshes[mesh->getId()] = std::move(mesh);
+    return m_meshes[mesh->getId()].get();
 }
 
-std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&                path,
-                                                       const std::shared_ptr<SceneNode>& parent)
+SceneNode* Scene::createMeshesFromFile(const std::string& path, const std::shared_ptr<SceneNode>& parent)
 {
-    auto node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
+    SceneNode* node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
 
     tinygltf::Model    inputModel;
     tinygltf::TinyGLTF gltfContext;
@@ -351,7 +351,7 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
         for(int nodeIdx : scene.nodes)
         {
             const tinygltf::Node inputNode = inputModel.nodes[nodeIdx];
-            gltf::loadNodes(m_vertices, m_indices, inputNode, inputModel, node, materialOffset);
+            gltf::loadNodes(this, m_vertices, m_indices, inputNode, inputModel, node, materialOffset);
         }
     }
     else
@@ -364,21 +364,19 @@ std::shared_ptr<SceneNode> Scene::createMeshesFromFile(const std::string&       
     return node;
 }
 
-void Scene::update(float deltaTime)
-{
-    auto camera = getMainCamera();
-}
+void Scene::update(float deltaTime) {}
 
-std::shared_ptr<Camera> Scene::createCamera(float aspectRatio, CameraType type) {
+Camera* Scene::createCamera(float aspectRatio, CameraType type)
+{
     auto camera                = Object::Create<Camera>(type);
     camera->m_aspect           = {aspectRatio};
-    m_cameras[camera->getId()] = camera;
-    return camera;
+    m_cameras[camera->getId()] = std::move(camera);
+    return m_cameras[camera->getId()].get();
 }
 
-std::shared_ptr<Camera> Scene::createPerspectiveCamera(float aspectRatio, float fov, float znear, float zfar)
+Camera* Scene::createPerspectiveCamera(float aspectRatio, float fov, float znear, float zfar)
 {
-    auto camera = createCamera(aspectRatio, CameraType::PERSPECTIVE);
+    auto* camera                = createCamera(aspectRatio, CameraType::PERSPECTIVE);
     camera->m_perspective.zfar  = zfar;
     camera->m_perspective.znear = znear;
     camera->m_perspective.fov   = fov;
