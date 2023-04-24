@@ -62,6 +62,7 @@ protected:
     std::vector<VkSemaphore>          m_renderSemaphore  = {};
     std::vector<VkSemaphore>          m_presentSemaphore = {};
     std::vector<VkFence>              m_frameFences      = {};
+
     std::vector<VulkanCommandBuffer*> m_commandBuffers   = {};
 
 protected:

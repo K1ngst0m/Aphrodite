@@ -108,8 +108,8 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         // pipeline cache
         {
             VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
-            VK_CHECK_RESULT(
-                vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+            VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreatePipelineCache(
+                m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
         }
     }
 }

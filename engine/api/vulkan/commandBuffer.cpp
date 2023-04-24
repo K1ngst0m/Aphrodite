@@ -7,12 +7,15 @@ namespace aph
 
 VulkanCommandBuffer::~VulkanCommandBuffer() { m_pool->freeCommandBuffers(1, &m_handle); }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanCommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
+VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* pDevice, VulkanCommandPool* pool, VkCommandBuffer handle,
+                                         uint32_t queueFamilyIndices) :
+    m_pDevice(pDevice),
+    m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
     m_state(CommandBufferState::INITIAL),
     m_queueFamilyType(queueFamilyIndices)
 {
-    m_handle = handle;
+    getHandle() = handle;
 }
 
 VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
@@ -24,7 +27,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = static_cast<VkCommandBufferUsageFlags>(flags),
     };
-    auto result = vkBeginCommandBuffer(m_handle, &beginInfo);
+    auto result = m_pDeviceTable->vkBeginCommandBuffer(m_handle, &beginInfo);
     if(result != VK_SUCCESS) { return result; }
 
     // Mark CommandBuffer as recording and reset internal state.
@@ -39,53 +42,62 @@ VkResult VulkanCommandBuffer::end()
 
     m_state = CommandBufferState::EXECUTABLE;
 
-    return vkEndCommandBuffer(m_handle);
+    return m_pDeviceTable->vkEndCommandBuffer(m_handle);
 }
 
 VkResult VulkanCommandBuffer::reset()
 {
-    if(m_handle != VK_NULL_HANDLE) return vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    if(m_handle != VK_NULL_HANDLE)
+        return m_pDeviceTable->vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
     m_state = CommandBufferState::INITIAL;
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::setViewport(const VkViewport& viewport) { vkCmdSetViewport(m_handle, 0, 1, &viewport); }
-void VulkanCommandBuffer::setSissor(const VkRect2D& scissor) { vkCmdSetScissor(m_handle, 0, 1, &scissor); }
+void VulkanCommandBuffer::setViewport(const VkViewport& viewport)
+{
+    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewport);
+}
+void VulkanCommandBuffer::setSissor(const VkRect2D& scissor)
+{
+    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor);
+}
 void VulkanCommandBuffer::bindPipeline(VulkanPipeline* pPipeline)
 {
-    vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
 void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
                                             const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
                                             const uint32_t* pDynamicOffset)
 {
-    vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(), firstSet,
-                            descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(),
+                                            firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,
+                                            pDynamicOffset);
 }
 void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer* pBuffer,
                                             const std::vector<VkDeviceSize>& offsets)
 {
-    vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
+    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
 }
 void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
-    vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
+    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
 void VulkanCommandBuffer::pushConstants(VulkanPipeline* pPipeline, const std::vector<ShaderStage>& stages,
                                         uint32_t offset, uint32_t size, const void* pValues)
 {
-    vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), utils::VkCast(stages), offset, size, pValues);
+    m_pDeviceTable->vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), utils::VkCast(stages), offset, size,
+                                       pValues);
 }
 void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
                                       uint32_t vertexOffset, uint32_t firstInstance)
 {
-    vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 void VulkanCommandBuffer::copyBuffer(VulkanBuffer* srcBuffer, VulkanBuffer* dstBuffer, VkDeviceSize size)
 {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
+    m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout,
                                                 VkImageSubresourceRange* pSubResourceRange,
@@ -105,7 +117,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     else
     {
         imageMemoryBarrier.subresourceRange = {
-            .aspectMask     = aph::utils::getImageAspectFlags(static_cast<VkFormat>(imageCreateInfo.format)),
+            .aspectMask     = aph::utils::getImageAspectFlags(imageCreateInfo.format),
             .baseMipLevel   = 0,
             .levelCount     = imageCreateInfo.mipLevels,
             .baseArrayLayer = 0,
@@ -209,7 +221,8 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
         break;
     }
 
-    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+                                         &imageMemoryBarrier);
 }
 void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* image,
                                             const std::vector<VkBufferImageCopy>& regions)
@@ -230,13 +243,13 @@ void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* i
         };
         region.imageOffset = {0, 0, 0};
         region.imageExtent = {image->getWidth(), image->getHeight(), 1};
-        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                               1, &region);
+        m_pDeviceTable->vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
     else
     {
-        vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                               regions.size(), regions.data());
+        m_pDeviceTable->vkCmdCopyBufferToImage(m_handle, buffer->getHandle(), image->getHandle(),
+                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
     }
 }
 void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage)
@@ -259,13 +272,13 @@ void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage
     copyRegion.extent.height  = srcImage->getHeight();
     copyRegion.extent.depth   = 1;
 
-    vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage->getHandle(),
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+    m_pDeviceTable->vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
 void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
                                uint32_t firstInstance)
 {
-    vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+    m_pDeviceTable->vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags srcAccessMask,
@@ -282,29 +295,30 @@ void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags s
     imageMemoryBarrier.image                = image->getHandle();
     imageMemoryBarrier.subresourceRange     = subresourceRange;
 
-    vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+    m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+                                         &imageMemoryBarrier);
 }
 void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage,
                                     VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
                                     VkFilter filter)
 {
-    vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(), dstImageLayout, 1, pRegions,
-                   filter);
+    m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(),
+                                   dstImageLayout, 1, pRegions, filter);
 }
 uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };
 void     VulkanCommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
-    vkCmdBeginRendering(getHandle(), &renderingInfo);
+    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
-void VulkanCommandBuffer::endRendering() { vkCmdEndRendering(getHandle()); }
+void VulkanCommandBuffer::endRendering() { m_pDeviceTable->vkCmdEndRendering(getHandle()); }
 void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
-    vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
+    m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
 void VulkanCommandBuffer::pushDescriptorSet(VulkanPipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes,
                                             uint32_t setIdx)
 {
-    vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(), setIdx,
-                              writes.size(), writes.data());
+    m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(),
+                                              setIdx, writes.size(), writes.data());
 }
 }  // namespace aph

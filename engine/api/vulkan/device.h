@@ -86,6 +86,7 @@ public:
     void     unMapMemory(VulkanBuffer* pBuffer);
 
 public:
+    VolkDeviceTable*    getDeviceTable() { return &m_table; }
     VulkanCommandPool* getCommandPoolWithQueue(VulkanQueue* queue);
     VulkanQueue*       getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
     VkResult           allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
@@ -101,6 +102,7 @@ public:
 private:
     VkPhysicalDeviceFeatures m_supportedFeatures{};
     VulkanPhysicalDevice*    m_physicalDevice{};
+    VolkDeviceTable          m_table{};
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools  m_commandPools;
 };
