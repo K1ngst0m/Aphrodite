@@ -191,7 +191,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         {
             GraphicsPipelineCreateInfo pipelineCreateInfo{};
             auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-            std::vector<VkFormat>      colorFormats = {getSwapChain()->getFormat()};
+            std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
             pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
                  .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                  .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),

@@ -13,14 +13,11 @@ public:
     VulkanRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
     ~VulkanRenderer();
 
-    void beginFrame();
-    void endFrame();
+    void beginFrame() override;
+    void endFrame() override;
 
 public:
-    VulkanInstance*     getInstance() const { return m_pInstance; }
     VulkanDevice*       getDevice() const { return m_pDevice; }
-    VkPipelineCache     getPipelineCache() { return m_pipelineCache; }
-    VulkanSwapChain*    getSwapChain() { return m_pSwapChain; }
     VulkanShaderModule* getShaders(const std::filesystem::path& path);
 
     VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }

@@ -51,6 +51,9 @@ public:
     {
     }
 
+    virtual void beginFrame() = 0;
+    virtual void endFrame() = 0;
+
     std::shared_ptr<Window> getWindow() { return m_window; }
     uint32_t                getWindowWidth() { return m_window->getWidth(); };
     uint32_t                getWindowHeight() { return m_window->getHeight(); };

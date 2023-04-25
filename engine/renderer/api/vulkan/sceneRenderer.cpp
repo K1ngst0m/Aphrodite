@@ -306,8 +306,6 @@ void VulkanSceneRenderer::_initSetLayout()
         {
             // Create sampler
             VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
-            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            samplerInfo.maxAnisotropy       = 1.0f;
             if(m_pDevice->getFeatures().samplerAnisotropy)
             {
                 samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
@@ -623,7 +621,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 {
     // post fx
     {
-        VulkanImageView* pColorAttachment = getSwapChain()->getImage()->getView();
+        VulkanImageView* pColorAttachment = m_pSwapChain->getImage()->getView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                               VK_IMAGE_LAYOUT_GENERAL);
@@ -750,7 +748,7 @@ void VulkanSceneRenderer::_initPipeline()
         GraphicsPipelineCreateInfo createInfo{};
 
         auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {getSwapChain()->getFormat()};
+        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
         createInfo.renderingCreateInfo     = VkPipelineRenderingCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -775,7 +773,7 @@ void VulkanSceneRenderer::_initPipeline()
     {
         GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = {getSwapChain()->getFormat()};
+        std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
 
         createInfo.renderingCreateInfo = {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,

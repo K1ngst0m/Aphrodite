@@ -107,16 +107,18 @@ inline VkImageCreateInfo imageCreateInfo()
 inline VkSamplerCreateInfo samplerCreateInfo()
 {
     VkSamplerCreateInfo samplerCreateInfo{};
-    samplerCreateInfo.sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter    = VK_FILTER_LINEAR;
-    samplerCreateInfo.minFilter    = VK_FILTER_LINEAR;
-    samplerCreateInfo.mipmapMode   = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.mipLodBias   = 0.0f;
-    samplerCreateInfo.compareOp    = VK_COMPARE_OP_NEVER;
-    samplerCreateInfo.minLod       = 0.0f;
+    samplerCreateInfo.sType         = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerCreateInfo.magFilter     = VK_FILTER_LINEAR;
+    samplerCreateInfo.minFilter     = VK_FILTER_LINEAR;
+    samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerCreateInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeV  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.addressModeW  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerCreateInfo.mipLodBias    = 0.0f;
+    samplerCreateInfo.compareOp     = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod        = 0.0f;
+    samplerCreateInfo.maxAnisotropy = 1.0f;
+    samplerCreateInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
     return samplerCreateInfo;
 }
@@ -179,10 +181,7 @@ inline VkViewport viewport(float width, float height, float x = 0, float y = 0, 
     return viewport;
 }
 
-inline VkViewport viewport(VkExtent2D extent)
-{
-    return viewport(extent.width, extent.height);
-}
+inline VkViewport viewport(VkExtent2D extent) { return viewport(extent.width, extent.height); }
 
 inline VkRect2D rect2D(VkExtent2D extent, int32_t offsetX = 0, int32_t offsetY = 0)
 {
