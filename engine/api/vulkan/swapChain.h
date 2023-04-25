@@ -29,20 +29,21 @@ public:
                           const std::vector<VkSemaphore>& waitSemaphores);
 
 public:
-    VkFormat   getSurfaceFormat() const { return m_surfaceFormat.format; }
-    VkExtent2D getExtent() const { return m_extent; }
+    VkFormat   getFormat() const { return m_surfaceFormat.format; }
     uint32_t   getWidth() const { return m_extent.width; }
     uint32_t   getHeight() const { return m_extent.height; }
 
     VulkanImage* getImage(uint32_t idx) const { return m_images[idx].get(); }
 
 private:
-    VulkanDevice*             m_device{};
+    VulkanDevice*                             m_device{};
     std::vector<std::unique_ptr<VulkanImage>> m_images{};
 
     VkSurfaceKHR       m_surface{};
     VkSurfaceFormatKHR m_surfaceFormat{};
     VkExtent2D         m_extent{};
+
+    uint32_t m_imageIdx{};
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };

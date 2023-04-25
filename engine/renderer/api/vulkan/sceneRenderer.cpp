@@ -117,6 +117,16 @@ void VulkanSceneRenderer::recordDrawSceneCommands()
     recordPostFxCommands(commandBuffer);
 
     commandBuffer->end();
+
+    QueueSubmitInfo submitInfo{
+        .commandBuffers   = {m_commandBuffers[m_frameIdx]},
+        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .waitSemaphores   = {m_renderSemaphore[m_frameIdx]},
+        .signalSemaphores = {m_presentSemaphore[m_frameIdx]},
+    };
+
+    auto* queue = getGraphicsQueue();
+    VK_CHECK_RESULT(queue->submit({submitInfo}, m_frameFences[m_frameIdx]));
 }
 
 void VulkanSceneRenderer::update(float deltaTime)
@@ -226,10 +236,10 @@ void VulkanSceneRenderer::_loadScene()
 
 void VulkanSceneRenderer::_initForward()
 {
-    VkExtent2D imageExtent = getSwapChain()->getExtent();
+    VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
+
     m_images[IMAGE_FORWARD_COLOR].resize(m_config.maxFrames);
     m_images[IMAGE_FORWARD_DEPTH].resize(m_config.maxFrames);
-
     m_images[IMAGE_FORWARD_COLOR_MS].resize(m_config.maxFrames);
     m_images[IMAGE_FORWARD_DEPTH_MS].resize(m_config.maxFrames);
 
@@ -237,8 +247,9 @@ void VulkanSceneRenderer::_initForward()
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         {
-            auto&           colorImage   = m_images[IMAGE_FORWARD_COLOR][idx];
-            auto&           colorImageMS = m_images[IMAGE_FORWARD_COLOR_MS][idx];
+            auto& colorImage   = m_images[IMAGE_FORWARD_COLOR][idx];
+            auto& colorImageMS = m_images[IMAGE_FORWARD_COLOR_MS][idx];
+
             ImageCreateInfo createInfo{
                 .extent = {imageExtent.width, imageExtent.height, 1},
                 .usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -247,7 +258,7 @@ void VulkanSceneRenderer::_initForward()
                 .format    = VK_FORMAT_B8G8R8A8_UNORM,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
-            createInfo.samples = getSampleCount();
+            createInfo.samples = m_sampleCount;
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImageMS));
         }
 
@@ -262,7 +273,7 @@ void VulkanSceneRenderer::_initForward()
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
-            createInfo.samples = getSampleCount();
+            createInfo.samples = m_sampleCount;
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* cmd) {
                 cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -294,7 +305,7 @@ void VulkanSceneRenderer::_initSetLayout()
     {
         {
             // Create sampler
-            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
+            VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             samplerInfo.maxAnisotropy       = 1.0f;
             if(m_pDevice->getFeatures().samplerAnisotropy)
@@ -305,8 +316,8 @@ void VulkanSceneRenderer::_initSetLayout()
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
         }
         {
-            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
-            samplerInfo.maxLod              = aph::utils::calculateFullMipLevels(2048, 2048);
+            VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
+            samplerInfo.maxLod              = utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE]));
         }
@@ -407,7 +418,7 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         ImageCreateInfo createInfo{
             .extent    = {image->width, image->height, 1},
-            .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
+            .mipLevels = utils::calculateFullMipLevels(image->width, image->height),
             .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
             .format    = VK_FORMAT_R8G8B8A8_UNORM,
             .tiling    = VK_IMAGE_TILING_OPTIMAL,
@@ -421,7 +432,7 @@ void VulkanSceneRenderer::_initGpuResources()
     // create skybox cubemap
     {
         auto skyboxDir    = AssetManager::GetTextureDir() / "skybox";
-        auto skyboxImages = aph::utils::loadSkyboxFromFile({
+        auto skyboxImages = utils::loadSkyboxFromFile({
             (skyboxDir / "front.jpg").string(),
             (skyboxDir / "back.jpg").c_str(),
             (skyboxDir / "top_rotate_left_90.jpg").c_str(),
@@ -474,8 +485,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         .width  = getWindowWidth(),
         .height = getWindowHeight(),
     };
-    VkViewport viewport = aph::init::viewport(extent);
-    VkRect2D   scissor  = aph::init::rect2D(extent);
+    VkViewport viewport = init::viewport(extent);
+    VkRect2D   scissor  = init::rect2D(extent);
 
     // dynamic state
     pCommandBuffer->setViewport(viewport);
@@ -516,7 +527,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
             .clearValue         = {.depthStencil{1.0f, 0}},
         };
-        if(getSampleCount() == VK_SAMPLE_COUNT_1_BIT)
+        if(m_sampleCount == VK_SAMPLE_COUNT_1_BIT)
         {
             forwardDepthAttachmentInfo.imageView   = pDepthAttachment->getHandle();
             forwardDepthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
@@ -626,8 +637,8 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
             std::vector<VkWriteDescriptorSet> writes{
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
-                aph::init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
+                init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
+                init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
             };
 
             pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
@@ -648,62 +659,59 @@ void VulkanSceneRenderer::drawUI(float deltaTime)
     io.DeltaTime   = 1.0f;
 
     io.AddMousePosEvent((float)m_window->getCursorX(), (float)m_window->getCursorY());
-    io.AddMouseButtonEvent(0,
-                           m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_LEFT) == aph::input::STATUS_PRESS);
-    io.AddMouseButtonEvent(1,
-                           m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_RIGHT) == aph::input::STATUS_PRESS);
-    io.AddMouseButtonEvent(2,
-                           m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_MIDDLE) == aph::input::STATUS_PRESS);
+    io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_LEFT) == input::STATUS_PRESS);
+    io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_RIGHT) == input::STATUS_PRESS);
+    io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_MIDDLE) == input::STATUS_PRESS);
 
     ImGui::NewFrame();
 
-    aph::ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.m_scale, [&]() {
-        aph::ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
-        aph::ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
-        aph::ui::text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
-        aph::ui::drawWithItemWidth(110.0f, m_ui.m_scale, [&]() {
-            if(aph::ui::header("Input"))
+    ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.scale, [&]() {
+        ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
+        ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
+        ui::text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
+        ui::drawWithItemWidth(110.0f, m_ui.scale, [&]() {
+            if(ui::header("Input"))
             {
-                aph::ui::text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorX(), m_window->getCursorY());
-                aph::ui::text("cursor visible : %s", m_window->getMouseData()->isCursorVisible ? "yes" : "no");
+                ui::text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorX(), m_window->getCursorY());
+                ui::text("cursor visible : %s", m_window->getMouseData()->isCursorVisible ? "yes" : "no");
             }
-            if(aph::ui::header("Scene"))
+            if(ui::header("Scene"))
             {
                 {
                     auto ambient = m_scene->getAmbient();
-                    aph::ui::colorPicker("ambient", &ambient[0]);
+                    ui::colorPicker("ambient", &ambient[0]);
                     m_scene->setAmbient(ambient);
-                    aph::ui::text("camera count : %d", m_cameraNodeList.size());
-                    aph::ui::text("light count : %d", m_lightNodeList.size());
+                    ui::text("camera count : %d", m_cameraNodeList.size());
+                    ui::text("light count : %d", m_lightNodeList.size());
                 }
 
-                if(aph::ui::header("Main Camera"))
+                if(ui::header("Main Camera"))
                 {
                     auto camera  = m_scene->getMainCamera();
                     auto camType = camera->m_cameraType;
 
                     if(camType == CameraType::PERSPECTIVE)
                     {
-                        // aph::ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_view[3][0],
+                        // ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_view[3][0],
                         //                     camera->m_view[3][1], camera->m_view[3][2]);
-                        aph::ui::sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
-                        aph::ui::sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
-                        aph::ui::sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
-                        // aph::ui::checkBox("flipY", &camera->m_flipY);
-                        // aph::ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        // aph::ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        ui::sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
+                        ui::sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
+                        ui::sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
+                        // ui::checkBox("flipY", &camera->m_flipY);
+                        // ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                     else if(camType == CameraType::ORTHO)
                     {
                         assert("TODO");
                         // auto camera = m_scene->getMainCamera();
-                        // aph::ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                        // ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
                         //                     camera->m_position.y, camera->m_position.z);
-                        // aph::ui::text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                        // ui::text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
                         //                     camera->m_rotation.y, camera->m_rotation.z);
-                        // aph::ui::checkBox("flipY", &camera->m_flipY);
-                        // aph::ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        // aph::ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        // ui::checkBox("flipY", &camera->m_flipY);
+                        // ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                 }
 
@@ -711,18 +719,18 @@ void VulkanSceneRenderer::drawUI(float deltaTime)
                 {
                     char lightName[100];
                     sprintf(lightName, "light [%d]", idx);
-                    if(aph::ui::header(lightName))
+                    if(ui::header(lightName))
                     {
                         auto light = m_lightNodeList[idx]->getObject<Light>();
                         auto type  = light->m_type;
                         if(type == LightType::POINT)
                         {
-                            aph::ui::text("type : point");
+                            ui::text("type : point");
                             ImGui::SliderFloat3("position", &light->m_position[0], 0.0f, 1.0f);
                         }
                         else if(type == LightType::DIRECTIONAL)
                         {
-                            aph::ui::text("type : directional");
+                            ui::text("type : directional");
                             ImGui::SliderFloat3("direction", &light->m_direction[0], 0.0f, 1.0f);
                         }
                         ImGui::SliderFloat3("color", &light->m_color[0], 0.0f, 1.0f);
@@ -742,7 +750,7 @@ void VulkanSceneRenderer::_initPipeline()
         GraphicsPipelineCreateInfo createInfo{};
 
         auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {getSwapChain()->getSurfaceFormat()};
+        std::vector<VkFormat> colorFormats = {getSwapChain()->getFormat()};
         createInfo.renderingCreateInfo     = VkPipelineRenderingCreateInfo{
                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -750,7 +758,7 @@ void VulkanSceneRenderer::_initPipeline()
                 .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        createInfo.multisampling.rasterizationSamples = getSampleCount();
+        createInfo.multisampling.rasterizationSamples = m_sampleCount;
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 
@@ -767,7 +775,7 @@ void VulkanSceneRenderer::_initPipeline()
     {
         GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = {getSwapChain()->getSurfaceFormat()};
+        std::vector<VkFormat>      colorFormats = {getSwapChain()->getFormat()};
 
         createInfo.renderingCreateInfo = {
             .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
@@ -775,13 +783,12 @@ void VulkanSceneRenderer::_initPipeline()
             .pColorAttachmentFormats = colorFormats.data(),
             .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
-        createInfo.multisampling.rasterizationSamples = getSampleCount();
+        createInfo.multisampling.rasterizationSamples = m_sampleCount;
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 
-        createInfo.depthStencil =
-            aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
         createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
 

@@ -128,7 +128,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         // Setup Dear ImGui style
-        io.FontGlobalScale = m_ui.m_scale;
+        io.FontGlobalScale = m_ui.scale;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
 
         // Create font texture
@@ -136,13 +136,13 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             unsigned char*    fontData;
             int               texWidth, texHeight;
             const std::string filename = AssetManager::GetFontDir() / "Roboto-Medium.ttf";
-            io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_ui.m_scale);
+            io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_ui.scale);
             io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
             VkDeviceSize uploadSize = texWidth * texHeight * 4;
 
             // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling above)
             ImGuiStyle& style = ImGui::GetStyle();
-            style.ScaleAllSizes(m_ui.m_scale);
+            style.ScaleAllSizes(m_ui.scale);
 
             std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
             ImageCreateInfo      creatInfo{
@@ -151,9 +151,9 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                      .format = VK_FORMAT_R8G8B8A8_UNORM,
                      .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
-            m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.m_pFontImage, imageData);
+            m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.pFontImage, imageData);
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
-                pCmd->transitionImageLayout(m_ui.m_pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             });
         }
@@ -168,7 +168,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.m_fontSampler));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler));
         }
 
         // setup descriptor
@@ -176,22 +176,22 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             std::vector<ResourcesBinding> bindings{
                 {ResourceType::COMBINE_SAMPLER_IMAGE, {ShaderStage::FS}},
             };
-            m_pDevice->createDescriptorSetLayout(bindings, &m_ui.m_pSetLayout);
+            m_pDevice->createDescriptorSetLayout(bindings, &m_ui.pSetLayout);
 
-            VkDescriptorImageInfo      fontDescriptor = {m_ui.m_fontSampler, m_ui.m_pFontImage->getView()->getHandle(),
+            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler, m_ui.pFontImage->getView()->getHandle(),
                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
             std::vector<ResourceWrite> writes{
                 {&fontDescriptor, {}},
             };
 
-            m_ui.m_set = m_ui.m_pSetLayout->allocateSet(writes);
+            m_ui.set = m_ui.pSetLayout->allocateSet(writes);
         }
 
         // setup pipeline
         {
             GraphicsPipelineCreateInfo pipelineCreateInfo{};
             auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
-            std::vector<VkFormat>      colorFormats = {getSwapChain()->getSurfaceFormat()};
+            std::vector<VkFormat>      colorFormats = {getSwapChain()->getFormat()};
             pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
                  .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                  .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
@@ -201,12 +201,10 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             pipelineCreateInfo.depthStencil =
                 aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
-            pipelineCreateInfo.setLayouts = {m_ui.m_pSetLayout};
-            pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(m_ui.m_pushConstBlock)}};
-            pipelineCreateInfo.shaderMapList[ShaderStage::VS] =
-                getShaders(shaderDir / "uioverlay.vert.spv");
-            pipelineCreateInfo.shaderMapList[ShaderStage::FS] =
-                getShaders(shaderDir / "uioverlay.frag.spv");
+            pipelineCreateInfo.setLayouts = {m_ui.pSetLayout};
+            pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(m_ui.pushConstBlock)}};
+            pipelineCreateInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "uioverlay.vert.spv");
+            pipelineCreateInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "uioverlay.frag.spv");
 
             pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
             pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -223,8 +221,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                                   VK_COLOR_COMPONENT_A_BIT,
             };
             pipelineCreateInfo.colorBlendAttachment = blendAttachmentState;
-            pipelineCreateInfo.multisampling =
-                aph::init::pipelineMultisampleStateCreateInfo(getSampleCount());
+            pipelineCreateInfo.multisampling        = aph::init::pipelineMultisampleStateCreateInfo(m_sampleCount);
 
             // Vertex bindings an attributes based on ImGui vertex definition
             std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -242,7 +239,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
             pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_ui.m_pPipeline));
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_ui.pipeline));
         }
     }
 }
@@ -251,14 +248,14 @@ VulkanRenderer::~VulkanRenderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        m_pDevice->destroyBuffer(m_ui.m_pVertexBuffer);
-        m_pDevice->destroyBuffer(m_ui.m_pIndexBuffer);
+        m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
+        m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
 
-        m_pDevice->destroyImage(m_ui.m_pFontImage);
+        m_pDevice->destroyImage(m_ui.pFontImage);
 
-        m_pDevice->destroySampler(m_ui.m_fontSampler);
-        m_pDevice->destroyDescriptorSetLayout(m_ui.m_pSetLayout);
-        m_pDevice->destroyPipeline(m_ui.m_pPipeline);
+        m_pDevice->destroySampler(m_ui.fontSampler);
+        m_pDevice->destroyDescriptorSetLayout(m_ui.pSetLayout);
+        m_pDevice->destroyPipeline(m_ui.pipeline);
         if(ImGui::GetCurrentContext()) { ImGui::DestroyContext(); }
     }
 
@@ -293,15 +290,6 @@ void VulkanRenderer::beginFrame()
 void VulkanRenderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
-
-    QueueSubmitInfo submitInfo{
-        .commandBuffers   = {m_commandBuffers[m_frameIdx]},
-        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-        .waitSemaphores   = {m_renderSemaphore[m_frameIdx]},
-        .signalSemaphores = {m_presentSemaphore[m_frameIdx]},
-    };
-
-    VK_CHECK_RESULT(queue->submit({submitInfo}, m_frameFences[m_frameIdx]));
     VK_CHECK_RESULT(m_pSwapChain->presentImage(m_imageIdx, queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
@@ -352,16 +340,16 @@ void VulkanRenderer::recordUIDraw(VulkanCommandBuffer* pCommandBuffer)
         if((!imDrawData) || (imDrawData->CmdListsCount == 0)) { return; }
 
         ImGuiIO& io = ImGui::GetIO();
-        pCommandBuffer->bindPipeline(m_ui.m_pPipeline);
-        pCommandBuffer->bindDescriptorSet(m_ui.m_pPipeline, 0, 1, &m_ui.m_set);
+        pCommandBuffer->bindPipeline(m_ui.pipeline);
+        pCommandBuffer->bindDescriptorSet(m_ui.pipeline, 0, 1, &m_ui.set);
 
-        m_ui.m_pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
-        m_ui.m_pushConstBlock.translate = glm::vec2(-1.0f);
-        pCommandBuffer->pushConstants(m_ui.m_pPipeline, {ShaderStage::VS}, 0, sizeof(m_ui.m_pushConstBlock),
-                                      &m_ui.m_pushConstBlock);
+        m_ui.pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
+        m_ui.pushConstBlock.translate = glm::vec2(-1.0f);
+        pCommandBuffer->pushConstants(m_ui.pipeline, {ShaderStage::VS}, 0, sizeof(m_ui.pushConstBlock),
+                                      &m_ui.pushConstBlock);
 
-        pCommandBuffer->bindVertexBuffers(0, 1, m_ui.m_pVertexBuffer, {0});
-        pCommandBuffer->bindIndexBuffers(m_ui.m_pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        pCommandBuffer->bindVertexBuffers(0, 1, m_ui.pVertexBuffer, {0});
+        pCommandBuffer->bindIndexBuffers(m_ui.pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         for(int32_t i = 0; i < imDrawData->CmdListsCount; i++)
         {
@@ -405,43 +393,43 @@ bool VulkanRenderer::updateUIDrawData(float deltaTime)
         if((vertexBufferSize == 0) || (indexBufferSize == 0)) { return false; }
 
         // Vertex buffer
-        if(m_ui.m_pVertexBuffer == nullptr || (m_ui.m_vertexCount != imDrawData->TotalVtxCount))
+        if(m_ui.pVertexBuffer == nullptr || (m_ui.vertexCount != imDrawData->TotalVtxCount))
         {
             BufferCreateInfo createInfo = {.size   = static_cast<uint32_t>(vertexBufferSize),
                                            .usage  = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                            .domain = BufferDomain::Host};
-            if(m_ui.m_pVertexBuffer)
+            if(m_ui.pVertexBuffer)
             {
                 m_pDevice->waitIdle();
-                m_pDevice->unMapMemory(m_ui.m_pVertexBuffer);
-                m_pDevice->destroyBuffer(m_ui.m_pVertexBuffer);
+                m_pDevice->unMapMemory(m_ui.pVertexBuffer);
+                m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.m_pVertexBuffer));
-            m_ui.m_vertexCount = imDrawData->TotalVtxCount;
-            m_pDevice->mapMemory(m_ui.m_pVertexBuffer);
+            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.pVertexBuffer));
+            m_ui.vertexCount = imDrawData->TotalVtxCount;
+            m_pDevice->mapMemory(m_ui.pVertexBuffer);
             updateCmdBuffers = true;
         }
 
-        if(m_ui.m_pIndexBuffer == nullptr || (m_ui.m_indexCount != imDrawData->TotalVtxCount))
+        if(m_ui.pIndexBuffer == nullptr || (m_ui.indexCount = imDrawData->TotalVtxCount))
         {
             BufferCreateInfo createInfo = {.size   = static_cast<uint32_t>(vertexBufferSize),
                                            .usage  = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
                                            .domain = BufferDomain::Host};
-            if(m_ui.m_pIndexBuffer)
+            if(m_ui.pIndexBuffer)
             {
                 m_pDevice->waitIdle();
-                m_pDevice->unMapMemory(m_ui.m_pIndexBuffer);
-                m_pDevice->destroyBuffer(m_ui.m_pIndexBuffer);
+                m_pDevice->unMapMemory(m_ui.pIndexBuffer);
+                m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.m_pIndexBuffer));
-            m_ui.m_indexCount = imDrawData->TotalIdxCount;
-            m_pDevice->mapMemory(m_ui.m_pIndexBuffer);
+            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.pIndexBuffer));
+            m_ui.indexCount = imDrawData->TotalIdxCount;
+            m_pDevice->mapMemory(m_ui.pIndexBuffer);
             updateCmdBuffers = true;
         }
 
         // Upload data
-        ImDrawVert* vtxDst = (ImDrawVert*)m_ui.m_pVertexBuffer->getMapped();
-        ImDrawIdx*  idxDst = (ImDrawIdx*)m_ui.m_pIndexBuffer->getMapped();
+        ImDrawVert* vtxDst = (ImDrawVert*)m_ui.pVertexBuffer->getMapped();
+        ImDrawIdx*  idxDst = (ImDrawIdx*)m_ui.pIndexBuffer->getMapped();
 
         for(int n = 0; n < imDrawData->CmdListsCount; n++)
         {
@@ -453,8 +441,8 @@ bool VulkanRenderer::updateUIDrawData(float deltaTime)
         }
 
         // Flush to make writes visible to GPU
-        m_pDevice->flushMemory(m_ui.m_pVertexBuffer->getMemory());
-        m_pDevice->flushMemory(m_ui.m_pIndexBuffer->getMemory());
+        m_pDevice->flushMemory(m_ui.pVertexBuffer->getMemory());
+        m_pDevice->flushMemory(m_ui.pIndexBuffer->getMemory());
 
         return updateCmdBuffers;
     }

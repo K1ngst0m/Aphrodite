@@ -17,15 +17,11 @@ public:
     void endFrame();
 
 public:
-    VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
     VulkanInstance*       getInstance() const { return m_pInstance; }
     VulkanDevice*         getDevice() const { return m_pDevice; }
     VkPipelineCache       getPipelineCache() { return m_pipelineCache; }
     VulkanSwapChain*      getSwapChain() { return m_pSwapChain; }
     VulkanShaderModule*   getShaders(const std::filesystem::path& path);
-
-    VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool.get(); }
-    uint32_t                  getCommandBufferCount() const { return m_commandBuffers.size(); }
 
     VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }
     VulkanQueue* getComputeQueue() const { return m_queue.compute; }
@@ -82,26 +78,26 @@ protected:
         {
             glm::vec2 scale;
             glm::vec2 translate;
-        } m_pushConstBlock;
+        } pushConstBlock;
 
         bool visible = {true};
         bool updated = {false};
 
-        VulkanImage*     m_pFontImage  = {};
-        VkSampler        m_fontSampler = {};
-        VkDescriptorPool m_pool        = {};
-        VkRenderPass     m_renderpass  = {};
-        VulkanPipeline*  m_pPipeline   = {};
+        VulkanImage*     pFontImage  = {};
+        VkSampler        fontSampler = {};
+        VkDescriptorPool pool        = {};
+        VkRenderPass     renderPass  = {};
+        VulkanPipeline*  pipeline   = {};
 
-        VulkanBuffer* m_pVertexBuffer = {};
-        VulkanBuffer* m_pIndexBuffer  = {};
-        uint32_t      m_vertexCount   = {};
-        uint32_t      m_indexCount    = {};
+        VulkanBuffer* pVertexBuffer = {};
+        VulkanBuffer* pIndexBuffer  = {};
+        uint32_t      vertexCount   = {};
+        uint32_t      indexCount    = {};
 
-        VulkanDescriptorSetLayout* m_pSetLayout = {};
-        VkDescriptorSet            m_set        = {};
+        VulkanDescriptorSetLayout* pSetLayout = {};
+        VkDescriptorSet            set        = {};
 
-        float m_scale = {1.1f};
+        float scale = {1.1f};
     } m_ui;
 };
 }  // namespace aph
