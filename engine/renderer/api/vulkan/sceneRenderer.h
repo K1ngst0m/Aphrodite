@@ -16,18 +16,21 @@ public:
     void cleanup();
     void update(float deltaTime);
     void recordDrawSceneCommands();
-    void recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer);
+    void recordDeferredGeometryCommands(VulkanCommandBuffer* pCommandBuffer);
+    void recordDeferredLightCommands(VulkanCommandBuffer* pCommandBuffer);
+    void recordForwardCommands(VulkanCommandBuffer* pCommandBuffer);
     void recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer);
 
 private:
     void drawUI(float deltaTime);
-    void _initSetLayout();
-    void _initSet();
-    void _initForward();
+    void _initGbuffer();
+    void _initGeneral();
     void _initSkybox();
     void _initPipeline();
-    void _loadScene();
+    void _initSetLayout();
     void _initGpuResources();
+    void _initSet();
+    void _loadScene();
 
 private:
     enum SetLayoutIndex
@@ -37,6 +40,7 @@ private:
         SET_LAYOUT_SCENE,
         // SET_LAYOUT_OBJECT,
         SET_LAYOUT_POSTFX,
+        SET_LAYOUT_GBUFFER,
         SET_LAYOUT_MAX,
     };
 
@@ -51,6 +55,8 @@ private:
 
     enum PipelineIndex
     {
+        PIPELINE_GRAPHICS_GEOMETRY,
+        PIPELINE_GRAPHICS_LIGHTING,
         PIPELINE_GRAPHICS_FORWARD,
         // PIPELINE_GRAPHICS_SHADOW,
         PIPELINE_GRAPHICS_SKYBOX,
@@ -76,10 +82,13 @@ private:
         IMAGE_GBUFFER_POSITION,
         IMAGE_GBUFFER_NORMAL,
         IMAGE_GBUFFER_ALBEDO,
-        IMAGE_FORWARD_COLOR,
-        IMAGE_FORWARD_DEPTH,
-        IMAGE_FORWARD_COLOR_MS,
-        IMAGE_FORWARD_DEPTH_MS,
+        IMAGE_GBUFFER_EMISSIVE,
+        IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO,
+        IMAGE_GBUFFER_DEPTH,
+        IMAGE_GENERAL_COLOR,
+        IMAGE_GENERAL_DEPTH,
+        IMAGE_GENERAL_COLOR_MS,
+        IMAGE_GENERAL_DEPTH_MS,
         IMAGE_SCENE_SKYBOX,
         IMAGE_SCENE_TEXTURES,
         IMAGE_MAX

@@ -101,7 +101,7 @@ std::vector<char> loadSpvFromFile(const std::string& filename)
     return buffer;
 }
 
-VkImageAspectFlags getImageAspectFlags(VkFormat format)
+VkImageAspectFlags getImageAspect(VkFormat format)
 {
     switch(format)
     {
@@ -116,16 +116,4 @@ VkImageAspectFlags getImageAspectFlags(VkFormat format)
     }
 }
 
-VkImageLayout getDefaultImageLayoutFromUsage(VkImageUsageFlags usage)
-{
-    if(usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    if(usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    if(usage & VK_IMAGE_USAGE_STORAGE_BIT) return VK_IMAGE_LAYOUT_GENERAL;
-    if(usage & VK_IMAGE_USAGE_SAMPLED_BIT) return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if(usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT) return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if(usage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    if(usage & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-
-    return VK_IMAGE_LAYOUT_GENERAL;
-}
 }  // namespace aph::utils

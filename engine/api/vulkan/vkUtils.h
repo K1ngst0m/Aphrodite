@@ -32,9 +32,7 @@ namespace aph::utils
 std::string        errorString(VkResult errorCode);
 std::vector<char>  loadSpvFromFile(const std::string& filename);
 std::vector<char>  loadGlslFromFile(const std::string& filename);
-VkImageAspectFlags getImageAspectFlags(VkFormat format);
-VkImageLayout      getDefaultImageLayoutFromUsage(VkImageUsageFlags usage);
-
+VkImageAspectFlags getImageAspect(VkFormat format);
 }  // namespace aph::utils
 
 // convert

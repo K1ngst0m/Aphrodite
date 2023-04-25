@@ -220,7 +220,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                 .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
                                   VK_COLOR_COMPONENT_A_BIT,
             };
-            pipelineCreateInfo.colorBlendAttachment = blendAttachmentState;
+            pipelineCreateInfo.colorBlendAttachments[0] = blendAttachmentState;
             pipelineCreateInfo.multisampling        = aph::init::pipelineMultisampleStateCreateInfo(m_sampleCount);
 
             // Vertex bindings an attributes based on ImGui vertex definition

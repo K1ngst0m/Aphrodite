@@ -13,7 +13,7 @@ struct Vertex
     glm::vec3 normal;
     glm::vec2 uv;
     glm::vec3 color;
-    glm::vec4 tangent;
+    glm::vec3 tangent;
 };
 
 enum class AlphaMode : uint32_t

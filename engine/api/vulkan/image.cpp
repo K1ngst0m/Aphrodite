@@ -37,7 +37,7 @@ VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
             .viewType         = imageTypeMap.at(m_createInfo.imageType),
             .format           = imageFormat,
             .subresourceRange = {
-                .aspectMask = utils::getImageAspectFlags(m_createInfo.format),
+                .aspectMask = utils::getImageAspect(m_createInfo.format),
                 .baseMipLevel = 0,
                 .levelCount = m_createInfo.mipLevels,
                 .baseArrayLayer = 0,

@@ -171,7 +171,7 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, Vu
         .format   = createInfo.format,
     };
     info.subresourceRange = {
-        .aspectMask     = aph::utils::getImageAspectFlags(createInfo.format),
+        .aspectMask     = aph::utils::getImageAspect(createInfo.format),
         .baseMipLevel   = createInfo.subresourceRange.baseMipLevel,
         .levelCount     = createInfo.subresourceRange.levelCount,
         .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
@@ -466,8 +466,8 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
         .pNext           = nullptr,
         .logicOpEnable   = VK_FALSE,
         .logicOp         = VK_LOGIC_OP_COPY,
-        .attachmentCount = 1,
-        .pAttachments    = &createInfo.colorBlendAttachment,
+        .attachmentCount = static_cast<uint32_t>(createInfo.colorBlendAttachments.size()),
+        .pAttachments    = createInfo.colorBlendAttachments.data(),
     };
 
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;

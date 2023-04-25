@@ -117,7 +117,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     else
     {
         imageMemoryBarrier.subresourceRange = {
-            .aspectMask     = aph::utils::getImageAspectFlags(imageCreateInfo.format),
+            .aspectMask     = aph::utils::getImageAspect(imageCreateInfo.format),
             .baseMipLevel   = 0,
             .levelCount     = imageCreateInfo.mipLevels,
             .baseArrayLayer = 0,

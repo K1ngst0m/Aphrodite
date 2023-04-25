@@ -25,7 +25,7 @@ public:
     VulkanQueue* getTransferQueue() const { return m_queue.transfer; }
 
 protected:
-    VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_8_BIT};
+    VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
 
     VulkanInstance*  m_pInstance  = {};
     VulkanDevice*    m_pDevice    = {};

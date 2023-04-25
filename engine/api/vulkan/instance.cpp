@@ -61,7 +61,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         std::cerr << "[ERROR] >>> " << pCallbackData->pMessage << std::endl;
         break;
-    default: break;
+
+        default: break;
     }
     return VK_FALSE;
 }

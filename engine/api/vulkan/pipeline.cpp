@@ -10,7 +10,7 @@ std::unordered_map<VertexComponent, VkVertexInputAttributeDescription> vertexCom
     {VertexComponent::NORMAL, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)}},
     {VertexComponent::UV, {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}},
     {VertexComponent::COLOR, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}},
-    {VertexComponent::TANGENT, {0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, tangent)}},
+    {VertexComponent::TANGENT, {0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)}},
 };
 
 std::unordered_map<VertexComponent, size_t> vertexComponentSizeMap{
@@ -44,7 +44,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
     rasterizer           = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
                                                                            VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
     multisampling        = aph::init::pipelineMultisampleStateCreateInfo();
-    colorBlendAttachment = aph::init::pipelineColorBlendAttachmentState();
+    colorBlendAttachments.push_back(aph::init::pipelineColorBlendAttachmentState());
     depthStencil         = aph::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 

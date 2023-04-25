@@ -21,20 +21,20 @@ enum class VertexComponent
 
 struct GraphicsPipelineCreateInfo
 {
-    std::vector<VkVertexInputBindingDescription>   inputBinding         = {};
-    std::vector<VkVertexInputAttributeDescription> inputAttribute       = {};
-    VkPipelineVertexInputStateCreateInfo           vertexInputInfo      = {};
-    VkPipelineRenderingCreateInfo                  renderingCreateInfo  = {};
-    std::vector<VkDynamicState>                    dynamicStages        = {};
-    VkPipelineInputAssemblyStateCreateInfo         inputAssembly        = {};
-    VkViewport                                     viewport             = {};
-    VkRect2D                                       scissor              = {};
-    VkPipelineDynamicStateCreateInfo               dynamicState         = {};
-    VkPipelineRasterizationStateCreateInfo         rasterizer           = {};
-    VkPipelineColorBlendAttachmentState            colorBlendAttachment = {};
-    VkPipelineMultisampleStateCreateInfo           multisampling        = {};
-    VkPipelineDepthStencilStateCreateInfo          depthStencil         = {};
-    VkPipelineCache                                pipelineCache        = {};
+    std::vector<VkVertexInputBindingDescription>     inputBinding          = {};
+    std::vector<VkVertexInputAttributeDescription>   inputAttribute        = {};
+    VkPipelineVertexInputStateCreateInfo             vertexInputInfo       = {};
+    VkPipelineRenderingCreateInfo                    renderingCreateInfo   = {};
+    std::vector<VkDynamicState>                      dynamicStages         = {};
+    VkPipelineInputAssemblyStateCreateInfo           inputAssembly         = {};
+    VkViewport                                       viewport              = {};
+    VkRect2D                                         scissor               = {};
+    VkPipelineDynamicStateCreateInfo                 dynamicState          = {};
+    VkPipelineRasterizationStateCreateInfo           rasterizer            = {};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments = {};
+    VkPipelineMultisampleStateCreateInfo             multisampling         = {};
+    VkPipelineDepthStencilStateCreateInfo            depthStencil          = {};
+    VkPipelineCache                                  pipelineCache         = {};
 
     std::vector<VulkanDescriptorSetLayout*> setLayouts    = {};
     std::vector<VkPushConstantRange>        constants     = {};
