@@ -1,5 +1,7 @@
 #include "sceneRenderer.h"
 
+#include "ui/ui.h"
+
 #include "api/gpuResource.h"
 #include "api/vulkan/vkUtils.h"
 #include "common/assetManager.h"
@@ -103,7 +105,6 @@ void VulkanSceneRenderer::cleanup()
     {
         m_pDevice->destroySampler(sampler);
     }
-    VulkanRenderer::cleanup();
 }
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
@@ -162,7 +163,8 @@ void VulkanSceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_LIGHT]->write(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
 
-    _updateUI(deltaTime);
+    drawUI(deltaTime);
+    updateUIDrawData(deltaTime);
 }
 
 void VulkanSceneRenderer::_initSet()
@@ -599,9 +601,7 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
         }
 
         // draw ui
-        {
-            if(m_pUIRenderer) { m_pUIRenderer->draw(pCommandBuffer); }
-        }
+        recordUIDraw(pCommandBuffer);
 
         pCommandBuffer->endRendering();
 
@@ -646,7 +646,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
     }
 }
 
-void VulkanSceneRenderer::_updateUI(float deltaTime)
+void VulkanSceneRenderer::drawUI(float deltaTime)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -663,53 +663,53 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
 
     ImGui::NewFrame();
 
-    m_pUIRenderer->drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, [&]() {
-        m_pUIRenderer->text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
-        m_pUIRenderer->text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
-        m_pUIRenderer->text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
-        m_pUIRenderer->drawWithItemWidth(110.0f, [&]() {
-            if(m_pUIRenderer->header("Input"))
+    aph::ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.m_scale, [&]() {
+        aph::ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
+        aph::ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
+        aph::ui::text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
+        aph::ui::drawWithItemWidth(110.0f, m_ui.m_scale, [&]() {
+            if(aph::ui::header("Input"))
             {
-                m_pUIRenderer->text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorX(), m_window->getCursorY());
-                m_pUIRenderer->text("cursor visible : %s", m_window->getMouseData()->isCursorVisible ? "yes" : "no");
+                aph::ui::text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorX(), m_window->getCursorY());
+                aph::ui::text("cursor visible : %s", m_window->getMouseData()->isCursorVisible ? "yes" : "no");
             }
-            if(m_pUIRenderer->header("Scene"))
+            if(aph::ui::header("Scene"))
             {
                 {
                     auto ambient = m_scene->getAmbient();
-                    m_pUIRenderer->colorPicker("ambient", &ambient[0]);
+                    aph::ui::colorPicker("ambient", &ambient[0]);
                     m_scene->setAmbient(ambient);
-                    m_pUIRenderer->text("camera count : %d", m_cameraNodeList.size());
-                    m_pUIRenderer->text("light count : %d", m_lightNodeList.size());
+                    aph::ui::text("camera count : %d", m_cameraNodeList.size());
+                    aph::ui::text("light count : %d", m_lightNodeList.size());
                 }
 
-                if(m_pUIRenderer->header("Main Camera"))
+                if(aph::ui::header("Main Camera"))
                 {
                     auto camera  = m_scene->getMainCamera();
                     auto camType = camera->m_cameraType;
 
                     if(camType == CameraType::PERSPECTIVE)
                     {
-                        // m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_view[3][0],
+                        // aph::ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_view[3][0],
                         //                     camera->m_view[3][1], camera->m_view[3][2]);
-                        m_pUIRenderer->sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
-                        m_pUIRenderer->sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
-                        m_pUIRenderer->sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
-                        // m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
-                        // m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        // m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        aph::ui::sliderFloat("fov", &camera->m_perspective.fov, 30.0f, 120.0f);
+                        aph::ui::sliderFloat("znear", &camera->m_perspective.znear, 0.01f, 60.0f);
+                        aph::ui::sliderFloat("zfar", &camera->m_perspective.zfar, 60.0f, 200.0f);
+                        // aph::ui::checkBox("flipY", &camera->m_flipY);
+                        // aph::ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // aph::ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                     else if(camType == CameraType::ORTHO)
                     {
                         assert("TODO");
                         // auto camera = m_scene->getMainCamera();
-                        // m_pUIRenderer->text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
+                        // aph::ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
                         //                     camera->m_position.y, camera->m_position.z);
-                        // m_pUIRenderer->text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
+                        // aph::ui::text("rotation : [ %.2f, %.2f, %.2f ]", camera->m_rotation.x,
                         //                     camera->m_rotation.y, camera->m_rotation.z);
-                        // m_pUIRenderer->checkBox("flipY", &camera->m_flipY);
-                        // m_pUIRenderer->sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
-                        // m_pUIRenderer->sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
+                        // aph::ui::checkBox("flipY", &camera->m_flipY);
+                        // aph::ui::sliderFloat("rotation speed", &camera->m_rotationSpeed, 0.1f, 1.0f);
+                        // aph::ui::sliderFloat("move speed", &camera->m_movementSpeed, 0.1f, 5.0f);
                     }
                 }
 
@@ -717,18 +717,18 @@ void VulkanSceneRenderer::_updateUI(float deltaTime)
                 {
                     char lightName[100];
                     sprintf(lightName, "light [%d]", idx);
-                    if(m_pUIRenderer->header(lightName))
+                    if(aph::ui::header(lightName))
                     {
                         auto light = m_lightNodeList[idx]->getObject<Light>();
                         auto type  = light->m_type;
                         if(type == LightType::POINT)
                         {
-                            m_pUIRenderer->text("type : point");
+                            aph::ui::text("type : point");
                             ImGui::SliderFloat3("position", &light->m_position[0], 0.0f, 1.0f);
                         }
                         else if(type == LightType::DIRECTIONAL)
                         {
-                            m_pUIRenderer->text("type : directional");
+                            aph::ui::text("type : directional");
                             ImGui::SliderFloat3("direction", &light->m_direction[0], 0.0f, 1.0f);
                         }
                         ImGui::SliderFloat3("color", &light->m_color[0], 0.0f, 1.0f);
@@ -774,13 +774,13 @@ void VulkanSceneRenderer::_initPipeline()
         GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
         auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = {getSwapChain()->getSurfaceFormat()};
-        createInfo.renderingCreateInfo          = {
-                     .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                     .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                     .pColorAttachmentFormats = colorFormats.data(),
-                     .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
 
+        createInfo.renderingCreateInfo = {
+            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+            .pColorAttachmentFormats = colorFormats.data(),
+            .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        };
         createInfo.multisampling.rasterizationSamples = getSampleCount();
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;

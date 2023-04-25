@@ -3,7 +3,6 @@
 
 #include "api/vulkan/device.h"
 #include "renderer.h"
-#include "uiRenderer.h"
 #include "scene/scene.h"
 
 namespace aph
@@ -19,10 +18,9 @@ public:
     void recordDrawSceneCommands();
     void recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer);
     void recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer);
-    void setUIRenderer(const std::unique_ptr<VulkanUIRenderer>& renderer) { m_pUIRenderer = renderer.get(); }
 
 private:
-    void _updateUI(float deltaTime);
+    void drawUI(float deltaTime);
     void _initSetLayout();
     void _initSet();
     void _initForward();
@@ -102,9 +100,6 @@ private:
     std::vector<SceneNode*> m_meshNodeList;
     std::vector<SceneNode*> m_cameraNodeList;
     std::vector<SceneNode*> m_lightNodeList;
-
-private:
-    VulkanUIRenderer* m_pUIRenderer = {};
 };
 }  // namespace aph
 

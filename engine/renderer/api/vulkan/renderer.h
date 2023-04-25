@@ -11,17 +11,13 @@ class VulkanRenderer : public IRenderer
 {
 public:
     VulkanRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
+    ~VulkanRenderer();
 
-    ~VulkanRenderer() = default;
-
-    void cleanup() override;
-    void idleDevice() override;
     void beginFrame();
     void endFrame();
 
 public:
     VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
-    RenderConfig          getConfig() const { return m_config; }
     VulkanInstance*       getInstance() const { return m_pInstance; }
     VulkanDevice*         getDevice() const { return m_pDevice; }
     uint32_t              getCurrentFrameIndex() const { return m_frameIdx; }
@@ -59,11 +55,11 @@ protected:
     } m_queue;
 
 protected:
-    std::vector<VkSemaphore>          m_renderSemaphore  = {};
-    std::vector<VkSemaphore>          m_presentSemaphore = {};
-    std::vector<VkFence>              m_frameFences      = {};
+    std::vector<VkSemaphore> m_renderSemaphore  = {};
+    std::vector<VkSemaphore> m_presentSemaphore = {};
+    std::vector<VkFence>     m_frameFences      = {};
 
-    std::vector<VulkanCommandBuffer*> m_commandBuffers   = {};
+    std::vector<VulkanCommandBuffer*> m_commandBuffers = {};
 
 protected:
     uint32_t m_frameIdx = {};
@@ -78,6 +74,38 @@ protected:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
 
     std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
+
+protected:
+    bool updateUIDrawData(float deltaTime);
+    void recordUIDraw(VulkanCommandBuffer* pCommandBuffer);
+    struct UI
+    {
+        void resize(uint32_t width, uint32_t height);
+        struct PushConstBlock
+        {
+            glm::vec2 scale;
+            glm::vec2 translate;
+        } m_pushConstBlock;
+
+        bool visible = {true};
+        bool updated = {false};
+
+        VulkanImage*     m_pFontImage  = {};
+        VkSampler        m_fontSampler = {};
+        VkDescriptorPool m_pool        = {};
+        VkRenderPass     m_renderpass  = {};
+        VulkanPipeline*  m_pPipeline   = {};
+
+        VulkanBuffer* m_pVertexBuffer = {};
+        VulkanBuffer* m_pIndexBuffer  = {};
+        uint32_t      m_vertexCount   = {};
+        uint32_t      m_indexCount    = {};
+
+        VulkanDescriptorSetLayout* m_pSetLayout = {};
+        VkDescriptorSet            m_set        = {};
+
+        float m_scale = {1.1f};
+    } m_ui;
 };
 }  // namespace aph
 

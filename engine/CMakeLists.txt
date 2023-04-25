@@ -6,17 +6,19 @@ file(GLOB base_src
   aph_core.hpp
   aph_renderer.hpp
 
+  ui/*.cpp
+  ui/*.h
+  ui/*.hpp
+
   renderer/*.cpp
   renderer/*.h
   renderer/*.hpp
 
   renderer/api/vulkan/sceneRenderer.h
   renderer/api/vulkan/renderer.h
-  renderer/api/vulkan/uiRenderer.h
 
   renderer/api/vulkan/sceneRenderer.cpp
   renderer/api/vulkan/renderer.cpp
-  renderer/api/vulkan/uiRenderer.cpp
 
   api/vulkan/*.cpp
   api/vulkan/*.h

@@ -9,12 +9,20 @@
 
 namespace aph
 {
+
+enum RenderConfigFlagBits
+{
+    RENDER_CFG_DEBUG       = (1 << 0),
+    RENDER_CFG_UI          = (1 << 1),
+    RENDER_CFG_DEFAULT_RES = (1 << 2),
+    RENDER_CFG_ALL         = RENDER_CFG_DEBUG | RENDER_CFG_UI | RENDER_CFG_DEFAULT_RES,
+};
+using RenderConfigFlags = uint32_t;
+
 struct RenderConfig
 {
-    bool                enableDebug         = {true};
-    bool                enableUI            = {true};
-    bool                initDefaultResource = {true};
-    uint32_t            maxFrames           = {2};
+    RenderConfigFlags flags     = RENDER_CFG_ALL;
+    uint32_t          maxFrames = {2};
 };
 
 class VulkanSceneRenderer;
@@ -47,9 +55,6 @@ public:
     uint32_t                getWindowWidth() { return m_window->getWidth(); };
     uint32_t                getWindowHeight() { return m_window->getHeight(); };
     uint32_t                getWindowAspectRation() { return m_window->getAspectRatio(); }
-
-    virtual void cleanup()    = 0;
-    virtual void idleDevice() = 0;
 
 protected:
     std::shared_ptr<Window> m_window = {};

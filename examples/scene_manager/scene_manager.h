@@ -38,7 +38,6 @@ private:
     std::unique_ptr<aph::CameraController> m_cameraController = {};
 
     std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
-    std::unique_ptr<aph::VulkanUIRenderer>    m_uiRenderer    = {};
 
     std::shared_ptr<aph::Window> m_window = {};
 };
