@@ -20,14 +20,11 @@ public:
     VkSampleCountFlagBits getSampleCount() const { return m_sampleCount; }
     VulkanInstance*       getInstance() const { return m_pInstance; }
     VulkanDevice*         getDevice() const { return m_pDevice; }
-    uint32_t              getCurrentFrameIndex() const { return m_frameIdx; }
-    uint32_t              getCurrentImageIndex() const { return m_imageIdx; }
     VkPipelineCache       getPipelineCache() { return m_pipelineCache; }
     VulkanSwapChain*      getSwapChain() { return m_pSwapChain; }
     VulkanShaderModule*   getShaders(const std::filesystem::path& path);
 
     VulkanSyncPrimitivesPool* getSyncPrimitiviesPool() { return m_pSyncPrimitivesPool.get(); }
-    VulkanCommandBuffer*      getDefaultCommandBuffer(uint32_t idx) const { return m_commandBuffers[idx]; }
     uint32_t                  getCommandBufferCount() const { return m_commandBuffers.size(); }
 
     VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }

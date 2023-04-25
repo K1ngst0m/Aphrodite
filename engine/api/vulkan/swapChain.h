@@ -34,7 +34,6 @@ public:
     uint32_t   getWidth() const { return m_extent.width; }
     uint32_t   getHeight() const { return m_extent.height; }
 
-    uint32_t     getImageCount() const { return m_images.size(); }
     VulkanImage* getImage(uint32_t idx) const { return m_images[idx].get(); }
 
 private:

@@ -109,8 +109,7 @@ void VulkanSceneRenderer::cleanup()
 
 void VulkanSceneRenderer::recordDrawSceneCommands()
 {
-    uint32_t frameIdx      = getCurrentFrameIndex();
-    auto*    commandBuffer = getDefaultCommandBuffer(frameIdx);
+    auto* commandBuffer = m_commandBuffers[m_frameIdx];
 
     commandBuffer->begin();
 
@@ -227,17 +226,15 @@ void VulkanSceneRenderer::_loadScene()
 
 void VulkanSceneRenderer::_initForward()
 {
-    uint32_t   imageCount  = getSwapChain()->getImageCount();
     VkExtent2D imageExtent = getSwapChain()->getExtent();
+    m_images[IMAGE_FORWARD_COLOR].resize(m_config.maxFrames);
+    m_images[IMAGE_FORWARD_DEPTH].resize(m_config.maxFrames);
 
-    m_images[IMAGE_FORWARD_COLOR].resize(imageCount);
-    m_images[IMAGE_FORWARD_DEPTH].resize(imageCount);
-
-    m_images[IMAGE_FORWARD_COLOR_MS].resize(imageCount);
-    m_images[IMAGE_FORWARD_DEPTH_MS].resize(imageCount);
+    m_images[IMAGE_FORWARD_COLOR_MS].resize(m_config.maxFrames);
+    m_images[IMAGE_FORWARD_DEPTH_MS].resize(m_config.maxFrames);
 
     // frame buffer
-    for(auto idx = 0; idx < imageCount; idx++)
+    for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         {
             auto&           colorImage   = m_images[IMAGE_FORWARD_COLOR][idx];
@@ -473,8 +470,6 @@ void VulkanSceneRenderer::_initSkybox()
 
 void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandBuffer)
 {
-    uint32_t imageIdx = getCurrentImageIndex();
-
     VkExtent2D extent{
         .width  = getWindowWidth(),
         .height = getWindowHeight(),
@@ -488,8 +483,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
 
     // forward pass
     {
-        VulkanImageView*          pColorAttachment   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getView();
-        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_FORWARD_COLOR_MS][imageIdx]->getView();
+        VulkanImageView*          pColorAttachment   = m_images[IMAGE_FORWARD_COLOR][m_frameIdx]->getView();
+        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_FORWARD_COLOR_MS][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pColorAttachmentMS->getHandle(),
@@ -508,8 +503,8 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
             forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
         }
 
-        VulkanImageView*          pDepthAttachment   = m_images[IMAGE_FORWARD_DEPTH][imageIdx]->getView();
-        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_FORWARD_DEPTH_MS][imageIdx]->getView();
+        VulkanImageView*          pDepthAttachment   = m_images[IMAGE_FORWARD_DEPTH][m_frameIdx]->getView();
+        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_FORWARD_DEPTH_MS][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pDepthAttachmentMS->getHandle(),
@@ -615,10 +610,9 @@ void VulkanSceneRenderer::recordDrawSceneCommands(VulkanCommandBuffer* pCommandB
 }
 void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer)
 {
-    uint32_t imageIdx = getCurrentImageIndex();
     // post fx
     {
-        VulkanImageView* pColorAttachment = getSwapChain()->getImage(imageIdx)->getView();
+        VulkanImageView* pColorAttachment = getSwapChain()->getImage(m_imageIdx)->getView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                               VK_IMAGE_LAYOUT_GENERAL);
@@ -626,7 +620,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 
         {
             VkDescriptorImageInfo inputImageInfo{
-                .imageView   = m_images[IMAGE_FORWARD_COLOR][imageIdx]->getView()->getHandle(),
+                .imageView   = m_images[IMAGE_FORWARD_COLOR][m_frameIdx]->getView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             VkDescriptorImageInfo outputImageInfo{.imageView   = pColorAttachment->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
