@@ -94,11 +94,11 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
 namespace aph
 {
 VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDevice* pDevice) :
-    m_device(pDevice),
+    m_pDevice(pDevice),
     m_surface(createInfo.surface)
 {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(
-        m_surface, m_device->getPhysicalDevice()->getHandle(), static_cast<GLFWwindow*>(createInfo.windowHandle));
+        m_surface, m_pDevice->getPhysicalDevice()->getHandle(), static_cast<GLFWwindow*>(createInfo.windowHandle));
 
     uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
     if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)
@@ -125,15 +125,15 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(m_device->getHandle(), &swapChainCreateInfo, nullptr, &getHandle()));
+    VK_CHECK_RESULT(vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, nullptr, &getHandle()));
 
     m_surfaceFormat = swapChainSupport.preferedSurfaceFormat;
     m_extent        = swapChainSupport.preferedExtent;
 
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(m_device->getHandle(), getHandle(), &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, nullptr);
     std::vector<VkImage> images(imageCount);
-    vkGetSwapchainImagesKHR(m_device->getHandle(), getHandle(), &imageCount, images.data());
+    vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.
     for(auto handle : images)
@@ -149,17 +149,16 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
             .tiling      = VK_IMAGE_TILING_OPTIMAL,
         };
 
-        m_images.push_back(std::make_unique<VulkanImage>(m_device, imageCreateInfo, handle));
+        m_images.push_back(std::make_unique<VulkanImage>(m_pDevice, imageCreateInfo, handle));
     }
 }
 
-VkResult VulkanSwapChain::acquireNextImage(uint32_t* pImageIndex, VkSemaphore semaphore, VkFence fence) const
+VkResult VulkanSwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
 {
-    return vkAcquireNextImageKHR(m_device->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, pImageIndex);
+    return vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
 }
 
-VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue* pQueue,
-                                       const std::vector<VkSemaphore>& waitSemaphores)
+VkResult VulkanSwapChain::presentImage(VulkanQueue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
 {
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -167,7 +166,7 @@ VkResult VulkanSwapChain::presentImage(const uint32_t& imageIdx, VulkanQueue* pQ
         .pWaitSemaphores    = waitSemaphores.data(),
         .swapchainCount     = 1,
         .pSwapchains        = &getHandle(),
-        .pImageIndices      = &imageIdx,
+        .pImageIndices      = &m_imageIdx,
         .pResults           = nullptr,  // Optional
     };
 

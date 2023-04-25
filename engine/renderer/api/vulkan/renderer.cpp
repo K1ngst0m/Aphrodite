@@ -279,7 +279,7 @@ VulkanRenderer::~VulkanRenderer()
 void VulkanRenderer::beginFrame()
 {
     VK_CHECK_RESULT(m_pDevice->waitForFence({m_frameFences[m_frameIdx]}));
-    VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(&m_imageIdx, m_renderSemaphore[m_frameIdx]));
+    VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
     VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
 
     {
@@ -290,7 +290,7 @@ void VulkanRenderer::beginFrame()
 void VulkanRenderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
-    VK_CHECK_RESULT(m_pSwapChain->presentImage(m_imageIdx, queue, {m_presentSemaphore[m_frameIdx]}));
+    VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 

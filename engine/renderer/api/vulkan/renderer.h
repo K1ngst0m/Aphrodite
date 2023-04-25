@@ -17,18 +17,15 @@ public:
     void endFrame();
 
 public:
-    VulkanInstance*       getInstance() const { return m_pInstance; }
-    VulkanDevice*         getDevice() const { return m_pDevice; }
-    VkPipelineCache       getPipelineCache() { return m_pipelineCache; }
-    VulkanSwapChain*      getSwapChain() { return m_pSwapChain; }
-    VulkanShaderModule*   getShaders(const std::filesystem::path& path);
+    VulkanInstance*     getInstance() const { return m_pInstance; }
+    VulkanDevice*       getDevice() const { return m_pDevice; }
+    VkPipelineCache     getPipelineCache() { return m_pipelineCache; }
+    VulkanSwapChain*    getSwapChain() { return m_pSwapChain; }
+    VulkanShaderModule* getShaders(const std::filesystem::path& path);
 
     VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }
     VulkanQueue* getComputeQueue() const { return m_queue.compute; }
     VulkanQueue* getTransferQueue() const { return m_queue.transfer; }
-
-protected:
-    std::unique_ptr<VulkanSyncPrimitivesPool> m_pSyncPrimitivesPool = {};
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_8_BIT};
@@ -47,26 +44,23 @@ protected:
         VulkanQueue* transfer = {};
     } m_queue;
 
-protected:
-    std::vector<VkSemaphore> m_renderSemaphore  = {};
-    std::vector<VkSemaphore> m_presentSemaphore = {};
-    std::vector<VkFence>     m_frameFences      = {};
-
-    std::vector<VulkanCommandBuffer*> m_commandBuffers = {};
+    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
 
 protected:
-    uint32_t m_frameIdx = {};
-    uint32_t m_imageIdx = {};
+    std::unique_ptr<VulkanSyncPrimitivesPool> m_pSyncPrimitivesPool = {};
+    std::vector<VkSemaphore>                  m_renderSemaphore     = {};
+    std::vector<VkSemaphore>                  m_presentSemaphore    = {};
+    std::vector<VkFence>                      m_frameFences         = {};
+    std::vector<VulkanCommandBuffer*>         m_commandBuffers      = {};
 
 protected:
+    uint32_t m_frameIdx     = {};
     float    m_frameTimer   = {};
     uint32_t m_lastFPS      = {};
     uint32_t m_frameCounter = {};
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_timer = {};
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
-
-    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
 
 protected:
     bool updateUIDrawData(float deltaTime);
@@ -87,7 +81,7 @@ protected:
         VkSampler        fontSampler = {};
         VkDescriptorPool pool        = {};
         VkRenderPass     renderPass  = {};
-        VulkanPipeline*  pipeline   = {};
+        VulkanPipeline*  pipeline    = {};
 
         VulkanBuffer* pVertexBuffer = {};
         VulkanBuffer* pIndexBuffer  = {};

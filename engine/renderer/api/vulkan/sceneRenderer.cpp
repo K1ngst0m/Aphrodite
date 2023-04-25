@@ -623,7 +623,7 @@ void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuff
 {
     // post fx
     {
-        VulkanImageView* pColorAttachment = getSwapChain()->getImage(m_imageIdx)->getView();
+        VulkanImageView* pColorAttachment = getSwapChain()->getImage()->getView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                               VK_IMAGE_LAYOUT_GENERAL);
