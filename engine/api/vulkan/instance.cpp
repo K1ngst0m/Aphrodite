@@ -121,14 +121,12 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
         .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
     };
 
-    if(createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
-    {
-        if(!checkValidationLayerSupport(createInfo.enabledLayers)) { return VK_ERROR_EXTENSION_NOT_PRESENT; }
-
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-        populateDebugMessengerCreateInfo(debugCreateInfo);
-        instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-    }
+    #if defined (APH_DEBUG)
+    if(!checkValidationLayerSupport(createInfo.enabledLayers)) { return VK_ERROR_EXTENSION_NOT_PRESENT; }
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+    populateDebugMessengerCreateInfo(debugCreateInfo);
+    instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+    #endif
 
     VkInstance handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, nullptr, &handle));
@@ -180,13 +178,13 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
     // Copy address of object instance.
     *ppInstance = instance;
 
-    if(createInfo.flags & INSTANCE_CREATION_ENABLE_DEBUG)
+    #if defined (APH_DEBUG)
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         populateDebugMessengerCreateInfo(createInfo);
         VK_CHECK_RESULT(createDebugUtilsMessengerEXT(handle, &createInfo, nullptr, &instance->m_debugMessenger));
     }
-
+    #endif
     // Return success.
     return VK_SUCCESS;
 }

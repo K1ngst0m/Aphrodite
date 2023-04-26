@@ -8,16 +8,11 @@
 namespace aph
 {
 
-enum InstanceCreationFlagBits
-{
-    INSTANCE_CREATION_ENABLE_DEBUG = 1 << 0,
-};
 using InstanceCreationFlags = uint32_t;
 
 struct InstanceCreateInfo
 {
     const char*              pApplicationName = "Aphrodite";
-    InstanceCreationFlags    flags{};
     std::vector<const char*> enabledLayers{};
     std::vector<const char*> enabledExtensions{};
 };

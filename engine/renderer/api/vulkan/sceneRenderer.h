@@ -15,11 +15,11 @@ public:
     void load(Scene* scene);
     void cleanup();
     void update(float deltaTime);
-    void recordDrawSceneCommands();
-    void recordDeferredGeometryCommands(VulkanCommandBuffer* pCommandBuffer);
-    void recordDeferredLightCommands(VulkanCommandBuffer* pCommandBuffer);
-    void recordForwardCommands(VulkanCommandBuffer* pCommandBuffer);
-    void recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer);
+    void recordAll();
+    void recordDeferredGeometry(VulkanCommandBuffer* pCommandBuffer);
+    void recordDeferredLighting(VulkanCommandBuffer* pCommandBuffer);
+    void recordForward(VulkanCommandBuffer* pCommandBuffer);
+    void recordPostFX(VulkanCommandBuffer* pCommandBuffer);
 
 private:
     void drawUI(float deltaTime);
@@ -58,7 +58,6 @@ private:
         PIPELINE_GRAPHICS_GEOMETRY,
         PIPELINE_GRAPHICS_LIGHTING,
         PIPELINE_GRAPHICS_FORWARD,
-        // PIPELINE_GRAPHICS_SHADOW,
         PIPELINE_GRAPHICS_SKYBOX,
         PIPELINE_COMPUTE_POSTFX,
         PIPELINE_MAX,

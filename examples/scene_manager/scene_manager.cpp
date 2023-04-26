@@ -28,7 +28,7 @@ void scene_manager::run()
 
         // draw and submit
         m_sceneRenderer->beginFrame();
-        m_sceneRenderer->recordDrawSceneCommands();
+        m_sceneRenderer->recordAll();
         m_sceneRenderer->endFrame();
     }
 }
@@ -70,9 +70,6 @@ void scene_manager::setupScene()
         m_cameraNode = m_scene->getRootNode()->createChildNode();
         m_cameraNode->attachObject<aph::Camera>(camera);
         m_scene->setMainCamera(camera);
-
-        // // camera 2
-        // m_scene->getRootNode()->createChildNode()->attachObject(camera);
     }
 
     // lights
@@ -94,9 +91,9 @@ void scene_manager::setupScene()
         else { m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb"); }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
-        auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
-        model2->rotate(180.0f, {0.0f, 1.0f, 0.0f});
-        model2->translate({3.0, 1.0, 1.0});
+        // auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
+        // model2->rotate(180.0f, {0.0f, 1.0f, 0.0f});
+        // model2->translate({3.0, 1.0, 1.0});
     }
 
     {

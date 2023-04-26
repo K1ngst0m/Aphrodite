@@ -34,11 +34,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
         if(m_config.flags & RENDER_CFG_DEBUG)
         {
-            const std::vector<const char*> validationLayers = {
-                "VK_LAYER_KHRONOS_validation",
-            };
-            instanceCreateInfo.flags         = INSTANCE_CREATION_ENABLE_DEBUG;
-            instanceCreateInfo.enabledLayers = validationLayers;
+            instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
         }
 
         VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_pInstance));

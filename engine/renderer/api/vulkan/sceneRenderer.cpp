@@ -110,16 +110,15 @@ void VulkanSceneRenderer::cleanup()
     }
 }
 
-void VulkanSceneRenderer::recordDrawSceneCommands()
+void VulkanSceneRenderer::recordAll()
 {
     auto* commandBuffer = m_commandBuffers[m_frameIdx];
 
     commandBuffer->begin();
 
-    recordDeferredGeometryCommands(commandBuffer);
-    recordDeferredLightCommands(commandBuffer);
-    // recordForwardCommands(commandBuffer);
-    recordPostFxCommands(commandBuffer);
+    recordDeferredGeometry(commandBuffer);
+    recordDeferredLighting(commandBuffer);
+    recordPostFX(commandBuffer);
 
     commandBuffer->end();
 
@@ -548,7 +547,7 @@ void VulkanSceneRenderer::_initSkybox()
     }
 }
 
-void VulkanSceneRenderer::recordDeferredLightCommands(VulkanCommandBuffer* pCommandBuffer)
+void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -653,7 +652,7 @@ void VulkanSceneRenderer::recordDeferredLightCommands(VulkanCommandBuffer* pComm
         }
 
         // draw ui
-        // recordUIDraw(pCommandBuffer);
+        recordUIDraw(pCommandBuffer);
 
         pCommandBuffer->endRendering();
 
@@ -664,7 +663,7 @@ void VulkanSceneRenderer::recordDeferredLightCommands(VulkanCommandBuffer* pComm
     }
 }
 
-void VulkanSceneRenderer::recordDeferredGeometryCommands(VulkanCommandBuffer* pCommandBuffer)
+void VulkanSceneRenderer::recordDeferredGeometry(VulkanCommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -826,7 +825,7 @@ void VulkanSceneRenderer::recordDeferredGeometryCommands(VulkanCommandBuffer* pC
     }
 }
 
-void VulkanSceneRenderer::recordForwardCommands(VulkanCommandBuffer* pCommandBuffer)
+void VulkanSceneRenderer::recordForward(VulkanCommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -966,7 +965,7 @@ void VulkanSceneRenderer::recordForwardCommands(VulkanCommandBuffer* pCommandBuf
         }
     }
 }
-void VulkanSceneRenderer::recordPostFxCommands(VulkanCommandBuffer* pCommandBuffer)
+void VulkanSceneRenderer::recordPostFX(VulkanCommandBuffer* pCommandBuffer)
 {
     // post fx
     {
