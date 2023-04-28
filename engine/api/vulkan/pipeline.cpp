@@ -1,7 +1,7 @@
 #include "pipeline.h"
 #include "scene/mesh.h"
 
-namespace aph
+namespace aph::vk
 {
 namespace
 {
@@ -35,21 +35,21 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
             bindingSize += vertexComponentSizeMap[component];
         }
         inputBinding    = {{0, bindingSize, VK_VERTEX_INPUT_RATE_VERTEX}};
-        vertexInputInfo = aph::init::pipelineVertexInputStateCreateInfo(inputBinding, inputAttribute);
+        vertexInputInfo = aph::vk::init::pipelineVertexInputStateCreateInfo(inputBinding, inputAttribute);
     }
-    inputAssembly = aph::init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
+    inputAssembly = init::pipelineInputAssemblyStateCreateInfo(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, VK_FALSE);
     dynamicStages = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
     dynamicState =
-        aph::init::pipelineDynamicStateCreateInfo(dynamicStages.data(), static_cast<uint32_t>(dynamicStages.size()));
-    rasterizer           = aph::init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
-                                                                           VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
-    multisampling        = aph::init::pipelineMultisampleStateCreateInfo();
-    colorBlendAttachments.push_back(aph::init::pipelineColorBlendAttachmentState());
-    depthStencil         = aph::init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
+        init::pipelineDynamicStateCreateInfo(dynamicStages.data(), static_cast<uint32_t>(dynamicStages.size()));
+    rasterizer    = init::pipelineRasterizationStateCreateInfo(VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
+                                                               VK_FRONT_FACE_COUNTER_CLOCKWISE, 0);
+    multisampling = init::pipelineMultisampleStateCreateInfo();
+    colorBlendAttachments.push_back(init::pipelineColorBlendAttachmentState());
+    depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 
-VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const ComputePipelineCreateInfo& createInfo,
-                               VkPipelineLayout layout, VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipelineLayout layout,
+                   VkPipeline handle) :
     m_pDevice(pDevice),
     m_pipelineLayout(layout),
     m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE),
@@ -60,8 +60,8 @@ VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const ComputePipelineCreat
     getHandle() = handle;
 }
 
-VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const GraphicsPipelineCreateInfo& createInfo,
-                               VkRenderPass renderPass, VkPipelineLayout layout, VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+                   VkPipelineLayout layout, VkPipeline handle) :
     m_pDevice(pDevice),
     m_renderPass(renderPass),
     m_pipelineLayout(layout),
@@ -73,4 +73,4 @@ VulkanPipeline::VulkanPipeline(VulkanDevice* pDevice, const GraphicsPipelineCrea
     getHandle() = handle;
 }
 
-}  // namespace aph
+}  // namespace aph::vk

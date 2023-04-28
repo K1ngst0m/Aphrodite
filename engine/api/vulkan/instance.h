@@ -5,7 +5,7 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
 
 using InstanceCreationFlags = uint32_t;
@@ -17,28 +17,28 @@ struct InstanceCreateInfo
     std::vector<const char*> enabledExtensions{};
 };
 
-class VulkanPhysicalDevice;
+class PhysicalDevice;
 
-class VulkanInstance : public ResourceHandle<VkInstance>
+class Instance : public ResourceHandle<VkInstance>
 {
 private:
-    VulkanInstance() = default;
+    Instance() = default;
 
 public:
-    static VkResult Create(const InstanceCreateInfo& createInfo, VulkanInstance** ppInstance);
+    static VkResult Create(const InstanceCreateInfo& createInfo, Instance** ppInstance);
 
-    static void Destroy(VulkanInstance* pInstance);
+    static void Destroy(Instance* pInstance);
 
-    ThreadPool*           getThreadPool() { return m_threadPool; }
-    VulkanPhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
+    ThreadPool*     getThreadPool() { return m_threadPool; }
+    PhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
 
 private:
-    VkDebugUtilsMessengerEXT                           m_debugMessenger{};
-    std::vector<const char*>                           m_supportedInstanceExtensions{};
-    std::vector<std::string>                           m_validationLayers{};
-    std::vector<std::unique_ptr<VulkanPhysicalDevice>> m_physicalDevices{};
-    ThreadPool*                                        m_threadPool{};
+    VkDebugUtilsMessengerEXT                     m_debugMessenger{};
+    std::vector<const char*>                     m_supportedInstanceExtensions{};
+    std::vector<std::string>                     m_validationLayers{};
+    std::vector<std::unique_ptr<PhysicalDevice>> m_physicalDevices{};
+    ThreadPool*                                  m_threadPool{};
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // INSTANCE_H_

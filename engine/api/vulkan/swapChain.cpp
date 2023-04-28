@@ -76,7 +76,7 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
             int width, height;
             glfwGetFramebufferSize(windowHandle, &width, &height);
 
-            VkExtent2D actualExtent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+            VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
             actualExtent.width     = std::clamp(actualExtent.width, details.capabilities.minImageExtent.width,
                                                 details.capabilities.maxImageExtent.width);
@@ -91,9 +91,9 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
 
 }  // namespace
 
-namespace aph
+namespace aph::vk
 {
-VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDevice* pDevice) :
+SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
     m_pDevice(pDevice),
     m_surface(createInfo.surface)
 {
@@ -139,7 +139,7 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
     for(auto handle : images)
     {
         ImageCreateInfo imageCreateInfo = {
-            .extent      = { m_extent.width, m_extent.height, 1 },
+            .extent      = {m_extent.width, m_extent.height, 1},
             .mipLevels   = 1,
             .arrayLayers = 1,
             .usage       = swapChainCreateInfo.imageUsage,
@@ -149,16 +149,16 @@ VulkanSwapChain::VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDe
             .tiling      = VK_IMAGE_TILING_OPTIMAL,
         };
 
-        m_images.push_back(std::make_unique<VulkanImage>(m_pDevice, imageCreateInfo, handle));
+        m_images.push_back(std::make_unique<Image>(m_pDevice, imageCreateInfo, handle));
     }
 }
 
-VkResult VulkanSwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
+VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
 {
     return vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
 }
 
-VkResult VulkanSwapChain::presentImage(VulkanQueue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
+VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
 {
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -174,5 +174,5 @@ VkResult VulkanSwapChain::presentImage(VulkanQueue* pQueue, const std::vector<Vk
     return result;
 }
 
-VulkanSwapChain::~VulkanSwapChain() = default;
-}  // namespace aph
+SwapChain::~SwapChain() = default;
+}  // namespace aph::vk

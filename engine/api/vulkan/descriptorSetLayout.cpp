@@ -2,20 +2,19 @@
 #include "device.h"
 #include "descriptorPool.h"
 
-namespace aph
+namespace aph::vk
 {
 
-VulkanDescriptorSetLayout::VulkanDescriptorSetLayout(VulkanDevice*                        device,
-                                                     const std::vector<ResourcesBinding>& bindings,
-                                                     VkDescriptorSetLayout                handle) :
+DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<ResourcesBinding>& bindings,
+                                         VkDescriptorSetLayout handle) :
     m_pDevice(device)
 {
     m_bindings  = bindings;
-    m_pool      = new VulkanDescriptorPool(this);
+    m_pool      = new DescriptorPool(this);
     getHandle() = handle;
 }
 
-VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<ResourceWrite>& writes)
+VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite>& writes)
 {
     auto set = m_pool->allocateSet();
     if(writes.empty()) { return set; }
@@ -27,11 +26,11 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<Resourc
         const auto& binding = m_bindings[idx];
 
         VkWriteDescriptorSet vkWrite{
-            .sType          = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet         = set,
-            .dstBinding     = idx,
+            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet          = set,
+            .dstBinding      = idx,
             .descriptorCount = static_cast<uint32_t>(write.count),
-            .descriptorType = utils::VkCast(binding.resType),
+            .descriptorType  = utils::VkCast(binding.resType),
         };
 
         switch(binding.resType)
@@ -41,13 +40,13 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<Resourc
         case ResourceType::COMBINE_SAMPLER_IMAGE:
         case ResourceType::STORAGE_IMAGE:
         {
-            vkWrite.pImageInfo      = write.imageInfos;
+            vkWrite.pImageInfo = write.imageInfos;
         }
         break;
         case ResourceType::UNIFORM_BUFFER:
         case ResourceType::STORAGE_BUFFER:
         {
-            vkWrite.pBufferInfo     = write.bufferInfos;
+            vkWrite.pBufferInfo = write.bufferInfos;
         }
         break;
         default:
@@ -64,7 +63,7 @@ VkDescriptorSet VulkanDescriptorSetLayout::allocateSet(const std::vector<Resourc
     return set;
 }
 
-VkResult VulkanDescriptorSetLayout::freeSet(VkDescriptorSet set) { return m_pool->freeSet(set); }
+VkResult DescriptorSetLayout::freeSet(VkDescriptorSet set) { return m_pool->freeSet(set); }
 
-VulkanDescriptorSetLayout::~VulkanDescriptorSetLayout() { delete m_pool; }
-}  // namespace aph
+DescriptorSetLayout::~DescriptorSetLayout() { delete m_pool; }
+}  // namespace aph::vk

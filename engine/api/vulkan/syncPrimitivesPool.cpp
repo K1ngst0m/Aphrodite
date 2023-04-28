@@ -1,11 +1,11 @@
 #include "syncPrimitivesPool.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
-VulkanSyncPrimitivesPool::VulkanSyncPrimitivesPool(VulkanDevice* device) : m_device(device) {}
+SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_device(device) {}
 
-VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool()
+SyncPrimitivesPool::~SyncPrimitivesPool()
 {
     // Destroy all created fences.
     for(auto* fence : m_allFences)
@@ -16,7 +16,7 @@ VulkanSyncPrimitivesPool::~VulkanSyncPrimitivesPool()
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 
-VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
+VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
 {
     VkResult result = VK_SUCCESS;
 
@@ -41,7 +41,7 @@ VkResult VulkanSyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::releaseFence(VkFence fence)
+VkResult SyncPrimitivesPool::releaseFence(VkFence fence)
 {
     m_fenceLock.Lock();
     if(m_allFences.count(fence))
@@ -58,7 +58,7 @@ VkResult VulkanSyncPrimitivesPool::releaseFence(VkFence fence)
     return VK_SUCCESS;
 }
 
-bool VulkanSyncPrimitivesPool::Exists(VkFence fence)
+bool SyncPrimitivesPool::Exists(VkFence fence)
 {
     m_fenceLock.Lock();
     auto result = (m_allFences.find(fence) != m_allFences.end());
@@ -66,7 +66,7 @@ bool VulkanSyncPrimitivesPool::Exists(VkFence fence)
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores)
+VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores)
 {
     VkResult result = VK_SUCCESS;
 
@@ -95,7 +95,7 @@ VkResult VulkanSyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkS
     return result;
 }
 
-VkResult VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore* pSemaphores)
+VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore* pSemaphores)
 {
     m_semaphoreLock.Lock();
     for(auto i = 0U; i < semaphoreCount; ++i)
@@ -106,11 +106,11 @@ VkResult VulkanSyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, co
     return VK_SUCCESS;
 }
 
-bool VulkanSyncPrimitivesPool::Exists(VkSemaphore semaphore)
+bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
 {
     m_semaphoreLock.Lock();
     auto result = (m_allSemaphores.find(semaphore) != m_allSemaphores.end());
     m_semaphoreLock.Unlock();
     return result;
 }
-}  // namespace aph
+}  // namespace aph::vk

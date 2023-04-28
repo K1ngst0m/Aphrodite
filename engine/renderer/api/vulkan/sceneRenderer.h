@@ -5,21 +5,21 @@
 #include "renderer.h"
 #include "scene/scene.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanSceneRenderer : public VulkanRenderer
+class SceneRenderer : public Renderer
 {
 public:
-    VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
+    SceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
 
     void load(Scene* scene);
     void cleanup();
     void update(float deltaTime);
     void recordAll();
-    void recordDeferredGeometry(VulkanCommandBuffer* pCommandBuffer);
-    void recordDeferredLighting(VulkanCommandBuffer* pCommandBuffer);
-    void recordForward(VulkanCommandBuffer* pCommandBuffer);
-    void recordPostFX(VulkanCommandBuffer* pCommandBuffer);
+    void recordDeferredGeometry(CommandBuffer* pCommandBuffer);
+    void recordDeferredLighting(CommandBuffer* pCommandBuffer);
+    void recordForward(CommandBuffer* pCommandBuffer);
+    void recordPostFX(CommandBuffer* pCommandBuffer);
 
 private:
     void drawUI(float deltaTime);
@@ -93,15 +93,15 @@ private:
         IMAGE_MAX
     };
 
-    std::array<VulkanBuffer*, BUFFER_MAX>                  m_buffers;
-    std::array<VulkanPipeline*, PIPELINE_MAX>              m_pipelines;
-    std::array<VulkanDescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
-    std::array<VkSampler, SAMP_MAX>                        m_samplers;
-    std::array<std::vector<VulkanImage*>, IMAGE_MAX>       m_images;
-    VkDescriptorSet                                        m_sceneSet{};
-    VkDescriptorSet                                        m_samplerSet{};
+    std::array<Buffer*, BUFFER_MAX>                  m_buffers;
+    std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
+    std::array<DescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
+    std::array<VkSampler, SAMP_MAX>                  m_samplers;
+    std::array<std::vector<Image*>, IMAGE_MAX>       m_images;
+    VkDescriptorSet                                  m_sceneSet{};
+    VkDescriptorSet                                  m_samplerSet{};
 
-    VulkanImageView* m_pCubeMapView{};
+    ImageView* m_pCubeMapView{};
 
 private:
     Scene*                  m_scene = {};
@@ -109,6 +109,6 @@ private:
     std::vector<SceneNode*> m_cameraNodeList;
     std::vector<SceneNode*> m_lightNodeList;
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // VKSCENERENDERER_H_

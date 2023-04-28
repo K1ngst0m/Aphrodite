@@ -14,8 +14,7 @@ public:
     void Lock()
     {
         auto callingThread = std::this_thread::get_id();
-        if(callingThread == m_owningThread)
-            return;
+        if(callingThread == m_owningThread) return;
 
         while(true)
         {

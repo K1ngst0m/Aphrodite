@@ -5,50 +5,50 @@
 #include "api/vulkan/shader.h"
 #include "renderer/renderer.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanRenderer : public IRenderer
+class Renderer : public IRenderer
 {
 public:
-    VulkanRenderer(std::shared_ptr<Window> window, const RenderConfig& config);
-    ~VulkanRenderer();
+    Renderer(std::shared_ptr<Window> window, const RenderConfig& config);
+    ~Renderer();
 
     void beginFrame() override;
     void endFrame() override;
 
 public:
-    VulkanDevice*       getDevice() const { return m_pDevice; }
-    VulkanShaderModule* getShaders(const std::filesystem::path& path);
+    Device*       getDevice() const { return m_pDevice; }
+    ShaderModule* getShaders(const std::filesystem::path& path);
 
-    VulkanQueue* getGraphicsQueue() const { return m_queue.graphics; }
-    VulkanQueue* getComputeQueue() const { return m_queue.compute; }
-    VulkanQueue* getTransferQueue() const { return m_queue.transfer; }
+    Queue* getGraphicsQueue() const { return m_queue.graphics; }
+    Queue* getComputeQueue() const { return m_queue.compute; }
+    Queue* getTransferQueue() const { return m_queue.transfer; }
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
 
-    VulkanInstance*  m_pInstance  = {};
-    VulkanDevice*    m_pDevice    = {};
-    VulkanSwapChain* m_pSwapChain = {};
+    Instance*  m_pInstance  = {};
+    Device*    m_pDevice    = {};
+    SwapChain* m_pSwapChain = {};
 
     VkSurfaceKHR    m_surface       = {};
     VkPipelineCache m_pipelineCache = {};
 
     struct
     {
-        VulkanQueue* graphics = {};
-        VulkanQueue* compute  = {};
-        VulkanQueue* transfer = {};
+        Queue* graphics = {};
+        Queue* compute  = {};
+        Queue* transfer = {};
     } m_queue;
 
-    std::unordered_map<std::string, VulkanShaderModule*> shaderModuleCaches = {};
+    std::unordered_map<std::string, ShaderModule*> shaderModuleCaches = {};
 
 protected:
-    std::unique_ptr<VulkanSyncPrimitivesPool> m_pSyncPrimitivesPool = {};
-    std::vector<VkSemaphore>                  m_renderSemaphore     = {};
-    std::vector<VkSemaphore>                  m_presentSemaphore    = {};
-    std::vector<VkFence>                      m_frameFences         = {};
-    std::vector<VulkanCommandBuffer*>         m_commandBuffers      = {};
+    std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
+    std::vector<VkSemaphore>            m_renderSemaphore     = {};
+    std::vector<VkSemaphore>            m_presentSemaphore    = {};
+    std::vector<VkFence>                m_frameFences         = {};
+    std::vector<CommandBuffer*>         m_commandBuffers      = {};
 
 protected:
     uint32_t m_frameIdx     = {};
@@ -61,7 +61,7 @@ protected:
 
 protected:
     bool updateUIDrawData(float deltaTime);
-    void recordUIDraw(VulkanCommandBuffer* pCommandBuffer);
+    void recordUIDraw(CommandBuffer* pCommandBuffer);
     struct UI
     {
         void resize(uint32_t width, uint32_t height);
@@ -74,23 +74,23 @@ protected:
         bool visible = {true};
         bool updated = {false};
 
-        VulkanImage*     pFontImage  = {};
+        Image*           pFontImage  = {};
         VkSampler        fontSampler = {};
         VkDescriptorPool pool        = {};
         VkRenderPass     renderPass  = {};
-        VulkanPipeline*  pipeline    = {};
+        Pipeline*        pipeline    = {};
 
-        VulkanBuffer* pVertexBuffer = {};
-        VulkanBuffer* pIndexBuffer  = {};
-        uint32_t      vertexCount   = {};
-        uint32_t      indexCount    = {};
+        Buffer*  pVertexBuffer = {};
+        Buffer*  pIndexBuffer  = {};
+        uint32_t vertexCount   = {};
+        uint32_t indexCount    = {};
 
-        VulkanDescriptorSetLayout* pSetLayout = {};
-        VkDescriptorSet            set        = {};
+        DescriptorSetLayout* pSetLayout = {};
+        VkDescriptorSet      set        = {};
 
         float scale = {1.1f};
     } m_ui;
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // VULKANRENDERER_H_

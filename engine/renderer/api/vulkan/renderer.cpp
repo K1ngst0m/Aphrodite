@@ -10,10 +10,9 @@
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
 
-namespace aph
+namespace aph::vk
 {
-VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
-    IRenderer(std::move(window), config)
+Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) : IRenderer(std::move(window), config)
 {
     // create instance
     {
@@ -37,7 +36,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
         }
 
-        VK_CHECK_RESULT(VulkanInstance::Create(instanceCreateInfo, &m_pInstance));
+        VK_CHECK_RESULT(Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
@@ -55,7 +54,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(0),
         };
 
-        VK_CHECK_RESULT(VulkanDevice::Create(createInfo, &m_pDevice));
+        VK_CHECK_RESULT(Device::Create(createInfo, &m_pDevice));
 
         // get 3 type queue
         m_queue.graphics = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
@@ -91,7 +90,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
         m_presentSemaphore.resize(m_config.maxFrames);
 
         {
-            m_pSyncPrimitivesPool = std::make_unique<VulkanSyncPrimitivesPool>(m_pDevice);
+            m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
         }
 
         // command buffer
@@ -148,7 +147,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                      .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.pFontImage, imageData);
-            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* pCmd) {
+            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCmd) {
                 pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             });
@@ -156,7 +155,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
 
         // font sampler
         {
-            VkSamplerCreateInfo samplerInfo = aph::init::samplerCreateInfo();
+            VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
             samplerInfo.magFilter           = VK_FILTER_LINEAR;
             samplerInfo.minFilter           = VK_FILTER_LINEAR;
             samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
@@ -195,7 +194,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                  .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
             };
             pipelineCreateInfo.depthStencil =
-                aph::init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
+                init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
             pipelineCreateInfo.setLayouts = {m_ui.pSetLayout};
             pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(m_ui.pushConstBlock)}};
@@ -217,7 +216,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                                   VK_COLOR_COMPONENT_A_BIT,
             };
             pipelineCreateInfo.colorBlendAttachments[0] = blendAttachmentState;
-            pipelineCreateInfo.multisampling        = aph::init::pipelineMultisampleStateCreateInfo(m_sampleCount);
+            pipelineCreateInfo.multisampling            = init::pipelineMultisampleStateCreateInfo(m_sampleCount);
 
             // Vertex bindings an attributes based on ImGui vertex definition
             std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
@@ -228,7 +227,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
                 {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},    // Location 1: UV
                 {2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},  // Location 0: Color
             };
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo = aph::init::pipelineVertexInputStateCreateInfo();
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo = init::pipelineVertexInputStateCreateInfo();
             vertexInputInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindings.size());
             vertexInputInfo.pVertexBindingDescriptions           = vertexInputBindings.data();
             vertexInputInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributes.size());
@@ -240,7 +239,7 @@ VulkanRenderer::VulkanRenderer(std::shared_ptr<Window> window, const RenderConfi
     }
 }
 
-VulkanRenderer::~VulkanRenderer()
+Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
@@ -268,11 +267,11 @@ VulkanRenderer::~VulkanRenderer()
 
     m_pDevice->destroySwapchain(m_pSwapChain);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
-    VulkanDevice::Destroy(m_pDevice);
-    VulkanInstance::Destroy(m_pInstance);
+    Device::Destroy(m_pDevice);
+    Instance::Destroy(m_pInstance);
 };
 
-void VulkanRenderer::beginFrame()
+void Renderer::beginFrame()
 {
     VK_CHECK_RESULT(m_pDevice->waitForFence({m_frameFences[m_frameIdx]}));
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
@@ -283,7 +282,7 @@ void VulkanRenderer::beginFrame()
     }
 }
 
-void VulkanRenderer::endFrame()
+void Renderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
@@ -306,26 +305,26 @@ void VulkanRenderer::endFrame()
     }
 }
 
-VulkanShaderModule* VulkanRenderer::getShaders(const std::filesystem::path& path)
+ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
         std::vector<char> spvCode;
-        if(path.extension() == ".spv") { spvCode = aph::utils::loadSpvFromFile(path); }
-        else { spvCode = aph::utils::loadGlslFromFile(path); }
-        auto* shaderModule       = VulkanShaderModule::Create(m_pDevice, spvCode);
+        if(path.extension() == ".spv") { spvCode = utils::loadSpvFromFile(path); }
+        else { spvCode = utils::loadGlslFromFile(path); }
+        auto* shaderModule       = ShaderModule::Create(m_pDevice, spvCode);
         shaderModuleCaches[path] = shaderModule;
     }
     return shaderModuleCaches[path];
 }
 
-void VulkanRenderer::UI::resize(uint32_t width, uint32_t height)
+void Renderer::UI::resize(uint32_t width, uint32_t height)
 {
     ImGuiIO& io    = ImGui::GetIO();
     io.DisplaySize = ImVec2((float)(width), (float)(height));
 }
 
-void VulkanRenderer::recordUIDraw(VulkanCommandBuffer* pCommandBuffer)
+void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
@@ -367,7 +366,7 @@ void VulkanRenderer::recordUIDraw(VulkanCommandBuffer* pCommandBuffer)
     }
 }
 
-bool VulkanRenderer::updateUIDrawData(float deltaTime)
+bool Renderer::updateUIDrawData(float deltaTime)
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
@@ -444,4 +443,4 @@ bool VulkanRenderer::updateUIDrawData(float deltaTime)
     }
     return true;
 }
-}  // namespace aph
+}  // namespace aph::vk

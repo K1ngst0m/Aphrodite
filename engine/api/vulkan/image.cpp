@@ -2,11 +2,10 @@
 #include "api/vulkan/vkUtils.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
 
-VulkanImage::VulkanImage(VulkanDevice* pDevice, const ImageCreateInfo& createInfo, VkImage image,
-                         VkDeviceMemory memory) :
+Image::Image(Device* pDevice, const ImageCreateInfo& createInfo, VkImage image, VkDeviceMemory memory) :
     m_pDevice(pDevice),
     m_memory(memory)
 {
@@ -14,7 +13,7 @@ VulkanImage::VulkanImage(VulkanDevice* pDevice, const ImageCreateInfo& createInf
     getCreateInfo() = createInfo;
 }
 
-VulkanImage::~VulkanImage()
+Image::~Image()
 {
     for(auto& [_, imageView] : m_imageViewFormatMap)
     {
@@ -22,7 +21,7 @@ VulkanImage::~VulkanImage()
     }
 }
 
-VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
+ImageView* Image::getView(VkFormat imageFormat)
 {
     if(imageFormat == VK_FORMAT_UNDEFINED) { imageFormat = m_createInfo.format; }
 
@@ -36,12 +35,11 @@ VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
         ImageViewCreateInfo createInfo{
             .viewType         = imageTypeMap.at(m_createInfo.imageType),
             .format           = imageFormat,
-            .subresourceRange = {
-                .aspectMask = utils::getImageAspect(m_createInfo.format),
-                .baseMipLevel = 0,
-                .levelCount = m_createInfo.mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount = m_createInfo.layerCount},
+            .subresourceRange = {.aspectMask     = utils::getImageAspect(m_createInfo.format),
+                                 .baseMipLevel   = 0,
+                                 .levelCount     = m_createInfo.mipLevels,
+                                 .baseArrayLayer = 0,
+                                 .layerCount     = m_createInfo.layerCount},
         };
         m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }
@@ -49,10 +47,9 @@ VulkanImageView* VulkanImage::getView(VkFormat imageFormat)
     return m_imageViewFormatMap[imageFormat];
 }
 
-VulkanImageView::VulkanImageView(const ImageViewCreateInfo& createInfo, VulkanImage* pImage, VkImageView handle) :
-    m_image(pImage)
+ImageView::ImageView(const ImageViewCreateInfo& createInfo, Image* pImage, VkImageView handle) : m_image(pImage)
 {
     getHandle()     = handle;
     getCreateInfo() = createInfo;
 }
-}  // namespace aph
+}  // namespace aph::vk

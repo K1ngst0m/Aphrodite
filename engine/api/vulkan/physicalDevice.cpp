@@ -1,9 +1,9 @@
 #include "physicalDevice.h"
 
-namespace aph
+namespace aph::vk
 {
 
-VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
+PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
 {
     getHandle() = handle;
 
@@ -53,13 +53,13 @@ VulkanPhysicalDevice::VulkanPhysicalDevice(VkPhysicalDevice handle)
     }
 }
 
-bool VulkanPhysicalDevice::isExtensionSupported(std::string_view extension) const
+bool PhysicalDevice::isExtensionSupported(std::string_view extension) const
 {
     return (std::find(m_supportedExtensions.begin(), m_supportedExtensions.end(), extension) !=
             m_supportedExtensions.end());
 }
 
-uint32_t VulkanPhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
+uint32_t PhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
 {
     uint32_t desired = 0, fallback = 0;
     switch(domain)
@@ -94,7 +94,7 @@ uint32_t VulkanPhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask)
     return UINT32_MAX;
 }
 
-uint32_t VulkanPhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) const
+uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) const
 {
     uint32_t prio[3] = {};
 
@@ -152,7 +152,7 @@ uint32_t VulkanPhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask
     return UINT32_MAX;
 }
 
-uint32_t VulkanPhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const
+uint32_t PhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const
 {
     for(uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; i++)
     {
@@ -166,8 +166,8 @@ uint32_t VulkanPhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, ui
     return UINT32_MAX;
 }
 
-VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-                                                   VkFormatFeatureFlags features) const
+VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                             VkFormatFeatureFlags features) const
 {
     for(VkFormat format : candidates)
     {
@@ -181,11 +181,11 @@ VkFormat VulkanPhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& 
     assert("failed to find supported format!");
     return {};
 }
-std::vector<uint32_t> VulkanPhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
+std::vector<uint32_t> PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
 {
     return m_queueFamilyMap.count(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
 }
-size_t VulkanPhysicalDevice::padUniformBufferSize(size_t originalSize) const
+size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
 {
     // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = m_properties.limits.minUniformBufferOffsetAlignment;
@@ -193,4 +193,4 @@ size_t VulkanPhysicalDevice::padUniformBufferSize(size_t originalSize) const
     if(minUboAlignment > 0) { alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1); }
     return alignedSize;
 }
-}  // namespace aph
+}  // namespace aph::vk

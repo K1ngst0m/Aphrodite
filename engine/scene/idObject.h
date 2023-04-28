@@ -33,9 +33,9 @@ public:
 
     IdType getId() const { return m_Id; }
 
-    bool operator()(const IdObject *left, const IdObject *right) { return left->m_Id < right->m_Id; }
+    bool operator()(const IdObject* left, const IdObject* right) { return left->m_Id < right->m_Id; }
 
-    bool operator()(const IdObject &left, const IdObject &right) { return left.m_Id < right.m_Id; }
+    bool operator()(const IdObject& left, const IdObject& right) { return left.m_Id < right.m_Id; }
 };
 }  // namespace aph
 

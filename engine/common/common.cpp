@@ -1,12 +1,13 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "common.h"
 
-namespace aph::utils {
+namespace aph::utils
+{
 std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY)
 {
     auto image = std::make_shared<ImageInfo>();
     stbi_set_flip_vertically_on_load(isFlipY);
-    int            width, height, channels;
+    int      width, height, channels;
     uint8_t* img = stbi_load(path.data(), &width, &height, &channels, 0);
     if(img == nullptr)
     {
@@ -27,15 +28,13 @@ std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY
         }
         memcpy(image->data.data(), rgba.data(), image->data.size());
     }
-    else
-    {
-        memcpy(image->data.data(), img, image->data.size());
-    }
+    else { memcpy(image->data.data(), img, image->data.size()); }
     stbi_image_free(img);
 
     return image;
 }
-std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths){
+std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths)
+{
     std::array<std::shared_ptr<ImageInfo>, 6> skyboxImages;
     for(uint32_t idx = 0; idx < 6; idx++)
     {
@@ -43,4 +42,4 @@ std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::str
     }
     return skyboxImages;
 }
-}
+}  // namespace aph::utils

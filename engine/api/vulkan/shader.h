@@ -4,26 +4,25 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
+class Device;
 
-class VulkanShaderModule : public ResourceHandle<VkShaderModule>
+class ShaderModule : public ResourceHandle<VkShaderModule>
 {
 public:
-    static VulkanShaderModule* Create(VulkanDevice* pDevice, const std::vector<char>& code,
-                                      const std::string& entrypoint = "main");
+    static ShaderModule* Create(Device* pDevice, const std::vector<char>& code, const std::string& entrypoint = "main");
 
     std::vector<char> getCode() { return m_code; }
 
 private:
-    VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
+    ShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
     std::string       m_entrypoint = {};
     std::vector<char> m_code       = {};
 };
 
-using ShaderMapList = std::unordered_map<ShaderStage, VulkanShaderModule*>;
+using ShaderMapList = std::unordered_map<ShaderStage, ShaderModule*>;
 
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // SHADER_H_

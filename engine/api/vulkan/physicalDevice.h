@@ -4,7 +4,7 @@
 #include "instance.h"
 #include "api/gpuResource.h"
 
-namespace aph
+namespace aph::vk
 {
 enum class QueueType
 {
@@ -13,12 +13,12 @@ enum class QueueType
     TRANSFER = 2,
 };
 
-class VulkanPhysicalDevice : public ResourceHandle<VkPhysicalDevice>
+class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 {
-    friend class VulkanDevice;
+    friend class Device;
 
 public:
-    VulkanPhysicalDevice(VkPhysicalDevice handle);
+    PhysicalDevice(VkPhysicalDevice handle);
 
     std::vector<uint32_t>      getQueueFamilyIndexByFlags(QueueType flags);
     bool                       isExtensionSupported(std::string_view extension) const;
@@ -37,6 +37,6 @@ private:
     std::vector<VkQueueFamilyProperties>                 m_queueFamilyProperties;
     std::unordered_map<QueueType, std::vector<uint32_t>> m_queueFamilyMap;
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // PHYSICALDEVICE_H_

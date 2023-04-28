@@ -20,15 +20,15 @@ private:
 
 private:
     std::shared_ptr<aph::Window> m_window;
-    std::shared_ptr<aph::VulkanRenderer> m_renderer;
+    std::shared_ptr<aph::Renderer> m_renderer;
 
     aph::VulkanRenderPass *m_pRenderPass = nullptr;
     std::vector<aph::VulkanFramebuffer *> m_framebuffers;
-    std::vector<aph::VulkanImage *> m_colorAttachments;
-    std::vector<aph::VulkanImage *> m_depthAttachments;
+    std::vector<aph::Image *> m_colorAttachments;
+    std::vector<aph::Image *> m_depthAttachments;
 
-    aph::VulkanPipeline *m_demoPipeline;
-    aph::VulkanDevice *m_device = nullptr;
+    aph::Pipeline *m_demoPipeline;
+    aph::Device *m_device = nullptr;
 
     float m_deltaTime;
 };

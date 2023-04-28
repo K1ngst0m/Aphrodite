@@ -2,13 +2,12 @@
 #include "api/gpuResource.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
 
-VulkanCommandBuffer::~VulkanCommandBuffer() { m_pool->freeCommandBuffers(1, &m_handle); }
+CommandBuffer::~CommandBuffer() { m_pool->freeCommandBuffers(1, &m_handle); }
 
-VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* pDevice, VulkanCommandPool* pool, VkCommandBuffer handle,
-                                         uint32_t queueFamilyIndices) :
+CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pDevice(pDevice),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
@@ -18,7 +17,7 @@ VulkanCommandBuffer::VulkanCommandBuffer(VulkanDevice* pDevice, VulkanCommandPoo
     getHandle() = handle;
 }
 
-VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
+VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
     if(m_state == CommandBufferState::RECORDING) { return VK_NOT_READY; }
 
@@ -36,7 +35,7 @@ VkResult VulkanCommandBuffer::begin(VkCommandBufferUsageFlags flags)
     return VK_SUCCESS;
 }
 
-VkResult VulkanCommandBuffer::end()
+VkResult CommandBuffer::end()
 {
     if(m_state != CommandBufferState::RECORDING) { return VK_NOT_READY; }
 
@@ -45,7 +44,7 @@ VkResult VulkanCommandBuffer::end()
     return m_pDeviceTable->vkEndCommandBuffer(m_handle);
 }
 
-VkResult VulkanCommandBuffer::reset()
+VkResult CommandBuffer::reset()
 {
     if(m_handle != VK_NULL_HANDLE)
         return m_pDeviceTable->vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
@@ -53,55 +52,52 @@ VkResult VulkanCommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void VulkanCommandBuffer::setViewport(const VkViewport& viewport)
+void CommandBuffer::setViewport(const VkViewport& viewport)
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewport);
 }
-void VulkanCommandBuffer::setSissor(const VkRect2D& scissor)
-{
-    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor);
-}
-void VulkanCommandBuffer::bindPipeline(VulkanPipeline* pPipeline)
+void CommandBuffer::setSissor(const VkRect2D& scissor) { m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor); }
+void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
     m_pDeviceTable->vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
-void VulkanCommandBuffer::bindDescriptorSet(VulkanPipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
-                                            const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
-                                            const uint32_t* pDynamicOffset)
+void CommandBuffer::bindDescriptorSet(Pipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
+                                      const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
+                                      const uint32_t* pDynamicOffset)
 {
     m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(),
                                             firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,
                                             pDynamicOffset);
 }
-void VulkanCommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const VulkanBuffer* pBuffer,
-                                            const std::vector<VkDeviceSize>& offsets)
+void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const Buffer* pBuffer,
+                                      const std::vector<VkDeviceSize>& offsets)
 {
     m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
 }
-void VulkanCommandBuffer::bindIndexBuffers(const VulkanBuffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
+void CommandBuffer::bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
     m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void VulkanCommandBuffer::pushConstants(VulkanPipeline* pPipeline, const std::vector<ShaderStage>& stages,
-                                        uint32_t offset, uint32_t size, const void* pValues)
+void CommandBuffer::pushConstants(Pipeline* pPipeline, const std::vector<ShaderStage>& stages, uint32_t offset,
+                                  uint32_t size, const void* pValues)
 {
     m_pDeviceTable->vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), utils::VkCast(stages), offset, size,
                                        pValues);
 }
-void VulkanCommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex,
-                                      uint32_t vertexOffset, uint32_t firstInstance)
+void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
+                                uint32_t firstInstance)
 {
     m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
-void VulkanCommandBuffer::copyBuffer(VulkanBuffer* srcBuffer, VulkanBuffer* dstBuffer, VkDeviceSize size)
+void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size)
 {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayout oldLayout, VkImageLayout newLayout,
-                                                VkImageSubresourceRange* pSubResourceRange,
-                                                VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask)
+void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout oldLayout, VkImageLayout newLayout,
+                                          VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags srcStageMask,
+                                          VkPipelineStageFlags dstStageMask)
 {
     VkImageMemoryBarrier imageMemoryBarrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -117,7 +113,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     else
     {
         imageMemoryBarrier.subresourceRange = {
-            .aspectMask     = aph::utils::getImageAspect(imageCreateInfo.format),
+            .aspectMask     = utils::getImageAspect(imageCreateInfo.format),
             .baseMipLevel   = 0,
             .levelCount     = imageCreateInfo.mipLevels,
             .baseArrayLayer = 0,
@@ -224,8 +220,7 @@ void VulkanCommandBuffer::transitionImageLayout(VulkanImage* image, VkImageLayou
     m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                                          &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* image,
-                                            const std::vector<VkBufferImageCopy>& regions)
+void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions)
 {
     if(regions.empty())
     {
@@ -252,7 +247,7 @@ void VulkanCommandBuffer::copyBufferToImage(VulkanBuffer* buffer, VulkanImage* i
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
     }
 }
-void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage)
+void CommandBuffer::copyImage(Image* srcImage, Image* dstImage)
 {
     // Copy region for transfer from framebuffer to cube face
     VkImageCopy copyRegion = {};
@@ -275,19 +270,17 @@ void VulkanCommandBuffer::copyImage(VulkanImage* srcImage, VulkanImage* dstImage
     m_pDeviceTable->vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                    dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
-void VulkanCommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex,
-                               uint32_t firstInstance)
+void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
     m_pDeviceTable->vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags srcAccessMask,
-                                             VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout,
-                                             VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
-                                             VkPipelineStageFlags    dstStageMask,
-                                             VkImageSubresourceRange subresourceRange)
+void CommandBuffer::imageMemoryBarrier(Image* image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+                                       VkImageLayout oldImageLayout, VkImageLayout newImageLayout,
+                                       VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
+                                       VkImageSubresourceRange subresourceRange)
 {
-    VkImageMemoryBarrier imageMemoryBarrier = aph::init::imageMemoryBarrier();
+    VkImageMemoryBarrier imageMemoryBarrier = init::imageMemoryBarrier();
     imageMemoryBarrier.srcAccessMask        = srcAccessMask;
     imageMemoryBarrier.dstAccessMask        = dstAccessMask;
     imageMemoryBarrier.oldLayout            = oldImageLayout;
@@ -298,27 +291,27 @@ void VulkanCommandBuffer::imageMemoryBarrier(VulkanImage* image, VkAccessFlags s
     m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                                          &imageMemoryBarrier);
 }
-void VulkanCommandBuffer::blitImage(VulkanImage* srcImage, VkImageLayout srcImageLayout, VulkanImage* dstImage,
-                                    VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
-                                    VkFilter filter)
+void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage,
+                              VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
+                              VkFilter filter)
 {
     m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(),
                                    dstImageLayout, 1, pRegions, filter);
 }
-uint32_t VulkanCommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };
-void     VulkanCommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
+uint32_t CommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };
+void     CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
-void VulkanCommandBuffer::endRendering() { m_pDeviceTable->vkCmdEndRendering(getHandle()); }
-void VulkanCommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+void CommandBuffer::endRendering() { m_pDeviceTable->vkCmdEndRendering(getHandle()); }
+void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
-void VulkanCommandBuffer::pushDescriptorSet(VulkanPipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes,
-                                            uint32_t setIdx)
+void CommandBuffer::pushDescriptorSet(Pipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes,
+                                      uint32_t setIdx)
 {
     m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(),
                                               setIdx, writes.size(), writes.data());
 }
-}  // namespace aph
+}  // namespace aph::vk

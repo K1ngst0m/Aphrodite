@@ -4,10 +4,10 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
-class VulkanImageView;
+class Device;
+class ImageView;
 
 struct ImageCreateInfo
 {
@@ -28,16 +28,15 @@ struct ImageCreateInfo
     VkImageLayout initialLayout = {VK_IMAGE_LAYOUT_UNDEFINED};
 };
 
-class VulkanImage : public ResourceHandle<VkImage, ImageCreateInfo>
+class Image : public ResourceHandle<VkImage, ImageCreateInfo>
 {
 public:
-    VulkanImage(VulkanDevice* pDevice, const ImageCreateInfo& createInfo, VkImage image,
-                VkDeviceMemory memory = VK_NULL_HANDLE);
-    ~VulkanImage();
+    Image(Device* pDevice, const ImageCreateInfo& createInfo, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
+    ~Image();
 
     VkDeviceMemory getMemory() { return m_memory; }
 
-    VulkanImageView* getView(VkFormat imageFormat = VK_FORMAT_UNDEFINED);
+    ImageView* getView(VkFormat imageFormat = VK_FORMAT_UNDEFINED);
 
     Extent3D getExtent() const { return m_createInfo.extent; }
     uint32_t getWidth() const { return m_createInfo.extent.width; }
@@ -47,9 +46,9 @@ public:
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:
-    VulkanDevice*                                  m_pDevice            = {};
-    std::unordered_map<VkFormat, VulkanImageView*> m_imageViewFormatMap = {};
-    VkDeviceMemory                                 m_memory             = {};
+    Device*                                  m_pDevice            = {};
+    std::unordered_map<VkFormat, ImageView*> m_imageViewFormatMap = {};
+    VkDeviceMemory                           m_memory             = {};
 };
 
 struct ImageViewCreateInfo
@@ -61,23 +60,23 @@ struct ImageViewCreateInfo
     VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_NONE, 0, 1, 0, 1};
 };
 
-class VulkanImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
+class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
 public:
-    VulkanImageView(const ImageViewCreateInfo& createInfo, VulkanImage* pImage, VkImageView handle);
+    ImageView(const ImageViewCreateInfo& createInfo, Image* pImage, VkImageView handle);
 
     VkFormat                getFormat() const { return m_createInfo.format; }
     VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
     VkImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
     VkComponentMapping      getComponentMapping() const { return m_createInfo.components; }
 
-    VulkanImage* getImage() { return m_image; }
+    Image* getImage() { return m_image; }
 
 private:
-    VulkanImage*                                             m_image       = {};
+    Image*                                                   m_image       = {};
     std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
 };
 
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // IMAGE_H_

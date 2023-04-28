@@ -1,17 +1,15 @@
 #include "commandPool.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
-VulkanCommandPool::VulkanCommandPool(const CommandPoolCreateInfo& createInfo, VulkanDevice* device,
-                                     VkCommandPool pool) :
-    m_device(device)
+CommandPool::CommandPool(const CommandPoolCreateInfo& createInfo, Device* device, VkCommandPool pool) : m_device(device)
 {
     getHandle()     = pool;
     getCreateInfo() = m_createInfo;
 }
 
-VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer* pCommandBuffers)
+VkResult CommandPool::allocateCommandBuffers(uint32_t commandBufferCount, VkCommandBuffer* pCommandBuffers)
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();
@@ -32,7 +30,7 @@ VkResult VulkanCommandPool::allocateCommandBuffers(uint32_t commandBufferCount, 
     // Return result.
     return result;
 }
-void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers)
+void CommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers)
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();
@@ -40,8 +38,5 @@ void VulkanCommandPool::freeCommandBuffers(uint32_t commandBufferCount, const Vk
     m_spinLock.Unlock();
 }
 
-uint32_t VulkanCommandPool::getQueueFamilyIndex() const
-{
-    return m_createInfo.queueFamilyIndex;
-}
-}  // namespace aph
+uint32_t CommandPool::getQueueFamilyIndex() const { return m_createInfo.queueFamilyIndex; }
+}  // namespace aph::vk

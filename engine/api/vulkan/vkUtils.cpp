@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 #include "spvgen/spvgen.h"
 
-namespace aph::utils
+namespace aph::vk::utils
 {
 
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
@@ -116,4 +116,4 @@ VkImageAspectFlags getImageAspect(VkFormat format)
     }
 }
 
-}  // namespace aph::utils
+}  // namespace aph::vk::utils

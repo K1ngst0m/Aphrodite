@@ -5,7 +5,7 @@
 
 #include <vector>
 
-namespace aph::init
+namespace aph::vk::init
 {
 
 inline VkMemoryAllocateInfo memoryAllocateInfo(uint32_t size, uint32_t memTypeIndex)
@@ -654,6 +654,6 @@ inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderSta
     return info;
 }
 
-}  // namespace aph::init
+}  // namespace aph::vk::init
 
 #endif  // VKLINIT_H_

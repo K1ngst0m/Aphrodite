@@ -18,7 +18,7 @@ void triangle_demo::init()
     };
 
     // setup renderer
-    m_renderer = aph::Renderer::Create<aph::VulkanRenderer>(m_window->getWindowData(), config);
+    m_renderer = aph::Renderer::Create<aph::Renderer>(m_window->getWindowData(), config);
     m_device = m_renderer->getDevice();
     setupPipeline();
 }
@@ -117,7 +117,7 @@ void triangle_demo::setupPipeline()
                     VK_CHECK_RESULT(m_device->createImage(createInfo, &depthImage));
                 }
 
-                m_device->executeSingleCommands(aph::QUEUE_GRAPHICS, [&](aph::VulkanCommandBuffer *cmd) {
+                m_device->executeSingleCommands(aph::QUEUE_GRAPHICS, [&](aph::CommandBuffer *cmd) {
                     cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
                                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
                 });
@@ -129,7 +129,7 @@ void triangle_demo::setupPipeline()
                 auto colorAttachment = m_colorAttachments[idx]->getImageView();
                 auto depthAttachment = m_depthAttachments[idx]->getImageView();
                 {
-                    std::vector<aph::VulkanImageView *> attachments{ colorAttachment, depthAttachment };
+                    std::vector<aph::ImageView *> attachments{ colorAttachment, depthAttachment };
                     aph::FramebufferCreateInfo createInfo{
                         .width = m_renderer->getSwapChain()->getExtent().width,
                         .height = m_renderer->getSwapChain()->getExtent().height,

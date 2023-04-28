@@ -36,8 +36,8 @@ void Window::setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc)
 {
     m_framebufferResizeCB = cbFunc;
     glfwSetFramebufferSizeCallback(getHandle(), [](GLFWwindow* window, int width, int height) {
-        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        ptr->m_windowData->width = {static_cast<uint32_t>(width)};
+        auto* ptr                 = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        ptr->m_windowData->width  = {static_cast<uint32_t>(width)};
         ptr->m_windowData->height = {static_cast<uint32_t>(height)};
         ptr->m_framebufferResizeCB(width, height);
     });

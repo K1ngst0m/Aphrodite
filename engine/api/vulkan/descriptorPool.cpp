@@ -1,9 +1,9 @@
 #include "descriptorPool.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
-VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout* layout) : m_layout(layout)
+DescriptorPool::DescriptorPool(DescriptorSetLayout* layout) : m_layout(layout)
 {
     const auto& bindings = layout->getBindings();
 
@@ -22,7 +22,7 @@ VulkanDescriptorPool::VulkanDescriptorPool(VulkanDescriptorSetLayout* layout) : 
     }
 }
 
-VulkanDescriptorPool::~VulkanDescriptorPool()
+DescriptorPool::~DescriptorPool()
 {
     // Destroy all allocated descriptor sets.
     for(auto it : m_allocatedDescriptorSets)
@@ -37,7 +37,7 @@ VulkanDescriptorPool::~VulkanDescriptorPool()
     }
 }
 
-VkDescriptorSet VulkanDescriptorPool::allocateSet()
+VkDescriptorSet DescriptorPool::allocateSet()
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();
@@ -67,8 +67,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
             auto result = vkCreateDescriptorPool(m_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
-            if(result != VK_SUCCESS)
-                return VK_NULL_HANDLE;
+            if(result != VK_SUCCESS) return VK_NULL_HANDLE;
 
             // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
@@ -76,8 +75,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
             break;
         }
 
-        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool)
-            break;
+        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool) break;
 
         // Increment pool index.
         ++m_currentAllocationPoolIndex;
@@ -96,8 +94,7 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
     allocInfo.pSetLayouts                 = &setLayout;
     VkDescriptorSet handle                = VK_NULL_HANDLE;
     auto            result = vkAllocateDescriptorSets(m_layout->getDevice()->getHandle(), &allocInfo, &handle);
-    if(result != VK_SUCCESS)
-        return VK_NULL_HANDLE;
+    if(result != VK_SUCCESS) return VK_NULL_HANDLE;
 
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
@@ -110,15 +107,14 @@ VkDescriptorSet VulkanDescriptorPool::allocateSet()
     return handle;
 }
 
-VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
+VkResult DescriptorPool::freeSet(VkDescriptorSet descriptorSet)
 {
     // Safe guard access to internal resources across threads.
     m_spinLock.Lock();
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
     auto it = m_allocatedDescriptorSets.find(descriptorSet);
-    if(it == m_allocatedDescriptorSets.end())
-        return VK_INCOMPLETE;
+    if(it == m_allocatedDescriptorSets.end()) return VK_INCOMPLETE;
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
@@ -139,4 +135,4 @@ VkResult VulkanDescriptorPool::freeSet(VkDescriptorSet descriptorSet)
     // Return success.
     return VK_SUCCESS;
 }
-}  // namespace aph
+}  // namespace aph::vk

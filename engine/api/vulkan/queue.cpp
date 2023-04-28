@@ -1,11 +1,10 @@
 #include "queue.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
 
-VulkanQueue::VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index,
-                         const VkQueueFamilyProperties& propertiesd) :
+Queue::Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
     m_properties(propertiesd)
@@ -13,7 +12,7 @@ VulkanQueue::VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t inde
     getHandle() = queue;
 }
 
-VkResult VulkanQueue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
+VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
 {
     std::vector<VkSubmitInfo>    finalSubmits;
     std::vector<VkCommandBuffer> cmds;
@@ -42,4 +41,4 @@ VkResult VulkanQueue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Vk
     return result;
 }
 
-}  // namespace aph
+}  // namespace aph::vk

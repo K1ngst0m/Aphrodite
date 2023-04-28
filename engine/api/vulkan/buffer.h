@@ -4,22 +4,22 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
+class Device;
 
 struct BufferCreateInfo
 {
-    uint32_t              size      = {0};
-    uint32_t              alignment = {0};
-    VkBufferUsageFlags    usage     = {0};
-    BufferDomain          domain    = {BufferDomain::Device};
+    uint32_t           size      = {0};
+    uint32_t           alignment = {0};
+    VkBufferUsageFlags usage     = {0};
+    BufferDomain       domain    = {BufferDomain::Device};
 };
 
-class VulkanBuffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
+class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 {
 public:
-    VulkanBuffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory);
+    Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory);
 
     uint32_t       getSize() const { return m_createInfo.size; }
     uint32_t       getOffset() const { return m_createInfo.alignment; }
@@ -32,6 +32,6 @@ private:
     VkDeviceMemory memory = {};
     void*          mapped = {};
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // VKLBUFFER_H_

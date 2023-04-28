@@ -21,26 +21,26 @@
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
         { \
-            std::cout << "Fatal : VkResult is \"" << aph::utils::errorString(res) << "\" in " << __FILE__ \
+            std::cout << "Fatal : VkResult is \"" << aph::vk::utils::errorString(res) << "\" in " << __FILE__ \
                       << " at line " << __LINE__ << "\n"; \
             assert(res == VK_SUCCESS); \
         } \
     }
 
-namespace aph::utils
+namespace aph::vk::utils
 {
 std::string        errorString(VkResult errorCode);
 std::vector<char>  loadSpvFromFile(const std::string& filename);
 std::vector<char>  loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags getImageAspect(VkFormat format);
-}  // namespace aph::utils
+}  // namespace aph::vk::utils
 
 // convert
-namespace aph::utils
+namespace aph::vk::utils
 {
 VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
-}  // namespace aph::utils
+}  // namespace aph::vk::utils
 
 #endif  // VKLUTILS_H_

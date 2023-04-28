@@ -5,11 +5,11 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
-class VulkanImage;
-class VulkanQueue;
+class Device;
+class Image;
+class Queue;
 
 struct SwapChainCreateInfo
 {
@@ -17,26 +17,26 @@ struct SwapChainCreateInfo
     void*        windowHandle;
 };
 
-class VulkanSwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
+class SwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
 {
 public:
-    VulkanSwapChain(const SwapChainCreateInfo& createInfo, VulkanDevice* pDevice);
-    ~VulkanSwapChain();
+    SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice);
+    ~SwapChain();
 
     VkResult acquireNextImage(VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
 
-    VkResult presentImage(VulkanQueue* pQueue, const std::vector<VkSemaphore>& waitSemaphores);
+    VkResult presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores);
 
 public:
     VkFormat getFormat() const { return m_surfaceFormat.format; }
     uint32_t getWidth() const { return m_extent.width; }
     uint32_t getHeight() const { return m_extent.height; }
 
-    VulkanImage* getImage() const { return m_images[m_imageIdx].get(); }
+    Image* getImage() const { return m_images[m_imageIdx].get(); }
 
 private:
-    VulkanDevice*                             m_pDevice{};
-    std::vector<std::unique_ptr<VulkanImage>> m_images{};
+    Device*                             m_pDevice{};
+    std::vector<std::unique_ptr<Image>> m_images{};
 
     VkSurfaceKHR       m_surface{};
     VkSurfaceFormatKHR m_surfaceFormat{};
@@ -46,6 +46,6 @@ private:
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // SWAPCHAIN_H_

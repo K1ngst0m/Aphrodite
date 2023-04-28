@@ -1,10 +1,9 @@
 #include "shader.h"
 #include "device.h"
 
-namespace aph
+namespace aph::vk
 {
-VulkanShaderModule* VulkanShaderModule::Create(VulkanDevice* pDevice, const std::vector<char>& code,
-                                               const std::string& entrypoint)
+ShaderModule* ShaderModule::Create(Device* pDevice, const std::vector<char>& code, const std::string& entrypoint)
 {
     VkShaderModuleCreateInfo createInfo{
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -15,14 +14,14 @@ VulkanShaderModule* VulkanShaderModule::Create(VulkanDevice* pDevice, const std:
     VkShaderModule handle;
     VK_CHECK_RESULT(vkCreateShaderModule(pDevice->getHandle(), &createInfo, nullptr, &handle));
 
-    auto *instance = new VulkanShaderModule(code, handle, entrypoint);
+    auto* instance = new ShaderModule(code, handle, entrypoint);
     return instance;
 }
 
-VulkanShaderModule::VulkanShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
+ShaderModule::ShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
     m_entrypoint(std::move(entrypoint)),
     m_code(std::move(code))
 {
     getHandle() = shaderModule;
 }
-}  // namespace aph
+}  // namespace aph::vk

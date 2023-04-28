@@ -27,7 +27,7 @@ public:
         auto instance = std::make_unique<TObject>(std::forward<Args>(args)...);
         return instance;
     }
-    Object(IdType id, ObjectType type) : IdObject{ id }, m_ObjectType{ type } {}
+    Object(IdType id, ObjectType type) : IdObject{id}, m_ObjectType{type} {}
     virtual ~Object() = default;
 
     ObjectType getType() { return m_ObjectType; }

@@ -55,8 +55,7 @@ public:
         m_condition.wait(lock, [this](void) { return !m_queue.empty() || !m_valid; });
 
         // Ensure queue is still valid since above predicate could fall through.
-        if(!m_valid)
-            return false;
+        if(!m_valid) return false;
 
         // Get the item out of the queue.
         item = std::move(m_queue.front());
@@ -65,7 +64,7 @@ public:
     }
 
 private:
-    std::atomic_bool        m_valid{ true };
+    std::atomic_bool        m_valid{true};
     std::queue<T>           m_queue;
     std::mutex              m_mutex;
     std::condition_variable m_condition;
@@ -100,7 +99,7 @@ public:
 private:
     std::stack<std::thread>                     m_threads;
     ThreadSafeQueue<std::packaged_task<void()>> m_tasks;
-    std::atomic<uint32_t>                       m_activeThreads{ 0U };
+    std::atomic<uint32_t>                       m_activeThreads{0U};
     std::mutex                                  m_threadsCompleteMutex;
     std::condition_variable                     m_threadsCompleteCondition;
 };

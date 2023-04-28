@@ -27,18 +27,9 @@ std::string format_duration(T xms)
     }
 
     std::stringstream ss;
-    if(days > 0)
-    {
-        ss << std::setfill('0') << std::setw(2) << days << '-';
-    }
-    if(hours > 0)
-    {
-        ss << std::setfill('0') << std::setw(2) << hours << ':';
-    }
-    if(minutes > 0)
-    {
-        ss << std::setfill('0') << std::setw(2) << minutes << ':';
-    }
+    if(days > 0) { ss << std::setfill('0') << std::setw(2) << days << '-'; }
+    if(hours > 0) { ss << std::setfill('0') << std::setw(2) << hours << ':'; }
+    if(minutes > 0) { ss << std::setfill('0') << std::setw(2) << minutes << ':'; }
     // Always display seconds no matter what
     ss << std::setfill('0') << std::setw(2) << seconds;
     return ss.str();
@@ -48,23 +39,12 @@ std::string prep_level(Logger& l)
 {
     switch(l._message_level)
     {
-    case LOG_ERR:
-        return APH_LOG_ERROR;
-        break;
-    case LOG_WARN:
-        return APH_LOG_WARNING;
-        break;
-    case LOG_INFO:
-        return APH_LOG_INFO;
-        break;
-    case LOG_DEBUG:
-        return APH_LOG_DEBUG;
-        break;
-    case LOG_TIME:
-        return APH_LOG_TIME;
-        break;
-    default:
-        return "";
+    case LOG_ERR: return APH_LOG_ERROR; break;
+    case LOG_WARN: return APH_LOG_WARNING; break;
+    case LOG_INFO: return APH_LOG_INFO; break;
+    case LOG_DEBUG: return APH_LOG_DEBUG; break;
+    case LOG_TIME: return APH_LOG_TIME; break;
+    default: return "";
     }
     return "";
 }
@@ -82,26 +62,18 @@ std::string prep_time(Logger& l)
     M = std::to_string(t->tm_mon + 1);
     Y = std::to_string(t->tm_year + 1900);
 
-    if(t->tm_sec < 10)
-        s = "0" + s;
-    if(t->tm_min < 10)
-        m = "0" + m;
-    if(t->tm_hour < 10)
-        h = "0" + h;
-    if(t->tm_mday < 10)
-        D = "0" + D;
-    if(t->tm_mon + 1 < 10)
-        M = "0" + M;
+    if(t->tm_sec < 10) s = "0" + s;
+    if(t->tm_min < 10) m = "0" + m;
+    if(t->tm_hour < 10) h = "0" + h;
+    if(t->tm_mday < 10) D = "0" + D;
+    if(t->tm_mon + 1 < 10) M = "0" + M;
 
     std::string ret = "[ " + Y + "-" + M + "-" + D + "T" + h + ":" + m + ":" + s + " ]";
 
     return ret;
 }
 
-std::string prep_name(Logger& l)
-{
-    return "[ " + l._name + " ]";
-}
+std::string prep_name(Logger& l) { return "[ " + l._name + " ]"; }
 
 template <typename T>
 Logger& operator<<(Logger& l, const T& s)
@@ -130,10 +102,7 @@ Logger::Logger(std::ostream& f, unsigned ll, std::string n) : _message_level(LOG
 Logger& Logger::operator()(unsigned ll)
 {
     _message_level = ll;
-    if(_message_level <= _loglevel())
-    {
-        _fac << prep_level(*this) << prep_time(*this) << prep_name(*this) << ": ";
-    }
+    if(_message_level <= _loglevel()) { _fac << prep_level(*this) << prep_time(*this) << prep_name(*this) << ": "; }
     return *this;
 }
 
@@ -196,14 +165,8 @@ unsigned& Logger::_loglevel()
     return _ll_internal;
 };
 
-void Logger::set_log_level(unsigned ll)
-{
-    _loglevel() = ll;
-}
+void Logger::set_log_level(unsigned ll) { _loglevel() = ll; }
 
-void Logger::flush()
-{
-    _fac.flush();
-}
+void Logger::flush() { _fac.flush(); }
 
 }  // namespace aph

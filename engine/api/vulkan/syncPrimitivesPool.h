@@ -5,15 +5,15 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
-class VulkanSyncPrimitivesPool
+class Device;
+class SyncPrimitivesPool
 {
 public:
-    VulkanSyncPrimitivesPool(VulkanDevice* device);
+    SyncPrimitivesPool(Device* device);
 
-    ~VulkanSyncPrimitivesPool();
+    ~SyncPrimitivesPool();
 
     VkResult acquireFence(VkFence& fence, bool isSignaled = true);
     VkResult releaseFence(VkFence fence);
@@ -24,13 +24,13 @@ public:
     bool     Exists(VkSemaphore semaphore);
 
 private:
-    VulkanDevice*           m_device              = {};
+    Device*                 m_device              = {};
     std::set<VkFence>       m_allFences           = {};
     std::set<VkSemaphore>   m_allSemaphores       = {};
     std::queue<VkFence>     m_availableFences     = {};
     std::queue<VkSemaphore> m_availableSemaphores = {};
     SpinLock                m_fenceLock = {}, m_semaphoreLock = {};
 };
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // SYNCPRIMITIVESPOOL_H_

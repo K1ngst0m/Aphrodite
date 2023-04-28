@@ -108,7 +108,7 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
-    m_sceneRenderer = aph::IRenderer::Create<aph::VulkanSceneRenderer>(m_window, config);
+    m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
 }
 
 void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)

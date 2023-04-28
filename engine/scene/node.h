@@ -107,7 +107,6 @@ public:
         }
     }
 
-
 private:
     Object* m_object{};
 };

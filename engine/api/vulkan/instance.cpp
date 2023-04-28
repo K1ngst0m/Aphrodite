@@ -1,7 +1,7 @@
 #include "instance.h"
 #include "physicalDevice.h"
 
-namespace aph
+namespace aph::vk
 {
 
 #ifdef VK_CHECK_RESULT
@@ -62,7 +62,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
         std::cerr << "[ERROR] >>> " << pCallbackData->pMessage << std::endl;
         break;
 
-        default: break;
+    default: break;
     }
     return VK_FALSE;
 }
@@ -99,7 +99,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 }  // namespace
 
-VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInstance** ppInstance)
+VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
     // Fill out VkApplicationInfo struct.
     // TODO check version with supports
@@ -121,12 +121,12 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
         .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
     };
 
-    #if defined (APH_DEBUG)
+#if defined(APH_DEBUG)
     if(!checkValidationLayerSupport(createInfo.enabledLayers)) { return VK_ERROR_EXTENSION_NOT_PRESENT; }
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     populateDebugMessengerCreateInfo(debugCreateInfo);
     instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-    #endif
+#endif
 
     VkInstance handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, nullptr, &handle));
@@ -134,7 +134,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
     volkLoadInstance(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto* instance        = new VulkanInstance();
+    auto* instance        = new Instance();
     instance->getHandle() = handle;
 
     // Get the number of attached physical devices.
@@ -151,7 +151,7 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
         // Wrap native Vulkan handles in PhysicalDevice class.
         for(auto& pd : physicalDevices)
         {
-            auto pdImpl = std::make_unique<VulkanPhysicalDevice>(pd);
+            auto pdImpl = std::make_unique<PhysicalDevice>(pd);
             instance->m_physicalDevices.push_back(std::move(pdImpl));
         }
     }
@@ -178,21 +178,21 @@ VkResult VulkanInstance::Create(const InstanceCreateInfo& createInfo, VulkanInst
     // Copy address of object instance.
     *ppInstance = instance;
 
-    #if defined (APH_DEBUG)
+#if defined(APH_DEBUG)
     {
         VkDebugUtilsMessengerCreateInfoEXT createInfo{};
         populateDebugMessengerCreateInfo(createInfo);
         VK_CHECK_RESULT(createDebugUtilsMessengerEXT(handle, &createInfo, nullptr, &instance->m_debugMessenger));
     }
-    #endif
+#endif
     // Return success.
     return VK_SUCCESS;
 }
 
-void VulkanInstance::Destroy(VulkanInstance* pInstance)
+void Instance::Destroy(Instance* pInstance)
 {
     delete pInstance->m_threadPool;
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);
     vkDestroyInstance(pInstance->getHandle(), nullptr);
 }
-}  // namespace aph
+}  // namespace aph::vk

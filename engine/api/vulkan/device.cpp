@@ -1,8 +1,7 @@
 #include "device.h"
-#include <vulkan/vulkan_core.h>
 #include "api/gpuResource.h"
 
-namespace aph
+namespace aph::vk
 {
 
 #ifdef VK_CHECK_RESULT
@@ -15,16 +14,16 @@ namespace aph
         if(res != VK_SUCCESS) { return res; } \
     }
 
-VulkanDevice::VulkanDevice(const DeviceCreateInfo& createInfo, VulkanPhysicalDevice* pPhysicalDevice, VkDevice handle) :
+Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle) :
     m_physicalDevice(pPhysicalDevice)
 {
     getHandle()     = handle;
     getCreateInfo() = createInfo;
 }
 
-VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice** ppDevice)
+VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
 {
-    VulkanPhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
+    PhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
 
     auto queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
     auto queueFamilyCount      = queueFamilyProperties.size();
@@ -47,7 +46,6 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
     VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
     vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
-
 
     // TODO manage features
     supportedFeatures.sampleRateShading = VK_TRUE;
@@ -102,7 +100,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     VK_CHECK_RESULT(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
 
     // Initialize Device class.
-    auto* device                = new VulkanDevice(createInfo, physicalDevice, handle);
+    auto* device = new Device(createInfo, physicalDevice, handle);
     volkLoadDeviceTable(&device->m_table, handle);
     device->m_supportedFeatures = supportedFeatures;
 
@@ -115,8 +113,8 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
         {
             VkQueue queue = VK_NULL_HANDLE;
             device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            device->m_queues[queueFamilyIndex][queueIndex] = std::make_unique<VulkanQueue>(
-                queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+            device->m_queues[queueFamilyIndex][queueIndex] =
+                std::make_unique<Queue>(queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
 
@@ -127,7 +125,7 @@ VkResult VulkanDevice::Create(const DeviceCreateInfo& createInfo, VulkanDevice**
     return VK_SUCCESS;
 }
 
-void VulkanDevice::Destroy(VulkanDevice* pDevice)
+void Device::Destroy(Device* pDevice)
 {
     for(auto& [_, commandpool] : pDevice->m_commandPools)
     {
@@ -139,7 +137,7 @@ void VulkanDevice::Destroy(VulkanDevice* pDevice)
     pDevice = nullptr;
 }
 
-VkResult VulkanDevice::createCommandPool(const CommandPoolCreateInfo& createInfo, VulkanCommandPool** ppPool)
+VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool)
 {
     VkCommandPoolCreateInfo cmdPoolInfo{
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -149,19 +147,18 @@ VkResult VulkanDevice::createCommandPool(const CommandPoolCreateInfo& createInfo
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
     VK_CHECK_RESULT(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
-    *ppPool = new VulkanCommandPool(createInfo, this, cmdPool);
+    *ppPool = new CommandPool(createInfo, this, cmdPool);
     return VK_SUCCESS;
 }
 
-VkFormat VulkanDevice::getDepthFormat() const
+VkFormat Device::getDepthFormat() const
 {
     return m_physicalDevice->findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, VulkanImageView** ppImageView,
-                                       VulkanImage* pImage)
+VkResult Device::createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -171,7 +168,7 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, Vu
         .format   = createInfo.format,
     };
     info.subresourceRange = {
-        .aspectMask     = aph::utils::getImageAspect(createInfo.format),
+        .aspectMask     = utils::getImageAspect(createInfo.format),
         .baseMipLevel   = createInfo.subresourceRange.baseMipLevel,
         .levelCount     = createInfo.subresourceRange.levelCount,
         .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
@@ -182,15 +179,14 @@ VkResult VulkanDevice::createImageView(const ImageViewCreateInfo& createInfo, Vu
     VkImageView handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(m_table.vkCreateImageView(getHandle(), &info, nullptr, &handle));
 
-    *ppImageView = new VulkanImageView(createInfo, pImage, handle);
+    *ppImageView = new ImageView(createInfo, pImage, handle);
 
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::executeSingleCommands(QueueType                                                    type,
-                                             const std::function<void(VulkanCommandBuffer* pCmdBuffer)>&& func)
+VkResult Device::executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
 {
-    VulkanCommandBuffer* cmd = nullptr;
+    CommandBuffer* cmd = nullptr;
     VK_CHECK_RESULT(allocateCommandBuffers(1, &cmd, getQueueByFlags(type)));
 
     VK_CHECK_RESULT(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
@@ -209,8 +205,8 @@ VkResult VulkanDevice::executeSingleCommands(QueueType                          
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer, const void* data,
-                                    bool persistmentMap)
+VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data,
+                              bool persistmentMap)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -257,13 +253,13 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     }
     else
     {
-        VkMemoryAllocateInfo allocInfo = aph::init::memoryAllocateInfo(
+        VkMemoryAllocateInfo allocInfo = init::memoryAllocateInfo(
             memRequirements.memoryRequirements.size,
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits));
         VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
     }
 
-    *ppBuffer = new VulkanBuffer(createInfo, buffer, memory);
+    *ppBuffer = new Buffer(createInfo, buffer, memory);
 
     // bind buffer and memory
     VK_CHECK_RESULT(bindMemory(*ppBuffer));
@@ -278,7 +274,7 @@ VkResult VulkanDevice::createBuffer(const BufferCreateInfo& createInfo, VulkanBu
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage)
+VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
 {
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -345,16 +341,16 @@ VkResult VulkanDevice::createImage(const ImageCreateInfo& createInfo, VulkanImag
         VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
     }
 
-    *ppImage = new VulkanImage(this, createInfo, image, memory);
+    *ppImage = new Image(this, createInfo, image, memory);
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE) { VK_CHECK_RESULT(bindMemory(*ppImage)); }
 
     return VK_SUCCESS;
 }
 
-VulkanPhysicalDevice* VulkanDevice::getPhysicalDevice() const { return m_physicalDevice; }
+PhysicalDevice* Device::getPhysicalDevice() const { return m_physicalDevice; }
 
-void VulkanDevice::destroyBuffer(VulkanBuffer* pBuffer)
+void Device::destroyBuffer(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr); }
     vkDestroyBuffer(m_handle, pBuffer->getHandle(), nullptr);
@@ -362,7 +358,7 @@ void VulkanDevice::destroyBuffer(VulkanBuffer* pBuffer)
     pBuffer = nullptr;
 }
 
-void VulkanDevice::destroyImage(VulkanImage* pImage)
+void Device::destroyImage(Image* pImage)
 {
     if(pImage->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pImage->getMemory(), nullptr); }
     vkDestroyImage(m_handle, pImage->getHandle(), nullptr);
@@ -370,57 +366,56 @@ void VulkanDevice::destroyImage(VulkanImage* pImage)
     pImage = nullptr;
 }
 
-void VulkanDevice::destroyImageView(VulkanImageView* pImageView)
+void Device::destroyImageView(ImageView* pImageView)
 {
     vkDestroyImageView(m_handle, pImageView->getHandle(), nullptr);
     delete pImageView;
     pImageView = nullptr;
 }
 
-VkResult VulkanDevice::createSwapchain(const SwapChainCreateInfo& createInfo, VulkanSwapChain** ppSwapchain)
+VkResult Device::createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
 {
-    *ppSwapchain = new VulkanSwapChain(createInfo, this);
+    *ppSwapchain = new SwapChain(createInfo, this);
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroySwapchain(VulkanSwapChain* pSwapchain)
+void Device::destroySwapchain(SwapChain* pSwapchain)
 {
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
     pSwapchain = nullptr;
 }
 
-VulkanQueue* VulkanDevice::getQueueByFlags(QueueType flags, uint32_t queueIndex)
+Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
 {
     std::vector<uint32_t> supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
     if(supportedQueueFamilyIndexList.empty()) { return nullptr; }
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
 }
 
-VkResult VulkanDevice::waitIdle() { return vkDeviceWaitIdle(getHandle()); }
+VkResult Device::waitIdle() { return vkDeviceWaitIdle(getHandle()); }
 
-VulkanCommandPool* VulkanDevice::getCommandPoolWithQueue(VulkanQueue* queue)
+CommandPool* Device::getCommandPoolWithQueue(Queue* queue)
 {
     auto queueIndices = queue->getFamilyIndex();
 
     if(m_commandPools.count(queueIndices)) { return m_commandPools.at(queueIndices); }
 
     CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
-    VulkanCommandPool*    pool = nullptr;
+    CommandPool*          pool = nullptr;
     createCommandPool(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
     return pool;
 }
 
-void VulkanDevice::destroyCommandPool(VulkanCommandPool* pPool)
+void Device::destroyCommandPool(CommandPool* pPool)
 {
     vkDestroyCommandPool(getHandle(), pPool->getHandle(), nullptr);
     delete pPool;
     pPool = nullptr;
 }
 
-VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers,
-                                              VulkanQueue* pQueue)
+VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
 {
     auto* queue = pQueue;
     auto* pool  = getCommandPoolWithQueue(queue);
@@ -430,12 +425,12 @@ VkResult VulkanDevice::allocateCommandBuffers(uint32_t commandBufferCount, Vulka
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        ppCommandBuffers[i] = new VulkanCommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
     }
     return VK_SUCCESS;
 }
 
-void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommandBuffer** ppCommandBuffers)
+void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers)
 {
     // Destroy all of the command buffers.
     for(auto i = 0U; i < commandBufferCount; ++i)
@@ -445,8 +440,8 @@ void VulkanDevice::freeCommandBuffers(uint32_t commandBufferCount, VulkanCommand
     }
 }
 
-VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
-                                              VulkanPipeline** ppPipeline)
+VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+                                        Pipeline** ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
@@ -479,7 +474,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
             setLayouts.push_back(setLayout->getHandle());
         }
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            aph::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+            init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
         m_table.vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
     }
 
@@ -506,8 +501,7 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(
-            aph::init::pipelineShaderStageCreateInfo(aph::utils::VkCast(stage), sModule->getHandle()));
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
     }
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages    = shaderStages.data();
@@ -516,12 +510,12 @@ VkResult VulkanDevice::createGraphicsPipeline(const GraphicsPipelineCreateInfo& 
     VK_CHECK_RESULT(
         m_table.vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
 
-    *ppPipeline = new VulkanPipeline(this, createInfo, renderPass, pipelineLayout, handle);
+    *ppPipeline = new Pipeline(this, createInfo, renderPass, pipelineLayout, handle);
 
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroyPipeline(VulkanPipeline* pipeline)
+void Device::destroyPipeline(Pipeline* pipeline)
 {
     m_table.vkDestroyPipelineLayout(getHandle(), pipeline->getPipelineLayout(), nullptr);
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
@@ -529,16 +523,15 @@ void VulkanDevice::destroyPipeline(VulkanPipeline* pipeline)
     pipeline = nullptr;
 }
 
-VkResult VulkanDevice::createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                                 VulkanDescriptorSetLayout**          ppDescriptorSetLayout,
-                                                 bool                                 enablePushDescriptor)
+VkResult Device::createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
+                                           DescriptorSetLayout** ppDescriptorSetLayout, bool enablePushDescriptor)
 {
     std::vector<VkDescriptorSetLayoutBinding> vkBindings;
     uint32_t                                  bindingIdx = 0;
     for(const auto& binding : bindings)
     {
-        auto vkBinding = aph::init::descriptorSetLayoutBinding(
-            utils::VkCast(binding.resType), utils::VkCast(binding.stages), bindingIdx, binding.count);
+        auto vkBinding = init::descriptorSetLayoutBinding(utils::VkCast(binding.resType), utils::VkCast(binding.stages),
+                                                          bindingIdx, binding.count);
         vkBinding.pImmutableSamplers = binding.pImmutableSampler;
         vkBindings.push_back(vkBinding);
         bindingIdx++;
@@ -553,16 +546,16 @@ VkResult VulkanDevice::createDescriptorSetLayout(const std::vector<ResourcesBind
 
     VkDescriptorSetLayout setLayout;
     VK_CHECK_RESULT(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
-    *ppDescriptorSetLayout = new VulkanDescriptorSetLayout(this, bindings, setLayout);
+    *ppDescriptorSetLayout = new DescriptorSetLayout(this, bindings, setLayout);
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroyDescriptorSetLayout(VulkanDescriptorSetLayout* pLayout)
+void Device::destroyDescriptorSetLayout(DescriptorSetLayout* pLayout)
 {
     m_table.vkDestroyDescriptorSetLayout(m_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
 }
-VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& createInfo, VulkanPipeline** ppPipeline)
+VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
     {
@@ -573,34 +566,32 @@ VkResult VulkanDevice::createComputePipeline(const ComputePipelineCreateInfo& cr
             setLayouts.push_back(setLayout->getHandle());
         }
         VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            aph::init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
+            init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
         VK_CHECK_RESULT(m_table.vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
     }
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
     {
-        shaderStages.push_back(
-            aph::init::pipelineShaderStageCreateInfo(aph::utils::VkCast(stage), sModule->getHandle()));
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
     }
 
-    VkComputePipelineCreateInfo ci = aph::init::computePipelineCreateInfo(pipelineLayout);
+    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(pipelineLayout);
     ci.stage                       = shaderStages[0];
     VkPipeline handle              = VK_NULL_HANDLE;
     VK_CHECK_RESULT(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
-    *ppPipeline = new VulkanPipeline(this, createInfo, pipelineLayout, handle);
+    *ppPipeline = new Pipeline(this, createInfo, pipelineLayout, handle);
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::waitForFence(const std::vector<VkFence>& fences, bool waitAll, uint32_t timeout)
+VkResult Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, uint32_t timeout)
 {
     return m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 
-VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, VulkanBuffer** ppBuffer,
-                                               const void* data)
+VkResult Device::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data)
 {
     // using staging buffer
-    aph::VulkanBuffer* stagingBuffer{};
+    Buffer* stagingBuffer{};
     {
         BufferCreateInfo stagingCI{
             .size   = static_cast<uint32_t>(createInfo.size),
@@ -610,7 +601,7 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
         VK_CHECK_RESULT(createBuffer(stagingCI, &stagingBuffer, data));
     }
 
-    VulkanBuffer* buffer = nullptr;
+    Buffer* buffer = nullptr;
     {
         auto bufferCI   = createInfo;
         bufferCI.domain = BufferDomain::Device;
@@ -619,21 +610,21 @@ VkResult VulkanDevice::createDeviceLocalBuffer(const BufferCreateInfo& createInf
     }
 
     executeSingleCommands(QueueType::GRAPHICS,
-                          [&](VulkanCommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, buffer, createInfo.size); });
+                          [&](CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, buffer, createInfo.size); });
     *ppBuffer = buffer;
     destroyBuffer(stagingBuffer);
     return VK_SUCCESS;
 };
 
-VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo, VulkanImage** ppImage,
-                                              const std::vector<uint8_t>& data)
+VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image** ppImage,
+                                        const std::vector<uint8_t>& data)
 {
     bool           genMipmap = createInfo.mipLevels > 1;
     const uint32_t width     = createInfo.extent.width;
     const uint32_t height    = createInfo.extent.height;
 
     // Load texture from image buffer
-    VulkanBuffer* stagingBuffer;
+    Buffer* stagingBuffer;
     {
         BufferCreateInfo bufferCI{
             .size   = static_cast<uint32_t>(data.size()),
@@ -643,7 +634,7 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
         createBuffer(bufferCI, &stagingBuffer, data.data());
     }
 
-    VulkanImage* texture{};
+    Image* texture{};
     {
         auto imageCI = createInfo;
         imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -652,13 +643,17 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
 
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
-        executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* cmd) {
+        executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* cmd) {
             cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->copyBufferToImage(stagingBuffer, texture);
-            if(genMipmap) { cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL); }
+            if(genMipmap)
+            {
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            }
         });
 
-        executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* cmd) {
+        executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* cmd) {
             if(genMipmap)
             {
                 // generate mipmap chains
@@ -694,8 +689,8 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
                                             VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
                     // Blit from previous level
-                    cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                                   &imageBlit, VK_FILTER_LINEAR);
+                    cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
                     // Prepare current mip level as image blit source for next level
                     cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -704,9 +699,14 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
                                             mipSubRange);
                 }
 
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
-            else { cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); }
+            else
+            {
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
         });
     }
 
@@ -715,7 +715,7 @@ VkResult VulkanDevice::createDeviceLocalImage(const ImageCreateInfo& createInfo,
 
     return VK_SUCCESS;
 }
-VkResult VulkanDevice::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+VkResult Device::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
 {
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -725,7 +725,7 @@ VkResult VulkanDevice::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, V
     };
     return m_table.vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange);
 }
-VkResult VulkanDevice::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
+VkResult Device::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
 {
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -736,7 +736,7 @@ VkResult VulkanDevice::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size
     return m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange);
 }
 
-VkResult VulkanDevice::mapMemory(VulkanBuffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
+VkResult Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
 {
     if(mapped == nullptr)
     {
@@ -745,25 +745,25 @@ VkResult VulkanDevice::mapMemory(VulkanBuffer* pBuffer, void* mapped, VkDeviceSi
     return m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped);
 }
 
-VkResult VulkanDevice::bindMemory(VulkanBuffer* pBuffer, VkDeviceSize offset)
+VkResult Device::bindMemory(Buffer* pBuffer, VkDeviceSize offset)
 {
     return m_table.vkBindBufferMemory(getHandle(), pBuffer->getHandle(), pBuffer->getMemory(), offset);
 }
 
-VkResult VulkanDevice::bindMemory(VulkanImage* pImage, VkDeviceSize offset)
+VkResult Device::bindMemory(Image* pImage, VkDeviceSize offset)
 {
     return m_table.vkBindImageMemory(getHandle(), pImage->getHandle(), pImage->getMemory(), offset);
 }
 
-void VulkanDevice::unMapMemory(VulkanBuffer* pBuffer) { m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory()); }
+void Device::unMapMemory(Buffer* pBuffer) { m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory()); }
 
-VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, VulkanImage** ppImage,
-                                     VulkanImageView** ppImageView)
+VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage,
+                               ImageView** ppImageView)
 {
-    uint32_t                     cubeMapWidth{}, cubeMapHeight{};
-    VkFormat                     imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
-    uint32_t                     mipLevels   = 0;
-    std::array<VulkanBuffer*, 6> stagingBuffers;
+    uint32_t               cubeMapWidth{}, cubeMapHeight{};
+    VkFormat               imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    uint32_t               mipLevels   = 0;
+    std::array<Buffer*, 6> stagingBuffers;
     for(auto idx = 0; idx < 6; idx++)
     {
         const auto& image = images[idx];
@@ -814,7 +814,7 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
         .layerCount   = 6,
     };
 
-    VulkanImage*    cubeMapImage{};
+    Image*          cubeMapImage{};
     ImageCreateInfo imageCI{
         .extent      = {cubeMapWidth, cubeMapHeight, 1},
         .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
@@ -827,16 +827,16 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     };
     createImage(imageCI, &cubeMapImage);
 
-    executeSingleCommands(QueueType::GRAPHICS, [&](VulkanCommandBuffer* pCommandBuffer) {
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                              &subresourceRange);
+    executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCommandBuffer) {
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED,
+                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
         // Copy the cube map faces from the staging buffer to the optimal tiled image
         for(uint32_t idx = 0; idx < 6; idx++)
         {
             pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, {bufferCopyRegions[idx]});
         }
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                              &subresourceRange);
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
     });
 
     for(auto* buffer : stagingBuffers)
@@ -854,11 +854,11 @@ VkResult VulkanDevice::createCubeMap(const std::array<std::shared_ptr<ImageInfo>
     return VK_SUCCESS;
 }
 
-VkResult VulkanDevice::createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler)
+VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler)
 {
     VK_CHECK_RESULT(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, pSampler));
     return VK_SUCCESS;
 }
 
-void VulkanDevice::destroySampler(VkSampler sampler) { m_table.vkDestroySampler(getHandle(), sampler, nullptr); }
-}  // namespace aph
+void Device::destroySampler(VkSampler sampler) { m_table.vkDestroySampler(getHandle(), sampler, nullptr); }
+}  // namespace aph::vk

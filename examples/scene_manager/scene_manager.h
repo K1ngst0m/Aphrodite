@@ -3,6 +3,7 @@
 
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
+#include "renderer/api/vulkan/sceneRenderer.h"
 
 class scene_manager : public aph::BaseApp
 {
@@ -37,7 +38,7 @@ private:
 
     std::unique_ptr<aph::CameraController> m_cameraController = {};
 
-    std::unique_ptr<aph::VulkanSceneRenderer> m_sceneRenderer = {};
+    std::unique_ptr<aph::vk::SceneRenderer> m_sceneRenderer = {};
 
     std::shared_ptr<aph::Window> m_window = {};
 };

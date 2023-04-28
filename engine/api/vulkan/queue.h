@@ -4,23 +4,23 @@
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
-class VulkanCommandBuffer;
+class Device;
+class CommandBuffer;
 
 struct QueueSubmitInfo
 {
-    std::vector<VulkanCommandBuffer*> commandBuffers;
+    std::vector<CommandBuffer*>       commandBuffers;
     std::vector<VkPipelineStageFlags> waitStages;
     std::vector<VkSemaphore>          waitSemaphores;
     std::vector<VkSemaphore>          signalSemaphores;
 };
 
-class VulkanQueue : public ResourceHandle<VkQueue>
+class Queue : public ResourceHandle<VkQueue>
 {
 public:
-    VulkanQueue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
+    Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
 
     uint32_t     getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t     getIndex() const { return m_index; }
@@ -34,8 +34,8 @@ private:
     VkQueueFamilyProperties m_properties       = {};
 };
 
-using QueueFamily = std::vector<std::unique_ptr<VulkanQueue>>;
+using QueueFamily = std::vector<std::unique_ptr<Queue>>;
 
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // QUEUE_H_

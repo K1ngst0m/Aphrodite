@@ -5,10 +5,10 @@
 #include "shader.h"
 #include "vkUtils.h"
 
-namespace aph
+namespace aph::vk
 {
-class VulkanDevice;
-class VulkanDescriptorSetLayout;
+class Device;
+class DescriptorSetLayout;
 
 enum class VertexComponent
 {
@@ -36,9 +36,9 @@ struct GraphicsPipelineCreateInfo
     VkPipelineDepthStencilStateCreateInfo            depthStencil          = {};
     VkPipelineCache                                  pipelineCache         = {};
 
-    std::vector<VulkanDescriptorSetLayout*> setLayouts    = {};
-    std::vector<VkPushConstantRange>        constants     = {};
-    ShaderMapList                           shaderMapList = {};
+    std::vector<DescriptorSetLayout*> setLayouts    = {};
+    std::vector<VkPushConstantRange>  constants     = {};
+    ShaderMapList                     shaderMapList = {};
 
     GraphicsPipelineCreateInfo(const std::vector<VertexComponent>& component = {VertexComponent::POSITION,
                                                                                 VertexComponent::NORMAL,
@@ -50,34 +50,33 @@ struct GraphicsPipelineCreateInfo
 
 struct ComputePipelineCreateInfo
 {
-    std::vector<VulkanDescriptorSetLayout*> setLayouts;
-    std::vector<VkPushConstantRange>        constants;
-    ShaderMapList                           shaderMapList;
+    std::vector<DescriptorSetLayout*> setLayouts;
+    std::vector<VkPushConstantRange>  constants;
+    ShaderMapList                     shaderMapList;
 };
 
-class VulkanPipeline : public ResourceHandle<VkPipeline>
+class Pipeline : public ResourceHandle<VkPipeline>
 {
 public:
-    VulkanPipeline(VulkanDevice* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
-                   VkPipelineLayout layout, VkPipeline handle);
-    VulkanPipeline(VulkanDevice* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipelineLayout layout,
-                   VkPipeline handle);
+    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+             VkPipelineLayout layout, VkPipeline handle);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipelineLayout layout, VkPipeline handle);
 
-    VulkanDescriptorSetLayout* getDescriptorSetLayout(uint32_t idx) { return m_setLayouts[idx]; }
-    VkPipelineLayout           getPipelineLayout() { return m_pipelineLayout; }
-    VkPipelineBindPoint        getBindPoint() { return m_bindPoint; }
+    DescriptorSetLayout* getDescriptorSetLayout(uint32_t idx) { return m_setLayouts[idx]; }
+    VkPipelineLayout     getPipelineLayout() { return m_pipelineLayout; }
+    VkPipelineBindPoint  getBindPoint() { return m_bindPoint; }
 
 protected:
-    VulkanDevice*                           m_pDevice        = {};
-    VkRenderPass                            m_renderPass     = {};
-    VkPipelineCache                         m_cache          = {};
-    VkPipelineLayout                        m_pipelineLayout = {};
-    VkPipelineBindPoint                     m_bindPoint      = {};
-    std::vector<VkPushConstantRange>        m_constants      = {};
-    std::vector<VulkanDescriptorSetLayout*> m_setLayouts     = {};
-    ShaderMapList                           m_shaderMapList  = {};
+    Device*                           m_pDevice        = {};
+    VkRenderPass                      m_renderPass     = {};
+    VkPipelineCache                   m_cache          = {};
+    VkPipelineLayout                  m_pipelineLayout = {};
+    VkPipelineBindPoint               m_bindPoint      = {};
+    std::vector<VkPushConstantRange>  m_constants      = {};
+    std::vector<DescriptorSetLayout*> m_setLayouts     = {};
+    ShaderMapList                     m_shaderMapList  = {};
 };
 
-}  // namespace aph
+}  // namespace aph::vk
 
 #endif  // PIPELINE_H_

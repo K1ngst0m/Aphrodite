@@ -10,15 +10,21 @@
 namespace aph
 {
 
+namespace vk
+{
+class SceneRenderer;
+class Renderer;
+};  // namespace vk
+
 enum RenderConfigFlagBits
 {
     RENDER_CFG_DEBUG       = (1 << 0),
     RENDER_CFG_UI          = (1 << 1),
     RENDER_CFG_DEFAULT_RES = (1 << 2),
     RENDER_CFG_ALL         = RENDER_CFG_DEFAULT_RES | RENDER_CFG_UI
-    #if defined(APH_DEBUG)
-    | RENDER_CFG_DEBUG
-    #endif
+#if defined(APH_DEBUG)
+                     | RENDER_CFG_DEBUG
+#endif
     ,
 };
 using RenderConfigFlags = uint32_t;
@@ -29,8 +35,6 @@ struct RenderConfig
     uint32_t          maxFrames = {2};
 };
 
-class VulkanSceneRenderer;
-class VulkanRenderer;
 class IRenderer
 {
 public:
@@ -38,15 +42,15 @@ public:
     static std::unique_ptr<TRenderer> Create(const std::shared_ptr<Window>& window, const RenderConfig& config)
     {
         std::unique_ptr<TRenderer> renderer = {};
-        if constexpr(std::is_same<TRenderer, VulkanRenderer>::value)
+        if constexpr(std::is_same<TRenderer, vk::Renderer>::value)
         {
-            renderer = std::make_unique<VulkanRenderer>(window, config);
+            renderer = std::make_unique<vk::Renderer>(window, config);
         }
-        else if constexpr(std::is_same<TRenderer, VulkanSceneRenderer>::value)
+        else if constexpr(std::is_same<TRenderer, vk::SceneRenderer>::value)
         {
-            renderer = std::make_unique<VulkanSceneRenderer>(window, config);
+            renderer = std::make_unique<vk::SceneRenderer>(window, config);
         }
-        else { assert("current type of the renderer is not supported."); }
+        else { static_assert("current type of the renderer is not supported."); }
         return renderer;
     }
     IRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
@@ -56,7 +60,7 @@ public:
     }
 
     virtual void beginFrame() = 0;
-    virtual void endFrame() = 0;
+    virtual void endFrame()   = 0;
 
     std::shared_ptr<Window> getWindow() { return m_window; }
     uint32_t                getWindowWidth() { return m_window->getWidth(); };

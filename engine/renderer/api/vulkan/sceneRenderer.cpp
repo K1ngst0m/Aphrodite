@@ -22,7 +22,7 @@
 #include <imgui_impl_glfw.h>
 #include <vulkan/vulkan_core.h>
 
-namespace aph
+namespace aph::vk
 {
 struct SceneInfo
 {
@@ -51,16 +51,16 @@ struct ObjectInfo
     uint32_t nodeId{};
     uint32_t materialId{};
 };
-}  // namespace aph
+}  // namespace aph::vk
 
-namespace aph
+namespace aph::vk
 {
-VulkanSceneRenderer::VulkanSceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
-    VulkanRenderer(std::move(window), config)
+SceneRenderer::SceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
+    Renderer(std::move(window), config)
 {
 }
 
-void VulkanSceneRenderer::load(Scene* scene)
+void SceneRenderer::load(Scene* scene)
 {
     m_scene = scene;
 
@@ -77,7 +77,7 @@ void VulkanSceneRenderer::load(Scene* scene)
     _initPipeline();
 }
 
-void VulkanSceneRenderer::cleanup()
+void SceneRenderer::cleanup()
 {
     for(auto* pipeline : m_pipelines)
     {
@@ -110,7 +110,7 @@ void VulkanSceneRenderer::cleanup()
     }
 }
 
-void VulkanSceneRenderer::recordAll()
+void SceneRenderer::recordAll()
 {
     auto* commandBuffer = m_commandBuffers[m_frameIdx];
 
@@ -133,7 +133,7 @@ void VulkanSceneRenderer::recordAll()
     VK_CHECK_RESULT(queue->submit({submitInfo}, m_frameFences[m_frameIdx]));
 }
 
-void VulkanSceneRenderer::update(float deltaTime)
+void SceneRenderer::update(float deltaTime)
 {
     m_scene->update(deltaTime);
 
@@ -171,7 +171,7 @@ void VulkanSceneRenderer::update(float deltaTime)
               .color     = {light->m_color * light->m_intensity, 1.0f},
               .position  = {light->m_position, 1.0f},
               .direction = {light->m_direction, 1.0f},
-              .lightType = utils::getUnderLyingType(light->m_type),
+              .lightType = aph::utils::getUnderLyingType(light->m_type),
         };
         m_buffers[BUFFER_SCENE_LIGHT]->write(&lightData, sizeof(LightInfo) * idx, sizeof(LightInfo));
     }
@@ -180,7 +180,7 @@ void VulkanSceneRenderer::update(float deltaTime)
     updateUIDrawData(deltaTime);
 }
 
-void VulkanSceneRenderer::_initSet()
+void SceneRenderer::_initSet()
 {
     VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
@@ -213,7 +213,7 @@ void VulkanSceneRenderer::_initSet()
     m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
 }
 
-void VulkanSceneRenderer::_loadScene()
+void SceneRenderer::_loadScene()
 {
     m_scene->getRootNode()->traversalChildren([&](SceneNode* node) {
         switch(node->getAttachType())
@@ -238,7 +238,7 @@ void VulkanSceneRenderer::_loadScene()
     });
 }
 
-void VulkanSceneRenderer::_initGbuffer()
+void SceneRenderer::_initGbuffer()
 {
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
     m_images[IMAGE_GBUFFER_ALBEDO].resize(m_config.maxFrames);
@@ -294,7 +294,7 @@ void VulkanSceneRenderer::_initGbuffer()
     }
 }
 
-void VulkanSceneRenderer::_initGeneral()
+void SceneRenderer::_initGeneral()
 {
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
 
@@ -346,7 +346,7 @@ void VulkanSceneRenderer::_initGeneral()
     }
 }
 
-void VulkanSceneRenderer::_initSetLayout()
+void SceneRenderer::_initSetLayout()
 {
     // scene
     {
@@ -374,7 +374,7 @@ void VulkanSceneRenderer::_initSetLayout()
             }
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
 
-            samplerInfo.maxLod      = utils::calculateFullMipLevels(2048, 2048);
+            samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE]));
         }
@@ -397,17 +397,15 @@ void VulkanSceneRenderer::_initSetLayout()
 
     {
         std::vector<ResourcesBinding> bindings{
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER], true);
     }
 }
 
-void VulkanSceneRenderer::_initGpuResources()
+void SceneRenderer::_initGpuResources()
 {
     // create scene info buffer
     {
@@ -486,13 +484,13 @@ void VulkanSceneRenderer::_initGpuResources()
     {
         ImageCreateInfo createInfo{
             .extent    = {image->width, image->height, 1},
-            .mipLevels = utils::calculateFullMipLevels(image->width, image->height),
+            .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
             .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
             .format    = VK_FORMAT_R8G8B8A8_UNORM,
             .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
-        VulkanImage* texture{};
+        Image* texture{};
         m_pDevice->createDeviceLocalImage(createInfo, &texture, image->data);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }
@@ -500,7 +498,7 @@ void VulkanSceneRenderer::_initGpuResources()
     // create skybox cubemap
     {
         auto skyboxDir    = AssetManager::GetTextureDir() / "skybox";
-        auto skyboxImages = utils::loadSkyboxFromFile({
+        auto skyboxImages = aph::utils::loadSkyboxFromFile({
             (skyboxDir / "front.jpg").string(),
             (skyboxDir / "back.jpg").c_str(),
             (skyboxDir / "top_rotate_left_90.jpg").c_str(),
@@ -509,13 +507,13 @@ void VulkanSceneRenderer::_initGpuResources()
             (skyboxDir / "right.jpg").c_str(),
         });
 
-        VulkanImage* pImage{};
+        Image* pImage{};
         m_pDevice->createCubeMap(skyboxImages, &pImage, &m_pCubeMapView);
         m_images[IMAGE_SCENE_SKYBOX].push_back(pImage);
     }
 }
 
-void VulkanSceneRenderer::_initSkybox()
+void SceneRenderer::_initSkybox()
 {
     // skybox vertex
     {
@@ -547,7 +545,7 @@ void VulkanSceneRenderer::_initSkybox()
     }
 }
 
-void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBuffer)
+void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -562,7 +560,7 @@ void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBu
 
     // forward pass
     {
-        VulkanImageView*          pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
+        ImageView*                pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView   = pColorAttachment->getHandle(),
@@ -572,7 +570,7 @@ void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBu
             .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
         };
 
-        VulkanImageView*          pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
+        ImageView*                pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView   = pDepthAttachment->getHandle(),
@@ -642,7 +640,8 @@ void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBu
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &metallicRoughnessAOImageInfo),
+                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
+                                             &metallicRoughnessAOImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
                 };
                 pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_LIGHTING], writes, 2);
@@ -663,7 +662,7 @@ void VulkanSceneRenderer::recordDeferredLighting(VulkanCommandBuffer* pCommandBu
     }
 }
 
-void VulkanSceneRenderer::recordDeferredGeometry(VulkanCommandBuffer* pCommandBuffer)
+void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -678,12 +677,11 @@ void VulkanSceneRenderer::recordDeferredGeometry(VulkanCommandBuffer* pCommandBu
 
     // geometry pass
     {
-        VulkanImageView* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx]->getView();
-        VulkanImageView* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx]->getView();
-        VulkanImageView* albedoAttachment   = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx]->getView();
-        VulkanImageView* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx]->getView();
-        VulkanImageView* metallicRoughnessAOAttachment =
-            m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx]->getView();
+        ImageView* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx]->getView();
+        ImageView* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx]->getView();
+        ImageView* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx]->getView();
+        ImageView* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx]->getView();
+        ImageView* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx]->getView();
 
         // 0 pos, 1 normal, 2 albedo
         std::array<VkRenderingAttachmentInfo, 5> colorAttachments;
@@ -728,7 +726,7 @@ void VulkanSceneRenderer::recordDeferredGeometry(VulkanCommandBuffer* pCommandBu
             .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
         };
 
-        VulkanImageView*          depthAttachment = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx]->getView();
+        ImageView*                depthAttachment = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx]->getView();
         VkRenderingAttachmentInfo depthAttachmentInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView   = depthAttachment->getHandle(),
@@ -825,7 +823,7 @@ void VulkanSceneRenderer::recordDeferredGeometry(VulkanCommandBuffer* pCommandBu
     }
 }
 
-void VulkanSceneRenderer::recordForward(VulkanCommandBuffer* pCommandBuffer)
+void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
 {
     VkExtent2D extent{
         .width  = getWindowWidth(),
@@ -840,8 +838,8 @@ void VulkanSceneRenderer::recordForward(VulkanCommandBuffer* pCommandBuffer)
 
     // forward pass
     {
-        VulkanImageView*          pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
-        VulkanImageView*          pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx]->getView();
+        ImageView*                pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
+        ImageView*                pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardColorAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pColorAttachmentMS->getHandle(),
@@ -860,8 +858,8 @@ void VulkanSceneRenderer::recordForward(VulkanCommandBuffer* pCommandBuffer)
             forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
         }
 
-        VulkanImageView*          pDepthAttachment   = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
-        VulkanImageView*          pDepthAttachmentMS = m_images[IMAGE_GENERAL_DEPTH_MS][m_frameIdx]->getView();
+        ImageView*                pDepthAttachment   = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
+        ImageView*                pDepthAttachmentMS = m_images[IMAGE_GENERAL_DEPTH_MS][m_frameIdx]->getView();
         VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
             .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
             .imageView          = pDepthAttachmentMS->getHandle(),
@@ -965,11 +963,11 @@ void VulkanSceneRenderer::recordForward(VulkanCommandBuffer* pCommandBuffer)
         }
     }
 }
-void VulkanSceneRenderer::recordPostFX(VulkanCommandBuffer* pCommandBuffer)
+void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
 {
     // post fx
     {
-        VulkanImageView* pColorAttachment = m_pSwapChain->getImage()->getView();
+        ImageView* pColorAttachment = m_pSwapChain->getImage()->getView();
 
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
                                               VK_IMAGE_LAYOUT_GENERAL);
@@ -997,7 +995,7 @@ void VulkanSceneRenderer::recordPostFX(VulkanCommandBuffer* pCommandBuffer)
     }
 }
 
-void VulkanSceneRenderer::drawUI(float deltaTime)
+void SceneRenderer::drawUI(float deltaTime)
 {
     ImGuiIO& io = ImGui::GetIO();
 
@@ -1089,7 +1087,7 @@ void VulkanSceneRenderer::drawUI(float deltaTime)
 
     ImGui::Render();
 }
-void VulkanSceneRenderer::_initPipeline()
+void SceneRenderer::_initPipeline()
 {
     // forward graphics pipeline
     {
@@ -1206,4 +1204,4 @@ void VulkanSceneRenderer::_initPipeline()
         VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }
 }
-}  // namespace aph
+}  // namespace aph::vk
