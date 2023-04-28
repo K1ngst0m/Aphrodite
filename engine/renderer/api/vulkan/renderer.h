@@ -41,7 +41,7 @@ protected:
         Queue* transfer = {};
     } m_queue;
 
-    std::unordered_map<std::string, ShaderModule*> shaderModuleCaches = {};
+    std::unordered_map<std::string, std::unique_ptr<ShaderModule>> shaderModuleCaches = {};
 
 protected:
     std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};

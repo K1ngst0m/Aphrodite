@@ -1,19 +1,7 @@
 #include "instance.h"
 #include "physicalDevice.h"
 
-namespace aph::vk
-{
-
-#ifdef VK_CHECK_RESULT
-#    undef VK_CHECK_RESULT
-#endif
-
-#define VK_CHECK_RESULT(f) \
-    { \
-        VkResult res = (f); \
-        if(res != VK_SUCCESS) { return res; } \
-    }
-
+#ifdef APH_DEBUG
 namespace
 {
 
@@ -98,6 +86,27 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }
 
 }  // namespace
+#endif
+
+
+namespace aph::vk
+{
+
+#ifdef VK_CHECK_RESULT
+#    undef VK_CHECK_RESULT
+#endif
+
+#define VK_CHECK_RESULT(f) \
+    { \
+        VkResult res = (f); \
+        if(res != VK_SUCCESS) { return res; } \
+    }
+
+Instance::Instance(const InstanceCreateInfo& createInfo, VkInstance instance)
+{
+    getHandle()     = instance;
+    getCreateInfo() = createInfo;
+};
 
 VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
@@ -105,7 +114,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     // TODO check version with supports
     VkApplicationInfo appInfo = {
         .sType            = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = createInfo.pApplicationName,
+        .pApplicationName = createInfo.appName.c_str(),
         .pEngineName      = "Aphrodite",
         .engineVersion    = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion       = VK_API_VERSION_1_3,
@@ -134,8 +143,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     volkLoadInstance(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto* instance        = new Instance();
-    instance->getHandle() = handle;
+    auto* instance        = new Instance(createInfo, handle);
 
     // Get the number of attached physical devices.
     uint32_t physicalDeviceCount = 0;
@@ -173,7 +181,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
     // Initialize the Instance's thread pool with a single worker thread for now.
     // TODO: Assess background tasks and performance before increasing thread count.
-    instance->m_threadPool = new ThreadPool(1);
+    instance->m_threadPool = std::make_unique<ThreadPool>(1);
 
     // Copy address of object instance.
     *ppInstance = instance;
@@ -191,8 +199,9 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
 void Instance::Destroy(Instance* pInstance)
 {
-    delete pInstance->m_threadPool;
+    #ifdef APH_DEBUG
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);
+    #endif
     vkDestroyInstance(pInstance->getHandle(), nullptr);
 }
 }  // namespace aph::vk

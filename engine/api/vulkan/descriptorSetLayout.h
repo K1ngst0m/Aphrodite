@@ -31,17 +31,15 @@ class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 public:
     DescriptorSetLayout(Device* device, const std::vector<ResourcesBinding>& bindings, VkDescriptorSetLayout handle);
 
-    ~DescriptorSetLayout();
-
     Device*                       getDevice() { return m_pDevice; }
     std::vector<ResourcesBinding> getBindings() { return m_bindings; }
     VkDescriptorSet               allocateSet(const std::vector<ResourceWrite>& writes = {});
     VkResult                      freeSet(VkDescriptorSet set);
 
 private:
-    Device*                       m_pDevice  = {};
-    std::vector<ResourcesBinding> m_bindings = {};
-    DescriptorPool*               m_pool     = {};
+    Device*                         m_pDevice  = {};
+    std::vector<ResourcesBinding>   m_bindings = {};
+    std::unique_ptr<DescriptorPool> m_pool     = {};
 };
 
 }  // namespace aph::vk

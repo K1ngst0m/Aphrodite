@@ -39,8 +39,7 @@ private:
 
 public:
     static VkResult Create(const DeviceCreateInfo& createInfo, Device** ppDevice);
-
-    static void Destroy(Device* pDevice);
+    static void     Destroy(Device* pDevice);
 
 public:
     VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage,
@@ -68,7 +67,6 @@ public:
     void destroyBuffer(Buffer* pBuffer);
     void destroyImage(Image* pImage);
     void destroyImageView(ImageView* pImageView);
-    void destoryRenderPass(VulkanRenderPass* pRenderpass);
     void destroySwapchain(SwapChain* pSwapchain);
     void destroyCommandPool(CommandPool* pPool);
     void destroyPipeline(Pipeline* pipeline);

@@ -321,7 +321,7 @@ Mesh* Scene::createMesh()
     return m_meshes[id].get();
 }
 
-SceneNode* Scene::createMeshesFromFile(const std::string& path, const std::shared_ptr<SceneNode>& parent)
+SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* parent)
 {
     SceneNode* node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
 

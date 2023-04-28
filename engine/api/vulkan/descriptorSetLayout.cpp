@@ -10,7 +10,7 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<Resou
     m_pDevice(device)
 {
     m_bindings  = bindings;
-    m_pool      = new DescriptorPool(this);
+    m_pool      = std::make_unique<DescriptorPool>(this);
     getHandle() = handle;
 }
 
@@ -64,6 +64,4 @@ VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite
 }
 
 VkResult DescriptorSetLayout::freeSet(VkDescriptorSet set) { return m_pool->freeSet(set); }
-
-DescriptorSetLayout::~DescriptorSetLayout() { delete m_pool; }
 }  // namespace aph::vk

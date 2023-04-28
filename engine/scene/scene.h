@@ -35,7 +35,7 @@ public:
     Light*     createLight(LightType type, glm::vec3 color = glm::vec3(1.0f), float intensity = 1.0f);
     Camera*    createPerspectiveCamera(float aspectRatio, float fov = 60.0f, float znear = 0.01f, float zfar = 200.0f);
     Camera*    createCamera(float aspectRatio, CameraType type);
-    SceneNode* createMeshesFromFile(const std::string& path, const std::shared_ptr<SceneNode>& parent = nullptr);
+    SceneNode* createMeshesFromFile(const std::string& path, SceneNode* parent = nullptr);
 
     SceneNode* getRootNode() { return m_rootNode.get(); }
     Camera*    getMainCamera() { return m_camera; }

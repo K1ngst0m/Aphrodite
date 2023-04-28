@@ -260,7 +260,6 @@ Renderer::~Renderer()
     for(const auto& [key, shaderModule] : shaderModuleCaches)
     {
         vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
-        delete shaderModule;
     }
 
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
@@ -312,10 +311,9 @@ ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
         std::vector<char> spvCode;
         if(path.extension() == ".spv") { spvCode = utils::loadSpvFromFile(path); }
         else { spvCode = utils::loadGlslFromFile(path); }
-        auto* shaderModule       = ShaderModule::Create(m_pDevice, spvCode);
-        shaderModuleCaches[path] = shaderModule;
+        shaderModuleCaches[path] = ShaderModule::Create(m_pDevice, spvCode);
     }
-    return shaderModuleCaches[path];
+    return shaderModuleCaches[path].get();
 }
 
 void Renderer::UI::resize(uint32_t width, uint32_t height)
