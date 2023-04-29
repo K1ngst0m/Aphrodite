@@ -14,6 +14,9 @@ SyncPrimitivesPool::~SyncPrimitivesPool()
     // Destroy all created semaphores.
     for(auto* semaphore : m_allSemaphores)
         vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
+
+    for(auto* semaphore : m_allTimelineSemahpores)
+        vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
 }
 
 VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
@@ -112,5 +115,45 @@ bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
     auto result = (m_allSemaphores.find(semaphore) != m_allSemaphores.end());
     m_semaphoreLock.Unlock();
     return result;
+}
+
+VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores)
+{
+    VkResult result = VK_SUCCESS;
+
+    // See if there are free semaphores available.
+    m_timelineSemaphoreLock.Lock();
+    while(!m_availableTimelineSemaphores.empty())
+    {
+        *pSemaphores = m_availableTimelineSemaphores.front();
+        m_availableTimelineSemaphores.pop();
+        ++pSemaphores;
+        if(--semaphoreCount == 0) break;
+    }
+
+    // Create any remaining required semaphores.
+    for(auto i = 0U; i < semaphoreCount; ++i)
+    {
+        VkSemaphoreTypeCreateInfo timelineCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .pNext = nullptr,
+            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
+            .initialValue = 0,
+        };
+
+        VkSemaphoreCreateInfo createInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = &timelineCreateInfo,
+            .flags = 0,
+        };
+        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
+        if(result != VK_SUCCESS) break;
+
+        m_allTimelineSemahpores.emplace(pSemaphores[i]);
+    }
+
+    m_timelineSemaphoreLock.Unlock();
+    return result;
+
 }
 }  // namespace aph::vk

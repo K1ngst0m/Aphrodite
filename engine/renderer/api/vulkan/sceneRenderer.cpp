@@ -20,7 +20,6 @@
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui_impl_glfw.h>
-#include <vulkan/vulkan_core.h>
 
 namespace aph::vk
 {
@@ -120,64 +119,83 @@ void SceneRenderer::recordAll()
         POSTFX,
         CB_MAX,
     };
-    CommandBuffer* cbs[CB_MAX] = {};
-    m_pDevice->allocateCommandBuffers(CB_MAX, cbs, queue);
+    CommandBuffer* cb[CB_MAX] = {};
+    m_pDevice->allocateCommandBuffers(CB_MAX, cb, queue);
 
-    // TODO muti thread
     {
-        cbs[GEOMETRY]->begin();
-        recordDeferredGeometry(cbs[GEOMETRY]);
-        cbs[GEOMETRY]->end();
+        cb[GEOMETRY]->begin();
+        recordDeferredGeometry(cb[GEOMETRY]);
+        cb[GEOMETRY]->end();
 
-        cbs[LIGHTING]->begin();
-        recordDeferredLighting(cbs[LIGHTING]);
-        cbs[LIGHTING]->end();
+        cb[LIGHTING]->begin();
+        recordDeferredLighting(cb[LIGHTING]);
+        cb[LIGHTING]->end();
 
-        cbs[POSTFX]->begin();
-        recordPostFX(cbs[POSTFX]);
-        cbs[POSTFX]->end();
+        cb[POSTFX]->begin();
+        recordPostFX(cb[POSTFX]);
+        cb[POSTFX]->end();
     }
 
-    std::vector<QueueSubmitInfo> submitInfos(CB_MAX);
-    submitInfos[GEOMETRY] = {
-        .commandBuffers   = {cbs[GEOMETRY]},
-        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-        .waitSemaphores   = {m_renderSemaphore[m_frameIdx]},
-        .signalSemaphores = {m_sem1[m_frameIdx]},
-    };
-    submitInfos[LIGHTING] = {
-        .commandBuffers   = {cbs[LIGHTING]},
-        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-        .waitSemaphores   = {m_sem1[m_frameIdx]},
-        .signalSemaphores = {m_sem2[m_frameIdx]},
-    };
-    submitInfos[POSTFX] = {
-        .commandBuffers   = {cbs[POSTFX]},
-        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
-        .waitSemaphores   = {m_sem2[m_frameIdx]},
-        .signalSemaphores = {m_presentSemaphore[m_frameIdx]},
-    };
-
-    // TODO use queue->submit
-    std::vector<VkSubmitInfo>    vkSubmits;
-    for(const auto& submitInfo : submitInfos)
+    std::array<VkSemaphoreSubmitInfo, CB_MAX> waitInfo;
+    std::array<VkSemaphoreSubmitInfo, CB_MAX> signalInfo;
+    std::array<VkCommandBufferSubmitInfo, CB_MAX> cbSubmitInfo;
+    std::vector<VkSubmitInfo2> submitInfos(CB_MAX);
+    for (auto idx = 0; idx < CB_MAX; idx++)
     {
-        VkSubmitInfo info{
-            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
-            .pWaitSemaphores      = submitInfo.waitSemaphores.data(),
-            .pWaitDstStageMask    = submitInfo.waitStages.data(),
-            .commandBufferCount   = 1,
-            .pCommandBuffers      = &submitInfo.commandBuffers[0]->getHandle(),
-            .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
-            .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
-        };
-        vkSubmits.push_back(info);
+        auto & cbSI = cbSubmitInfo[idx];
+        auto & waitSI = waitInfo[idx];
+        auto & sigSI = signalInfo[idx];
+        auto & si = submitInfos[idx];
+
+        {
+            cbSI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+            cbSI.commandBuffer = cb[idx]->getHandle();
+            cbSI.pNext = nullptr;
+            cbSI.deviceMask = 0;
+        }
+
+        {
+            waitSI.pNext = nullptr;
+            waitSI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            waitSI.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            waitSI.deviceIndex = 0;
+
+            sigSI.pNext = nullptr;
+            sigSI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            sigSI.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            sigSI.deviceIndex = 0;
+        }
+
+        si.pNext = nullptr;
+        si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        si.commandBufferInfoCount = 1;
+        si.pCommandBufferInfos = &cbSI;
+        si.signalSemaphoreInfoCount = 1;
+        si.pSignalSemaphoreInfos = &sigSI;
+        si.waitSemaphoreInfoCount = 1;
+        si.pWaitSemaphoreInfos = &waitSI;
     }
 
-    VK_CHECK_RESULT(vkQueueSubmit(queue->getHandle(), vkSubmits.size(), vkSubmits.data(), m_frameFences[m_frameIdx]));
+    // timeline
+    VkSemaphore timelineSemaphore{};
+    m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineSemaphore);
 
-    // VK_CHECK_RESULT(queue->submit(submitInfos, m_frameFences[m_frameIdx]));
+    waitInfo[GEOMETRY].semaphore = m_renderSemaphore[m_frameIdx];
+
+    signalInfo[GEOMETRY].semaphore = timelineSemaphore;
+    signalInfo[GEOMETRY].value = 1;
+
+    waitInfo[LIGHTING].semaphore = timelineSemaphore;
+    waitInfo[LIGHTING].value = 1;
+    signalInfo[LIGHTING].semaphore = timelineSemaphore;
+    signalInfo[LIGHTING].value = 2;
+
+    waitInfo[POSTFX].semaphore = timelineSemaphore;
+    waitInfo[POSTFX].value = 2;
+
+    signalInfo[POSTFX].semaphore = m_presentSemaphore[m_frameIdx];
+
+    VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), m_frameFences[m_frameIdx]));
 }
 
 void SceneRenderer::update(float deltaTime)

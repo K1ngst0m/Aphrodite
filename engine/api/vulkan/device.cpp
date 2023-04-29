@@ -50,8 +50,20 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
     // TODO manage features
     supportedFeatures.sampleRateShading = VK_TRUE;
     supportedFeatures.samplerAnisotropy = VK_TRUE;
+
+    VkPhysicalDeviceSynchronization2Features sync2Features{
+        .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
+        .synchronization2 = VK_TRUE,
+    };
+
+    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
+        .sType             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
+        .pNext             = &sync2Features,
+        .timelineSemaphore = VK_TRUE,
+    };
     VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures{
         .sType                           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
+        .pNext                           = &timelineSemaphoreFeatures,
         .descriptorBuffer                = VK_TRUE,
         .descriptorBufferPushDescriptors = VK_TRUE,
     };
