@@ -112,25 +112,72 @@ void SceneRenderer::cleanup()
 
 void SceneRenderer::recordAll()
 {
-    auto* commandBuffer = m_commandBuffers[m_frameIdx];
+    auto* queue = getGraphicsQueue();
+    enum CBIdx
+    {
+        GEOMETRY,
+        LIGHTING,
+        POSTFX,
+        CB_MAX,
+    };
+    CommandBuffer* cbs[CB_MAX] = {};
+    m_pDevice->allocateCommandBuffers(CB_MAX, cbs, queue);
 
-    commandBuffer->begin();
+    // TODO muti thread
+    {
+        cbs[GEOMETRY]->begin();
+        recordDeferredGeometry(cbs[GEOMETRY]);
+        cbs[GEOMETRY]->end();
 
-    recordDeferredGeometry(commandBuffer);
-    recordDeferredLighting(commandBuffer);
-    recordPostFX(commandBuffer);
+        cbs[LIGHTING]->begin();
+        recordDeferredLighting(cbs[LIGHTING]);
+        cbs[LIGHTING]->end();
 
-    commandBuffer->end();
+        cbs[POSTFX]->begin();
+        recordPostFX(cbs[POSTFX]);
+        cbs[POSTFX]->end();
+    }
 
-    QueueSubmitInfo submitInfo{
-        .commandBuffers   = {m_commandBuffers[m_frameIdx]},
+    std::vector<QueueSubmitInfo> submitInfos(CB_MAX);
+    submitInfos[GEOMETRY] = {
+        .commandBuffers   = {cbs[GEOMETRY]},
         .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
         .waitSemaphores   = {m_renderSemaphore[m_frameIdx]},
+        .signalSemaphores = {m_sem1[m_frameIdx]},
+    };
+    submitInfos[LIGHTING] = {
+        .commandBuffers   = {cbs[LIGHTING]},
+        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .waitSemaphores   = {m_sem1[m_frameIdx]},
+        .signalSemaphores = {m_sem2[m_frameIdx]},
+    };
+    submitInfos[POSTFX] = {
+        .commandBuffers   = {cbs[POSTFX]},
+        .waitStages       = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        .waitSemaphores   = {m_sem2[m_frameIdx]},
         .signalSemaphores = {m_presentSemaphore[m_frameIdx]},
     };
 
-    auto* queue = getGraphicsQueue();
-    VK_CHECK_RESULT(queue->submit({submitInfo}, m_frameFences[m_frameIdx]));
+    // TODO use queue->submit
+    std::vector<VkSubmitInfo>    vkSubmits;
+    for(const auto& submitInfo : submitInfos)
+    {
+        VkSubmitInfo info{
+            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
+            .pWaitSemaphores      = submitInfo.waitSemaphores.data(),
+            .pWaitDstStageMask    = submitInfo.waitStages.data(),
+            .commandBufferCount   = 1,
+            .pCommandBuffers      = &submitInfo.commandBuffers[0]->getHandle(),
+            .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
+            .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
+        };
+        vkSubmits.push_back(info);
+    }
+
+    VK_CHECK_RESULT(vkQueueSubmit(queue->getHandle(), vkSubmits.size(), vkSubmits.data(), m_frameFences[m_frameIdx]));
+
+    // VK_CHECK_RESULT(queue->submit(submitInfos, m_frameFences[m_frameIdx]));
 }
 
 void SceneRenderer::update(float deltaTime)
@@ -284,12 +331,10 @@ void SceneRenderer::_initGbuffer()
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
-            {
-                m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-                    cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED,
-                                               VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-                });
-            }
+            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
+                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            });
         }
     }
 }

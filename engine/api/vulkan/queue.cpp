@@ -14,30 +14,33 @@ Queue::Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQ
 
 VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
 {
-    std::vector<VkSubmitInfo>    finalSubmits;
-    std::vector<VkCommandBuffer> cmds;
+    std::vector<VkSubmitInfo>    vkSubmits;
+    std::vector<VkCommandBuffer> vkCmds;
 
     for(const auto& submitInfo : submitInfos)
     {
-        cmds.reserve(submitInfo.commandBuffers.size());
+        uint32_t cmdOffset = {static_cast<uint32_t>(vkCmds.size())};
+        uint32_t cmdSize   = {static_cast<uint32_t>(submitInfo.commandBuffers.size())};
+
         for(auto* cmd : submitInfo.commandBuffers)
         {
-            cmds.push_back(cmd->getHandle());
+            vkCmds.push_back(cmd->getHandle());
         }
+
         VkSubmitInfo info{
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
             .pWaitSemaphores      = submitInfo.waitSemaphores.data(),
             .pWaitDstStageMask    = submitInfo.waitStages.data(),
-            .commandBufferCount   = static_cast<uint32_t>(cmds.size()),
-            .pCommandBuffers      = cmds.data(),
+            .commandBufferCount   = cmdSize,
+            .pCommandBuffers      = &vkCmds[cmdOffset],
             .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
             .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
         };
-        finalSubmits.push_back(info);
+        vkSubmits.push_back(info);
     }
 
-    VkResult result = vkQueueSubmit(getHandle(), finalSubmits.size(), finalSubmits.data(), fence);
+    VkResult result = vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), fence);
     return result;
 }
 

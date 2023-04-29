@@ -85,7 +85,9 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
     if(m_config.flags & RENDER_CFG_DEFAULT_RES)
     {
         m_frameFences.resize(m_config.maxFrames);
-        m_commandBuffers.resize(m_config.maxFrames);
+        m_sem1.resize(m_config.maxFrames);
+        m_sem2.resize(m_config.maxFrames);
+        m_sem3.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
         m_presentSemaphore.resize(m_config.maxFrames);
 
@@ -93,14 +95,12 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
             m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
         }
 
-        // command buffer
-        {
-            m_pDevice->allocateCommandBuffers(m_commandBuffers.size(), m_commandBuffers.data(), getGraphicsQueue());
-        }
-
         {
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
+            m_pSyncPrimitivesPool->acquireSemaphore(m_sem1.size(), m_sem1.data());
+            m_pSyncPrimitivesPool->acquireSemaphore(m_sem2.size(), m_sem2.data());
+            m_pSyncPrimitivesPool->acquireSemaphore(m_sem3.size(), m_sem3.data());
 
             for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
             {
