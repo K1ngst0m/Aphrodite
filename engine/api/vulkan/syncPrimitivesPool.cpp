@@ -135,10 +135,10 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
         VkSemaphoreTypeCreateInfo timelineCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-            .pNext = nullptr,
+            .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
+            .pNext         = nullptr,
             .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-            .initialValue = 0,
+            .initialValue  = 0,
         };
 
         VkSemaphoreCreateInfo createInfo{
@@ -154,6 +154,5 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
 
     m_timelineSemaphoreLock.Unlock();
     return result;
-
 }
 }  // namespace aph::vk

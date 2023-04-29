@@ -136,44 +136,44 @@ void SceneRenderer::recordAll()
         cb[POSTFX]->end();
     }
 
-    std::array<VkSemaphoreSubmitInfo, CB_MAX> waitInfo;
-    std::array<VkSemaphoreSubmitInfo, CB_MAX> signalInfo;
+    std::array<VkSemaphoreSubmitInfo, CB_MAX>     waitInfo;
+    std::array<VkSemaphoreSubmitInfo, CB_MAX>     signalInfo;
     std::array<VkCommandBufferSubmitInfo, CB_MAX> cbSubmitInfo;
-    std::vector<VkSubmitInfo2> submitInfos(CB_MAX);
-    for (auto idx = 0; idx < CB_MAX; idx++)
+    std::vector<VkSubmitInfo2>                    submitInfos(CB_MAX);
+    for(auto idx = 0; idx < CB_MAX; idx++)
     {
-        auto & cbSI = cbSubmitInfo[idx];
-        auto & waitSI = waitInfo[idx];
-        auto & sigSI = signalInfo[idx];
-        auto & si = submitInfos[idx];
+        auto& cbSI   = cbSubmitInfo[idx];
+        auto& waitSI = waitInfo[idx];
+        auto& sigSI  = signalInfo[idx];
+        auto& si     = submitInfos[idx];
 
         {
-            cbSI.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+            cbSI.sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
             cbSI.commandBuffer = cb[idx]->getHandle();
-            cbSI.pNext = nullptr;
-            cbSI.deviceMask = 0;
+            cbSI.pNext         = nullptr;
+            cbSI.deviceMask    = 0;
         }
 
         {
-            waitSI.pNext = nullptr;
-            waitSI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            waitSI.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            waitSI.pNext       = nullptr;
+            waitSI.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            waitSI.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             waitSI.deviceIndex = 0;
 
-            sigSI.pNext = nullptr;
-            sigSI.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            sigSI.stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            sigSI.pNext       = nullptr;
+            sigSI.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            sigSI.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             sigSI.deviceIndex = 0;
         }
 
-        si.pNext = nullptr;
-        si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        si.commandBufferInfoCount = 1;
-        si.pCommandBufferInfos = &cbSI;
-        si.waitSemaphoreInfoCount = 1;
-        si.pWaitSemaphoreInfos = &waitSI;
+        si.pNext                    = nullptr;
+        si.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+        si.commandBufferInfoCount   = 1;
+        si.pCommandBufferInfos      = &cbSI;
+        si.waitSemaphoreInfoCount   = 1;
+        si.pWaitSemaphoreInfos      = &waitSI;
         si.signalSemaphoreInfoCount = 1;
-        si.pSignalSemaphoreInfos = &sigSI;
+        si.pSignalSemaphoreInfos    = &sigSI;
     }
 
     // timeline
@@ -182,30 +182,30 @@ void SceneRenderer::recordAll()
     waitInfo[GEOMETRY].semaphore = m_renderSemaphore[m_frameIdx];
 
     signalInfo[GEOMETRY].semaphore = timelineSemaphore;
-    signalInfo[GEOMETRY].value = 1;
+    signalInfo[GEOMETRY].value     = 1;
 
-    waitInfo[LIGHTING].semaphore = timelineSemaphore;
-    waitInfo[LIGHTING].value = 1;
+    waitInfo[LIGHTING].semaphore   = timelineSemaphore;
+    waitInfo[LIGHTING].value       = 1;
     signalInfo[LIGHTING].semaphore = timelineSemaphore;
-    signalInfo[LIGHTING].value = 2;
+    signalInfo[LIGHTING].value     = 2;
 
     waitInfo[POSTFX].semaphore = timelineSemaphore;
-    waitInfo[POSTFX].value = 2;
+    waitInfo[POSTFX].value     = 2;
 
     signalInfo[POSTFX].semaphore = m_presentSemaphore[m_frameIdx];
 
     std::array<VkSemaphoreSubmitInfo, 2> sigSis;
     sigSis[0] = signalInfo[POSTFX];
     sigSis[1] = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .pNext = nullptr,
-        .semaphore = timelineSemaphore,
-        .value = UINT64_MAX,
-        .stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext       = nullptr,
+        .semaphore   = timelineSemaphore,
+        .value       = UINT64_MAX,
+        .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
         .deviceIndex = 0,
     };
     submitInfos[POSTFX].signalSemaphoreInfoCount = sigSis.size();
-    submitInfos[POSTFX].pSignalSemaphoreInfos = sigSis.data();
+    submitInfos[POSTFX].pSignalSemaphoreInfos    = sigSis.data();
 
     VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), VK_NULL_HANDLE));
 }
@@ -362,8 +362,7 @@ void SceneRenderer::_initGbuffer()
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED,
-                                            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             });
         }
     }

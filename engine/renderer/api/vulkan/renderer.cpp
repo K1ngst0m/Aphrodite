@@ -261,19 +261,17 @@ void Renderer::beginFrame()
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
 
     static std::vector<bool> firstFrames(m_config.maxFrames, true);
-    if (firstFrames[m_frameIdx]){
-        firstFrames[m_frameIdx] = false;
-    }
+    if(firstFrames[m_frameIdx]) { firstFrames[m_frameIdx] = false; }
     else
     {
-        constexpr uint64_t waitValue = UINT64_MAX;
+        constexpr uint64_t  waitValue = UINT64_MAX;
         VkSemaphoreWaitInfo waitInfo{
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-            .pNext = nullptr,
-            .flags = 0,
+            .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+            .pNext          = nullptr,
+            .flags          = 0,
             .semaphoreCount = 1,
-            .pSemaphores = &m_timelineSemaphore[m_frameIdx],
-            .pValues = &waitValue,
+            .pSemaphores    = &m_timelineSemaphore[m_frameIdx],
+            .pValues        = &waitValue,
         };
         vkWaitSemaphores(m_pDevice->getHandle(), &waitInfo, UINT64_MAX);
     }

@@ -88,7 +88,6 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }  // namespace
 #endif
 
-
 namespace aph::vk
 {
 
@@ -143,7 +142,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     volkLoadInstance(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
-    auto* instance        = new Instance(createInfo, handle);
+    auto* instance = new Instance(createInfo, handle);
 
     // Get the number of attached physical devices.
     uint32_t physicalDeviceCount = 0;
@@ -199,9 +198,9 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
 void Instance::Destroy(Instance* pInstance)
 {
-    #ifdef APH_DEBUG
+#ifdef APH_DEBUG
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);
-    #endif
+#endif
     vkDestroyInstance(pInstance->getHandle(), nullptr);
 }
 }  // namespace aph::vk
