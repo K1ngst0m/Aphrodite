@@ -45,9 +45,9 @@ protected:
 
 protected:
     std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
+    std::vector<VkSemaphore>            m_timelineSemaphore   = {};
     std::vector<VkSemaphore>            m_renderSemaphore     = {};
     std::vector<VkSemaphore>            m_presentSemaphore    = {};
-    std::vector<VkFence>                m_frameFences         = {};
 
 protected:
     uint32_t m_frameIdx     = {};

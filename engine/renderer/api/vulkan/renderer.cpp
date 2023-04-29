@@ -84,7 +84,7 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
     // init default resources
     if(m_config.flags & RENDER_CFG_DEFAULT_RES)
     {
-        m_frameFences.resize(m_config.maxFrames);
+        m_timelineSemaphore.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
         m_presentSemaphore.resize(m_config.maxFrames);
 
@@ -92,11 +92,6 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
             m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
-
-            for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
-            {
-                m_pSyncPrimitivesPool->acquireFence(m_frameFences[idx]);
-            }
         }
 
         // pipeline cache
@@ -263,9 +258,25 @@ Renderer::~Renderer()
 
 void Renderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_pDevice->waitForFence({m_frameFences[m_frameIdx]}));
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
-    VK_CHECK_RESULT(m_pSyncPrimitivesPool->releaseFence(m_frameFences[m_frameIdx]));
+
+    static std::vector<bool> firstFrames(m_config.maxFrames, true);
+    if (firstFrames[m_frameIdx]){
+        firstFrames[m_frameIdx] = false;
+    }
+    else
+    {
+        constexpr uint64_t waitValue = UINT64_MAX;
+        VkSemaphoreWaitInfo waitInfo{
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .semaphoreCount = 1,
+            .pSemaphores = &m_timelineSemaphore[m_frameIdx],
+            .pValues = &waitValue,
+        };
+        vkWaitSemaphores(m_pDevice->getHandle(), &waitInfo, UINT64_MAX);
+    }
 
     {
         m_timer = std::chrono::high_resolution_clock::now();

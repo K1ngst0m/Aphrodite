@@ -170,16 +170,15 @@ void SceneRenderer::recordAll()
         si.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
         si.commandBufferInfoCount = 1;
         si.pCommandBufferInfos = &cbSI;
-        si.signalSemaphoreInfoCount = 1;
-        si.pSignalSemaphoreInfos = &sigSI;
         si.waitSemaphoreInfoCount = 1;
         si.pWaitSemaphoreInfos = &waitSI;
+        si.signalSemaphoreInfoCount = 1;
+        si.pSignalSemaphoreInfos = &sigSI;
     }
 
     // timeline
-    VkSemaphore timelineSemaphore{};
+    VkSemaphore& timelineSemaphore = m_timelineSemaphore[m_frameIdx];
     m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineSemaphore);
-
     waitInfo[GEOMETRY].semaphore = m_renderSemaphore[m_frameIdx];
 
     signalInfo[GEOMETRY].semaphore = timelineSemaphore;
@@ -195,7 +194,20 @@ void SceneRenderer::recordAll()
 
     signalInfo[POSTFX].semaphore = m_presentSemaphore[m_frameIdx];
 
-    VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), m_frameFences[m_frameIdx]));
+    std::array<VkSemaphoreSubmitInfo, 2> sigSis;
+    sigSis[0] = signalInfo[POSTFX];
+    sigSis[1] = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .semaphore = timelineSemaphore,
+        .value = UINT64_MAX,
+        .stageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .deviceIndex = 0,
+    };
+    submitInfos[POSTFX].signalSemaphoreInfoCount = sigSis.size();
+    submitInfos[POSTFX].pSignalSemaphoreInfos = sigSis.data();
+
+    VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), VK_NULL_HANDLE));
 }
 
 void SceneRenderer::update(float deltaTime)
