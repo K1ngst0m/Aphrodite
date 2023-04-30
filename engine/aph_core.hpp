@@ -7,8 +7,9 @@
 #include "api/vulkan/vkInit.h"
 #include "api/vulkan/vkUtils.h"
 
+#include "wsi/wsi.h"
+
 #include "common/common.h"
-#include "common/wsi.h"
 #include "common/assetManager.h"
 #include "common/timer.h"
 #include "common/logger.h"

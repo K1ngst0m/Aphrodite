@@ -14,6 +14,10 @@ file(GLOB base_src
   ui/*.h
   ui/*.hpp
 
+  wsi/*.cpp
+  wsi/*.h
+  wsi/*.hpp
+
   renderer/*.cpp
   renderer/*.h
   renderer/*.hpp

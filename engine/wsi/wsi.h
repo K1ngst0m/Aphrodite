@@ -1,11 +1,9 @@
-#ifndef WINDOW_H_
-#define WINDOW_H_
+#ifndef WSI_H_
+#define WSI_H_
 
 #include "app/input/event.h"
-#include "common.h"
+#include "common/common.h"
 #include <volk.h>
-
-class GLFWwindow;
 
 namespace aph::vk
 {
@@ -14,25 +12,20 @@ class Instance;
 
 namespace aph
 {
-class WSI_Glfw;
 class WSI
 {
 protected:
-    WSI(uint32_t width, uint32_t height);
+    WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height)
+    {
+        init();
+    }
 
 public:
-    template <typename TWSI>
     static std::shared_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
     {
-        if constexpr(std::is_same_v<TWSI, WSI_Glfw>)
-        {
-            return std::shared_ptr<WSI>(new TWSI(width, height));
-        }
-        else
-        {
-            static_assert("unexpedted wsi type.");
-        }
+        return std::shared_ptr<WSI>(new WSI(width, height));
     }
+
     virtual ~WSI();
 
 public:
@@ -40,9 +33,9 @@ public:
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
 
-    virtual VkSurfaceKHR getSurface(vk::Instance* instance) = 0;
-    virtual uint32_t     getFrameBufferWidth() const { return m_width; };
-    virtual uint32_t     getFrameBufferHeight() const { return m_height; };
+    VkSurfaceKHR getSurface(vk::Instance* instance);
+    uint32_t     getFrameBufferWidth() const;
+    uint32_t     getFrameBufferHeight() const;
 
     template <typename TEvent>
     void pushEvent(const TEvent& e)
@@ -86,10 +79,14 @@ public:
         }
     }
 
-    virtual bool update() = 0;
-    virtual void close()  = 0;
+    bool update();
+    void close();
 
 protected:
+    void* m_window = {};
+
+    void init();
+
     uint32_t m_width  = {};
     uint32_t m_height = {};
 
@@ -105,22 +102,6 @@ protected:
     EventData<MouseButtonEvent> m_mouseButtonEvent;
 };
 
-class WSI_Glfw : public WSI
-{
-public:
-    WSI_Glfw(uint32_t width, uint32_t height);
-    ~WSI_Glfw() override;
-    VkSurfaceKHR getSurface(vk::Instance* instance) override;
-    uint32_t     getFrameBufferWidth() const override;
-    uint32_t     getFrameBufferHeight() const override;
-
-    bool update() override;
-    void close() override;
-
-private:
-    GLFWwindow* m_window = {};
-};
-
 }  // namespace aph
 
-#endif  // WINDOW_H_
+#endif  // WSI_H_

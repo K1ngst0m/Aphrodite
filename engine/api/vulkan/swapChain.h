@@ -1,7 +1,7 @@
 #ifndef VULKAN_SWAPCHAIN_H_
 #define VULKAN_SWAPCHAIN_H_
 
-#include "common/wsi.h"
+#include "wsi/wsi.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 

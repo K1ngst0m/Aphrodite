@@ -1,10 +1,8 @@
 #include "wsi.h"
-#include <GLFW/glfw3.h>
-#include "app/input/input.h"
 #include "api/vulkan/instance.h"
+#include <GLFW/glfw3.h>
 
-namespace aph
-{
+using namespace aph;
 
 static Key glfwKeyCast(int key)
 {
@@ -140,42 +138,54 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     glfw->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
 }
 
-WSI::WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height)
+void WSI::init()
 {
+    assert(glfwInit());
+    assert(glfwVulkanSupported());
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    m_window = (void*)glfwCreateWindow(m_width, m_height, "Aphrodite Engine", nullptr, nullptr);
+    auto window = static_cast<GLFWwindow*>(m_window);
+    assert(window);
+
+    glfwSetWindowUserPointer(window, this);
+    glfwSetKeyCallback(window, keyCB);
+    glfwSetCursorPosCallback(window, cursorCB);
+    glfwSetMouseButtonCallback(window, buttonCB);
 }
 
-WSI::~WSI() = default;
-
-VkSurfaceKHR WSI_Glfw::getSurface(vk::Instance* instance)
+VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
 {
     VkSurfaceKHR surface;
-    glfwCreateWindowSurface(instance->getHandle(), m_window, nullptr, &surface);
+    glfwCreateWindowSurface(instance->getHandle(), (GLFWwindow*)m_window, nullptr, &surface);
     return surface;
 };
 
-uint32_t WSI_Glfw::getFrameBufferWidth() const
+uint32_t WSI::getFrameBufferWidth() const
 {
     int w, h;
-    glfwGetFramebufferSize(m_window, &w, &h);
+    glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
     return w;
 };
 
-uint32_t WSI_Glfw::getFrameBufferHeight() const
+uint32_t WSI::getFrameBufferHeight() const
 {
     int w, h;
-    glfwGetFramebufferSize(m_window, &w, &h);
+    glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
     return h;
 };
 
-WSI_Glfw::~WSI_Glfw()
+WSI::~WSI()
 {
-    glfwDestroyWindow(m_window);
+    glfwDestroyWindow((GLFWwindow*)m_window);
     glfwTerminate();
 }
 
-bool WSI_Glfw::update()
+bool WSI::update()
 {
-    if(glfwWindowShouldClose(m_window))
+    if(glfwWindowShouldClose((GLFWwindow*)m_window))
         return false;
 
     glfwPollEvents();
@@ -225,25 +235,8 @@ bool WSI_Glfw::update()
 
     return true;
 };
-void WSI_Glfw::close()
+
+void WSI::close()
 {
-    glfwSetWindowShouldClose(m_window, true);
+    glfwSetWindowShouldClose((GLFWwindow*)m_window, true);
 };
-
-WSI_Glfw::WSI_Glfw(uint32_t width, uint32_t height) : WSI(width, height)
-{
-    assert(glfwInit());
-    assert(glfwVulkanSupported());
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    m_window = glfwCreateWindow(width, height, "Aphrodite Engine", nullptr, nullptr);
-    assert(m_window);
-
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetKeyCallback(m_window, keyCB);
-    glfwSetCursorPosCallback(m_window, cursorCB);
-    glfwSetMouseButtonCallback(m_window, buttonCB);
-}
-}  // namespace aph

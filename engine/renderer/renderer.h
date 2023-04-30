@@ -5,7 +5,7 @@
 
 #include "api/gpuResource.h"
 #include "common/common.h"
-#include "common/wsi.h"
+#include "wsi/wsi.h"
 
 namespace aph
 {
