@@ -3,7 +3,9 @@
 
 namespace aph::vk
 {
-SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_device(device) {}
+SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_device(device)
+{
+}
 
 SyncPrimitivesPool::~SyncPrimitivesPool()
 {
@@ -35,9 +37,13 @@ VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
     {
         VkFenceCreateInfo createInfo = {};
         createInfo.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        if(isSignaled) { createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; }
+        if(isSignaled)
+        {
+            createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        }
         result = vkCreateFence(m_device->getHandle(), &createInfo, nullptr, &fence);
-        if(result == VK_SUCCESS) m_allFences.emplace(fence);
+        if(result == VK_SUCCESS)
+            m_allFences.emplace(fence);
     }
     m_fenceLock.Unlock();
 
@@ -80,7 +86,8 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemapho
         *pSemaphores = m_availableSemaphores.front();
         m_availableSemaphores.pop();
         ++pSemaphores;
-        if(--semaphoreCount == 0) break;
+        if(--semaphoreCount == 0)
+            break;
     }
 
     // Create any remaining required semaphores.
@@ -89,7 +96,8 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemapho
         VkSemaphoreCreateInfo createInfo = {};
         createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
         result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
-        if(result != VK_SUCCESS) break;
+        if(result != VK_SUCCESS)
+            break;
 
         m_allSemaphores.emplace(pSemaphores[i]);
     }
@@ -103,7 +111,10 @@ VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, const Vk
     m_semaphoreLock.Lock();
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
-        if(m_allSemaphores.count(pSemaphores[i])) { m_availableSemaphores.push(pSemaphores[i]); }
+        if(m_allSemaphores.count(pSemaphores[i]))
+        {
+            m_availableSemaphores.push(pSemaphores[i]);
+        }
     }
     m_semaphoreLock.Unlock();
     return VK_SUCCESS;
@@ -128,7 +139,8 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
         *pSemaphores = m_availableTimelineSemaphores.front();
         m_availableTimelineSemaphores.pop();
         ++pSemaphores;
-        if(--semaphoreCount == 0) break;
+        if(--semaphoreCount == 0)
+            break;
     }
 
     // Create any remaining required semaphores.
@@ -147,7 +159,8 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
             .flags = 0,
         };
         result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
-        if(result != VK_SUCCESS) break;
+        if(result != VK_SUCCESS)
+            break;
 
         m_allTimelineSemahpores.emplace(pSemaphores[i]);
     }

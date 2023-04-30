@@ -25,7 +25,10 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
             glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
             extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-            if(m_config.flags & RENDER_CFG_DEBUG) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
+            if(m_config.flags & RENDER_CFG_DEBUG)
+            {
+                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+            }
             extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         }
 
@@ -60,14 +63,23 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
         m_queue.graphics = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
         m_queue.compute  = m_pDevice->getQueueByFlags(QueueType::COMPUTE);
         m_queue.transfer = m_pDevice->getQueueByFlags(QueueType::TRANSFER);
-        if(!m_queue.compute) { m_queue.compute = m_queue.graphics; }
-        if(!m_queue.transfer) { m_queue.transfer = m_queue.compute; }
+        if(!m_queue.compute)
+        {
+            m_queue.compute = m_queue.graphics;
+        }
+        if(!m_queue.transfer)
+        {
+            m_queue.transfer = m_queue.compute;
+        }
 
         // check sample count support
         {
             auto limit  = createInfo.pPhysicalDevice->getProperties().limits;
             auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
-            if(!(counts & m_sampleCount)) { m_sampleCount = VK_SAMPLE_COUNT_1_BIT; }
+            if(!(counts & m_sampleCount))
+            {
+                m_sampleCount = VK_SAMPLE_COUNT_1_BIT;
+            }
         }
     }
 
@@ -111,6 +123,8 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
         // Setup Dear ImGui style
         io.FontGlobalScale = m_ui.scale;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+        io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
+        io.DeltaTime   = 1.0f;
 
         // Create font texture
         {
@@ -222,6 +236,12 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
 
             VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_ui.pipeline));
         }
+
+        {
+            m_window->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
+            m_window->registerEventHandler<MouseButtonEvent>(
+                [&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
+        }
     }
 }
 
@@ -237,7 +257,10 @@ Renderer::~Renderer()
         m_pDevice->destroySampler(m_ui.fontSampler);
         m_pDevice->destroyDescriptorSetLayout(m_ui.pSetLayout);
         m_pDevice->destroyPipeline(m_ui.pipeline);
-        if(ImGui::GetCurrentContext()) { ImGui::DestroyContext(); }
+        if(ImGui::GetCurrentContext())
+        {
+            ImGui::DestroyContext();
+        }
     }
 
     // TODO
@@ -261,7 +284,10 @@ void Renderer::beginFrame()
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
 
     static std::vector<bool> firstFrames(m_config.maxFrames, true);
-    if(firstFrames[m_frameIdx]) { firstFrames[m_frameIdx] = false; }
+    if(firstFrames[m_frameIdx])
+    {
+        firstFrames[m_frameIdx] = false;
+    }
     else
     {
         constexpr uint64_t  waitValue = UINT64_MAX;
@@ -309,8 +335,14 @@ ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
     if(!shaderModuleCaches.count(path))
     {
         std::vector<char> spvCode;
-        if(path.extension() == ".spv") { spvCode = utils::loadSpvFromFile(path); }
-        else { spvCode = utils::loadGlslFromFile(path); }
+        if(path.extension() == ".spv")
+        {
+            spvCode = utils::loadSpvFromFile(path);
+        }
+        else
+        {
+            spvCode = utils::loadGlslFromFile(path);
+        }
         shaderModuleCaches[path] = ShaderModule::Create(m_pDevice, spvCode);
     }
     return shaderModuleCaches[path].get();
@@ -330,7 +362,10 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
         int32_t     vertexOffset = 0;
         int32_t     indexOffset  = 0;
 
-        if((!imDrawData) || (imDrawData->CmdListsCount == 0)) { return; }
+        if((!imDrawData) || (imDrawData->CmdListsCount == 0))
+        {
+            return;
+        }
 
         ImGuiIO& io = ImGui::GetIO();
         pCommandBuffer->bindPipeline(m_ui.pipeline);
@@ -368,22 +403,23 @@ bool Renderer::updateUIDrawData(float deltaTime)
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        ImGuiIO& io = ImGui::GetIO();
-
-        io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
-        io.DeltaTime   = deltaTime;
-
         ImDrawData* imDrawData       = ImGui::GetDrawData();
         bool        updateCmdBuffers = false;
 
-        if(!imDrawData) { return false; };
+        if(!imDrawData)
+        {
+            return false;
+        };
 
         // Note: Alignment is done inside buffer creation
         VkDeviceSize vertexBufferSize = imDrawData->TotalVtxCount * sizeof(ImDrawVert);
         VkDeviceSize indexBufferSize  = imDrawData->TotalIdxCount * sizeof(ImDrawIdx);
 
         // Update buffers only if vertex or index count has been changed compared to current buffer size
-        if((vertexBufferSize == 0) || (indexBufferSize == 0)) { return false; }
+        if((vertexBufferSize == 0) || (indexBufferSize == 0))
+        {
+            return false;
+        }
 
         // Vertex buffer
         if(m_ui.pVertexBuffer == nullptr || (m_ui.vertexCount != imDrawData->TotalVtxCount))
@@ -439,6 +475,23 @@ bool Renderer::updateUIDrawData(float deltaTime)
 
         return updateCmdBuffers;
     }
+    return true;
+}
+
+bool Renderer::onUIMouseBtn(const MouseButtonEvent& e)
+{
+    ImGuiIO& io = ImGui::GetIO();
+
+    io.AddMouseButtonEvent(0, e.m_button == MouseButton::Left && e.m_pressed);
+    io.AddMouseButtonEvent(1, e.m_button == MouseButton::Right && e.m_pressed);
+    io.AddMouseButtonEvent(2, e.m_button == MouseButton::Middle && e.m_pressed);
+    return true;
+}
+
+bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    io.AddMousePosEvent((float)e.m_absX, (float)e.m_absY);
     return true;
 }
 }  // namespace aph::vk

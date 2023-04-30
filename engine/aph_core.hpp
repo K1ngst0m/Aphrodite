@@ -14,6 +14,8 @@
 #include "common/logger.h"
 
 #include "app/app.h"
+#include "app/input/input.h"
+#include "app/input/event.h"
 
 #include "scene/camera.h"
 #include "scene/mesh.h"

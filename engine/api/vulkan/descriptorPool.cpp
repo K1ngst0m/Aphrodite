@@ -67,7 +67,8 @@ VkDescriptorSet DescriptorPool::allocateSet()
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
             auto result = vkCreateDescriptorPool(m_layout->getDevice()->getHandle(), &createInfo, nullptr, &handle);
-            if(result != VK_SUCCESS) return VK_NULL_HANDLE;
+            if(result != VK_SUCCESS)
+                return VK_NULL_HANDLE;
 
             // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
@@ -75,7 +76,8 @@ VkDescriptorSet DescriptorPool::allocateSet()
             break;
         }
 
-        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool) break;
+        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool)
+            break;
 
         // Increment pool index.
         ++m_currentAllocationPoolIndex;
@@ -94,7 +96,8 @@ VkDescriptorSet DescriptorPool::allocateSet()
     allocInfo.pSetLayouts                 = &setLayout;
     VkDescriptorSet handle                = VK_NULL_HANDLE;
     auto            result = vkAllocateDescriptorSets(m_layout->getDevice()->getHandle(), &allocInfo, &handle);
-    if(result != VK_SUCCESS) return VK_NULL_HANDLE;
+    if(result != VK_SUCCESS)
+        return VK_NULL_HANDLE;
 
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
@@ -114,7 +117,8 @@ VkResult DescriptorPool::freeSet(VkDescriptorSet descriptorSet)
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
     auto it = m_allocatedDescriptorSets.find(descriptorSet);
-    if(it == m_allocatedDescriptorSets.end()) return VK_INCOMPLETE;
+    if(it == m_allocatedDescriptorSets.end())
+        return VK_INCOMPLETE;
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;

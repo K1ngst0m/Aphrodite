@@ -86,10 +86,12 @@ uint32_t PhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
     }
 
     uint32_t index = findMemoryType(desired, mask);
-    if(index != UINT32_MAX) return index;
+    if(index != UINT32_MAX)
+        return index;
 
     index = findMemoryType(fallback, mask);
-    if(index != UINT32_MAX) return index;
+    if(index != UINT32_MAX)
+        return index;
 
     return UINT32_MAX;
 }
@@ -100,7 +102,9 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
 
     switch(domain)
     {
-    case BufferDomain::Device: prio[0] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; break;
+    case BufferDomain::Device:
+        prio[0] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        break;
 
     case BufferDomain::LinkedDeviceHost:
         prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
@@ -146,7 +150,8 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
     for(auto& p : prio)
     {
         uint32_t index = findMemoryType(p, mask);
-        if(index != UINT32_MAX) return index;
+        if(index != UINT32_MAX)
+            return index;
     }
 
     return UINT32_MAX;
@@ -159,7 +164,8 @@ uint32_t PhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t
         if((1u << i) & mask)
         {
             uint32_t flags = m_memoryProperties.memoryTypes[i].propertyFlags;
-            if((flags & required) == required) return i;
+            if((flags & required) == required)
+                return i;
         }
     }
 
@@ -173,9 +179,15 @@ VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candid
     {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(getHandle(), format, &props);
-        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) { return format; }
+        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        {
+            return format;
+        }
 
-        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) { return format; }
+        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        {
+            return format;
+        }
     }
 
     assert("failed to find supported format!");
@@ -190,7 +202,10 @@ size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
     // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = m_properties.limits.minUniformBufferOffsetAlignment;
     size_t alignedSize     = originalSize;
-    if(minUboAlignment > 0) { alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1); }
+    if(minUboAlignment > 0)
+    {
+        alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+    }
     return alignedSize;
 }
 }  // namespace aph::vk

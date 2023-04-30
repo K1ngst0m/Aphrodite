@@ -181,7 +181,10 @@ inline VkViewport viewport(float width, float height, float x = 0, float y = 0, 
     return viewport;
 }
 
-inline VkViewport viewport(VkExtent2D extent) { return viewport(extent.width, extent.height); }
+inline VkViewport viewport(VkExtent2D extent)
+{
+    return viewport(extent.width, extent.height);
+}
 
 inline VkRect2D rect2D(VkExtent2D extent, int32_t offsetX = 0, int32_t offsetY = 0)
 {

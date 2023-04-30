@@ -11,7 +11,10 @@ namespace aph::vk
 #define VK_CHECK_RESULT(f) \
     { \
         VkResult res = (f); \
-        if(res != VK_SUCCESS) { return res; } \
+        if(res != VK_SUCCESS) \
+        { \
+            return res; \
+        } \
     }
 
 Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle) :
@@ -144,7 +147,10 @@ void Device::Destroy(Device* pDevice)
         pDevice->destroyCommandPool(commandpool);
     }
 
-    if(pDevice->m_handle) { pDevice->m_table.vkDestroyDevice(pDevice->m_handle, nullptr); }
+    if(pDevice->m_handle)
+    {
+        pDevice->m_table.vkDestroyDevice(pDevice->m_handle, nullptr);
+    }
     delete pDevice;
     pDevice = nullptr;
 }
@@ -280,7 +286,10 @@ VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuf
     {
         mapMemory(*ppBuffer);
         (*ppBuffer)->write(data);
-        if(!persistmentMap) { unMapMemory(*ppBuffer); }
+        if(!persistmentMap)
+        {
+            unMapMemory(*ppBuffer);
+        }
     }
 
     return VK_SUCCESS;
@@ -355,16 +364,25 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
 
     *ppImage = new Image(this, createInfo, image, memory);
 
-    if((*ppImage)->getMemory() != VK_NULL_HANDLE) { VK_CHECK_RESULT(bindMemory(*ppImage)); }
+    if((*ppImage)->getMemory() != VK_NULL_HANDLE)
+    {
+        VK_CHECK_RESULT(bindMemory(*ppImage));
+    }
 
     return VK_SUCCESS;
 }
 
-PhysicalDevice* Device::getPhysicalDevice() const { return m_physicalDevice; }
+PhysicalDevice* Device::getPhysicalDevice() const
+{
+    return m_physicalDevice;
+}
 
 void Device::destroyBuffer(Buffer* pBuffer)
 {
-    if(pBuffer->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr); }
+    if(pBuffer->getMemory() != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr);
+    }
     vkDestroyBuffer(m_handle, pBuffer->getHandle(), nullptr);
     delete pBuffer;
     pBuffer = nullptr;
@@ -372,7 +390,10 @@ void Device::destroyBuffer(Buffer* pBuffer)
 
 void Device::destroyImage(Image* pImage)
 {
-    if(pImage->getMemory() != VK_NULL_HANDLE) { vkFreeMemory(m_handle, pImage->getMemory(), nullptr); }
+    if(pImage->getMemory() != VK_NULL_HANDLE)
+    {
+        vkFreeMemory(m_handle, pImage->getMemory(), nullptr);
+    }
     vkDestroyImage(m_handle, pImage->getHandle(), nullptr);
     delete pImage;
     pImage = nullptr;
@@ -401,17 +422,26 @@ void Device::destroySwapchain(SwapChain* pSwapchain)
 Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
 {
     std::vector<uint32_t> supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
-    if(supportedQueueFamilyIndexList.empty()) { return nullptr; }
+    if(supportedQueueFamilyIndexList.empty())
+    {
+        return nullptr;
+    }
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
 }
 
-VkResult Device::waitIdle() { return vkDeviceWaitIdle(getHandle()); }
+VkResult Device::waitIdle()
+{
+    return vkDeviceWaitIdle(getHandle());
+}
 
 CommandPool* Device::getCommandPoolWithQueue(Queue* queue)
 {
     auto queueIndices = queue->getFamilyIndex();
 
-    if(m_commandPools.count(queueIndices)) { return m_commandPools.at(queueIndices); }
+    if(m_commandPools.count(queueIndices))
+    {
+        return m_commandPools.at(queueIndices);
+    }
 
     CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
     CommandPool*          pool = nullptr;
@@ -507,8 +537,14 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .basePipelineHandle  = VK_NULL_HANDLE,
     };
 
-    if(renderPass) { pipelineInfo.renderPass = renderPass; }
-    else { pipelineInfo.pNext = &createInfo.renderingCreateInfo; }
+    if(renderPass)
+    {
+        pipelineInfo.renderPass = renderPass;
+    }
+    else
+    {
+        pipelineInfo.pNext = &createInfo.renderingCreateInfo;
+    }
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : createInfo.shaderMapList)
@@ -554,7 +590,10 @@ VkResult Device::createDescriptorSetLayout(const std::vector<ResourcesBinding>& 
         .pBindings    = vkBindings.data(),
     };
 
-    if(enablePushDescriptor) { createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR; }
+    if(enablePushDescriptor)
+    {
+        createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
+    }
 
     VkDescriptorSetLayout setLayout;
     VK_CHECK_RESULT(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
@@ -651,7 +690,10 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
         auto imageCI = createInfo;
         imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         imageCI.domain = ImageDomain::Device;
-        if(genMipmap) { imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT; }
+        if(genMipmap)
+        {
+            imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        }
 
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
@@ -767,7 +809,10 @@ VkResult Device::bindMemory(Image* pImage, VkDeviceSize offset)
     return m_table.vkBindImageMemory(getHandle(), pImage->getHandle(), pImage->getMemory(), offset);
 }
 
-void Device::unMapMemory(Buffer* pBuffer) { m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory()); }
+void Device::unMapMemory(Buffer* pBuffer)
+{
+    m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory());
+}
 
 VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage,
                                ImageView** ppImageView)
@@ -872,5 +917,8 @@ VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, VkSampler*
     return VK_SUCCESS;
 }
 
-void Device::destroySampler(VkSampler sampler) { m_table.vkDestroySampler(getHandle(), sampler, nullptr); }
+void Device::destroySampler(VkSampler sampler)
+{
+    m_table.vkDestroySampler(getHandle(), sampler, nullptr);
+}
 }  // namespace aph::vk

@@ -1,19 +1,153 @@
 #include "window.h"
 #include <GLFW/glfw3.h>
-#include "common/inputCode.h"
+#include "app/input/input.h"
 
 namespace aph
 {
+
+static Key glfwKeyCast(int key)
+{
+#define k(glfw, aph) \
+    case GLFW_KEY_##glfw: \
+        return Key::aph
+    switch(key)
+    {
+        k(A, A);
+        k(B, B);
+        k(C, C);
+        k(D, D);
+        k(E, E);
+        k(F, F);
+        k(G, G);
+        k(H, H);
+        k(I, I);
+        k(J, J);
+        k(K, K);
+        k(L, L);
+        k(M, M);
+        k(N, N);
+        k(O, O);
+        k(P, P);
+        k(Q, Q);
+        k(R, R);
+        k(S, S);
+        k(T, T);
+        k(U, U);
+        k(V, V);
+        k(W, W);
+        k(X, X);
+        k(Y, Y);
+        k(Z, Z);
+        k(LEFT_CONTROL, LeftCtrl);
+        k(LEFT_ALT, LeftAlt);
+        k(LEFT_SHIFT, LeftShift);
+        k(ENTER, Return);
+        k(SPACE, Space);
+        k(ESCAPE, Escape);
+        k(LEFT, Left);
+        k(RIGHT, Right);
+        k(UP, Up);
+        k(DOWN, Down);
+        k(0, _0);
+        k(1, _1);
+        k(2, _2);
+        k(3, _3);
+        k(4, _4);
+        k(5, _5);
+        k(6, _6);
+        k(7, _7);
+        k(8, _8);
+        k(9, _9);
+    default:
+        return Key::Unknown;
+    }
+#undef k
+}
+
+static void cursorCB(GLFWwindow* window, double x, double y)
+{
+    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    static double lastX = glfw->getWidth() / 2;
+    static double lastY = glfw->getHeight() / 2;
+
+    double deltaX = lastX - x;
+    double deltaY = lastY - y;
+    lastX         = x;
+    lastY         = y;
+
+    glfw->pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+}
+
+static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
+{
+    KeyState state{};
+    switch(action)
+    {
+    case GLFW_PRESS:
+        state = KeyState::Pressed;
+        break;
+    case GLFW_RELEASE:
+        state = KeyState::Released;
+        break;
+    case GLFW_REPEAT:
+        state = KeyState::Repeat;
+        break;
+    }
+
+    auto  gkey = glfwKeyCast(key);
+    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    if(action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
+    {
+        glfw->close();
+    }
+    else if(action == GLFW_PRESS && key == GLFW_KEY_1)
+    {
+        static bool visible = false;
+        glfwSetInputMode(window, GLFW_CURSOR, visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        visible = !visible;
+    }
+    else
+    {
+        glfw->pushEvent(KeyboardEvent{gkey, state});
+    }
+}
+
+static void buttonCB(GLFWwindow* window, int button, int action, int _)
+{
+    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+
+    MouseButton btn;
+    switch(button)
+    {
+    default:
+    case GLFW_MOUSE_BUTTON_LEFT:
+        btn = MouseButton::Left;
+        break;
+    case GLFW_MOUSE_BUTTON_RIGHT:
+        btn = MouseButton::Right;
+        break;
+    case GLFW_MOUSE_BUTTON_MIDDLE:
+        btn = MouseButton::Middle;
+        break;
+    }
+
+    double x, y;
+    glfwGetCursorPos(window, &x, &y);
+
+    glfw->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+}
+
 std::shared_ptr<Window> Window::Create(uint32_t width, uint32_t height)
 {
-    auto instance = std::make_shared<Window>(width, height);
+    auto instance = std::shared_ptr<Window>(new Window(width, height));
     return instance;
 }
 
 Window::Window(uint32_t width, uint32_t height)
 {
     m_windowData = std::make_shared<WindowData>(width, height);
-    m_cursorData = std::make_shared<CursorData>(width / 2.0f, height / 2.0f);
     assert(glfwInit());
     assert(glfwVulkanSupported());
 
@@ -24,6 +158,9 @@ Window::Window(uint32_t width, uint32_t height)
         glfwCreateWindow(m_windowData->width, m_windowData->height, "Aphrodite Engine", nullptr, nullptr);
     assert(m_windowData->window);
     glfwSetWindowUserPointer(getHandle(), this);
+    glfwSetKeyCallback(m_windowData->window, keyCB);
+    glfwSetCursorPosCallback(m_windowData->window, cursorCB);
+    glfwSetMouseButtonCallback(m_windowData->window, buttonCB);
 }
 
 Window::~Window()
@@ -32,79 +169,61 @@ Window::~Window()
     glfwTerminate();
 }
 
-void Window::setFramebufferSizeCallback(const FramebufferSizeFunc& cbFunc)
+void Window::close()
 {
-    m_framebufferResizeCB = cbFunc;
-    glfwSetFramebufferSizeCallback(getHandle(), [](GLFWwindow* window, int width, int height) {
-        auto* ptr                 = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        ptr->m_windowData->width  = {static_cast<uint32_t>(width)};
-        ptr->m_windowData->height = {static_cast<uint32_t>(height)};
-        ptr->m_framebufferResizeCB(width, height);
-    });
+    glfwSetWindowShouldClose(getHandle(), true);
 }
 
-void Window::setCursorPosCallback(const CursorPosFunc& cbFunc)
+bool Window::update()
 {
-    m_cursorPosCB = cbFunc;
+    if(glfwWindowShouldClose(getHandle()))
+        return false;
 
-    glfwSetCursorPosCallback(getHandle(), [](GLFWwindow* window, double xposIn, double yposIn) {
-        Window* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+    glfwPollEvents();
 
-        auto xpos{static_cast<float>(xposIn)};
-        auto ypos{static_cast<float>(yposIn)};
+    {
+        auto& events   = m_keyboardsEvent.m_events;
+        auto& handlers = m_keyboardsEvent.m_handlers;
 
-        if(ptr->m_cursorData->firstMouse)
+        while(!events.empty())
         {
-            ptr->m_cursorData->xPos       = xpos;
-            ptr->m_cursorData->yPos       = ypos;
-            ptr->m_cursorData->firstMouse = false;
+            auto e = events.front();
+            events.pop();
+            for(const auto& cb : handlers)
+            {
+                cb(e);
+            }
         }
+    }
 
-        ptr->m_cursorPosCB(xposIn, yposIn);
+    {
+        auto& events   = m_mouseMoveEvent.m_events;
+        auto& handlers = m_mouseMoveEvent.m_handlers;
+        while(!events.empty())
+        {
+            auto e = events.front();
+            events.pop();
+            for(const auto& cb : handlers)
+            {
+                cb(e);
+            }
+        }
+    }
 
-        ptr->m_cursorData->xPos = xpos;
-        ptr->m_cursorData->yPos = ypos;
-    });
+    {
+        auto& events   = m_mouseButtonEvent.m_events;
+        auto& handlers = m_mouseButtonEvent.m_handlers;
+        while(!events.empty())
+        {
+            auto e = events.front();
+            events.pop();
+            for(const auto& cb : handlers)
+            {
+                cb(e);
+            }
+        }
+    }
+
+    return true;
 }
-
-void Window::setKeyCallback(const KeyFunc& cbFunc)
-{
-    m_keyCB = cbFunc;
-    glfwSetKeyCallback(getHandle(), [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        ptr->m_keyCB(key, scancode, action, mods);
-    });
-}
-
-void Window::setMouseButtonCallback(const MouseButtonFunc& cbFunc)
-{
-    m_mouseButtonCB = cbFunc;
-    glfwSetMouseButtonCallback(getHandle(), [](GLFWwindow* window, int button, int action, int mods) {
-        auto* ptr = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        ptr->m_mouseButtonCB(button, action, mods);
-    });
-}
-
-void Window::setCursorVisibility(bool flag)
-{
-    glfwSetInputMode(getHandle(), GLFW_CURSOR, flag ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_HIDDEN);
-    m_cursorData->isCursorVisible = flag;
-}
-
-void     Window::close() { glfwSetWindowShouldClose(getHandle(), true); }
-bool     Window::shouldClose() { return glfwWindowShouldClose(getHandle()); }
-void     Window::pollEvents() { glfwPollEvents(); }
-uint32_t Window::getKeyInputStatus(KeyId keycode)
-{
-    auto status = glfwGetKey(getHandle(), keycode);
-    // std::cout << "input status: " << keycode << " " << status << std::endl;
-    return status;
-}
-
-uint32_t Window::getMouseButtonStatus(MouseButtonId mouseButton)
-{
-    auto status = glfwGetMouseButton(getHandle(), mouseButton);
-    return status;
-}
-void Window::toggleCursorVisibility() { m_cursorData->isCursorVisible = !m_cursorData->isCursorVisible; }
 }  // namespace aph

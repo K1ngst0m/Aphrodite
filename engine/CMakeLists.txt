@@ -6,6 +6,10 @@ file(GLOB base_src
   aph_core.hpp
   aph_renderer.hpp
 
+  input/*.cpp
+  input/*.h
+  input/*.hpp
+
   ui/*.cpp
   ui/*.h
   ui/*.hpp

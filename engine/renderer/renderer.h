@@ -50,7 +50,10 @@ public:
         {
             renderer = std::make_unique<vk::SceneRenderer>(window, config);
         }
-        else { static_assert("current type of the renderer is not supported."); }
+        else
+        {
+            static_assert("current type of the renderer is not supported.");
+        }
         return renderer;
     }
     IRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :

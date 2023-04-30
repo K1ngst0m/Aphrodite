@@ -13,11 +13,10 @@ void scene_manager::init()
 
 void scene_manager::run()
 {
-    while(!m_window->shouldClose())
+    while(m_window->update())
     {
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
-        m_window->pollEvents();
 
         // update scene object
         m_modelNode->rotate(1.0f * deltaTime, {0.0f, 1.0f, 0.0f});
@@ -41,16 +40,18 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = aph::Window::Create(m_options.windowWidth, m_options.windowHeight);
+    m_window = aph::Window::Create(m_options.windowWidth,
+                                   m_options.windowHeight);
 
-    m_window->setCursorPosCallback([=](double xposIn, double yposIn) { this->mouseHandleDerive(xposIn, yposIn); });
-
-    m_window->setFramebufferSizeCallback([=](int width, int height) {
-        // this->m_framebufferResized = true;
+    m_window->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e){
+        return onMouseBtn(e);
     });
-
-    m_window->setKeyCallback(
-        [=](int key, int scancode, int action, int mods) { this->keyboardHandleDerive(key, scancode, action, mods); });
+    m_window->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e){
+        return onKeyDown(e);
+    });
+    m_window->registerEventHandler<aph::MouseMoveEvent>([this](const aph::MouseMoveEvent& e){
+        return onMouseMove(e);
+    });
 }
 
 void scene_manager::setupScene()
@@ -111,46 +112,49 @@ void scene_manager::setupRenderer()
     m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
 }
 
-void scene_manager::keyboardHandleDerive(int key, int scancode, int action, int mods)
+bool scene_manager::onKeyDown(const aph::KeyboardEvent & event)
 {
     using namespace aph;
-    if(action == aph::input::STATUS_PRESS)
+    if(event.m_state == aph::KeyState::Pressed)
     {
-        switch(key)
+        switch(event.m_key)
         {
-        case aph::input::KEY_ESCAPE: m_window->close(); break;
-        case aph::input::KEY_W: m_cameraController->move(aph::Direction::UP, true); break;
-        case aph::input::KEY_A: m_cameraController->move(aph::Direction::LEFT, true); break;
-        case aph::input::KEY_S: m_cameraController->move(aph::Direction::DOWN, true); break;
-        case aph::input::KEY_D: m_cameraController->move(aph::Direction::RIGHT, true); break;
+        case Key::Escape: m_window->close(); break;
+        case Key::W: m_cameraController->move(Direction::UP, true); break;
+        case Key::A: m_cameraController->move(Direction::LEFT, true); break;
+        case Key::S: m_cameraController->move(Direction::DOWN, true); break;
+        case Key::D: m_cameraController->move(Direction::RIGHT, true); break;
+        default: break;
         }
     }
 
-    if(action == aph::input::STATUS_RELEASE)
+    if(event.m_state == aph::KeyState::Released)
     {
-        switch(key)
+        switch(event.m_key)
         {
-        case aph::input::KEY_W: m_cameraController->move(aph::Direction::UP, false); break;
-        case aph::input::KEY_A: m_cameraController->move(aph::Direction::LEFT, false); break;
-        case aph::input::KEY_S: m_cameraController->move(aph::Direction::DOWN, false); break;
-        case aph::input::KEY_D: m_cameraController->move(aph::Direction::RIGHT, false); break;
+        case Key::W: m_cameraController->move(Direction::UP, false); break;
+        case Key::A: m_cameraController->move(Direction::LEFT, false); break;
+        case Key::S: m_cameraController->move(Direction::DOWN, false); break;
+        case Key::D: m_cameraController->move(Direction::RIGHT, false); break;
+        default: break;
         }
     }
+
+    return true;
 }
 
-void scene_manager::mouseHandleDerive(double xposIn, double yposIn)
-{
-    if(m_window->getMouseButtonStatus(aph::input::MOUSE_BUTTON_RIGHT) != aph::input::STATUS_PRESS)
+bool scene_manager::onMouseBtn(const aph::MouseButtonEvent& event) {
+    if (event.m_button == aph::MouseButton::Right)
     {
-        m_window->setCursorVisibility(true);
-        return;
+        m_cameraController->setCursorEnabled(event.m_pressed);
     }
+    return true;
+}
 
-    m_window->setCursorVisibility(false);
-    const float dx = m_window->getCursorX() - xposIn;
-    const float dy = m_window->getCursorY() - yposIn;
-
-    m_cameraController->rotate({dy, -dx, 0.0f});
+bool scene_manager::onMouseMove(const aph::MouseMoveEvent& event)
+{
+    m_cameraController->rotate({event.m_deltaY, -event.m_deltaX, 0.0f});
+    return true;
 }
 
 int main(int argc, char** argv)

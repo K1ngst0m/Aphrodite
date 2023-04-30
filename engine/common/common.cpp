@@ -28,7 +28,10 @@ std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY
         }
         memcpy(image->data.data(), rgba.data(), image->data.size());
     }
-    else { memcpy(image->data.data(), img, image->data.size()); }
+    else
+    {
+        memcpy(image->data.data(), img, image->data.size());
+    }
     stbi_image_free(img);
 
     return image;

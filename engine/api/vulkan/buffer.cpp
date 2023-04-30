@@ -13,7 +13,10 @@ Buffer::Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemo
 void Buffer::write(const void* data, size_t offset, VkDeviceSize size) const
 {
     assert(mapped);
-    if(size == VK_WHOLE_SIZE) { size = getSize(); }
+    if(size == VK_WHOLE_SIZE)
+    {
+        size = getSize();
+    }
     uint8_t* pMapped = (uint8_t*)mapped;
     memcpy(pMapped + offset, data, size);
 }

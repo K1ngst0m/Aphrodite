@@ -59,6 +59,8 @@ protected:
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
 
 protected:
+    bool onUIMouseMove(const MouseMoveEvent& e);
+    bool onUIMouseBtn(const MouseButtonEvent& e);
     bool updateUIDrawData(float deltaTime);
     void recordUIDraw(CommandBuffer* pCommandBuffer);
     struct UI

@@ -66,9 +66,17 @@ public:
 
     void move(Direction direction, bool flag) { m_directions[direction] = flag; }
 
-    void rotate(glm::vec3 delta) { m_direction += delta * m_rotationSpeed; }
+    void rotate(glm::vec3 delta)
+    {
+        if(!enabled)
+        {
+            return;
+        }
+        m_direction += delta * m_rotationSpeed;
+    }
     void translate(glm::vec3 delta) { m_position += delta * m_movementSpeed; }
     void update(float deltaTime);
+    void setCursorEnabled(bool flag) { enabled = flag; }
 
 private:
     CameraController(Camera* camera) : m_camera{camera} {}
@@ -85,6 +93,8 @@ private:
 
     std::unordered_map<Direction, bool> m_directions{
         {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};
+
+    bool enabled = false;
 };
 
 }  // namespace aph

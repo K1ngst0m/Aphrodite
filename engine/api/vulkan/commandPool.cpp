@@ -38,5 +38,8 @@ void CommandPool::freeCommandBuffers(uint32_t commandBufferCount, const VkComman
     m_spinLock.Unlock();
 }
 
-uint32_t CommandPool::getQueueFamilyIndex() const { return m_createInfo.queueFamilyIndex; }
+uint32_t CommandPool::getQueueFamilyIndex() const
+{
+    return m_createInfo.queueFamilyIndex;
+}
 }  // namespace aph::vk

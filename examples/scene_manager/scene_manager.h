@@ -26,8 +26,9 @@ private:
     void setupRenderer();
     void setupScene();
 
-    void keyboardHandleDerive(int key, int scancode, int action, int mods);
-    void mouseHandleDerive(double xposIn, double yposIn);
+    bool onKeyDown(const aph::KeyboardEvent & event);
+    bool onMouseMove(const aph::MouseMoveEvent & event);
+    bool onMouseBtn(const aph::MouseButtonEvent& event);
 
 private:
     std::shared_ptr<aph::Scene> m_scene                = {};

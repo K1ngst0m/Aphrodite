@@ -28,7 +28,10 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model
             }
             memcpy(newImage->data.data(), rgba.data(), glTFImage.image.size());
         }
-        else { memcpy(newImage->data.data(), glTFImage.image.data(), glTFImage.image.size()); }
+        else
+        {
+            memcpy(newImage->data.data(), glTFImage.image.data(), glTFImage.image.size());
+        }
         images.push_back(newImage);
     }
 }
@@ -50,7 +53,10 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
         material.roughnessFactor = glTFMaterial.pbrMetallicRoughness.roughnessFactor;
 
         material.doubleSided = glTFMaterial.doubleSided;
-        if(glTFMaterial.alphaMode == "BLEND") { material.alphaMode = AlphaMode::BLEND; }
+        if(glTFMaterial.alphaMode == "BLEND")
+        {
+            material.alphaMode = AlphaMode::BLEND;
+        }
         if(glTFMaterial.alphaMode == "MASK")
         {
             material.alphaCutoff = 0.5f;
@@ -101,8 +107,14 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
         glm::quat q = glm::make_quat(inputNode.rotation.data());
         matrix *= glm::mat4(q);
     }
-    if(inputNode.scale.size() == 3) { matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data()))); }
-    if(inputNode.matrix.size() == 16) { matrix = glm::make_mat4x4(inputNode.matrix.data()); };
+    if(inputNode.scale.size() == 3)
+    {
+        matrix = glm::scale(matrix, glm::vec3(glm::make_vec3(inputNode.scale.data())));
+    }
+    if(inputNode.matrix.size() == 16)
+    {
+        matrix = glm::make_mat4x4(inputNode.matrix.data());
+    };
 
     SceneNode* node{parent->createChildNode(matrix, inputNode.name)};
 
@@ -251,9 +263,15 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
 
         switch(indexType)
         {
-        case IndexType::UINT16: indexSizeScaling = 0.5f; break;
-        case IndexType::UINT32: indexSizeScaling = 0.25f; break;
-        default: indexSizeScaling = 1.0f; break;
+        case IndexType::UINT16:
+            indexSizeScaling = 0.5f;
+            break;
+        case IndexType::UINT32:
+            indexSizeScaling = 0.25f;
+            break;
+        default:
+            indexSizeScaling = 1.0f;
+            break;
         }
     }
 
@@ -334,7 +352,10 @@ SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* paren
     {
         fileLoaded = gltfContext.LoadBinaryFromFile(&inputModel, &error, &warning, path);
     }
-    else { fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path); }
+    else
+    {
+        fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path);
+    }
 
     if(fileLoaded)
     {
@@ -366,7 +387,9 @@ SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* paren
     return node;
 }
 
-void Scene::update(float deltaTime) {}
+void Scene::update(float deltaTime)
+{
+}
 
 Camera* Scene::createCamera(float aspectRatio, CameraType type)
 {

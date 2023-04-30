@@ -17,7 +17,10 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<Resou
 VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite>& writes)
 {
     auto set = m_pool->allocateSet();
-    if(writes.empty()) { return set; }
+    if(writes.empty())
+    {
+        return set;
+    }
 
     std::vector<VkWriteDescriptorSet> vkWrites;
     for(uint32_t idx = 0; idx < writes.size(); idx++)
@@ -63,5 +66,8 @@ VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite
     return set;
 }
 
-VkResult DescriptorSetLayout::freeSet(VkDescriptorSet set) { return m_pool->freeSet(set); }
+VkResult DescriptorSetLayout::freeSet(VkDescriptorSet set)
+{
+    return m_pool->freeSet(set);
+}
 }  // namespace aph::vk

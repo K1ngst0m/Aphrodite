@@ -55,7 +55,8 @@ public:
         m_condition.wait(lock, [this](void) { return !m_queue.empty() || !m_valid; });
 
         // Ensure queue is still valid since above predicate could fall through.
-        if(!m_valid) return false;
+        if(!m_valid)
+            return false;
 
         // Get the item out of the queue.
         item = std::move(m_queue.front());

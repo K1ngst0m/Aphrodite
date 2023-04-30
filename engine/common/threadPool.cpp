@@ -13,7 +13,8 @@ ThreadPool::ThreadPool(uint32_t threadCount)
             {
                 // Pop the next task off of the queue.
                 std::packaged_task<void()> packagedTask;
-                if(!m_tasks.Pop(packagedTask)) break;
+                if(!m_tasks.Pop(packagedTask))
+                    break;
 
                 // Increment the number of active threads.
                 ++m_activeThreads;
@@ -53,7 +54,10 @@ std::shared_future<void> ThreadPool::AddTask(Task&& task)
     return future.share();
 }
 
-void ThreadPool::ClearPendingTasks() { m_tasks.Clear(); }
+void ThreadPool::ClearPendingTasks()
+{
+    m_tasks.Clear();
+}
 
 void ThreadPool::Wait()
 {

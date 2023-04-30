@@ -21,8 +21,14 @@ public:
     {
         if constexpr(std::is_same<TNode, Node>::value)
         {
-            if(parent->parent) { name = parent->name + "-" + std::to_string(id); }
-            else { name = std::to_string(id); }
+            if(parent->parent)
+            {
+                name = parent->name + "-" + std::to_string(id);
+            }
+            else
+            {
+                name = std::to_string(id);
+            }
         }
     }
 
@@ -70,15 +76,27 @@ public:
     template <typename TObject>
     void attachObject(TObject* object)
     {
-        if constexpr(isObjectTypeValid<TObject>()) { m_object = object; }
-        else { static_assert("Invalid type of the object."); }
+        if constexpr(isObjectTypeValid<TObject>())
+        {
+            m_object = object;
+        }
+        else
+        {
+            static_assert("Invalid type of the object.");
+        }
     }
 
     template <typename TObject>
     TObject* getObject()
     {
-        if constexpr(isObjectTypeValid<TObject>()) { return static_cast<TObject*>(m_object); }
-        else { static_assert("Invalid type of the object."); }
+        if constexpr(isObjectTypeValid<TObject>())
+        {
+            return static_cast<TObject*>(m_object);
+        }
+        else
+        {
+            static_assert("Invalid type of the object.");
+        }
     }
 
     template <typename TObject>

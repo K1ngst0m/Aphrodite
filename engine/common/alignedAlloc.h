@@ -20,14 +20,16 @@ struct AlignedAllocation
     static void* operator new(size_t size)
     {
         void* ret = ::aph::memAlignAlloc(alignof(T), size);
-        if(!ret) throw std::bad_alloc();
+        if(!ret)
+            throw std::bad_alloc();
         return ret;
     }
 
     static void* operator new[](size_t size)
     {
         void* ret = ::aph::memAlignAlloc(alignof(T), size);
-        if(!ret) throw std::bad_alloc();
+        if(!ret)
+            throw std::bad_alloc();
         return ret;
     }
 

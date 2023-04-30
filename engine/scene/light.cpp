@@ -2,5 +2,7 @@
 
 namespace aph
 {
-Light::Light() : Object(Id::generateNewId<Light>(), ObjectType::LIGHT) {}
+Light::Light() : Object(Id::generateNewId<Light>(), ObjectType::LIGHT)
+{
+}
 }  // namespace aph

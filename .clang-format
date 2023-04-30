@@ -14,13 +14,6 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
 BreakConstructorInitializers: 'AfterColon'
 ConstructorInitializerIndentWidth: '4'
 ContinuationIndentWidth: '4'
-AllowShortBlocksOnASingleLine: 'true'
-AllowShortFunctionsOnASingleLine: 'All'
-AllowShortCaseLabelsOnASingleLine: 'true'
-AllowShortIfStatementsOnASingleLine: 'true'
-AlwaysBreakBeforeMultilineStrings: 'true'
-BinPackArguments: 'true'
-BinPackParameters: 'true'
 Cpp11BracedListStyle: 'true'
 DerivePointerAlignment: 'false'
 IncludeBlocks: 'Preserve'
@@ -30,7 +23,6 @@ IndentWidth: '4'
 PointerAlignment: Left
 AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveDeclarations: true
-BreakInheritanceList: BeforeColon
 SpaceBeforeParens: Never
 SpaceInEmptyParentheses: 'false'
 SpacesInParentheses: 'false'

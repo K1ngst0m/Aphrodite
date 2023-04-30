@@ -31,7 +31,10 @@ bool button(const char* caption)
 }
 bool comboBox(const char* caption, int32_t* itemindex, std::vector<std::string> items)
 {
-    if(items.empty()) { return false; }
+    if(items.empty())
+    {
+        return false;
+    }
     std::vector<const char*> charitems;
     charitems.reserve(items.size());
     for(auto& item : items)
@@ -69,7 +72,10 @@ bool radioButton(const char* caption, bool value)
     bool res = ImGui::RadioButton(caption, value);
     return res;
 }
-bool header(const char* caption) { return ImGui::CollapsingHeader(caption, ImGuiTreeNodeFlags_DefaultOpen); }
+bool header(const char* caption)
+{
+    return ImGui::CollapsingHeader(caption, ImGuiTreeNodeFlags_DefaultOpen);
+}
 
 void drawWithItemWidth(float itemWidth, float scale, std::function<void()>&& drawFunc)
 {

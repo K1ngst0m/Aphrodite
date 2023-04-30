@@ -5,7 +5,10 @@
 namespace aph::vk
 {
 
-CommandBuffer::~CommandBuffer() { m_pool->freeCommandBuffers(1, &m_handle); }
+CommandBuffer::~CommandBuffer()
+{
+    m_pool->freeCommandBuffers(1, &m_handle);
+}
 
 CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pDevice(pDevice),
@@ -19,7 +22,10 @@ CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer
 
 VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
-    if(m_state == CommandBufferState::RECORDING) { return VK_NOT_READY; }
+    if(m_state == CommandBufferState::RECORDING)
+    {
+        return VK_NOT_READY;
+    }
 
     // Begin command recording.
     VkCommandBufferBeginInfo beginInfo = {
@@ -27,7 +33,10 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
         .flags = static_cast<VkCommandBufferUsageFlags>(flags),
     };
     auto result = m_pDeviceTable->vkBeginCommandBuffer(m_handle, &beginInfo);
-    if(result != VK_SUCCESS) { return result; }
+    if(result != VK_SUCCESS)
+    {
+        return result;
+    }
 
     // Mark CommandBuffer as recording and reset internal state.
     m_state = CommandBufferState::RECORDING;
@@ -37,7 +46,10 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 
 VkResult CommandBuffer::end()
 {
-    if(m_state != CommandBufferState::RECORDING) { return VK_NOT_READY; }
+    if(m_state != CommandBufferState::RECORDING)
+    {
+        return VK_NOT_READY;
+    }
 
     m_state = CommandBufferState::EXECUTABLE;
 
@@ -56,7 +68,10 @@ void CommandBuffer::setViewport(const VkViewport& viewport)
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewport);
 }
-void CommandBuffer::setSissor(const VkRect2D& scissor) { m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor); }
+void CommandBuffer::setSissor(const VkRect2D& scissor)
+{
+    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor);
+}
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
     m_pDeviceTable->vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
@@ -109,7 +124,10 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout oldLayout,
     };
 
     const auto& imageCreateInfo = image->getCreateInfo();
-    if(pSubResourceRange) { imageMemoryBarrier.subresourceRange = *pSubResourceRange; }
+    if(pSubResourceRange)
+    {
+        imageMemoryBarrier.subresourceRange = *pSubResourceRange;
+    }
     else
     {
         imageMemoryBarrier.subresourceRange = {
@@ -298,12 +316,18 @@ void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Ima
     m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(),
                                    dstImageLayout, 1, pRegions, filter);
 }
-uint32_t CommandBuffer::getQueueFamilyIndices() const { return m_queueFamilyType; };
-void     CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
+uint32_t CommandBuffer::getQueueFamilyIndices() const
+{
+    return m_queueFamilyType;
+};
+void CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
-void CommandBuffer::endRendering() { m_pDeviceTable->vkCmdEndRendering(getHandle()); }
+void CommandBuffer::endRendering()
+{
+    m_pDeviceTable->vkCmdEndRendering(getHandle());
+}
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);

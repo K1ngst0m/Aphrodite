@@ -310,7 +310,9 @@ void SceneRenderer::_loadScene()
             m_lightNodeList.push_back(node);
         }
         break;
-        default: assert("unattached scene node."); break;
+        default:
+            assert("unattached scene node.");
+            break;
         }
     });
 }
@@ -856,9 +858,15 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
                     VkIndexType indexType = VK_INDEX_TYPE_UINT32;
                     switch(mesh->m_indexType)
                     {
-                    case IndexType::UINT16: indexType = VK_INDEX_TYPE_UINT16; break;
-                    case IndexType::UINT32: indexType = VK_INDEX_TYPE_UINT32; break;
-                    default: assert("undefined behavior."); break;
+                    case IndexType::UINT16:
+                        indexType = VK_INDEX_TYPE_UINT16;
+                        break;
+                    case IndexType::UINT32:
+                        indexType = VK_INDEX_TYPE_UINT32;
+                        break;
+                    default:
+                        assert("undefined behavior.");
+                        break;
                     }
                     pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
                 }
@@ -874,7 +882,10 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
                                                         mesh->m_vertexOffset, 0);
                         }
-                        else { pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0); }
+                        else
+                        {
+                            pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        }
                     }
                 }
             }
@@ -1000,9 +1011,15 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
                     VkIndexType indexType = VK_INDEX_TYPE_UINT32;
                     switch(mesh->m_indexType)
                     {
-                    case IndexType::UINT16: indexType = VK_INDEX_TYPE_UINT16; break;
-                    case IndexType::UINT32: indexType = VK_INDEX_TYPE_UINT32; break;
-                    default: assert("undefined behavior."); break;
+                    case IndexType::UINT16:
+                        indexType = VK_INDEX_TYPE_UINT16;
+                        break;
+                    case IndexType::UINT32:
+                        indexType = VK_INDEX_TYPE_UINT32;
+                        break;
+                    default:
+                        assert("undefined behavior.");
+                        break;
                     }
                     pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
                 }
@@ -1018,7 +1035,10 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
                                                         mesh->m_vertexOffset, 0);
                         }
-                        else { pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0); }
+                        else
+                        {
+                            pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        }
                     }
                 }
             }
@@ -1071,28 +1091,12 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
 
 void SceneRenderer::drawUI(float deltaTime)
 {
-    ImGuiIO& io = ImGui::GetIO();
-
-    io.DisplaySize = ImVec2(m_window->getWidth(), m_window->getHeight());
-    io.DeltaTime   = 1.0f;
-
-    io.AddMousePosEvent((float)m_window->getCursorX(), (float)m_window->getCursorY());
-    io.AddMouseButtonEvent(0, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_LEFT) == input::STATUS_PRESS);
-    io.AddMouseButtonEvent(1, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_RIGHT) == input::STATUS_PRESS);
-    io.AddMouseButtonEvent(2, m_window->getMouseButtonStatus(input::MOUSE_BUTTON_MIDDLE) == input::STATUS_PRESS);
-
     ImGui::NewFrame();
-
     ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.scale, [&]() {
         ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
         ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
         ui::text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
         ui::drawWithItemWidth(110.0f, m_ui.scale, [&]() {
-            if(ui::header("Input"))
-            {
-                ui::text("cursor pos : [ %.2f, %.2f ]", m_window->getCursorX(), m_window->getCursorY());
-                ui::text("cursor visible : %s", m_window->getMouseData()->isCursorVisible ? "yes" : "no");
-            }
             if(ui::header("Scene"))
             {
                 {

@@ -23,7 +23,10 @@ Image::~Image()
 
 ImageView* Image::getView(VkFormat imageFormat)
 {
-    if(imageFormat == VK_FORMAT_UNDEFINED) { imageFormat = m_createInfo.format; }
+    if(imageFormat == VK_FORMAT_UNDEFINED)
+    {
+        imageFormat = m_createInfo.format;
+    }
 
     if(!m_imageViewFormatMap.count(imageFormat))
     {
