@@ -61,4 +61,5 @@ target_link_libraries(engine
   ${cmake_thread_libs_init}
   dl
   spvgen
+  reckless
   )

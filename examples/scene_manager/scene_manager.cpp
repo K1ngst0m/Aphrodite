@@ -1,6 +1,6 @@
 #include "scene_manager.h"
-#include <argparse/argparse.hpp>
 #include "renderer/renderer.h"
+#include <argparse/argparse.hpp>
 
 scene_manager::scene_manager() : aph::BaseApp("scene_manager") {}
 
@@ -40,6 +40,8 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
+    aph::Logger::Get()->info("init window: [%d, %d]", m_options.windowWidth, m_options.windowHeight);
+
     m_window = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
     m_window->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e){
@@ -108,6 +110,7 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
+    aph::Logger::Get()->info("init renderer: max frames %d", config.maxFrames);
     m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
 }
 
@@ -179,6 +182,7 @@ int main(int argc, char** argv)
     app.m_options.modelPath    = program.get<std::string>("--model");
     app.m_options.windowWidth  = program.get<uint32_t>("--width");
     app.m_options.windowHeight = program.get<uint32_t>("--height");
+
 
     app.init();
     app.run();

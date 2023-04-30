@@ -10,3 +10,4 @@ build/
 .projectile
 /compile_commands.json
 /.ccls-cache/
+/log.txt

@@ -15,10 +15,7 @@ namespace aph
 class WSI
 {
 protected:
-    WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height)
-    {
-        init();
-    }
+    WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height) { init(); }
 
 public:
     static std::shared_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
@@ -83,10 +80,9 @@ public:
     void close();
 
 protected:
-    void* m_window = {};
-
     void init();
 
+    void*    m_window = {};
     uint32_t m_width  = {};
     uint32_t m_height = {};
 

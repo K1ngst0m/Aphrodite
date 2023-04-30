@@ -1,6 +1,7 @@
 #include "scene.h"
 #include "common/assetManager.h"
 #include "common/common.h"
+#include "common/logger.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_INCLUDE_STB_IMAGE
@@ -236,7 +237,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                     break;
                 }
                 default:
-                    std::cerr << "Index component type " << accessor.componentType << " not supported!" << std::endl;
+                    aph::Logger::Get()->error("Index component type %s not supported!\n", accessor.componentType);
                     return;
                 }
             }
@@ -379,7 +380,7 @@ SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* paren
     }
     else
     {
-        std::cout << error << std::endl;
+        aph::Logger::Get()->error("%s\n", error);
         assert("Could not open the glTF file.");
         return {};
     }

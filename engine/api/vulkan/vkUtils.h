@@ -6,6 +6,7 @@
 #include <volk.h>
 #include "vkInit.h"
 #include "common/common.h"
+#include "common/logger.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -21,8 +22,7 @@
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
         { \
-            std::cout << "Fatal : VkResult is \"" << aph::vk::utils::errorString(res) << "\" in " << __FILE__ \
-                      << " at line " << __LINE__ << "\n"; \
+            aph::Logger::Get()->error("Fatal : VkResult is \"%s\" in %s at line %s\n", aph::vk::utils::errorString(res), __FILE__, __LINE__); \
             assert(res == VK_SUCCESS); \
         } \
     }
