@@ -17,8 +17,8 @@ public:
     struct
     {
         std::string modelPath    = {};
-        uint32_t    windowWidth  = {};
-        uint32_t    windowHeight = {};
+        uint32_t    windowWidth  = {1440};
+        uint32_t    windowHeight = {900};
     } m_options;
 
 private:

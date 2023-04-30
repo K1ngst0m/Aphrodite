@@ -29,10 +29,10 @@ public:
     float    getAspectRatio() const { return static_cast<float>(m_width) / m_height; }
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
+    uint32_t getFrameBufferWidth() const;
+    uint32_t getFrameBufferHeight() const;
 
     VkSurfaceKHR getSurface(vk::Instance* instance);
-    uint32_t     getFrameBufferWidth() const;
-    uint32_t     getFrameBufferHeight() const;
 
     template <typename TEvent>
     void pushEvent(const TEvent& e)

@@ -573,7 +573,7 @@ void SceneRenderer::_initGpuResources()
 
     // create skybox cubemap
     {
-        auto skyboxDir    = AssetManager::GetTextureDir() / "skybox";
+        auto skyboxDir    = asset::GetTextureDir() / "skybox";
         auto skyboxImages = aph::utils::loadSkyboxFromFile({
             (skyboxDir / "front.jpg").string(),
             (skyboxDir / "back.jpg").c_str(),
@@ -1171,7 +1171,7 @@ void SceneRenderer::_initPipeline()
     {
         GraphicsPipelineCreateInfo createInfo{};
 
-        auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
         createInfo.renderingCreateInfo     = {
                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
@@ -1197,7 +1197,7 @@ void SceneRenderer::_initPipeline()
     {
         GraphicsPipelineCreateInfo createInfo{};
 
-        auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT,
                                               VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
                                               VK_FORMAT_R8G8B8A8_UNORM};
@@ -1226,7 +1226,7 @@ void SceneRenderer::_initPipeline()
     {
         GraphicsPipelineCreateInfo createInfo{{}};
 
-        auto                  shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
         createInfo.renderingCreateInfo     = {
                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
@@ -1252,7 +1252,7 @@ void SceneRenderer::_initPipeline()
     // skybox graphics pipeline
     {
         GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
-        auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
 
         createInfo.renderingCreateInfo = {
@@ -1275,7 +1275,7 @@ void SceneRenderer::_initPipeline()
 
     // postfx compute pipeline
     {
-        std::filesystem::path     shaderDir = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "default";
+        std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         ComputePipelineCreateInfo createInfo{};
         createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
         createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");

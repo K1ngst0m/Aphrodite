@@ -129,7 +129,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
         {
             unsigned char*    fontData;
             int               texWidth, texHeight;
-            const std::string filename = AssetManager::GetFontDir() / "Roboto-Medium.ttf";
+            const std::string filename = asset::GetFontDir() / "Roboto-Medium.ttf";
             io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_ui.scale);
             io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
             VkDeviceSize uploadSize = texWidth * texHeight * 4;
@@ -184,7 +184,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
         // setup pipeline
         {
             GraphicsPipelineCreateInfo pipelineCreateInfo{};
-            auto                       shaderDir    = AssetManager::GetShaderDir(ShaderAssetType::GLSL) / "ui";
+            auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "ui";
             std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
             pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
                  .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
@@ -265,7 +265,7 @@ Renderer::~Renderer()
     // TODO
     m_pSyncPrimitivesPool.reset(nullptr);
 
-    for(const auto& [key, shaderModule] : shaderModuleCaches)
+    for(const auto& [_, shaderModule] : shaderModuleCaches)
     {
         vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
     }

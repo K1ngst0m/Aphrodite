@@ -1,6 +1,5 @@
 #include "scene_manager.h"
 #include "renderer/renderer.h"
-#include <argparse/argparse.hpp>
 
 scene_manager::scene_manager() : aph::BaseApp("scene_manager") {}
 
@@ -90,7 +89,7 @@ void scene_manager::setupScene()
     // load from gltf file
     {
         if(!m_options.modelPath.empty()) { m_modelNode = m_scene->createMeshesFromFile(m_options.modelPath); }
-        else { m_modelNode = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb"); }
+        else { m_modelNode = m_scene->createMeshesFromFile(aph::asset::GetModelDir() / "DamagedHelmet.glb"); }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
         // auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
@@ -161,28 +160,16 @@ bool scene_manager::onMouseMove(const aph::MouseMoveEvent& event)
 
 int main(int argc, char** argv)
 {
-    argparse::ArgumentParser program("program_name");
-
-    program.add_argument("--width").help("window width").scan<'u', uint32_t>().default_value(1440U);
-    program.add_argument("--height").help("window height").scan<'u', uint32_t>().default_value(900U);
-    program.add_argument("--model").help("load model from files.").default_value("");
-    try
-    {
-        program.parse_args(argc, argv);
-    }
-    catch(const std::runtime_error& err)
-    {
-        std::cerr << err.what() << std::endl;
-        std::cerr << program;
-        return 1;
-    }
-
     scene_manager app;
 
-    app.m_options.modelPath    = program.get<std::string>("--model");
-    app.m_options.windowWidth  = program.get<uint32_t>("--width");
-    app.m_options.windowHeight = program.get<uint32_t>("--height");
-
+	int exitCode;
+    aph::CLICallbacks cbs;
+    cbs.add("--width", [&](aph::CLIParser &parser) { app.m_options.windowWidth = parser.nextUint(); });
+    cbs.add("--height", [&](aph::CLIParser &parser) { app.m_options.windowHeight = parser.nextUint(); });
+    cbs.add("--model", [&](aph::CLIParser &parser) { app.m_options.modelPath = parser.nextString(); });
+    cbs.m_errorHandler = [&]() { aph::Logger::Get()->error("Failed to parse CLI arguments for GLFW.\n"); };
+    if (!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
+        return exitCode;
 
     app.init();
     app.run();

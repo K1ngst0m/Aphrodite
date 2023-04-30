@@ -13,6 +13,7 @@
 #include "common/assetManager.h"
 #include "common/timer.h"
 #include "common/logger.h"
+#include "common/cli.h"
 
 #include "app/app.h"
 #include "app/input/input.h"

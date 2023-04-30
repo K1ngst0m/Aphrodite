@@ -17,11 +17,13 @@ private:
                                          >;
 
     Logger() : m_writer{"log.txt"}, m_logger{&m_writer} {}
+
 public:
     static Logger* g_logger;
-    static log_t* Get()
+    static log_t*  Get()
     {
-        if (g_logger == nullptr){
+        if(g_logger == nullptr)
+        {
             g_logger = new Logger();
         }
         return &g_logger->m_logger;
@@ -31,7 +33,7 @@ private:
     reckless::file_writer m_writer{"log.txt"};
     log_t                 m_logger;
 };
-inline Logger * Logger::g_logger = nullptr;
+inline Logger* Logger::g_logger = nullptr;
 }  // namespace aph
 
 #endif  // LOGGER_H_

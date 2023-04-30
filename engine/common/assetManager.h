@@ -3,24 +3,54 @@
 
 #include "common.h"
 
-namespace aph
+namespace aph::asset
 {
 
-enum class ShaderAssetType
+enum class AssetType{
+
+};
+
+enum class ShaderType
 {
     GLSL,
     HLSL,
 };
 
-class AssetManager
+struct AssetFile
 {
-public:
-    static std::filesystem::path GetAssertDir();
-    static std::filesystem::path GetShaderDir(ShaderAssetType type);
-    static std::filesystem::path GetTextureDir();
-    static std::filesystem::path GetModelDir();
-    static std::filesystem::path GetFontDir();
+    char type[4];
+    int version;
+    std::string json;
+    std::vector<char> binaryBlob;
 };
+
+bool saveBinaryfile(const char* path, const AssetFile& file);
+bool loadBinaryfile(const char* path, AssetFile& outputFile);
+
+enum class TextureFormat : uint32_t
+{
+    Unknown = 0,
+    RGBA8
+};
+
+// struct TextureInfo {
+//     uint64_t textureSize;
+//     TextureFormat textureFormat;
+//     CompressionMode compressionMode;
+//     uint32_t pixelsize[3];
+//     std::string originalFile;
+// };
+
+// //parses the texture metadata from an asset file
+// TextureInfo readTextureInfo(AssetFile* file);
+// void unpackTexture(TextureInfo* info, const char* sourcebuffer, size_t sourceSize, char* destination);
+// AssetFile packTexture(TextureInfo* info, void* pixelData);
+
+std::filesystem::path GetAssertDir();
+std::filesystem::path GetShaderDir(ShaderType type);
+std::filesystem::path GetTextureDir();
+std::filesystem::path GetModelDir();
+std::filesystem::path GetFontDir();
 }  // namespace aph
 
 #endif  // ASSETMANAGER_H_

@@ -22,7 +22,8 @@
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
         { \
-            aph::Logger::Get()->error("Fatal : VkResult is \"%s\" in %s at line %s\n", aph::vk::utils::errorString(res), __FILE__, __LINE__); \
+            aph::Logger::Get()->error("Fatal : VkResult is \"%s\" in %s at line %s\n", \
+                                      aph::vk::utils::errorString(res), __FILE__, __LINE__); \
             assert(res == VK_SUCCESS); \
         } \
     }
