@@ -10,7 +10,7 @@ namespace aph::vk
 class Renderer : public IRenderer
 {
 public:
-    Renderer(std::shared_ptr<Window> window, const RenderConfig& config);
+    Renderer(std::shared_ptr<WSI> window, const RenderConfig& config);
     ~Renderer();
 
     void beginFrame() override;

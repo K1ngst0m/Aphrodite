@@ -1,6 +1,7 @@
-#include "window.h"
+#include "wsi.h"
 #include <GLFW/glfw3.h>
 #include "app/input/input.h"
+#include "api/vulkan/instance.h"
 
 namespace aph
 {
@@ -66,7 +67,7 @@ static Key glfwKeyCast(int key)
 
 static void cursorCB(GLFWwindow* window, double x, double y)
 {
-    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
     static double lastX = glfw->getWidth() / 2;
     static double lastY = glfw->getHeight() / 2;
@@ -96,7 +97,7 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
 
     auto  gkey = glfwKeyCast(key);
-    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
     if(action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
     {
@@ -116,7 +117,7 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
 
 static void buttonCB(GLFWwindow* window, int button, int action, int _)
 {
-    auto* glfw = static_cast<Window*>(glfwGetWindowUserPointer(window));
+    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
     MouseButton btn;
     switch(button)
@@ -139,44 +140,42 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     glfw->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
 }
 
-std::shared_ptr<Window> Window::Create(uint32_t width, uint32_t height)
+WSI::WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height)
 {
-    auto instance = std::shared_ptr<Window>(new Window(width, height));
-    return instance;
 }
 
-Window::Window(uint32_t width, uint32_t height):
-    m_width{width}, m_height(height)
+WSI::~WSI() = default;
+
+VkSurfaceKHR WSI_Glfw::getSurface(vk::Instance* instance)
 {
-    assert(glfwInit());
-    assert(glfwVulkanSupported());
+    VkSurfaceKHR surface;
+    glfwCreateWindowSurface(instance->getHandle(), m_window, nullptr, &surface);
+    return surface;
+};
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+uint32_t WSI_Glfw::getFrameBufferWidth() const
+{
+    int w, h;
+    glfwGetFramebufferSize(m_window, &w, &h);
+    return w;
+};
 
-    m_window = glfwCreateWindow(width, height, "Aphrodite Engine", nullptr, nullptr);
-    assert(m_window);
+uint32_t WSI_Glfw::getFrameBufferHeight() const
+{
+    int w, h;
+    glfwGetFramebufferSize(m_window, &w, &h);
+    return h;
+};
 
-    glfwSetWindowUserPointer(getHandle(), this);
-    glfwSetKeyCallback(m_window, keyCB);
-    glfwSetCursorPosCallback(m_window, cursorCB);
-    glfwSetMouseButtonCallback(m_window, buttonCB);
-}
-
-Window::~Window()
+WSI_Glfw::~WSI_Glfw()
 {
     glfwDestroyWindow(m_window);
     glfwTerminate();
 }
 
-void Window::close()
+bool WSI_Glfw::update()
 {
-    glfwSetWindowShouldClose(getHandle(), true);
-}
-
-bool Window::update()
-{
-    if(glfwWindowShouldClose(getHandle()))
+    if(glfwWindowShouldClose(m_window))
         return false;
 
     glfwPollEvents();
@@ -225,5 +224,26 @@ bool Window::update()
     }
 
     return true;
+};
+void WSI_Glfw::close()
+{
+    glfwSetWindowShouldClose(m_window, true);
+};
+
+WSI_Glfw::WSI_Glfw(uint32_t width, uint32_t height) : WSI(width, height)
+{
+    assert(glfwInit());
+    assert(glfwVulkanSupported());
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
+    m_window = glfwCreateWindow(width, height, "Aphrodite Engine", nullptr, nullptr);
+    assert(m_window);
+
+    glfwSetWindowUserPointer(m_window, this);
+    glfwSetKeyCallback(m_window, keyCB);
+    glfwSetCursorPosCallback(m_window, cursorCB);
+    glfwSetMouseButtonCallback(m_window, buttonCB);
 }
 }  // namespace aph

@@ -54,7 +54,7 @@ struct ObjectInfo
 
 namespace aph::vk
 {
-SceneRenderer::SceneRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
+SceneRenderer::SceneRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) :
     Renderer(std::move(window), config)
 {
 }

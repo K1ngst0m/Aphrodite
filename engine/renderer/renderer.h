@@ -5,7 +5,7 @@
 
 #include "api/gpuResource.h"
 #include "common/common.h"
-#include "common/window.h"
+#include "common/wsi.h"
 
 namespace aph
 {
@@ -39,7 +39,7 @@ class IRenderer
 {
 public:
     template <typename TRenderer>
-    static std::unique_ptr<TRenderer> Create(const std::shared_ptr<Window>& window, const RenderConfig& config)
+    static std::unique_ptr<TRenderer> Create(const std::shared_ptr<WSI>& window, const RenderConfig& config)
     {
         std::unique_ptr<TRenderer> renderer = {};
         if constexpr(std::is_same<TRenderer, vk::Renderer>::value)
@@ -56,23 +56,21 @@ public:
         }
         return renderer;
     }
-    IRenderer(std::shared_ptr<Window> window, const RenderConfig& config) :
-        m_window(std::move(window)),
-        m_config(config)
+    IRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) : m_window(std::move(window)), m_config(config)
     {
     }
 
     virtual void beginFrame() = 0;
     virtual void endFrame()   = 0;
 
-    std::shared_ptr<Window> getWindow() { return m_window; }
-    uint32_t                getWindowWidth() { return m_window->getWidth(); };
-    uint32_t                getWindowHeight() { return m_window->getHeight(); };
-    uint32_t                getWindowAspectRation() { return m_window->getAspectRatio(); }
+    std::shared_ptr<WSI> getWindow() { return m_window; }
+    uint32_t             getWindowWidth() { return m_window->getWidth(); };
+    uint32_t             getWindowHeight() { return m_window->getHeight(); };
+    uint32_t             getWindowAspectRation() { return m_window->getAspectRatio(); }
 
 protected:
-    std::shared_ptr<Window> m_window = {};
-    RenderConfig            m_config = {};
+    std::shared_ptr<WSI> m_window = {};
+    RenderConfig         m_config = {};
 };
 }  // namespace aph
 

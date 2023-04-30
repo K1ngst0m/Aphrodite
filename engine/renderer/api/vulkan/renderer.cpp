@@ -12,7 +12,7 @@
 
 namespace aph::vk
 {
-Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) : IRenderer(std::move(window), config)
+Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IRenderer(std::move(window), config)
 {
     // create instance
     {
@@ -85,10 +85,9 @@ Renderer::Renderer(std::shared_ptr<Window> window, const RenderConfig& config) :
 
     // setup swapchain
     {
-        VK_CHECK_RESULT(glfwCreateWindowSurface(m_pInstance->getHandle(), m_window->getHandle(), nullptr, &m_surface));
         SwapChainCreateInfo createInfo{
-            .surface      = m_surface,
-            .windowHandle = m_window->getHandle(),
+            .instance = m_pInstance,
+            .wsi      = m_window.get(),
         };
         VK_CHECK_RESULT(m_pDevice->createSwapchain(createInfo, &m_pSwapChain));
     }

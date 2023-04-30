@@ -1,7 +1,7 @@
 #ifndef VULKAN_SWAPCHAIN_H_
 #define VULKAN_SWAPCHAIN_H_
 
-#include "common/window.h"
+#include "common/wsi.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
@@ -13,8 +13,8 @@ class Queue;
 
 struct SwapChainCreateInfo
 {
-    VkSurfaceKHR surface;
-    void*        windowHandle;
+    Instance* instance;
+    WSI*      wsi;
 };
 
 class SwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>

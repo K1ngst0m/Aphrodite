@@ -40,8 +40,7 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = aph::Window::Create(m_options.windowWidth,
-                                   m_options.windowHeight);
+    m_window = aph::WSI::Create<aph::WSI_Glfw>(m_options.windowWidth, m_options.windowHeight);
 
     m_window->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e){
         return onMouseBtn(e);

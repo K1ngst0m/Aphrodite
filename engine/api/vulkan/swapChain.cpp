@@ -14,7 +14,7 @@ struct SwapChainSupportDetails
     VkExtent2D         preferedExtent;
 };
 
-SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, GLFWwindow* windowHandle)
+SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, aph::WSI* wsi)
 {
     SwapChainSupportDetails details;
 
@@ -73,10 +73,7 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
         }
         else
         {
-            int width, height;
-            glfwGetFramebufferSize(windowHandle, &width, &height);
-
-            VkExtent2D actualExtent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+            VkExtent2D actualExtent = {wsi->getFrameBufferWidth(), wsi->getFrameBufferHeight()};
 
             actualExtent.width     = std::clamp(actualExtent.width, details.capabilities.minImageExtent.width,
                                                 details.capabilities.maxImageExtent.width);
@@ -93,12 +90,12 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
 
 namespace aph::vk
 {
-SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
-    m_pDevice(pDevice),
-    m_surface(createInfo.surface)
+SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) : m_pDevice(pDevice)
 {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(
-        m_surface, m_pDevice->getPhysicalDevice()->getHandle(), static_cast<GLFWwindow*>(createInfo.windowHandle));
+    m_surface = createInfo.wsi->getSurface(createInfo.instance);
+
+    SwapChainSupportDetails swapChainSupport =
+        querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), createInfo.wsi);
 
     uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
     if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)
