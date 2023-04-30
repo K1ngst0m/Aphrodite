@@ -145,27 +145,27 @@ std::shared_ptr<Window> Window::Create(uint32_t width, uint32_t height)
     return instance;
 }
 
-Window::Window(uint32_t width, uint32_t height)
+Window::Window(uint32_t width, uint32_t height):
+    m_width{width}, m_height(height)
 {
-    m_windowData = std::make_shared<WindowData>(width, height);
     assert(glfwInit());
     assert(glfwVulkanSupported());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-    m_windowData->window =
-        glfwCreateWindow(m_windowData->width, m_windowData->height, "Aphrodite Engine", nullptr, nullptr);
-    assert(m_windowData->window);
+    m_window = glfwCreateWindow(width, height, "Aphrodite Engine", nullptr, nullptr);
+    assert(m_window);
+
     glfwSetWindowUserPointer(getHandle(), this);
-    glfwSetKeyCallback(m_windowData->window, keyCB);
-    glfwSetCursorPosCallback(m_windowData->window, cursorCB);
-    glfwSetMouseButtonCallback(m_windowData->window, buttonCB);
+    glfwSetKeyCallback(m_window, keyCB);
+    glfwSetCursorPosCallback(m_window, cursorCB);
+    glfwSetMouseButtonCallback(m_window, buttonCB);
 }
 
 Window::~Window()
 {
-    glfwDestroyWindow(m_windowData->window);
+    glfwDestroyWindow(m_window);
     glfwTerminate();
 }
 

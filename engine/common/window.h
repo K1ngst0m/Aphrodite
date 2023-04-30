@@ -9,15 +9,6 @@ class GLFWwindow;
 namespace aph
 {
 
-struct WindowData
-{
-    GLFWwindow* window  = {};
-    uint32_t    width   = {};
-    uint32_t    height  = {};
-    bool        resized = {false};
-    WindowData(uint32_t w, uint32_t h) : width{w}, height{h} {}
-};
-
 class Window
 {
 private:
@@ -28,12 +19,10 @@ public:
     ~Window();
 
 public:
-    std::shared_ptr<WindowData> getWindowData() { return m_windowData; }
-
-    float       getAspectRatio() const { return static_cast<float>(m_windowData->width) / m_windowData->height; }
-    uint32_t    getWidth() const { return m_windowData->width; }
-    uint32_t    getHeight() const { return m_windowData->height; }
-    GLFWwindow* getHandle() { return m_windowData->window; }
+    float       getAspectRatio() const { return static_cast<float>(m_width) / m_height; }
+    uint32_t    getWidth() const { return m_width; }
+    uint32_t    getHeight() const { return m_height; }
+    GLFWwindow* getHandle() { return m_window; }
 
     template <typename TEvent>
     void pushEvent(const TEvent& e)
@@ -81,7 +70,9 @@ public:
     void close();
 
 private:
-    std::shared_ptr<WindowData> m_windowData = {};
+    GLFWwindow* m_window  = {};
+    uint32_t    m_width   = {};
+    uint32_t    m_height  = {};
 
 private:
     template <typename TEvent>
