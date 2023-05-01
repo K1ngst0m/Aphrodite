@@ -16,7 +16,7 @@ private:
                                          reckless::timestamp_field  // Then timestamp field
                                          >;
 
-    Logger() : m_writer{"log.txt"}, m_logger{&m_writer} {}
+    Logger() : m_fileWriter{"log.txt"}, m_logger{&m_stdcoutWriter} {}
 
 public:
     static Logger* g_logger;
@@ -30,10 +30,21 @@ public:
     }
 
 private:
-    reckless::file_writer m_writer{"log.txt"};
-    log_t                 m_logger;
+    reckless::file_writer   m_fileWriter{"log.txt"};
+    reckless::stdout_writer m_stdcoutWriter{};
+    log_t                   m_logger;
 };
 inline Logger* Logger::g_logger = nullptr;
 }  // namespace aph
+
+#define CM_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug(__VA_ARGS__); } while(0)
+#define CM_LOG_WARN(...) do { ::aph::Logger::Get()->warn( __VA_ARGS__); } while(0)
+#define CM_LOG_INFO(...) do { ::aph::Logger::Get()->info(__VA_ARGS__); } while(0)
+#define CM_LOG_ERR(...) do { ::aph::Logger::Get()->error(__VA_ARGS__); } while(0)
+
+#define VK_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug("[VK] " __VA_ARGS__); } while(0)
+#define VK_LOG_WARN(...) do { ::aph::Logger::Get()->warn("[VK] " __VA_ARGS__); } while(0)
+#define VK_LOG_INFO(...) do { ::aph::Logger::Get()->info("[VK] " __VA_ARGS__); } while(0)
+#define VK_LOG_ERR(...) do { ::aph::Logger::Get()->error("[VK] " __VA_ARGS__); } while(0)
 
 #endif  // LOGGER_H_

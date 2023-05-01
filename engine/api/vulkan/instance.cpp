@@ -1,5 +1,6 @@
 #include "instance.h"
 #include "physicalDevice.h"
+#include "common/logger.h"
 
 #ifdef APH_DEBUG
 namespace
@@ -38,19 +39,20 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
                                              VkDebugUtilsMessageTypeFlagsEXT             messageType,
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
+    auto msg = std::string(pCallbackData->pMessage);
     switch(messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        std::cerr << "[DEBUG] >>> " << pCallbackData->pMessage << std::endl;
+        VK_LOG_DEBUG("%s", msg);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        std::cerr << "[INFO] >>> " << pCallbackData->pMessage << std::endl;
+        VK_LOG_INFO("%s", msg);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        std::cerr << "[WARNING] >>> " << pCallbackData->pMessage << std::endl;
+        VK_LOG_WARN("%s", msg);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        std::cerr << "[ERROR] >>> " << pCallbackData->pMessage << std::endl;
+        VK_LOG_ERR("%s", msg);
         break;
 
     default:

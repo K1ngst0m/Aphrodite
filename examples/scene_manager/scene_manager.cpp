@@ -1,7 +1,9 @@
 #include "scene_manager.h"
 #include "renderer/renderer.h"
 
-scene_manager::scene_manager() : aph::BaseApp("scene_manager") {}
+scene_manager::scene_manager() : aph::BaseApp("scene_manager")
+{
+}
 
 void scene_manager::init()
 {
@@ -39,19 +41,15 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    aph::Logger::Get()->info("init window: [%d, %d]", m_options.windowWidth, m_options.windowHeight);
+    CM_LOG_INFO("init window: [%d, %d]", m_options.windowWidth, m_options.windowHeight);
 
     m_window = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
-    m_window->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e){
-        return onMouseBtn(e);
-    });
-    m_window->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e){
-        return onKeyDown(e);
-    });
-    m_window->registerEventHandler<aph::MouseMoveEvent>([this](const aph::MouseMoveEvent& e){
-        return onMouseMove(e);
-    });
+    m_window->registerEventHandler<aph::MouseButtonEvent>(
+        [this](const aph::MouseButtonEvent& e) { return onMouseBtn(e); });
+    m_window->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e) { return onKeyDown(e); });
+    m_window->registerEventHandler<aph::MouseMoveEvent>(
+        [this](const aph::MouseMoveEvent& e) { return onMouseMove(e); });
 }
 
 void scene_manager::setupScene()
@@ -88,8 +86,17 @@ void scene_manager::setupScene()
 
     // load from gltf file
     {
-        if(!m_options.modelPath.empty()) { m_modelNode = m_scene->createMeshesFromFile(m_options.modelPath); }
-        else { m_modelNode = m_scene->createMeshesFromFile(aph::asset::GetModelDir() / "DamagedHelmet.glb"); }
+        if(!m_options.modelPath.empty())
+        {
+            CM_LOG_INFO("Loading model from file: '%s'", m_options.modelPath);
+            m_modelNode = m_scene->createMeshesFromFile(m_options.modelPath);
+        }
+        else
+        {
+            auto modelPath = aph::asset::GetModelDir() / "DamagedHelmet.glb";
+            CM_LOG_INFO("Loading model from file: '%s'", modelPath);
+            m_modelNode = m_scene->createMeshesFromFile(modelPath);
+        }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
         // auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
@@ -109,23 +116,34 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
-    aph::Logger::Get()->info("init renderer: max frames %d", config.maxFrames);
+    CM_LOG_INFO("init renderer: max frames %d", config.maxFrames);
     m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
 }
 
-bool scene_manager::onKeyDown(const aph::KeyboardEvent & event)
+bool scene_manager::onKeyDown(const aph::KeyboardEvent& event)
 {
     using namespace aph;
     if(event.m_state == aph::KeyState::Pressed)
     {
         switch(event.m_key)
         {
-        case Key::Escape: m_window->close(); break;
-        case Key::W: m_cameraController->move(Direction::UP, true); break;
-        case Key::A: m_cameraController->move(Direction::LEFT, true); break;
-        case Key::S: m_cameraController->move(Direction::DOWN, true); break;
-        case Key::D: m_cameraController->move(Direction::RIGHT, true); break;
-        default: break;
+        case Key::Escape:
+            m_window->close();
+            break;
+        case Key::W:
+            m_cameraController->move(Direction::UP, true);
+            break;
+        case Key::A:
+            m_cameraController->move(Direction::LEFT, true);
+            break;
+        case Key::S:
+            m_cameraController->move(Direction::DOWN, true);
+            break;
+        case Key::D:
+            m_cameraController->move(Direction::RIGHT, true);
+            break;
+        default:
+            break;
         }
     }
 
@@ -133,19 +151,29 @@ bool scene_manager::onKeyDown(const aph::KeyboardEvent & event)
     {
         switch(event.m_key)
         {
-        case Key::W: m_cameraController->move(Direction::UP, false); break;
-        case Key::A: m_cameraController->move(Direction::LEFT, false); break;
-        case Key::S: m_cameraController->move(Direction::DOWN, false); break;
-        case Key::D: m_cameraController->move(Direction::RIGHT, false); break;
-        default: break;
+        case Key::W:
+            m_cameraController->move(Direction::UP, false);
+            break;
+        case Key::A:
+            m_cameraController->move(Direction::LEFT, false);
+            break;
+        case Key::S:
+            m_cameraController->move(Direction::DOWN, false);
+            break;
+        case Key::D:
+            m_cameraController->move(Direction::RIGHT, false);
+            break;
+        default:
+            break;
         }
     }
 
     return true;
 }
 
-bool scene_manager::onMouseBtn(const aph::MouseButtonEvent& event) {
-    if (event.m_button == aph::MouseButton::Right)
+bool scene_manager::onMouseBtn(const aph::MouseButtonEvent& event)
+{
+    if(event.m_button == aph::MouseButton::Right)
     {
         m_cameraController->setCursorEnabled(event.m_pressed);
     }
@@ -162,13 +190,13 @@ int main(int argc, char** argv)
 {
     scene_manager app;
 
-	int exitCode;
+    int               exitCode;
     aph::CLICallbacks cbs;
-    cbs.add("--width", [&](aph::CLIParser &parser) { app.m_options.windowWidth = parser.nextUint(); });
-    cbs.add("--height", [&](aph::CLIParser &parser) { app.m_options.windowHeight = parser.nextUint(); });
-    cbs.add("--model", [&](aph::CLIParser &parser) { app.m_options.modelPath = parser.nextString(); });
-    cbs.m_errorHandler = [&]() { aph::Logger::Get()->error("Failed to parse CLI arguments for GLFW.\n"); };
-    if (!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
+    cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
+    cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
+    cbs.add("--model", [&](aph::CLIParser& parser) { app.m_options.modelPath = parser.nextString(); });
+    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments for GLFW.\n"); };
+    if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
         return exitCode;
 
     app.init();

@@ -237,7 +237,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                     break;
                 }
                 default:
-                    aph::Logger::Get()->error("Index component type %s not supported!\n", accessor.componentType);
+                    CM_LOG_ERR("Index component type %s not supported!\n", accessor.componentType);
                     return;
                 }
             }
@@ -380,7 +380,7 @@ SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* paren
     }
     else
     {
-        aph::Logger::Get()->error("%s\n", error);
+        CM_LOG_ERR("%s\n", error);
         assert("Could not open the glTF file.");
         return {};
     }

@@ -26,8 +26,8 @@ private:
     void setupRenderer();
     void setupScene();
 
-    bool onKeyDown(const aph::KeyboardEvent & event);
-    bool onMouseMove(const aph::MouseMoveEvent & event);
+    bool onKeyDown(const aph::KeyboardEvent& event);
+    bool onMouseMove(const aph::MouseMoveEvent& event);
     bool onMouseBtn(const aph::MouseButtonEvent& event);
 
 private:
