@@ -44,15 +44,18 @@ public:
         std::unique_ptr<TRenderer> renderer = {};
         if constexpr(std::is_same<TRenderer, vk::Renderer>::value)
         {
+            CM_LOG_INFO("Init Common Renderer.");
             renderer = std::make_unique<vk::Renderer>(window, config);
         }
         else if constexpr(std::is_same<TRenderer, vk::SceneRenderer>::value)
         {
+            CM_LOG_INFO("Init Scene Renderer.");
             renderer = std::make_unique<vk::SceneRenderer>(window, config);
         }
         else
         {
-            static_assert("current type of the renderer is not supported.");
+            CM_LOG_ERR("current type of the renderer is not supported.");
+            assert(false);
         }
         return renderer;
     }

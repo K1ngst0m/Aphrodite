@@ -15,8 +15,14 @@ enum class CameraType
     PERSPECTIVE,
 };
 
+struct Light;
 struct Camera : public Object
 {
+    Camera(Light * light):
+        Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
+        m_cameraType(CameraType::PERSPECTIVE)
+    {
+    }
     Camera(CameraType cameraType);
     ~Camera() override = default;
 

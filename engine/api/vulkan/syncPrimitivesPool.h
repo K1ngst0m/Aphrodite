@@ -19,7 +19,7 @@ public:
     VkResult releaseFence(VkFence fence);
     bool     Exists(VkFence fence);
 
-    VkResult acquireTimelineSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores);
+    VkResult acquireTimelineSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores, uint32_t init = 0);
     VkResult acquireSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores);
     VkResult ReleaseSemaphores(uint32_t semaphoreCount, const VkSemaphore* pSemaphores);
     bool     Exists(VkSemaphore semaphore);

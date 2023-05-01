@@ -10,10 +10,9 @@ namespace aph
 class Logger
 {
 private:
-    using log_t = reckless::severity_log<reckless::indent<4>,       // 4 spaces of indent
-                                         ' ',                       // Field separator
-                                         reckless::severity_field,  // Show severity marker (D/I/W/E) first
-                                         reckless::timestamp_field  // Then timestamp field
+    using log_t = reckless::severity_log<reckless::indent<4>,      // 4 spaces of indent
+                                         ' ',                      // Field separator
+                                         reckless::severity_field  // Show severity marker (D/I/W/E) first
                                          >;
 
     Logger() : m_fileWriter{"log.txt"}, m_logger{&m_stdcoutWriter} {}
@@ -37,10 +36,10 @@ private:
 inline Logger* Logger::g_logger = nullptr;
 }  // namespace aph
 
-#define CM_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug(__VA_ARGS__); } while(0)
-#define CM_LOG_WARN(...) do { ::aph::Logger::Get()->warn( __VA_ARGS__); } while(0)
-#define CM_LOG_INFO(...) do { ::aph::Logger::Get()->info(__VA_ARGS__); } while(0)
-#define CM_LOG_ERR(...) do { ::aph::Logger::Get()->error(__VA_ARGS__); } while(0)
+#define CM_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug("[APH] " __VA_ARGS__); } while(0)
+#define CM_LOG_WARN(...) do { ::aph::Logger::Get()->warn("[APH] " __VA_ARGS__); } while(0)
+#define CM_LOG_INFO(...) do { ::aph::Logger::Get()->info("[APH] " __VA_ARGS__); } while(0)
+#define CM_LOG_ERR(...) do { ::aph::Logger::Get()->error("[APH] " __VA_ARGS__); } while(0)
 
 #define VK_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug("[VK] " __VA_ARGS__); } while(0)
 #define VK_LOG_WARN(...) do { ::aph::Logger::Get()->warn("[VK] " __VA_ARGS__); } while(0)

@@ -69,11 +69,10 @@ void SceneRenderer::load(Scene* scene)
     _initSetLayout();
     _initSet();
 
+    _initShadow();
     _initGbuffer();
     _initGeneral();
     _initSkybox();
-
-    _initPipeline();
 }
 
 void SceneRenderer::cleanup()
@@ -115,6 +114,7 @@ void SceneRenderer::recordAll()
     enum CBIdx
     {
         GEOMETRY,
+        SHADOW,
         LIGHTING,
         POSTFX,
         CB_MAX,
@@ -122,7 +122,12 @@ void SceneRenderer::recordAll()
     CommandBuffer* cb[CB_MAX] = {};
     m_pDevice->allocateCommandBuffers(CB_MAX, cb, queue);
 
+    // TODO multi thread
     {
+        cb[SHADOW]->begin();
+        recordShadow(cb[SHADOW]);
+        cb[SHADOW]->end();
+
         cb[GEOMETRY]->begin();
         recordDeferredGeometry(cb[GEOMETRY]);
         cb[GEOMETRY]->end();
@@ -136,15 +141,42 @@ void SceneRenderer::recordAll()
         cb[POSTFX]->end();
     }
 
-    std::array<VkSemaphoreSubmitInfo, CB_MAX>     waitInfo;
-    std::array<VkSemaphoreSubmitInfo, CB_MAX>     signalInfo;
+    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX>     waitSemaphoreInfos;
+    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX>     signalSemaphoreInfos;
     std::array<VkCommandBufferSubmitInfo, CB_MAX> cbSubmitInfo;
     std::vector<VkSubmitInfo2>                    submitInfos(CB_MAX);
+
+    {
+        // timeline
+        VkSemaphore& timelineMain = m_timelineMain[m_frameIdx];
+        VkSemaphore timelineShadow{};
+
+        m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineMain);
+        m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
+
+        // 1 geometry && shadow
+        signalSemaphoreInfos[GEOMETRY].push_back({.semaphore = timelineMain, .value = 1});
+        signalSemaphoreInfos[SHADOW].push_back({.semaphore = timelineShadow, .value = 1});
+
+        // 2 lighting
+        waitSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineShadow, .value = 1});
+        waitSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineMain, .value = 1});
+
+        signalSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineMain, .value = 2});
+
+        // 3 postfx
+        waitSemaphoreInfos[POSTFX].push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
+        waitSemaphoreInfos[POSTFX].push_back({.semaphore = timelineMain, .value = 2});
+
+        signalSemaphoreInfos[POSTFX].push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
+        signalSemaphoreInfos[POSTFX].push_back({.semaphore = timelineMain, .value = UINT64_MAX});
+    }
+
     for(auto idx = 0; idx < CB_MAX; idx++)
     {
         auto& cbSI   = cbSubmitInfo[idx];
-        auto& waitSI = waitInfo[idx];
-        auto& sigSI  = signalInfo[idx];
+        auto& waitSI = waitSemaphoreInfos[idx];
+        auto& sigSI  = signalSemaphoreInfos[idx];
         auto& si     = submitInfos[idx];
 
         {
@@ -154,58 +186,31 @@ void SceneRenderer::recordAll()
             cbSI.deviceMask    = 0;
         }
 
+        for (auto& wait : waitSI)
         {
-            waitSI.pNext       = nullptr;
-            waitSI.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            waitSI.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-            waitSI.deviceIndex = 0;
+            wait.pNext       = nullptr;
+            wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            wait.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            wait.deviceIndex = 0;
+        }
 
-            sigSI.pNext       = nullptr;
-            sigSI.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            sigSI.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-            sigSI.deviceIndex = 0;
+        for (auto& sig : sigSI)
+        {
+            sig.pNext       = nullptr;
+            sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            sig.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            sig.deviceIndex = 0;
         }
 
         si.pNext                    = nullptr;
         si.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
         si.commandBufferInfoCount   = 1;
         si.pCommandBufferInfos      = &cbSI;
-        si.waitSemaphoreInfoCount   = 1;
-        si.pWaitSemaphoreInfos      = &waitSI;
-        si.signalSemaphoreInfoCount = 1;
-        si.pSignalSemaphoreInfos    = &sigSI;
+        si.waitSemaphoreInfoCount   = waitSI.size();
+        si.pWaitSemaphoreInfos      = waitSI.data();
+        si.signalSemaphoreInfoCount = sigSI.size();
+        si.pSignalSemaphoreInfos    = sigSI.data();
     }
-
-    // timeline
-    VkSemaphore& timelineSemaphore = m_timelineSemaphore[m_frameIdx];
-    m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineSemaphore);
-    waitInfo[GEOMETRY].semaphore = m_renderSemaphore[m_frameIdx];
-
-    signalInfo[GEOMETRY].semaphore = timelineSemaphore;
-    signalInfo[GEOMETRY].value     = 1;
-
-    waitInfo[LIGHTING].semaphore   = timelineSemaphore;
-    waitInfo[LIGHTING].value       = 1;
-    signalInfo[LIGHTING].semaphore = timelineSemaphore;
-    signalInfo[LIGHTING].value     = 2;
-
-    waitInfo[POSTFX].semaphore = timelineSemaphore;
-    waitInfo[POSTFX].value     = 2;
-
-    signalInfo[POSTFX].semaphore = m_presentSemaphore[m_frameIdx];
-
-    std::array<VkSemaphoreSubmitInfo, 2> sigSis;
-    sigSis[0] = signalInfo[POSTFX];
-    sigSis[1] = {
-        .sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .pNext       = nullptr,
-        .semaphore   = timelineSemaphore,
-        .value       = UINT64_MAX,
-        .stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .deviceIndex = 0,
-    };
-    submitInfos[POSTFX].signalSemaphoreInfoCount = sigSis.size();
-    submitInfos[POSTFX].pSignalSemaphoreInfos    = sigSis.data();
 
     VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), VK_NULL_HANDLE));
 }
@@ -217,8 +222,8 @@ void SceneRenderer::update(float deltaTime)
     {
         SceneInfo sceneInfo = {
             .ambient     = glm::vec4(m_scene->getAmbient(), 0.0f),
-            .cameraCount = static_cast<uint32_t>(m_cameraNodeList.size()),
-            .lightCount  = static_cast<uint32_t>(m_lightNodeList.size()),
+            .cameraCount = static_cast<uint32_t>(m_cameraList.size()),
+            .lightCount  = static_cast<uint32_t>(m_lightList.size()),
         };
         m_buffers[BUFFER_SCENE_INFO]->write(&sceneInfo, 0, sizeof(SceneInfo));
     }
@@ -230,9 +235,9 @@ void SceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_TRANSFORM]->write(&data, sizeof(glm::mat4) * idx, sizeof(glm::mat4));
     }
 
-    for(uint32_t idx = 0; idx < m_cameraNodeList.size(); idx++)
+    for(uint32_t idx = 0; idx < m_cameraList.size(); idx++)
     {
-        const auto& camera = m_cameraNodeList[idx]->getObject<Camera>();
+        const auto& camera = m_cameraList[idx];
         CameraInfo  cameraData{
              .view    = camera->m_view,
              .proj    = camera->m_projection,
@@ -241,9 +246,9 @@ void SceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
 
-    for(uint32_t idx = 0; idx < m_lightNodeList.size(); idx++)
+    for(uint32_t idx = 0; idx < m_lightList.size(); idx++)
     {
-        const auto& light = m_lightNodeList[idx]->getObject<Light>();
+        const auto& light = m_lightList[idx];
         LightInfo   lightData{
               .color     = {light->m_color * light->m_intensity, 1.0f},
               .position  = {light->m_position, 1.0f},
@@ -259,6 +264,7 @@ void SceneRenderer::update(float deltaTime)
 
 void SceneRenderer::_initSet()
 {
+    VK_LOG_INFO("Init descriptor set.");
     VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
@@ -292,6 +298,7 @@ void SceneRenderer::_initSet()
 
 void SceneRenderer::_loadScene()
 {
+    bool enabledShadow = true;
     m_scene->getRootNode()->traversalChildren([&](SceneNode* node) {
         switch(node->getAttachType())
         {
@@ -302,12 +309,12 @@ void SceneRenderer::_loadScene()
         break;
         case ObjectType::CAMERA:
         {
-            m_cameraNodeList.push_back(node);
+            m_cameraList.push_back(node->getObject<Camera>());
         }
         break;
         case ObjectType::LIGHT:
         {
-            m_lightNodeList.push_back(node);
+            m_lightList.push_back(node->getObject<Light>());
         }
         break;
         default:
@@ -315,10 +322,19 @@ void SceneRenderer::_loadScene()
             break;
         }
     });
+
+    {
+        // TODO for testing
+        auto* cam = new Camera{CameraType::PERSPECTIVE};
+        cam->m_view = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        cam->m_projection = glm::perspective(glm::radians(100.0f), 1.0f, 0.1f, 64.0f);
+        m_cameraList.push_back(cam);
+    }
 }
 
 void SceneRenderer::_initGbuffer()
 {
+    VK_LOG_INFO("Init deferred pass.");
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
     m_images[IMAGE_GBUFFER_ALBEDO].resize(m_config.maxFrames);
     m_images[IMAGE_GBUFFER_NORMAL].resize(m_config.maxFrames);
@@ -368,10 +384,67 @@ void SceneRenderer::_initGbuffer()
             });
         }
     }
+
+    // geometry graphics pipeline
+    {
+        GraphicsPipelineCreateInfo createInfo{};
+
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        std::vector<VkFormat> colorFormats = {VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT,
+                                              VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
+                                              VK_FORMAT_R8G8B8A8_UNORM};
+        createInfo.renderingCreateInfo     = {
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+                .pColorAttachmentFormats = colorFormats.data(),
+                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        };
+
+        // createInfo.multisampling.rasterizationSamples = m_sampleCount;
+        // createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        // createInfo.multisampling.minSampleShading     = 0.2f;
+        createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
+
+        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "geometry.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "geometry.frag.spv");
+
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
+    }
+
+    // deferred light pbr pipeline
+    {
+        GraphicsPipelineCreateInfo createInfo{{}};
+
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
+        createInfo.renderingCreateInfo     = {
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+                .pColorAttachmentFormats = colorFormats.data(),
+                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        };
+
+        createInfo.multisampling.rasterizationSamples = m_sampleCount;
+        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        createInfo.multisampling.minSampleShading     = 0.2f;
+
+        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP],
+                                 m_setLayouts[SET_LAYOUT_GBUFFER]};
+        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr_deferred.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr_deferred.frag.spv");
+
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
+    }
 }
 
 void SceneRenderer::_initGeneral()
 {
+    VK_LOG_INFO("Init general pass.");
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
 
     m_images[IMAGE_GENERAL_COLOR].resize(m_config.maxFrames);
@@ -420,10 +493,20 @@ void SceneRenderer::_initGeneral()
             });
         }
     }
+
+    // postfx compute pipeline
+    {
+        std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        ComputePipelineCreateInfo createInfo{};
+        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
+        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
+        VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+    }
 }
 
 void SceneRenderer::_initSetLayout()
 {
+    VK_LOG_INFO("Init descriptor set.");
     // scene
     {
         std::vector<ResourcesBinding> bindings{
@@ -449,6 +532,7 @@ void SceneRenderer::_initSetLayout()
                 samplerInfo.anisotropyEnable = VK_TRUE;
             }
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW]));
 
             samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
@@ -458,6 +542,7 @@ void SceneRenderer::_initSetLayout()
         std::vector<ResourcesBinding> bindings{
             {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_TEXTURE]},
             {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_CUBEMAP]},
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_SHADOW]},
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
@@ -476,6 +561,7 @@ void SceneRenderer::_initSetLayout()
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER], true);
     }
@@ -483,6 +569,7 @@ void SceneRenderer::_initSetLayout()
 
 void SceneRenderer::_initGpuResources()
 {
+    VK_LOG_INFO("Init GPU resources.");
     // create scene info buffer
     {
         BufferCreateInfo createInfo{
@@ -496,7 +583,7 @@ void SceneRenderer::_initGpuResources()
     // create camera buffer
     {
         BufferCreateInfo createInfo{
-            .size   = static_cast<uint32_t>(m_cameraNodeList.size() * sizeof(CameraInfo)),
+            .size   = static_cast<uint32_t>(m_cameraList.size() * sizeof(CameraInfo)),
             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .domain = BufferDomain::Host,
         };
@@ -507,7 +594,7 @@ void SceneRenderer::_initGpuResources()
     // create light buffer
     {
         BufferCreateInfo createInfo{
-            .size   = static_cast<uint32_t>(m_lightNodeList.size() * sizeof(LightInfo)),
+            .size   = static_cast<uint32_t>(m_lightList.size() * sizeof(LightInfo)),
             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .domain = BufferDomain::Host,
         };
@@ -591,6 +678,7 @@ void SceneRenderer::_initGpuResources()
 
 void SceneRenderer::_initSkybox()
 {
+    VK_LOG_INFO("Init skybox pass.");
     // skybox vertex
     {
         constexpr std::array skyboxVertices = {-1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
@@ -619,6 +707,31 @@ void SceneRenderer::_initSkybox()
             m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_CUBE_VERTEX], skyboxVertices.data());
         }
     }
+
+    // skybox graphics pipeline
+    {
+        GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
+        auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
+
+        createInfo.renderingCreateInfo = {
+            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+            .pColorAttachmentFormats = colorFormats.data(),
+            .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        };
+        createInfo.multisampling.rasterizationSamples = m_sampleCount;
+        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        createInfo.multisampling.minSampleShading     = 0.2f;
+
+        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
+
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+    }
+
 }
 
 void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
@@ -711,6 +824,9 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                 VkDescriptorImageInfo emissiveImageInfo{
                     .imageView   = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx]->getView()->getHandle(),
                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo shadowMapInfo{
+                    .imageView   = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx]->getView()->getHandle(),
+                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
                 std::vector<VkWriteDescriptorSet> writes{
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
@@ -719,6 +835,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
                                              &metallicRoughnessAOImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
+                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
                 };
                 pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_LIGHTING], writes, 2);
             }
@@ -736,6 +853,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
         }
     }
+
 }
 
 void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
@@ -906,6 +1024,104 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
                                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
         }
     }
+
+}
+
+void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
+{
+    // TODO
+    VkExtent2D extent{.width  = 4096, .height = 4096,};
+    VkViewport viewport = init::viewport(extent);
+    VkRect2D   scissor  = init::rect2D(extent);
+
+    // dynamic state
+    pCommandBuffer->setViewport(viewport);
+    pCommandBuffer->setSissor(scissor);
+
+    // forward pass
+    {
+        ImageView*                pDepthAttachment   = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx]->getView();
+        VkRenderingAttachmentInfo depthAttachmentInfo{
+            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView          = pDepthAttachment->getHandle(),
+            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue         = {.depthStencil{1.0f, 0}},
+        };
+
+        VkRenderingInfo renderingInfo{
+            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+            .renderArea{
+                .offset{0, 0},
+                .extent{extent},
+            },
+            .layerCount           = 1,
+            .pDepthAttachment     = &depthAttachmentInfo,
+        };
+
+        {
+            pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        }
+
+        pCommandBuffer->beginRendering(renderingInfo);
+
+        // draw scene object
+        {
+            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SHADOW]);
+            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SHADOW], 0, 1, &m_sceneSet);
+            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
+
+            for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
+            {
+                const auto& node = m_meshNodeList[nodeId];
+                auto        mesh = node->getObject<Mesh>();
+                pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_SHADOW],
+                                              {ShaderStage::VS}, offsetof(ObjectInfo, nodeId),
+                                              sizeof(ObjectInfo::nodeId), &nodeId);
+                if(mesh->m_indexOffset > -1)
+                {
+                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
+                    switch(mesh->m_indexType)
+                    {
+                    case IndexType::UINT16:
+                        indexType = VK_INDEX_TYPE_UINT16;
+                        break;
+                    case IndexType::UINT32:
+                        indexType = VK_INDEX_TYPE_UINT32;
+                        break;
+                    default:
+                        assert("undefined behavior.");
+                        break;
+                    }
+                    pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
+                }
+                for(const auto& subset : mesh->m_subsets)
+                {
+                    if(subset.indexCount > 0)
+                    {
+                        if(subset.hasIndices)
+                        {
+                            pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
+                                                        mesh->m_vertexOffset, 0);
+                        }
+                        else
+                        {
+                            pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
+                        }
+                    }
+                }
+            }
+        }
+
+        pCommandBuffer->endRendering();
+
+        {
+            pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(),
+                                                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+        }
+    }
 }
 
 void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
@@ -1056,7 +1272,34 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
                                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
         }
     }
+
+    // forward graphics pipeline
+    {
+        GraphicsPipelineCreateInfo createInfo{};
+
+        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
+        createInfo.renderingCreateInfo     = {
+                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+                .pColorAttachmentFormats = colorFormats.data(),
+                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        };
+
+        createInfo.multisampling.rasterizationSamples = m_sampleCount;
+        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        createInfo.multisampling.minSampleShading     = 0.2f;
+
+        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
+
+        VK_CHECK_RESULT(
+            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
+    }
 }
+
 void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
 {
     // post fx
@@ -1103,8 +1346,8 @@ void SceneRenderer::drawUI(float deltaTime)
                     auto ambient = m_scene->getAmbient();
                     ui::colorPicker("ambient", &ambient[0]);
                     m_scene->setAmbient(ambient);
-                    ui::text("camera count : %d", m_cameraNodeList.size());
-                    ui::text("light count : %d", m_lightNodeList.size());
+                    ui::text("camera count : %d", m_cameraList.size());
+                    ui::text("light count : %d", m_lightList.size());
                 }
 
                 if(ui::header("Main Camera"))
@@ -1137,13 +1380,13 @@ void SceneRenderer::drawUI(float deltaTime)
                     }
                 }
 
-                for(uint32_t idx = 0; idx < m_lightNodeList.size(); idx++)
+                for(uint32_t idx = 0; idx < m_lightList.size(); idx++)
                 {
                     char lightName[100];
                     sprintf(lightName, "light [%d]", idx);
                     if(ui::header(lightName))
                     {
-                        auto light = m_lightNodeList[idx]->getObject<Light>();
+                        auto light = m_lightList[idx];
                         auto type  = light->m_type;
                         if(type == LightType::POINT)
                         {
@@ -1165,121 +1408,48 @@ void SceneRenderer::drawUI(float deltaTime)
 
     ImGui::Render();
 }
-void SceneRenderer::_initPipeline()
+
+void SceneRenderer::_initShadow()
 {
-    // forward graphics pipeline
+    VK_LOG_INFO("Init shadow pass.");
+    m_images[IMAGE_SHADOW_DEPTH].resize(m_config.maxFrames);
+    for(auto idx = 0; idx < m_config.maxFrames; idx++)
+    {
+        auto &depth = m_images[IMAGE_SHADOW_DEPTH][idx];
+        ImageCreateInfo createInfo{
+            // TODO depth map size
+            .extent    = {4096, 4096, 1},
+            .usage     = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .domain    = ImageDomain::Device,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format    = m_pDevice->getDepthFormat(),
+        };
+        VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
+        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
+            cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        });
+    }
+
+    // shadow pipeline
     {
         GraphicsPipelineCreateInfo createInfo{};
 
         auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
         createInfo.renderingCreateInfo     = {
                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
                 .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
-
+        createInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+        createInfo.rasterizer.depthBiasEnable = VK_TRUE;
+        createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
+        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
         createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
+        createInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)}};
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "shadow.vert.spv");
 
         VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
-    }
-
-    // geometry graphics pipeline
-    {
-        GraphicsPipelineCreateInfo createInfo{};
-
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT,
-                                              VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
-                                              VK_FORMAT_R8G8B8A8_UNORM};
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
-
-        // createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        // createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        // createInfo.multisampling.minSampleShading     = 0.2f;
-        createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
-
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "geometry.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "geometry.frag.spv");
-
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
-    }
-
-    // deferred light pbr pipeline
-    {
-        GraphicsPipelineCreateInfo createInfo{{}};
-
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
-
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
-
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP],
-                                 m_setLayouts[SET_LAYOUT_GBUFFER]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr_deferred.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr_deferred.frag.spv");
-
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
-    }
-
-    // skybox graphics pipeline
-    {
-        GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
-        auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
-
-        createInfo.renderingCreateInfo = {
-            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-            .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-            .pColorAttachmentFormats = colorFormats.data(),
-            .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
-
-        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
-
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
-    }
-
-    // postfx compute pipeline
-    {
-        std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        ComputePipelineCreateInfo createInfo{};
-        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
-        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
-        VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
     }
 }
 }  // namespace aph::vk

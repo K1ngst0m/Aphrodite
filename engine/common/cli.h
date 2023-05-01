@@ -26,7 +26,7 @@ public:
     bool parse();
     void end();
 
-    unsigned    nextUint();
+    uint32_t    nextUint();
     double      nextDouble();
     const char* nextString();
 

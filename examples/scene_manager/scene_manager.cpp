@@ -41,7 +41,6 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    CM_LOG_INFO("init window: [%d, %d]", m_options.windowWidth, m_options.windowHeight);
 
     m_window = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
@@ -88,13 +87,11 @@ void scene_manager::setupScene()
     {
         if(!m_options.modelPath.empty())
         {
-            CM_LOG_INFO("Loading model from file: '%s'", m_options.modelPath);
             m_modelNode = m_scene->createMeshesFromFile(m_options.modelPath);
         }
         else
         {
             auto modelPath = aph::asset::GetModelDir() / "DamagedHelmet.glb";
-            CM_LOG_INFO("Loading model from file: '%s'", modelPath);
             m_modelNode = m_scene->createMeshesFromFile(modelPath);
         }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
@@ -116,7 +113,6 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
-    CM_LOG_INFO("init renderer: max frames %d", config.maxFrames);
     m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
 }
 
@@ -195,7 +191,7 @@ int main(int argc, char** argv)
     cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
     cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
     cbs.add("--model", [&](aph::CLIParser& parser) { app.m_options.modelPath = parser.nextString(); });
-    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments for GLFW.\n"); };
+    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments.\n"); };
     if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
         return exitCode;
 

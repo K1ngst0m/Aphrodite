@@ -128,7 +128,7 @@ bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
     return result;
 }
 
-VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores)
+VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, VkSemaphore* pSemaphores, uint32_t init)
 {
     VkResult result = VK_SUCCESS;
 
@@ -150,7 +150,7 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
             .sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
             .pNext         = nullptr,
             .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-            .initialValue  = 0,
+            .initialValue  = init,
         };
 
         VkSemaphoreCreateInfo createInfo{
@@ -160,7 +160,9 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
         };
         result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
         if(result != VK_SUCCESS)
+        {
             break;
+        }
 
         m_allTimelineSemahpores.emplace(pSemaphores[i]);
     }

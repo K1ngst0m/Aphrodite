@@ -95,7 +95,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
     // init default resources
     if(m_config.flags & RENDER_CFG_DEFAULT_RES)
     {
-        m_timelineSemaphore.resize(m_config.maxFrames);
+        m_timelineMain.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
         m_presentSemaphore.resize(m_config.maxFrames);
 
@@ -295,7 +295,7 @@ void Renderer::beginFrame()
             .pNext          = nullptr,
             .flags          = 0,
             .semaphoreCount = 1,
-            .pSemaphores    = &m_timelineSemaphore[m_frameIdx],
+            .pSemaphores    = &m_timelineMain[m_frameIdx],
             .pValues        = &waitValue,
         };
         vkWaitSemaphores(m_pDevice->getHandle(), &waitInfo, UINT64_MAX);

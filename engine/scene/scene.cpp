@@ -342,6 +342,7 @@ Mesh* Scene::createMesh()
 
 SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* parent)
 {
+    CM_LOG_INFO("Loading model from file: '%s'", path);
     SceneNode* node = parent ? parent->createChildNode() : m_rootNode->createChildNode();
 
     tinygltf::Model    inputModel;

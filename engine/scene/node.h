@@ -82,7 +82,8 @@ public:
         }
         else
         {
-            static_assert("Invalid type of the object.");
+            CM_LOG_ERR("Invalid type of the object.");
+            assert(false);
         }
     }
 
@@ -95,7 +96,8 @@ public:
         }
         else
         {
-            static_assert("Invalid type of the object.");
+            CM_LOG_ERR("Invalid type of the object.");
+            assert(false);
         }
     }
 

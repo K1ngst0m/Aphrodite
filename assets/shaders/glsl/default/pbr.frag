@@ -64,6 +64,7 @@ layout( push_constant ) uniform constants
     uint matId;
 };
 
+
 Material mat = materials[matId];
 
 vec3 getNormal()

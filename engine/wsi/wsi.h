@@ -20,6 +20,7 @@ protected:
 public:
     static std::shared_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
     {
+        CM_LOG_INFO("Init window: [%d, %d]", width, height);
         return std::shared_ptr<WSI>(new WSI(width, height));
     }
 
@@ -51,7 +52,8 @@ public:
         }
         else
         {
-            static_assert("unexpected event type.");
+            CM_LOG_ERR("unexpected event type.");
+            assert(false);
         }
     }
 

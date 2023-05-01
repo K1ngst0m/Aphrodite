@@ -37,8 +37,10 @@ layout (set = 2, binding = 1) uniform texture2D normalMap;
 layout (set = 2, binding = 2) uniform texture2D albedoMap;
 layout (set = 2, binding = 3) uniform texture2D metallicRoughnessAOMap;
 layout (set = 2, binding = 4) uniform texture2D emissiveMap;
+layout (set = 2, binding = 5) uniform texture2D shadowMap;
 
 layout (set = 1, binding = 0) uniform sampler samp;
+layout (set = 1, binding = 2) uniform sampler shadowSamp;
 
 const float PI = 3.14159265359;
 
@@ -82,7 +84,40 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+float textureProj(vec4 shadowCoord, vec2 off)
+{
+    float shadow = 1.0;
+    if ( shadowCoord.z > -1.0 && shadowCoord.z < 1.0 )
+    {
+        float dist = texture(sampler2D(shadowMap, shadowSamp), shadowCoord.st + off).r;
+        if (shadowCoord.w > 0.0 && dist < shadowCoord.z)
+        {
+            shadow = ambientColor.x;
+        }
+    }
+    return shadow;
+}
+
+float ShadowCalculation(vec4 fragPosLightSpace)
+{
+    // perform perspective divide
+    vec3 projCoords = cameras[1].viewPos.xyz / cameras[1].viewPos.w;
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
+    float closestDepth = texture(sampler2D(shadowMap, shadowSamp), projCoords.xy).r;
+    // get depth of current fragment from light's perspective
+    float currentDepth = projCoords.z;
+    // check whether current frag pos is in shadow
+    float shadow = currentDepth > closestDepth  ? 1.0 : 0.0;
+
+    return shadow;
+}
+
+
 void main() {
+    float shadowDist = texture(sampler2D(shadowMap, shadowSamp), inUV).r;
+
     // Get G-Buffer values
     vec3 fragPos = texture(sampler2D(positionMap, samp), inUV).rgb;
     vec3 albedo = texture(sampler2D(albedoMap, samp), inUV).rgb;
@@ -131,7 +166,10 @@ void main() {
 
         float NdotL = max(dot(N, L), 0.0f);
 
+        float shadow = ShadowCalculation(cameras[1].view * cameras[1].viewPos);
+
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+        Lo *= shadow;
     }
 
     vec3 ambient = ambientColor.xyz * albedo * ao;

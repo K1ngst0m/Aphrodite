@@ -16,6 +16,7 @@ public:
     void cleanup();
     void update(float deltaTime);
     void recordAll();
+    void recordShadow(CommandBuffer* pCommandBuffer);
     void recordDeferredGeometry(CommandBuffer* pCommandBuffer);
     void recordDeferredLighting(CommandBuffer* pCommandBuffer);
     void recordForward(CommandBuffer* pCommandBuffer);
@@ -23,10 +24,10 @@ public:
 
 private:
     void drawUI(float deltaTime);
+    void _initShadow();
     void _initGbuffer();
     void _initGeneral();
     void _initSkybox();
-    void _initPipeline();
     void _initSetLayout();
     void _initGpuResources();
     void _initSet();
@@ -47,8 +48,7 @@ private:
     enum SamplerIndex
     {
         SAMP_TEXTURE,
-        // SAMP_SHADOW,
-        // SAMP_POSTFX,
+        SAMP_SHADOW,
         SAMP_CUBEMAP,
         SAMP_MAX,
     };
@@ -58,6 +58,7 @@ private:
         PIPELINE_GRAPHICS_GEOMETRY,
         PIPELINE_GRAPHICS_LIGHTING,
         PIPELINE_GRAPHICS_FORWARD,
+        PIPELINE_GRAPHICS_SHADOW,
         PIPELINE_GRAPHICS_SKYBOX,
         PIPELINE_COMPUTE_POSTFX,
         PIPELINE_MAX,
@@ -84,6 +85,7 @@ private:
         IMAGE_GBUFFER_EMISSIVE,
         IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO,
         IMAGE_GBUFFER_DEPTH,
+        IMAGE_SHADOW_DEPTH,
         IMAGE_GENERAL_COLOR,
         IMAGE_GENERAL_DEPTH,
         IMAGE_GENERAL_COLOR_MS,
@@ -106,8 +108,8 @@ private:
 private:
     Scene*                  m_scene = {};
     std::vector<SceneNode*> m_meshNodeList;
-    std::vector<SceneNode*> m_cameraNodeList;
-    std::vector<SceneNode*> m_lightNodeList;
+    std::vector<Camera*>    m_cameraList;
+    std::vector<Light*>     m_lightList;
 };
 }  // namespace aph::vk
 

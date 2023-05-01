@@ -37,6 +37,8 @@
 
 #include <stb/stb_image.h>
 
+#include "logger.h"
+
 namespace aph
 {
 enum class Result

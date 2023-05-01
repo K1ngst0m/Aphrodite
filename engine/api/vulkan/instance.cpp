@@ -39,6 +39,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
                                              VkDebugUtilsMessageTypeFlagsEXT             messageType,
                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
+    static uint32_t errCount = 0;
     auto msg = std::string(pCallbackData->pMessage);
     switch(messageSeverity)
     {
@@ -52,12 +53,17 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
         VK_LOG_WARN("%s", msg);
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        if (++errCount > 10)
+        {
+            std::abort();
+        }
         VK_LOG_ERR("%s", msg);
         break;
 
     default:
         break;
     }
+    aph::Logger::Get()->flush();
     return VK_FALSE;
 }
 
