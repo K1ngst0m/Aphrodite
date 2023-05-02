@@ -9,6 +9,7 @@ include(cmake/cflags.cmake)
 include(cmake/external.cmake)
 
 include_directories(external)
+include_directories(external/vulkan)
 include_directories(external/aixlog)
 include_directories(external/volk)
 include_directories(external/glm)
