@@ -17,6 +17,7 @@
 // Default fence timeout in nanoseconds
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
+#ifdef APH_DEBUG
 #define VK_CHECK_RESULT(f) \
     { \
         VkResult res = (f); \
@@ -24,9 +25,12 @@
         { \
             CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s\n", \
                                       aph::vk::utils::errorString(res), __FILE__, __LINE__); \
-            assert(res == VK_SUCCESS); \
+            std::abort(); \
         } \
     }
+#else
+#define VK_CHECK_RESULT(f) ((void)0)
+#endif
 
 namespace aph::vk::utils
 {

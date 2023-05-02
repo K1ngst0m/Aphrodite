@@ -54,8 +54,8 @@ public:
         }
         else
         {
-            CM_LOG_ERR("current type of the renderer is not supported.");
-            assert(false);
+            CM_LOG_ERR("Current type of the renderer is not supported.");
+            APH_ASSERT(false);
         }
         return renderer;
     }

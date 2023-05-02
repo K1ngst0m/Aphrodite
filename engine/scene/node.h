@@ -83,7 +83,7 @@ public:
         else
         {
             CM_LOG_ERR("Invalid type of the object.");
-            assert(false);
+            APH_ASSERT(false);
         }
     }
 
@@ -97,7 +97,7 @@ public:
         else
         {
             CM_LOG_ERR("Invalid type of the object.");
-            assert(false);
+            APH_ASSERT(false);
         }
     }
 

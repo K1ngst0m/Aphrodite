@@ -302,7 +302,8 @@ std::unique_ptr<Scene> Scene::Create(SceneType type)
     }
     default:
     {
-        assert("scene manager type not support.");
+        CM_LOG_ERR("scene manager type not support.");
+        APH_ASSERT(false);
         return {};
     }
     }
@@ -382,7 +383,7 @@ SceneNode* Scene::createMeshesFromFile(const std::string& path, SceneNode* paren
     else
     {
         CM_LOG_ERR("%s\n", error);
-        assert("Could not open the glTF file.");
+        APH_ASSERT(false);
         return {};
     }
 

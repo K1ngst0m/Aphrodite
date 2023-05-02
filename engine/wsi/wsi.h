@@ -53,7 +53,7 @@ public:
         else
         {
             CM_LOG_ERR("unexpected event type.");
-            assert(false);
+            APH_ASSERT(false);
         }
     }
 

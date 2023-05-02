@@ -241,7 +241,7 @@ void SceneRenderer::update(float deltaTime)
         CameraInfo  cameraData{
              .view    = camera->m_view,
              .proj    = camera->m_projection,
-             .viewPos = {camera->m_view[3]},
+             .viewPos = camera->m_view[3],
         };
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
@@ -264,7 +264,7 @@ void SceneRenderer::update(float deltaTime)
 
 void SceneRenderer::_initSet()
 {
-    VK_LOG_INFO("Init descriptor set.");
+    VK_LOG_DEBUG("Init descriptor set.");
     VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
@@ -298,7 +298,6 @@ void SceneRenderer::_initSet()
 
 void SceneRenderer::_loadScene()
 {
-    bool enabledShadow = true;
     m_scene->getRootNode()->traversalChildren([&](SceneNode* node) {
         switch(node->getAttachType())
         {
@@ -317,9 +316,7 @@ void SceneRenderer::_loadScene()
             m_lightList.push_back(node->getObject<Light>());
         }
         break;
-        default:
-            assert("unattached scene node.");
-            break;
+        default: break;
         }
     });
 
@@ -334,7 +331,7 @@ void SceneRenderer::_loadScene()
 
 void SceneRenderer::_initGbuffer()
 {
-    VK_LOG_INFO("Init deferred pass.");
+    VK_LOG_DEBUG("Init deferred pass.");
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
     m_images[IMAGE_GBUFFER_ALBEDO].resize(m_config.maxFrames);
     m_images[IMAGE_GBUFFER_NORMAL].resize(m_config.maxFrames);
@@ -444,7 +441,7 @@ void SceneRenderer::_initGbuffer()
 
 void SceneRenderer::_initGeneral()
 {
-    VK_LOG_INFO("Init general pass.");
+    VK_LOG_DEBUG("Init general pass.");
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
 
     m_images[IMAGE_GENERAL_COLOR].resize(m_config.maxFrames);
@@ -506,7 +503,7 @@ void SceneRenderer::_initGeneral()
 
 void SceneRenderer::_initSetLayout()
 {
-    VK_LOG_INFO("Init descriptor set.");
+    VK_LOG_DEBUG("Init descriptor set.");
     // scene
     {
         std::vector<ResourcesBinding> bindings{
@@ -569,7 +566,7 @@ void SceneRenderer::_initSetLayout()
 
 void SceneRenderer::_initGpuResources()
 {
-    VK_LOG_INFO("Init GPU resources.");
+    VK_LOG_DEBUG("Init GPU resources.");
     // create scene info buffer
     {
         BufferCreateInfo createInfo{
@@ -678,7 +675,7 @@ void SceneRenderer::_initGpuResources()
 
 void SceneRenderer::_initSkybox()
 {
-    VK_LOG_INFO("Init skybox pass.");
+    VK_LOG_DEBUG("Init skybox pass.");
     // skybox vertex
     {
         constexpr std::array skyboxVertices = {-1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f,
@@ -983,7 +980,8 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
                         indexType = VK_INDEX_TYPE_UINT32;
                         break;
                     default:
-                        assert("undefined behavior.");
+                        CM_LOG_ERR("undefined behavior.");
+                        APH_ASSERT(false);
                         break;
                     }
                     pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
@@ -1092,7 +1090,8 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
                         indexType = VK_INDEX_TYPE_UINT32;
                         break;
                     default:
-                        assert("undefined behavior.");
+                        CM_LOG_ERR("undefined behavior.");
+                        APH_ASSERT(false);
                         break;
                     }
                     pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
@@ -1234,7 +1233,8 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
                         indexType = VK_INDEX_TYPE_UINT32;
                         break;
                     default:
-                        assert("undefined behavior.");
+                        CM_LOG_ERR("undefined behavior.");
+                        APH_ASSERT(false);
                         break;
                     }
                     pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
@@ -1368,7 +1368,8 @@ void SceneRenderer::drawUI(float deltaTime)
                     }
                     else if(camType == CameraType::ORTHO)
                     {
-                        assert("TODO");
+                        CM_LOG_ERR("TODO");
+                        APH_ASSERT(false);
                         // auto camera = m_scene->getMainCamera();
                         // ui::text("position : [ %.2f, %.2f, %.2f ]", camera->m_position.x,
                         //                     camera->m_position.y, camera->m_position.z);
@@ -1411,7 +1412,7 @@ void SceneRenderer::drawUI(float deltaTime)
 
 void SceneRenderer::_initShadow()
 {
-    VK_LOG_INFO("Init shadow pass.");
+    VK_LOG_DEBUG("Init shadow pass.");
     m_images[IMAGE_SHADOW_DEPTH].resize(m_config.maxFrames);
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {

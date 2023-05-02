@@ -57,7 +57,7 @@ struct ImageViewCreateInfo
     VkFormat                format           = {VK_FORMAT_UNDEFINED};
     VkComponentMapping      components       = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
                                                 VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
-    VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_NONE, 0, 1, 0, 1};
+    VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
 };
 
 class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
