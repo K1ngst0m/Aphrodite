@@ -66,6 +66,8 @@ public:
     VkPipelineLayout     getPipelineLayout() { return m_pipelineLayout; }
     VkPipelineBindPoint  getBindPoint() { return m_bindPoint; }
 
+    VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size);
+
 protected:
     Device*                           m_pDevice        = {};
     VkRenderPass                      m_renderPass     = {};

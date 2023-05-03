@@ -41,7 +41,6 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-
     m_window = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
     m_window->registerEventHandler<aph::MouseButtonEvent>(
@@ -92,7 +91,7 @@ void scene_manager::setupScene()
         else
         {
             auto modelPath = aph::asset::GetModelDir() / "DamagedHelmet.glb";
-            m_modelNode = m_scene->createMeshesFromFile(modelPath);
+            m_modelNode    = m_scene->createMeshesFromFile(modelPath);
         }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 

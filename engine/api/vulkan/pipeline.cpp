@@ -26,7 +26,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
     {
         uint32_t location    = 0;
         uint32_t bindingSize = 0;
-        for(VertexComponent component : components)
+        for(const VertexComponent& component : components)
         {
             VkVertexInputAttributeDescription desc = vertexComponmentMap[component];
             desc.location                          = location;
@@ -73,4 +73,17 @@ Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo
     getHandle() = handle;
 }
 
+VkShaderStageFlags Pipeline::getConstantShaderStage(uint32_t offset, uint32_t size)
+{
+    VkShaderStageFlags stage = 0;
+    size += offset;
+    for (const auto& constant: m_constants)
+    {
+        if (offset >= size) {break;}
+        if (offset >= constant.size) {continue;}
+        stage |= constant.stageFlags;
+        offset += constant.size;
+    }
+    return stage;
+}
 }  // namespace aph::vk

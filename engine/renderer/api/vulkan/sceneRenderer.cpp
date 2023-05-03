@@ -825,17 +825,15 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         // skybox
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
-            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], {0});
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
             pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
         }
 
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_LIGHTING]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_LIGHTING], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_LIGHTING], 1, 1, &m_samplerSet);
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
 
             {
                 VkDescriptorImageInfo posImageInfo{
@@ -866,7 +864,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
                 };
-                pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_LIGHTING], writes, 2);
+                pCommandBuffer->pushDescriptorSet(writes, 2);
             }
 
             pCommandBuffer->draw(3, 1, 0, 0);
@@ -989,23 +987,19 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY], 1, 1, &m_samplerSet);
-            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
-            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 Mesh*       mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY],
-                                              {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, nodeId),
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
-                    pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY],
-                                                  {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, materialId),
-                                                  sizeof(ObjectInfo::materialId), &subset.materialIndex);
+                    pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
                     if(subset.indexCount > 0)
                     {
                         if(subset.hasIndices)
@@ -1083,16 +1077,15 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SHADOW]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SHADOW], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
-            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
+            pCommandBuffer->bindDescriptorSet({m_sceneSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_SHADOW],
-                                              {ShaderStage::VS}, offsetof(ObjectInfo, nodeId),
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
@@ -1199,34 +1192,29 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
         // skybox
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
-            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], {0});
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
             pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
         }
 
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
-            pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
-            pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
-            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
-                                              {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, nodeId),
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
                     if(subset.indexCount > 0)
                     {
-                        pCommandBuffer->pushConstants(
-                            m_pipelines[PIPELINE_GRAPHICS_FORWARD], {ShaderStage::VS, ShaderStage::FS},
-                            offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
+                        pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
                         if(subset.hasIndices)
                         {
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
@@ -1303,7 +1291,7 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
                 init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
             };
 
-            pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
+            pCommandBuffer->pushDescriptorSet(writes, 0);
         }
 
         pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_CMD]);

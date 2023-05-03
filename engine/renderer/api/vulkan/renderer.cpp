@@ -368,14 +368,13 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
 
         ImGuiIO& io = ImGui::GetIO();
         pCommandBuffer->bindPipeline(m_ui.pipeline);
-        pCommandBuffer->bindDescriptorSet(m_ui.pipeline, 0, 1, &m_ui.set);
+        pCommandBuffer->bindDescriptorSet({m_ui.set});
 
         m_ui.pushConstBlock.scale     = glm::vec2(2.0f / io.DisplaySize.x, 2.0f / io.DisplaySize.y);
         m_ui.pushConstBlock.translate = glm::vec2(-1.0f);
-        pCommandBuffer->pushConstants(m_ui.pipeline, {ShaderStage::VS}, 0, sizeof(m_ui.pushConstBlock),
-                                      &m_ui.pushConstBlock);
+        pCommandBuffer->pushConstants(0, sizeof(m_ui.pushConstBlock), &m_ui.pushConstBlock);
 
-        pCommandBuffer->bindVertexBuffers(0, 1, m_ui.pVertexBuffer, {0});
+        pCommandBuffer->bindVertexBuffers(m_ui.pVertexBuffer);
         pCommandBuffer->bindIndexBuffers(m_ui.pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
         for(int32_t i = 0; i < imDrawData->CmdListsCount; i++)

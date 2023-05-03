@@ -74,17 +74,19 @@ void CommandBuffer::setSissor(const VkRect2D& scissor)
 }
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
+    m_graphicsState.pPipeline = pPipeline;
     m_pDeviceTable->vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
 }
-void CommandBuffer::bindDescriptorSet(Pipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
+void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
                                       const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
                                       const uint32_t* pDynamicOffset)
 {
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, pPipeline->getBindPoint(), pPipeline->getPipelineLayout(),
+    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(), m_graphicsState.pPipeline->getPipelineLayout(),
                                             firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,
                                             pDynamicOffset);
 }
-void CommandBuffer::bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const Buffer* pBuffer,
+void CommandBuffer::bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
                                       const std::vector<VkDeviceSize>& offsets)
 {
     m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
@@ -93,11 +95,11 @@ void CommandBuffer::bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset,
 {
     m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
 }
-void CommandBuffer::pushConstants(Pipeline* pPipeline, const std::vector<ShaderStage>& stages, uint32_t offset,
-                                  uint32_t size, const void* pValues)
+void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
 {
-    m_pDeviceTable->vkCmdPushConstants(m_handle, pPipeline->getPipelineLayout(), utils::VkCast(stages), offset, size,
-                                       pValues);
+    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
+    auto stage = m_graphicsState.pPipeline->getConstantShaderStage(offset, size);
+    m_pDeviceTable->vkCmdPushConstants(m_handle, m_graphicsState.pPipeline->getPipelineLayout(), stage, offset, size, pValues);
 }
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                                 uint32_t firstInstance)
@@ -332,10 +334,12 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 {
     m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
-void CommandBuffer::pushDescriptorSet(Pipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes,
+void CommandBuffer::pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes,
                                       uint32_t setIdx)
 {
-    m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(),
+    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
+    m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), m_graphicsState.pPipeline->getBindPoint(),
+                                              m_graphicsState.pPipeline->getPipelineLayout(),
                                               setIdx, writes.size(), writes.data());
 }
 void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
@@ -345,5 +349,11 @@ void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
 void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
     vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
+}
+void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet)
+{
+    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(), m_graphicsState.pPipeline->getPipelineLayout(),
+                                            firstSet, pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
 }
 }  // namespace aph::vk

@@ -22,6 +22,11 @@ enum class CommandBufferState
     INVALID,
 };
 
+struct CommandGraphicsState
+{
+    Pipeline* pPipeline{};
+};
+
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
@@ -37,18 +42,19 @@ public:
     void endRendering();
     void setViewport(const VkViewport& viewport);
     void setSissor(const VkRect2D& scissor);
-    void bindDescriptorSet(Pipeline* pPipeline, uint32_t firstSet, uint32_t descriptorSetCount,
+    void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);
+    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
                            const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount = 0,
                            const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
-    void bindVertexBuffers(uint32_t firstBinding, uint32_t bindingCount, const Buffer* pBuffer,
-                           const std::vector<VkDeviceSize>& offsets);
-    void bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType);
-    void pushConstants(Pipeline* pPipeline, const std::vector<ShaderStage>& stages, uint32_t offset, uint32_t size,
+    void bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding = 0, uint32_t bindingCount = 1,
+                           const std::vector<VkDeviceSize>& offsets = {0});
+    void bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset = 0, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+    void pushConstants(uint32_t offset, uint32_t size,
                        const void* pValues);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                      uint32_t firstInstance);
-    void pushDescriptorSet(Pipeline* pipeline, const std::vector<VkWriteDescriptorSet>& writes, uint32_t setIdx);
+    void pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes, uint32_t setIdx);
     void dispatch(Buffer* pBuffer, VkDeviceSize offset = 0);
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);
@@ -77,6 +83,7 @@ private:
     CommandBufferState     m_state            = {};
     bool                   m_submittedToQueue = {false};
     uint32_t               m_queueFamilyType  = {};
+    CommandGraphicsState   m_graphicsState    = {};
 };
 }  // namespace aph::vk
 
