@@ -74,6 +74,7 @@ private:
         BUFFER_SCENE_LIGHT,
         BUFFER_SCENE_CAMERA,
         BUFFER_SCENE_TRANSFORM,
+        BUFFER_INDIRECT_CMD,
         BUFFER_MAX,
     };
 

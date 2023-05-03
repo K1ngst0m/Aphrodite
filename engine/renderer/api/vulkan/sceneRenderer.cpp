@@ -671,6 +671,38 @@ void SceneRenderer::_initGpuResources()
         m_pDevice->createCubeMap(skyboxImages, &pImage, &m_pCubeMapView);
         m_images[IMAGE_SCENE_SKYBOX].push_back(pImage);
     }
+
+    // indirect cmds
+    {
+        std::vector<uint8_t> cmdBuffers;
+        VkDispatchIndirectCommand postFX {
+            .x = m_window->getWidth(),
+            .y = m_window->getHeight(),
+            .z = 1,
+        };
+        VkDrawIndirectCommand skybox
+        {
+            .vertexCount = 36,
+            .instanceCount = 1,
+            .firstVertex = 0,
+            .firstInstance = 0,
+        };
+        cmdBuffers.resize(sizeof(postFX) + sizeof(skybox));
+
+        memcpy(cmdBuffers.data(), &postFX, sizeof(postFX));
+        memcpy(cmdBuffers.data() + sizeof(postFX), &skybox, sizeof(skybox));
+
+        // sum buffers size
+        {
+
+        }
+
+        BufferCreateInfo createInfo{
+            .size  = static_cast<uint32_t>(cmdBuffers.size()),
+            .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+        };
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_CMD], cmdBuffers.data());
+    }
 }
 
 void SceneRenderer::_initSkybox()
@@ -796,7 +828,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
             pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], {0});
-            pCommandBuffer->draw(36, 1, 0, 0);
+            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
         }
 
         // draw scene object
@@ -1204,7 +1236,7 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 0, 1, &m_sceneSet);
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SKYBOX], 1, 1, &m_samplerSet);
             pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_CUBE_VERTEX], {0});
-            pCommandBuffer->draw(36, 1, 0, 0);
+            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
         }
 
         // draw scene object
@@ -1325,8 +1357,7 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
             pCommandBuffer->pushDescriptorSet(m_pipelines[PIPELINE_COMPUTE_POSTFX], writes, 0);
         }
 
-        pCommandBuffer->dispatch(pColorAttachment->getImage()->getWidth(), pColorAttachment->getImage()->getHeight(),
-                                 1);
+        pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_CMD]);
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
                                               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }

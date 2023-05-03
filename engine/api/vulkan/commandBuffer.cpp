@@ -338,4 +338,12 @@ void CommandBuffer::pushDescriptorSet(Pipeline* pipeline, const std::vector<VkWr
     m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), pipeline->getBindPoint(), pipeline->getPipelineLayout(),
                                               setIdx, writes.size(), writes.data());
 }
+void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
+{
+    vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
+}
+void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
+{
+    vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
+}
 }  // namespace aph::vk
