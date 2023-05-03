@@ -1,7 +1,7 @@
 #ifndef INSTANCE_H_
 #define INSTANCE_H_
 
-#include "common/threadPool.h"
+#include "threads/threadPool.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 

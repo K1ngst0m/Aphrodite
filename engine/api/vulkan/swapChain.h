@@ -35,6 +35,7 @@ public:
     Image* getImage() const { return m_images[m_imageIdx].get(); }
 
 private:
+    Instance*                           m_pInstance{};
     Device*                             m_pDevice{};
     std::vector<std::unique_ptr<Image>> m_images{};
 

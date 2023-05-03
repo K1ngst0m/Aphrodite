@@ -74,7 +74,8 @@ public:
         }
         else
         {
-            static_assert("unexpected event type.");
+            CM_LOG_ERR("unexpected event type.");
+            APH_ASSERT(false);
         }
     }
 

@@ -90,7 +90,9 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
 
 namespace aph::vk
 {
-SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) : m_pDevice(pDevice)
+SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
+    m_pInstance(createInfo.instance),
+    m_pDevice(pDevice)
 {
     m_surface = createInfo.wsi->getSurface(createInfo.instance);
 
@@ -171,5 +173,8 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
     return result;
 }
 
-SwapChain::~SwapChain() = default;
+SwapChain::~SwapChain()
+{
+    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+};
 }  // namespace aph::vk

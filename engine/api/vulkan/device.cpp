@@ -813,7 +813,7 @@ void Device::unMapMemory(Buffer* pBuffer)
 VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage)
 {
     uint32_t               cubeMapWidth{}, cubeMapHeight{};
-    uint32_t               mipLevels   = 0;
+    uint32_t               mipLevels = 0;
     std::array<Buffer*, 6> stagingBuffers;
     for(auto idx = 0; idx < 6; idx++)
     {

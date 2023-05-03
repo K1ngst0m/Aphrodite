@@ -671,19 +671,19 @@ void SceneRenderer::_initGpuResources()
     // indirect cmds
     {
         // std::vector<VkDrawIndexedIndirectCommand> drawIndexList;
-        std::vector<VkDrawIndirectCommand> drawList;
+        std::vector<VkDrawIndirectCommand>     drawList;
         std::vector<VkDispatchIndirectCommand> dispatchList;
         dispatchList.push_back({
             .x = m_window->getWidth(),
             .y = m_window->getHeight(),
             .z = 1,
-            });
+        });
         drawList.push_back({
             .vertexCount   = 36,
             .instanceCount = 1,
             .firstVertex   = 0,
             .firstInstance = 0,
-            });
+        });
 
         BufferCreateInfo createInfo{
             .size  = static_cast<uint32_t>(dispatchList.size() * sizeof(VkDispatchIndirectCommand)),
@@ -953,102 +953,6 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
         }
 
         pCommandBuffer->endRendering();
-    }
-}
-
-void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
-{
-    // TODO refine
-    APH_ASSERT(false);
-    VkExtent2D extent{
-        .width  = getWindowWidth(),
-        .height = getWindowHeight(),
-    };
-    VkViewport viewport = init::viewport(extent);
-    VkRect2D   scissor  = init::rect2D(extent);
-
-    // dynamic state
-    pCommandBuffer->setViewport(viewport);
-    pCommandBuffer->setSissor(scissor);
-
-    // forward pass
-    {
-        Image* pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
-        // Image* pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx];
-
-        pCommandBuffer->setRenderTarget({pColorAttachment});
-        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
-
-        // skybox
-        {
-            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
-            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
-            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
-        }
-
-        // draw scene object
-        {
-            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_FORWARD]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
-            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
-            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
-
-            for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
-            {
-                const auto& node = m_meshNodeList[nodeId];
-                auto        mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
-                for(const auto& subset : mesh->m_subsets)
-                {
-                    if(subset.indexCount > 0)
-                    {
-                        pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
-                                                      &subset.materialIndex);
-                        if(subset.hasIndices)
-                        {
-                            pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
-                                                        mesh->m_vertexOffset, 0);
-                        }
-                        else
-                        {
-                            pCommandBuffer->draw(subset.vertexCount, 1, subset.firstVertex, 0);
-                        }
-                    }
-                }
-            }
-        }
-
-        // draw ui
-        recordUIDraw(pCommandBuffer);
-
-        pCommandBuffer->endRendering();
-    }
-
-    // forward graphics pipeline
-    {
-        GraphicsPipelineCreateInfo createInfo{};
-
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
-
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
-
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr.frag.spv");
-
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_FORWARD]));
     }
 }
 

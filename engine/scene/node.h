@@ -19,7 +19,7 @@ public:
         parent{parent},
         matrix{transform}
     {
-        if constexpr(std::is_same<TNode, Node>::value)
+        if constexpr(std::is_same_v<TNode, Node>)
         {
             if(parent->parent)
             {
@@ -104,8 +104,7 @@ public:
     template <typename TObject>
     constexpr static bool isObjectTypeValid()
     {
-        return std::is_same<TObject, Camera>::value || std::is_same<TObject, Light>::value ||
-               std::is_same<TObject, Mesh>::value;
+        return std::is_same_v<TObject, Camera> || std::is_same_v<TObject, Light> || std::is_same_v<TObject, Mesh>;
     }
 
     void traversalChildren(std::function<void(SceneNode* node)>&& func)

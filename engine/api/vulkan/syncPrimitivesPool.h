@@ -1,7 +1,7 @@
 #ifndef SYNCPRIMITIVESPOOL_H_
 #define SYNCPRIMITIVESPOOL_H_
 
-#include "common/spinlock.h"
+#include "threads/spinlock.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 

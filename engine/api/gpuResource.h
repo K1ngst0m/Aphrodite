@@ -66,7 +66,7 @@ class ResourceHandle
 public:
     ResourceHandle()
     {
-        if constexpr(std::is_same<T_CreateInfo, DummyCreateInfo>::value)
+        if constexpr(std::is_same_v<T_CreateInfo, DummyCreateInfo>)
         {
             m_createInfo.typeId = typeid(T_Handle).hash_code();
         }

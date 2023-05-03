@@ -19,7 +19,6 @@ public:
     void recordShadow(CommandBuffer* pCommandBuffer);
     void recordDeferredGeometry(CommandBuffer* pCommandBuffer);
     void recordDeferredLighting(CommandBuffer* pCommandBuffer);
-    void recordForward(CommandBuffer* pCommandBuffer);
     void recordPostFX(CommandBuffer* pCommandBuffer);
 
 private:
@@ -57,7 +56,6 @@ private:
     {
         PIPELINE_GRAPHICS_GEOMETRY,
         PIPELINE_GRAPHICS_LIGHTING,
-        PIPELINE_GRAPHICS_FORWARD,
         PIPELINE_GRAPHICS_SHADOW,
         PIPELINE_GRAPHICS_SKYBOX,
         PIPELINE_COMPUTE_POSTFX,

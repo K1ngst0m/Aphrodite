@@ -158,7 +158,7 @@ void WSI::init()
 
 VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
 {
-    VkSurfaceKHR surface;
+    VkSurfaceKHR surface{};
     glfwCreateWindowSurface(instance->getHandle(), (GLFWwindow*)m_window, nullptr, &surface);
     return surface;
 };

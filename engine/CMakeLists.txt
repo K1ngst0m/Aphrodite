@@ -10,6 +10,14 @@ file(GLOB base_src
   input/*.h
   input/*.hpp
 
+  threads/*.cpp
+  threads/*.h
+  threads/*.hpp
+
+  cli/*.cpp
+  cli/*.h
+  cli/*.hpp
+
   ui/*.cpp
   ui/*.h
   ui/*.hpp

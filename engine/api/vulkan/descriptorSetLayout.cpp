@@ -54,7 +54,8 @@ VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite
         break;
         default:
         {
-            assert("invalid resource type.");
+            VK_LOG_ERR("invalid resource type.");
+            APH_ASSERT(false);
             return set;
         }
         }

@@ -42,12 +42,12 @@ public:
     static std::unique_ptr<TRenderer> Create(const std::shared_ptr<WSI>& window, const RenderConfig& config)
     {
         std::unique_ptr<TRenderer> renderer = {};
-        if constexpr(std::is_same<TRenderer, vk::Renderer>::value)
+        if constexpr(std::is_same_v<TRenderer, vk::Renderer>)
         {
             CM_LOG_INFO("Init Common Renderer.");
             renderer = std::make_unique<vk::Renderer>(window, config);
         }
-        else if constexpr(std::is_same<TRenderer, vk::SceneRenderer>::value)
+        else if constexpr(std::is_same_v<TRenderer, vk::SceneRenderer>)
         {
             CM_LOG_INFO("Init Scene Renderer.");
             renderer = std::make_unique<vk::SceneRenderer>(window, config);

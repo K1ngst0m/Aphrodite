@@ -45,7 +45,7 @@ ImageView* Image::getView(VkFormat imageFormat)
                                  .layerCount     = m_createInfo.arrayLayers},
         };
         // cubemap
-        if (m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arrayLayers == 6)
+        if(m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arrayLayers == 6)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }
