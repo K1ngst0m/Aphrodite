@@ -15,7 +15,6 @@ struct ImageCreateInfo
     uint32_t flags       = {0};
     uint32_t alignment   = {0};
     uint32_t mipLevels   = {1};
-    uint32_t layerCount  = {1};
     uint32_t arrayLayers = {1};
 
     VkImageUsageFlags  usage   = {};
@@ -44,10 +43,8 @@ public:
     uint32_t getWidth() const { return m_createInfo.extent.width; }
     uint32_t getHeight() const { return m_createInfo.extent.height; }
     uint32_t getMipLevels() const { return m_createInfo.mipLevels; }
-    uint32_t getLayerCount() const { return m_createInfo.layerCount; }
+    uint32_t getLayerCount() const { return m_createInfo.arrayLayers; }
     uint32_t getOffset() const { return m_createInfo.alignment; }
-
-    uint32_t getImageLayout() { return m_layout; }
 
 private:
     Device*                                  m_pDevice            = {};

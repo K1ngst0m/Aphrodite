@@ -810,11 +810,9 @@ void Device::unMapMemory(Buffer* pBuffer)
     m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
 
-VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage,
-                               ImageView** ppImageView)
+VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage)
 {
     uint32_t               cubeMapWidth{}, cubeMapHeight{};
-    VkFormat               imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     uint32_t               mipLevels   = 0;
     std::array<Buffer*, 6> stagingBuffers;
     for(auto idx = 0; idx < 6; idx++)
@@ -896,12 +894,6 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
         destroyBuffer(buffer);
     }
 
-    ImageViewCreateInfo createInfo{
-        .viewType = VK_IMAGE_VIEW_TYPE_CUBE,
-        .format   = imageFormat,
-        .subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0, mipLevels, 0, 6},
-    };
-    VK_CHECK_RESULT(createImageView(createInfo, ppImageView, cubeMapImage));
     *ppImage = cubeMapImage;
     return VK_SUCCESS;
 }

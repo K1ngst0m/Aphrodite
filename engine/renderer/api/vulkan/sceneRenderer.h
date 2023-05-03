@@ -74,7 +74,9 @@ private:
         BUFFER_SCENE_LIGHT,
         BUFFER_SCENE_CAMERA,
         BUFFER_SCENE_TRANSFORM,
-        BUFFER_INDIRECT_CMD,
+        BUFFER_INDIRECT_DRAW_CMD,
+        // BUFFER_INDIRECT_DRAW_INDEXED_CMD,
+        BUFFER_INDIRECT_DISPATCH_CMD,
         BUFFER_MAX,
     };
 
@@ -84,7 +86,7 @@ private:
         IMAGE_GBUFFER_NORMAL,
         IMAGE_GBUFFER_ALBEDO,
         IMAGE_GBUFFER_EMISSIVE,
-        IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO,
+        IMAGE_GBUFFER_MRAO,
         IMAGE_GBUFFER_DEPTH,
         IMAGE_SHADOW_DEPTH,
         IMAGE_GENERAL_COLOR,
@@ -104,8 +106,6 @@ private:
 
     VkDescriptorSet m_sceneSet{};
     VkDescriptorSet m_samplerSet{};
-
-    ImageView* m_pCubeMapView{};
 
 private:
     Scene*                  m_scene = {};

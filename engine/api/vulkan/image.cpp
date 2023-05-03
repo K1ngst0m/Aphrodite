@@ -42,8 +42,13 @@ ImageView* Image::getView(VkFormat imageFormat)
                                  .baseMipLevel   = 0,
                                  .levelCount     = m_createInfo.mipLevels,
                                  .baseArrayLayer = 0,
-                                 .layerCount     = m_createInfo.layerCount},
+                                 .layerCount     = m_createInfo.arrayLayers},
         };
+        // cubemap
+        if (m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arrayLayers == 6)
+        {
+            createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        }
         m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }
 

@@ -87,8 +87,6 @@ void SceneRenderer::cleanup()
         m_pDevice->destroyDescriptorSetLayout(setLayout);
     }
 
-    m_pDevice->destroyImageView(m_pCubeMapView);
-
     for(const auto& images : m_images)
     {
         for(auto* image : images)
@@ -190,7 +188,7 @@ void SceneRenderer::recordAll()
         {
             wait.pNext       = nullptr;
             wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            wait.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            wait.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             wait.deviceIndex = 0;
         }
 
@@ -198,7 +196,7 @@ void SceneRenderer::recordAll()
         {
             sig.pNext       = nullptr;
             sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            sig.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+            sig.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
             sig.deviceIndex = 0;
         }
 
@@ -270,7 +268,7 @@ void SceneRenderer::_initSet()
     VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
     VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_pCubeMapView->getHandle(),
+    VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_images[IMAGE_SCENE_SKYBOX][0]->getView()->getHandle(),
                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     std::vector<VkDescriptorImageInfo> textureInfos{};
     for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
@@ -338,17 +336,17 @@ void SceneRenderer::_initGbuffer()
     m_images[IMAGE_GBUFFER_NORMAL].resize(m_config.maxFrames);
     m_images[IMAGE_GBUFFER_POSITION].resize(m_config.maxFrames);
     m_images[IMAGE_GBUFFER_EMISSIVE].resize(m_config.maxFrames);
-    m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO].resize(m_config.maxFrames);
+    m_images[IMAGE_GBUFFER_MRAO].resize(m_config.maxFrames);
     m_images[IMAGE_GBUFFER_DEPTH].resize(m_config.maxFrames);
 
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         {
-            auto& position            = m_images[IMAGE_GBUFFER_POSITION][idx];
-            auto& normal              = m_images[IMAGE_GBUFFER_NORMAL][idx];
-            auto& albedo              = m_images[IMAGE_GBUFFER_ALBEDO][idx];
-            auto& emissive            = m_images[IMAGE_GBUFFER_EMISSIVE][idx];
-            auto& metallicRoughnessAO = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][idx];
+            auto& position = m_images[IMAGE_GBUFFER_POSITION][idx];
+            auto& normal   = m_images[IMAGE_GBUFFER_NORMAL][idx];
+            auto& albedo   = m_images[IMAGE_GBUFFER_ALBEDO][idx];
+            auto& emissive = m_images[IMAGE_GBUFFER_EMISSIVE][idx];
+            auto& mrao     = m_images[IMAGE_GBUFFER_MRAO][idx];
 
             ImageCreateInfo createInfo{
                 .extent    = {imageExtent.width, imageExtent.height, 1},
@@ -359,7 +357,7 @@ void SceneRenderer::_initGbuffer()
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &position));
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &normal));
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &metallicRoughnessAO));
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &mrao));
 
             createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &albedo));
@@ -666,38 +664,35 @@ void SceneRenderer::_initGpuResources()
         });
 
         Image* pImage{};
-        m_pDevice->createCubeMap(skyboxImages, &pImage, &m_pCubeMapView);
+        m_pDevice->createCubeMap(skyboxImages, &pImage);
         m_images[IMAGE_SCENE_SKYBOX].push_back(pImage);
     }
 
     // indirect cmds
     {
-        std::vector<uint8_t>      cmdBuffers;
-        VkDispatchIndirectCommand postFX{
+        // std::vector<VkDrawIndexedIndirectCommand> drawIndexList;
+        std::vector<VkDrawIndirectCommand> drawList;
+        std::vector<VkDispatchIndirectCommand> dispatchList;
+        dispatchList.push_back({
             .x = m_window->getWidth(),
             .y = m_window->getHeight(),
             .z = 1,
-        };
-        VkDrawIndirectCommand skybox{
+            });
+        drawList.push_back({
             .vertexCount   = 36,
             .instanceCount = 1,
             .firstVertex   = 0,
             .firstInstance = 0,
-        };
-        cmdBuffers.resize(sizeof(postFX) + sizeof(skybox));
-
-        memcpy(cmdBuffers.data(), &postFX, sizeof(postFX));
-        memcpy(cmdBuffers.data() + sizeof(postFX), &skybox, sizeof(skybox));
-
-        // sum buffers size
-        {
-        }
+            });
 
         BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(cmdBuffers.size()),
-            .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+            .size  = static_cast<uint32_t>(dispatchList.size() * sizeof(VkDispatchIndirectCommand)),
+            .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
         };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_CMD], cmdBuffers.data());
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD], dispatchList.data());
+
+        createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(VkDrawIndirectCommand));
+        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_DRAW_CMD], drawList.data());
     }
 }
 
@@ -771,19 +766,19 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
     pCommandBuffer->setViewport(viewport);
     pCommandBuffer->setSissor(scissor);
 
-    Image* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
-    Image* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
-    Image* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
-    Image* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx];
-    Image* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
-    Image* pShadowMap                    = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
+    Image* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
+    Image* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
+    Image* albedoAttachment   = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
+    Image* mraoAttachment     = m_images[IMAGE_GBUFFER_MRAO][m_frameIdx];
+    Image* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
+    Image* pShadowMap         = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
 
     {
         pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(normalAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(albedoAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_GENERAL);
-        pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(mraoAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(pShadowMap, VK_IMAGE_LAYOUT_GENERAL);
     }
 
@@ -800,7 +795,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
             pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
             pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
-            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
+            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
         }
 
         // draw scene object
@@ -815,9 +810,8 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
                 VkDescriptorImageInfo albedoImageInfo{.imageView   = albedoAttachment->getView()->getHandle(),
                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo metallicRoughnessAOImageInfo{
-                    .imageView   = metallicRoughnessAOAttachment->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo mraoImageInfo{.imageView   = mraoAttachment->getView()->getHandle(),
+                                                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
                 VkDescriptorImageInfo emissiveImageInfo{.imageView   = emissiveAttachment->getView()->getHandle(),
                                                         .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
                 VkDescriptorImageInfo shadowMapInfo{.imageView   = pShadowMap->getView()->getHandle(),
@@ -827,8 +821,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
-                                             &metallicRoughnessAOImageInfo),
+                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
                 };
@@ -860,15 +853,15 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
 
     // geometry pass
     {
-        Image* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
-        Image* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
-        Image* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
-        Image* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx];
-        Image* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
-        Image* depthAttachment               = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx];
+        Image* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
+        Image* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
+        Image* albedoAttachment   = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
+        Image* mraoAttachment     = m_images[IMAGE_GBUFFER_MRAO][m_frameIdx];
+        Image* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
+        Image* depthAttachment    = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx];
 
         pCommandBuffer->setRenderTarget(
-            {positionAttachment, normalAttachment, albedoAttachment, metallicRoughnessAOAttachment, emissiveAttachment},
+            {positionAttachment, normalAttachment, albedoAttachment, mraoAttachment, emissiveAttachment},
             depthAttachment);
         pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
@@ -980,8 +973,8 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
 
     // forward pass
     {
-        Image* pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
-        Image* pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx];
+        Image* pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
+        // Image* pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx];
 
         pCommandBuffer->setRenderTarget({pColorAttachment});
         pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
@@ -991,7 +984,7 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
             pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
             pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
-            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_CMD], sizeof(VkDispatchIndirectCommand));
+            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
         }
 
         // draw scene object
@@ -1085,7 +1078,7 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
             pCommandBuffer->pushDescriptorSet(writes, 0);
         }
 
-        pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_CMD]);
+        pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]);
         pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }
