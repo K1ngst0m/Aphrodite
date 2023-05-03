@@ -72,16 +72,15 @@ public:
     void draw(Buffer* pBuffer, VkDeviceSize offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(VkDrawIndirectCommand));
     void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size);
-    void transitionImageLayout(Image* image, VkImageLayout oldLayout, VkImageLayout newLayout,
+    void transitionImageLayout(Image* image, VkImageLayout newLayout,
                                VkImageSubresourceRange* pSubResourceRange = nullptr,
                                VkPipelineStageFlags     srcStageMask      = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
                                VkPipelineStageFlags     dstStageMask      = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
     void copyImage(Image* srcImage, Image* dstImage);
     void imageMemoryBarrier(Image* image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-                            VkImageLayout oldImageLayout, VkImageLayout newImageLayout,
-                            VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
-                            VkImageSubresourceRange subresourceRange);
+                            VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+                            VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
     void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,
                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter = VK_FILTER_LINEAR);
 

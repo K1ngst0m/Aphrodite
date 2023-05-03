@@ -698,12 +698,11 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
         VK_CHECK_RESULT(createImage(imageCI, &texture));
 
         executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* cmd) {
-            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->copyBufferToImage(stagingBuffer, texture);
             if(genMipmap)
             {
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
             }
         });
 
@@ -738,7 +737,7 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
                     mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
-                    cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                    cmd->imageMemoryBarrier(texture, 0, VK_ACCESS_TRANSFER_WRITE_BIT,
                                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                             VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
 
@@ -748,18 +747,15 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
 
                     // Prepare current mip level as image blit source for next level
                     cmd->imageMemoryBarrier(texture, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-                                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                            mipSubRange);
+                                            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                            VK_PIPELINE_STAGE_TRANSFER_BIT, mipSubRange);
                 }
 
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
             else
             {
-                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             }
         });
     }
@@ -885,15 +881,14 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
     createImage(imageCI, &cubeMapImage);
 
     executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCommandBuffer) {
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
         // Copy the cube map faces from the staging buffer to the optimal tiled image
         for(uint32_t idx = 0; idx < 6; idx++)
         {
             pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, {bufferCopyRegions[idx]});
         }
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &subresourceRange);
+        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                              &subresourceRange);
     });
 
     for(auto* buffer : stagingBuffers)

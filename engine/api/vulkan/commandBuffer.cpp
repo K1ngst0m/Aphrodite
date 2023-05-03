@@ -114,13 +114,13 @@ void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSiz
     copyRegion.size = size;
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout oldLayout, VkImageLayout newLayout,
+void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
                                           VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags srcStageMask,
                                           VkPipelineStageFlags dstStageMask)
 {
     VkImageMemoryBarrier imageMemoryBarrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .oldLayout           = oldLayout,
+        .oldLayout           = image->m_layout,
         .newLayout           = newLayout,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -146,7 +146,7 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout oldLayout,
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
     // before it will be transitioned to the new layout
-    switch(oldLayout)
+    switch(image->m_layout)
     {
     case VK_IMAGE_LAYOUT_UNDEFINED:
         // Image layout is undefined (or does not matter)
@@ -241,6 +241,7 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout oldLayout,
 
     m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                                          &imageMemoryBarrier);
+    image->m_layout = newLayout;
 }
 void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions)
 {
@@ -298,20 +299,20 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
 }
 
 void CommandBuffer::imageMemoryBarrier(Image* image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-                                       VkImageLayout oldImageLayout, VkImageLayout newImageLayout,
-                                       VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
-                                       VkImageSubresourceRange subresourceRange)
+                                       VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+                                       VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
 {
     VkImageMemoryBarrier imageMemoryBarrier = init::imageMemoryBarrier();
     imageMemoryBarrier.srcAccessMask        = srcAccessMask;
     imageMemoryBarrier.dstAccessMask        = dstAccessMask;
-    imageMemoryBarrier.oldLayout            = oldImageLayout;
+    imageMemoryBarrier.oldLayout            = image->m_layout;
     imageMemoryBarrier.newLayout            = newImageLayout;
     imageMemoryBarrier.image                = image->getHandle();
     imageMemoryBarrier.subresourceRange     = subresourceRange;
 
     m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
                                          &imageMemoryBarrier);
+    image->m_layout = newImageLayout;
 }
 void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage,
                               VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
@@ -406,7 +407,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
             vkColor.storeOp = color.storeOp.value();
         }
         vkColors.push_back(vkColor);
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
     VkRenderingInfo renderingInfo{
@@ -445,7 +446,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
         {
             vkDepth.clearValue = m_graphicsState.depthAttachment.value().clear.value();
         }
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
     }
 

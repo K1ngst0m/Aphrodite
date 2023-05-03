@@ -378,7 +378,7 @@ void SceneRenderer::_initGbuffer()
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             });
         }
     }
@@ -484,10 +484,8 @@ void SceneRenderer::_initGeneral()
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
 
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-                cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-                cmd->transitionImageLayout(depthImageMS, VK_IMAGE_LAYOUT_UNDEFINED,
-                                           VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                cmd->transitionImageLayout(depthImageMS, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             });
         }
     }
@@ -773,7 +771,23 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
     pCommandBuffer->setViewport(viewport);
     pCommandBuffer->setSissor(scissor);
 
-    // forward pass
+    Image* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
+    Image* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
+    Image* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
+    Image* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx];
+    Image* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
+    Image* pShadowMap                    = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
+
+    {
+        pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(normalAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(albedoAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(pShadowMap, VK_IMAGE_LAYOUT_GENERAL);
+    }
+
+    // deferred rendering pass
     {
         Image* pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
         Image* pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx];
@@ -795,24 +809,19 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
 
             {
-                VkDescriptorImageInfo posImageInfo{
-                    .imageView   = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx]->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo normalImageInfo{
-                    .imageView   = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx]->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo albedoImageInfo{
-                    .imageView   = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx]->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo posImageInfo{.imageView   = positionAttachment->getView()->getHandle(),
+                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo normalImageInfo{.imageView   = normalAttachment->getView()->getHandle(),
+                                                      .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo albedoImageInfo{.imageView   = albedoAttachment->getView()->getHandle(),
+                                                      .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
                 VkDescriptorImageInfo metallicRoughnessAOImageInfo{
-                    .imageView   = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx]->getView()->getHandle(),
+                    .imageView   = metallicRoughnessAOAttachment->getView()->getHandle(),
                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo emissiveImageInfo{
-                    .imageView   = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx]->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo shadowMapInfo{
-                    .imageView   = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx]->getView()->getHandle(),
-                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo emissiveImageInfo{.imageView   = emissiveAttachment->getView()->getHandle(),
+                                                        .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+                VkDescriptorImageInfo shadowMapInfo{.imageView   = pShadowMap->getView()->getHandle(),
+                                                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
                 std::vector<VkWriteDescriptorSet> writes{
                     init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
@@ -833,11 +842,6 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         recordUIDraw(pCommandBuffer);
 
         pCommandBuffer->endRendering();
-
-        {
-            pCommandBuffer->transitionImageLayout(pColorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-        }
     }
 }
 
@@ -901,19 +905,6 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
         }
 
         pCommandBuffer->endRendering();
-
-        {
-            pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(normalAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(albedoAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-        }
     }
 }
 
@@ -969,11 +960,6 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
         }
 
         pCommandBuffer->endRendering();
-
-        {
-            pCommandBuffer->transitionImageLayout(pDepthAttachment, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-        }
     }
 }
 
@@ -1044,13 +1030,6 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
         recordUIDraw(pCommandBuffer);
 
         pCommandBuffer->endRendering();
-
-        {
-            pCommandBuffer->transitionImageLayout(pColorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                                  VK_IMAGE_LAYOUT_GENERAL);
-        }
     }
 
     // forward graphics pipeline
@@ -1084,10 +1063,11 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
 {
     // post fx
     {
-        ImageView* pColorAttachment = m_pSwapChain->getImage()->getView();
+        ImageView* pColorAttachment  = m_pSwapChain->getImage()->getView();
+        Image*     renderResultImage = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
 
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                              VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(renderResultImage, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
 
         {
@@ -1106,8 +1086,7 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
         }
 
         pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_CMD]);
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL,
-                                              VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }
 
@@ -1206,7 +1185,7 @@ void SceneRenderer::_initShadow()
         };
         VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
         m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-            cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         });
     }
 

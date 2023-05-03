@@ -30,6 +30,8 @@ struct ImageCreateInfo
 
 class Image : public ResourceHandle<VkImage, ImageCreateInfo>
 {
+    friend class CommandBuffer;
+
 public:
     Image(Device* pDevice, const ImageCreateInfo& createInfo, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
     ~Image();
@@ -45,9 +47,12 @@ public:
     uint32_t getLayerCount() const { return m_createInfo.layerCount; }
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
+    uint32_t getImageLayout() { return m_layout; }
+
 private:
     Device*                                  m_pDevice            = {};
     std::unordered_map<VkFormat, ImageView*> m_imageViewFormatMap = {};
+    VkImageLayout                            m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
     VkDeviceMemory                           m_memory             = {};
 };
 

@@ -55,6 +55,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBits
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
         if(++errCount > 10)
         {
+            VK_LOG_ERR("Too many errors, exit.");
             std::abort();
         }
         VK_LOG_ERR("%s", msg);

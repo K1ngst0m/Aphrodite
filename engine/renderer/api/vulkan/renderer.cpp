@@ -147,8 +147,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             };
             m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.pFontImage, imageData);
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCmd) {
-                pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_UNDEFINED,
-                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             });
         }
 
