@@ -36,16 +36,52 @@ private:
 inline Logger* Logger::g_logger = nullptr;
 }  // namespace aph
 
-#define LOG_FLUSH() do { ::aph::Logger::Get()->flush(); } while(0)
+#define LOG_FLUSH() \
+    do \
+    { \
+        ::aph::Logger::Get()->flush(); \
+    } while(0)
 
-#define CM_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug("[APH] " __VA_ARGS__); } while(0)
-#define CM_LOG_WARN(...) do { ::aph::Logger::Get()->warn("[APH] " __VA_ARGS__); } while(0)
-#define CM_LOG_INFO(...) do { ::aph::Logger::Get()->info("[APH] " __VA_ARGS__); } while(0)
-#define CM_LOG_ERR(...) do { ::aph::Logger::Get()->error("[APH] " __VA_ARGS__); } while(0)
+#define CM_LOG_DEBUG(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->debug("[APH] " __VA_ARGS__); \
+    } while(0)
+#define CM_LOG_WARN(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->warn("[APH] " __VA_ARGS__); \
+    } while(0)
+#define CM_LOG_INFO(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->info("[APH] " __VA_ARGS__); \
+    } while(0)
+#define CM_LOG_ERR(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->error("[APH] " __VA_ARGS__); \
+    } while(0)
 
-#define VK_LOG_DEBUG(...) do { ::aph::Logger::Get()->debug("[VK] " __VA_ARGS__); } while(0)
-#define VK_LOG_WARN(...) do { ::aph::Logger::Get()->warn("[VK] " __VA_ARGS__); } while(0)
-#define VK_LOG_INFO(...) do { ::aph::Logger::Get()->info("[VK] " __VA_ARGS__); } while(0)
-#define VK_LOG_ERR(...) do { ::aph::Logger::Get()->error("[VK] " __VA_ARGS__); } while(0)
+#define VK_LOG_DEBUG(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->debug("[VK] " __VA_ARGS__); \
+    } while(0)
+#define VK_LOG_WARN(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->warn("[VK] " __VA_ARGS__); \
+    } while(0)
+#define VK_LOG_INFO(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->info("[VK] " __VA_ARGS__); \
+    } while(0)
+#define VK_LOG_ERR(...) \
+    do \
+    { \
+        ::aph::Logger::Get()->error("[VK] " __VA_ARGS__); \
+    } while(0)
 
 #endif  // LOGGER_H_

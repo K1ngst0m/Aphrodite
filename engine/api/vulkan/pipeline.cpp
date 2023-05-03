@@ -77,10 +77,16 @@ VkShaderStageFlags Pipeline::getConstantShaderStage(uint32_t offset, uint32_t si
 {
     VkShaderStageFlags stage = 0;
     size += offset;
-    for (const auto& constant: m_constants)
+    for(const auto& constant : m_constants)
     {
-        if (offset >= size) {break;}
-        if (offset >= constant.size) {continue;}
+        if(offset >= size)
+        {
+            break;
+        }
+        if(offset >= constant.size)
+        {
+            continue;
+        }
         stage |= constant.stageFlags;
         offset += constant.size;
     }

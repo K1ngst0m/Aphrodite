@@ -26,7 +26,7 @@ enum class ImageDomain
 
 enum class ShaderStage
 {
-    NA = 0,
+    NA  = 0,
     VS  = 1,
     TCS = 2,
     TES = 3,

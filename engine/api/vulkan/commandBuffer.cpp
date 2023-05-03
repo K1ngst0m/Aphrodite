@@ -39,7 +39,8 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
     }
 
     // Mark CommandBuffer as recording and reset internal state.
-    m_state = CommandBufferState::RECORDING;
+    m_graphicsState = CommandGraphicsState();
+    m_state         = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
 }
@@ -82,9 +83,9 @@ void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetC
                                       const uint32_t* pDynamicOffset)
 {
     APH_ASSERT(m_graphicsState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(), m_graphicsState.pPipeline->getPipelineLayout(),
-                                            firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount,
-                                            pDynamicOffset);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(),
+                                            m_graphicsState.pPipeline->getPipelineLayout(), firstSet,
+                                            descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
 void CommandBuffer::bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
                                       const std::vector<VkDeviceSize>& offsets)
@@ -99,7 +100,8 @@ void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pV
 {
     APH_ASSERT(m_graphicsState.pPipeline != nullptr);
     auto stage = m_graphicsState.pPipeline->getConstantShaderStage(offset, size);
-    m_pDeviceTable->vkCmdPushConstants(m_handle, m_graphicsState.pPipeline->getPipelineLayout(), stage, offset, size, pValues);
+    m_pDeviceTable->vkCmdPushConstants(m_handle, m_graphicsState.pPipeline->getPipelineLayout(), stage, offset, size,
+                                       pValues);
 }
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                                 uint32_t firstInstance)
@@ -324,7 +326,18 @@ uint32_t CommandBuffer::getQueueFamilyIndices() const
 };
 void CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
+    // uint32_t colorCount = renderingInfo.colorAttachmentCount;
+    // for (uint32_t idx = 0; idx < colorCount; idx++)
+    // {
+    //     m_graphicsState.colorAttachments.resize(colorCount);
+    // }
+    // memcpy(m_graphicsState.colorAttachments.data(), renderingInfo.pColorAttachments,
+    // sizeof(VkRenderingAttachmentInfo) * colorCount); memcpy(&m_graphicsState.depthAttachment,
+    // renderingInfo.pDepthAttachment, sizeof(VkRenderingAttachmentInfo));
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
+    // for (auto colorAttachment : m_graphicsState.colorAttachments){
+    // transitionImageLayout(colorAttachment.imageView, , VkImageLayout newLayout)
+    // }
 }
 void CommandBuffer::endRendering()
 {
@@ -334,13 +347,12 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 {
     m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
-void CommandBuffer::pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes,
-                                      uint32_t setIdx)
+void CommandBuffer::pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes, uint32_t setIdx)
 {
     APH_ASSERT(m_graphicsState.pPipeline != nullptr);
     m_pDeviceTable->vkCmdPushDescriptorSetKHR(getHandle(), m_graphicsState.pPipeline->getBindPoint(),
-                                              m_graphicsState.pPipeline->getPipelineLayout(),
-                                              setIdx, writes.size(), writes.data());
+                                              m_graphicsState.pPipeline->getPipelineLayout(), setIdx, writes.size(),
+                                              writes.data());
 }
 void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
 {
@@ -353,7 +365,98 @@ void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCoun
 void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet)
 {
     APH_ASSERT(m_graphicsState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(), m_graphicsState.pPipeline->getPipelineLayout(),
-                                            firstSet, pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(),
+                                            m_graphicsState.pPipeline->getPipelineLayout(), firstSet,
+                                            pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
+}
+void CommandBuffer::setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth)
+{
+    m_graphicsState.colorAttachments = colors;
+    m_graphicsState.depthAttachment  = depth;
+}
+void CommandBuffer::beginRendering(VkRect2D renderArea)
+{
+    APH_ASSERT(!m_graphicsState.colorAttachments.empty() || m_graphicsState.depthAttachment.has_value());
+    std::vector<VkRenderingAttachmentInfo> vkColors;
+    VkRenderingAttachmentInfo              vkDepth;
+    vkColors.reserve(m_graphicsState.colorAttachments.size());
+    for(const auto& color : m_graphicsState.colorAttachments)
+    {
+        auto&                     image = color.image;
+        VkRenderingAttachmentInfo vkColor{.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                                          .imageView   = image->getView()->getHandle(),
+                                          .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                          .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                          .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+                                          .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}}};
+        if(color.layout.has_value())
+        {
+            vkColor.imageLayout = color.layout.value();
+        }
+        if(color.clear.has_value())
+        {
+            vkColor.clearValue = color.clear.value();
+        }
+        if(color.loadOp.has_value())
+        {
+            vkColor.loadOp = color.loadOp.value();
+        }
+        if(color.storeOp.has_value())
+        {
+            vkColor.storeOp = color.storeOp.value();
+        }
+        vkColors.push_back(vkColor);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    }
+
+    VkRenderingInfo renderingInfo{
+        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea           = renderArea,
+        .layerCount           = 1,
+        .colorAttachmentCount = static_cast<uint32_t>(vkColors.size()),
+        .pColorAttachments    = vkColors.data(),
+        .pDepthAttachment     = nullptr,
+    };
+
+    if(m_graphicsState.depthAttachment.has_value())
+    {
+        auto& image = m_graphicsState.depthAttachment.value().image;
+        vkDepth     = {
+                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .imageView   = image->getView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                .clearValue  = {.depthStencil{1.0f, 0}},
+        };
+        if(m_graphicsState.depthAttachment.value().layout.has_value())
+        {
+            vkDepth.imageLayout = m_graphicsState.depthAttachment.value().layout.value();
+        }
+        if(m_graphicsState.depthAttachment.value().storeOp.has_value())
+        {
+            vkDepth.storeOp = m_graphicsState.depthAttachment.value().storeOp.value();
+        }
+        if(m_graphicsState.depthAttachment.value().loadOp.has_value())
+        {
+            vkDepth.loadOp = m_graphicsState.depthAttachment.value().loadOp.value();
+        }
+        if(m_graphicsState.depthAttachment.value().clear.has_value())
+        {
+            vkDepth.clearValue = m_graphicsState.depthAttachment.value().clear.value();
+        }
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        renderingInfo.pDepthAttachment = &vkDepth;
+    }
+
+    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
+}
+void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* depth)
+{
+    for(auto color : colors)
+    {
+        m_graphicsState.colorAttachments.push_back({.image = color});
+    }
+    m_graphicsState.depthAttachment = {.image = depth};
 }
 }  // namespace aph::vk

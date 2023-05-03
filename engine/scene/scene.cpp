@@ -225,13 +225,13 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                 {
-                    if (unifiedIndexType)
+                    if(unifiedIndexType)
                     {
                         indices.resize(indices.size() + accessor.count * 4);
-                        auto* dataPtr = reinterpret_cast<uint32_t*>(&indices[idxOffset]);
-                        indexType     = IndexType::UINT32;
-                        const auto* buf =
-                            reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        auto* dataPtr   = reinterpret_cast<uint32_t*>(&indices[idxOffset]);
+                        indexType       = IndexType::UINT32;
+                        const auto* buf = reinterpret_cast<const uint16_t*>(
+                            &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                         for(size_t index = 0; index < accessor.count; index++)
                         {
                             dataPtr[index] = buf[index] + vertexStart;
@@ -240,10 +240,10 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                     else
                     {
                         indices.resize(indices.size() + accessor.count * 2);
-                        auto* dataPtr = reinterpret_cast<uint16_t*>(&indices[idxOffset]);
-                        indexType     = IndexType::UINT16;
-                        const auto* buf =
-                            reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        auto* dataPtr   = reinterpret_cast<uint16_t*>(&indices[idxOffset]);
+                        indexType       = IndexType::UINT16;
+                        const auto* buf = reinterpret_cast<const uint16_t*>(
+                            &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
                         for(size_t index = 0; index < accessor.count; index++)
                         {
                             dataPtr[index] = buf[index] + vertexStart;

@@ -6,7 +6,8 @@
 namespace aph::asset
 {
 
-enum class AssetType{
+enum class AssetType
+{
 
 };
 
@@ -18,9 +19,9 @@ enum class ShaderType
 
 struct AssetFile
 {
-    char type[4];
-    int version;
-    std::string json;
+    char              type[4];
+    int               version;
+    std::string       json;
     std::vector<char> binaryBlob;
 };
 
@@ -51,6 +52,6 @@ std::filesystem::path GetShaderDir(ShaderType type);
 std::filesystem::path GetTextureDir();
 std::filesystem::path GetModelDir();
 std::filesystem::path GetFontDir();
-}  // namespace aph
+}  // namespace aph::asset
 
 #endif  // ASSETMANAGER_H_

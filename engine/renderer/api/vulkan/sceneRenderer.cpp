@@ -141,15 +141,15 @@ void SceneRenderer::recordAll()
         cb[POSTFX]->end();
     }
 
-    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX>     waitSemaphoreInfos;
-    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX>     signalSemaphoreInfos;
-    std::array<VkCommandBufferSubmitInfo, CB_MAX> cbSubmitInfo;
-    std::vector<VkSubmitInfo2>                    submitInfos(CB_MAX);
+    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX> waitSemaphoreInfos;
+    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX> signalSemaphoreInfos;
+    std::array<VkCommandBufferSubmitInfo, CB_MAX>          cbSubmitInfo;
+    std::vector<VkSubmitInfo2>                             submitInfos(CB_MAX);
 
     {
         // timeline
         VkSemaphore& timelineMain = m_timelineMain[m_frameIdx];
-        VkSemaphore timelineShadow{};
+        VkSemaphore  timelineShadow{};
 
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineMain);
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
@@ -186,7 +186,7 @@ void SceneRenderer::recordAll()
             cbSI.deviceMask    = 0;
         }
 
-        for (auto& wait : waitSI)
+        for(auto& wait : waitSI)
         {
             wait.pNext       = nullptr;
             wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
@@ -194,7 +194,7 @@ void SceneRenderer::recordAll()
             wait.deviceIndex = 0;
         }
 
-        for (auto& sig : sigSI)
+        for(auto& sig : sigSI)
         {
             sig.pNext       = nullptr;
             sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
@@ -316,14 +316,15 @@ void SceneRenderer::_loadScene()
             m_lightList.push_back(node->getObject<Light>());
         }
         break;
-        default: break;
+        default:
+            break;
         }
     });
 
     {
         // TODO for testing
-        auto* cam = new Camera{CameraType::PERSPECTIVE};
-        cam->m_view = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
+        auto* cam         = new Camera{CameraType::PERSPECTIVE};
+        cam->m_view       = glm::lookAt(glm::vec3(1.0f), glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f));
         cam->m_projection = glm::perspective(glm::radians(100.0f), 1.0f, 0.1f, 64.0f);
         m_cameraList.push_back(cam);
     }
@@ -557,8 +558,7 @@ void SceneRenderer::_initSetLayout()
         std::vector<ResourcesBinding> bindings{
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
+            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER], true);
     }
@@ -674,17 +674,16 @@ void SceneRenderer::_initGpuResources()
 
     // indirect cmds
     {
-        std::vector<uint8_t> cmdBuffers;
-        VkDispatchIndirectCommand postFX {
+        std::vector<uint8_t>      cmdBuffers;
+        VkDispatchIndirectCommand postFX{
             .x = m_window->getWidth(),
             .y = m_window->getHeight(),
             .z = 1,
         };
-        VkDrawIndirectCommand skybox
-        {
-            .vertexCount = 36,
+        VkDrawIndirectCommand skybox{
+            .vertexCount   = 36,
             .instanceCount = 1,
-            .firstVertex = 0,
+            .firstVertex   = 0,
             .firstInstance = 0,
         };
         cmdBuffers.resize(sizeof(postFX) + sizeof(skybox));
@@ -694,7 +693,6 @@ void SceneRenderer::_initGpuResources()
 
         // sum buffers size
         {
-
         }
 
         BufferCreateInfo createInfo{
@@ -760,7 +758,6 @@ void SceneRenderer::_initSkybox()
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
     }
-
 }
 
 void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
@@ -778,49 +775,11 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
 
     // forward pass
     {
-        ImageView*                pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo forwardColorAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pColorAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
+        Image* pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
+        Image* pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx];
 
-        ImageView*                pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = pDepthAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue  = {.depthStencil{1.0f, 0}},
-        };
-        if(m_sampleCount == VK_SAMPLE_COUNT_1_BIT)
-        {
-            forwardDepthAttachmentInfo.imageView   = pDepthAttachment->getHandle();
-            forwardDepthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
-        }
-
-        VkRenderingInfo renderingInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .renderArea{
-                .offset{0, 0},
-                .extent{extent},
-            },
-            .layerCount           = 1,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &forwardColorAttachmentInfo,
-            .pDepthAttachment     = &forwardDepthAttachmentInfo,
-        };
-
-        {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
-
-        pCommandBuffer->beginRendering(renderingInfo);
+        pCommandBuffer->setRenderTarget({pColorAttachment}, pDepthAttachment);
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // skybox
         {
@@ -876,11 +835,10 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
         }
     }
-
 }
 
 void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
@@ -898,91 +856,17 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
 
     // geometry pass
     {
-        ImageView* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx]->getView();
-        ImageView* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx]->getView();
-        ImageView* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx]->getView();
-        ImageView* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx]->getView();
-        ImageView* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx]->getView();
+        Image* positionAttachment            = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
+        Image* normalAttachment              = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
+        Image* albedoAttachment              = m_images[IMAGE_GBUFFER_ALBEDO][m_frameIdx];
+        Image* metallicRoughnessAOAttachment = m_images[IMAGE_GBUFFER_METALLIC_ROUGHNESS_AO][m_frameIdx];
+        Image* emissiveAttachment            = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
+        Image* depthAttachment               = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx];
 
-        // 0 pos, 1 normal, 2 albedo
-        std::array<VkRenderingAttachmentInfo, 5> colorAttachments;
-        colorAttachments[0] = {
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = positionAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
-        colorAttachments[1] = {
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = normalAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
-        colorAttachments[2] = {
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = albedoAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
-        colorAttachments[3] = {
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = metallicRoughnessAOAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
-        colorAttachments[4] = {
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = emissiveAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
-
-        ImageView*                depthAttachment = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo depthAttachmentInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = depthAttachment->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue  = {.depthStencil{1.0f, 0}},
-        };
-
-        VkRenderingInfo renderingInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .renderArea{
-                .offset{0, 0},
-                .extent{extent},
-            },
-            .layerCount           = 1,
-            .colorAttachmentCount = colorAttachments.size(),
-            .pColorAttachments    = colorAttachments.data(),
-            .pDepthAttachment     = &depthAttachmentInfo,
-        };
-
-        {
-            pCommandBuffer->transitionImageLayout(positionAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(normalAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(albedoAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(emissiveAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
-
-        pCommandBuffer->beginRendering(renderingInfo);
+        pCommandBuffer->setRenderTarget(
+            {positionAttachment, normalAttachment, albedoAttachment, metallicRoughnessAOAttachment, emissiveAttachment},
+            depthAttachment);
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // draw scene object
         {
@@ -995,11 +879,11 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 Mesh*       mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
-                                              sizeof(ObjectInfo::nodeId), &nodeId);
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
-                    pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
+                    pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                  &subset.materialIndex);
                     if(subset.indexCount > 0)
                     {
                         if(subset.hasIndices)
@@ -1019,25 +903,27 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(positionAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(normalAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(albedoAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(emissiveAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment->getImage(),
+            pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(normalAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(albedoAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(metallicRoughnessAOAttachment,
                                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
         }
     }
-
 }
 
 void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
 {
     // TODO
-    VkExtent2D extent{.width  = 4096, .height = 4096,};
+    VkExtent2D extent{
+        .width  = 4096,
+        .height = 4096,
+    };
     VkViewport viewport = init::viewport(extent);
     VkRect2D   scissor  = init::rect2D(extent);
 
@@ -1047,32 +933,10 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
 
     // forward pass
     {
-        ImageView*                pDepthAttachment   = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo depthAttachmentInfo{
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView          = pDepthAttachment->getHandle(),
-            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {.depthStencil{1.0f, 0}},
-        };
-
-        VkRenderingInfo renderingInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .renderArea{
-                .offset{0, 0},
-                .extent{extent},
-            },
-            .layerCount           = 1,
-            .pDepthAttachment     = &depthAttachmentInfo,
-        };
-
-        {
-            pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-        }
-
-        pCommandBuffer->beginRendering(renderingInfo);
+        Image* pDepthAttachment = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
+        pCommandBuffer->setRenderTarget(
+            {}, AttachmentInfo{.image = pDepthAttachment, .storeOp = VK_ATTACHMENT_STORE_OP_STORE});
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // draw scene object
         {
@@ -1085,8 +949,7 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
-                                              sizeof(ObjectInfo::nodeId), &nodeId);
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
                     if(subset.indexCount > 0)
@@ -1108,14 +971,16 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(pDepthAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pDepthAttachment, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
         }
     }
 }
 
 void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
 {
+    // TODO refine
+    APH_ASSERT(false);
     VkExtent2D extent{
         .width  = getWindowWidth(),
         .height = getWindowHeight(),
@@ -1129,65 +994,11 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
 
     // forward pass
     {
-        ImageView*                pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView();
-        ImageView*                pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo forwardColorAttachmentInfo{
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView          = pColorAttachmentMS->getHandle(),
-            .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
-            .resolveImageView   = pColorAttachment->getHandle(),
-            .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue         = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}},
-        };
+        Image* pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
+        Image* pColorAttachmentMS = m_images[IMAGE_GENERAL_COLOR_MS][m_frameIdx];
 
-        if(m_sampleCount == VK_SAMPLE_COUNT_1_BIT)
-        {
-            forwardColorAttachmentInfo.imageView   = pColorAttachment->getHandle();
-            forwardColorAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
-        }
-
-        ImageView*                pDepthAttachment   = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx]->getView();
-        ImageView*                pDepthAttachmentMS = m_images[IMAGE_GENERAL_DEPTH_MS][m_frameIdx]->getView();
-        VkRenderingAttachmentInfo forwardDepthAttachmentInfo{
-            .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView          = pDepthAttachmentMS->getHandle(),
-            .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
-            .resolveImageView   = pDepthAttachment->getHandle(),
-            .resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue         = {.depthStencil{1.0f, 0}},
-        };
-        if(m_sampleCount == VK_SAMPLE_COUNT_1_BIT)
-        {
-            forwardDepthAttachmentInfo.imageView   = pDepthAttachment->getHandle();
-            forwardDepthAttachmentInfo.resolveMode = VK_RESOLVE_MODE_NONE;
-        }
-
-        VkRenderingInfo renderingInfo{
-            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-            .renderArea{
-                .offset{0, 0},
-                .extent{extent},
-            },
-            .layerCount           = 1,
-            .colorAttachmentCount = 1,
-            .pColorAttachments    = &forwardColorAttachmentInfo,
-            .pDepthAttachment     = &forwardDepthAttachmentInfo,
-        };
-
-        {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(), VK_IMAGE_LAYOUT_UNDEFINED,
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        }
-
-        pCommandBuffer->beginRendering(renderingInfo);
+        pCommandBuffer->setRenderTarget({pColorAttachment});
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // skybox
         {
@@ -1208,13 +1019,13 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
             {
                 const auto& node = m_meshNodeList[nodeId];
                 auto        mesh = node->getObject<Mesh>();
-                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId),
-                                              sizeof(ObjectInfo::nodeId), &nodeId);
+                pCommandBuffer->pushConstants(offsetof(ObjectInfo, nodeId), sizeof(ObjectInfo::nodeId), &nodeId);
                 for(const auto& subset : mesh->m_subsets)
                 {
                     if(subset.indexCount > 0)
                     {
-                        pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId), &subset.materialIndex);
+                        pCommandBuffer->pushConstants(offsetof(ObjectInfo, materialId), sizeof(ObjectInfo::materialId),
+                                                      &subset.materialIndex);
                         if(subset.hasIndices)
                         {
                             pCommandBuffer->drawIndexed(subset.indexCount, 1, mesh->m_indexOffset + subset.firstIndex,
@@ -1235,10 +1046,10 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
         pCommandBuffer->endRendering();
 
         {
-            pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
-            pCommandBuffer->transitionImageLayout(pColorAttachmentMS->getImage(),
-                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachment, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
+            pCommandBuffer->transitionImageLayout(pColorAttachmentMS, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                  VK_IMAGE_LAYOUT_GENERAL);
         }
     }
 
@@ -1384,7 +1195,7 @@ void SceneRenderer::_initShadow()
     m_images[IMAGE_SHADOW_DEPTH].resize(m_config.maxFrames);
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
-        auto &depth = m_images[IMAGE_SHADOW_DEPTH][idx];
+        auto&           depth = m_images[IMAGE_SHADOW_DEPTH][idx];
         ImageCreateInfo createInfo{
             // TODO depth map size
             .extent    = {4096, 4096, 1},
@@ -1403,22 +1214,22 @@ void SceneRenderer::_initShadow()
     {
         GraphicsPipelineCreateInfo createInfo{};
 
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        auto shaderDir                 = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        createInfo.renderingCreateInfo = {
+            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .depthAttachmentFormat = m_pDevice->getDepthFormat(),
         };
 
-        createInfo.rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
+        createInfo.rasterizer.cullMode        = VK_CULL_MODE_FRONT_BIT;
         createInfo.rasterizer.depthBiasEnable = VK_TRUE;
         createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
-        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)}};
+        createInfo.depthStencil =
+            init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
+        createInfo.constants                      = {{utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)}};
         createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "shadow.vert.spv");
 
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
     }
 }
 }  // namespace aph::vk

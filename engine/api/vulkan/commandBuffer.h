@@ -22,36 +22,47 @@ enum class CommandBufferState
     INVALID,
 };
 
+struct AttachmentInfo
+{
+    Image*                             image{};
+    std::optional<VkImageLayout>       layout;
+    std::optional<VkAttachmentLoadOp>  loadOp;
+    std::optional<VkAttachmentStoreOp> storeOp;
+    std::optional<VkClearValue>        clear;
+};
+
 struct CommandGraphicsState
 {
-    Pipeline* pPipeline{};
+    Pipeline*                     pPipeline{};
+    std::vector<AttachmentInfo>   colorAttachments;
+    std::optional<AttachmentInfo> depthAttachment;
 };
 
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
     CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices);
-
     ~CommandBuffer();
 
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
     VkResult end();
     VkResult reset();
 
+    void setRenderTarget(const std::vector<Image*>& colors, Image* depth = nullptr);
+    void setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
+    void beginRendering(VkRect2D renderArea);
     void beginRendering(const VkRenderingInfo& renderingInfo);
     void endRendering();
     void setViewport(const VkViewport& viewport);
     void setSissor(const VkRect2D& scissor);
     void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);
-    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
-                           const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount = 0,
-                           const uint32_t* pDynamicOffset = nullptr);
+    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
+                           uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding = 0, uint32_t bindingCount = 1,
                            const std::vector<VkDeviceSize>& offsets = {0});
     void bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset = 0, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
-    void pushConstants(uint32_t offset, uint32_t size,
-                       const void* pValues);
+    void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                      uint32_t firstInstance);
     void pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes, uint32_t setIdx);

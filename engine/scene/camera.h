@@ -18,7 +18,7 @@ enum class CameraType
 struct Light;
 struct Camera : public Object
 {
-    Camera(Light * light):
+    Camera(Light* light) :
         Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
         m_cameraType(CameraType::PERSPECTIVE)
     {

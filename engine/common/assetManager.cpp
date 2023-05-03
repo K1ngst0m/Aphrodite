@@ -45,20 +45,20 @@ bool saveBinaryfile(const char* path, const AssetFile& file)
 
     outfile.write(file.type, 4);
     uint32_t version = file.version;
-    //version
+    // version
     outfile.write((const char*)&version, sizeof(uint32_t));
 
-    //json length
+    // json length
     uint32_t length = file.json.size();
     outfile.write((const char*)&length, sizeof(uint32_t));
 
-    //blob length
+    // blob length
     uint32_t bloblength = file.binaryBlob.size();
     outfile.write((const char*)&bloblength, sizeof(uint32_t));
 
-    //json stream
+    // json stream
     outfile.write(file.json.data(), length);
-    //blob data
+    // blob data
     outfile.write(file.binaryBlob.data(), file.binaryBlob.size());
 
     outfile.close();
@@ -71,9 +71,10 @@ bool loadBinaryfile(const char* path, AssetFile& outputFile)
     std::ifstream infile;
     infile.open(path, std::ios::binary);
 
-    if (!infile.is_open()) return false;
+    if(!infile.is_open())
+        return false;
 
-    //move file cursor to beginning
+    // move file cursor to beginning
     infile.seekg(0);
 
     infile.read(outputFile.type, 4);
