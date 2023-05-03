@@ -992,6 +992,7 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY], 0, 1, &m_sceneSet);
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY], 1, 1, &m_samplerSet);
             pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
@@ -1000,24 +1001,6 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
                 pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY],
                                               {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
-                if(mesh->m_indexOffset > -1)
-                {
-                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-                    switch(mesh->m_indexType)
-                    {
-                    case IndexType::UINT16:
-                        indexType = VK_INDEX_TYPE_UINT16;
-                        break;
-                    case IndexType::UINT32:
-                        indexType = VK_INDEX_TYPE_UINT32;
-                        break;
-                    default:
-                        CM_LOG_ERR("undefined behavior.");
-                        APH_ASSERT(false);
-                        break;
-                    }
-                    pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-                }
                 for(const auto& subset : mesh->m_subsets)
                 {
                     pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY],
@@ -1102,6 +1085,7 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SHADOW]);
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_SHADOW], 0, 1, &m_sceneSet);
             pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
@@ -1110,24 +1094,6 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
                 pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_SHADOW],
                                               {ShaderStage::VS}, offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
-                if(mesh->m_indexOffset > -1)
-                {
-                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-                    switch(mesh->m_indexType)
-                    {
-                    case IndexType::UINT16:
-                        indexType = VK_INDEX_TYPE_UINT16;
-                        break;
-                    case IndexType::UINT32:
-                        indexType = VK_INDEX_TYPE_UINT32;
-                        break;
-                    default:
-                        CM_LOG_ERR("undefined behavior.");
-                        APH_ASSERT(false);
-                        break;
-                    }
-                    pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-                }
                 for(const auto& subset : mesh->m_subsets)
                 {
                     if(subset.indexCount > 0)
@@ -1245,6 +1211,7 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 0, 1, &m_sceneSet);
             pCommandBuffer->bindDescriptorSet(m_pipelines[PIPELINE_GRAPHICS_FORWARD], 1, 1, &m_samplerSet);
             pCommandBuffer->bindVertexBuffers(0, 1, m_buffers[BUFFER_SCENE_VERTEX], {0});
+            pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, VK_INDEX_TYPE_UINT32);
 
             for(uint32_t nodeId = 0; nodeId < m_meshNodeList.size(); nodeId++)
             {
@@ -1253,24 +1220,6 @@ void SceneRenderer::recordForward(CommandBuffer* pCommandBuffer)
                 pCommandBuffer->pushConstants(m_pipelines[PIPELINE_GRAPHICS_FORWARD],
                                               {ShaderStage::VS, ShaderStage::FS}, offsetof(ObjectInfo, nodeId),
                                               sizeof(ObjectInfo::nodeId), &nodeId);
-                if(mesh->m_indexOffset > -1)
-                {
-                    VkIndexType indexType = VK_INDEX_TYPE_UINT32;
-                    switch(mesh->m_indexType)
-                    {
-                    case IndexType::UINT16:
-                        indexType = VK_INDEX_TYPE_UINT16;
-                        break;
-                    case IndexType::UINT32:
-                        indexType = VK_INDEX_TYPE_UINT32;
-                        break;
-                    default:
-                        CM_LOG_ERR("undefined behavior.");
-                        APH_ASSERT(false);
-                        break;
-                    }
-                    pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX], 0, indexType);
-                }
                 for(const auto& subset : mesh->m_subsets)
                 {
                     if(subset.indexCount > 0)

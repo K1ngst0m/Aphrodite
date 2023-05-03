@@ -95,7 +95,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
 
 void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uint8_t>& indicesList,
                const tinygltf::Node& inputNode, const tinygltf::Model& input, SceneNode* parent,
-               uint32_t materialOffset)
+               uint32_t materialOffset, bool unifiedIndexType = true)
 {
     glm::mat4 matrix{1.0f};
 
@@ -225,14 +225,29 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                 }
                 case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT:
                 {
-                    indices.resize(indices.size() + accessor.count * 2);
-                    auto* dataPtr = reinterpret_cast<uint16_t*>(&indices[idxOffset]);
-                    indexType     = IndexType::UINT16;
-                    const auto* buf =
-                        reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-                    for(size_t index = 0; index < accessor.count; index++)
+                    if (unifiedIndexType)
                     {
-                        dataPtr[index] = buf[index] + vertexStart;
+                        indices.resize(indices.size() + accessor.count * 4);
+                        auto* dataPtr = reinterpret_cast<uint32_t*>(&indices[idxOffset]);
+                        indexType     = IndexType::UINT32;
+                        const auto* buf =
+                            reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        for(size_t index = 0; index < accessor.count; index++)
+                        {
+                            dataPtr[index] = buf[index] + vertexStart;
+                        }
+                    }
+                    else
+                    {
+                        indices.resize(indices.size() + accessor.count * 2);
+                        auto* dataPtr = reinterpret_cast<uint16_t*>(&indices[idxOffset]);
+                        indexType     = IndexType::UINT16;
+                        const auto* buf =
+                            reinterpret_cast<const uint16_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
+                        for(size_t index = 0; index < accessor.count; index++)
+                        {
+                            dataPtr[index] = buf[index] + vertexStart;
+                        }
                     }
                     break;
                 }
