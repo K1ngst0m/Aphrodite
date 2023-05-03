@@ -18,18 +18,18 @@
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
 #ifdef APH_DEBUG
-#define VK_CHECK_RESULT(f) \
-    { \
-        VkResult res = (f); \
-        if(res != VK_SUCCESS) \
+#    define VK_CHECK_RESULT(f) \
         { \
-            CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s\n", \
-                                      aph::vk::utils::errorString(res), __FILE__, __LINE__); \
-            std::abort(); \
-        } \
-    }
+            VkResult res = (f); \
+            if(res != VK_SUCCESS) \
+            { \
+                CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s\n", aph::vk::utils::errorString(res), \
+                           __FILE__, __LINE__); \
+                std::abort(); \
+            } \
+        }
 #else
-#define VK_CHECK_RESULT(f) ((void)0)
+#    define VK_CHECK_RESULT(f) ((void)0)
 #endif
 
 namespace aph::vk::utils
@@ -38,6 +38,7 @@ std::string        errorString(VkResult errorCode);
 std::vector<char>  loadSpvFromFile(const std::string& filename);
 std::vector<char>  loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags getImageAspect(VkFormat format);
+ShaderStage        getStageFromPath(std::string_view path);
 }  // namespace aph::vk::utils
 
 // convert
@@ -47,5 +48,9 @@ VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 }  // namespace aph::vk::utils
+
+namespace aph
+{
+}  // namespace aph
 
 #endif  // VKLUTILS_H_

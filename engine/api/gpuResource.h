@@ -26,14 +26,15 @@ enum class ImageDomain
 
 enum class ShaderStage
 {
-    VS  = 0,
-    TCS = 1,
-    TES = 2,
-    GS  = 3,
-    FS  = 4,
-    CS  = 5,
-    TS  = 6,
-    MS  = 7,
+    NA = 0,
+    VS  = 1,
+    TCS = 2,
+    TES = 3,
+    GS  = 4,
+    FS  = 5,
+    CS  = 6,
+    TS  = 7,
+    MS  = 8,
 };
 
 enum class ResourceType

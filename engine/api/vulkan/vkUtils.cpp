@@ -1,10 +1,7 @@
 #include "vkUtils.h"
-#include <vulkan/vulkan_core.h>
-#include "spvgen/spvgen.h"
 
 namespace aph::vk::utils
 {
-
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {
     VkShaderStageFlags flags{};
@@ -64,7 +61,8 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
 
 std::vector<char> loadGlslFromFile(const std::string& filename)
 {
-    // TODO spvgen
+    // TODO
+    APH_ASSERT(false);
     return {};
 }
 
@@ -138,4 +136,21 @@ VkImageAspectFlags getImageAspect(VkFormat format)
     }
 }
 
+ShaderStage getStageFromPath(std::string_view path)
+{
+    auto ext = std::filesystem::path(path).extension();
+    if(ext == ".vert")
+        return ShaderStage::VS;
+    if(ext == ".tesc")
+        return ShaderStage::TCS;
+    if(ext == ".tese")
+        return ShaderStage::TES;
+    if(ext == ".geom")
+        return ShaderStage::GS;
+    if(ext == ".frag")
+        return ShaderStage::FS;
+    if(ext == ".comp")
+        return ShaderStage::CS;
+    return ShaderStage::NA;
+}
 }  // namespace aph::vk::utils

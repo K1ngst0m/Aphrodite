@@ -86,20 +86,22 @@ std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view pat
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
 }  // namespace aph::utils
 
-namespace aph {
+namespace aph
+{
 #ifdef APH_DEBUG
-#define APH_ASSERT(x)                                            \
-    do                                                           \
-    {                                                            \
-        if (!bool(x))                                            \
-        {                                                        \
-            CM_LOG_ERR("Error at %s:%d.\n", __FILE__, __LINE__); \
-            abort();                                        \
-        }                                                        \
-    } while (0)
+#    define APH_ASSERT(x) \
+        do \
+        { \
+            if(!bool(x)) \
+            { \
+                CM_LOG_ERR("Error at %s:%d.\n", __FILE__, __LINE__); \
+                LOG_FLUSH(); \
+                abort(); \
+            } \
+        } while(0)
 #else
-#define APH_ASSERT(x) ((void)0)
+#    define APH_ASSERT(x) ((void)0)
 #endif
-}
+}  // namespace aph
 
 #endif  // VKLCOMMON_H_

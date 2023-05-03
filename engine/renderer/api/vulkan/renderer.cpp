@@ -338,7 +338,7 @@ ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
         {
             spvCode = utils::loadSpvFromFile(path);
         }
-        else
+        else if (utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
         {
             spvCode = utils::loadGlslFromFile(path);
         }
