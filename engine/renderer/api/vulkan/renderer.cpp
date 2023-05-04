@@ -332,7 +332,7 @@ ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        std::vector<char> spvCode;
+        std::vector<uint32_t> spvCode;
         if(path.extension() == ".spv")
         {
             spvCode = utils::loadSpvFromFile(path);

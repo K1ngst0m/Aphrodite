@@ -2,6 +2,42 @@
 
 namespace aph::vk::utils
 {
+
+std::string errorString(VkResult errorCode)
+{
+    switch(errorCode)
+    {
+#define STR(r) \
+    case VK_##r: \
+        return #r
+        STR(NOT_READY);
+        STR(TIMEOUT);
+        STR(EVENT_SET);
+        STR(EVENT_RESET);
+        STR(INCOMPLETE);
+        STR(ERROR_OUT_OF_HOST_MEMORY);
+        STR(ERROR_OUT_OF_DEVICE_MEMORY);
+        STR(ERROR_INITIALIZATION_FAILED);
+        STR(ERROR_DEVICE_LOST);
+        STR(ERROR_MEMORY_MAP_FAILED);
+        STR(ERROR_LAYER_NOT_PRESENT);
+        STR(ERROR_EXTENSION_NOT_PRESENT);
+        STR(ERROR_FEATURE_NOT_PRESENT);
+        STR(ERROR_INCOMPATIBLE_DRIVER);
+        STR(ERROR_TOO_MANY_OBJECTS);
+        STR(ERROR_FORMAT_NOT_SUPPORTED);
+        STR(ERROR_SURFACE_LOST_KHR);
+        STR(ERROR_NATIVE_WINDOW_IN_USE_KHR);
+        STR(SUBOPTIMAL_KHR);
+        STR(ERROR_OUT_OF_DATE_KHR);
+        STR(ERROR_INCOMPATIBLE_DISPLAY_KHR);
+        STR(ERROR_VALIDATION_FAILED_EXT);
+        STR(ERROR_INVALID_SHADER_NV);
+#undef STR
+    default:
+        return "UNKNOWN_ERROR";
+    }
+}
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {
     VkShaderStageFlags flags{};
@@ -59,63 +95,18 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
     }
 }
 
-std::vector<char> loadGlslFromFile(const std::string& filename)
+std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 {
-    // TODO
-    APH_ASSERT(false);
     return {};
 }
 
-std::string errorString(VkResult errorCode)
+std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
 {
-    switch(errorCode)
-    {
-#define STR(r) \
-    case VK_##r: \
-        return #r
-        STR(NOT_READY);
-        STR(TIMEOUT);
-        STR(EVENT_SET);
-        STR(EVENT_RESET);
-        STR(INCOMPLETE);
-        STR(ERROR_OUT_OF_HOST_MEMORY);
-        STR(ERROR_OUT_OF_DEVICE_MEMORY);
-        STR(ERROR_INITIALIZATION_FAILED);
-        STR(ERROR_DEVICE_LOST);
-        STR(ERROR_MEMORY_MAP_FAILED);
-        STR(ERROR_LAYER_NOT_PRESENT);
-        STR(ERROR_EXTENSION_NOT_PRESENT);
-        STR(ERROR_FEATURE_NOT_PRESENT);
-        STR(ERROR_INCOMPATIBLE_DRIVER);
-        STR(ERROR_TOO_MANY_OBJECTS);
-        STR(ERROR_FORMAT_NOT_SUPPORTED);
-        STR(ERROR_SURFACE_LOST_KHR);
-        STR(ERROR_NATIVE_WINDOW_IN_USE_KHR);
-        STR(SUBOPTIMAL_KHR);
-        STR(ERROR_OUT_OF_DATE_KHR);
-        STR(ERROR_INCOMPATIBLE_DISPLAY_KHR);
-        STR(ERROR_VALIDATION_FAILED_EXT);
-        STR(ERROR_INVALID_SHADER_NV);
-#undef STR
-    default:
-        return "UNKNOWN_ERROR";
-    }
-}
-
-std::vector<char> loadSpvFromFile(const std::string& filename)
-{
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    assert(file.is_open() && "failed to open file!");
-
-    size_t            fileSize = (size_t)file.tellg();
-    std::vector<char> buffer(fileSize);
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
+    auto source = aph::utils::readFile(filename);
+    uint32_t size = source.size();
+    std::vector<uint32_t> spirv(size);
+    memcpy(spirv.data(), source.data(), size);
+    return spirv;
 }
 
 VkImageAspectFlags getImageAspect(VkFormat format)

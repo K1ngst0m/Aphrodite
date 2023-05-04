@@ -84,6 +84,7 @@ typename std::underlying_type<T>::type getUnderLyingType(T value)
 }
 std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
+std::string readFile(const std::string& filename);
 }  // namespace aph::utils
 
 namespace aph

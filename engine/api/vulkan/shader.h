@@ -11,15 +11,15 @@ class Device;
 class ShaderModule : public ResourceHandle<VkShaderModule>
 {
 public:
-    static std::unique_ptr<ShaderModule> Create(Device* pDevice, const std::vector<char>& code,
+    static std::unique_ptr<ShaderModule> Create(Device* pDevice, const std::vector<uint32_t>& code,
                                                 const std::string& entrypoint = "main");
 
-    std::vector<char> getCode() { return m_code; }
+    std::vector<uint32_t> getCode() { return m_code; }
 
 private:
-    ShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint = "main");
+    ShaderModule(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main");
     std::string       m_entrypoint = {};
-    std::vector<char> m_code       = {};
+    std::vector<uint32_t> m_code       = {};
 };
 
 using ShaderMapList = std::unordered_map<ShaderStage, ShaderModule*>;

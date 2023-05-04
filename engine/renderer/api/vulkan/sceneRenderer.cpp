@@ -396,9 +396,6 @@ void SceneRenderer::_initGbuffer()
                 .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
         };
 
-        // createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        // createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        // createInfo.multisampling.minSampleShading     = 0.2f;
         createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
 
         createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};

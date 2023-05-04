@@ -45,4 +45,12 @@ std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::str
     }
     return skyboxImages;
 }
+std::string readFile(const std::string& filename)
+{
+    std::ifstream file(filename);
+    APH_ASSERT(file.is_open());
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    return buffer.str();
+}
 }  // namespace aph::utils

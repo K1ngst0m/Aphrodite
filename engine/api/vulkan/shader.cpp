@@ -3,13 +3,13 @@
 
 namespace aph::vk
 {
-std::unique_ptr<ShaderModule> ShaderModule::Create(Device* pDevice, const std::vector<char>& code,
+std::unique_ptr<ShaderModule> ShaderModule::Create(Device* pDevice, const std::vector<uint32_t>& code,
                                                    const std::string& entrypoint)
 {
     VkShaderModuleCreateInfo createInfo{
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = code.size(),
-        .pCode    = reinterpret_cast<const uint32_t*>(code.data()),
+        .pCode    = code.data(),
     };
 
     VkShaderModule handle;
@@ -19,7 +19,7 @@ std::unique_ptr<ShaderModule> ShaderModule::Create(Device* pDevice, const std::v
     return instance;
 }
 
-ShaderModule::ShaderModule(std::vector<char> code, VkShaderModule shaderModule, std::string entrypoint) :
+ShaderModule::ShaderModule(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint) :
     m_entrypoint(std::move(entrypoint)),
     m_code(std::move(code))
 {
