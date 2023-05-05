@@ -139,11 +139,7 @@ void SceneRenderer::recordAll()
         cb[POSTFX]->end();
     }
 
-    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX> waitSemaphoreInfos;
-    std::array<std::vector<VkSemaphoreSubmitInfo>, CB_MAX> signalSemaphoreInfos;
-    std::array<VkCommandBufferSubmitInfo, CB_MAX>          cbSubmitInfo;
-    std::vector<VkSubmitInfo2>                             submitInfos(CB_MAX);
-
+    std::vector<QueueSubmitInfo2> submitInfos(CB_MAX);
     {
         // timeline
         VkSemaphore& timelineMain = m_timelineMain[m_frameIdx];
@@ -153,64 +149,29 @@ void SceneRenderer::recordAll()
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
 
         // 1 geometry && shadow
-        signalSemaphoreInfos[GEOMETRY].push_back({.semaphore = timelineMain, .value = 1});
-        signalSemaphoreInfos[SHADOW].push_back({.semaphore = timelineShadow, .value = 1});
+        submitInfos[GEOMETRY].signals.push_back({.semaphore = timelineMain, .value = 1});
+        submitInfos[SHADOW].signals.push_back({.semaphore = timelineShadow, .value = 1});
 
         // 2 lighting
-        waitSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineShadow, .value = 1});
-        waitSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineMain, .value = 1});
+        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineShadow, .value = 1});
+        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineMain, .value = 1});
 
-        signalSemaphoreInfos[LIGHTING].push_back({.semaphore = timelineMain, .value = 2});
+        submitInfos[LIGHTING].signals.push_back({.semaphore = timelineMain, .value = 2});
 
         // 3 postfx
-        waitSemaphoreInfos[POSTFX].push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
-        waitSemaphoreInfos[POSTFX].push_back({.semaphore = timelineMain, .value = 2});
+        submitInfos[POSTFX].waits.push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
+        submitInfos[POSTFX].waits.push_back({.semaphore = timelineMain, .value = 2});
 
-        signalSemaphoreInfos[POSTFX].push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
-        signalSemaphoreInfos[POSTFX].push_back({.semaphore = timelineMain, .value = UINT64_MAX});
+        submitInfos[POSTFX].signals.push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
+        submitInfos[POSTFX].signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
     }
 
     for(auto idx = 0; idx < CB_MAX; idx++)
     {
-        auto& cbSI   = cbSubmitInfo[idx];
-        auto& waitSI = waitSemaphoreInfos[idx];
-        auto& sigSI  = signalSemaphoreInfos[idx];
-        auto& si     = submitInfos[idx];
-
-        {
-            cbSI.sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
-            cbSI.commandBuffer = cb[idx]->getHandle();
-            cbSI.pNext         = nullptr;
-            cbSI.deviceMask    = 0;
-        }
-
-        for(auto& wait : waitSI)
-        {
-            wait.pNext       = nullptr;
-            wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            wait.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-            wait.deviceIndex = 0;
-        }
-
-        for(auto& sig : sigSI)
-        {
-            sig.pNext       = nullptr;
-            sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
-            sig.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-            sig.deviceIndex = 0;
-        }
-
-        si.pNext                    = nullptr;
-        si.sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
-        si.commandBufferInfoCount   = 1;
-        si.pCommandBufferInfos      = &cbSI;
-        si.waitSemaphoreInfoCount   = waitSI.size();
-        si.pWaitSemaphoreInfos      = waitSI.data();
-        si.signalSemaphoreInfoCount = sigSI.size();
-        si.pSignalSemaphoreInfos    = sigSI.data();
+        submitInfos[idx].commands.push_back({.commandBuffer = cb[idx]->getHandle()});
     }
 
-    VK_CHECK_RESULT(vkQueueSubmit2(queue->getHandle(), submitInfos.size(), submitInfos.data(), VK_NULL_HANDLE));
+    VK_CHECK_RESULT(queue->submit(submitInfos));
 }
 
 void SceneRenderer::update(float deltaTime)

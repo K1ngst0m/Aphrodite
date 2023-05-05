@@ -44,4 +44,44 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence 
     return result;
 }
 
+VkResult Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
+{
+    std::vector<QueueSubmitInfo2> si = submitInfos;
+    std::vector<VkSubmitInfo2>    vkSubmitInfos;
+    vkSubmitInfos.reserve(submitInfos.size());
+    for(auto& submitInfo : si)
+    {
+        for(auto& cmd : submitInfo.commands)
+        {
+            cmd.sType      = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+            cmd.pNext      = nullptr;
+            cmd.deviceMask = 0;
+        }
+        for(auto& sig : submitInfo.signals)
+        {
+            sig.pNext       = nullptr;
+            sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            sig.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            sig.deviceIndex = 0;
+        }
+        for(auto& wait : submitInfo.waits)
+        {
+            wait.pNext       = nullptr;
+            wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            wait.stageMask   = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+            wait.deviceIndex = 0;
+        }
+        vkSubmitInfos.push_back({
+            .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+            .pNext                    = nullptr,
+            .waitSemaphoreInfoCount   = static_cast<uint32_t>(submitInfo.waits.size()),
+            .pWaitSemaphoreInfos      = submitInfo.waits.data(),
+            .commandBufferInfoCount   = static_cast<uint32_t>(submitInfo.commands.size()),
+            .pCommandBufferInfos      = submitInfo.commands.data(),
+            .signalSemaphoreInfoCount = static_cast<uint32_t>(submitInfo.signals.size()),
+            .pSignalSemaphoreInfos    = submitInfo.signals.data(),
+        });
+    }
+    return vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE);
+}
 }  // namespace aph::vk
