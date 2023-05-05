@@ -8,7 +8,7 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
+#include <imgui/imgui_impl_glfw.h>
 
 namespace aph::vk
 {
@@ -196,8 +196,8 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
 
             pipelineCreateInfo.setLayouts = {m_ui.pSetLayout};
             pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(m_ui.pushConstBlock)}};
-            pipelineCreateInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "uioverlay.vert.spv");
-            pipelineCreateInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "uioverlay.frag.spv");
+            pipelineCreateInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "uioverlay.vert");
+            pipelineCreateInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "uioverlay.frag");
 
             pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
             pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -332,16 +332,7 @@ ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        std::vector<uint32_t> spvCode;
-        if(path.extension() == ".spv")
-        {
-            spvCode = utils::loadSpvFromFile(path);
-        }
-        else if(utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
-        {
-            spvCode = utils::loadGlslFromFile(path);
-        }
-        shaderModuleCaches[path] = ShaderModule::Create(m_pDevice, spvCode);
+        shaderModuleCaches[path] = ShaderModule::Create(m_pDevice, path);
     }
     return shaderModuleCaches[path].get();
 }

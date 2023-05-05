@@ -29,7 +29,7 @@
             } \
         }
 #else
-#    define VK_CHECK_RESULT(f) ((void)0)
+#    define VK_CHECK_RESULT(f) (f)
 #endif
 
 namespace aph::vk::utils

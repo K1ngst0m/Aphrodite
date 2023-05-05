@@ -11,8 +11,8 @@ class Device;
 class ShaderModule : public ResourceHandle<VkShaderModule>
 {
 public:
-    static std::unique_ptr<ShaderModule> Create(Device* pDevice, const std::vector<uint32_t>& code,
-                                                const std::string& entrypoint = "main");
+    static std::unique_ptr<ShaderModule> Create(Device* pDevice, const std::filesystem::path& path,
+                                                   const std::string& entrypoint = "main");
 
     std::vector<uint32_t> getCode() { return m_code; }
 

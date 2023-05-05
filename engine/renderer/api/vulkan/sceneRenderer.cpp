@@ -19,7 +19,7 @@
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
-#include <imgui_impl_glfw.h>
+#include <imgui/imgui_impl_glfw.h>
 
 namespace aph::vk
 {
@@ -361,8 +361,8 @@ void SceneRenderer::_initGbuffer()
 
         createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "geometry.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "geometry.frag.spv");
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "geometry.vert");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "geometry.frag");
 
         VK_CHECK_RESULT(
             m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
@@ -388,8 +388,8 @@ void SceneRenderer::_initGbuffer()
         createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP],
                                  m_setLayouts[SET_LAYOUT_GBUFFER]};
         createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr_deferred.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr_deferred.frag.spv");
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr_deferred.vert");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr_deferred.frag");
 
         VK_CHECK_RESULT(
             m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
@@ -451,7 +451,7 @@ void SceneRenderer::_initGeneral()
         std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         ComputePipelineCreateInfo createInfo{};
         createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
-        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp.spv");
+        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp");
         VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
     }
 }
@@ -704,8 +704,8 @@ void SceneRenderer::_initSkybox()
 
         createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
         createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert.spv");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag.spv");
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert");
+        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag");
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
     }
@@ -1061,7 +1061,7 @@ void SceneRenderer::_initShadow()
             init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
         createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
         createInfo.constants                      = {{utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "shadow.vert.spv");
+        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "shadow.vert");
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
     }

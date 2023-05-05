@@ -1,4 +1,5 @@
 #include "vkUtils.h"
+#include <shaderc/shaderc.hpp>
 
 namespace aph::vk::utils
 {
@@ -38,6 +39,7 @@ std::string errorString(VkResult errorCode)
         return "UNKNOWN_ERROR";
     }
 }
+
 VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
 {
     VkShaderStageFlags flags{};
@@ -97,14 +99,55 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
 
 std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 {
-    return {};
+    shaderc::Compiler compiler{};
+    auto source = aph::utils::readFile(filename);
+    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
+    switch (getStageFromPath(filename)) {
+    case ShaderStage::VS:
+        stage = shaderc_vertex_shader;
+        break;
+    case ShaderStage::FS:
+        stage = shaderc_fragment_shader;
+        break;
+    case ShaderStage::CS:
+        stage = shaderc_compute_shader;
+        break;
+    case ShaderStage::TCS:
+        stage = shaderc_tess_control_shader;
+        break;
+    case ShaderStage::TES:
+        stage = shaderc_tess_evaluation_shader;
+        break;
+    case ShaderStage::GS:
+        stage = shaderc_geometry_shader;
+        break;
+    case ShaderStage::TS:
+        stage = shaderc_task_shader;
+        break;
+    case ShaderStage::MS:
+        stage = shaderc_mesh_shader;
+        break;
+    default:
+        break;
+    }
+
+    shaderc::CompileOptions options{};
+    options.SetGenerateDebugInfo();
+    options.SetSourceLanguage(shaderc_source_language_glsl);
+    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+    options.SetTargetSpirv(shaderc_spirv_version_1_6);
+
+    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.c_str(), "main", options);
+    APH_ASSERT(result.GetCompilationStatus() == 0);
+    std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
+    return spirv;
 }
 
 std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
 {
     auto source = aph::utils::readFile(filename);
     uint32_t size = source.size();
-    std::vector<uint32_t> spirv(size);
+    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
     memcpy(spirv.data(), source.data(), size);
     return spirv;
 }
