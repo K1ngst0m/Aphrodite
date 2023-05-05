@@ -34,6 +34,8 @@ struct AttachmentInfo
 struct CommandGraphicsState
 {
     Pipeline*                     pPipeline{};
+    VkViewport                    viewport{};
+    VkRect2D                      scissor{};
     std::vector<AttachmentInfo>   colorAttachments;
     std::optional<AttachmentInfo> depthAttachment;
 };

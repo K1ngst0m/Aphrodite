@@ -68,10 +68,12 @@ VkResult CommandBuffer::reset()
 void CommandBuffer::setViewport(const VkViewport& viewport)
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewport);
+    m_graphicsState.viewport = viewport;
 }
 void CommandBuffer::setSissor(const VkRect2D& scissor)
 {
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor);
+    m_graphicsState.scissor = scissor;
 }
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
