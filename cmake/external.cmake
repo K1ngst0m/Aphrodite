@@ -21,7 +21,6 @@ set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(external/glfw)
 add_subdirectory(external/reckless)
-add_subdirectory(external/shaderc)
 add_subdirectory(external/imgui)
 add_subdirectory(external/volk)
 

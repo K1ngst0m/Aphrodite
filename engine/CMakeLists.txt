@@ -34,5 +34,5 @@ target_link_libraries(engine
   dl
   reckless
   imgui
-  shaderc
-  )
+  shaderc_shared
+)
