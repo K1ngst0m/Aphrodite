@@ -23,6 +23,7 @@ add_subdirectory(external/glfw)
 add_subdirectory(external/reckless)
 add_subdirectory(external/imgui)
 add_subdirectory(external/volk)
+add_subdirectory(external/SPIRV-cross)
 
 find_library(vulkan_lib NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
 if (vulkan_lib)

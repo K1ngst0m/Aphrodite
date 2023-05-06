@@ -1,0 +1,24 @@
+# Note: this file is parsed by fetch_external_sources.py to get the revision,
+# please do not move the lines and change the formats at will.
+
+Promotion history for /spvgen/external
+
+[glslang]
+Commit: 1fb2f1d7
+Date: 2023/1/11
+1fb2f1d7 Merge pull request #3108 from greg-lunarg/i3105
+
+[SPIRV-tools]
+Commit: 7e8813bb
+Date: 2023/1/11
+7e8813bb  Validate version 5 of clspv reflection (#5050)
+
+[SPIRV-headers]
+Commit: d13b522
+Date: 2023/1/4
+d13b522 Merge pull request #312 from alan-baker/clspv-optional-operands
+
+[SPIRV-cross]
+Commit: 49e4117c
+Date: 2023/1/12
+49e4117c Updates for main branch rename.

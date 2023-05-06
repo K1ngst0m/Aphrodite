@@ -24,6 +24,7 @@ target_include_directories(engine PUBLIC  ../external/glm
                                   PRIVATE ../external/vulkan
                                   PRIVATE ../external/stb/include
                                   PRIVATE ../external/tinygltf/include
+                                  PRIVATE ../external/SPIRV-Cross
                                   )
 
 target_link_libraries(engine
@@ -35,4 +36,6 @@ target_link_libraries(engine
   reckless
   imgui
   shaderc_shared
+  spirv-cross-core
+  # spirv-cross-reflect
 )
