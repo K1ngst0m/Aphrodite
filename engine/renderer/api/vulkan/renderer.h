@@ -76,7 +76,7 @@ protected:
         bool updated = {false};
 
         Image*           pFontImage  = {};
-        VkSampler        fontSampler = {};
+        Sampler*        fontSampler = {};
         VkDescriptorPool pool        = {};
         VkRenderPass     renderPass  = {};
         Pipeline*        pipeline    = {};

@@ -898,14 +898,18 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
     return VK_SUCCESS;
 }
 
-VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler)
+VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable)
 {
-    VK_CHECK_RESULT(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, pSampler));
+    VkSampler handle;
+    VK_CHECK_RESULT(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, &handle));
+    *ppSampler = new Sampler(this, createInfo, handle, immutable);
     return VK_SUCCESS;
 }
 
-void Device::destroySampler(VkSampler sampler)
+void Device::destroySampler(Sampler* pSampler)
 {
-    m_table.vkDestroySampler(getHandle(), sampler, nullptr);
+    m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), nullptr);
+    delete pSampler;
+    pSampler = nullptr;
 }
 }  // namespace aph::vk

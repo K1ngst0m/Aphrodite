@@ -99,7 +99,7 @@ private:
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;
     std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
     std::array<DescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
-    std::array<VkSampler, SAMP_MAX>                  m_samplers;
+    std::array<Sampler*, SAMP_MAX>                   m_samplers;
     std::array<std::vector<Image*>, IMAGE_MAX>       m_images;
 
     VkDescriptorSet m_sceneSet{};

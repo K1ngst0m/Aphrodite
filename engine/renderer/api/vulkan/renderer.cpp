@@ -161,7 +161,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
         }
 
         // setup descriptor
@@ -171,7 +171,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             };
             m_pDevice->createDescriptorSetLayout(bindings, &m_ui.pSetLayout);
 
-            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler, m_ui.pFontImage->getView()->getHandle(),
+            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler->getHandle(), m_ui.pFontImage->getView()->getHandle(),
                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
             std::vector<ResourceWrite> writes{
                 {&fontDescriptor, {}},

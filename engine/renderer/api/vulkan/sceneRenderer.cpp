@@ -100,7 +100,7 @@ void SceneRenderer::cleanup()
         m_pDevice->destroyBuffer(buffer);
     }
 
-    for(auto* const sampler : m_samplers)
+    for(const auto& sampler : m_samplers)
     {
         m_pDevice->destroySampler(sampler);
     }
@@ -483,18 +483,18 @@ void SceneRenderer::_initSetLayout()
                 samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
                 samplerInfo.anisotropyEnable = VK_TRUE;
             }
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW]));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP], true));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW], true));
 
             samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
             samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE]));
+            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE], true));
         }
 
         std::vector<ResourcesBinding> bindings{
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_TEXTURE]},
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_CUBEMAP]},
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_SHADOW]},
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_TEXTURE]->getHandle()},
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_CUBEMAP]->getHandle()},
+            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_SHADOW]->getHandle()},
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
@@ -508,6 +508,7 @@ void SceneRenderer::_initSetLayout()
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_POSTFX], true);
     }
 
+    // gbuffer
     {
         std::vector<ResourcesBinding> bindings{
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},

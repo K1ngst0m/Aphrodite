@@ -7,6 +7,7 @@
 #include "descriptorPool.h"
 #include "descriptorSetLayout.h"
 #include "image.h"
+#include "sampler.h"
 #include "physicalDevice.h"
 #include "pipeline.h"
 #include "queue.h"
@@ -49,7 +50,7 @@ public:
     VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
 
 public:
-    VkResult createSampler(const VkSamplerCreateInfo& createInfo, VkSampler* pSampler);
+    VkResult createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable);
     VkResult createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data = nullptr,
                           bool persistmentMap = false);
     VkResult createImage(const ImageCreateInfo& createInfo, Image** ppImage);
@@ -70,7 +71,7 @@ public:
     void destroyCommandPool(CommandPool* pPool);
     void destroyPipeline(Pipeline* pipeline);
     void destroyDescriptorSetLayout(DescriptorSetLayout* pLayout);
-    void destroySampler(VkSampler sampler);
+    void destroySampler(Sampler* pSampler);
 
 public:
     VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
