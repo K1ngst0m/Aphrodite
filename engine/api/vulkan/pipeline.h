@@ -36,10 +36,6 @@ struct GraphicsPipelineCreateInfo
     VkPipelineDepthStencilStateCreateInfo            depthStencil          = {};
     VkPipelineCache                                  pipelineCache         = {};
 
-    std::vector<DescriptorSetLayout*> setLayouts    = {};
-    std::vector<VkPushConstantRange>  constants     = {};
-    ShaderMapList                     shaderMapList = {};
-
     GraphicsPipelineCreateInfo(const std::vector<VertexComponent>& component = {VertexComponent::POSITION,
                                                                                 VertexComponent::NORMAL,
                                                                                 VertexComponent::UV,
@@ -50,33 +46,24 @@ struct GraphicsPipelineCreateInfo
 
 struct ComputePipelineCreateInfo
 {
-    std::vector<DescriptorSetLayout*> setLayouts;
-    std::vector<VkPushConstantRange>  constants;
-    ShaderMapList                     shaderMapList;
 };
 
 class Pipeline : public ResourceHandle<VkPipeline>
 {
 public:
-    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
-             VkPipelineLayout layout, VkPipeline handle);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipelineLayout layout, VkPipeline handle);
+    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
 
-    DescriptorSetLayout* getDescriptorSetLayout(uint32_t idx) { return m_setLayouts[idx]; }
-    VkPipelineLayout     getPipelineLayout() { return m_pipelineLayout; }
-    VkPipelineBindPoint  getBindPoint() { return m_bindPoint; }
+    VkPipelineLayout    getPipelineLayout() { return m_pProgram->m_pipeLayout; }
+    VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size);
 
 protected:
-    Device*                           m_pDevice        = {};
-    VkRenderPass                      m_renderPass     = {};
-    VkPipelineCache                   m_cache          = {};
-    VkPipelineLayout                  m_pipelineLayout = {};
-    VkPipelineBindPoint               m_bindPoint      = {};
-    std::vector<VkPushConstantRange>  m_constants      = {};
-    std::vector<DescriptorSetLayout*> m_setLayouts     = {};
-    ShaderMapList                     m_shaderMapList  = {};
+    Device*             m_pDevice   = {};
+    ShaderProgram*      m_pProgram  = {};
+    VkPipelineBindPoint m_bindPoint = {};
+    VkPipelineCache     m_cache     = {};
 };
 
 }  // namespace aph::vk

@@ -23,8 +23,8 @@
             VkResult res = (f); \
             if(res != VK_SUCCESS) \
             { \
-                CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s\n", aph::vk::utils::errorString(res), \
-                           __FILE__, __LINE__); \
+                CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s", aph::vk::utils::errorString(res), __FILE__, \
+                           __LINE__); \
                 std::abort(); \
             } \
         }

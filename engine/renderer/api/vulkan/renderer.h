@@ -10,15 +10,15 @@ namespace aph::vk
 class Renderer : public IRenderer
 {
 public:
-    Renderer(std::shared_ptr<WSI> window, const RenderConfig& config);
+    Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config);
     ~Renderer();
 
     void beginFrame() override;
     void endFrame() override;
 
 public:
-    Device*       getDevice() const { return m_pDevice; }
-    ShaderModule* getShaders(const std::filesystem::path& path);
+    Device* getDevice() const { return m_pDevice; }
+    Shader* getShaders(const std::filesystem::path& path);
 
     Queue* getGraphicsQueue() const { return m_queue.graphics; }
     Queue* getComputeQueue() const { return m_queue.compute; }
@@ -41,7 +41,7 @@ protected:
         Queue* transfer = {};
     } m_queue;
 
-    std::unordered_map<std::string, std::unique_ptr<ShaderModule>> shaderModuleCaches = {};
+    std::unordered_map<std::string, std::unique_ptr<Shader>> shaderModuleCaches = {};
 
 protected:
     std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
@@ -76,10 +76,10 @@ protected:
         bool updated = {false};
 
         Image*           pFontImage  = {};
-        Sampler*        fontSampler = {};
+        Sampler*         fontSampler = {};
         VkDescriptorPool pool        = {};
-        VkRenderPass     renderPass  = {};
         Pipeline*        pipeline    = {};
+        ShaderProgram*   pProgram    = {};
 
         Buffer*  pVertexBuffer = {};
         Buffer*  pIndexBuffer  = {};

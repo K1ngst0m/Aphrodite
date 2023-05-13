@@ -99,10 +99,11 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
 
 std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 {
-    shaderc::Compiler compiler{};
-    auto source = aph::utils::readFile(filename);
-    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
-    switch (getStageFromPath(filename)) {
+    shaderc::Compiler   compiler{};
+    auto                source = aph::utils::readFile(filename);
+    shaderc_shader_kind stage  = shaderc_glsl_infer_from_source;
+    switch(getStageFromPath(filename))
+    {
     case ShaderStage::VS:
         stage = shaderc_vertex_shader;
         break;
@@ -145,8 +146,8 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 
 std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
 {
-    auto source = aph::utils::readFile(filename);
-    uint32_t size = source.size();
+    auto                  source = aph::utils::readFile(filename);
+    uint32_t              size   = source.size();
     std::vector<uint32_t> spirv(size / sizeof(uint32_t));
     memcpy(spirv.data(), source.data(), size);
     return spirv;

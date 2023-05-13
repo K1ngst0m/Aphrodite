@@ -67,12 +67,13 @@ void SceneRenderer::load(Scene* scene)
     _initGpuResources();
 
     _initSetLayout();
-    _initSet();
 
     _initShadow();
     _initGbuffer();
     _initGeneral();
     _initSkybox();
+
+    _initSet();
 }
 
 void SceneRenderer::cleanup()
@@ -111,10 +112,10 @@ void SceneRenderer::recordAll()
     auto* queue = getGraphicsQueue();
     enum CBIdx
     {
-        GEOMETRY,
-        SHADOW,
-        LIGHTING,
-        POSTFX,
+        GEOMETRY = 0,
+        SHADOW   = 1,
+        LIGHTING = 2,
+        POSTFX   = 3,
         CB_MAX,
     };
     CommandBuffer* cb[CB_MAX] = {};
@@ -148,17 +149,17 @@ void SceneRenderer::recordAll()
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineMain);
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
 
-        // 1 geometry && shadow
+        // 1. geometry && shadow
         submitInfos[GEOMETRY].signals.push_back({.semaphore = timelineMain, .value = 1});
-        submitInfos[SHADOW].signals.push_back({.semaphore = timelineShadow, .value = 1});
+        submitInfos[SHADOW].signals.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
 
-        // 2 lighting
-        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineShadow, .value = 1});
+        // 2. lighting
+        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
         submitInfos[LIGHTING].waits.push_back({.semaphore = timelineMain, .value = 1});
 
         submitInfos[LIGHTING].signals.push_back({.semaphore = timelineMain, .value = 2});
 
-        // 3 postfx
+        // 3. postfx
         submitInfos[POSTFX].waits.push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
         submitInfos[POSTFX].waits.push_back({.semaphore = timelineMain, .value = 2});
 
@@ -224,35 +225,91 @@ void SceneRenderer::update(float deltaTime)
 void SceneRenderer::_initSet()
 {
     VK_LOG_DEBUG("Init descriptor set.");
-    VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
-    VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_images[IMAGE_SCENE_SKYBOX][0]->getView()->getHandle(),
-                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-    std::vector<VkDescriptorImageInfo> textureInfos{};
-    for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
+
     {
-        VkDescriptorImageInfo info{
-            .imageView   = texture->getView()->getHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_images[IMAGE_SCENE_SKYBOX][0]->getView()->getHandle(),
+                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        std::vector<VkDescriptorImageInfo> textureInfos{};
+        for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
+        {
+            VkDescriptorImageInfo info{
+                .imageView   = texture->getView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            };
+            textureInfos.push_back(info);
+        }
+
+        std::vector<ResourceWrite> writes{
+            {{}, &sceneBufferInfo},
+            {{}, &transformBufferInfo},
+            {{}, &cameraBufferInfo},
+            {{}, &lightBufferInfo},
+            {textureInfos.data(), {}, textureInfos.size()},
+            {{}, &materialBufferInfo},
+            {&skyBoxImageInfo, {}},
         };
-        textureInfos.push_back(info);
+        m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
     }
 
-    std::vector<ResourceWrite> writes{
-        {{}, &sceneBufferInfo},
-        {{}, &transformBufferInfo},
-        {{}, &cameraBufferInfo},
-        {{}, &lightBufferInfo},
-        {textureInfos.data(), {}, textureInfos.size()},
-        {{}, &materialBufferInfo},
-        {&skyBoxImageInfo, {}},
-    };
+    // postfx
+    {
+        m_postFxSets.resize(m_config.maxFrames);
+        for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
+        {
+            VkDescriptorImageInfo inputImageInfo{
+                .imageView   = m_images[IMAGE_GENERAL_COLOR][idx]->getView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo outputImageInfo{.imageView   = m_pSwapChain->getImage()->getView()->getHandle(),
+                                                  .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
-    m_sceneSet   = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
-    m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
+            std::vector<ResourceWrite> writes{
+                {&inputImageInfo, {}},
+                {&outputImageInfo, {}},
+            };
+            m_postFxSets[idx] = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet(writes);
+        }
+    }
+
+    {
+        m_gbufferSets.resize(m_config.maxFrames);
+        for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
+        {
+            ImageView* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][idx]->getView();
+            ImageView* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][idx]->getView();
+            ImageView* albedoAttachment   = m_images[IMAGE_GBUFFER_ALBEDO][idx]->getView();
+            ImageView* mraoAttachment     = m_images[IMAGE_GBUFFER_MRAO][idx]->getView();
+            ImageView* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][idx]->getView();
+            ImageView* pShadowMap         = m_images[IMAGE_SHADOW_DEPTH][idx]->getView();
+
+            VkDescriptorImageInfo      posImageInfo{.imageView   = positionAttachment->getHandle(),
+                                                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo      normalImageInfo{.imageView   = normalAttachment->getHandle(),
+                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo      albedoImageInfo{.imageView   = albedoAttachment->getHandle(),
+                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo      mraoImageInfo{.imageView   = mraoAttachment->getHandle(),
+                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo      emissiveImageInfo{.imageView   = emissiveAttachment->getHandle(),
+                                                         .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo      shadowMapInfo{.imageView   = pShadowMap->getHandle(),
+                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            std::vector<ResourceWrite> writes{
+                {&posImageInfo, {}},  {&normalImageInfo, {}},   {&albedoImageInfo, {}},
+                {&mraoImageInfo, {}}, {&emissiveImageInfo, {}}, {&shadowMapInfo, {}},
+            };
+
+            m_gbufferSets[idx] = m_setLayouts[SET_LAYOUT_GBUFFER]->allocateSet(writes);
+        }
+    }
+
+    {
+        m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
+    }
 }
 
 void SceneRenderer::_loadScene()
@@ -359,13 +416,17 @@ void SceneRenderer::_initGbuffer()
 
         createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
 
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "geometry.vert");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "geometry.frag");
-
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
+        {
+            auto& program          = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
+            program                = new ShaderProgram(m_pDevice, getShaders(shaderDir / "geometry.vert"),
+                                                       getShaders(shaderDir / "geometry.frag"));
+            program->m_pSetLayouts = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
+                                      m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
+            program->m_combineLayout.pushConstantRange = {utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0,
+                                                          sizeof(ObjectInfo)};
+            VK_CHECK_RESULT(
+                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
+        }
     }
 
     // deferred light pbr pipeline
@@ -385,14 +446,19 @@ void SceneRenderer::_initGbuffer()
         createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
         createInfo.multisampling.minSampleShading     = 0.2f;
 
-        createInfo.setLayouts = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP],
-                                 m_setLayouts[SET_LAYOUT_GBUFFER]};
-        createInfo.constants  = {{utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "pbr_deferred.vert");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "pbr_deferred.frag");
+        {
+            auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
+            program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "pbr_deferred.vert"),
+                                              getShaders(shaderDir / "pbr_deferred.frag"));
 
-        VK_CHECK_RESULT(
-            m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
+            program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
+                                                          m_setLayouts[SET_LAYOUT_SAMP]->getHandle(),
+                                                          m_setLayouts[SET_LAYOUT_GBUFFER]->getHandle()};
+            program->m_combineLayout.pushConstantRange = {utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0,
+                                                          sizeof(ObjectInfo)};
+            VK_CHECK_RESULT(
+                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
+        }
     }
 }
 
@@ -402,6 +468,7 @@ void SceneRenderer::_initGeneral()
     VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
 
     m_images[IMAGE_GENERAL_COLOR].resize(m_config.maxFrames);
+    m_images[IMAGE_GENERAL_COLOR_POSTFX].resize(m_config.maxFrames);
     m_images[IMAGE_GENERAL_DEPTH].resize(m_config.maxFrames);
     m_images[IMAGE_GENERAL_COLOR_MS].resize(m_config.maxFrames);
     m_images[IMAGE_GENERAL_DEPTH_MS].resize(m_config.maxFrames);
@@ -412,6 +479,7 @@ void SceneRenderer::_initGeneral()
         {
             auto& colorImage   = m_images[IMAGE_GENERAL_COLOR][idx];
             auto& colorImageMS = m_images[IMAGE_GENERAL_COLOR_MS][idx];
+            auto& colorPostFx  = m_images[IMAGE_GENERAL_COLOR_POSTFX][idx];
 
             ImageCreateInfo createInfo{
                 .extent = {imageExtent.width, imageExtent.height, 1},
@@ -421,6 +489,7 @@ void SceneRenderer::_initGeneral()
                 .format    = VK_FORMAT_B8G8R8A8_UNORM,
             };
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
+            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorPostFx));
             createInfo.samples = m_sampleCount;
             VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImageMS));
         }
@@ -450,9 +519,13 @@ void SceneRenderer::_initGeneral()
     {
         std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         ComputePipelineCreateInfo createInfo{};
-        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]};
-        createInfo.shaderMapList[ShaderStage::CS] = getShaders(shaderDir / "postFX.comp");
-        VK_CHECK_RESULT(m_pDevice->createComputePipeline(createInfo, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+        {
+            auto& program = m_programs[SHADER_PROGRAM_POSTFX];
+            program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "postFX.comp"));
+            // program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]->getHandle()};
+            VK_CHECK_RESULT(
+                m_pDevice->createComputePipeline(createInfo, program, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+        }
     }
 }
 
@@ -505,7 +578,7 @@ void SceneRenderer::_initSetLayout()
             {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
             {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
         };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_POSTFX], true);
+        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_POSTFX]);
     }
 
     // gbuffer
@@ -515,7 +588,7 @@ void SceneRenderer::_initSetLayout()
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
             {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
         };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER], true);
+        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER]);
     }
 }
 
@@ -633,8 +706,8 @@ void SceneRenderer::_initGpuResources()
         std::vector<VkDrawIndirectCommand>     drawList;
         std::vector<VkDispatchIndirectCommand> dispatchList;
         dispatchList.push_back({
-            .x = m_window->getWidth(),
-            .y = m_window->getHeight(),
+            .x = m_wsi->getWidth(),
+            .y = m_wsi->getHeight(),
             .z = 1,
         });
         drawList.push_back({
@@ -704,11 +777,16 @@ void SceneRenderer::_initSkybox()
         createInfo.multisampling.minSampleShading     = 0.2f;
 
         createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
-        createInfo.setLayouts   = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "skybox.vert");
-        createInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "skybox.frag");
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+        {
+            auto& program          = m_programs[SHADER_PROGRAM_SKYBOX];
+            program                = new ShaderProgram(m_pDevice, getShaders(shaderDir / "skybox.vert"),
+                                                       getShaders(shaderDir / "skybox.frag"));
+            program->m_pSetLayouts = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
+                                      m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
+            VK_CHECK_RESULT(
+                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+        }
     }
 }
 
@@ -760,33 +838,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_LIGHTING]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
-
-            {
-                VkDescriptorImageInfo posImageInfo{.imageView   = positionAttachment->getView()->getHandle(),
-                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo normalImageInfo{.imageView   = normalAttachment->getView()->getHandle(),
-                                                      .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo albedoImageInfo{.imageView   = albedoAttachment->getView()->getHandle(),
-                                                      .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo mraoImageInfo{.imageView   = mraoAttachment->getView()->getHandle(),
-                                                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo emissiveImageInfo{.imageView   = emissiveAttachment->getView()->getHandle(),
-                                                        .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-                VkDescriptorImageInfo shadowMapInfo{.imageView   = pShadowMap->getView()->getHandle(),
-                                                    .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-
-                std::vector<VkWriteDescriptorSet> writes{
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
-                    init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
-                };
-                pCommandBuffer->pushDescriptorSet(writes, 2);
-            }
-
+            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet, m_gbufferSets[m_frameIdx]});
             pCommandBuffer->draw(3, 1, 0, 0);
         }
 
@@ -919,30 +971,30 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
 {
     // post fx
     {
-        ImageView* pColorAttachment  = m_pSwapChain->getImage()->getView();
-        Image*     renderResultImage = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
-
-        pCommandBuffer->transitionImageLayout(renderResultImage, VK_IMAGE_LAYOUT_GENERAL);
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_GENERAL);
-        pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
+        Image* inputImage  = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
+        Image* outputImage = m_pSwapChain->getImage();
 
         {
             VkDescriptorImageInfo inputImageInfo{
                 .imageView   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx]->getView()->getHandle(),
                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo outputImageInfo{.imageView   = pColorAttachment->getHandle(),
+            VkDescriptorImageInfo outputImageInfo{.imageView   = m_pSwapChain->getImage()->getView()->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-
-            std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
-                init::writeDescriptorSet(nullptr, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
+            std::vector<VkWriteDescriptorSet> writes = {
+                init::writeDescriptorSet(m_postFxSets[m_frameIdx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
+                                         &inputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[m_frameIdx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+                                         &outputImageInfo),
             };
-
-            pCommandBuffer->pushDescriptorSet(writes, 0);
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
 
+        pCommandBuffer->transitionImageLayout(inputImage, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(outputImage, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_COMPUTE_POSTFX]);
+        pCommandBuffer->bindDescriptorSet({m_postFxSets[m_frameIdx]});
         pCommandBuffer->dispatch(m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]);
-        pCommandBuffer->transitionImageLayout(pColorAttachment->getImage(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        pCommandBuffer->transitionImageLayout(outputImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
     }
 }
 
@@ -952,7 +1004,7 @@ void SceneRenderer::drawUI(float deltaTime)
     ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.scale, [&]() {
         ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
         ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
-        ui::text("resolution [ %.2f, %.2f ]", (float)m_window->getWidth(), (float)m_window->getHeight());
+        ui::text("resolution [ %.2f, %.2f ]", (float)m_wsi->getWidth(), (float)m_wsi->getHeight());
         ui::drawWithItemWidth(110.0f, m_ui.scale, [&]() {
             if(ui::header("Scene"))
             {
@@ -1060,11 +1112,18 @@ void SceneRenderer::_initShadow()
         createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
         createInfo.depthStencil =
             init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
-        createInfo.setLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE], m_setLayouts[SET_LAYOUT_SAMP]};
-        createInfo.constants                      = {{utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)}};
-        createInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "shadow.vert");
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, nullptr, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
+        {
+            auto& program = m_programs[SHADER_PROGRAM_SHADOW];
+            program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr);
+            // program->combineLayout(nullptr);
+            // program->createPipelineLayout(nullptr);
+            program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
+                                                          m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
+            program->m_combineLayout.pushConstantRange = {utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)};
+            VK_CHECK_RESULT(
+                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
+        }
     }
 }
 }  // namespace aph::vk

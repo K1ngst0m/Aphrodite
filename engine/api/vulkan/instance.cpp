@@ -35,39 +35,6 @@ bool checkValidationLayerSupport(const std::vector<const char*>& validationLayer
     return true;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-                                             VkDebugUtilsMessageTypeFlagsEXT             messageType,
-                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-{
-    static uint32_t errCount = 0;
-    auto            msg      = std::string(pCallbackData->pMessage);
-    switch(messageSeverity)
-    {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        VK_LOG_DEBUG("%s", msg);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        VK_LOG_INFO("%s", msg);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        VK_LOG_WARN("%s", msg);
-        break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        if(++errCount > 10)
-        {
-            VK_LOG_ERR("Too many errors, exit.");
-            std::abort();
-        }
-        VK_LOG_ERR("%s", msg);
-        break;
-
-    default:
-        break;
-    }
-    aph::Logger::Get()->flush();
-    return VK_FALSE;
-}
-
 VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
                                       const VkAllocationCallbacks* pAllocator,
                                       VkDebugUtilsMessengerEXT*    pDebugMessenger)
@@ -89,19 +56,6 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     {
         func(instance, debugMessenger, pAllocator);
     }
-}
-
-void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
-{
-    createInfo                 = {};
-    createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
 }
 
 }  // namespace
@@ -156,9 +110,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    populateDebugMessengerCreateInfo(debugCreateInfo);
-    instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+    instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&createInfo.debugCreateInfo;
 #endif
 
     VkInstance handle = VK_NULL_HANDLE;
@@ -212,9 +164,8 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
 #if defined(APH_DEBUG)
     {
-        VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-        populateDebugMessengerCreateInfo(createInfo);
-        VK_CHECK_RESULT(createDebugUtilsMessengerEXT(handle, &createInfo, nullptr, &instance->m_debugMessenger));
+        VK_CHECK_RESULT(
+            createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, nullptr, &instance->m_debugMessenger));
     }
 #endif
     // Return success.

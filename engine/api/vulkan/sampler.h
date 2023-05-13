@@ -11,17 +11,11 @@ class Device;
 class Sampler : public ResourceHandle<VkSampler, VkSamplerCreateInfo>
 {
 public:
-    Sampler(Device* pDevice, const VkSamplerCreateInfo& createInfo, VkSampler handle, bool immutable) :
-        m_pDevice(pDevice),
-        m_isImmutable(immutable)
-    {
-        getHandle()     = handle;
-        getCreateInfo() = createInfo;
-    }
+    Sampler(Device* pDevice, const VkSamplerCreateInfo& createInfo, VkSampler handle, bool immutable);
 
 private:
-    Device* m_pDevice{};
-    bool    m_isImmutable{};
+    Device* m_pDevice     = {};
+    bool    m_isImmutable = {};
 };
 
 class ImmutableYcbcrConversion
@@ -32,28 +26,28 @@ public:
     void operator=(const ImmutableYcbcrConversion&)           = delete;
     ImmutableYcbcrConversion(const ImmutableYcbcrConversion&) = delete;
 
-    VkSamplerYcbcrConversion get_conversion() const { return conversion; }
+    VkSamplerYcbcrConversion getConversion() const { return m_conversion; }
 
 private:
-    Device*                  device{};
-    VkSamplerYcbcrConversion conversion{};
+    Device*                  m_pDevice    = {};
+    VkSamplerYcbcrConversion m_conversion = {};
 };
 
 class ImmutableSampler
 {
 public:
-    ImmutableSampler(Device* device, const VkSamplerCreateInfo& info, const ImmutableYcbcrConversion* ycbcr);
+    ImmutableSampler(Device* device, const VkSamplerCreateInfo& info, const ImmutableYcbcrConversion* ycbcr = nullptr);
     void operator=(const ImmutableSampler&)   = delete;
     ImmutableSampler(const ImmutableSampler&) = delete;
 
-    const Sampler& get_sampler() const { return *sampler; }
+    Sampler* getSampler() const { return m_pSampler; }
 
-    VkSamplerYcbcrConversion get_ycbcr_conversion() const { return ycbcr ? ycbcr->get_conversion() : VK_NULL_HANDLE; }
+    VkSamplerYcbcrConversion getYcbcrConversion() const;
 
 private:
-    Device*                         device{};
-    const ImmutableYcbcrConversion* ycbcr{};
-    Sampler*                        sampler{};
+    Device*                         m_pDevice  = {};
+    const ImmutableYcbcrConversion* m_pYcbcr   = {};
+    Sampler*                        m_pSampler = {};
 };
 
 }  // namespace aph::vk

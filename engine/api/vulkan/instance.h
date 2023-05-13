@@ -11,9 +11,10 @@ namespace aph::vk
 using InstanceCreationFlags = uint32_t;
 struct InstanceCreateInfo
 {
-    std::string              appName{"Aphrodite"};
-    std::vector<const char*> enabledLayers{};
-    std::vector<const char*> enabledExtensions{};
+    std::string                        appName{"Aphrodite"};
+    std::vector<const char*>           enabledLayers{};
+    std::vector<const char*>           enabledExtensions{};
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 };
 
 class PhysicalDevice;

@@ -7,22 +7,130 @@
 namespace aph::vk
 {
 class Device;
+class ImmutableSampler;
 
-class ShaderModule : public ResourceHandle<VkShaderModule>
+constexpr unsigned VULKAN_NUM_DESCRIPTOR_SETS           = 4;
+constexpr unsigned VULKAN_NUM_BINDINGS                  = 32;
+constexpr unsigned VULKAN_NUM_BINDINGS_BINDLESS_VARYING = 16 * 1024;
+constexpr unsigned VULKAN_NUM_ATTACHMENTS               = 8;
+constexpr unsigned VULKAN_NUM_VERTEX_ATTRIBS            = 16;
+constexpr unsigned VULKAN_NUM_VERTEX_BUFFERS            = 4;
+constexpr unsigned VULKAN_PUSH_CONSTANT_SIZE            = 128;
+constexpr unsigned VULKAN_MAX_UBO_SIZE                  = 16 * 1024;
+constexpr unsigned VULKAN_NUM_USER_SPEC_CONSTANTS       = 8;
+constexpr unsigned VULKAN_NUM_INTERNAL_SPEC_CONSTANTS   = 4;
+constexpr unsigned VULKAN_NUM_TOTAL_SPEC_CONSTANTS =
+    VULKAN_NUM_USER_SPEC_CONSTANTS + VULKAN_NUM_INTERNAL_SPEC_CONSTANTS;
+constexpr unsigned VULKAN_NUM_SETS_PER_POOL    = 16;
+constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
+
+struct ShaderLayout
 {
-public:
-    static std::unique_ptr<ShaderModule> Create(Device* pDevice, const std::filesystem::path& path,
-                                                   const std::string& entrypoint = "main");
-
-    std::vector<uint32_t> getCode() { return m_code; }
-
-private:
-    ShaderModule(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main");
-    std::string       m_entrypoint = {};
-    std::vector<uint32_t> m_code       = {};
+    uint32_t sampledImageMask               = 0;
+    uint32_t storageImageMask               = 0;
+    uint32_t uniformBufferMask              = 0;
+    uint32_t storageBufferMask              = 0;
+    uint32_t sampledTexelBufferMask         = 0;
+    uint32_t storageTexelBufferMask         = 0;
+    uint32_t inputAttachmentMask            = 0;
+    uint32_t samplerMask                    = 0;
+    uint32_t separateImageMask              = 0;
+    uint32_t fpMask                         = 0;
+    uint32_t immutableSamplerMask           = 0;
+    uint8_t  arraySize[VULKAN_NUM_BINDINGS] = {};
+    uint32_t padding                        = 0;
+    enum
+    {
+        UNSIZED_ARRAY = 0xff
+    };
 };
 
-using ShaderMapList = std::unordered_map<ShaderStage, ShaderModule*>;
+struct ResourceLayout
+{
+    ShaderLayout setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+
+    uint32_t inputMask        = 0;
+    uint32_t outputMask       = 0;
+    uint32_t pushConstantSize = 0;
+    uint32_t specConstantMask = 0;
+    uint32_t bindlessSetMask  = 0;
+};
+
+struct CombinedResourceLayout
+{
+    ShaderLayout setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS]                       = {};
+    uint32_t     stagesForBindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
+    uint32_t     stagesForSets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
+
+    uint32_t            attributeMask             = 0;
+    uint32_t            renderTargetMask          = 0;
+    VkPushConstantRange pushConstantRange         = {};
+    uint32_t            descriptorSetMask         = 0;
+    uint32_t            bindlessDescriptorSetMask = 0;
+    uint32_t            combinedSpecConstantMask  = 0;
+
+    std::unordered_map<ShaderStage, uint32_t> specConstantMask = {};
+};
+
+struct ImmutableSamplerBank
+{
+    const ImmutableSampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
+};
+
+class Shader : public ResourceHandle<VkShaderModule>
+{
+    friend class ShaderProgram;
+
+public:
+    static std::unique_ptr<Shader> Create(Device* pDevice, const std::filesystem::path& path,
+                                          const std::string&    entrypoint = "main",
+                                          const ResourceLayout* pLayout    = nullptr);
+
+private:
+    static ResourceLayout ReflectLayout(const std::vector<uint32_t>& code);
+    Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main",
+           const ResourceLayout* pLayout = nullptr);
+    std::string           m_entrypoint = {};
+    std::vector<uint32_t> m_code       = {};
+    ResourceLayout        m_layout     = {};
+};
+using ShaderMapList = std::unordered_map<ShaderStage, Shader*>;
+
+class ShaderProgram
+{
+public:
+    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank = nullptr) :
+        m_pDevice(device)
+    {
+        m_shaders[ShaderStage::VS] = vs;
+        m_shaders[ShaderStage::FS] = fs;
+        combineLayout(samplerBank);
+        // TODO
+        // createPipelineLayout(samplerBank);
+    }
+
+    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank = nullptr) : m_pDevice(device)
+    {
+        m_shaders[ShaderStage::CS] = cs;
+        combineLayout(samplerBank);
+        createPipelineLayout(samplerBank);
+    }
+
+    ~ShaderProgram() = default;
+
+public:
+    void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
+    void combineLayout(const ImmutableSamplerBank* samplerBank);
+
+public:
+    void                               createUpdateTemplates();
+    Device*                            m_pDevice       = {};
+    ShaderMapList                      m_shaders       = {};
+    std::vector<VkDescriptorSetLayout> m_pSetLayouts   = {};
+    VkPipelineLayout                   m_pipeLayout    = {};
+    CombinedResourceLayout             m_combineLayout = {};
+    std::vector<VkDescriptorPoolSize>  m_poolSize      = {};
+};
 
 }  // namespace aph::vk
 

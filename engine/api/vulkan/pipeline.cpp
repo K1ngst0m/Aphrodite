@@ -1,5 +1,6 @@
 #include "pipeline.h"
 #include "scene/mesh.h"
+#include "device.h"
 
 namespace aph::vk
 {
@@ -48,27 +49,20 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
     depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipelineLayout layout,
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, ShaderProgram* program,
                    VkPipeline handle) :
     m_pDevice(pDevice),
-    m_pipelineLayout(layout),
-    m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE),
-    m_constants(createInfo.constants),
-    m_setLayouts(createInfo.setLayouts),
-    m_shaderMapList(createInfo.shaderMapList)
+    m_pProgram(program),
+    m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE)
 {
     getHandle() = handle;
 }
 
-Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
-                   VkPipelineLayout layout, VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* program,
+                   VkPipeline handle) :
     m_pDevice(pDevice),
-    m_renderPass(renderPass),
-    m_pipelineLayout(layout),
-    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS),
-    m_constants(createInfo.constants),
-    m_setLayouts(createInfo.setLayouts),
-    m_shaderMapList(createInfo.shaderMapList)
+    m_pProgram(program),
+    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 {
     getHandle() = handle;
 }
@@ -77,19 +71,10 @@ VkShaderStageFlags Pipeline::getConstantShaderStage(uint32_t offset, uint32_t si
 {
     VkShaderStageFlags stage = 0;
     size += offset;
-    for(const auto& constant : m_constants)
-    {
-        if(offset >= size)
-        {
-            break;
-        }
-        if(offset >= constant.size)
-        {
-            continue;
-        }
-        stage |= constant.stageFlags;
-        offset += constant.size;
-    }
+    const auto& constant = m_pProgram->m_combineLayout.pushConstantRange;
+    stage |= constant.stageFlags;
+    offset += constant.size;
     return stage;
 }
+
 }  // namespace aph::vk

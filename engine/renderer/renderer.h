@@ -59,20 +59,18 @@ public:
         }
         return renderer;
     }
-    IRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) : m_window(std::move(window)), m_config(config)
-    {
-    }
+    IRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) : m_wsi(std::move(window)), m_config(config) {}
 
     virtual void beginFrame() = 0;
     virtual void endFrame()   = 0;
 
-    std::shared_ptr<WSI> getWindow() { return m_window; }
-    uint32_t             getWindowWidth() { return m_window->getWidth(); };
-    uint32_t             getWindowHeight() { return m_window->getHeight(); };
-    uint32_t             getWindowAspectRation() { return m_window->getAspectRatio(); }
+    std::shared_ptr<WSI> getWSI() { return m_wsi; }
+    uint32_t             getWindowWidth() { return m_wsi->getWidth(); };
+    uint32_t             getWindowHeight() { return m_wsi->getHeight(); };
+    uint32_t             getWindowAspectRation() { return m_wsi->getAspectRatio(); }
 
 protected:
-    std::shared_ptr<WSI> m_window = {};
+    std::shared_ptr<WSI> m_wsi    = {};
     RenderConfig         m_config = {};
 };
 }  // namespace aph

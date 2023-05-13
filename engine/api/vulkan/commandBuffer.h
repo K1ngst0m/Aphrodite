@@ -67,7 +67,6 @@ public:
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                      uint32_t firstInstance);
-    void pushDescriptorSet(const std::vector<VkWriteDescriptorSet>& writes, uint32_t setIdx);
     void dispatch(Buffer* pBuffer, VkDeviceSize offset = 0);
     void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
     void draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance);

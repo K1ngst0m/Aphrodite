@@ -48,6 +48,7 @@ public:
     VkResult createDeviceLocalImage(const ImageCreateInfo& createInfo, Image** ppImage,
                                     const std::vector<uint8_t>& data);
     VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
+    VkResult executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
 
 public:
     VkResult createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable);
@@ -57,11 +58,12 @@ public:
     VkResult createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
     VkResult createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
     VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool);
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* pProgram,
                                     Pipeline** ppPipeline);
-    VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, ShaderProgram* pProgram,
+                                   Pipeline** ppPipeline);
     VkResult createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                       DescriptorSetLayout** ppDescriptorSetLayout, bool enablePushDescriptor = false);
+                                       DescriptorSetLayout**                ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(Buffer* pBuffer);

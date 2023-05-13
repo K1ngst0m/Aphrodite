@@ -12,7 +12,44 @@
 
 namespace aph::vk
 {
-Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IRenderer(std::move(window), config)
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+                                                    VkDebugUtilsMessageTypeFlagsEXT             messageType,
+                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                    void*                                       pUserData)
+{
+    static uint32_t   errCount = 0;
+    std::stringstream msg;
+    uint32_t          frameId = *(uint32_t*)pUserData;
+    msg << "[frame:" << frameId << "] ";
+    msg << pCallbackData->pMessage;
+    switch(messageSeverity)
+    {
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+        VK_LOG_DEBUG("%s", msg.str());
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+        VK_LOG_INFO("%s", msg.str());
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+        VK_LOG_WARN("%s", msg.str());
+        break;
+    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+        if(++errCount > 10)
+        {
+            VK_LOG_ERR("Too many errors, exit.");
+            std::abort();
+        }
+        VK_LOG_ERR("%s", msg.str());
+        break;
+
+    default:
+        break;
+    }
+    return VK_FALSE;
+}
+
+Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRenderer(std::move(wsi), config)
 {
     // create instance
     {
@@ -38,6 +75,18 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
         {
             instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
         }
+
+        auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
+        debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+        debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
+                                VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+        debugInfo.pfnUserCallback = debugCallback;
+        debugInfo.pUserData       = &m_frameIdx;
 
         VK_CHECK_RESULT(Instance::Create(instanceCreateInfo, &m_pInstance));
     }
@@ -87,7 +136,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
     {
         SwapChainCreateInfo createInfo{
             .instance = m_pInstance,
-            .wsi      = m_window.get(),
+            .wsi      = m_wsi.get(),
         };
         VK_CHECK_RESULT(m_pDevice->createSwapchain(createInfo, &m_pSwapChain));
     }
@@ -122,7 +171,7 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
         // Setup Dear ImGui style
         io.FontGlobalScale = m_ui.scale;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-        io.DisplaySize = ImVec2((float)m_window->getWidth(), (float)m_window->getHeight());
+        io.DisplaySize = ImVec2((float)m_wsi->getWidth(), (float)m_wsi->getHeight());
         io.DeltaTime   = 1.0f;
 
         // Create font texture
@@ -171,7 +220,8 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             };
             m_pDevice->createDescriptorSetLayout(bindings, &m_ui.pSetLayout);
 
-            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler->getHandle(), m_ui.pFontImage->getView()->getHandle(),
+            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler->getHandle(),
+                                                         m_ui.pFontImage->getView()->getHandle(),
                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
             std::vector<ResourceWrite> writes{
                 {&fontDescriptor, {}},
@@ -194,10 +244,9 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             pipelineCreateInfo.depthStencil =
                 init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
-            pipelineCreateInfo.setLayouts = {m_ui.pSetLayout};
-            pipelineCreateInfo.constants  = {{utils::VkCast(ShaderStage::VS), 0, sizeof(m_ui.pushConstBlock)}};
-            pipelineCreateInfo.shaderMapList[ShaderStage::VS] = getShaders(shaderDir / "uioverlay.vert");
-            pipelineCreateInfo.shaderMapList[ShaderStage::FS] = getShaders(shaderDir / "uioverlay.frag");
+            m_ui.pProgram = new ShaderProgram(m_pDevice, getShaders(shaderDir / "uioverlay.vert"),
+                                              getShaders(shaderDir / "uioverlay.frag"));
+            m_ui.pProgram->createPipelineLayout(nullptr);
 
             pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
             pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -232,13 +281,12 @@ Renderer::Renderer(std::shared_ptr<WSI> window, const RenderConfig& config) : IR
             vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
             pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, nullptr, &m_ui.pipeline));
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_ui.pProgram, &m_ui.pipeline));
         }
 
         {
-            m_window->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
-            m_window->registerEventHandler<MouseButtonEvent>(
-                [&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
+            m_wsi->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
+            m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
         }
     }
 }
@@ -328,11 +376,11 @@ void Renderer::endFrame()
     }
 }
 
-ShaderModule* Renderer::getShaders(const std::filesystem::path& path)
+Shader* Renderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        shaderModuleCaches[path] = ShaderModule::Create(m_pDevice, path);
+        shaderModuleCaches[path] = Shader::Create(m_pDevice, path);
     }
     return shaderModuleCaches[path].get();
 }

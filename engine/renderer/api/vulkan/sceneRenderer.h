@@ -88,6 +88,7 @@ private:
         IMAGE_GBUFFER_DEPTH,
         IMAGE_SHADOW_DEPTH,
         IMAGE_GENERAL_COLOR,
+        IMAGE_GENERAL_COLOR_POSTFX,
         IMAGE_GENERAL_DEPTH,
         IMAGE_GENERAL_COLOR_MS,
         IMAGE_GENERAL_DEPTH_MS,
@@ -96,14 +97,27 @@ private:
         IMAGE_MAX
     };
 
+    enum ShaderProgramIdx
+    {
+        SHADER_PROGRAM_DEFERRED_GEOMETRY,
+        SHADER_PROGRAM_DEFERRED_LIGHTING,
+        SHADER_PROGRAM_SKYBOX,
+        SHADER_PROGRAM_SHADOW,
+        SHADER_PROGRAM_POSTFX,
+        SHADER_PROGRAM_MAX
+    };
+
+    std::array<ShaderProgram*, BUFFER_MAX>           m_programs;
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;
     std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
     std::array<DescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
     std::array<Sampler*, SAMP_MAX>                   m_samplers;
     std::array<std::vector<Image*>, IMAGE_MAX>       m_images;
 
-    VkDescriptorSet m_sceneSet{};
-    VkDescriptorSet m_samplerSet{};
+    std::vector<VkDescriptorSet> m_gbufferSets{};
+    std::vector<VkDescriptorSet> m_postFxSets{};
+    VkDescriptorSet              m_sceneSet{};
+    VkDescriptorSet              m_samplerSet{};
 
 private:
     Scene*                  m_scene = {};

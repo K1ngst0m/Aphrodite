@@ -82,6 +82,7 @@ inline Logger* Logger::g_logger = nullptr;
     do \
     { \
         ::aph::Logger::Get()->error("[VK] " __VA_ARGS__); \
+        ::aph::Logger::Get()->flush(); \
     } while(0)
 
 #endif  // LOGGER_H_

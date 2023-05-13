@@ -4,11 +4,7 @@
 namespace aph::vk
 {
 
-#ifdef VK_CHECK_RESULT
-#    undef VK_CHECK_RESULT
-#endif
-
-#define VK_CHECK_RESULT(f) \
+#define _VR(f) \
     { \
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
@@ -112,7 +108,7 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
     };
 
     VkDevice handle = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
+    _VR(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
 
     // Initialize Device class.
     auto* device = new Device(createInfo, physicalDevice, handle);
@@ -164,7 +160,7 @@ VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, Comm
     };
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
+    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
     *ppPool = new CommandPool(createInfo, this, cmdPool);
     return VK_SUCCESS;
 }
@@ -195,30 +191,9 @@ VkResult Device::createImageView(const ImageViewCreateInfo& createInfo, ImageVie
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
     VkImageView handle = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(m_table.vkCreateImageView(getHandle(), &info, nullptr, &handle));
+    _VR(m_table.vkCreateImageView(getHandle(), &info, nullptr, &handle));
 
     *ppImageView = new ImageView(createInfo, pImage, handle);
-
-    return VK_SUCCESS;
-}
-
-VkResult Device::executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
-{
-    CommandBuffer* cmd = nullptr;
-    VK_CHECK_RESULT(allocateCommandBuffers(1, &cmd, getQueueByFlags(type)));
-
-    VK_CHECK_RESULT(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-    func(cmd);
-    VK_CHECK_RESULT(cmd->end());
-
-    uint32_t queueFamilyIndex = getQueueByFlags(type)->getFamilyIndex();
-    auto&    queue            = m_queues[queueFamilyIndex][0];
-
-    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    VK_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
-    VK_CHECK_RESULT(queue->waitIdle());
-
-    freeCommandBuffers(1, &cmd);
 
     return VK_SUCCESS;
 }
@@ -234,7 +209,7 @@ VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuf
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VkBuffer buffer;
-    VK_CHECK_RESULT(vkCreateBuffer(getHandle(), &bufferInfo, nullptr, &buffer));
+    _VR(vkCreateBuffer(getHandle(), &bufferInfo, nullptr, &buffer));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -267,20 +242,20 @@ VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuf
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        VK_CHECK_RESULT(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
     }
     else
     {
         VkMemoryAllocateInfo allocInfo = init::memoryAllocateInfo(
             memRequirements.memoryRequirements.size,
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits));
-        VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
     }
 
     *ppBuffer = new Buffer(createInfo, buffer, memory);
 
     // bind buffer and memory
-    VK_CHECK_RESULT(bindMemory(*ppBuffer));
+    _VR(bindMemory(*ppBuffer));
 
     if(data)
     {
@@ -316,7 +291,7 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
     VkImage image;
-    VK_CHECK_RESULT(vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
+    _VR(vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -348,7 +323,7 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        VK_CHECK_RESULT(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
     }
     else
     {
@@ -359,14 +334,14 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
                 m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        VK_CHECK_RESULT(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
     }
 
     *ppImage = new Image(this, createInfo, image, memory);
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE)
     {
-        VK_CHECK_RESULT(bindMemory(*ppImage));
+        _VR(bindMemory(*ppImage));
     }
 
     return VK_SUCCESS;
@@ -463,7 +438,7 @@ VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuff
     auto* pool  = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
-    VK_CHECK_RESULT(pool->allocateCommandBuffers(commandBufferCount, handles.data()));
+    _VR(pool->allocateCommandBuffers(commandBufferCount, handles.data()));
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
@@ -482,7 +457,7 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     }
 }
 
-VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, VkRenderPass renderPass,
+VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* pProgram,
                                         Pipeline** ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
@@ -507,17 +482,18 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .pAttachments    = createInfo.colorBlendAttachments.data(),
     };
 
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkPipelineLayout pipelineLayout = pProgram->m_pipeLayout;
+    if(!pipelineLayout)
     {
-        std::vector<VkDescriptorSetLayout> setLayouts;
-        setLayouts.reserve(createInfo.setLayouts.size());
-        for(auto* setLayout : createInfo.setLayouts)
+        std::vector<VkDescriptorSetLayout> setLayouts         = pProgram->m_pSetLayouts;
+        VkPipelineLayoutCreateInfo         pipelineLayoutInfo = init::pipelineLayoutCreateInfo(setLayouts, {});
+        if(pProgram->m_combineLayout.pushConstantRange.size != 0)
         {
-            setLayouts.push_back(setLayout->getHandle());
+            pipelineLayoutInfo.pPushConstantRanges    = &pProgram->m_combineLayout.pushConstantRange;
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
         }
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
         m_table.vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
+        pProgram->m_pipeLayout = pipelineLayout;
     }
 
     // build the actual pipeline
@@ -537,28 +513,23 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .basePipelineHandle  = VK_NULL_HANDLE,
     };
 
-    if(renderPass)
-    {
-        pipelineInfo.renderPass = renderPass;
-    }
-    else
-    {
-        pipelineInfo.pNext = &createInfo.renderingCreateInfo;
-    }
+    pipelineInfo.pNext = &createInfo.renderingCreateInfo;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for(const auto& [stage, sModule] : createInfo.shaderMapList)
+    for(const auto& [stage, sModule] : pProgram->m_shaders)
     {
-        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
+        if(sModule)
+        {
+            shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
+        }
     }
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages    = shaderStages.data();
 
     VkPipeline handle;
-    VK_CHECK_RESULT(
-        m_table.vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
+    _VR(m_table.vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
 
-    *ppPipeline = new Pipeline(this, createInfo, renderPass, pipelineLayout, handle);
+    *ppPipeline = new Pipeline(this, createInfo, pProgram, handle);
 
     return VK_SUCCESS;
 }
@@ -572,7 +543,7 @@ void Device::destroyPipeline(Pipeline* pipeline)
 }
 
 VkResult Device::createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                           DescriptorSetLayout** ppDescriptorSetLayout, bool enablePushDescriptor)
+                                           DescriptorSetLayout**                ppDescriptorSetLayout)
 {
     std::vector<VkDescriptorSetLayoutBinding> vkBindings;
     uint32_t                                  bindingIdx = 0;
@@ -590,13 +561,8 @@ VkResult Device::createDescriptorSetLayout(const std::vector<ResourcesBinding>& 
         .pBindings    = vkBindings.data(),
     };
 
-    if(enablePushDescriptor)
-    {
-        createInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR;
-    }
-
     VkDescriptorSetLayout setLayout;
-    VK_CHECK_RESULT(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
+    _VR(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
     *ppDescriptorSetLayout = new DescriptorSetLayout(this, bindings, setLayout);
     return VK_SUCCESS;
 }
@@ -606,31 +572,15 @@ void Device::destroyDescriptorSetLayout(DescriptorSetLayout* pLayout)
     m_table.vkDestroyDescriptorSetLayout(m_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
 }
-VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, ShaderProgram* pProgram,
+                                       Pipeline** ppPipeline)
 {
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-    {
-        std::vector<VkDescriptorSetLayout> setLayouts;
-        setLayouts.reserve(createInfo.setLayouts.size());
-        for(auto* setLayout : createInfo.setLayouts)
-        {
-            setLayouts.push_back(setLayout->getHandle());
-        }
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo =
-            init::pipelineLayoutCreateInfo(setLayouts, createInfo.constants);
-        VK_CHECK_RESULT(m_table.vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout));
-    }
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
-    for(const auto& [stage, sModule] : createInfo.shaderMapList)
-    {
-        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
-    }
-
-    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(pipelineLayout);
-    ci.stage                       = shaderStages[0];
+    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(pProgram->m_pipeLayout);
+    ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
+                                                                         pProgram->m_shaders[ShaderStage::CS]->getHandle());
     VkPipeline handle              = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
-    *ppPipeline = new Pipeline(this, createInfo, pipelineLayout, handle);
+    _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
+    *ppPipeline = new Pipeline(this, createInfo, pProgram, handle);
     return VK_SUCCESS;
 }
 
@@ -649,7 +599,7 @@ VkResult Device::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, Buf
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        VK_CHECK_RESULT(createBuffer(stagingCI, &stagingBuffer, data));
+        _VR(createBuffer(stagingCI, &stagingBuffer, data));
     }
 
     Buffer* buffer = nullptr;
@@ -657,7 +607,7 @@ VkResult Device::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, Buf
         auto bufferCI   = createInfo;
         bufferCI.domain = BufferDomain::Device;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        VK_CHECK_RESULT(createBuffer(bufferCI, &buffer));
+        _VR(createBuffer(bufferCI, &buffer));
     }
 
     executeSingleCommands(QueueType::GRAPHICS,
@@ -695,7 +645,7 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
             imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
-        VK_CHECK_RESULT(createImage(imageCI, &texture));
+        _VR(createImage(imageCI, &texture));
 
         executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* cmd) {
             cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -901,7 +851,7 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
 VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable)
 {
     VkSampler handle;
-    VK_CHECK_RESULT(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, &handle));
+    _VR(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, &handle));
     *ppSampler = new Sampler(this, createInfo, handle, immutable);
     return VK_SUCCESS;
 }
@@ -912,4 +862,29 @@ void Device::destroySampler(Sampler* pSampler)
     delete pSampler;
     pSampler = nullptr;
 }
+
+VkResult Device::executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
+{
+    CommandBuffer* cmd = nullptr;
+    _VR(allocateCommandBuffers(1, &cmd, queue));
+
+    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    func(cmd);
+    _VR(cmd->end());
+
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    _VR(queue->submit({submitInfo}, VK_NULL_HANDLE));
+    _VR(queue->waitIdle());
+
+    freeCommandBuffers(1, &cmd);
+
+    return VK_SUCCESS;
+}
+
+VkResult Device::executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
+{
+    auto* queue = getQueueByFlags(type);
+    return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
+}
+
 }  // namespace aph::vk

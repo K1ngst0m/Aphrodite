@@ -20,8 +20,8 @@ struct QueueSubmitInfo
 struct QueueSubmitInfo2
 {
     std::vector<VkCommandBufferSubmitInfo> commands;
-    std::vector<VkSemaphoreSubmitInfo> waits;
-    std::vector<VkSemaphoreSubmitInfo> signals;
+    std::vector<VkSemaphoreSubmitInfo>     waits;
+    std::vector<VkSemaphoreSubmitInfo>     signals;
 };
 
 class Queue : public ResourceHandle<VkQueue>

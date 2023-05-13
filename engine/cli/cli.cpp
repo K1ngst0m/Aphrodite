@@ -39,7 +39,7 @@ bool CLIParser::parse()
     }
     catch(const std::exception& e)
     {
-        CM_LOG_ERR("Failed to parse arguments: %s\n", e.what());
+        CM_LOG_ERR("Failed to parse arguments: %s", e.what());
         if(m_cbs.m_errorHandler)
         {
             m_cbs.m_errorHandler();

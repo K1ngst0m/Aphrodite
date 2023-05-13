@@ -190,7 +190,7 @@ int main(int argc, char** argv)
     cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
     cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
     cbs.add("--model", [&](aph::CLIParser& parser) { app.m_options.modelPath = parser.nextString(); });
-    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments.\n"); };
+    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
     if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
         return exitCode;
 
