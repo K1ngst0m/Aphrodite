@@ -220,14 +220,14 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             };
             m_pDevice->createDescriptorSetLayout(bindings, &m_ui.pSetLayout);
 
-            VkDescriptorImageInfo      fontDescriptor = {m_ui.fontSampler->getHandle(),
-                                                         m_ui.pFontImage->getView()->getHandle(),
-                                                         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-            std::vector<ResourceWrite> writes{
-                {&fontDescriptor, {}},
-            };
+            VkDescriptorImageInfo fontDescriptor = {m_ui.fontSampler->getHandle(),
+                                                    m_ui.pFontImage->getView()->getHandle(),
+                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
-            m_ui.set = m_ui.pSetLayout->allocateSet(writes);
+            m_ui.set = m_ui.pSetLayout->allocateSet();
+            std::vector<VkWriteDescriptorSet> writes{
+                init::writeDescriptorSet(m_ui.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
 
         // setup pipeline

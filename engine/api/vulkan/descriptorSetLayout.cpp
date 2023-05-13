@@ -14,57 +14,9 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<Resou
     getHandle() = handle;
 }
 
-VkDescriptorSet DescriptorSetLayout::allocateSet(const std::vector<ResourceWrite>& writes)
+VkDescriptorSet DescriptorSetLayout::allocateSet()
 {
-    auto set = m_pool->allocateSet();
-    if(writes.empty())
-    {
-        return set;
-    }
-
-    std::vector<VkWriteDescriptorSet> vkWrites;
-    for(uint32_t idx = 0; idx < writes.size(); idx++)
-    {
-        const auto& write   = writes[idx];
-        const auto& binding = m_bindings[idx];
-
-        VkWriteDescriptorSet vkWrite{
-            .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet          = set,
-            .dstBinding      = idx,
-            .descriptorCount = static_cast<uint32_t>(write.count),
-            .descriptorType  = utils::VkCast(binding.resType),
-        };
-
-        switch(binding.resType)
-        {
-        case ResourceType::SAMPLER:
-        case ResourceType::SAMPLED_IMAGE:
-        case ResourceType::COMBINE_SAMPLER_IMAGE:
-        case ResourceType::STORAGE_IMAGE:
-        {
-            vkWrite.pImageInfo = write.imageInfos;
-        }
-        break;
-        case ResourceType::UNIFORM_BUFFER:
-        case ResourceType::STORAGE_BUFFER:
-        {
-            vkWrite.pBufferInfo = write.bufferInfos;
-        }
-        break;
-        default:
-        {
-            VK_LOG_ERR("invalid resource type.");
-            APH_ASSERT(false);
-            return set;
-        }
-        }
-
-        vkWrites.push_back(vkWrite);
-    }
-    vkUpdateDescriptorSets(m_pDevice->getHandle(), vkWrites.size(), vkWrites.data(), 0, nullptr);
-
-    return set;
+    return m_pool->allocateSet();
 }
 
 VkResult DescriptorSetLayout::freeSet(VkDescriptorSet set)

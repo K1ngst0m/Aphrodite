@@ -347,19 +347,24 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
-            programLayout.setShaderLayouts[i].sampledImageMask |= shaderLayout.setShaderLayouts[i].sampledImageMask;
-            programLayout.setShaderLayouts[i].storageImageMask |= shaderLayout.setShaderLayouts[i].storageImageMask;
-            programLayout.setShaderLayouts[i].uniformBufferMask |= shaderLayout.setShaderLayouts[i].uniformBufferMask;
-            programLayout.setShaderLayouts[i].storageBufferMask |= shaderLayout.setShaderLayouts[i].storageBufferMask;
-            programLayout.setShaderLayouts[i].sampledTexelBufferMask |=
+            programLayout.setInfos[i].shaderLayout.sampledImageMask |=
+                shaderLayout.setShaderLayouts[i].sampledImageMask;
+            programLayout.setInfos[i].shaderLayout.storageImageMask |=
+                shaderLayout.setShaderLayouts[i].storageImageMask;
+            programLayout.setInfos[i].shaderLayout.uniformBufferMask |=
+                shaderLayout.setShaderLayouts[i].uniformBufferMask;
+            programLayout.setInfos[i].shaderLayout.storageBufferMask |=
+                shaderLayout.setShaderLayouts[i].storageBufferMask;
+            programLayout.setInfos[i].shaderLayout.sampledTexelBufferMask |=
                 shaderLayout.setShaderLayouts[i].sampledTexelBufferMask;
-            programLayout.setShaderLayouts[i].storageTexelBufferMask |=
+            programLayout.setInfos[i].shaderLayout.storageTexelBufferMask |=
                 shaderLayout.setShaderLayouts[i].storageTexelBufferMask;
-            programLayout.setShaderLayouts[i].inputAttachmentMask |=
+            programLayout.setInfos[i].shaderLayout.inputAttachmentMask |=
                 shaderLayout.setShaderLayouts[i].inputAttachmentMask;
-            programLayout.setShaderLayouts[i].samplerMask |= shaderLayout.setShaderLayouts[i].samplerMask;
-            programLayout.setShaderLayouts[i].separateImageMask |= shaderLayout.setShaderLayouts[i].separateImageMask;
-            programLayout.setShaderLayouts[i].fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
+            programLayout.setInfos[i].shaderLayout.samplerMask |= shaderLayout.setShaderLayouts[i].samplerMask;
+            programLayout.setInfos[i].shaderLayout.separateImageMask |=
+                shaderLayout.setShaderLayouts[i].separateImageMask;
+            programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
 
             uint32_t active_binds =
                 shaderLayout.setShaderLayouts[i].sampledImageMask | shaderLayout.setShaderLayouts[i].storageImageMask |
@@ -371,12 +376,12 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
                 shaderLayout.setShaderLayouts[i].separateImageMask;
 
             if(active_binds)
-                programLayout.stagesForSets[i] |= stage_mask;
+                programLayout.setInfos[i].stagesForSets |= stage_mask;
 
             aph::utils::forEachBit(active_binds, [&](uint32_t bit) {
-                programLayout.stagesForBindings[i][bit] |= stage_mask;
+                programLayout.setInfos[i].stagesForBindings[bit] |= stage_mask;
 
-                auto& combinedSize = programLayout.setShaderLayouts[i].arraySize[bit];
+                auto& combinedSize = programLayout.setInfos[i].shaderLayout.arraySize[bit];
                 auto& shaderSize   = shaderLayout.setShaderLayouts[i].arraySize[bit];
                 if(combinedSize && combinedSize != shaderSize)
                     VK_LOG_ERR("Mismatch between array sizes in different shaders.");
@@ -396,46 +401,49 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 
         programLayout.specConstantMask[stage] = shaderLayout.specConstantMask;
         programLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
-        programLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
+        // TODO
+        // programLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
     }
 
     if(samplerBank)
     {
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
-            aph::utils::forEachBit(
-                programLayout.setShaderLayouts[i].samplerMask | programLayout.setShaderLayouts[i].sampledImageMask,
-                [&](uint32_t binding) {
-                    if(samplerBank->samplers[i][binding])
-                    {
-                        extImmutableSamplers.samplers[i][binding] = samplerBank->samplers[i][binding];
-                        programLayout.setShaderLayouts[i].immutableSamplerMask |= 1u << binding;
-                    }
-                });
+            aph::utils::forEachBit(programLayout.setInfos[i].shaderLayout.samplerMask |
+                                       programLayout.setInfos[i].shaderLayout.sampledImageMask,
+                                   [&](uint32_t binding) {
+                                       if(samplerBank->samplers[i][binding])
+                                       {
+                                           extImmutableSamplers.samplers[i][binding] =
+                                               samplerBank->samplers[i][binding];
+                                           programLayout.setInfos[i].shaderLayout.immutableSamplerMask |= 1u << binding;
+                                       }
+                                   });
         }
     }
 
     for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
     {
-        if(programLayout.stagesForSets[i] != 0)
+        if(programLayout.setInfos[i].stagesForSets != 0)
         {
             programLayout.descriptorSetMask |= 1u << i;
 
             for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {
-                auto& arraySize = programLayout.setShaderLayouts[i].arraySize[binding];
+                auto& arraySize = programLayout.setInfos[i].shaderLayout.arraySize[binding];
                 if(arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
                     for(unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
                     {
-                        if(programLayout.stagesForBindings[i][i] != 0)
+                        if(programLayout.setInfos[i].stagesForBindings[i] != 0)
                         {
-                            VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.", i, i);
+                            VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.",
+                                       i, i);
                         }
                     }
 
                     // Allows us to have one unified descriptor set layout for bindless.
-                    programLayout.stagesForBindings[i][binding] = VK_SHADER_STAGE_ALL;
+                    programLayout.setInfos[i].stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
                 }
                 else if(arraySize == 0)
                 {
@@ -445,7 +453,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
                 {
                     for(unsigned i = 1; i < arraySize; i++)
                     {
-                        if(programLayout.stagesForBindings[i][binding + i] != 0)
+                        if(programLayout.setInfos[i].stagesForBindings[binding + i] != 0)
                         {
                             VK_LOG_ERR(
                                 "Detected binding aliasing for (%u, %u). Binding array with %u elements starting "
@@ -466,28 +474,28 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank)
 {
     m_pSetLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
-    unsigned num_sets = 0;
+    unsigned numSets = 0;
     for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
     {
         m_pSetLayouts[i] =
-            createDescriptorSetLayout(m_pDevice, m_combineLayout.setShaderLayouts[i], samplerBank->samplers[i],
-                                      m_combineLayout.stagesForBindings[i], m_poolSize);
+            createDescriptorSetLayout(m_pDevice, m_combineLayout.setInfos[i].shaderLayout, samplerBank->samplers[i],
+                                      m_combineLayout.setInfos[i].stagesForBindings, m_poolSize);
         if(m_combineLayout.descriptorSetMask & (1u << i))
         {
-            num_sets = i + 1;
+            numSets = i + 1;
         }
     }
 
-    if(num_sets > m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
+    if(numSets > m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
     {
-        VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", num_sets,
+        VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets,
                    m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
     }
 
     VkPipelineLayoutCreateInfo info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    if(num_sets)
+    if(numSets)
     {
-        info.setLayoutCount = num_sets;
+        info.setLayoutCount = numSets;
         info.pSetLayouts    = m_pSetLayouts.data();
     }
 

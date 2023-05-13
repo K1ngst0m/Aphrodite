@@ -244,16 +244,20 @@ void SceneRenderer::_initSet()
             textureInfos.push_back(info);
         }
 
-        std::vector<ResourceWrite> writes{
-            {{}, &sceneBufferInfo},
-            {{}, &transformBufferInfo},
-            {{}, &cameraBufferInfo},
-            {{}, &lightBufferInfo},
-            {textureInfos.data(), {}, textureInfos.size()},
-            {{}, &materialBufferInfo},
-            {&skyBoxImageInfo, {}},
+        m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
+
+        std::vector<VkWriteDescriptorSet> writes{
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
+                                     textureInfos.size()),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxImageInfo),
         };
-        m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet(writes);
+
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 
     // postfx
@@ -267,11 +271,12 @@ void SceneRenderer::_initSet()
             VkDescriptorImageInfo outputImageInfo{.imageView   = m_pSwapChain->getImage()->getView()->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
-            std::vector<ResourceWrite> writes{
-                {&inputImageInfo, {}},
-                {&outputImageInfo, {}},
+            m_postFxSets[idx] = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet();
+            std::vector<VkWriteDescriptorSet> writes{
+                init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
             };
-            m_postFxSets[idx] = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet(writes);
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
     }
 
@@ -286,24 +291,29 @@ void SceneRenderer::_initSet()
             ImageView* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][idx]->getView();
             ImageView* pShadowMap         = m_images[IMAGE_SHADOW_DEPTH][idx]->getView();
 
-            VkDescriptorImageInfo      posImageInfo{.imageView   = positionAttachment->getHandle(),
+            VkDescriptorImageInfo posImageInfo{.imageView   = positionAttachment->getHandle(),
+                                               .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo normalImageInfo{.imageView   = normalAttachment->getHandle(),
+                                                  .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo albedoImageInfo{.imageView   = albedoAttachment->getHandle(),
+                                                  .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo mraoImageInfo{.imageView   = mraoAttachment->getHandle(),
+                                                .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            VkDescriptorImageInfo emissiveImageInfo{.imageView   = emissiveAttachment->getHandle(),
                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo      normalImageInfo{.imageView   = normalAttachment->getHandle(),
-                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo      albedoImageInfo{.imageView   = albedoAttachment->getHandle(),
-                                                       .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo      mraoImageInfo{.imageView   = mraoAttachment->getHandle(),
-                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo      emissiveImageInfo{.imageView   = emissiveAttachment->getHandle(),
-                                                         .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            VkDescriptorImageInfo      shadowMapInfo{.imageView   = pShadowMap->getHandle(),
-                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            std::vector<ResourceWrite> writes{
-                {&posImageInfo, {}},  {&normalImageInfo, {}},   {&albedoImageInfo, {}},
-                {&mraoImageInfo, {}}, {&emissiveImageInfo, {}}, {&shadowMapInfo, {}},
+            VkDescriptorImageInfo shadowMapInfo{.imageView   = pShadowMap->getHandle(),
+                                                .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+            m_gbufferSets[idx] = m_setLayouts[SET_LAYOUT_GBUFFER]->allocateSet();
+            std::vector<VkWriteDescriptorSet> writes{
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
             };
 
-            m_gbufferSets[idx] = m_setLayouts[SET_LAYOUT_GBUFFER]->allocateSet(writes);
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
     }
 
@@ -522,7 +532,6 @@ void SceneRenderer::_initGeneral()
         {
             auto& program = m_programs[SHADER_PROGRAM_POSTFX];
             program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "postFX.comp"));
-            // program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_POSTFX]->getHandle()};
             VK_CHECK_RESULT(
                 m_pDevice->createComputePipeline(createInfo, program, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
         }
@@ -1116,7 +1125,6 @@ void SceneRenderer::_initShadow()
         {
             auto& program = m_programs[SHADER_PROGRAM_SHADOW];
             program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr);
-            // program->combineLayout(nullptr);
             // program->createPipelineLayout(nullptr);
             program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
                                                           m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};

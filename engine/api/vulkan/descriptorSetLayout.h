@@ -19,13 +19,6 @@ struct ResourcesBinding
     const VkSampler*         pImmutableSampler{};
 };
 
-struct ResourceWrite
-{
-    VkDescriptorImageInfo*  imageInfos{};
-    VkDescriptorBufferInfo* bufferInfos{};
-    size_t                  count{1};
-};
-
 class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 {
 public:
@@ -33,7 +26,7 @@ public:
 
     Device*                       getDevice() { return m_pDevice; }
     std::vector<ResourcesBinding> getBindings() { return m_bindings; }
-    VkDescriptorSet               allocateSet(const std::vector<ResourceWrite>& writes = {});
+    VkDescriptorSet               allocateSet();
     VkResult                      freeSet(VkDescriptorSet set);
 
 private:

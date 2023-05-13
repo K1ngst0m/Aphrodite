@@ -49,25 +49,30 @@ struct ResourceLayout
 {
     ShaderLayout setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
 
-    uint32_t inputMask        = 0;
-    uint32_t outputMask       = 0;
-    uint32_t pushConstantSize = 0;
-    uint32_t specConstantMask = 0;
-    uint32_t bindlessSetMask  = 0;
+    uint32_t inputMask        = {};
+    uint32_t outputMask       = {};
+    uint32_t pushConstantSize = {};
+    uint32_t specConstantMask = {};
+    uint32_t bindlessSetMask  = {};
 };
 
 struct CombinedResourceLayout
 {
-    ShaderLayout setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS]                       = {};
-    uint32_t     stagesForBindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
-    uint32_t     stagesForSets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
+    struct SetInfo
+    {
+        ShaderLayout shaderLayout                           = {};
+        uint32_t     stagesForBindings[VULKAN_NUM_BINDINGS] = {};
+        uint32_t     stagesForSets                          = {};
+    };
+    SetInfo setInfos[VULKAN_NUM_DESCRIPTOR_SETS] = {};
 
-    uint32_t            attributeMask             = 0;
-    uint32_t            renderTargetMask          = 0;
-    VkPushConstantRange pushConstantRange         = {};
-    uint32_t            descriptorSetMask         = 0;
-    uint32_t            bindlessDescriptorSetMask = 0;
-    uint32_t            combinedSpecConstantMask  = 0;
+    VkPushConstantRange pushConstantRange = {};
+
+    uint32_t attributeMask             = {};
+    uint32_t renderTargetMask          = {};
+    uint32_t descriptorSetMask         = {};
+    uint32_t bindlessDescriptorSetMask = {};
+    uint32_t combinedSpecConstantMask  = {};
 
     std::unordered_map<ShaderStage, uint32_t> specConstantMask = {};
 };
