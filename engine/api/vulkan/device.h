@@ -56,6 +56,10 @@ public:
                           bool persistmentMap = false);
     VkResult createImage(const ImageCreateInfo& createInfo, Image** ppImage);
     VkResult createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
+    VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,
+                                 const ImmutableSamplerBank* samplerBank = nullptr);
+    VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* cs,
+                                 const ImmutableSamplerBank* samplerBank = nullptr);
     VkResult createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
     VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool);
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* pProgram,
@@ -68,6 +72,7 @@ public:
                                        DescriptorSetLayout**                            ppDescriptorSetLayout);
 
 public:
+    void destroyShaderProgram(ShaderProgram* pProgram);
     void destroyBuffer(Buffer* pBuffer);
     void destroyImage(Image* pImage);
     void destroyImageView(ImageView* pImageView);

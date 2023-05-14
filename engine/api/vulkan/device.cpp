@@ -482,29 +482,6 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .pAttachments    = createInfo.colorBlendAttachments.data(),
     };
 
-    VkPipelineLayout pipelineLayout = pProgram->m_pipeLayout;
-    if(!pipelineLayout)
-    {
-        std::vector<VkDescriptorSetLayout> vkSetLayouts;
-        vkSetLayouts.reserve(pProgram->m_pSetLayouts.size());
-        for(const auto& setLayout : pProgram->m_pSetLayouts)
-        {
-            vkSetLayouts.push_back(setLayout->getHandle());
-        }
-
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-        pipelineLayoutInfo.setLayoutCount = vkSetLayouts.size();
-        pipelineLayoutInfo.pSetLayouts    = vkSetLayouts.data();
-
-        if(pProgram->m_combineLayout.pushConstantRange.size != 0)
-        {
-            pipelineLayoutInfo.pPushConstantRanges    = &pProgram->m_combineLayout.pushConstantRange;
-            pipelineLayoutInfo.pushConstantRangeCount = 1;
-        }
-        m_table.vkCreatePipelineLayout(getHandle(), &pipelineLayoutInfo, nullptr, &pipelineLayout);
-        pProgram->m_pipeLayout = pipelineLayout;
-    }
-
     // build the actual pipeline
     // we now use all of the info structs we have been writing into into this one to create the pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo = {
@@ -517,7 +494,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .pDepthStencilState  = &createInfo.depthStencil,
         .pColorBlendState    = &colorBlending,
         .pDynamicState       = &createInfo.dynamicState,
-        .layout              = pipelineLayout,
+        .layout              = pProgram->m_pipeLayout,
         .subpass             = 0,
         .basePipelineHandle  = VK_NULL_HANDLE,
     };
@@ -527,10 +504,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : pProgram->m_shaders)
     {
-        if(sModule)
-        {
-            shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
-        }
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
     }
     pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
     pipelineInfo.pStages    = shaderStages.data();
@@ -545,7 +519,6 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
 
 void Device::destroyPipeline(Pipeline* pipeline)
 {
-    m_table.vkDestroyPipelineLayout(getHandle(), pipeline->getPipelineLayout(), nullptr);
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
     pipeline = nullptr;
@@ -884,5 +857,21 @@ VkResult Device::executeSingleCommands(QueueType type, const std::function<void(
 {
     auto* queue = getQueueByFlags(type);
     return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
+}
+void Device::destroyShaderProgram(ShaderProgram* pProgram)
+{
+    delete pProgram;
+    pProgram = nullptr;
+}
+VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* cs, const ImmutableSamplerBank* samplerBank)
+{
+    *ppProgram = new ShaderProgram(this, cs, samplerBank);
+    return VK_SUCCESS;
+}
+VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,
+                                     const ImmutableSamplerBank* samplerBank)
+{
+    *ppProgram = new ShaderProgram(this, vs, fs, samplerBank);
+    return VK_SUCCESS;
 }
 }  // namespace aph::vk

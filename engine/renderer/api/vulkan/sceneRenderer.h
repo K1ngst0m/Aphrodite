@@ -68,7 +68,6 @@ private:
         BUFFER_SCENE_CAMERA,
         BUFFER_SCENE_TRANSFORM,
         BUFFER_INDIRECT_DRAW_CMD,
-        // BUFFER_INDIRECT_DRAW_INDEXED_CMD,
         BUFFER_INDIRECT_DISPATCH_CMD,
         BUFFER_MAX,
     };
@@ -102,7 +101,7 @@ private:
         SHADER_PROGRAM_MAX
     };
 
-    std::array<ShaderProgram*, BUFFER_MAX>           m_programs;
+    std::array<ShaderProgram*, SHADER_PROGRAM_MAX>   m_programs;
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;
     std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
     std::array<DescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;

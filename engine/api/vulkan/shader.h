@@ -105,28 +105,8 @@ using ShaderMapList = std::unordered_map<ShaderStage, Shader*>;
 class ShaderProgram
 {
 public:
-    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank = nullptr) :
-        m_pDevice(device)
-    {
-        if(vs)
-        {
-            m_shaders[ShaderStage::VS] = vs;
-        }
-        if(fs)
-        {
-            m_shaders[ShaderStage::FS] = fs;
-        }
-        // combineLayout(samplerBank);
-        // TODO
-        // createPipelineLayout(samplerBank);
-    }
-
-    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank = nullptr) : m_pDevice(device)
-    {
-        m_shaders[ShaderStage::CS] = cs;
-        combineLayout(samplerBank);
-        createPipelineLayout(samplerBank);
-    }
+    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
+    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
 
     ~ShaderProgram();
 

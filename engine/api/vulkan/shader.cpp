@@ -527,4 +527,24 @@ ShaderProgram::~ShaderProgram()
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
 }
+ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device)
+{
+    if(vs)
+    {
+        m_shaders[ShaderStage::VS] = vs;
+    }
+    if(fs)
+    {
+        m_shaders[ShaderStage::FS] = fs;
+    }
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
+ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device)
+{
+    m_shaders[ShaderStage::CS] = cs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
 }  // namespace aph::vk

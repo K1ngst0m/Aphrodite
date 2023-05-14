@@ -229,10 +229,8 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             pipelineCreateInfo.depthStencil =
                 init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
-            m_ui.pProgram = new ShaderProgram(m_pDevice, getShaders(shaderDir / "uioverlay.vert"),
-                                              getShaders(shaderDir / "uioverlay.frag"));
-            m_ui.pProgram->combineLayout(nullptr);
-            m_ui.pProgram->createPipelineLayout(nullptr);
+            VK_CHECK_RESULT(m_pDevice->createShaderProgram(&m_ui.pProgram, getShaders(shaderDir / "uioverlay.vert"),
+                                                           getShaders(shaderDir / "uioverlay.frag")));
 
             pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
             pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -295,10 +293,9 @@ Renderer::~Renderer()
     {
         m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
         m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
-
         m_pDevice->destroyImage(m_ui.pFontImage);
-
         m_pDevice->destroySampler(m_ui.fontSampler);
+        m_pDevice->destroyShaderProgram(m_ui.pProgram);
         m_pDevice->destroyPipeline(m_ui.pipeline);
         if(ImGui::GetCurrentContext())
         {
