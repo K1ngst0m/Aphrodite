@@ -57,6 +57,7 @@ public:
     void endRendering();
     void setViewport(const VkViewport& viewport);
     void setSissor(const VkRect2D& scissor);
+    void bindDescriptorSet(uint32_t setIdx);
     void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);
     void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
                            uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);

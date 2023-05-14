@@ -13,7 +13,7 @@ layout (location = 2) out vec4  outAlbedo;
 layout (location = 3) out vec4  outMetallicRoughnessAO;
 layout (location = 4) out vec4  outEmissive;
 
-layout (set = 0, binding = 4) uniform texture2D textures[];
+layout (set = 0, binding = 4) uniform texture2D textures[5];
 struct Material{
     vec4 emissiveFactor;
     vec4 baseColorFactor;
@@ -31,6 +31,8 @@ layout (set = 0, binding = 5) uniform MaterialUB{
     Material materials[100];
 };
 layout (set = 1, binding = 0) uniform sampler samp;
+layout (set = 1, binding = 1) uniform sampler shadowSamp;
+layout (set = 1, binding = 2) uniform sampler cubemapSamp;
 
 layout( push_constant ) uniform constants
 {

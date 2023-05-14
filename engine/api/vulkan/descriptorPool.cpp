@@ -9,7 +9,7 @@ DescriptorPool::DescriptorPool(DescriptorSetLayout* layout) : m_layout(layout)
 
     for(auto& binding : bindings)
     {
-        m_descriptorTypeCounts[utils::VkCast(binding.resType)] += binding.count;
+        m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
     }
 
     m_poolSizes.resize(m_descriptorTypeCounts.size());

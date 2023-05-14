@@ -9,5 +9,5 @@ do
     dir="$(dirname -- "$rpath")"
     name="$(basename -- "$rpath")"
     # glslc "$rpath" -o "$dir/$name.spv"
-    glslangValidator --quiet --target-env vulkan1.3 "$rpath" -o "$dir/$name.spv"
+    glslangValidator --quiet --target-env vulkan1.3 "$rpath" -o "$dir/$name.spv"&
 done

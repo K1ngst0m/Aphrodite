@@ -54,6 +54,7 @@ public:
     Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
 
+    ShaderProgram*      getProgram() { return m_pProgram; }
     VkPipelineLayout    getPipelineLayout() { return m_pProgram->m_pipeLayout; }
     VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
 

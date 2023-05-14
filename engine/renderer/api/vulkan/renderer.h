@@ -86,8 +86,7 @@ protected:
         uint32_t vertexCount   = {};
         uint32_t indexCount    = {};
 
-        DescriptorSetLayout* pSetLayout = {};
-        VkDescriptorSet      set        = {};
+        VkDescriptorSet set = {};
 
         float scale = {1.1f};
     } m_ui;

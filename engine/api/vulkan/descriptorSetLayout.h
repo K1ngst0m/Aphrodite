@@ -11,28 +11,21 @@ class Buffer;
 class Device;
 class DescriptorPool;
 
-struct ResourcesBinding
-{
-    ResourceType             resType{};
-    std::vector<ShaderStage> stages{};
-    size_t                   count{1};
-    const VkSampler*         pImmutableSampler{};
-};
-
 class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 {
 public:
-    DescriptorSetLayout(Device* device, const std::vector<ResourcesBinding>& bindings, VkDescriptorSetLayout handle);
+    DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
+                        VkDescriptorSetLayout handle);
 
-    Device*                       getDevice() { return m_pDevice; }
-    std::vector<ResourcesBinding> getBindings() { return m_bindings; }
-    VkDescriptorSet               allocateSet();
-    VkResult                      freeSet(VkDescriptorSet set);
+    Device*                                   getDevice() { return m_pDevice; }
+    std::vector<VkDescriptorSetLayoutBinding> getBindings() { return m_bindings; }
+    VkDescriptorSet                           allocateSet();
+    VkResult                                  freeSet(VkDescriptorSet set);
 
 private:
-    Device*                         m_pDevice  = {};
-    std::vector<ResourcesBinding>   m_bindings = {};
-    std::unique_ptr<DescriptorPool> m_pool     = {};
+    Device*                                   m_pDevice  = {};
+    std::vector<VkDescriptorSetLayoutBinding> m_bindings = {};
+    std::unique_ptr<DescriptorPool>           m_pool     = {};
 };
 
 }  // namespace aph::vk

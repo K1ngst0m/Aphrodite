@@ -485,8 +485,17 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
     VkPipelineLayout pipelineLayout = pProgram->m_pipeLayout;
     if(!pipelineLayout)
     {
-        std::vector<VkDescriptorSetLayout> setLayouts         = pProgram->m_pSetLayouts;
-        VkPipelineLayoutCreateInfo         pipelineLayoutInfo = init::pipelineLayoutCreateInfo(setLayouts, {});
+        std::vector<VkDescriptorSetLayout> vkSetLayouts;
+        vkSetLayouts.reserve(pProgram->m_pSetLayouts.size());
+        for(const auto& setLayout : pProgram->m_pSetLayouts)
+        {
+            vkSetLayouts.push_back(setLayout->getHandle());
+        }
+
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+        pipelineLayoutInfo.setLayoutCount = vkSetLayouts.size();
+        pipelineLayoutInfo.pSetLayouts    = vkSetLayouts.data();
+
         if(pProgram->m_combineLayout.pushConstantRange.size != 0)
         {
             pipelineLayoutInfo.pPushConstantRanges    = &pProgram->m_combineLayout.pushConstantRange;
@@ -542,29 +551,19 @@ void Device::destroyPipeline(Pipeline* pipeline)
     pipeline = nullptr;
 }
 
-VkResult Device::createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                           DescriptorSetLayout**                ppDescriptorSetLayout)
+VkResult Device::createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
+                                           DescriptorSetLayout**                  ppDescriptorSetLayout)
 {
-    std::vector<VkDescriptorSetLayoutBinding> vkBindings;
-    uint32_t                                  bindingIdx = 0;
-    for(const auto& binding : bindings)
-    {
-        auto vkBinding = init::descriptorSetLayoutBinding(utils::VkCast(binding.resType), utils::VkCast(binding.stages),
-                                                          bindingIdx, binding.count);
-        vkBinding.pImmutableSamplers = binding.pImmutableSampler;
-        vkBindings.push_back(vkBinding);
-        bindingIdx++;
-    }
-    VkDescriptorSetLayoutCreateInfo createInfo{
-        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = static_cast<uint32_t>(vkBindings.size()),
-        .pBindings    = vkBindings.data(),
-    };
-
     VkDescriptorSetLayout setLayout;
     _VR(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
-    *ppDescriptorSetLayout = new DescriptorSetLayout(this, bindings, setLayout);
+    *ppDescriptorSetLayout = new DescriptorSetLayout(this, createInfo, setLayout);
     return VK_SUCCESS;
+}
+VkResult Device::createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,
+                                           DescriptorSetLayout**                            ppDescriptorSetLayout)
+{
+    VkDescriptorSetLayoutCreateInfo createInfo = init::descriptorSetLayoutCreateInfo(bindingds);
+    return createDescriptorSetLayout(createInfo, ppDescriptorSetLayout);
 }
 
 void Device::destroyDescriptorSetLayout(DescriptorSetLayout* pLayout)
@@ -886,5 +885,4 @@ VkResult Device::executeSingleCommands(QueueType type, const std::function<void(
     auto* queue = getQueueByFlags(type);
     return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
 }
-
 }  // namespace aph::vk

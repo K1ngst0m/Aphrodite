@@ -36,11 +36,6 @@ private:
     enum SetLayoutIndex
     {
         SET_LAYOUT_SAMP,
-        // SET_LAYOUT_MATERIAL,
-        SET_LAYOUT_SCENE,
-        // SET_LAYOUT_OBJECT,
-        SET_LAYOUT_POSTFX,
-        SET_LAYOUT_GBUFFER,
         SET_LAYOUT_MAX,
     };
 
@@ -114,10 +109,14 @@ private:
     std::array<Sampler*, SAMP_MAX>                   m_samplers;
     std::array<std::vector<Image*>, IMAGE_MAX>       m_images;
 
+    // TODO remove
     std::vector<VkDescriptorSet> m_gbufferSets{};
     std::vector<VkDescriptorSet> m_postFxSets{};
     VkDescriptorSet              m_sceneSet{};
     VkDescriptorSet              m_samplerSet{};
+    VkDescriptorSet              m_shadowSet{};
+    VkDescriptorSet              m_geometrySet{};
+    VkDescriptorSet              m_skyboxSet{};
 
 private:
     Scene*                  m_scene = {};

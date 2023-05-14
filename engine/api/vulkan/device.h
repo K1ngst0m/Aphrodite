@@ -62,8 +62,10 @@ public:
                                     Pipeline** ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, ShaderProgram* pProgram,
                                    Pipeline** ppPipeline);
-    VkResult createDescriptorSetLayout(const std::vector<ResourcesBinding>& bindings,
-                                       DescriptorSetLayout**                ppDescriptorSetLayout);
+    VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
+                                       DescriptorSetLayout**                  ppDescriptorSetLayout);
+    VkResult createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,
+                                       DescriptorSetLayout**                            ppDescriptorSetLayout);
 
 public:
     void destroyBuffer(Buffer* pBuffer);

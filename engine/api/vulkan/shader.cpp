@@ -45,18 +45,15 @@ static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType&
 };
 
 // create descriptor set layout
-static VkDescriptorSetLayout createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
-                                                       const ImmutableSampler* const*     pImmutableSamplers,
-                                                       const uint32_t*                    stageForBinds,
-                                                       std::vector<VkDescriptorPoolSize>& poolSize)
+static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
+                                                      const ImmutableSampler* const*     pImmutableSamplers,
+                                                      const uint32_t*                    stageForBinds,
+                                                      std::vector<VkDescriptorPoolSize>& poolSize)
 {
-    VkDescriptorSetLayout set_layout{};
-
-    VkDescriptorSetLayoutCreateInfo           info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
-    std::vector<VkDescriptorSetLayoutBinding> bindings;
-    // VkDescriptorBindingFlagsEXT               binding_flags = 0;
+    std::vector<VkDescriptorSetLayoutBinding> vkBindings;
 
+    // VkDescriptorBindingFlagsEXT               binding_flags = 0;
     // VkDescriptorSetLayoutBindingFlagsCreateInfoEXT flags = {
     //     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
 
@@ -82,57 +79,57 @@ static VkDescriptorSetLayout createDescriptorSetLayout(Device* m_pDevice, const 
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
                 vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
 
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, array_size, stages,
-                                vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, array_size, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, pool_array_size});
             types++;
         }
 
         if(layout.sampledTexelBufferMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, pool_array_size});
             types++;
         }
 
         if(layout.storageTexelBufferMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, pool_array_size});
             types++;
         }
 
         if(layout.storageImageMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, pool_array_size});
             types++;
         }
 
         if(layout.uniformBufferMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, array_size, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, pool_array_size});
             types++;
         }
 
         if(layout.storageBufferMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, pool_array_size});
             types++;
         }
 
         if(layout.inputAttachmentMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, pool_array_size});
             types++;
         }
 
         if(layout.separateImageMask & (1u << i))
         {
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, array_size, stages, nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, array_size, stages, nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, pool_array_size});
             types++;
         }
@@ -142,8 +139,8 @@ static VkDescriptorSetLayout createDescriptorSetLayout(Device* m_pDevice, const 
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
                 vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
 
-            bindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, array_size, stages,
-                                vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, array_size, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
             poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, pool_array_size});
             types++;
         }
@@ -152,20 +149,19 @@ static VkDescriptorSetLayout createDescriptorSetLayout(Device* m_pDevice, const 
         APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
     }
 
-    if(!bindings.empty())
+    VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    if(!vkBindings.empty())
     {
-        info.bindingCount = bindings.size();
-        info.pBindings    = bindings.data();
+        info.bindingCount = vkBindings.size();
+        info.pBindings    = vkBindings.data();
     }
 
 #ifdef APH_DEBUG
     VK_LOG_INFO("Creating descriptor set layout.");
 #endif
-    auto table = m_pDevice->getDeviceTable();
-    if(table->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, nullptr, &set_layout) != VK_SUCCESS)
-        VK_LOG_ERR("Failed to create descriptor set layout.");
-
-    return set_layout;
+    DescriptorSetLayout* setLayout{};
+    VK_CHECK_RESULT(m_pDevice->createDescriptorSetLayout(info, &setLayout));
+    return setLayout;
 };
 
 std::unique_ptr<Shader> Shader::Create(Device* pDevice, const std::filesystem::path& path,
@@ -338,10 +334,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 
     for(const auto& [stage, shader] : m_shaders)
     {
-        if(!shader)
-        {
-            continue;
-        }
+        APH_ASSERT(shader);
         auto&    shaderLayout = shader->m_layout;
         uint32_t stage_mask   = utils::VkCast(stage);
 
@@ -492,11 +485,17 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
                    m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
     }
 
-    VkPipelineLayoutCreateInfo info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    std::vector<VkDescriptorSetLayout> vkSetLayouts;
     if(numSets)
     {
+        vkSetLayouts.reserve(m_pSetLayouts.size());
+        for(const auto& setLayout : m_pSetLayouts)
+        {
+            vkSetLayouts.push_back(setLayout->getHandle());
+        }
         info.setLayoutCount = numSets;
-        info.pSetLayouts    = m_pSetLayouts.data();
+        info.pSetLayouts    = vkSetLayouts.data();
     }
 
     if(m_combineLayout.pushConstantRange.stageFlags != 0)
@@ -518,5 +517,14 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
 
 void ShaderProgram::createUpdateTemplates()
 {
+}
+
+ShaderProgram::~ShaderProgram()
+{
+    for(auto* setLayout : m_pSetLayouts)
+    {
+        m_pDevice->destroyDescriptorSetLayout(setLayout);
+    }
+    m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
 }
 }  // namespace aph::vk

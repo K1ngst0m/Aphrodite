@@ -76,17 +76,19 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
         }
 
-        auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
-        debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-        debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
-                                VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
-        debugInfo.pfnUserCallback = debugCallback;
-        debugInfo.pUserData       = &m_frameIdx;
+        {
+            auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
+            debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+            debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+            debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
+            debugInfo.pfnUserCallback = debugCallback;
+            debugInfo.pUserData       = &m_frameIdx;
+        }
 
         VK_CHECK_RESULT(Instance::Create(instanceCreateInfo, &m_pInstance));
     }
@@ -213,23 +215,6 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
         }
 
-        // setup descriptor
-        {
-            std::vector<ResourcesBinding> bindings{
-                {ResourceType::COMBINE_SAMPLER_IMAGE, {ShaderStage::FS}},
-            };
-            m_pDevice->createDescriptorSetLayout(bindings, &m_ui.pSetLayout);
-
-            VkDescriptorImageInfo fontDescriptor = {m_ui.fontSampler->getHandle(),
-                                                    m_ui.pFontImage->getView()->getHandle(),
-                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-
-            m_ui.set = m_ui.pSetLayout->allocateSet();
-            std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_ui.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
-        }
-
         // setup pipeline
         {
             GraphicsPipelineCreateInfo pipelineCreateInfo{};
@@ -246,6 +231,7 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
 
             m_ui.pProgram = new ShaderProgram(m_pDevice, getShaders(shaderDir / "uioverlay.vert"),
                                               getShaders(shaderDir / "uioverlay.frag"));
+            m_ui.pProgram->combineLayout(nullptr);
             m_ui.pProgram->createPipelineLayout(nullptr);
 
             pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
@@ -284,6 +270,18 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_ui.pProgram, &m_ui.pipeline));
         }
 
+        // setup descriptor
+        {
+            VkDescriptorImageInfo fontDescriptor = {m_ui.fontSampler->getHandle(),
+                                                    m_ui.pFontImage->getView()->getHandle(),
+                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+
+            m_ui.set = m_ui.pProgram->getSetLayout(0)->allocateSet();
+            std::vector<VkWriteDescriptorSet> writes{
+                init::writeDescriptorSet(m_ui.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+        }
+
         {
             m_wsi->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
             m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
@@ -301,7 +299,6 @@ Renderer::~Renderer()
         m_pDevice->destroyImage(m_ui.pFontImage);
 
         m_pDevice->destroySampler(m_ui.fontSampler);
-        m_pDevice->destroyDescriptorSetLayout(m_ui.pSetLayout);
         m_pDevice->destroyPipeline(m_ui.pipeline);
         if(ImGui::GetCurrentContext())
         {

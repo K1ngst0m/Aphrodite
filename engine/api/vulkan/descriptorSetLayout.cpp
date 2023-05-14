@@ -5,11 +5,14 @@
 namespace aph::vk
 {
 
-DescriptorSetLayout::DescriptorSetLayout(Device* device, const std::vector<ResourcesBinding>& bindings,
+DescriptorSetLayout::DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
                                          VkDescriptorSetLayout handle) :
     m_pDevice(device)
 {
-    m_bindings  = bindings;
+    for(uint32_t idx = 0; idx < createInfo.bindingCount; idx++)
+    {
+        m_bindings.push_back(createInfo.pBindings[idx]);
+    }
     m_pool      = std::make_unique<DescriptorPool>(this);
     getHandle() = handle;
 }

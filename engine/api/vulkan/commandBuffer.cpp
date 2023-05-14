@@ -472,4 +472,7 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
     }
     m_graphicsState.depthAttachment = {.image = depth};
 }
+void CommandBuffer::bindDescriptorSet(uint32_t setIdx)
+{
+}
 }  // namespace aph::vk

@@ -8,6 +8,7 @@ namespace aph::vk
 {
 class Device;
 class ImmutableSampler;
+class DescriptorSetLayout;
 
 constexpr unsigned VULKAN_NUM_DESCRIPTOR_SETS           = 4;
 constexpr unsigned VULKAN_NUM_BINDINGS                  = 32;
@@ -107,9 +108,15 @@ public:
     ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank = nullptr) :
         m_pDevice(device)
     {
-        m_shaders[ShaderStage::VS] = vs;
-        m_shaders[ShaderStage::FS] = fs;
-        combineLayout(samplerBank);
+        if(vs)
+        {
+            m_shaders[ShaderStage::VS] = vs;
+        }
+        if(fs)
+        {
+            m_shaders[ShaderStage::FS] = fs;
+        }
+        // combineLayout(samplerBank);
         // TODO
         // createPipelineLayout(samplerBank);
     }
@@ -121,20 +128,21 @@ public:
         createPipelineLayout(samplerBank);
     }
 
-    ~ShaderProgram() = default;
+    ~ShaderProgram();
 
 public:
-    void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
-    void combineLayout(const ImmutableSamplerBank* samplerBank);
+    void                 createPipelineLayout(const ImmutableSamplerBank* samplerBank);
+    void                 combineLayout(const ImmutableSamplerBank* samplerBank);
+    DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
 
 public:
-    void                               createUpdateTemplates();
-    Device*                            m_pDevice       = {};
-    ShaderMapList                      m_shaders       = {};
-    std::vector<VkDescriptorSetLayout> m_pSetLayouts   = {};
-    VkPipelineLayout                   m_pipeLayout    = {};
-    CombinedResourceLayout             m_combineLayout = {};
-    std::vector<VkDescriptorPoolSize>  m_poolSize      = {};
+    void                              createUpdateTemplates();
+    Device*                           m_pDevice       = {};
+    ShaderMapList                     m_shaders       = {};
+    std::vector<DescriptorSetLayout*> m_pSetLayouts   = {};
+    VkPipelineLayout                  m_pipeLayout    = {};
+    CombinedResourceLayout            m_combineLayout = {};
+    std::vector<VkDescriptorPoolSize> m_poolSize      = {};
 };
 
 }  // namespace aph::vk

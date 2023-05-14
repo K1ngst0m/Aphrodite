@@ -40,6 +40,7 @@ layout (set = 2, binding = 4) uniform texture2D emissiveMap;
 layout (set = 2, binding = 5) uniform texture2D shadowMap;
 
 layout (set = 1, binding = 0) uniform sampler samp;
+layout (set = 1, binding = 1) uniform sampler smp1;
 layout (set = 1, binding = 2) uniform sampler shadowSamp;
 
 const float PI = 3.14159265359;

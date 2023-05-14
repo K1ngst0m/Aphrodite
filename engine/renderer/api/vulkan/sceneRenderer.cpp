@@ -225,15 +225,26 @@ void SceneRenderer::update(float deltaTime)
 void SceneRenderer::_initSet()
 {
     VK_LOG_DEBUG("Init descriptor set.");
-
+    // scene
     {
         VkDescriptorBufferInfo sceneBufferInfo{m_buffers[BUFFER_SCENE_INFO]->getHandle(), 0, VK_WHOLE_SIZE};
-        VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
         VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
         VkDescriptorBufferInfo lightBufferInfo{m_buffers[BUFFER_SCENE_LIGHT]->getHandle(), 0, VK_WHOLE_SIZE};
+        m_sceneSet = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(0)->allocateSet();
+        std::vector<VkWriteDescriptorSet> writes{
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo),
+        };
+
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+    }
+
+    // geometry
+    {
+        VkDescriptorBufferInfo materialBufferInfo{m_buffers[BUFFER_SCENE_MATERIAL]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
         VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
-        VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_images[IMAGE_SCENE_SKYBOX][0]->getView()->getHandle(),
-                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         std::vector<VkDescriptorImageInfo> textureInfos{};
         for(auto& texture : m_images[IMAGE_SCENE_TEXTURES])
         {
@@ -244,17 +255,27 @@ void SceneRenderer::_initSet()
             textureInfos.push_back(info);
         }
 
-        m_sceneSet = m_setLayouts[SET_LAYOUT_SCENE]->allocateSet();
+        m_geometrySet = m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]->getProgram()->getSetLayout(0)->allocateSet();
+        std::vector<VkWriteDescriptorSet> writes{
+            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
+                                     textureInfos.size()),
+            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
+        };
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+    }
+
+    // skybox
+    {
+        VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorImageInfo  skyBoxImageInfo{nullptr, m_images[IMAGE_SCENE_SKYBOX][0]->getView()->getHandle(),
+                                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        m_skyboxSet = m_pipelines[PIPELINE_GRAPHICS_SKYBOX]->getProgram()->getSetLayout(0)->allocateSet();
 
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
-                                     textureInfos.size()),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxImageInfo),
+            init::writeDescriptorSet(m_skyboxSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_skyboxSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxImageInfo),
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -271,7 +292,7 @@ void SceneRenderer::_initSet()
             VkDescriptorImageInfo outputImageInfo{.imageView   = m_pSwapChain->getImage()->getView()->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
 
-            m_postFxSets[idx] = m_setLayouts[SET_LAYOUT_POSTFX]->allocateSet();
+            m_postFxSets[idx] = m_pipelines[PIPELINE_COMPUTE_POSTFX]->getProgram()->getSetLayout(0)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
                 init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
                 init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
@@ -280,6 +301,7 @@ void SceneRenderer::_initSet()
         }
     }
 
+    // gbuffer
     {
         m_gbufferSets.resize(m_config.maxFrames);
         for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
@@ -303,7 +325,7 @@ void SceneRenderer::_initSet()
                                                     .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             VkDescriptorImageInfo shadowMapInfo{.imageView   = pShadowMap->getHandle(),
                                                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
-            m_gbufferSets[idx] = m_setLayouts[SET_LAYOUT_GBUFFER]->allocateSet();
+            m_gbufferSets[idx] = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(2)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
                 init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
                 init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
@@ -317,8 +339,34 @@ void SceneRenderer::_initSet()
         }
     }
 
+    // shadow
+    {
+        m_shadowSet = m_pipelines[PIPELINE_GRAPHICS_SHADOW]->getProgram()->getSetLayout(0)->allocateSet();
+
+        VkDescriptorBufferInfo transformBufferInfo{m_buffers[BUFFER_SCENE_TRANSFORM]->getHandle(), 0, VK_WHOLE_SIZE};
+        VkDescriptorBufferInfo cameraBufferInfo{m_buffers[BUFFER_SCENE_CAMERA]->getHandle(), 0, VK_WHOLE_SIZE};
+
+        std::vector<VkWriteDescriptorSet> writes{
+            init::writeDescriptorSet(m_shadowSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_shadowSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+        };
+
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+    }
+
+    // sampler
     {
         m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
+        VkDescriptorImageInfo sampTextureInfo{.sampler = m_samplers[SAMP_TEXTURE]->getHandle()};
+        VkDescriptorImageInfo sampShadowInfo{.sampler = m_samplers[SAMP_SHADOW]->getHandle()};
+        VkDescriptorImageInfo sampCubemapInfo{.sampler = m_samplers[SAMP_CUBEMAP]->getHandle()};
+
+        std::vector<VkWriteDescriptorSet> writes{
+            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 0, &sampTextureInfo),
+            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 1, &sampShadowInfo),
+            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 2, &sampCubemapInfo),
+        };
+        vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
 }
 
@@ -427,13 +475,11 @@ void SceneRenderer::_initGbuffer()
         createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
 
         {
-            auto& program          = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
-            program                = new ShaderProgram(m_pDevice, getShaders(shaderDir / "geometry.vert"),
-                                                       getShaders(shaderDir / "geometry.frag"));
-            program->m_pSetLayouts = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
-                                      m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
-            program->m_combineLayout.pushConstantRange = {utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0,
-                                                          sizeof(ObjectInfo)};
+            auto& program = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
+            program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "geometry.vert"),
+                                              getShaders(shaderDir / "geometry.frag"));
+            program->combineLayout(nullptr);
+            program->createPipelineLayout(nullptr);
             VK_CHECK_RESULT(
                 m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
         }
@@ -460,12 +506,8 @@ void SceneRenderer::_initGbuffer()
             auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
             program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "pbr_deferred.vert"),
                                               getShaders(shaderDir / "pbr_deferred.frag"));
-
-            program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
-                                                          m_setLayouts[SET_LAYOUT_SAMP]->getHandle(),
-                                                          m_setLayouts[SET_LAYOUT_GBUFFER]->getHandle()};
-            program->m_combineLayout.pushConstantRange = {utils::VkCast({ShaderStage::VS, ShaderStage::FS}), 0,
-                                                          sizeof(ObjectInfo)};
+            program->combineLayout(nullptr);
+            program->createPipelineLayout(nullptr);
             VK_CHECK_RESULT(
                 m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
         }
@@ -541,19 +583,6 @@ void SceneRenderer::_initGeneral()
 void SceneRenderer::_initSetLayout()
 {
     VK_LOG_DEBUG("Init descriptor set.");
-    // scene
-    {
-        std::vector<ResourcesBinding> bindings{
-            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
-            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
-            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
-            {ResourceType::UNIFORM_BUFFER, {ShaderStage::VS, ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}, m_images[IMAGE_SCENE_TEXTURES].size()},
-            {ResourceType::UNIFORM_BUFFER, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-        };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SCENE]);
-    }
 
     // sampler
     {
@@ -573,31 +602,12 @@ void SceneRenderer::_initSetLayout()
             VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE], true));
         }
 
-        std::vector<ResourcesBinding> bindings{
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_TEXTURE]->getHandle()},
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_CUBEMAP]->getHandle()},
-            {ResourceType::SAMPLER, {ShaderStage::FS}, 1, &m_samplers[SAMP_SHADOW]->getHandle()},
+        std::vector<VkDescriptorSetLayoutBinding> bindings{
+            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
         };
         m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
-    }
-
-    // off screen texture
-    {
-        std::vector<ResourcesBinding> bindings{
-            {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
-            {ResourceType::STORAGE_IMAGE, {ShaderStage::CS}},
-        };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_POSTFX]);
-    }
-
-    // gbuffer
-    {
-        std::vector<ResourcesBinding> bindings{
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-            {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}}, {ResourceType::SAMPLED_IMAGE, {ShaderStage::FS}},
-        };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_GBUFFER]);
     }
 }
 
@@ -788,11 +798,11 @@ void SceneRenderer::_initSkybox()
         createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
 
         {
-            auto& program          = m_programs[SHADER_PROGRAM_SKYBOX];
-            program                = new ShaderProgram(m_pDevice, getShaders(shaderDir / "skybox.vert"),
-                                                       getShaders(shaderDir / "skybox.frag"));
-            program->m_pSetLayouts = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
-                                      m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
+            auto& program = m_programs[SHADER_PROGRAM_SKYBOX];
+            program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "skybox.vert"),
+                                              getShaders(shaderDir / "skybox.frag"));
+            program->combineLayout(nullptr);
+            program->createPipelineLayout(nullptr);
             VK_CHECK_RESULT(
                 m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
         }
@@ -839,7 +849,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         // skybox
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindDescriptorSet({m_skyboxSet, m_samplerSet});
             pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
             pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
         }
@@ -888,7 +898,7 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet, m_samplerSet});
+            pCommandBuffer->bindDescriptorSet({m_geometrySet, m_samplerSet});
             pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
             pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
 
@@ -935,7 +945,7 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
     pCommandBuffer->setViewport(viewport);
     pCommandBuffer->setSissor(scissor);
 
-    // forward pass
+    // shadow pass
     {
         Image* pDepthAttachment = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
         pCommandBuffer->setRenderTarget(
@@ -945,7 +955,7 @@ void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
         // draw scene object
         {
             pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SHADOW]);
-            pCommandBuffer->bindDescriptorSet({m_sceneSet});
+            pCommandBuffer->bindDescriptorSet({m_shadowSet});
             pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_SCENE_VERTEX]);
             pCommandBuffer->bindIndexBuffers(m_buffers[BUFFER_SCENE_INDEX]);
 
@@ -1125,10 +1135,8 @@ void SceneRenderer::_initShadow()
         {
             auto& program = m_programs[SHADER_PROGRAM_SHADOW];
             program       = new ShaderProgram(m_pDevice, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr);
-            // program->createPipelineLayout(nullptr);
-            program->m_pSetLayouts                     = {m_setLayouts[SET_LAYOUT_SCENE]->getHandle(),
-                                                          m_setLayouts[SET_LAYOUT_SAMP]->getHandle()};
-            program->m_combineLayout.pushConstantRange = {utils::VkCast(ShaderStage::VS), 0, sizeof(ObjectInfo)};
+            program->combineLayout(nullptr);
+            program->createPipelineLayout(nullptr);
             VK_CHECK_RESULT(
                 m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
         }
