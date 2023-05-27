@@ -10,21 +10,6 @@ class Device;
 class ImmutableSampler;
 class DescriptorSetLayout;
 
-constexpr unsigned VULKAN_NUM_DESCRIPTOR_SETS           = 4;
-constexpr unsigned VULKAN_NUM_BINDINGS                  = 32;
-constexpr unsigned VULKAN_NUM_BINDINGS_BINDLESS_VARYING = 16 * 1024;
-constexpr unsigned VULKAN_NUM_ATTACHMENTS               = 8;
-constexpr unsigned VULKAN_NUM_VERTEX_ATTRIBS            = 16;
-constexpr unsigned VULKAN_NUM_VERTEX_BUFFERS            = 4;
-constexpr unsigned VULKAN_PUSH_CONSTANT_SIZE            = 128;
-constexpr unsigned VULKAN_MAX_UBO_SIZE                  = 16 * 1024;
-constexpr unsigned VULKAN_NUM_USER_SPEC_CONSTANTS       = 8;
-constexpr unsigned VULKAN_NUM_INTERNAL_SPEC_CONSTANTS   = 4;
-constexpr unsigned VULKAN_NUM_TOTAL_SPEC_CONSTANTS =
-    VULKAN_NUM_USER_SPEC_CONSTANTS + VULKAN_NUM_INTERNAL_SPEC_CONSTANTS;
-constexpr unsigned VULKAN_NUM_SETS_PER_POOL    = 16;
-constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
-
 struct ShaderLayout
 {
     uint32_t sampledImageMask               = 0;
@@ -110,12 +95,26 @@ public:
 
     ~ShaderProgram();
 
-public:
-    void                 createPipelineLayout(const ImmutableSamplerBank* samplerBank);
-    void                 combineLayout(const ImmutableSamplerBank* samplerBank);
-    DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
+    VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const
+    {
+        VkShaderStageFlags stage = 0;
+        size += offset;
+        const auto& constant = m_combineLayout.pushConstantRange;
+        stage |= constant.stageFlags;
+        offset += constant.size;
+        return stage;
+    }
 
-public:
+    DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
+    ShaderMapList        getShaders() const { return m_shaders; }
+    Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
+    VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
+
+private:
+    void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
+    void combineLayout(const ImmutableSamplerBank* samplerBank);
+
+private:
     void                              createUpdateTemplates();
     Device*                           m_pDevice       = {};
     ShaderMapList                     m_shaders       = {};

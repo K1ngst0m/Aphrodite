@@ -92,12 +92,44 @@ namespace aph::vk
 {
 SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
     m_pInstance(createInfo.instance),
-    m_pDevice(pDevice)
+    m_pDevice(pDevice),
+    m_pWSI(createInfo.wsi),
+    m_surface(createInfo.wsi->getSurface(createInfo.instance))
 {
-    m_surface = createInfo.wsi->getSurface(createInfo.instance);
+    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+    reCreate();
+}
 
-    SwapChainSupportDetails swapChainSupport =
-        querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), createInfo.wsi);
+VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
+{
+    return vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
+}
+
+VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
+{
+    VkPresentInfoKHR presentInfo = {
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+        .pWaitSemaphores    = waitSemaphores.data(),
+        .swapchainCount     = 1,
+        .pSwapchains        = &getHandle(),
+        .pImageIndices      = &m_imageIdx,
+        .pResults           = nullptr,  // Optional
+    };
+
+    VkResult result = vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
+    return result;
+}
+
+SwapChain::~SwapChain()
+{
+    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+};
+
+void SwapChain::reCreate()
+{
+    m_pDevice->waitIdle();
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
 
     uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
     if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)
@@ -151,30 +183,4 @@ SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
         m_images.push_back(std::make_unique<Image>(m_pDevice, imageCreateInfo, handle));
     }
 }
-
-VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
-{
-    return vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
-}
-
-VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
-{
-    VkPresentInfoKHR presentInfo = {
-        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
-        .pWaitSemaphores    = waitSemaphores.data(),
-        .swapchainCount     = 1,
-        .pSwapchains        = &getHandle(),
-        .pImageIndices      = &m_imageIdx,
-        .pResults           = nullptr,  // Optional
-    };
-
-    VkResult result = vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
-    return result;
-}
-
-SwapChain::~SwapChain()
-{
-    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
-};
 }  // namespace aph::vk

@@ -27,6 +27,8 @@ public:
 
     VkResult presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores);
 
+    void reCreate();
+
 public:
     VkFormat getFormat() const { return m_surfaceFormat.format; }
     uint32_t getWidth() const { return m_extent.width; }
@@ -37,6 +39,7 @@ public:
 private:
     Instance*                           m_pInstance{};
     Device*                             m_pDevice{};
+    WSI*                                m_pWSI{};
     std::vector<std::unique_ptr<Image>> m_images{};
 
     VkSurfaceKHR       m_surface{};

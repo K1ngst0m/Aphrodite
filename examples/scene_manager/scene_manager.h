@@ -41,7 +41,7 @@ private:
 
     std::unique_ptr<aph::vk::SceneRenderer> m_sceneRenderer = {};
 
-    std::shared_ptr<aph::WSI> m_window = {};
+    std::shared_ptr<aph::WSI> m_wsi = {};
 };
 
 #endif  // SCENE_MANAGER_H_

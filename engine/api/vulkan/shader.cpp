@@ -11,35 +11,53 @@ static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType&
     if(!type.array.empty())
     {
         if(type.array.size() != 1)
+        {
             VK_LOG_ERR("Array dimension must be 1.");
+        }
         else if(!type.array_size_literal.front())
+        {
             VK_LOG_ERR("Array dimension must be a literal.");
+        }
         else
         {
             if(type.array.front() == 0)
             {
                 if(binding != 0)
+                {
                     VK_LOG_ERR("Bindless textures can only be used with binding = 0 in a set.");
+                }
 
                 if(type.basetype != spirv_cross::SPIRType::Image || type.image.dim == spv::DimBuffer)
+                {
                     VK_LOG_ERR("Can only use bindless for sampled images.");
+                }
                 else
+                {
                     layout.bindlessSetMask |= 1u << set;
+                }
 
                 size = ShaderLayout::UNSIZED_ARRAY;
             }
             else if(size && size != type.array.front())
+            {
                 VK_LOG_ERR("Array dimension for (%u, %u) is inconsistent.", set, binding);
+            }
             else if(type.array.front() + binding > VULKAN_NUM_BINDINGS)
+            {
                 VK_LOG_ERR("Binding array will go out of bounds.");
+            }
             else
+            {
                 size = uint8_t(type.array.front());
+            }
         }
     }
     else
     {
         if(size && size != 1)
+        {
             VK_LOG_ERR("Array dimension for (%u, %u) is inconsistent.", set, binding);
+        }
         size = 1;
     }
 };
@@ -63,15 +81,15 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
         if(stages == 0)
             continue;
 
-        unsigned array_size = layout.arraySize[i];
-        unsigned pool_array_size;
-        if(array_size == ShaderLayout::UNSIZED_ARRAY)
+        unsigned arraySize = layout.arraySize[i];
+        unsigned poolArraySize;
+        if(arraySize == ShaderLayout::UNSIZED_ARRAY)
         {
-            array_size      = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
-            pool_array_size = array_size;
+            arraySize      = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+            poolArraySize = arraySize;
         }
         else
-            pool_array_size = array_size * VULKAN_NUM_SETS_PER_POOL;
+            poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
 
         unsigned types = 0;
         if(layout.sampledImageMask & (1u << i))
@@ -79,58 +97,58 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
                 vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
 
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, array_size, stages,
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, pool_array_size});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
             types++;
         }
 
         if(layout.sampledTexelBufferMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageTexelBufferMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageImageMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
             types++;
         }
 
         if(layout.uniformBufferMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageBufferMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.inputAttachmentMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
             types++;
         }
 
         if(layout.separateImageMask & (1u << i))
         {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, array_size, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, pool_array_size});
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
             types++;
         }
 
@@ -139,9 +157,9 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
                 vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
 
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, array_size, stages,
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, pool_array_size});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
             types++;
         }
 
@@ -199,6 +217,28 @@ Shader::Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::str
     m_layout    = pLayout ? *pLayout : ReflectLayout(m_code);
 }
 
+ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device)
+{
+    if(vs)
+    {
+        m_shaders[ShaderStage::VS] = vs;
+    }
+    if(fs)
+    {
+        m_shaders[ShaderStage::FS] = fs;
+    }
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
+
+ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device)
+{
+    m_shaders[ShaderStage::CS] = cs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
+
 ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
 {
     using namespace spirv_cross;
@@ -245,12 +285,18 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
 
         auto& type = compiler.get_type(res.type_id);
         if(type.image.dim == spv::DimBuffer)
+        {
             layout.setShaderLayouts[set].storageTexelBufferMask |= 1u << binding;
+        }
         else
+        {
             layout.setShaderLayouts[set].storageImageMask |= 1u << binding;
+        }
 
         if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
+        }
 
         updateArrayInfo(layout, type, set, binding);
     }
@@ -263,11 +309,17 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
 
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
+        }
         if(type.image.dim == spv::DimBuffer)
+        {
             layout.setShaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+        }
         else
+        {
             layout.setShaderLayouts[set].sampledImageMask |= 1u << binding;
+        }
         updateArrayInfo(layout, type, set, binding);
     }
     for(const auto& res : resources.separate_images)
@@ -279,11 +331,17 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
 
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
+        }
         if(type.image.dim == spv::DimBuffer)
+        {
             layout.setShaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+        }
         else
+        {
             layout.setShaderLayouts[set].separateImageMask |= 1u << binding;
+        }
         updateArrayInfo(layout, type, set, binding);
     }
     for(const auto& res : resources.separate_samplers)
@@ -303,8 +361,8 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
             compiler.get_declared_struct_size(compiler.get_type(resources.push_constant_buffers.front().base_type_id));
     }
 
-    auto spec_constants = compiler.get_specialization_constants();
-    for(auto& c : spec_constants)
+    auto specConstants = compiler.get_specialization_constants();
+    for(auto& c : specConstants)
     {
         if(c.constant_id >= VULKAN_NUM_TOTAL_SPEC_CONSTANTS)
         {
@@ -336,7 +394,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
     {
         APH_ASSERT(shader);
         auto&    shaderLayout = shader->m_layout;
-        uint32_t stage_mask   = utils::VkCast(stage);
+        uint32_t stageMask   = utils::VkCast(stage);
 
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
@@ -359,27 +417,36 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
                 shaderLayout.setShaderLayouts[i].separateImageMask;
             programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
 
-            uint32_t active_binds =
-                shaderLayout.setShaderLayouts[i].sampledImageMask | shaderLayout.setShaderLayouts[i].storageImageMask |
+            uint32_t activeBinds =
+                shaderLayout.setShaderLayouts[i].sampledImageMask |
+                shaderLayout.setShaderLayouts[i].storageImageMask |
                 shaderLayout.setShaderLayouts[i].uniformBufferMask |
                 shaderLayout.setShaderLayouts[i].storageBufferMask |
                 shaderLayout.setShaderLayouts[i].sampledTexelBufferMask |
                 shaderLayout.setShaderLayouts[i].storageTexelBufferMask |
-                shaderLayout.setShaderLayouts[i].inputAttachmentMask | shaderLayout.setShaderLayouts[i].samplerMask |
+                shaderLayout.setShaderLayouts[i].inputAttachmentMask |
+                shaderLayout.setShaderLayouts[i].samplerMask |
                 shaderLayout.setShaderLayouts[i].separateImageMask;
 
-            if(active_binds)
-                programLayout.setInfos[i].stagesForSets |= stage_mask;
+            if(activeBinds)
+            {
+                programLayout.setInfos[i].stagesForSets |= stageMask;
+            }
 
-            aph::utils::forEachBit(active_binds, [&](uint32_t bit) {
-                programLayout.setInfos[i].stagesForBindings[bit] |= stage_mask;
+            aph::utils::forEachBit(activeBinds, [&](uint32_t bit) {
+                programLayout.setInfos[i].stagesForBindings[bit] |= stageMask;
 
                 auto& combinedSize = programLayout.setInfos[i].shaderLayout.arraySize[bit];
                 auto& shaderSize   = shaderLayout.setShaderLayouts[i].arraySize[bit];
                 if(combinedSize && combinedSize != shaderSize)
+                {
                     VK_LOG_ERR("Mismatch between array sizes in different shaders.");
+                    APH_ASSERT(false);
+                }
                 else
+                {
                     combinedSize = shaderSize;
+                }
             });
         }
 
@@ -387,7 +454,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
         // Do not try to split into multiple ranges as it just complicates things for no obvious gain.
         if(shaderLayout.pushConstantSize != 0)
         {
-            programLayout.pushConstantRange.stageFlags |= stage_mask;
+            programLayout.pushConstantRange.stageFlags |= stageMask;
             programLayout.pushConstantRange.size =
                 std::max(programLayout.pushConstantRange.size, shaderLayout.pushConstantSize);
         }
@@ -526,25 +593,5 @@ ShaderProgram::~ShaderProgram()
         m_pDevice->destroyDescriptorSetLayout(setLayout);
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
-}
-ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device)
-{
-    if(vs)
-    {
-        m_shaders[ShaderStage::VS] = vs;
-    }
-    if(fs)
-    {
-        m_shaders[ShaderStage::FS] = fs;
-    }
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-}
-ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device)
-{
-    m_shaders[ShaderStage::CS] = cs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
 }
 }  // namespace aph::vk

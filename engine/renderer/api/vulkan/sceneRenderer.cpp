@@ -66,8 +66,6 @@ void SceneRenderer::load(Scene* scene)
     _loadScene();
     _initGpuResources();
 
-    _initSetLayout();
-
     _initShadow();
     _initGbuffer();
     _initGeneral();
@@ -351,6 +349,14 @@ void SceneRenderer::_initSet()
 
     // sampler
     {
+        {
+            std::vector<VkDescriptorSetLayoutBinding> bindings{
+                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
+                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
+                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
+            };
+            m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
+        }
         m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
         VkDescriptorImageInfo sampTextureInfo{.sampler = m_samplers[SAMP_TEXTURE]->getHandle()};
         VkDescriptorImageInfo sampShadowInfo{.sampler = m_samplers[SAMP_SHADOW]->getHandle()};
@@ -473,8 +479,8 @@ void SceneRenderer::_initGbuffer()
             auto& program = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
             m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "geometry.vert"),
                                            getShaders(shaderDir / "geometry.frag"));
-            VK_CHECK_RESULT(
-                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
+            createInfo.pProgram = program;
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
         }
     }
 
@@ -499,8 +505,8 @@ void SceneRenderer::_initGbuffer()
             auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
             m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "pbr_deferred.vert"),
                                            getShaders(shaderDir / "pbr_deferred.frag"));
-            VK_CHECK_RESULT(
-                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
+            createInfo.pProgram = program;
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
         }
     }
 }
@@ -508,7 +514,6 @@ void SceneRenderer::_initGbuffer()
 void SceneRenderer::_initGeneral()
 {
     VK_LOG_DEBUG("Init general pass.");
-    VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
 
     m_images[IMAGE_GENERAL_COLOR].resize(m_config.maxFrames);
     m_images[IMAGE_GENERAL_COLOR_POSTFX].resize(m_config.maxFrames);
@@ -517,6 +522,7 @@ void SceneRenderer::_initGeneral()
     m_images[IMAGE_GENERAL_DEPTH_MS].resize(m_config.maxFrames);
 
     // frame buffer
+    VkExtent2D imageExtent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight()};
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         {
@@ -560,45 +566,13 @@ void SceneRenderer::_initGeneral()
 
     // postfx compute pipeline
     {
-        std::filesystem::path     shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        ComputePipelineCreateInfo createInfo{};
+        std::filesystem::path shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         {
             auto& program = m_programs[SHADER_PROGRAM_POSTFX];
             VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "postFX.comp")));
             VK_CHECK_RESULT(
-                m_pDevice->createComputePipeline(createInfo, program, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+                m_pDevice->createComputePipeline({.pProgram = program}, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
         }
-    }
-}
-
-void SceneRenderer::_initSetLayout()
-{
-    VK_LOG_DEBUG("Init descriptor set.");
-
-    // sampler
-    {
-        {
-            // Create sampler
-            VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
-            if(m_pDevice->getFeatures().samplerAnisotropy)
-            {
-                samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
-                samplerInfo.anisotropyEnable = VK_TRUE;
-            }
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP], true));
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW], true));
-
-            samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
-            samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE], true));
-        }
-
-        std::vector<VkDescriptorSetLayoutBinding> bindings{
-            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-            init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-        };
-        m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
     }
 }
 
@@ -736,6 +710,22 @@ void SceneRenderer::_initGpuResources()
         createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(VkDrawIndirectCommand));
         m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_DRAW_CMD], drawList.data());
     }
+
+    {
+        // Create sampler
+        VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
+        if(m_pDevice->getFeatures().samplerAnisotropy)
+        {
+            samplerInfo.maxAnisotropy    = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
+            samplerInfo.anisotropyEnable = VK_TRUE;
+        }
+        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP], true));
+        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW], true));
+
+        samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
+        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE], true));
+    }
 }
 
 void SceneRenderer::_initSkybox()
@@ -792,8 +782,8 @@ void SceneRenderer::_initSkybox()
             auto& program = m_programs[SHADER_PROGRAM_SKYBOX];
             VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "skybox.vert"),
                                                            getShaders(shaderDir / "skybox.frag")));
-            VK_CHECK_RESULT(
-                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+            createInfo.pProgram = program;
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
         }
     }
 }
@@ -1125,8 +1115,8 @@ void SceneRenderer::_initShadow()
             auto& program = m_programs[SHADER_PROGRAM_SHADOW];
             VK_CHECK_RESULT(
                 m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr));
-            VK_CHECK_RESULT(
-                m_pDevice->createGraphicsPipeline(createInfo, program, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
+            createInfo.pProgram = program;
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
         }
     }
 }

@@ -264,8 +264,9 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
             vertexInputInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributes.size());
             vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
             pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
+            pipelineCreateInfo.pProgram                          = m_ui.pProgram;
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, m_ui.pProgram, &m_ui.pipeline));
+            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
         }
 
         // setup descriptor

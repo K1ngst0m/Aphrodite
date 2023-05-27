@@ -49,32 +49,20 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
     depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS);
 }
 
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, ShaderProgram* program,
-                   VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle) :
     m_pDevice(pDevice),
-    m_pProgram(program),
+    m_pProgram(createInfo.pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE)
 {
     getHandle() = handle;
 }
 
-Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* program,
-                   VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkPipeline handle) :
     m_pDevice(pDevice),
-    m_pProgram(program),
+    m_pProgram(createInfo.pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 {
     getHandle() = handle;
-}
-
-VkShaderStageFlags Pipeline::getConstantShaderStage(uint32_t offset, uint32_t size)
-{
-    VkShaderStageFlags stage = 0;
-    size += offset;
-    const auto& constant = m_pProgram->m_combineLayout.pushConstantRange;
-    stage |= constant.stageFlags;
-    offset += constant.size;
-    return stage;
 }
 
 }  // namespace aph::vk

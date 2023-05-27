@@ -35,6 +35,7 @@ struct GraphicsPipelineCreateInfo
     VkPipelineMultisampleStateCreateInfo             multisampling         = {};
     VkPipelineDepthStencilStateCreateInfo            depthStencil          = {};
     VkPipelineCache                                  pipelineCache         = {};
+    ShaderProgram*                                   pProgram              = {};
 
     GraphicsPipelineCreateInfo(const std::vector<VertexComponent>& component = {VertexComponent::POSITION,
                                                                                 VertexComponent::NORMAL,
@@ -46,19 +47,17 @@ struct GraphicsPipelineCreateInfo
 
 struct ComputePipelineCreateInfo
 {
+    ShaderProgram* pProgram = {};
 };
 
 class Pipeline : public ResourceHandle<VkPipeline>
 {
 public:
-    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, ShaderProgram* program, VkPipeline handle);
+    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkPipeline handle);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle);
 
     ShaderProgram*      getProgram() { return m_pProgram; }
-    VkPipelineLayout    getPipelineLayout() { return m_pProgram->m_pipeLayout; }
     VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
-
-    VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size);
 
 protected:
     Device*             m_pDevice   = {};

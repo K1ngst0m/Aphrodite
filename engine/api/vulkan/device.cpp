@@ -457,8 +457,7 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     }
 }
 
-VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* pProgram,
-                                        Pipeline** ppPipeline)
+VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     // make viewport state from our stored viewport and scissor.
     // at the moment we won't support multiple viewports or scissors
@@ -494,7 +493,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         .pDepthStencilState  = &createInfo.depthStencil,
         .pColorBlendState    = &colorBlending,
         .pDynamicState       = &createInfo.dynamicState,
-        .layout              = pProgram->m_pipeLayout,
+        .layout              = createInfo.pProgram->getPipelineLayout(),
         .subpass             = 0,
         .basePipelineHandle  = VK_NULL_HANDLE,
     };
@@ -502,7 +501,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
     pipelineInfo.pNext = &createInfo.renderingCreateInfo;
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for(const auto& [stage, sModule] : pProgram->m_shaders)
+    for(const auto& [stage, sModule] : createInfo.pProgram->getShaders())
     {
         shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
     }
@@ -512,7 +511,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
     VkPipeline handle;
     _VR(m_table.vkCreateGraphicsPipelines(getHandle(), createInfo.pipelineCache, 1, &pipelineInfo, nullptr, &handle));
 
-    *ppPipeline = new Pipeline(this, createInfo, pProgram, handle);
+    *ppPipeline = new Pipeline(this, createInfo, handle);
 
     return VK_SUCCESS;
 }
@@ -544,15 +543,14 @@ void Device::destroyDescriptorSetLayout(DescriptorSetLayout* pLayout)
     m_table.vkDestroyDescriptorSetLayout(m_handle, pLayout->getHandle(), nullptr);
     delete pLayout;
 }
-VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, ShaderProgram* pProgram,
-                                       Pipeline** ppPipeline)
+VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
-    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(pProgram->m_pipeLayout);
+    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(createInfo.pProgram->getPipelineLayout());
     ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                         pProgram->m_shaders[ShaderStage::CS]->getHandle());
+                                                                         createInfo.pProgram->getShader(ShaderStage::CS)->getHandle());
     VkPipeline handle              = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
-    *ppPipeline = new Pipeline(this, createInfo, pProgram, handle);
+    *ppPipeline = new Pipeline(this, createInfo, handle);
     return VK_SUCCESS;
 }
 

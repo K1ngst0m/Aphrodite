@@ -14,7 +14,7 @@ void scene_manager::init()
 
 void scene_manager::run()
 {
-    while(m_window->update())
+    while(m_wsi->update())
     {
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
@@ -41,13 +41,11 @@ void scene_manager::finish()
 
 void scene_manager::setupWindow()
 {
-    m_window = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
+    m_wsi = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
-    m_window->registerEventHandler<aph::MouseButtonEvent>(
-        [this](const aph::MouseButtonEvent& e) { return onMouseBtn(e); });
-    m_window->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e) { return onKeyDown(e); });
-    m_window->registerEventHandler<aph::MouseMoveEvent>(
-        [this](const aph::MouseMoveEvent& e) { return onMouseMove(e); });
+    m_wsi->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e) { return onMouseBtn(e); });
+    m_wsi->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e) { return onKeyDown(e); });
+    m_wsi->registerEventHandler<aph::MouseMoveEvent>([this](const aph::MouseMoveEvent& e) { return onMouseMove(e); });
 }
 
 void scene_manager::setupScene()
@@ -60,7 +58,7 @@ void scene_manager::setupScene()
 
     // scene camera
     {
-        auto* camera       = m_scene->createPerspectiveCamera(m_window->getAspectRatio(), 60.0f, 0.1f, 60.0f);
+        auto* camera       = m_scene->createPerspectiveCamera(m_wsi->getAspectRatio(), 60.0f, 0.1f, 60.0f);
         m_cameraController = aph::CameraController::Create(camera);
 
         // camera 1 (main)
@@ -112,7 +110,7 @@ void scene_manager::setupRenderer()
         .maxFrames = 2,
     };
 
-    m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_window, config);
+    m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_wsi, config);
 }
 
 bool scene_manager::onKeyDown(const aph::KeyboardEvent& event)
@@ -123,7 +121,7 @@ bool scene_manager::onKeyDown(const aph::KeyboardEvent& event)
         switch(event.m_key)
         {
         case Key::Escape:
-            m_window->close();
+            m_wsi->close();
             break;
         case Key::W:
             m_cameraController->move(Direction::UP, true);

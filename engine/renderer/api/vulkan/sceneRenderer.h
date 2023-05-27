@@ -27,7 +27,6 @@ private:
     void _initGbuffer();
     void _initGeneral();
     void _initSkybox();
-    void _initSetLayout();
     void _initGpuResources();
     void _initSet();
     void _loadScene();

@@ -62,10 +62,8 @@ public:
                                  const ImmutableSamplerBank* samplerBank = nullptr);
     VkResult createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
     VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool);
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, ShaderProgram* pProgram,
-                                    Pipeline** ppPipeline);
-    VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, ShaderProgram* pProgram,
-                                   Pipeline** ppPipeline);
+    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
     VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
                                        DescriptorSetLayout**                  ppDescriptorSetLayout);
     VkResult createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,

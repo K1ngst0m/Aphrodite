@@ -39,7 +39,7 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
     }
 
     // Mark CommandBuffer as recording and reset internal state.
-    m_graphicsState = CommandGraphicsState();
+    m_commandState = CommandState();
     m_state         = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
@@ -67,26 +67,24 @@ VkResult CommandBuffer::reset()
 
 void CommandBuffer::setViewport(const VkViewport& viewport)
 {
-    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewport);
-    m_graphicsState.viewport = viewport;
+    m_commandState.viewport = viewport;
 }
 void CommandBuffer::setSissor(const VkRect2D& scissor)
 {
-    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &scissor);
-    m_graphicsState.scissor = scissor;
+    m_commandState.scissor = scissor;
 }
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
-    m_graphicsState.pPipeline = pPipeline;
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, pPipeline->getBindPoint(), pPipeline->getHandle());
+    m_commandState.pPipeline = pPipeline;
 }
+
 void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
                                       const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
                                       const uint32_t* pDynamicOffset)
 {
-    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(),
-                                            m_graphicsState.pPipeline->getPipelineLayout(), firstSet,
+    APH_ASSERT(m_commandState.pPipeline != nullptr);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
+                                            m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
                                             descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
 void CommandBuffer::bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
@@ -100,15 +98,10 @@ void CommandBuffer::bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset,
 }
 void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
 {
-    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
-    auto stage = m_graphicsState.pPipeline->getConstantShaderStage(offset, size);
-    m_pDeviceTable->vkCmdPushConstants(m_handle, m_graphicsState.pPipeline->getPipelineLayout(), stage, offset, size,
-                                       pValues);
-}
-void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
-                                uint32_t firstInstance)
-{
-    m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    APH_ASSERT(m_commandState.pPipeline != nullptr);
+    auto stage = m_commandState.pPipeline->getProgram()->getConstantShaderStage(offset, size);
+    m_pDeviceTable->vkCmdPushConstants(m_handle, m_commandState.pPipeline->getProgram()->getPipelineLayout(), stage,
+                                       offset, size, pValues);
 }
 void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size)
 {
@@ -314,6 +307,7 @@ void CommandBuffer::copyImage(Image* srcImage, Image* dstImage)
 }
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
 {
+    flushGraphicsCommand();
     m_pDeviceTable->vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -346,18 +340,7 @@ uint32_t CommandBuffer::getQueueFamilyIndices() const
 };
 void CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
 {
-    // uint32_t colorCount = renderingInfo.colorAttachmentCount;
-    // for (uint32_t idx = 0; idx < colorCount; idx++)
-    // {
-    //     m_graphicsState.colorAttachments.resize(colorCount);
-    // }
-    // memcpy(m_graphicsState.colorAttachments.data(), renderingInfo.pColorAttachments,
-    // sizeof(VkRenderingAttachmentInfo) * colorCount); memcpy(&m_graphicsState.depthAttachment,
-    // renderingInfo.pDepthAttachment, sizeof(VkRenderingAttachmentInfo));
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
-    // for (auto colorAttachment : m_graphicsState.colorAttachments){
-    // transitionImageLayout(colorAttachment.imageView, , VkImageLayout newLayout)
-    // }
 }
 void CommandBuffer::endRendering()
 {
@@ -365,35 +348,44 @@ void CommandBuffer::endRendering()
 }
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
+    flushComputeCommand();
     m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
 }
 void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
 {
+    flushComputeCommand();
     vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
 }
 void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
+    flushGraphicsCommand();
     vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
+}
+void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
+                                uint32_t firstInstance)
+{
+    flushGraphicsCommand();
+    m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet)
 {
-    APH_ASSERT(m_graphicsState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_graphicsState.pPipeline->getBindPoint(),
-                                            m_graphicsState.pPipeline->getPipelineLayout(), firstSet,
+    APH_ASSERT(m_commandState.pPipeline != nullptr);
+    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
+                                            m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
                                             pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
 }
 void CommandBuffer::setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth)
 {
-    m_graphicsState.colorAttachments = colors;
-    m_graphicsState.depthAttachment  = depth;
+    m_commandState.colorAttachments = colors;
+    m_commandState.depthAttachment  = depth;
 }
 void CommandBuffer::beginRendering(VkRect2D renderArea)
 {
-    APH_ASSERT(!m_graphicsState.colorAttachments.empty() || m_graphicsState.depthAttachment.has_value());
+    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
     std::vector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
-    vkColors.reserve(m_graphicsState.colorAttachments.size());
-    for(const auto& color : m_graphicsState.colorAttachments)
+    vkColors.reserve(m_commandState.colorAttachments.size());
+    for(const auto& color : m_commandState.colorAttachments)
     {
         auto&                     image = color.image;
         VkRenderingAttachmentInfo vkColor{.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -431,9 +423,9 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
         .pDepthAttachment     = nullptr,
     };
 
-    if(m_graphicsState.depthAttachment.has_value())
+    if(m_commandState.depthAttachment.has_value())
     {
-        auto& image = m_graphicsState.depthAttachment.value().image;
+        auto& image = m_commandState.depthAttachment->image;
         vkDepth     = {
                 .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 .imageView   = image->getView()->getHandle(),
@@ -442,21 +434,21 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
                 .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                 .clearValue  = {.depthStencil{1.0f, 0}},
         };
-        if(m_graphicsState.depthAttachment.value().layout.has_value())
+        if(m_commandState.depthAttachment->layout.has_value())
         {
-            vkDepth.imageLayout = m_graphicsState.depthAttachment.value().layout.value();
+            vkDepth.imageLayout = m_commandState.depthAttachment->layout.value();
         }
-        if(m_graphicsState.depthAttachment.value().storeOp.has_value())
+        if(m_commandState.depthAttachment->storeOp.has_value())
         {
-            vkDepth.storeOp = m_graphicsState.depthAttachment.value().storeOp.value();
+            vkDepth.storeOp = m_commandState.depthAttachment->storeOp.value();
         }
-        if(m_graphicsState.depthAttachment.value().loadOp.has_value())
+        if(m_commandState.depthAttachment->loadOp.has_value())
         {
-            vkDepth.loadOp = m_graphicsState.depthAttachment.value().loadOp.value();
+            vkDepth.loadOp = m_commandState.depthAttachment->loadOp.value();
         }
-        if(m_graphicsState.depthAttachment.value().clear.has_value())
+        if(m_commandState.depthAttachment->clear.has_value())
         {
-            vkDepth.clearValue = m_graphicsState.depthAttachment.value().clear.value();
+            vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
         }
         transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
@@ -468,11 +460,68 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
 {
     for(auto color : colors)
     {
-        m_graphicsState.colorAttachments.push_back({.image = color});
+        m_commandState.colorAttachments.push_back({.image = color});
     }
-    m_graphicsState.depthAttachment = {.image = depth};
+    m_commandState.depthAttachment = {.image = depth};
 }
-void CommandBuffer::bindDescriptorSet(uint32_t setIdx)
+
+void CommandBuffer::flushComputeCommand()
 {
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getHandle());
+}
+void CommandBuffer::flushGraphicsCommand()
+{
+    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
+    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getHandle());
+}
+
+void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type, Buffer* buffer, VkDeviceSize offset,
+                               VkDeviceSize size)
+{
+    switch(type)
+    {
+    case ResourceType::UNIFORM_BUFFER:
+    case ResourceType::STORAGE_BUFFER:
+    {
+        auto& b                = m_commandState.resourceBindings.bindings;
+        b[set][binding]->buffer = {
+            .buffer = buffer->getHandle(),
+            .offset = offset,
+            .range  = size,
+        };
+    }
+    break;
+    default:
+        APH_ASSERT(false);
+        VK_LOG_ERR("Invalid resources type binding.");
+        break;
+    }
+    m_commandState.resourceBindings.bindings[set][binding]->resType = utils::VkCast(type);
+}
+void CommandBuffer::bindTexture(uint32_t set, uint32_t binding, ResourceType type, ImageView* imageview,
+                                VkImageLayout layout, Sampler* sampler)
+{
+    switch(type)
+    {
+    case ResourceType::SAMPLER:
+    case ResourceType::SAMPLED_IMAGE:
+    case ResourceType::COMBINE_SAMPLER_IMAGE:
+    case ResourceType::STORAGE_IMAGE:
+    {
+        auto& b                  = m_commandState.resourceBindings.bindings;
+        b[set][binding]->image = {
+            .sampler     = sampler->getHandle(),
+            .imageView   = imageview->getHandle(),
+            .imageLayout = layout,
+        };
+    }
+    break;
+    default:
+        APH_ASSERT(false);
+        VK_LOG_ERR("Invalid resources type binding.");
+        break;
+    }
+    m_commandState.resourceBindings.bindings[set][binding]->resType = utils::VkCast(type);
 }
 }  // namespace aph::vk
