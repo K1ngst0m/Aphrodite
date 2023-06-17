@@ -113,6 +113,12 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
                                           VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags2 srcStageMask,
                                           VkPipelineStageFlags2 dstStageMask)
 {
+    // early return
+    if (image->m_layout == newLayout)
+    {
+        return;
+    }
+
     VkImageMemoryBarrier2 imageMemoryBarrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .oldLayout           = image->m_layout,
@@ -257,6 +263,7 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
     m_pDeviceTable->vkCmdPipelineBarrier2(m_handle, &dependencyInfo);
     image->m_layout = newLayout;
 }
+
 void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions)
 {
     if(regions.empty())
