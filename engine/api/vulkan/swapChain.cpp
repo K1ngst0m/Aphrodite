@@ -94,9 +94,8 @@ SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
     m_pInstance(createInfo.instance),
     m_pDevice(pDevice),
     m_pWSI(createInfo.wsi),
-    m_surface(createInfo.wsi->getSurface(createInfo.instance))
+    m_surface(createInfo.wsi->getSurface(m_pInstance))
 {
-    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
     reCreate();
 }
 

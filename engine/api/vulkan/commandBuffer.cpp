@@ -110,8 +110,8 @@ void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSiz
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
-                                          VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags srcStageMask,
-                                          VkPipelineStageFlags dstStageMask)
+                                          VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags2 srcStageMask,
+                                          VkPipelineStageFlags2 dstStageMask)
 {
     VkImageMemoryBarrier2 imageMemoryBarrier{
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -138,6 +138,11 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
         };
     }
 
+    {
+        imageMemoryBarrier.srcStageMask  = srcStageMask;
+        imageMemoryBarrier.dstStageMask  = dstStageMask;
+    }
+
     // Source layouts (old)
     // Source access mask controls actions that have to be finished on the old layout
     // before it will be transitioned to the new layout
@@ -149,7 +154,10 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
         // No flags required, listed only for completeness
         imageMemoryBarrier.srcAccessMask = 0;
         break;
-
+    case VK_IMAGE_LAYOUT_GENERAL:
+        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
+                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
+        break;
     case VK_IMAGE_LAYOUT_PREINITIALIZED:
         // Image is preinitialized
         // Only valid as initial layout for linear images, preserves memory contents
@@ -195,6 +203,10 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
     // Destination access mask controls the dependency for the new image layout
     switch(newLayout)
     {
+    case VK_IMAGE_LAYOUT_GENERAL:
+        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
+                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
+        break;
     case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
         // Image will be used as a transfer destination
         // Make sure any writes to the image have been finished
@@ -232,16 +244,6 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
     default:
         // Other source layouts aren't handled (yet)
         break;
-    }
-
-    // TODO debug
-    {
-        imageMemoryBarrier.srcStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
-                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
-        imageMemoryBarrier.dstStageMask  = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
-                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
     }
 
     VkDependencyInfoKHR dependencyInfo = {
@@ -311,22 +313,6 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
     m_pDeviceTable->vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void CommandBuffer::imageMemoryBarrier(Image* image, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
-                                       VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
-                                       VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
-{
-    VkImageMemoryBarrier imageMemoryBarrier = init::imageMemoryBarrier();
-    imageMemoryBarrier.srcAccessMask        = srcAccessMask;
-    imageMemoryBarrier.dstAccessMask        = dstAccessMask;
-    imageMemoryBarrier.oldLayout            = image->m_layout;
-    imageMemoryBarrier.newLayout            = newImageLayout;
-    imageMemoryBarrier.image                = image->getHandle();
-    imageMemoryBarrier.subresourceRange     = subresourceRange;
-
-    m_pDeviceTable->vkCmdPipelineBarrier(m_handle, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
-                                         &imageMemoryBarrier);
-    image->m_layout = newImageLayout;
-}
 void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage,
                               VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
                               VkFilter filter)
