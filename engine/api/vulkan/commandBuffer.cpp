@@ -404,7 +404,9 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
             vkColor.storeOp = color.storeOp.value();
         }
         vkColors.push_back(vkColor);
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        // TODO debug layout
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
     VkRenderingInfo renderingInfo{
@@ -443,7 +445,9 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
         {
             vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
         }
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        // #TODO debug layout
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
     }
 

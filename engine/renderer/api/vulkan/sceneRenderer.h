@@ -100,6 +100,16 @@ private:
         SHADER_PROGRAM_MAX
     };
 
+    enum CBIdx
+    {
+        GEOMETRY = 0,
+        SHADOW   = 1,
+        LIGHTING = 2,
+        POSTFX   = 3,
+        CB_MAX,
+    };
+    CommandBuffer* cb[2][CB_MAX] = {};
+
     std::array<ShaderProgram*, SHADER_PROGRAM_MAX>   m_programs;
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;
     std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
@@ -117,10 +127,11 @@ private:
     VkDescriptorSet              m_skyboxSet{};
 
 private:
-    Scene*                  m_scene = {};
-    std::vector<SceneNode*> m_meshNodeList;
-    std::vector<Camera*>    m_cameraList;
-    std::vector<Light*>     m_lightList;
+    Scene*                      m_scene = {};
+    std::vector<SceneNode*>     m_meshNodeList;
+    std::vector<Camera*>        m_cameraList;
+    std::vector<Light*>         m_lightList;
+    std::unique_ptr<ThreadPool> m_threadPool{};
 };
 }  // namespace aph::vk
 

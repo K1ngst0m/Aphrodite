@@ -93,6 +93,7 @@ public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }
     CommandPool*     getCommandPoolWithQueue(Queue* queue);
     Queue*           getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
+    VkResult         allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
     VkResult allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
     void     freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers);
 
@@ -108,6 +109,7 @@ private:
     VolkDeviceTable          m_table{};
     std::vector<QueueFamily> m_queues;
     QueueFamilyCommandPools  m_commandPools;
+    std::vector<CommandPool*> m_threadCommandPools;
 };
 
 }  // namespace aph::vk

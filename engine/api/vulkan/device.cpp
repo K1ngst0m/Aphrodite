@@ -865,4 +865,23 @@ VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shad
     *ppProgram = new ShaderProgram(this, vs, fs, samplerBank);
     return VK_SUCCESS;
 }
+
+VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
+{
+    auto queueIndices = pQueue->getFamilyIndex();
+    CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
+
+    for(auto i = 0; i < commandBufferCount; i++)
+    {
+        CommandPool*          pool = nullptr;
+        createCommandPool(createInfo, &pool);
+        std::vector<VkCommandBuffer> handles(commandBufferCount);
+        for (auto &handle: handles)
+        {
+            _VR(pool->allocateCommandBuffers(1, &handle));
+        }
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
+    }
+    return VK_SUCCESS;
+}
 }  // namespace aph::vk
