@@ -54,8 +54,7 @@ struct ObjectInfo
 
 namespace aph::vk
 {
-SceneRenderer::SceneRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) :
-    Renderer(std::move(window), config)
+SceneRenderer::SceneRenderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : Renderer(std::move(wsi), config)
 {
     m_threadPool = std::make_unique<ThreadPool>(10);
 }
@@ -75,9 +74,9 @@ void SceneRenderer::load(Scene* scene)
     _initSet();
 
     auto* queue = getGraphicsQueue();
-    for (auto idx = 0; idx < m_config.maxFrames; idx++)
+    for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
-        m_pDevice->allocateThreadCommandBuffers(CB_MAX, cb[idx], queue);
+        m_pDevice->allocateThreadCommandBuffers(COMMAND_BUFFER_MAX, cb[idx], queue);
     }
 }
 
@@ -119,71 +118,66 @@ void SceneRenderer::cleanup()
 
 void SceneRenderer::recordAll()
 {
-    auto* queue = getGraphicsQueue();
+    auto* queue     = getGraphicsQueue();
+    auto* currentCB = cb[m_frameIdx];
 
     {
-        m_threadPool->AddTask([&](){
-            cb[m_frameIdx][SHADOW]->reset();
-            cb[m_frameIdx][SHADOW]->begin();
-            recordShadow(cb[m_frameIdx][SHADOW]);
-            cb[m_frameIdx][SHADOW]->end();
-            // VK_LOG_DEBUG("shadow command record complete.");
+        m_threadPool->AddTask([=]() {
+            currentCB[COMMAND_BUFFER_SHADOW]->reset();
+            currentCB[COMMAND_BUFFER_SHADOW]->begin();
+            recordShadow(currentCB[COMMAND_BUFFER_SHADOW]);
+            currentCB[COMMAND_BUFFER_SHADOW]->end();
         });
 
-        m_threadPool->AddTask([&](){
-            cb[m_frameIdx][GEOMETRY]->reset();
-            cb[m_frameIdx][GEOMETRY]->begin();
-            recordDeferredGeometry(cb[m_frameIdx][GEOMETRY]);
-            cb[m_frameIdx][GEOMETRY]->end();
-            // VK_LOG_DEBUG("geometry command record complete.");
+        m_threadPool->AddTask([=]() {
+            currentCB[COMMAND_BUFFER_GEOMETRY]->reset();
+            currentCB[COMMAND_BUFFER_GEOMETRY]->begin();
+            recordDeferredGeometry(currentCB[COMMAND_BUFFER_GEOMETRY]);
+            currentCB[COMMAND_BUFFER_GEOMETRY]->end();
         });
 
-        m_threadPool->AddTask([&](){
-            cb[m_frameIdx][LIGHTING]->reset();
-            cb[m_frameIdx][LIGHTING]->begin();
-            recordDeferredLighting(cb[m_frameIdx][LIGHTING]);
-            cb[m_frameIdx][LIGHTING]->end();
-            // VK_LOG_DEBUG("lighting command record complete.");
+        m_threadPool->AddTask([=]() {
+            currentCB[COMMAND_BUFFER_LIGHTING]->reset();
+            currentCB[COMMAND_BUFFER_LIGHTING]->begin();
+            recordDeferredLighting(currentCB[COMMAND_BUFFER_LIGHTING]);
+            currentCB[COMMAND_BUFFER_LIGHTING]->end();
         });
 
-        m_threadPool->AddTask([&](){
-            cb[m_frameIdx][POSTFX]->reset();
-            cb[m_frameIdx][POSTFX]->begin();
-            recordPostFX(cb[m_frameIdx][POSTFX]);
-            cb[m_frameIdx][POSTFX]->end();
-            // VK_LOG_DEBUG("postfx command record complete.");
+        m_threadPool->AddTask([=]() {
+            currentCB[COMMAND_BUFFER_POSTFX]->reset();
+            currentCB[COMMAND_BUFFER_POSTFX]->begin();
+            recordPostFX(currentCB[COMMAND_BUFFER_POSTFX]);
+            currentCB[COMMAND_BUFFER_POSTFX]->end();
         });
-
     }
 
-    std::vector<QueueSubmitInfo2> submitInfos(CB_MAX);
+    std::vector<QueueSubmitInfo2> submitInfos(COMMAND_BUFFER_MAX);
     {
         // timeline
-        VkSemaphore& timelineMain = m_timelineMain[m_frameIdx];
-        VkSemaphore  timelineShadow{};
+        VkSemaphore timelineMain = acquireTimelineMain();
+        VkSemaphore timelineShadow{};
 
-        m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineMain);
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
 
         // 1. geometry && shadow
-        submitInfos[GEOMETRY].signals.push_back({.semaphore = timelineMain, .value = 1});
-        submitInfos[SHADOW].signals.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
+        submitInfos[COMMAND_BUFFER_GEOMETRY].signals.push_back({.semaphore = timelineMain, .value = 1});
+        submitInfos[COMMAND_BUFFER_SHADOW].signals.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
 
         // 2. lighting
-        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
-        submitInfos[LIGHTING].waits.push_back({.semaphore = timelineMain, .value = 1});
+        submitInfos[COMMAND_BUFFER_LIGHTING].waits.push_back({.semaphore = timelineShadow, .value = UINT64_MAX});
+        submitInfos[COMMAND_BUFFER_LIGHTING].waits.push_back({.semaphore = timelineMain, .value = 1});
 
-        submitInfos[LIGHTING].signals.push_back({.semaphore = timelineMain, .value = 2});
+        submitInfos[COMMAND_BUFFER_LIGHTING].signals.push_back({.semaphore = timelineMain, .value = 2});
 
         // 3. postfx
-        submitInfos[POSTFX].waits.push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
-        submitInfos[POSTFX].waits.push_back({.semaphore = timelineMain, .value = 2});
+        submitInfos[COMMAND_BUFFER_POSTFX].waits.push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
+        submitInfos[COMMAND_BUFFER_POSTFX].waits.push_back({.semaphore = timelineMain, .value = 2});
 
-        submitInfos[POSTFX].signals.push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
-        submitInfos[POSTFX].signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
+        submitInfos[COMMAND_BUFFER_POSTFX].signals.push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
+        submitInfos[COMMAND_BUFFER_POSTFX].signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
     }
 
-    for(auto idx = 0; idx < CB_MAX; idx++)
+    for(auto idx = 0; idx < COMMAND_BUFFER_MAX; idx++)
     {
         submitInfos[idx].commands.push_back({.commandBuffer = cb[m_frameIdx][idx]->getHandle()});
     }
@@ -821,8 +815,8 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
     Image* mraoAttachment     = m_images[IMAGE_GBUFFER_MRAO][m_frameIdx];
     Image* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
     Image* pShadowMap         = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
-    Image* pColorAttachment = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
-    Image* pDepthAttachment = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx];
+    Image* pColorAttachment   = m_images[IMAGE_GENERAL_COLOR][m_frameIdx];
+    Image* pDepthAttachment   = m_images[IMAGE_GENERAL_DEPTH][m_frameIdx];
 
     {
         pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_GENERAL);
@@ -839,12 +833,12 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // skybox
-        // {
-        //     pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
-        //     pCommandBuffer->bindDescriptorSet({m_skyboxSet, m_samplerSet});
-        //     pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
-        //     pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
-        // }
+        {
+            pCommandBuffer->bindPipeline(m_pipelines[PIPELINE_GRAPHICS_SKYBOX]);
+            pCommandBuffer->bindDescriptorSet({m_skyboxSet, m_samplerSet});
+            pCommandBuffer->bindVertexBuffers(m_buffers[BUFFER_CUBE_VERTEX]);
+            pCommandBuffer->draw(m_buffers[BUFFER_INDIRECT_DRAW_CMD], 0);
+        }
 
         // draw scene object
         {

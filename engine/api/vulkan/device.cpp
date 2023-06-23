@@ -138,6 +138,10 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
 
 void Device::Destroy(Device* pDevice)
 {
+    for (auto commandPool : pDevice->m_threadCommandPools)
+    {
+        pDevice->destroyCommandPool(commandPool);
+    }
     for(auto& [_, commandpool] : pDevice->m_commandPools)
     {
         pDevice->destroyCommandPool(commandpool);
@@ -873,7 +877,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        CommandPool*          pool = nullptr;
+        CommandPool*          pool {};
         createCommandPool(createInfo, &pool);
         std::vector<VkCommandBuffer> handles(commandBufferCount);
         for (auto &handle: handles)
@@ -881,6 +885,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
             _VR(pool->allocateCommandBuffers(1, &handle));
         }
         ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
+        m_threadCommandPools.push_back(pool);
     }
     return VK_SUCCESS;
 }

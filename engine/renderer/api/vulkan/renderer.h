@@ -17,12 +17,28 @@ public:
     void endFrame() override;
 
 public:
-    Device* getDevice() const { return m_pDevice; }
-    Shader* getShaders(const std::filesystem::path& path);
+    SwapChain* getSwapChain() const { return m_pSwapChain; }
+    Device*    getDevice() const { return m_pDevice; }
+    Shader*    getShaders(const std::filesystem::path& path);
 
     Queue* getGraphicsQueue() const { return m_queue.graphics; }
     Queue* getComputeQueue() const { return m_queue.compute; }
     Queue* getTransferQueue() const { return m_queue.transfer; }
+
+    VkSemaphore getRenderSemaphore()
+    {
+        return m_renderSemaphore[m_frameIdx];
+    }
+
+    VkSemaphore getPresentSemaphore()
+    {
+        return m_presentSemaphore[m_frameIdx];
+    }
+
+    VkSemaphore acquireTimelineMain() {
+        m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &m_timelineMain[m_frameIdx]);
+        return m_timelineMain[m_frameIdx];
+    }
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};

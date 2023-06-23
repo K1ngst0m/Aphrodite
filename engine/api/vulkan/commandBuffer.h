@@ -82,6 +82,14 @@ public:
     void beginRendering(const VkRenderingInfo& renderingInfo);
     void endRendering();
 
+    void setViewport(const VkExtent2D& extent){
+        VkViewport viewport = aph::vk::init::viewport(extent);
+        setViewport(viewport);
+    }
+    void setScissor(const VkExtent2D& extent){
+        VkRect2D   scissor  = aph::vk::init::rect2D(extent);
+        setSissor(scissor);
+    }
     void setViewport(const VkViewport& viewport);
     void setSissor(const VkRect2D& scissor);
     void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);

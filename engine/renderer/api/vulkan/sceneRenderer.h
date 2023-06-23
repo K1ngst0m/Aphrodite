@@ -100,15 +100,16 @@ private:
         SHADER_PROGRAM_MAX
     };
 
-    enum CBIdx
+    // TODO
+    enum CommandBufferIdx
     {
-        GEOMETRY = 0,
-        SHADOW   = 1,
-        LIGHTING = 2,
-        POSTFX   = 3,
-        CB_MAX,
+        COMMAND_BUFFER_GEOMETRY = 0,
+        COMMAND_BUFFER_SHADOW   = 1,
+        COMMAND_BUFFER_LIGHTING = 2,
+        COMMAND_BUFFER_POSTFX   = 3,
+        COMMAND_BUFFER_MAX,
     };
-    CommandBuffer* cb[2][CB_MAX] = {};
+    CommandBuffer* cb[2][COMMAND_BUFFER_MAX] = {};
 
     std::array<ShaderProgram*, SHADER_PROGRAM_MAX>   m_programs;
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;

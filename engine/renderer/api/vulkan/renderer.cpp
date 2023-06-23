@@ -292,8 +292,14 @@ Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
-        m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
+        if (m_ui.pVertexBuffer)
+        {
+            m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
+        }
+        if (m_ui.pIndexBuffer)
+        {
+            m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
+        }
         m_pDevice->destroyImage(m_ui.pFontImage);
         m_pDevice->destroySampler(m_ui.fontSampler);
         m_pDevice->destroyShaderProgram(m_ui.pProgram);

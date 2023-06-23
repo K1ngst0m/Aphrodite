@@ -39,7 +39,7 @@ private:
 
     std::unique_ptr<aph::CameraController> m_cameraController = {};
 
-    std::unique_ptr<aph::vk::SceneRenderer> m_sceneRenderer = {};
+    std::unique_ptr<aph::vk::SceneRenderer> m_renderer = {};
 
     std::shared_ptr<aph::WSI> m_wsi = {};
 };

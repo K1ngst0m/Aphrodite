@@ -13,24 +13,22 @@ public:
     void run() override;
     void finish() override;
 
+    struct
+    {
+        uint32_t windowWidth  = {1440};
+        uint32_t windowHeight = {900};
+    } m_options;
+
 private:
-    void setupPipeline();
-
-    void buildCommands();
+    aph::vk::Pipeline*      m_pPipeline      = {};
+    aph::vk::ShaderProgram* m_pShaderProgram = {};
+    aph::vk::Buffer*        m_pVB            = {};
+    aph::vk::Buffer*        m_pIB            = {};
 
 private:
-    std::shared_ptr<aph::Window>   m_window;
-    std::shared_ptr<aph::Renderer> m_renderer;
-
-    aph::VulkanRenderPass*               m_pRenderPass = nullptr;
-    std::vector<aph::VulkanFramebuffer*> m_framebuffers;
-    std::vector<aph::Image*>             m_colorAttachments;
-    std::vector<aph::Image*>             m_depthAttachments;
-
-    aph::Pipeline* m_demoPipeline;
-    aph::Device*   m_device = nullptr;
-
-    float m_deltaTime;
+    std::shared_ptr<aph::WSI>          m_wsi      = {};
+    std::unique_ptr<aph::vk::Renderer> m_renderer = {};
+    aph::vk::Device* m_pDevice = {};
 };
 
 #endif  // SCENE_MANAGER_H_

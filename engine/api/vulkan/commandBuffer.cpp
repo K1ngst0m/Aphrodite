@@ -459,7 +459,11 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
     {
         m_commandState.colorAttachments.push_back({.image = color});
     }
-    m_commandState.depthAttachment = {.image = depth};
+
+    if (depth)
+    {
+        m_commandState.depthAttachment = {.image = depth};
+    }
 }
 
 void CommandBuffer::flushComputeCommand()

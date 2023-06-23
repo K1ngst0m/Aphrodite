@@ -24,19 +24,19 @@ void scene_manager::run()
         m_cameraController->update(deltaTime);
 
         // update resource data
-        m_sceneRenderer->update(deltaTime);
+        m_renderer->update(deltaTime);
 
         // draw and submit
-        m_sceneRenderer->beginFrame();
-        m_sceneRenderer->recordAll();
-        m_sceneRenderer->endFrame();
+        m_renderer->beginFrame();
+        m_renderer->recordAll();
+        m_renderer->endFrame();
     }
 }
 
 void scene_manager::finish()
 {
-    m_sceneRenderer->getDevice()->waitIdle();
-    m_sceneRenderer->cleanup();
+    m_renderer->getDevice()->waitIdle();
+    m_renderer->cleanup();
 }
 
 void scene_manager::setupWindow()
@@ -99,7 +99,7 @@ void scene_manager::setupScene()
     }
 
     {
-        m_sceneRenderer->load(m_scene.get());
+        m_renderer->load(m_scene.get());
     }
 }
 
@@ -107,10 +107,10 @@ void scene_manager::setupRenderer()
 {
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_ALL,
-        .maxFrames = 2,
+        .maxFrames = 1,
     };
 
-    m_sceneRenderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_wsi, config);
+    m_renderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_wsi, config);
 }
 
 bool scene_manager::onKeyDown(const aph::KeyboardEvent& event)
