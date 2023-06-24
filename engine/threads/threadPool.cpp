@@ -1,4 +1,5 @@
 #include "threadPool.h"
+#include <chrono>
 
 namespace aph
 {
@@ -18,6 +19,8 @@ ThreadPool::ThreadPool(uint32_t threadCount)
 
                 // Increment the number of active threads.
                 ++m_activeThreads;
+
+                m_threadsCompleteCondition.notify_all();
 
                 // Run the task.
                 packagedTask();
@@ -41,7 +44,10 @@ ThreadPool::~ThreadPool()
     while(!m_threads.empty())
     {
         auto& thread = m_threads.top();
-        thread.join();
+        if(thread.joinable())
+        {
+            m_threads.top().join();
+        }
         m_threads.pop();
     }
 }
@@ -51,6 +57,8 @@ std::shared_future<void> ThreadPool::AddTask(Task&& task)
     std::packaged_task<void()> packagedTask(std::move(task));
     auto                       future = packagedTask.get_future();
     m_tasks.Push(std::move(packagedTask));
+    // Notify any thread waiting on task completition via ThreadPool::Wait().
+    m_threadsCompleteCondition.notify_all();
     return future.share();
 }
 
@@ -61,8 +69,9 @@ void ThreadPool::ClearPendingTasks()
 
 void ThreadPool::Wait()
 {
+    using namespace std::chrono_literals;
     std::unique_lock<std::mutex> lock(m_threadsCompleteMutex);
-    m_threadsCompleteCondition.wait(lock, [this]() { return !m_activeThreads && m_tasks.Empty(); });
+    m_threadsCompleteCondition.wait_for(lock, 100ms, [this]() { return !m_activeThreads && m_tasks.Empty(); });
 }
 
 void ThreadPool::Abort()
