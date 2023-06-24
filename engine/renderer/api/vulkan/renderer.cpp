@@ -292,11 +292,11 @@ Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        if (m_ui.pVertexBuffer)
+        if(m_ui.pVertexBuffer)
         {
             m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
         }
-        if (m_ui.pIndexBuffer)
+        if(m_ui.pIndexBuffer)
         {
             m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
         }

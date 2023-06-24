@@ -25,17 +25,12 @@ public:
     Queue* getComputeQueue() const { return m_queue.compute; }
     Queue* getTransferQueue() const { return m_queue.transfer; }
 
-    VkSemaphore getRenderSemaphore()
-    {
-        return m_renderSemaphore[m_frameIdx];
-    }
+    VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
 
-    VkSemaphore getPresentSemaphore()
-    {
-        return m_presentSemaphore[m_frameIdx];
-    }
+    VkSemaphore getPresentSemaphore() { return m_presentSemaphore[m_frameIdx]; }
 
-    VkSemaphore acquireTimelineMain() {
+    VkSemaphore acquireTimelineMain()
+    {
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &m_timelineMain[m_frameIdx]);
         return m_timelineMain[m_frameIdx];
     }

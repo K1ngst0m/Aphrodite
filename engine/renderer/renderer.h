@@ -60,14 +60,15 @@ public:
         return renderer;
     }
     IRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) : m_wsi(std::move(window)), m_config(config) {}
+    virtual ~IRenderer() = default;
 
     virtual void beginFrame() = 0;
     virtual void endFrame()   = 0;
 
-    std::shared_ptr<WSI> getWSI() { return m_wsi; }
-    uint32_t             getWindowWidth() { return m_wsi->getWidth(); };
-    uint32_t             getWindowHeight() { return m_wsi->getHeight(); };
-    uint32_t             getWindowAspectRation() { return m_wsi->getAspectRatio(); }
+    std::shared_ptr<WSI> getWSI() const { return m_wsi; }
+    uint32_t             getWindowWidth() const { return m_wsi->getWidth(); };
+    uint32_t             getWindowHeight() const { return m_wsi->getHeight(); };
+    uint32_t             getWindowAspectRatio() const { return m_wsi->getAspectRatio(); }
 
 protected:
     std::shared_ptr<WSI> m_wsi    = {};

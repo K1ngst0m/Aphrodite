@@ -59,16 +59,16 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
         }
         for(auto& sig : submitInfo.signals)
         {
-            sig.pNext       = nullptr;
-            sig.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            sig.pNext = nullptr;
+            sig.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             // TODO
             sig.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
             sig.deviceIndex = 0;
         }
         for(auto& wait : submitInfo.waits)
         {
-            wait.pNext       = nullptr;
-            wait.sType       = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
+            wait.pNext = nullptr;
+            wait.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO;
             // TODO
             wait.stageMask   = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
             wait.deviceIndex = 0;

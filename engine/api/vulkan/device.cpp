@@ -138,7 +138,7 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
 
 void Device::Destroy(Device* pDevice)
 {
-    for (auto commandPool : pDevice->m_threadCommandPools)
+    for(auto commandPool : pDevice->m_threadCommandPools)
     {
         pDevice->destroyCommandPool(commandPool);
     }
@@ -661,11 +661,13 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
                     mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
-                    cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &mipSubRange, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                    cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &mipSubRange,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
                     // Blit from previous level
                     cmd->blitImage(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, texture,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-                    cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &mipSubRange, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                    cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &mipSubRange,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
                 }
 
                 cmd->transitionImageLayout(texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -870,17 +872,18 @@ VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shad
     return VK_SUCCESS;
 }
 
-VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
+VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,
+                                              Queue* pQueue)
 {
-    auto queueIndices = pQueue->getFamilyIndex();
+    auto                  queueIndices = pQueue->getFamilyIndex();
     CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        CommandPool*          pool {};
+        CommandPool* pool{};
         createCommandPool(createInfo, &pool);
         std::vector<VkCommandBuffer> handles(commandBufferCount);
-        for (auto &handle: handles)
+        for(auto& handle : handles)
         {
             _VR(pool->allocateCommandBuffers(1, &handle));
         }

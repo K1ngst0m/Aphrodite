@@ -85,7 +85,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
         unsigned poolArraySize;
         if(arraySize == ShaderLayout::UNSIZED_ARRAY)
         {
-            arraySize      = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+            arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
             poolArraySize = arraySize;
         }
         else
@@ -394,7 +394,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
     {
         APH_ASSERT(shader);
         auto&    shaderLayout = shader->m_layout;
-        uint32_t stageMask   = utils::VkCast(stage);
+        uint32_t stageMask    = utils::VkCast(stage);
 
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
@@ -418,14 +418,12 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
             programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
 
             uint32_t activeBinds =
-                shaderLayout.setShaderLayouts[i].sampledImageMask |
-                shaderLayout.setShaderLayouts[i].storageImageMask |
+                shaderLayout.setShaderLayouts[i].sampledImageMask | shaderLayout.setShaderLayouts[i].storageImageMask |
                 shaderLayout.setShaderLayouts[i].uniformBufferMask |
                 shaderLayout.setShaderLayouts[i].storageBufferMask |
                 shaderLayout.setShaderLayouts[i].sampledTexelBufferMask |
                 shaderLayout.setShaderLayouts[i].storageTexelBufferMask |
-                shaderLayout.setShaderLayouts[i].inputAttachmentMask |
-                shaderLayout.setShaderLayouts[i].samplerMask |
+                shaderLayout.setShaderLayouts[i].inputAttachmentMask | shaderLayout.setShaderLayouts[i].samplerMask |
                 shaderLayout.setShaderLayouts[i].separateImageMask;
 
             if(activeBinds)

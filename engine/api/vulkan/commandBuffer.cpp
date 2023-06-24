@@ -40,7 +40,7 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 
     // Mark CommandBuffer as recording and reset internal state.
     m_commandState = CommandState();
-    m_state         = CommandBufferState::RECORDING;
+    m_state        = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
 }
@@ -110,11 +110,11 @@ void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSiz
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
-                                          VkImageSubresourceRange* pSubResourceRange, VkPipelineStageFlags2 srcStageMask,
-                                          VkPipelineStageFlags2 dstStageMask)
+                                          VkImageSubresourceRange* pSubResourceRange,
+                                          VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
 {
     // early return
-    if (image->m_layout == newLayout)
+    if(image->m_layout == newLayout)
     {
         return;
     }
@@ -145,8 +145,8 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
     }
 
     {
-        imageMemoryBarrier.srcStageMask  = srcStageMask;
-        imageMemoryBarrier.dstStageMask  = dstStageMask;
+        imageMemoryBarrier.srcStageMask = srcStageMask;
+        imageMemoryBarrier.dstStageMask = dstStageMask;
     }
 
     // Source layouts (old)
@@ -460,7 +460,7 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
         m_commandState.colorAttachments.push_back({.image = color});
     }
 
-    if (depth)
+    if(depth)
     {
         m_commandState.depthAttachment = {.image = depth};
     }
@@ -468,13 +468,15 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
 
 void CommandBuffer::flushComputeCommand()
 {
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getHandle());
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
+                                      m_commandState.pPipeline->getHandle());
 }
 void CommandBuffer::flushGraphicsCommand()
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getHandle());
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
+                                      m_commandState.pPipeline->getHandle());
 }
 
 void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type, Buffer* buffer, VkDeviceSize offset,
@@ -485,7 +487,7 @@ void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type
     case ResourceType::UNIFORM_BUFFER:
     case ResourceType::STORAGE_BUFFER:
     {
-        auto& b                = m_commandState.resourceBindings.bindings;
+        auto& b                 = m_commandState.resourceBindings.bindings;
         b[set][binding]->buffer = {
             .buffer = buffer->getHandle(),
             .offset = offset,
@@ -510,7 +512,7 @@ void CommandBuffer::bindTexture(uint32_t set, uint32_t binding, ResourceType typ
     case ResourceType::COMBINE_SAMPLER_IMAGE:
     case ResourceType::STORAGE_IMAGE:
     {
-        auto& b                  = m_commandState.resourceBindings.bindings;
+        auto& b                = m_commandState.resourceBindings.bindings;
         b[set][binding]->image = {
             .sampler     = sampler->getHandle(),
             .imageView   = imageview->getHandle(),

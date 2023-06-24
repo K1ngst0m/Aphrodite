@@ -82,12 +82,14 @@ public:
     void beginRendering(const VkRenderingInfo& renderingInfo);
     void endRendering();
 
-    void setViewport(const VkExtent2D& extent){
+    void setViewport(const VkExtent2D& extent)
+    {
         VkViewport viewport = aph::vk::init::viewport(extent);
         setViewport(viewport);
     }
-    void setScissor(const VkExtent2D& extent){
-        VkRect2D   scissor  = aph::vk::init::rect2D(extent);
+    void setScissor(const VkExtent2D& extent)
+    {
+        VkRect2D scissor = aph::vk::init::rect2D(extent);
         setSissor(scissor);
     }
     void setViewport(const VkViewport& viewport);
@@ -112,8 +114,8 @@ public:
     void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size);
     void transitionImageLayout(Image* image, VkImageLayout newLayout,
                                VkImageSubresourceRange* pSubResourceRange = nullptr,
-                               VkPipelineStageFlags2     srcStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                               VkPipelineStageFlags2     dstStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+                               VkPipelineStageFlags2    srcStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+                               VkPipelineStageFlags2    dstStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
     void copyImage(Image* srcImage, Image* dstImage);
     void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,

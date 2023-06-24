@@ -128,7 +128,8 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     m_pDevice->waitIdle();
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
+    SwapChainSupportDetails swapChainSupport =
+        querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
 
     uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
     if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)
