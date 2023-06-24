@@ -698,8 +698,8 @@ void SceneRenderer::_initGpuResources()
         std::vector<VkDrawIndirectCommand>     drawList;
         std::vector<VkDispatchIndirectCommand> dispatchList;
         dispatchList.push_back({
-            .x = m_wsi->getWidth(),
-            .y = m_wsi->getHeight(),
+            .x = m_wsi->getWidth() / 12,
+            .y = m_wsi->getHeight() / 12,
             .z = 1,
         });
         drawList.push_back({
