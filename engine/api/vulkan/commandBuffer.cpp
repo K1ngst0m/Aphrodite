@@ -69,7 +69,7 @@ void CommandBuffer::setViewport(const VkViewport& viewport)
 {
     m_commandState.viewport = viewport;
 }
-void CommandBuffer::setSissor(const VkRect2D& scissor)
+void CommandBuffer::setScissor(const VkRect2D& scissor)
 {
     m_commandState.scissor = scissor;
 }
@@ -87,15 +87,19 @@ void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetC
                                             m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
                                             descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
-void CommandBuffer::bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
+void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
                                       const std::vector<VkDeviceSize>& offsets)
 {
-    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, firstBinding, bindingCount, &pBuffer->getHandle(), offsets.data());
+    // TODO multi vertex buffer binding
+    m_vertexBindingState.buffers[0] = pBuffer;
+    m_vertexBindingState.offsets[0] = {0};
 }
-void CommandBuffer::bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
+
+void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
-    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, pBuffer->getHandle(), offset, indexType);
+    m_indexState = {.buffer = pBuffer, .offset = offset, .indexType = indexType};
 }
+
 void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
 {
     APH_ASSERT(m_commandState.pPipeline != nullptr);
@@ -331,14 +335,12 @@ uint32_t CommandBuffer::getQueueFamilyIndices() const
 {
     return m_queueFamilyType;
 };
-void CommandBuffer::beginRendering(const VkRenderingInfo& renderingInfo)
-{
-    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
-}
+
 void CommandBuffer::endRendering()
 {
     m_pDeviceTable->vkCmdEndRendering(getHandle());
 }
+
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
 {
     flushComputeCommand();
@@ -405,8 +407,8 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
         }
         vkColors.push_back(vkColor);
         // TODO debug layout
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
     VkRenderingInfo renderingInfo{
@@ -446,8 +448,8 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
             vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
         }
         // #TODO debug layout
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
     }
 
@@ -457,7 +459,7 @@ void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* de
 {
     for(auto color : colors)
     {
-        m_commandState.colorAttachments.push_back({.image = color});
+        m_commandState.colorAttachments.push_back(AttachmentInfo{.image = color});
     }
 
     if(depth)
@@ -475,6 +477,8 @@ void CommandBuffer::flushGraphicsCommand()
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
+    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0]->getHandle(), m_vertexBindingState.offsets);
+    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer->getHandle(), m_indexState.offset, m_indexState.indexType);
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }
@@ -526,5 +530,15 @@ void CommandBuffer::bindTexture(uint32_t set, uint32_t binding, ResourceType typ
         break;
     }
     m_commandState.resourceBindings.bindings[set][binding]->resType = utils::VkCast(type);
+}
+void CommandBuffer::setScissor(const VkExtent2D& extent)
+{
+    VkRect2D scissor = aph::vk::init::rect2D(extent);
+    setScissor(scissor);
+}
+void CommandBuffer::setViewport(const VkExtent2D& extent)
+{
+    VkViewport viewport = aph::vk::init::viewport(extent);
+    setViewport(viewport);
 }
 }  // namespace aph::vk

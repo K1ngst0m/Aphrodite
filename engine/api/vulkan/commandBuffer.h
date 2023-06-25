@@ -51,6 +51,19 @@ struct ResourceBindings
     uint8_t                        push_constant_data[VULKAN_PUSH_CONSTANT_SIZE];
 };
 
+struct IndexState
+{
+    Buffer*      buffer;
+    VkDeviceSize offset;
+    VkIndexType  indexType;
+};
+
+struct VertexBindingState
+{
+    Buffer*      buffers[VULKAN_NUM_VERTEX_BUFFERS];
+    VkDeviceSize offsets[VULKAN_NUM_VERTEX_BUFFERS];
+};
+
 struct CommandState
 {
     Pipeline*                     pPipeline{};
@@ -79,28 +92,19 @@ public:
     void setRenderTarget(const std::vector<Image*>& colors, Image* depth = nullptr);
     void setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
     void beginRendering(VkRect2D renderArea);
-    void beginRendering(const VkRenderingInfo& renderingInfo);
     void endRendering();
 
-    void setViewport(const VkExtent2D& extent)
-    {
-        VkViewport viewport = aph::vk::init::viewport(extent);
-        setViewport(viewport);
-    }
-    void setScissor(const VkExtent2D& extent)
-    {
-        VkRect2D scissor = aph::vk::init::rect2D(extent);
-        setSissor(scissor);
-    }
+    void setViewport(const VkExtent2D& extent);
+    void setScissor(const VkExtent2D& extent);
     void setViewport(const VkViewport& viewport);
-    void setSissor(const VkRect2D& scissor);
+    void setScissor(const VkRect2D& scissor);
     void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);
     void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
                            uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
-    void bindVertexBuffers(const Buffer* pBuffer, uint32_t firstBinding = 0, uint32_t bindingCount = 1,
+    void bindVertexBuffers(Buffer* pBuffer, uint32_t firstBinding = 0, uint32_t bindingCount = 1,
                            const std::vector<VkDeviceSize>& offsets = {0});
-    void bindIndexBuffers(const Buffer* pBuffer, VkDeviceSize offset = 0, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
+    void bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset = 0, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
 
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
@@ -132,7 +136,11 @@ private:
     CommandBufferState     m_state            = {};
     bool                   m_submittedToQueue = {false};
     uint32_t               m_queueFamilyType  = {};
-    CommandState           m_commandState     = {};
+
+private:
+    IndexState         m_indexState         = {};
+    VertexBindingState m_vertexBindingState = {};
+    CommandState       m_commandState       = {};
 };
 }  // namespace aph::vk
 
