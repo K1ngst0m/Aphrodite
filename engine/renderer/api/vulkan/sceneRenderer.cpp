@@ -807,7 +807,7 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
 
     // dynamic state
     pCommandBuffer->setViewport(viewport);
-    pCommandBuffer->setSissor(scissor);
+    pCommandBuffer->setScissor(scissor);
 
     Image* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][m_frameIdx];
     Image* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][m_frameIdx];
@@ -822,15 +822,14 @@ void SceneRenderer::recordDeferredLighting(CommandBuffer* pCommandBuffer)
         pCommandBuffer->transitionImageLayout(positionAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(normalAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(albedoAttachment, VK_IMAGE_LAYOUT_GENERAL);
-        pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(mraoAttachment, VK_IMAGE_LAYOUT_GENERAL);
+        pCommandBuffer->transitionImageLayout(emissiveAttachment, VK_IMAGE_LAYOUT_GENERAL);
         pCommandBuffer->transitionImageLayout(pShadowMap, VK_IMAGE_LAYOUT_GENERAL);
     }
 
     // deferred rendering pass
     {
-        pCommandBuffer->setRenderTarget({pColorAttachment}, pDepthAttachment);
-        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}}, {pColorAttachment}, pDepthAttachment);
 
         // skybox
         {
@@ -866,7 +865,7 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
 
     // dynamic state
     pCommandBuffer->setViewport(viewport);
-    pCommandBuffer->setSissor(scissor);
+    pCommandBuffer->setScissor(scissor);
 
     // geometry pass
     {
@@ -877,10 +876,10 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
         Image* emissiveAttachment = m_images[IMAGE_GBUFFER_EMISSIVE][m_frameIdx];
         Image* depthAttachment    = m_images[IMAGE_GBUFFER_DEPTH][m_frameIdx];
 
-        pCommandBuffer->setRenderTarget(
+        pCommandBuffer->beginRendering(
+            {.offset{0, 0}, .extent{extent}},
             {positionAttachment, normalAttachment, albedoAttachment, mraoAttachment, emissiveAttachment},
             depthAttachment);
-        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
 
         // draw scene object
         {
@@ -920,24 +919,17 @@ void SceneRenderer::recordDeferredGeometry(CommandBuffer* pCommandBuffer)
 
 void SceneRenderer::recordShadow(CommandBuffer* pCommandBuffer)
 {
-    // TODO
-    VkExtent2D extent{
-        .width  = 4096,
-        .height = 4096,
-    };
-    VkViewport viewport = init::viewport(extent);
-    VkRect2D   scissor  = init::rect2D(extent);
+    VkExtent2D extent{4096, 4096};
 
     // dynamic state
-    pCommandBuffer->setViewport(viewport);
-    pCommandBuffer->setSissor(scissor);
+    pCommandBuffer->setViewport(extent);
+    pCommandBuffer->setScissor(extent);
 
     // shadow pass
     {
         Image* pDepthAttachment = m_images[IMAGE_SHADOW_DEPTH][m_frameIdx];
-        pCommandBuffer->setRenderTarget(
-            {}, AttachmentInfo{.image = pDepthAttachment, .storeOp = VK_ATTACHMENT_STORE_OP_STORE});
-        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}});
+        pCommandBuffer->beginRendering({.offset{0, 0}, .extent{extent}}, {},
+                                       {.image = pDepthAttachment, .storeOp = VK_ATTACHMENT_STORE_OP_STORE});
 
         // draw scene object
         {

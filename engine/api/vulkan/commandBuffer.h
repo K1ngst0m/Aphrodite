@@ -89,9 +89,8 @@ public:
     void bindTexture(uint32_t set, uint32_t binding, ResourceType type, ImageView* imageview, VkImageLayout layout,
                      Sampler* sampler = nullptr);
 
-    void setRenderTarget(const std::vector<Image*>& colors, Image* depth = nullptr);
-    void setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
-    void beginRendering(VkRect2D renderArea);
+    void beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth = nullptr);
+    void beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
     void endRendering();
 
     void setViewport(const VkExtent2D& extent);
@@ -141,6 +140,9 @@ private:
     IndexState         m_indexState         = {};
     VertexBindingState m_vertexBindingState = {};
     CommandState       m_commandState       = {};
+
+private:
+    uint32_t m_dirtySet = 0U;
 };
 }  // namespace aph::vk
 

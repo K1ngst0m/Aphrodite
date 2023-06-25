@@ -109,8 +109,7 @@ void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pV
 }
 void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size)
 {
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
+    VkBufferCopy copyRegion{.size = size};
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
@@ -369,13 +368,18 @@ void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescr
                                             m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
                                             pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
 }
-void CommandBuffer::setRenderTarget(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth)
+
+void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth)
 {
-    m_commandState.colorAttachments = colors;
-    m_commandState.depthAttachment  = depth;
-}
-void CommandBuffer::beginRendering(VkRect2D renderArea)
-{
+    for(auto color : colors)
+    {
+        m_commandState.colorAttachments.push_back(AttachmentInfo{.image = color});
+    }
+
+    if(depth)
+    {
+        m_commandState.depthAttachment = {.image = depth};
+    }
     APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
     std::vector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
@@ -452,20 +456,91 @@ void CommandBuffer::beginRendering(VkRect2D renderArea)
         transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
     }
-
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
-void CommandBuffer::setRenderTarget(const std::vector<Image*>& colors, Image* depth)
+
+void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors,
+                                   const AttachmentInfo& depth)
 {
-    for(auto color : colors)
+    m_commandState.colorAttachments = colors;
+    m_commandState.depthAttachment  = depth;
+    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
+    std::vector<VkRenderingAttachmentInfo> vkColors;
+    VkRenderingAttachmentInfo              vkDepth;
+    vkColors.reserve(m_commandState.colorAttachments.size());
+    for(const auto& color : m_commandState.colorAttachments)
     {
-        m_commandState.colorAttachments.push_back(AttachmentInfo{.image = color});
+        auto&                     image = color.image;
+        VkRenderingAttachmentInfo vkColor{.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                                          .imageView   = image->getView()->getHandle(),
+                                          .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                          .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                          .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+                                          .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}}};
+        if(color.layout.has_value())
+        {
+            vkColor.imageLayout = color.layout.value();
+        }
+        if(color.clear.has_value())
+        {
+            vkColor.clearValue = color.clear.value();
+        }
+        if(color.loadOp.has_value())
+        {
+            vkColor.loadOp = color.loadOp.value();
+        }
+        if(color.storeOp.has_value())
+        {
+            vkColor.storeOp = color.storeOp.value();
+        }
+        vkColors.push_back(vkColor);
+        // TODO debug layout
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
-    if(depth)
+    VkRenderingInfo renderingInfo{
+        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea           = renderArea,
+        .layerCount           = 1,
+        .colorAttachmentCount = static_cast<uint32_t>(vkColors.size()),
+        .pColorAttachments    = vkColors.data(),
+        .pDepthAttachment     = nullptr,
+    };
+
+    if(m_commandState.depthAttachment.has_value())
     {
-        m_commandState.depthAttachment = {.image = depth};
+        auto& image = m_commandState.depthAttachment->image;
+        vkDepth     = {
+                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                .imageView   = image->getView()->getHandle(),
+                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+                .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                .clearValue  = {.depthStencil{1.0f, 0}},
+        };
+        if(m_commandState.depthAttachment->layout.has_value())
+        {
+            vkDepth.imageLayout = m_commandState.depthAttachment->layout.value();
+        }
+        if(m_commandState.depthAttachment->storeOp.has_value())
+        {
+            vkDepth.storeOp = m_commandState.depthAttachment->storeOp.value();
+        }
+        if(m_commandState.depthAttachment->loadOp.has_value())
+        {
+            vkDepth.loadOp = m_commandState.depthAttachment->loadOp.value();
+        }
+        if(m_commandState.depthAttachment->clear.has_value())
+        {
+            vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
+        }
+        // #TODO debug layout
+        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
+        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        renderingInfo.pDepthAttachment = &vkDepth;
     }
+    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
 }
 
 void CommandBuffer::flushComputeCommand()
@@ -477,8 +552,10 @@ void CommandBuffer::flushGraphicsCommand()
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
-    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0]->getHandle(), m_vertexBindingState.offsets);
-    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer->getHandle(), m_indexState.offset, m_indexState.indexType);
+    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0]->getHandle(),
+                                           m_vertexBindingState.offsets);
+    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer->getHandle(), m_indexState.offset,
+                                         m_indexState.indexType);
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }
@@ -492,11 +569,7 @@ void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type
     case ResourceType::STORAGE_BUFFER:
     {
         auto& b                 = m_commandState.resourceBindings.bindings;
-        b[set][binding]->buffer = {
-            .buffer = buffer->getHandle(),
-            .offset = offset,
-            .range  = size,
-        };
+        b[set][binding]->buffer = {.buffer = buffer->getHandle(), .offset = offset, .range = size};
     }
     break;
     default:

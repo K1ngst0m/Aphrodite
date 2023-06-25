@@ -427,7 +427,7 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
                 scissorRect.offset.y      = std::max((int32_t)(pcmd->ClipRect.y), 0);
                 scissorRect.extent.width  = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
                 scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
-                pCommandBuffer->setSissor(scissorRect);
+                pCommandBuffer->setScissor(scissorRect);
                 pCommandBuffer->drawIndexed(pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
                 indexOffset += pcmd->ElemCount;
             }
