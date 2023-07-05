@@ -2,6 +2,7 @@
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
 #include "scene/mesh.h"
+#include "common/common.h"
 
 #include "api/gpuResource.h"
 #include "common/assetManager.h"
@@ -38,7 +39,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         if(++errCount > 10)
         {
             VK_LOG_ERR("Too many errors, exit.");
-            std::abort();
+            throw aph::TracedException();
         }
         VK_LOG_ERR("%s", msg.str());
         break;

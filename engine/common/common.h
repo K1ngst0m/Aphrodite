@@ -41,8 +41,8 @@
 #define BACKWARD_HAS_BACKTRACE_SYMBOL 1
 #include <backward-cpp/backward.hpp>
 
-namespace {
-using namespace backward;
+namespace aph
+{
 class TracedException : public std::runtime_error
 {
 public:
@@ -53,14 +53,14 @@ private:
     {
         std::ostringstream ss;
 
-        StackTrace    stackTrace;
-        TraceResolver resolver;
+        backward::StackTrace    stackTrace;
+        backward::TraceResolver resolver;
         stackTrace.load_here();
         resolver.load_stacktrace(stackTrace);
 
         for(std::size_t i = 0; i < stackTrace.size(); ++i)
         {
-            const ResolvedTrace trace = resolver.resolve(stackTrace[i]);
+            const backward::ResolvedTrace trace = resolver.resolve(stackTrace[i]);
 
             ss << "#" << i << " at " << trace.object_function << "\n";
         }
@@ -69,8 +69,8 @@ private:
     }
 };
 
-backward::SignalHandling sh;
-}
+static backward::SignalHandling sh;
+}  // namespace aph
 
 namespace aph
 {

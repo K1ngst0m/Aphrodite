@@ -94,9 +94,9 @@ void scene_manager::setupScene()
         }
         m_modelNode->rotate(180.0f, {0.0f, 1.0f, 0.0f});
 
-        // auto* model2 = m_scene->createMeshesFromFile(aph::AssetManager::GetModelDir() / "DamagedHelmet.glb");
-        // model2->rotate(180.0f, {0.0f, 1.0f, 0.0f});
-        // model2->translate({3.0, 1.0, 1.0});
+        auto* model2 = m_scene->createMeshesFromFile(aph::asset::GetModelDir() / "DamagedHelmet.glb");
+        model2->rotate(180.0f, {0.0f, 1.0f, 0.0f});
+        model2->translate({3.0, 1.0, 1.0});
     }
 
     {
@@ -204,7 +204,7 @@ int main(int argc, char** argv)
         app.run();
         app.finish();
     }
-    catch(const TracedException &ex)
+    catch(const aph::TracedException &ex)
     {
         CM_LOG_ERR("%s\n", ex.what());
     }
