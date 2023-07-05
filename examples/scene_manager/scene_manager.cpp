@@ -1,6 +1,8 @@
 #include "scene_manager.h"
 #include "renderer/renderer.h"
 
+#include <backward-cpp/backward.hpp>
+
 scene_manager::scene_manager() : aph::BaseApp("scene_manager")
 {
 }
@@ -43,7 +45,8 @@ void scene_manager::setupWindow()
 {
     m_wsi = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
-    m_wsi->registerEventHandler<aph::MouseButtonEvent>([this](const aph::MouseButtonEvent& e) { return onMouseBtn(e); });
+    m_wsi->registerEventHandler<aph::MouseButtonEvent>(
+        [this](const aph::MouseButtonEvent& e) { return onMouseBtn(e); });
     m_wsi->registerEventHandler<aph::KeyboardEvent>([this](const aph::KeyboardEvent& e) { return onKeyDown(e); });
     m_wsi->registerEventHandler<aph::MouseMoveEvent>([this](const aph::MouseMoveEvent& e) { return onMouseMove(e); });
 }
@@ -183,16 +186,32 @@ int main(int argc, char** argv)
 {
     scene_manager app;
 
-    int               exitCode;
-    aph::CLICallbacks cbs;
-    cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
-    cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
-    cbs.add("--model", [&](aph::CLIParser& parser) { app.m_options.modelPath = parser.nextString(); });
-    cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
-    if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
-        return exitCode;
+    // parse command
+    {
+        int               exitCode;
+        aph::CLICallbacks cbs;
+        cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
+        cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
+        cbs.add("--model", [&](aph::CLIParser& parser) { app.m_options.modelPath = parser.nextString(); });
+        cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
+        if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
+        {
+            return exitCode;
+        }
+    }
 
-    app.init();
-    app.run();
-    app.finish();
+    try
+    {
+        app.init();
+        app.run();
+        app.finish();
+    }
+    catch(...)
+    {
+        using namespace backward;
+        StackTrace st;
+        st.load_here(32);  // Load the stack trace from the current point
+        Printer p;
+        p.print(st);  // Print the stack trace
+    }
 }

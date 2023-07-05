@@ -18,6 +18,7 @@ add_library(engine STATIC ${base_src})
 target_include_directories(engine PUBLIC  ../external/glm
                                   PUBLIC  ../external/volk
                                   PUBLIC  ../external/reckless/reckless/include
+                                  PUBLIC  ../external/backward-cpp/include
                                   PRIVATE ../external/libshaderc/include
                                   PRIVATE ../external/glfw/include
                                   PRIVATE ../external/imgui/include
