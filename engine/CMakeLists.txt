@@ -33,10 +33,11 @@ target_link_libraries(engine
   ${xcb_libraries}
   ${cmake_thread_libs_init}
   volk
-  dl
   reckless
   imgui
   shaderc_shared
   spirv-cross-core
+  dl
+  dw
   # spirv-cross-reflect
 )

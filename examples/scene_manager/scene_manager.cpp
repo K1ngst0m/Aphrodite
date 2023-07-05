@@ -1,8 +1,6 @@
 #include "scene_manager.h"
 #include "renderer/renderer.h"
 
-#include <backward-cpp/backward.hpp>
-
 scene_manager::scene_manager() : aph::BaseApp("scene_manager")
 {
 }
@@ -206,12 +204,8 @@ int main(int argc, char** argv)
         app.run();
         app.finish();
     }
-    catch(...)
+    catch(const TracedException &ex)
     {
-        using namespace backward;
-        StackTrace st;
-        st.load_here(32);  // Load the stack trace from the current point
-        Printer p;
-        p.print(st);  // Print the stack trace
+        CM_LOG_ERR("%s\n", ex.what());
     }
 }

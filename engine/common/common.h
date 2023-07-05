@@ -37,6 +37,41 @@
 
 #include "logger.h"
 
+#define BACKWARD_HAS_DW 1
+#define BACKWARD_HAS_BACKTRACE_SYMBOL 1
+#include <backward-cpp/backward.hpp>
+
+namespace {
+using namespace backward;
+class TracedException : public std::runtime_error
+{
+public:
+    TracedException() : std::runtime_error(_get_trace()) {}
+
+private:
+    std::string _get_trace()
+    {
+        std::ostringstream ss;
+
+        StackTrace    stackTrace;
+        TraceResolver resolver;
+        stackTrace.load_here();
+        resolver.load_stacktrace(stackTrace);
+
+        for(std::size_t i = 0; i < stackTrace.size(); ++i)
+        {
+            const ResolvedTrace trace = resolver.resolve(stackTrace[i]);
+
+            ss << "#" << i << " at " << trace.object_function << "\n";
+        }
+
+        return ss.str();
+    }
+};
+
+backward::SignalHandling sh;
+}
+
 namespace aph
 {
 enum class Result
@@ -178,7 +213,7 @@ namespace aph
             { \
                 CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
                 LOG_FLUSH(); \
-                abort(); \
+                throw TracedException(); \
             } \
         } while(0)
 #else
