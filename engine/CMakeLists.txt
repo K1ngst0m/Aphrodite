@@ -15,20 +15,24 @@ file(GLOB base_src
 
 add_library(engine STATIC ${base_src})
 
-target_include_directories(engine PUBLIC  ../external/glm
-                                  PUBLIC  ../external/volk
-                                  PUBLIC  ../external/reckless/reckless/include
-                                  PUBLIC  ../external/backward-cpp/include
-                                  PRIVATE ../external/libshaderc/include
-                                  PRIVATE ../external/glfw/include
-                                  PRIVATE ../external/imgui/include
-                                  PRIVATE ../external/vulkan
-                                  PRIVATE ../external/stb/include
-                                  PRIVATE ../external/tinygltf/include
-                                  PRIVATE ../external/SPIRV-Cross
+target_include_directories(engine PUBLIC
+                                  ../external/glm
+                                  ../external/volk
+                                  ../external/reckless/reckless/include
+                                  ../external/backward-cpp/include
+
+                                  PRIVATE
+                                  ./
+                                  ../external/libshaderc/include
+                                  ../external/glfw/include
+                                  ../external/imgui/include
+                                  ../external/vulkan
+                                  ../external/stb/include
+                                  ../external/tinygltf/include
+                                  ../external/SPIRV-Cross
                                   )
 
-target_link_libraries(engine
+target_link_libraries(engine PRIVATE
   glfw
   ${xcb_libraries}
   ${cmake_thread_libs_init}
