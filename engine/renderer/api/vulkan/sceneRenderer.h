@@ -10,7 +10,7 @@ namespace aph::vk
 class SceneRenderer : public Renderer
 {
 public:
-    SceneRenderer(std::shared_ptr<WSI> window, const RenderConfig& config);
+    SceneRenderer(WSI* wsi, const RenderConfig& config);
 
     void load(Scene* scene);
     void cleanup();

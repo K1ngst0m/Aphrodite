@@ -50,7 +50,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
-Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRenderer(std::move(wsi), config)
+Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config)
 {
     // create instance
     {
@@ -139,7 +139,7 @@ Renderer::Renderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : IRend
     {
         SwapChainCreateInfo createInfo{
             .instance = m_pInstance,
-            .wsi      = m_wsi.get(),
+            .wsi      = m_wsi,
         };
         VK_CHECK_RESULT(m_pDevice->createSwapchain(createInfo, &m_pSwapChain));
     }

@@ -14,7 +14,7 @@ void triangle_demo::init()
         .maxFrames = 1,
     };
 
-    m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi, config);
+    m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->getDevice();
 
     // setup triangle
@@ -23,9 +23,8 @@ void triangle_demo::init()
         {
             // vertex: position, color
             std::array vertexArray{
-                0.0f, -0.5f, 1.0f, 1.0f,  0.0f, 0.0f,
-                0.5f, 0.5f, 1.0f, 0.0f, 1.0f,  0.0f,
-                -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+                0.0f, -0.5f, 1.0f, 1.0f,  0.0f, 0.0f, 0.5f, 0.5f, 1.0f,
+                0.0f, 1.0f,  0.0f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
             };
 
             aph::vk::BufferCreateInfo vertexBufferCreateInfo{
@@ -51,7 +50,8 @@ void triangle_demo::init()
 
         // pipeline
         {
-            aph::vk::GraphicsPipelineCreateInfo createInfo{{aph::vk::VertexComponent::POSITION, aph::vk::VertexComponent::COLOR}};
+            aph::vk::GraphicsPipelineCreateInfo createInfo{
+                {aph::vk::VertexComponent::POSITION, aph::vk::VertexComponent::COLOR}};
             auto                  shaderDir    = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
             std::vector<VkFormat> colorFormats = {m_renderer->getSwapChain()->getFormat()};
             createInfo.renderingCreateInfo     = {
@@ -64,8 +64,7 @@ void triangle_demo::init()
             createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
 
             {
-                m_pDevice->createShaderProgram(&m_pShaderProgram,
-                                               m_renderer->getShaders(shaderDir / "triangle.vert"),
+                m_pDevice->createShaderProgram(&m_pShaderProgram, m_renderer->getShaders(shaderDir / "triangle.vert"),
                                                m_renderer->getShaders(shaderDir / "triangle.frag"));
                 createInfo.pProgram = m_pShaderProgram;
             }
@@ -82,7 +81,7 @@ void triangle_demo::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
-        auto * queue = m_renderer->getGraphicsQueue();
+        auto* queue = m_renderer->getGraphicsQueue();
 
         // draw and submit
         m_renderer->beginFrame();

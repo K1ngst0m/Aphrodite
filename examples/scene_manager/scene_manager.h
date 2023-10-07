@@ -31,7 +31,7 @@ private:
     bool onMouseBtn(const aph::MouseButtonEvent& event);
 
 private:
-    std::shared_ptr<aph::Scene> m_scene                = {};
+    std::unique_ptr<aph::Scene> m_scene                = {};
     aph::SceneNode*             m_modelNode            = {};
     aph::SceneNode*             m_pointLightNode       = {};
     aph::SceneNode*             m_directionalLightNode = {};
@@ -41,7 +41,7 @@ private:
 
     std::unique_ptr<aph::vk::SceneRenderer> m_renderer = {};
 
-    std::shared_ptr<aph::WSI> m_wsi = {};
+    std::unique_ptr<aph::WSI> m_wsi = {};
 };
 
 #endif  // SCENE_MANAGER_H_

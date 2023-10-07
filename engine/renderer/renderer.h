@@ -39,7 +39,7 @@ class IRenderer
 {
 public:
     template <typename TRenderer>
-    static std::unique_ptr<TRenderer> Create(const std::shared_ptr<WSI>& window, const RenderConfig& config)
+    static std::unique_ptr<TRenderer> Create(WSI* window, const RenderConfig& config)
     {
         std::unique_ptr<TRenderer> renderer = {};
         if constexpr(std::is_same_v<TRenderer, vk::Renderer>)
@@ -59,20 +59,20 @@ public:
         }
         return renderer;
     }
-    IRenderer(std::shared_ptr<WSI> window, const RenderConfig& config) : m_wsi(std::move(window)), m_config(config) {}
+    IRenderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(config) {}
     virtual ~IRenderer() = default;
 
     virtual void beginFrame() = 0;
     virtual void endFrame()   = 0;
 
-    std::shared_ptr<WSI> getWSI() const { return m_wsi; }
-    uint32_t             getWindowWidth() const { return m_wsi->getWidth(); };
-    uint32_t             getWindowHeight() const { return m_wsi->getHeight(); };
-    uint32_t             getWindowAspectRatio() const { return m_wsi->getAspectRatio(); }
+    WSI*     getWSI() const { return m_wsi; }
+    uint32_t getWindowWidth() const { return m_wsi->getWidth(); };
+    uint32_t getWindowHeight() const { return m_wsi->getHeight(); };
+    uint32_t getWindowAspectRatio() const { return m_wsi->getAspectRatio(); }
 
 protected:
-    std::shared_ptr<WSI> m_wsi    = {};
-    RenderConfig         m_config = {};
+    WSI*         m_wsi    = {};
+    RenderConfig m_config = {};
 };
 }  // namespace aph
 

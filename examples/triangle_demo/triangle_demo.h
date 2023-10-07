@@ -26,7 +26,7 @@ private:
     aph::vk::Buffer*        m_pIB            = {};
 
 private:
-    std::shared_ptr<aph::WSI>          m_wsi      = {};
+    std::unique_ptr<aph::WSI>          m_wsi      = {};
     std::unique_ptr<aph::vk::Renderer> m_renderer = {};
     aph::vk::Device* m_pDevice = {};
 };

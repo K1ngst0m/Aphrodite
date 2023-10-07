@@ -54,7 +54,7 @@ struct ObjectInfo
 
 namespace aph::vk
 {
-SceneRenderer::SceneRenderer(std::shared_ptr<WSI> wsi, const RenderConfig& config) : Renderer(std::move(wsi), config)
+SceneRenderer::SceneRenderer(WSI* wsi, const RenderConfig& config) : Renderer(wsi, config)
 {
     m_threadPool = std::make_unique<ThreadPool>(10);
 }

@@ -111,7 +111,7 @@ void scene_manager::setupRenderer()
         .maxFrames = 1,
     };
 
-    m_renderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_wsi, config);
+    m_renderer = aph::IRenderer::Create<aph::vk::SceneRenderer>(m_wsi.get(), config);
 }
 
 bool scene_manager::onKeyDown(const aph::KeyboardEvent& event)

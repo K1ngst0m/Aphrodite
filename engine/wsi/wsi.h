@@ -18,10 +18,10 @@ protected:
     WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height) { init(); }
 
 public:
-    static std::shared_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
+    static std::unique_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
     {
         CM_LOG_INFO("Init window: [%d, %d]", width, height);
-        return std::shared_ptr<WSI>(new WSI(width, height));
+        return std::unique_ptr<WSI>(new WSI(width, height));
     }
 
     virtual ~WSI();
