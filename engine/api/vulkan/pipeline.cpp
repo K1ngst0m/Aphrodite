@@ -31,6 +31,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(const std::vector<VertexC
         {
             VkVertexInputAttributeDescription desc = vertexComponmentMap[component];
             desc.location                          = location;
+            desc.offset                            = bindingSize;
             inputAttribute.push_back(desc);
             location++;
             bindingSize += vertexComponentSizeMap[component];
