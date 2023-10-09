@@ -11,7 +11,7 @@ class Renderer : public IRenderer
 {
 public:
     Renderer(WSI* wsi, const RenderConfig& config);
-    ~Renderer();
+    ~Renderer() override;
 
     void beginFrame() override;
     void endFrame() override;
@@ -33,6 +33,13 @@ public:
     {
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &m_timelineMain[m_frameIdx]);
         return m_timelineMain[m_frameIdx];
+    }
+
+    CommandBuffer* acquireFrameCommandBuffer();
+
+    void submit(CommandBuffer* cmd)
+    {
+
     }
 
 protected:
@@ -61,6 +68,15 @@ protected:
     std::vector<VkSemaphore>            m_presentSemaphore    = {};
 
 protected:
+    struct FrameData
+    {
+        std::vector<CommandBuffer*> cmds;
+        // std::vector<CommandBuffer*> cmds;
+    };
+    FrameData m_frameData;
+
+protected:
+
     uint32_t m_frameIdx     = {};
     float    m_frameTimer   = {};
     uint32_t m_lastFPS      = {};

@@ -358,6 +358,20 @@ void Renderer::beginFrame()
 void Renderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
+    {
+        VkSemaphore timelineMain = acquireTimelineMain();
+        for (auto cb : m_frameData.cmds)
+        {
+            aph::vk::QueueSubmitInfo2 submitInfo{};
+            submitInfo.commands.push_back({.commandBuffer = cb->getHandle()});
+            submitInfo.waits.push_back({.semaphore = getRenderSemaphore()});
+            submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
+            submitInfo.signals.push_back({.semaphore = getPresentSemaphore()});
+            queue->submit({submitInfo});
+        }
+
+        m_frameData = {};
+    }
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
@@ -532,4 +546,13 @@ bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
     io.AddMousePosEvent((float)e.m_absX, (float)e.m_absY);
     return true;
 }
+
+CommandBuffer* Renderer::acquireFrameCommandBuffer()
+{
+    CommandBuffer* cmd;
+    m_pDevice->allocateCommandBuffers(1, &cmd, m_queue.graphics);
+    m_frameData.cmds.push_back(cmd);
+    return cmd;
+}
+
 }  // namespace aph::vk

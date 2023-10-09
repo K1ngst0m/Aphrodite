@@ -85,8 +85,7 @@ void triangle_demo::run()
 
         // draw and submit
         m_renderer->beginFrame();
-        aph::vk::CommandBuffer* cb = {};
-        m_pDevice->allocateCommandBuffers(1, &cb, queue);
+        aph::vk::CommandBuffer* cb = m_renderer->acquireFrameCommandBuffer();
 
         VkExtent2D extent{
             .width  = m_renderer->getWindowWidth(),
@@ -105,7 +104,6 @@ void triangle_demo::run()
         cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {presentImage});
         cb->drawIndexed(3, 1, 0, 0, 0);
         cb->endRendering();
-        cb->transitionImageLayout(presentImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
         cb->end();
 
         VkSemaphore timelineMain = m_renderer->acquireTimelineMain();
@@ -116,6 +114,7 @@ void triangle_demo::run()
         submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
         submitInfo.signals.push_back({.semaphore = m_renderer->getPresentSemaphore()});
         queue->submit({submitInfo});
+
         m_renderer->endFrame();
     }
 }

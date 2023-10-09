@@ -106,6 +106,10 @@ VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
 
 VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
 {
+    m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
+        cmd->transitionImageLayout(m_images[m_imageIdx].get(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+    });
+
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),

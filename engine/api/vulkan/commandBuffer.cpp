@@ -39,7 +39,7 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
     }
 
     // Mark CommandBuffer as recording and reset internal state.
-    m_commandState = CommandState();
+    m_commandState = {};
     m_state        = CommandBufferState::RECORDING;
 
     return VK_SUCCESS;
