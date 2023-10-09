@@ -201,6 +201,27 @@ inline void forEachBit(uint32_t value, const T& func)
     }
 }
 
+template <typename T>
+inline void forEachBitRange(uint32_t value, const T &func)
+{
+    if (value == ~0u)
+    {
+        func(0, 32);
+        return;
+    }
+
+    uint32_t bit_offset = 0;
+    while (value)
+    {
+        uint32_t bit = trailing_zeroes(value);
+        bit_offset += bit;
+        value >>= bit;
+        uint32_t range = trailing_ones(value);
+        func(bit_offset, range);
+        value &= ~((1u << range) - 1);
+    }
+}
+
 }  // namespace aph::utils
 
 namespace aph

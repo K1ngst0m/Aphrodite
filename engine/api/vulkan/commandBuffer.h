@@ -49,19 +49,21 @@ struct ResourceBindings
 {
     std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
     uint8_t                        push_constant_data[VULKAN_PUSH_CONSTANT_SIZE];
+    uint32_t                       dirty = 0;
 };
 
 struct IndexState
 {
-    Buffer*      buffer;
+    VkBuffer     buffer;
     VkDeviceSize offset;
     VkIndexType  indexType;
 };
 
 struct VertexBindingState
 {
-    Buffer*      buffers[VULKAN_NUM_VERTEX_BUFFERS];
+    VkBuffer     buffers[VULKAN_NUM_VERTEX_BUFFERS];
     VkDeviceSize offsets[VULKAN_NUM_VERTEX_BUFFERS];
+    uint32_t     dirty = 0;
 };
 
 struct CommandState
@@ -101,8 +103,7 @@ public:
     void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
                            uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
-    void bindVertexBuffers(Buffer* pBuffer, uint32_t firstBinding = 0, uint32_t bindingCount = 1,
-                           const std::vector<VkDeviceSize>& offsets = {0});
+    void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, uint32_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset = 0, VkIndexType indexType = VK_INDEX_TYPE_UINT32);
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
 

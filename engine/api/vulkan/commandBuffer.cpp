@@ -87,17 +87,20 @@ void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetC
                                             m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
                                             descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
 }
-void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t firstBinding, uint32_t bindingCount,
-                                      const std::vector<VkDeviceSize>& offsets)
+
+void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_t offset)
 {
-    // TODO multi vertex buffer binding
-    m_vertexBindingState.buffers[0] = pBuffer;
-    m_vertexBindingState.offsets[0] = {0};
+    APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
+
+    VkBuffer vkbuffer                     = pBuffer->getHandle();
+    m_vertexBindingState.buffers[binding] = pBuffer->getHandle();
+    m_vertexBindingState.offsets[binding] = offset;
+    m_vertexBindingState.dirty |= 1u << binding;
 }
 
 void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
-    m_indexState = {.buffer = pBuffer, .offset = offset, .indexType = indexType};
+    m_indexState = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = indexType};
 }
 
 void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
@@ -552,10 +555,19 @@ void CommandBuffer::flushGraphicsCommand()
 {
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
-    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0]->getHandle(),
+
+    aph::utils::forEachBitRange(m_vertexBindingState.dirty, [&](uint32_t binding, uint32_t bindingCount) {
+#ifdef APH_DEBUG
+        for(unsigned i = binding; i < binding + bindingCount; i++)
+            VK_ASSERT(m_vertexBindingState.buffers[i] != VK_NULL_HANDLE);
+#endif
+        m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount, m_vertexBindingState.buffers + binding,
+                                               m_vertexBindingState.offsets + binding);
+    });
+
+    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0],
                                            m_vertexBindingState.offsets);
-    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer->getHandle(), m_indexState.offset,
-                                         m_indexState.indexType);
+    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer, m_indexState.offset, m_indexState.indexType);
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }
