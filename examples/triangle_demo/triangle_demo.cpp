@@ -99,7 +99,6 @@ void triangle_demo::run()
 
         aph::vk::Image* presentImage = m_renderer->getSwapChain()->getImage();
 
-        // dynamic state
         cb->begin();
         cb->setViewport(extent);
         cb->setScissor(extent);
@@ -111,14 +110,12 @@ void triangle_demo::run()
         cb->endRendering();
         cb->end();
 
-        VkSemaphore timelineMain = m_renderer->acquireTimelineMain();
-
-        aph::vk::QueueSubmitInfo2 submitInfo{};
-        submitInfo.commands.push_back({.commandBuffer = cb->getHandle()});
-        submitInfo.waits.push_back({.semaphore = m_renderer->getRenderSemaphore()});
-        submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
-        submitInfo.signals.push_back({.semaphore = m_renderer->getPresentSemaphore()});
-        queue->submit({submitInfo});
+        aph::vk::QueueSubmitInfo submitInfo{};
+        submitInfo.commandBuffers.push_back(cb);
+        submitInfo.waitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        submitInfo.waitSemaphores.push_back(m_renderer->getRenderSemaphore());
+        submitInfo.signalSemaphores.push_back(m_renderer->getPresentSemaphore());
+        queue->submit({submitInfo}, m_renderer->getFrameFence());
 
         m_renderer->endFrame();
     }

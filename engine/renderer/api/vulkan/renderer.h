@@ -26,8 +26,8 @@ public:
     Queue* getTransferQueue() const { return m_queue.transfer; }
 
     VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
-
     VkSemaphore getPresentSemaphore() { return m_presentSemaphore[m_frameIdx]; }
+    VkFence getFrameFence() { return m_frameFence[m_frameIdx]; }
 
     VkSemaphore acquireTimelineMain()
     {
@@ -61,6 +61,7 @@ protected:
     std::vector<VkSemaphore>            m_timelineMain        = {};
     std::vector<VkSemaphore>            m_renderSemaphore     = {};
     std::vector<VkSemaphore>            m_presentSemaphore    = {};
+    std::vector<VkFence>                m_frameFence          = {};
 
 protected:
     struct FrameData
@@ -71,7 +72,6 @@ protected:
     FrameData m_frameData;
 
 protected:
-
     uint32_t m_frameIdx     = {};
     float    m_frameTimer   = {};
     uint32_t m_lastFPS      = {};

@@ -150,11 +150,16 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         m_timelineMain.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
         m_presentSemaphore.resize(m_config.maxFrames);
+        m_frameFence.resize(m_config.maxFrames);
 
         {
             m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
+            for (auto & fence : m_frameFence)
+            {
+                m_pSyncPrimitivesPool->acquireFence(fence);
+            }
         }
 
         // pipeline cache
@@ -330,25 +335,8 @@ Renderer::~Renderer()
 void Renderer::beginFrame()
 {
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
-
-    static std::vector<bool> firstFrames(m_config.maxFrames, true);
-    if(firstFrames[m_frameIdx])
-    {
-        firstFrames[m_frameIdx] = false;
-    }
-    else
-    {
-        constexpr uint64_t  waitValue = UINT64_MAX;
-        VkSemaphoreWaitInfo waitInfo{
-            .sType          = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-            .pNext          = nullptr,
-            .flags          = 0,
-            .semaphoreCount = 1,
-            .pSemaphores    = &m_timelineMain[m_frameIdx],
-            .pValues        = &waitValue,
-        };
-        vkWaitSemaphores(m_pDevice->getHandle(), &waitInfo, UINT64_MAX);
-    }
+    vkWaitForFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx], VK_TRUE, UINT64_MAX);
+    vkResetFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx]);
 
     {
         m_timer = std::chrono::high_resolution_clock::now();
@@ -358,20 +346,6 @@ void Renderer::beginFrame()
 void Renderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
-    // {
-    //     VkSemaphore timelineMain = acquireTimelineMain();
-    //     for (auto cb : m_frameData.cmds)
-    //     {
-    //         aph::vk::QueueSubmitInfo2 submitInfo{};
-    //         submitInfo.commands.push_back({.commandBuffer = cb->getHandle()});
-    //         submitInfo.waits.push_back({.semaphore = getRenderSemaphore()});
-    //         submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
-    //         submitInfo.signals.push_back({.semaphore = getPresentSemaphore()});
-    //         queue->submit({submitInfo});
-    //     }
-
-    //     m_frameData = {};
-    // }
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
