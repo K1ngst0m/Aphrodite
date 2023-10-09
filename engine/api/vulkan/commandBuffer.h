@@ -33,47 +33,50 @@ struct AttachmentInfo
     std::optional<VkClearValue>        clear;
 };
 
-struct ResourceBinding
-{
-    union
-    {
-        VkDescriptorBufferInfo buffer;
-        VkDescriptorImageInfo  image;
-        VkBufferView           bufferView;
-    };
-    VkDeviceSize     dynamicOffset;
-    VkDescriptorType resType;
-};
-
-struct ResourceBindings
-{
-    std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
-    uint8_t                        push_constant_data[VULKAN_PUSH_CONSTANT_SIZE];
-    uint32_t                       dirty = 0;
-};
-
-struct IndexState
-{
-    VkBuffer     buffer;
-    VkDeviceSize offset;
-    VkIndexType  indexType;
-};
-
-struct VertexBindingState
-{
-    VkBuffer     buffers[VULKAN_NUM_VERTEX_BUFFERS];
-    VkDeviceSize offsets[VULKAN_NUM_VERTEX_BUFFERS];
-    uint32_t     dirty = 0;
-};
 
 struct CommandState
 {
-    Pipeline*                     pPipeline{};
-    VkViewport                    viewport{};
-    VkRect2D                      scissor{};
-    std::vector<AttachmentInfo>   colorAttachments;
-    std::optional<AttachmentInfo> depthAttachment;
-    ResourceBindings              resourceBindings{};
+    struct ResourceBinding
+    {
+        union
+        {
+            VkDescriptorBufferInfo buffer;
+            VkDescriptorImageInfo  image;
+            VkBufferView           bufferView;
+        };
+        VkDeviceSize     dynamicOffset;
+        VkDescriptorType resType;
+    };
+
+    struct ResourceBindings
+    {
+        std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
+        uint8_t                        pushConstantData[VULKAN_PUSH_CONSTANT_SIZE];
+        uint32_t                       dirty = 0;
+    };
+
+    struct IndexState
+    {
+        VkBuffer     buffer;
+        VkDeviceSize offset;
+        VkIndexType  indexType;
+    };
+
+    struct VertexBindingState
+    {
+        VkBuffer     buffers[VULKAN_NUM_VERTEX_BUFFERS];
+        VkDeviceSize offsets[VULKAN_NUM_VERTEX_BUFFERS];
+        uint32_t     dirty = 0;
+    };
+
+    Pipeline*                     pPipeline        = {};
+    VkViewport                    viewport         = {};
+    VkRect2D                      scissor          = {};
+    std::vector<AttachmentInfo>   colorAttachments = {};
+    std::optional<AttachmentInfo> depthAttachment  = {};
+    ResourceBindings              resourceBindings = {};
+    IndexState                    index            = {};
+    VertexBindingState            vertexBinding    = {};
 };
 
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
@@ -138,12 +141,7 @@ private:
     uint32_t               m_queueFamilyType  = {};
 
 private:
-    IndexState         m_indexState         = {};
-    VertexBindingState m_vertexBindingState = {};
-    CommandState       m_commandState       = {};
-
-private:
-    uint32_t m_dirtySet = 0U;
+    CommandState m_commandState = {};
 };
 }  // namespace aph::vk
 

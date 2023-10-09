@@ -102,7 +102,7 @@ void triangle_demo::run()
         cb->bindVertexBuffers(m_pVB);
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
-        cb->beginRendering({.offset{0, 0}, .extent{extent}}, {m_renderer->getSwapChain()->getImage()});
+        cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {presentImage});
         cb->drawIndexed(3, 1, 0, 0, 0);
         cb->endRendering();
         cb->transitionImageLayout(presentImage, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);

@@ -5,11 +5,6 @@
 namespace aph::vk
 {
 
-CommandBuffer::~CommandBuffer()
-{
-    m_pool->freeCommandBuffers(1, &m_handle);
-}
-
 CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pDevice(pDevice),
     m_pDeviceTable(pDevice->getDeviceTable()),
@@ -18,6 +13,11 @@ CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer
     m_queueFamilyType(queueFamilyIndices)
 {
     getHandle() = handle;
+}
+
+CommandBuffer::~CommandBuffer()
+{
+    m_pool->freeCommandBuffers(1, &m_handle);
 }
 
 VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
@@ -92,15 +92,15 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_
 {
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
 
-    VkBuffer vkbuffer                     = pBuffer->getHandle();
-    m_vertexBindingState.buffers[binding] = pBuffer->getHandle();
-    m_vertexBindingState.offsets[binding] = offset;
-    m_vertexBindingState.dirty |= 1u << binding;
+    VkBuffer vkbuffer                             = pBuffer->getHandle();
+    m_commandState.vertexBinding.buffers[binding] = pBuffer->getHandle();
+    m_commandState.vertexBinding.offsets[binding] = offset;
+    m_commandState.vertexBinding.dirty |= 1u << binding;
 }
 
 void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
 {
-    m_indexState = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = indexType};
+    m_commandState.index = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = indexType};
 }
 
 void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
@@ -396,25 +396,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*
                                           .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
                                           .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
                                           .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}}};
-        if(color.layout.has_value())
-        {
-            vkColor.imageLayout = color.layout.value();
-        }
-        if(color.clear.has_value())
-        {
-            vkColor.clearValue = color.clear.value();
-        }
-        if(color.loadOp.has_value())
-        {
-            vkColor.loadOp = color.loadOp.value();
-        }
-        if(color.storeOp.has_value())
-        {
-            vkColor.storeOp = color.storeOp.value();
-        }
         vkColors.push_back(vkColor);
-        // TODO debug layout
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
         transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
 
@@ -438,24 +420,6 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*
                 .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                 .clearValue  = {.depthStencil{1.0f, 0}},
         };
-        if(m_commandState.depthAttachment->layout.has_value())
-        {
-            vkDepth.imageLayout = m_commandState.depthAttachment->layout.value();
-        }
-        if(m_commandState.depthAttachment->storeOp.has_value())
-        {
-            vkDepth.storeOp = m_commandState.depthAttachment->storeOp.value();
-        }
-        if(m_commandState.depthAttachment->loadOp.has_value())
-        {
-            vkDepth.loadOp = m_commandState.depthAttachment->loadOp.value();
-        }
-        if(m_commandState.depthAttachment->clear.has_value())
-        {
-            vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
-        }
-        // #TODO debug layout
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
         transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
     }
@@ -556,18 +520,20 @@ void CommandBuffer::flushGraphicsCommand()
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
 
-    aph::utils::forEachBitRange(m_vertexBindingState.dirty, [&](uint32_t binding, uint32_t bindingCount) {
+    aph::utils::forEachBitRange(m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
 #ifdef APH_DEBUG
         for(unsigned i = binding; i < binding + bindingCount; i++)
-            VK_ASSERT(m_vertexBindingState.buffers[i] != VK_NULL_HANDLE);
+            VK_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
 #endif
-        m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount, m_vertexBindingState.buffers + binding,
-                                               m_vertexBindingState.offsets + binding);
+        m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
+                                               m_commandState.vertexBinding.buffers + binding,
+                                               m_commandState.vertexBinding.offsets + binding);
     });
 
-    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_vertexBindingState.buffers[0],
-                                           m_vertexBindingState.offsets);
-    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_indexState.buffer, m_indexState.offset, m_indexState.indexType);
+    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
+                                           m_commandState.vertexBinding.offsets);
+    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
+                                         m_commandState.index.indexType);
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }
