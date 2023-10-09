@@ -2,7 +2,7 @@ include_guard()
 
 function(aph_compiler_options TARGET)
     set_target_properties(${TARGET} PROPERTIES
-        CXX_STANDARD 17
+        CXX_STANDARD 20
         CXX_STANDARD_REQUIRED ON
         CXX_EXTENSIONS OFF
 

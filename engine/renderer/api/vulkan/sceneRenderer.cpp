@@ -468,54 +468,40 @@ void SceneRenderer::_initGbuffer()
 
     // geometry graphics pipeline
     {
-        GraphicsPipelineCreateInfo createInfo{};
-
+        // TODO vertex input
         auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT,
-                                              VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R16G16B16A16_SFLOAT,
-                                              VK_FORMAT_R8G8B8A8_UNORM};
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        auto& program = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
+        m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "geometry.vert"),
+                                        getShaders(shaderDir / "geometry.frag"));
+        std::vector<VkFormat> colorFormats = {};
+        GraphicsPipelineCreateInfo createInfo{
+            .pProgram = program,
+            .color = {
+                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                {.format = VK_FORMAT_R8G8B8A8_UNORM},
+                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                {.format = VK_FORMAT_R8G8B8A8_UNORM},
+            },
         };
 
-        createInfo.colorBlendAttachments.resize(5, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
-
-        {
-            auto& program = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
-            m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "geometry.vert"),
-                                           getShaders(shaderDir / "geometry.frag"));
-            createInfo.pProgram = program;
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
-        }
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
     }
 
     // deferred light pbr pipeline
     {
-        GraphicsPipelineCreateInfo createInfo{{}};
-
+        // TODO vertex input
         auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat> colorFormats = {m_pSwapChain->getFormat()};
-        createInfo.renderingCreateInfo     = {
-                .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                .pColorAttachmentFormats = colorFormats.data(),
-                .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
+        m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "pbr_deferred.vert"),
+                                        getShaders(shaderDir / "pbr_deferred.frag"));
+
+        GraphicsPipelineCreateInfo createInfo{
+            .pProgram = program,
+            .color = {{.format = getSwapChain()->getFormat()}},
         };
 
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
-
-        {
-            auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
-            m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "pbr_deferred.vert"),
-                                           getShaders(shaderDir / "pbr_deferred.frag"));
-            createInfo.pProgram = program;
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
-        }
+        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
     }
 }
 
@@ -768,31 +754,31 @@ void SceneRenderer::_initSkybox()
         }
     }
 
-    // skybox graphics pipeline
+    // TODO skybox graphics pipeline
     {
-        GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
-        auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
+        // GraphicsPipelineCreateInfo createInfo{{VertexComponent::POSITION}};
+        // auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        // std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
 
-        createInfo.renderingCreateInfo = {
-            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-            .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-            .pColorAttachmentFormats = colorFormats.data(),
-            .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-        };
-        createInfo.multisampling.rasterizationSamples = m_sampleCount;
-        createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
-        createInfo.multisampling.minSampleShading     = 0.2f;
+        // createInfo.renderingCreateInfo = {
+        //     .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        //     .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+        //     .pColorAttachmentFormats = colorFormats.data(),
+        //     .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        // };
+        // createInfo.multisampling.rasterizationSamples = m_sampleCount;
+        // createInfo.multisampling.sampleShadingEnable  = VK_TRUE;
+        // createInfo.multisampling.minSampleShading     = 0.2f;
 
-        createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
+        // createInfo.depthStencil = init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_LESS);
 
-        {
-            auto& program = m_programs[SHADER_PROGRAM_SKYBOX];
-            VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "skybox.vert"),
-                                                           getShaders(shaderDir / "skybox.frag")));
-            createInfo.pProgram = program;
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
-        }
+        // {
+        //     auto& program = m_programs[SHADER_PROGRAM_SKYBOX];
+        //     VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "skybox.vert"),
+        //                                                    getShaders(shaderDir / "skybox.frag")));
+        //     createInfo.pProgram = program;
+        //     VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SKYBOX]));
+        // }
     }
 }
 
@@ -1095,29 +1081,29 @@ void SceneRenderer::_initShadow()
         });
     }
 
-    // shadow pipeline
+    // TODO shadow pipeline
     {
-        GraphicsPipelineCreateInfo createInfo{};
+        // GraphicsPipelineCreateInfo createInfo{};
 
-        auto shaderDir                 = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        createInfo.renderingCreateInfo = {
-            .sType                 = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-            .depthAttachmentFormat = m_pDevice->getDepthFormat(),
-        };
+        // auto shaderDir                 = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        // createInfo.renderingCreateInfo = {
+        //     .sType                 = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        //     .depthAttachmentFormat = m_pDevice->getDepthFormat(),
+        // };
 
-        createInfo.rasterizer.cullMode        = VK_CULL_MODE_FRONT_BIT;
-        createInfo.rasterizer.depthBiasEnable = VK_TRUE;
-        createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
-        createInfo.depthStencil =
-            init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
+        // createInfo.rasterizer.cullMode        = VK_CULL_MODE_FRONT_BIT;
+        // createInfo.rasterizer.depthBiasEnable = VK_TRUE;
+        // createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
+        // createInfo.depthStencil =
+        //     init::pipelineDepthStencilStateCreateInfo(VK_TRUE, VK_TRUE, VK_COMPARE_OP_LESS_OR_EQUAL);
 
-        {
-            auto& program = m_programs[SHADER_PROGRAM_SHADOW];
-            VK_CHECK_RESULT(
-                m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr));
-            createInfo.pProgram = program;
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
-        }
+        // {
+        //     auto& program = m_programs[SHADER_PROGRAM_SHADOW];
+        //     VK_CHECK_RESULT(
+        //         m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "shadow.vert"), (Shader*)nullptr));
+        //     createInfo.pProgram = program;
+        //     VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_SHADOW]));
+        // }
     }
 }
 }  // namespace aph::vk

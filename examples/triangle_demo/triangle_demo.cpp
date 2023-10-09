@@ -19,16 +19,22 @@ void triangle_demo::init()
 
     // setup triangle
     {
+        struct VertexData
+        {
+            glm::vec3 pos;
+            glm::vec3 color;
+        };
         // vertex buffer
         {
             // vertex: position, color
-            std::array vertexArray{
-                0.0f, -0.5f, 1.0f, 1.0f,  0.0f, 0.0f, 0.5f, 0.5f, 1.0f,
-                0.0f, 1.0f,  0.0f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+            std::vector<VertexData> vertexArray{
+                {.pos = {0.0f, -0.5f, 1.0f}, .color = {1.0f, 0.0f, 0.0f}},
+                {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
+                {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
             };
 
             aph::vk::BufferCreateInfo vertexBufferCreateInfo{
-                .size      = vertexArray.size() * sizeof(vertexArray[0]),
+                .size      = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                 .alignment = 0,
                 .usage     = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                 .domain    = aph::BufferDomain::Device,
@@ -50,24 +56,23 @@ void triangle_demo::init()
 
         // pipeline
         {
-            aph::vk::GraphicsPipelineCreateInfo createInfo{
-                {aph::vk::VertexComponent::POSITION, aph::vk::VertexComponent::COLOR}};
-            auto                  shaderDir    = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
-            std::vector<VkFormat> colorFormats = {m_renderer->getSwapChain()->getFormat()};
-            createInfo.renderingCreateInfo     = {
-                    .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                    .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                    .pColorAttachmentFormats = colorFormats.data(),
-                    .depthAttachmentFormat   = VK_FORMAT_UNDEFINED,
+            const aph::vk::VertexInput vdesc = {
+                .attributes =
+                    {
+                        {.location = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(VertexData, pos)},
+                        {.location = 1, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(VertexData, color)},
+                    },
+                .inputBindings = {{.stride = sizeof(VertexData)}},
             };
 
-            createInfo.colorBlendAttachments.resize(1, {.blendEnable = VK_FALSE, .colorWriteMask = 0xf});
-
-            {
-                m_pDevice->createShaderProgram(&m_pShaderProgram, m_renderer->getShaders(shaderDir / "triangle.vert"),
-                                               m_renderer->getShaders(shaderDir / "triangle.frag"));
-                createInfo.pProgram = m_pShaderProgram;
-            }
+            auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
+            m_pDevice->createShaderProgram(&m_pShaderProgram, m_renderer->getShaders(shaderDir / "triangle.vert"),
+                                           m_renderer->getShaders(shaderDir / "triangle.frag"));
+            aph::vk::GraphicsPipelineCreateInfo createInfo{
+                .vertexInput = vdesc,
+                .pProgram    = m_pShaderProgram,
+                .color       = {{.format = m_renderer->getSwapChain()->getFormat()}},
+            };
 
             VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pPipeline));
         }

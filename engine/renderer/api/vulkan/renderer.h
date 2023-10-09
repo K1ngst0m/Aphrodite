@@ -37,11 +37,6 @@ public:
 
     CommandBuffer* acquireFrameCommandBuffer();
 
-    void submit(CommandBuffer* cmd)
-    {
-
-    }
-
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
 

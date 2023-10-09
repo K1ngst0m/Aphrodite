@@ -188,4 +188,32 @@ ShaderStage getStageFromPath(std::string_view path)
         return ShaderStage::CS;
     return ShaderStage::NA;
 }
+VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples)
+{
+    if(numSamples <= 1)
+    {
+        return VK_SAMPLE_COUNT_1_BIT;
+    }
+    if(numSamples <= 2)
+    {
+        return VK_SAMPLE_COUNT_2_BIT;
+    }
+    if(numSamples <= 4)
+    {
+        return VK_SAMPLE_COUNT_4_BIT;
+    }
+    if(numSamples <= 8)
+    {
+        return VK_SAMPLE_COUNT_8_BIT;
+    }
+    if(numSamples <= 16)
+    {
+        return VK_SAMPLE_COUNT_16_BIT;
+    }
+    if(numSamples <= 32)
+    {
+        return VK_SAMPLE_COUNT_32_BIT;
+    }
+    return VK_SAMPLE_COUNT_64_BIT;
+}
 }  // namespace aph::vk::utils

@@ -168,124 +168,124 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // init ui
     if(m_config.flags & RENDER_CFG_UI)
     {
-        IMGUI_CHECKVERSION();
-        ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        // Setup Dear ImGui style
-        io.FontGlobalScale = m_ui.scale;
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-        io.DisplaySize = ImVec2((float)m_wsi->getWidth(), (float)m_wsi->getHeight());
-        io.DeltaTime   = 1.0f;
+        // IMGUI_CHECKVERSION();
+        // ImGui::CreateContext();
+        // ImGuiIO& io = ImGui::GetIO();
+        // // Setup Dear ImGui style
+        // io.FontGlobalScale = m_ui.scale;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+        // io.DisplaySize = ImVec2((float)m_wsi->getWidth(), (float)m_wsi->getHeight());
+        // io.DeltaTime   = 1.0f;
 
-        // Create font texture
-        {
-            unsigned char*    fontData;
-            int               texWidth, texHeight;
-            const std::string filename = asset::GetFontDir() / "Roboto-Medium.ttf";
-            io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_ui.scale);
-            io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
-            VkDeviceSize uploadSize = texWidth * texHeight * 4;
+        // // Create font texture
+        // {
+        //     unsigned char*    fontData;
+        //     int               texWidth, texHeight;
+        //     const std::string filename = asset::GetFontDir() / "Roboto-Medium.ttf";
+        //     io.Fonts->AddFontFromFileTTF(filename.c_str(), 16.0f * m_ui.scale);
+        //     io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
+        //     VkDeviceSize uploadSize = texWidth * texHeight * 4;
 
-            // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling above)
-            ImGuiStyle& style = ImGui::GetStyle();
-            style.ScaleAllSizes(m_ui.scale);
+        //     // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling above)
+        //     ImGuiStyle& style = ImGui::GetStyle();
+        //     style.ScaleAllSizes(m_ui.scale);
 
-            std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
-            ImageCreateInfo      creatInfo{
-                     .extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
-                     .usage  = VK_IMAGE_USAGE_SAMPLED_BIT,
-                     .format = VK_FORMAT_R8G8B8A8_UNORM,
-                     .tiling = VK_IMAGE_TILING_OPTIMAL,
-            };
-            m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.pFontImage, imageData);
-            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCmd) {
-                pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            });
-        }
+        //     std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
+        //     ImageCreateInfo      creatInfo{
+        //              .extent = {static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1},
+        //              .usage  = VK_IMAGE_USAGE_SAMPLED_BIT,
+        //              .format = VK_FORMAT_R8G8B8A8_UNORM,
+        //              .tiling = VK_IMAGE_TILING_OPTIMAL,
+        //     };
+        //     m_pDevice->createDeviceLocalImage(creatInfo, &m_ui.pFontImage, imageData);
+        //     m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCmd) {
+        //         pCmd->transitionImageLayout(m_ui.pFontImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        //     });
+        // }
 
-        // font sampler
-        {
-            VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
-            samplerInfo.magFilter           = VK_FILTER_LINEAR;
-            samplerInfo.minFilter           = VK_FILTER_LINEAR;
-            samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-            samplerInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-            samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-            VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
-        }
+        // // font sampler
+        // {
+        //     VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
+        //     samplerInfo.magFilter           = VK_FILTER_LINEAR;
+        //     samplerInfo.minFilter           = VK_FILTER_LINEAR;
+        //     samplerInfo.mipmapMode          = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        //     samplerInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        //     samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        //     samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        //     samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+        //     VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
+        // }
 
-        // setup pipeline
-        {
-            GraphicsPipelineCreateInfo pipelineCreateInfo{};
-            auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "ui";
-            std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
-            pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
-                 .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-                 .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
-                 .pColorAttachmentFormats = colorFormats.data(),
-                 .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
-            };
-            pipelineCreateInfo.depthStencil =
-                init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
+        // // TODO setup pipeline
+        // {
+        //     GraphicsPipelineCreateInfo pipelineCreateInfo{};
+        //     auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "ui";
+        //     std::vector<VkFormat>      colorFormats = {m_pSwapChain->getFormat()};
+        //     pipelineCreateInfo.renderingCreateInfo  = VkPipelineRenderingCreateInfo{
+        //          .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        //          .colorAttachmentCount    = static_cast<uint32_t>(colorFormats.size()),
+        //          .pColorAttachmentFormats = colorFormats.data(),
+        //          .depthAttachmentFormat   = m_pDevice->getDepthFormat(),
+        //     };
+        //     pipelineCreateInfo.depthStencil =
+        //         init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
-            VK_CHECK_RESULT(m_pDevice->createShaderProgram(&m_ui.pProgram, getShaders(shaderDir / "uioverlay.vert"),
-                                                           getShaders(shaderDir / "uioverlay.frag")));
+        //     VK_CHECK_RESULT(m_pDevice->createShaderProgram(&m_ui.pProgram, getShaders(shaderDir / "uioverlay.vert"),
+        //                                                    getShaders(shaderDir / "uioverlay.frag")));
 
-            pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
-            pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        //     pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
+        //     pipelineCreateInfo.rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-            VkPipelineColorBlendAttachmentState blendAttachmentState{
-                .blendEnable         = VK_TRUE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            };
-            pipelineCreateInfo.colorBlendAttachments[0] = blendAttachmentState;
-            pipelineCreateInfo.multisampling            = init::pipelineMultisampleStateCreateInfo(m_sampleCount);
+        //     VkPipelineColorBlendAttachmentState blendAttachmentState{
+        //         .blendEnable         = VK_TRUE,
+        //         .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+        //         .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        //         .colorBlendOp        = VK_BLEND_OP_ADD,
+        //         .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        //         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+        //         .alphaBlendOp        = VK_BLEND_OP_ADD,
+        //         .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        //                           VK_COLOR_COMPONENT_A_BIT,
+        //     };
+        //     pipelineCreateInfo.colorBlendAttachments[0] = blendAttachmentState;
+        //     pipelineCreateInfo.multisampling            = init::pipelineMultisampleStateCreateInfo(m_sampleCount);
 
-            // Vertex bindings an attributes based on ImGui vertex definition
-            std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
-                {0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX},
-            };
-            std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
-                {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},   // Location 0: Position
-                {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},    // Location 1: UV
-                {2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},  // Location 0: Color
-            };
-            VkPipelineVertexInputStateCreateInfo vertexInputInfo = init::pipelineVertexInputStateCreateInfo();
-            vertexInputInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindings.size());
-            vertexInputInfo.pVertexBindingDescriptions           = vertexInputBindings.data();
-            vertexInputInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributes.size());
-            vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
-            pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
-            pipelineCreateInfo.pProgram                          = m_ui.pProgram;
+        //     // Vertex bindings an attributes based on ImGui vertex definition
+        //     std::vector<VkVertexInputBindingDescription> vertexInputBindings = {
+        //         {0, sizeof(ImDrawVert), VK_VERTEX_INPUT_RATE_VERTEX},
+        //     };
+        //     std::vector<VkVertexInputAttributeDescription> vertexInputAttributes = {
+        //         {0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, pos)},   // Location 0: Position
+        //         {1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(ImDrawVert, uv)},    // Location 1: UV
+        //         {2, 0, VK_FORMAT_R8G8B8A8_UNORM, offsetof(ImDrawVert, col)},  // Location 0: Color
+        //     };
+        //     VkPipelineVertexInputStateCreateInfo vertexInputInfo = init::pipelineVertexInputStateCreateInfo();
+        //     vertexInputInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindings.size());
+        //     vertexInputInfo.pVertexBindingDescriptions           = vertexInputBindings.data();
+        //     vertexInputInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributes.size());
+        //     vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
+        //     pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
+        //     pipelineCreateInfo.pProgram                          = m_ui.pProgram;
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
-        }
+        //     VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
+        // }
 
-        // setup descriptor
-        {
-            VkDescriptorImageInfo fontDescriptor = {m_ui.fontSampler->getHandle(),
-                                                    m_ui.pFontImage->getView()->getHandle(),
-                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+        // // setup descriptor
+        // {
+        //     VkDescriptorImageInfo fontDescriptor = {m_ui.fontSampler->getHandle(),
+        //                                             m_ui.pFontImage->getView()->getHandle(),
+        //                                             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 
-            m_ui.set = m_ui.pProgram->getSetLayout(0)->allocateSet();
-            std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_ui.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
-            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
-        }
+        //     m_ui.set = m_ui.pProgram->getSetLayout(0)->allocateSet();
+        //     std::vector<VkWriteDescriptorSet> writes{
+        //         init::writeDescriptorSet(m_ui.set, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, &fontDescriptor)};
+        //     vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+        // }
 
-        {
-            m_wsi->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
-            m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
-        }
+        // {
+        //     m_wsi->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
+        //     m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
+        // }
     }
 }
 
@@ -293,22 +293,22 @@ Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        if(m_ui.pVertexBuffer)
-        {
-            m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
-        }
-        if(m_ui.pIndexBuffer)
-        {
-            m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
-        }
-        m_pDevice->destroyImage(m_ui.pFontImage);
-        m_pDevice->destroySampler(m_ui.fontSampler);
-        m_pDevice->destroyShaderProgram(m_ui.pProgram);
-        m_pDevice->destroyPipeline(m_ui.pipeline);
-        if(ImGui::GetCurrentContext())
-        {
-            ImGui::DestroyContext();
-        }
+        // if(m_ui.pVertexBuffer)
+        // {
+        //     m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
+        // }
+        // if(m_ui.pIndexBuffer)
+        // {
+        //     m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
+        // }
+        // m_pDevice->destroyImage(m_ui.pFontImage);
+        // m_pDevice->destroySampler(m_ui.fontSampler);
+        // m_pDevice->destroyShaderProgram(m_ui.pProgram);
+        // m_pDevice->destroyPipeline(m_ui.pipeline);
+        // if(ImGui::GetCurrentContext())
+        // {
+        //     ImGui::DestroyContext();
+        // }
     }
 
     // TODO
@@ -358,20 +358,20 @@ void Renderer::beginFrame()
 void Renderer::endFrame()
 {
     auto* queue = getGraphicsQueue();
-    {
-        VkSemaphore timelineMain = acquireTimelineMain();
-        for (auto cb : m_frameData.cmds)
-        {
-            aph::vk::QueueSubmitInfo2 submitInfo{};
-            submitInfo.commands.push_back({.commandBuffer = cb->getHandle()});
-            submitInfo.waits.push_back({.semaphore = getRenderSemaphore()});
-            submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
-            submitInfo.signals.push_back({.semaphore = getPresentSemaphore()});
-            queue->submit({submitInfo});
-        }
+    // {
+    //     VkSemaphore timelineMain = acquireTimelineMain();
+    //     for (auto cb : m_frameData.cmds)
+    //     {
+    //         aph::vk::QueueSubmitInfo2 submitInfo{};
+    //         submitInfo.commands.push_back({.commandBuffer = cb->getHandle()});
+    //         submitInfo.waits.push_back({.semaphore = getRenderSemaphore()});
+    //         submitInfo.signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
+    //         submitInfo.signals.push_back({.semaphore = getPresentSemaphore()});
+    //         queue->submit({submitInfo});
+    //     }
 
-        m_frameData = {};
-    }
+    //     m_frameData = {};
+    // }
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
