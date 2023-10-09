@@ -374,56 +374,16 @@ void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescr
 
 void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth)
 {
+    std::vector<AttachmentInfo>   colorAttachments = {};
+    AttachmentInfo depthAttachment  = {};
+    colorAttachments.reserve(colors.size());
     for(auto color : colors)
     {
-        m_commandState.colorAttachments.push_back(AttachmentInfo{.image = color});
+        colorAttachments.push_back({.image = color});
     }
 
-    if(depth)
-    {
-        m_commandState.depthAttachment = {.image = depth};
-    }
-    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
-    std::vector<VkRenderingAttachmentInfo> vkColors;
-    VkRenderingAttachmentInfo              vkDepth;
-    vkColors.reserve(m_commandState.colorAttachments.size());
-    for(const auto& color : m_commandState.colorAttachments)
-    {
-        auto&                     image = color.image;
-        VkRenderingAttachmentInfo vkColor{.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                          .imageView   = image->getView()->getHandle(),
-                                          .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                          .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                          .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-                                          .clearValue  = {.color{{0.1f, 0.1f, 0.1f, 1.0f}}}};
-        vkColors.push_back(vkColor);
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-    }
-
-    VkRenderingInfo renderingInfo{
-        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .renderArea           = renderArea,
-        .layerCount           = 1,
-        .colorAttachmentCount = static_cast<uint32_t>(vkColors.size()),
-        .pColorAttachments    = vkColors.data(),
-        .pDepthAttachment     = nullptr,
-    };
-
-    if(m_commandState.depthAttachment.has_value())
-    {
-        auto& image = m_commandState.depthAttachment->image;
-        vkDepth     = {
-                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView   = image->getView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .clearValue  = {.depthStencil{1.0f, 0}},
-        };
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
-        renderingInfo.pDepthAttachment = &vkDepth;
-    }
-    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
+    depthAttachment = {.image = depth};
+    beginRendering(renderArea, colorAttachments, depthAttachment);
 }
 
 void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors,
@@ -461,7 +421,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
             vkColor.storeOp = color.storeOp.value();
         }
         vkColors.push_back(vkColor);
-        // TODO debug layout
+        // debug layout
         // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
         transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     }
@@ -475,7 +435,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
         .pDepthAttachment     = nullptr,
     };
 
-    if(m_commandState.depthAttachment.has_value())
+    if(m_commandState.depthAttachment.has_value() && m_commandState.depthAttachment->image != nullptr)
     {
         auto& image = m_commandState.depthAttachment->image;
         vkDepth     = {
@@ -502,7 +462,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
         {
             vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
         }
-        // #TODO debug layout
+        // debug layout
         // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
         transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         renderingInfo.pDepthAttachment = &vkDepth;
