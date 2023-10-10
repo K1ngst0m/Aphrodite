@@ -52,8 +52,7 @@ public:
 public:
     VkResult createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable);
     VkResult createSampler(SamplerPreset preset, Sampler** ppSampler, bool immutable);
-    VkResult createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data = nullptr,
-                          bool persistmentMap = false);
+    VkResult createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
     VkResult createImage(const ImageCreateInfo& createInfo, Image** ppImage);
     VkResult createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
     VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,

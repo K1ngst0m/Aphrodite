@@ -33,25 +33,24 @@ void triangle_demo::init()
                 {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
             };
 
-            aph::vk::BufferCreateInfo vertexBufferCreateInfo{
-                .size      = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
-                .alignment = 0,
-                .usage     = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                .domain    = aph::BufferDomain::Device,
-            };
-            m_pDevice->createDeviceLocalBuffer(vertexBufferCreateInfo, &m_pVB, vertexArray.data());
+            aph::BufferLoadInfo loadInfo{
+                .data       = vertexArray.data(),
+                .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+                .ppBuffer   = &m_pVB};
+
+            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
         }
 
         // index buffer
         {
-            std::array                indexArray{0U, 1U, 2U};
-            aph::vk::BufferCreateInfo indexBufferCreateInfo{
-                .size      = indexArray.size() * sizeof(indexArray[0]),
-                .alignment = 0,
-                .usage     = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                .domain    = aph::BufferDomain::Device,
-            };
-            m_pDevice->createDeviceLocalBuffer(indexBufferCreateInfo, &m_pIB, indexArray.data());
+            std::array          indexArray{0U, 1U, 2U};
+            aph::BufferLoadInfo loadInfo{
+                .data       = indexArray.data(),
+                .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
+                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+                .ppBuffer   = &m_pIB};
+            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
         }
 
         // pipeline

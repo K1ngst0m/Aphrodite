@@ -206,8 +206,7 @@ VkResult Device::createImageView(const ImageViewCreateInfo& createInfo, ImageVie
     return VK_SUCCESS;
 }
 
-VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data,
-                              bool persistmentMap)
+VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -265,16 +264,6 @@ VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuf
     // bind buffer and memory
     _VR(bindMemory(*ppBuffer));
 
-    if(data)
-    {
-        mapMemory(*ppBuffer);
-        (*ppBuffer)->write(data);
-        if(!persistmentMap)
-        {
-            unMapMemory(*ppBuffer);
-        }
-    }
-
     return VK_SUCCESS;
 }
 
@@ -286,7 +275,7 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
         .imageType     = static_cast<VkImageType>(createInfo.imageType),
         .format        = static_cast<VkFormat>(createInfo.format),
         .mipLevels     = createInfo.mipLevels,
-        .arrayLayers   = createInfo.arrayLayers,
+        .arrayLayers   = createInfo.arraySize,
         .samples       = static_cast<VkSampleCountFlagBits>(createInfo.samples),
         .tiling        = static_cast<VkImageTiling>(createInfo.tiling),
         .usage         = createInfo.usage,
@@ -299,7 +288,7 @@ VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
     VkImage image;
-    _VR(vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
+    _VR(m_table.vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -427,7 +416,7 @@ VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
     }
 
     CommandPoolCreateInfo createInfo{.queue = queue};
-    VkCommandPool          pool = nullptr;
+    VkCommandPool         pool = nullptr;
     createCommandPool(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
     return pool;
@@ -441,8 +430,8 @@ void Device::destroyCommandPool(VkCommandPool pPool)
 
 VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
 {
-    Queue* queue = pQueue;
-    VkCommandPool  pool  = getCommandPoolWithQueue(queue);
+    Queue*        queue = pQueue;
+    VkCommandPool pool  = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
 
@@ -645,7 +634,13 @@ VkResult Device::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, Buf
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        _VR(createBuffer(stagingCI, &stagingBuffer, data));
+        _VR(createBuffer(stagingCI, &stagingBuffer));
+
+        createBuffer(stagingCI, &stagingBuffer);
+
+        mapMemory(stagingBuffer);
+        stagingBuffer->write(data);
+        unMapMemory(stagingBuffer);
     }
 
     Buffer* buffer = nullptr;
@@ -678,7 +673,11 @@ VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        createBuffer(bufferCI, &stagingBuffer, data.data());
+        createBuffer(bufferCI, &stagingBuffer);
+
+        mapMemory(stagingBuffer);
+        stagingBuffer->write(data.data());
+        unMapMemory(stagingBuffer);
     }
 
     Image* texture{};
@@ -858,14 +857,14 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
 
     Image*          cubeMapImage{};
     ImageCreateInfo imageCI{
-        .extent      = {cubeMapWidth, cubeMapHeight, 1},
-        .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-        .mipLevels   = mipLevels,
-        .arrayLayers = 6,
-        .usage       = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        .domain      = ImageDomain::Device,
-        .imageType   = VK_IMAGE_TYPE_2D,
-        .format      = VK_FORMAT_R8G8B8A8_UNORM,
+        .extent    = {cubeMapWidth, cubeMapHeight, 1},
+        .flags     = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+        .mipLevels = mipLevels,
+        .arraySize = 6,
+        .usage     = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .domain    = ImageDomain::Device,
+        .imageType = VK_IMAGE_TYPE_2D,
+        .format    = VK_FORMAT_R8G8B8A8_UNORM,
     };
     createImage(imageCI, &cubeMapImage);
 
@@ -900,20 +899,20 @@ VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, Sampler** 
 VkResult Device::createSampler(SamplerPreset preset, Sampler** ppSampler, bool immutable)
 {
     VkSamplerCreateInfo ci{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    ci.magFilter = VK_FILTER_LINEAR;
-    ci.minFilter = VK_FILTER_LINEAR;
-    ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.magFilter        = VK_FILTER_LINEAR;
+    ci.minFilter        = VK_FILTER_LINEAR;
+    ci.addressModeU     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeV     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeW     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     ci.anisotropyEnable = VK_FALSE;
-    ci.maxAnisotropy = 1.0f;
-    ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    ci.mipLodBias = 0.0f;
-    ci.minLod = 0.0f;
-    ci.maxLod = 1.0f;
-    ci.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+    ci.maxAnisotropy    = 1.0f;
+    ci.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    ci.mipLodBias       = 0.0f;
+    ci.minLod           = 0.0f;
+    ci.maxLod           = 1.0f;
+    ci.borderColor      = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-    switch (preset)
+    switch(preset)
     {
     case SamplerPreset::Nearest:
         ci.magFilter = VK_FILTER_NEAREST;
@@ -925,20 +924,20 @@ VkResult Device::createSampler(SamplerPreset preset, Sampler** ppSampler, bool i
         break;
     case SamplerPreset::Anisotropic:
         ci.anisotropyEnable = VK_TRUE;
-        ci.maxAnisotropy = 16.0f;
+        ci.maxAnisotropy    = 16.0f;
         break;
     case SamplerPreset::Mipmap:
-        ci.minFilter = VK_FILTER_LINEAR;
-        ci.magFilter = VK_FILTER_LINEAR;
+        ci.minFilter  = VK_FILTER_LINEAR;
+        ci.magFilter  = VK_FILTER_LINEAR;
         ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        ci.minLod = 0.0f;
-        ci.maxLod = 8.0f;
+        ci.minLod     = 0.0f;
+        ci.maxLod     = 8.0f;
         break;
     case SamplerPreset::Border:
         ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
         ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        ci.borderColor  = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         break;
     }
 

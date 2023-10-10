@@ -15,16 +15,17 @@ struct ImageCreateInfo
     uint32_t flags       = {0};
     uint32_t alignment   = {0};
     uint32_t mipLevels   = {1};
-    uint32_t arrayLayers = {1};
+    uint32_t arraySize   = {1};
+    uint32_t sampleCount = {1};
 
     VkImageUsageFlags  usage   = {};
     ImageDomain        domain  = {ImageDomain::Device};
     VkSampleCountFlags samples = {VK_SAMPLE_COUNT_1_BIT};
 
-    VkImageType   imageType     = {VK_IMAGE_TYPE_2D};
-    VkFormat      format        = {VK_FORMAT_UNDEFINED};
-    VkImageTiling tiling        = {VK_IMAGE_TILING_OPTIMAL};
-    VkImageLayout initialLayout = {VK_IMAGE_LAYOUT_UNDEFINED};
+    VkImageType      imageType      = {VK_IMAGE_TYPE_2D};
+    VkFormat         format         = {VK_FORMAT_UNDEFINED};
+    VkImageTiling    tiling         = {VK_IMAGE_TILING_OPTIMAL};
+    VkImageLayout    initialLayout  = {VK_IMAGE_LAYOUT_UNDEFINED};
 };
 
 class Image : public ResourceHandle<VkImage, ImageCreateInfo>
@@ -43,7 +44,7 @@ public:
     uint32_t getWidth() const { return m_createInfo.extent.width; }
     uint32_t getHeight() const { return m_createInfo.extent.height; }
     uint32_t getMipLevels() const { return m_createInfo.mipLevels; }
-    uint32_t getLayerCount() const { return m_createInfo.arrayLayers; }
+    uint32_t getLayerCount() const { return m_createInfo.arraySize; }
     uint32_t getOffset() const { return m_createInfo.alignment; }
 
 private:

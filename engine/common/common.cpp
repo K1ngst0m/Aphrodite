@@ -46,12 +46,41 @@ std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::str
     }
     return skyboxImages;
 }
-std::string readFile(const std::string& filename)
+bool readFile(const std::string& filename, std::string& data)
 {
     std::ifstream file(filename);
-    APH_ASSERT(file.is_open());
+    if(!file.is_open())
+    {
+        CM_LOG_ERR("Failed to open file: %s\n", filename);
+        return false;
+    }
     std::stringstream buffer;
     buffer << file.rdbuf();
-    return buffer.str();
+    data = buffer.str();
+    return true;
+}
+bool readFile(const std::string& filename, std::vector<uint8_t>& data)
+{
+    std::ifstream file{filename, std::ios::binary | std::ios::ate};
+    if(!file)
+    {
+        CM_LOG_ERR("Failed to open file: %s\n", filename);
+        return false;
+    }
+
+    // Determine the size of the file
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    // Resize the vector to hold the file data and read the file into the vector
+    data.resize(size);
+
+    if(!file.read(reinterpret_cast<char*>(data.data()), size))
+    {
+        CM_LOG_ERR("Failed to read file: %s\n", filename);
+        return false;
+    }
+
+    return true;
 }
 }  // namespace aph::utils

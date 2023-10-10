@@ -7,6 +7,7 @@
 namespace aph::vk
 {
 class Device;
+class Buffer;
 
 struct BufferCreateInfo
 {
@@ -14,6 +15,13 @@ struct BufferCreateInfo
     uint32_t           alignment = {0};
     VkBufferUsageFlags usage     = {0};
     BufferDomain       domain    = {BufferDomain::Device};
+};
+
+struct BufferLoadInfo
+{
+    void*            data;
+    BufferCreateInfo createInfo = {};
+    Buffer**         ppBuffer   = {};
 };
 
 class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>

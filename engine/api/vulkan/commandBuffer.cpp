@@ -146,7 +146,7 @@ void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
             .baseMipLevel   = 0,
             .levelCount     = imageCreateInfo.mipLevels,
             .baseArrayLayer = 0,
-            .layerCount     = imageCreateInfo.arrayLayers,
+            .layerCount     = imageCreateInfo.arraySize,
         };
     }
 

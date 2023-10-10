@@ -153,8 +153,9 @@ void SceneRenderer::recordAll()
 
     std::vector<QueueSubmitInfo2> submitInfos(COMMAND_BUFFER_MAX);
     {
-        // timeline
-        VkSemaphore timelineMain = acquireTimelineMain();
+        // TODO timeline
+        VkSemaphore timelineMain = VK_NULL_HANDLE;
+        // VkSemaphore timelineMain = acquireTimelineMain();
         VkSemaphore timelineShadow{};
 
         m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &timelineShadow);
@@ -469,20 +470,21 @@ void SceneRenderer::_initGbuffer()
     // geometry graphics pipeline
     {
         // TODO vertex input
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        auto& program = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
+        auto  shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        auto& program   = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
         m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "geometry.vert"),
-                                        getShaders(shaderDir / "geometry.frag"));
-        std::vector<VkFormat> colorFormats = {};
+                                       getShaders(shaderDir / "geometry.frag"));
+        std::vector<VkFormat>      colorFormats = {};
         GraphicsPipelineCreateInfo createInfo{
             .pProgram = program,
-            .color = {
-                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
-                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
-                {.format = VK_FORMAT_R8G8B8A8_UNORM},
-                {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
-                {.format = VK_FORMAT_R8G8B8A8_UNORM},
-            },
+            .color =
+                {
+                    {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                    {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                    {.format = VK_FORMAT_R8G8B8A8_UNORM},
+                    {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
+                    {.format = VK_FORMAT_R8G8B8A8_UNORM},
+                },
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
@@ -491,14 +493,14 @@ void SceneRenderer::_initGbuffer()
     // deferred light pbr pipeline
     {
         // TODO vertex input
-        auto                  shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        auto& program = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
+        auto  shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
+        auto& program   = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
         m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "pbr_deferred.vert"),
-                                        getShaders(shaderDir / "pbr_deferred.frag"));
+                                       getShaders(shaderDir / "pbr_deferred.frag"));
 
         GraphicsPipelineCreateInfo createInfo{
             .pProgram = program,
-            .color = {{.format = getSwapChain()->getFormat()}},
+            .color    = {{.format = getSwapChain()->getFormat()}},
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));

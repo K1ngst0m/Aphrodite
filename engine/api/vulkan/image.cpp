@@ -42,10 +42,10 @@ ImageView* Image::getView(VkFormat imageFormat)
                                  .baseMipLevel   = 0,
                                  .levelCount     = m_createInfo.mipLevels,
                                  .baseArrayLayer = 0,
-                                 .layerCount     = m_createInfo.arrayLayers},
+                                 .layerCount     = m_createInfo.arraySize},
         };
         // cubemap
-        if(m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arrayLayers == 6)
+        if(m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arraySize == 6)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }

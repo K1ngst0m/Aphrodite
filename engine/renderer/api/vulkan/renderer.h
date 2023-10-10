@@ -4,6 +4,7 @@
 #include "api/vulkan/device.h"
 #include "api/vulkan/shader.h"
 #include "renderer/renderer.h"
+#include "resource/resourceLoader.h"
 
 namespace aph::vk
 {
@@ -17,6 +18,9 @@ public:
     void endFrame() override;
 
 public:
+    std::unique_ptr<ResourceLoader> m_pResourceLoader;
+
+public:
     SwapChain* getSwapChain() const { return m_pSwapChain; }
     Device*    getDevice() const { return m_pDevice; }
     Shader*    getShaders(const std::filesystem::path& path);
@@ -28,12 +32,6 @@ public:
     VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
     VkSemaphore getPresentSemaphore() { return m_presentSemaphore[m_frameIdx]; }
     VkFence getFrameFence() { return m_frameFence[m_frameIdx]; }
-
-    VkSemaphore acquireTimelineMain()
-    {
-        m_pSyncPrimitivesPool->acquireTimelineSemaphore(1, &m_timelineMain[m_frameIdx]);
-        return m_timelineMain[m_frameIdx];
-    }
 
     CommandBuffer* acquireFrameCommandBuffer(Queue * queue);
 

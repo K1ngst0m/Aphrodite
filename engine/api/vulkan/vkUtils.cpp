@@ -99,9 +99,11 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
 
 std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 {
-    shaderc::Compiler   compiler{};
-    auto                source = aph::utils::readFile(filename);
-    shaderc_shader_kind stage  = shaderc_glsl_infer_from_source;
+    shaderc::Compiler compiler{};
+    std::string       source;
+    auto success = aph::utils::readFile(filename, source);
+    APH_ASSERT(success);
+    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
     switch(getStageFromPath(filename))
     {
     case ShaderStage::VS:
@@ -146,8 +148,10 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 
 std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
 {
-    auto                  source = aph::utils::readFile(filename);
-    uint32_t              size   = source.size();
+    std::string source;
+    auto success = aph::utils::readFile(filename, source);
+    APH_ASSERT(success);
+    uint32_t              size = source.size();
     std::vector<uint32_t> spirv(size / sizeof(uint32_t));
     memcpy(spirv.data(), source.data(), size);
     return spirv;
@@ -220,10 +224,10 @@ VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples)
 VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
 {
     VkDebugUtilsLabelEXT vkLabel{
-        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
-        .pNext = nullptr,
+        .sType      = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+        .pNext      = nullptr,
         .pLabelName = label.name.c_str(),
-        .color = {label.color[0], label.color[1], label.color[2], label.color[3]},
+        .color      = {label.color[0], label.color[1], label.color[2], label.color[3]},
     };
 
     return vkLabel;

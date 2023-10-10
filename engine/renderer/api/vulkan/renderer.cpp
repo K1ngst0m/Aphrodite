@@ -156,7 +156,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
-            for (auto & fence : m_frameFence)
+            for(auto& fence : m_frameFence)
             {
                 m_pSyncPrimitivesPool->acquireFence(fence);
             }
@@ -168,6 +168,11 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreatePipelineCache(
                 m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
         }
+    }
+
+    // init resource loader
+    {
+        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{.pDevice = m_pDevice});
     }
 
     // init ui
@@ -191,9 +196,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //     io.Fonts->GetTexDataAsRGBA32(&fontData, &texWidth, &texHeight);
         //     VkDeviceSize uploadSize = texWidth * texHeight * 4;
 
-        //     // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling above)
-        //     ImGuiStyle& style = ImGui::GetStyle();
-        //     style.ScaleAllSizes(m_ui.scale);
+        //     // SRS - Set ImGui style scale factor to handle retina and other HiDPI displays (same as font scaling
+        //     above) ImGuiStyle& style = ImGui::GetStyle(); style.ScaleAllSizes(m_ui.scale);
 
         //     std::vector<uint8_t> imageData(fontData, fontData + uploadSize);
         //     ImageCreateInfo      creatInfo{
@@ -249,7 +253,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //         .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
         //         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
         //         .alphaBlendOp        = VK_BLEND_OP_ADD,
-        //         .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+        //         .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT
+        //         |
         //                           VK_COLOR_COMPONENT_A_BIT,
         //     };
         //     pipelineCreateInfo.colorBlendAttachments[0] = blendAttachmentState;
@@ -267,9 +272,9 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //     VkPipelineVertexInputStateCreateInfo vertexInputInfo = init::pipelineVertexInputStateCreateInfo();
         //     vertexInputInfo.vertexBindingDescriptionCount        = static_cast<uint32_t>(vertexInputBindings.size());
         //     vertexInputInfo.pVertexBindingDescriptions           = vertexInputBindings.data();
-        //     vertexInputInfo.vertexAttributeDescriptionCount      = static_cast<uint32_t>(vertexInputAttributes.size());
-        //     vertexInputInfo.pVertexAttributeDescriptions         = vertexInputAttributes.data();
-        //     pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
+        //     vertexInputInfo.vertexAttributeDescriptionCount      =
+        //     static_cast<uint32_t>(vertexInputAttributes.size()); vertexInputInfo.pVertexAttributeDescriptions =
+        //     vertexInputAttributes.data(); pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
         //     pipelineCreateInfo.pProgram                          = m_ui.pProgram;
 
         //     VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
@@ -289,7 +294,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
         // {
         //     m_wsi->registerEventHandler<MouseMoveEvent>([&](const MouseMoveEvent& e) { return onUIMouseMove(e); });
-        //     m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e); });
+        //     m_wsi->registerEventHandler<MouseButtonEvent>([&](const MouseButtonEvent& e) { return onUIMouseBtn(e);
+        //     });
         // }
     }
 }
@@ -527,7 +533,7 @@ bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
     return true;
 }
 
-CommandBuffer* Renderer::acquireFrameCommandBuffer(Queue * queue)
+CommandBuffer* Renderer::acquireFrameCommandBuffer(Queue* queue)
 {
     CommandBuffer* cmd;
     m_pDevice->allocateCommandBuffers(1, &cmd, queue);

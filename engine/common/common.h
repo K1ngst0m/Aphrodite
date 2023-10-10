@@ -1,6 +1,7 @@
 #ifndef VKLCOMMON_H_
 #define VKLCOMMON_H_
 
+#include <variant>
 #include <algorithm>
 #include <array>
 #include <atomic>
@@ -171,13 +172,14 @@ constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint3
     return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
 }
 template <typename T>
-typename std::underlying_type<T>::type getUnderLyingType(T value)
+std::underlying_type_t<T> getUnderLyingType(T value)
 {
-    return static_cast<typename std::underlying_type<T>::type>(value);
+    return static_cast<std::underlying_type_t<T>>(value);
 }
 std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
-std::string                               readFile(const std::string& filename);
+bool                                      readFile(const std::string& filename, std::vector<uint8_t>& data);
+bool                                      readFile(const std::string& filename, std::string& data);
 
 template <typename T>
 inline void forEachBit64(uint64_t value, const T& func)
@@ -202,16 +204,16 @@ inline void forEachBit(uint32_t value, const T& func)
 }
 
 template <typename T>
-inline void forEachBitRange(uint32_t value, const T &func)
+inline void forEachBitRange(uint32_t value, const T& func)
 {
-    if (value == ~0u)
+    if(value == ~0u)
     {
         func(0, 32);
         return;
     }
 
     uint32_t bit_offset = 0;
-    while (value)
+    while(value)
     {
         uint32_t bit = trailing_zeroes(value);
         bit_offset += bit;

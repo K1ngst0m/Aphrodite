@@ -9,6 +9,7 @@ file(GLOB base_src
   api/vulkan/*.cpp
   scene/*.cpp
   app/*.cpp
+  resource/*.cpp
   renderer/api/vulkan/sceneRenderer.cpp
   renderer/api/vulkan/renderer.cpp
   )
@@ -20,6 +21,9 @@ target_include_directories(engine PUBLIC
                                   ../external/volk
                                   ../external/reckless/reckless/include
                                   ../external/backward-cpp/include
+                                  ../external/tinyimageformat
+                                  ../external/tinyktx
+                                  ../external/tinydds
 
                                   PRIVATE
                                   ./

@@ -176,7 +176,7 @@ void SwapChain::reCreate()
         ImageCreateInfo imageCreateInfo = {
             .extent      = {m_extent.width, m_extent.height, 1},
             .mipLevels   = 1,
-            .arrayLayers = 1,
+            .arraySize = 1,
             .usage       = swapChainCreateInfo.imageUsage,
             .samples     = VK_SAMPLE_COUNT_1_BIT,
             .imageType   = VK_IMAGE_TYPE_2D,
