@@ -16,6 +16,7 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence 
 {
     std::vector<VkSubmitInfo>    vkSubmits;
     std::vector<VkCommandBuffer> vkCmds;
+    std::vector<VkPipelineStageFlags> vkWaitStages;
 
     for(const auto& submitInfo : submitInfos)
     {
@@ -38,10 +39,12 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence 
             .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
         };
 
-        std::vector<VkPipelineStageFlags> vkWaitStages;
         if (submitInfo.waitStages.empty())
         {
-            vkWaitStages.resize(submitInfo.waitSemaphores.size(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+            if (vkWaitStages.empty())
+            {
+                vkWaitStages.resize(submitInfo.waitSemaphores.size(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+            }
             info.pWaitDstStageMask = vkWaitStages.data();
         }
         vkSubmits.push_back(info);

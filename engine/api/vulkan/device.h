@@ -3,7 +3,6 @@
 
 #include "buffer.h"
 #include "commandBuffer.h"
-#include "commandPool.h"
 #include "descriptorPool.h"
 #include "descriptorSetLayout.h"
 #include "image.h"
@@ -61,7 +60,7 @@ public:
     VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* cs,
                                  const ImmutableSamplerBank* samplerBank = nullptr);
     VkResult createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool);
+    VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
     VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
     VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
     VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
@@ -69,13 +68,15 @@ public:
     VkResult createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,
                                        DescriptorSetLayout**                            ppDescriptorSetLayout);
 
+    VkResult resetCommandPool(VkCommandPool pPool);
+
 public:
     void destroyShaderProgram(ShaderProgram* pProgram);
     void destroyBuffer(Buffer* pBuffer);
     void destroyImage(Image* pImage);
     void destroyImageView(ImageView* pImageView);
     void destroySwapchain(SwapChain* pSwapchain);
-    void destroyCommandPool(CommandPool* pPool);
+    void destroyCommandPool(VkCommandPool pPool);
     void destroyPipeline(Pipeline* pipeline);
     void destroyDescriptorSetLayout(DescriptorSetLayout* pLayout);
     void destroySampler(Sampler* pSampler);
@@ -91,7 +92,7 @@ public:
 
 public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }
-    CommandPool*     getCommandPoolWithQueue(Queue* queue);
+    VkCommandPool    getCommandPoolWithQueue(Queue* queue);
     Queue*           getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
     VkResult allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
     VkResult allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
@@ -104,12 +105,12 @@ public:
     VkPhysicalDeviceFeatures getFeatures() const { return m_supportedFeatures; }
 
 private:
-    VkPhysicalDeviceFeatures  m_supportedFeatures{};
-    PhysicalDevice*           m_physicalDevice{};
-    VolkDeviceTable           m_table{};
-    std::vector<QueueFamily>  m_queues;
-    QueueFamilyCommandPools   m_commandPools;
-    std::vector<CommandPool*> m_threadCommandPools;
+    VkPhysicalDeviceFeatures                    m_supportedFeatures{};
+    PhysicalDevice*                             m_physicalDevice{};
+    VolkDeviceTable                             m_table{};
+    std::vector<QueueFamily>                    m_queues;
+    std::unordered_map<uint32_t, VkCommandPool> m_commandPools;
+    std::vector<VkCommandPool>                  m_threadCommandPools;
 };
 
 }  // namespace aph::vk

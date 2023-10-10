@@ -5,7 +5,7 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
+CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
     m_pDevice(pDevice),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
@@ -17,7 +17,7 @@ CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer
 
 CommandBuffer::~CommandBuffer()
 {
-    m_pool->freeCommandBuffers(1, &m_handle);
+    m_pDeviceTable->vkFreeCommandBuffers(m_pDevice->getHandle(), m_pool, 1, &getHandle());
 }
 
 VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)

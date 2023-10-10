@@ -90,7 +90,7 @@ void triangle_demo::run()
 
         // draw and submit
         m_renderer->beginFrame();
-        aph::vk::CommandBuffer* cb = m_renderer->acquireFrameCommandBuffer();
+        aph::vk::CommandBuffer* cb = m_renderer->acquireFrameCommandBuffer(queue);
 
         VkExtent2D extent{
             .width  = m_renderer->getWindowWidth(),

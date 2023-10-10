@@ -8,12 +8,18 @@ namespace aph::vk
 {
 
 class Device;
-class CommandPool;
 class Pipeline;
 class Buffer;
 class Image;
 class ImageView;
 class Sampler;
+class Queue;
+
+struct CommandPoolCreateInfo
+{
+    Queue* queue     = {};
+    bool   transient = {false};
+};
 
 enum class CommandBufferState
 {
@@ -32,7 +38,6 @@ struct AttachmentInfo
     std::optional<VkAttachmentStoreOp> storeOp;
     std::optional<VkClearValue>        clear;
 };
-
 
 struct CommandState
 {
@@ -82,7 +87,7 @@ struct CommandState
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
-    CommandBuffer(Device* pDevice, CommandPool* pool, VkCommandBuffer handle, uint32_t queueFamilyIndices);
+    CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, uint32_t queueFamilyIndices);
     ~CommandBuffer();
 
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
@@ -137,7 +142,7 @@ private:
     void                   flushGraphicsCommand();
     Device*                m_pDevice          = {};
     const VolkDeviceTable* m_pDeviceTable     = {};
-    CommandPool*           m_pool             = {};
+    VkCommandPool          m_pool             = {};
     CommandBufferState     m_state            = {};
     bool                   m_submittedToQueue = {false};
     uint32_t               m_queueFamilyType  = {};

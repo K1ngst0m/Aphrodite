@@ -348,6 +348,12 @@ void Renderer::endFrame()
     auto* queue = getGraphicsQueue();
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
+    // clean the frame data
+    {
+        m_pDevice->freeCommandBuffers(m_frameData.cmds.size(), m_frameData.cmds.data());
+        m_frameData.cmds.clear();
+    }
+
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 
     {
@@ -521,10 +527,10 @@ bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
     return true;
 }
 
-CommandBuffer* Renderer::acquireFrameCommandBuffer()
+CommandBuffer* Renderer::acquireFrameCommandBuffer(Queue * queue)
 {
     CommandBuffer* cmd;
-    m_pDevice->allocateCommandBuffers(1, &cmd, m_queue.graphics);
+    m_pDevice->allocateCommandBuffers(1, &cmd, queue);
     m_frameData.cmds.push_back(cmd);
     return cmd;
 }

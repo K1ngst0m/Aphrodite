@@ -155,17 +155,21 @@ void Device::Destroy(Device* pDevice)
     pDevice = nullptr;
 }
 
-VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, CommandPool** ppPool)
+VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
 {
     VkCommandPoolCreateInfo cmdPoolInfo{
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags            = createInfo.flags,
-        .queueFamilyIndex = createInfo.queueFamilyIndex,
+        .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
     };
+
+    if(createInfo.transient)
+    {
+        cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    }
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
     _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
-    *ppPool = new CommandPool(createInfo, this, cmdPool);
+    *ppPool = cmdPool;
     return VK_SUCCESS;
 }
 
@@ -413,7 +417,7 @@ VkResult Device::waitIdle()
     return vkDeviceWaitIdle(getHandle());
 }
 
-CommandPool* Device::getCommandPoolWithQueue(Queue* queue)
+VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
 {
     auto queueIndices = queue->getFamilyIndex();
 
@@ -422,31 +426,39 @@ CommandPool* Device::getCommandPoolWithQueue(Queue* queue)
         return m_commandPools.at(queueIndices);
     }
 
-    CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
-    CommandPool*          pool = nullptr;
+    CommandPoolCreateInfo createInfo{.queue = queue};
+    VkCommandPool          pool = nullptr;
     createCommandPool(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
     return pool;
 }
 
-void Device::destroyCommandPool(CommandPool* pPool)
+void Device::destroyCommandPool(VkCommandPool pPool)
 {
-    vkDestroyCommandPool(getHandle(), pPool->getHandle(), nullptr);
-    delete pPool;
+    vkDestroyCommandPool(getHandle(), pPool, nullptr);
     pPool = nullptr;
 }
 
 VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
 {
-    auto* queue = pQueue;
-    auto* pool  = getCommandPoolWithQueue(queue);
+    Queue* queue = pQueue;
+    VkCommandPool  pool  = getCommandPoolWithQueue(queue);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
-    _VR(pool->allocateCommandBuffers(commandBufferCount, handles.data()));
+
+    // Allocate a new command buffer.
+    VkCommandBufferAllocateInfo allocInfo = {
+        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext              = nullptr,
+        .commandPool        = pool,
+        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = commandBufferCount,
+    };
+    _VR(vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queue->getFamilyIndex());
     }
     return VK_SUCCESS;
 }
@@ -480,10 +492,7 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
         const auto& attr = vstate.attributes[i];
 
         rps.vkAttributes[i] = {
-            .location = attr.location,
-            .binding = attr.binding,
-            .format = attr.format,
-            .offset = (uint32_t)attr.offset};
+            .location = attr.location, .binding = attr.binding, .format = attr.format, .offset = (uint32_t)attr.offset};
 
         if(!bufferAlreadyBound[attr.binding])
         {
@@ -939,20 +948,31 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
                                               Queue* pQueue)
 {
     auto                  queueIndices = pQueue->getFamilyIndex();
-    CommandPoolCreateInfo createInfo{.queueFamilyIndex = queueIndices};
+    CommandPoolCreateInfo createInfo{.queue = pQueue};
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        CommandPool* pool{};
+        VkCommandPool pool{};
         createCommandPool(createInfo, &pool);
         std::vector<VkCommandBuffer> handles(commandBufferCount);
-        for(auto& handle : handles)
-        {
-            _VR(pool->allocateCommandBuffers(1, &handle));
-        }
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pool->getQueueFamilyIndex());
+
+        // Allocate a new command buffer.
+        VkCommandBufferAllocateInfo allocInfo = {
+            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .commandPool        = pool,
+            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+            .commandBufferCount = commandBufferCount,
+        };
+        _VR(vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queueIndices);
         m_threadCommandPools.push_back(pool);
     }
     return VK_SUCCESS;
+}
+
+VkResult Device::resetCommandPool(VkCommandPool pPool)
+{
+    return m_table.vkResetCommandPool(getHandle(), pPool, 0);
 }
 }  // namespace aph::vk

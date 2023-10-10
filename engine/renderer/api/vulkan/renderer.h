@@ -35,7 +35,7 @@ public:
         return m_timelineMain[m_frameIdx];
     }
 
-    CommandBuffer* acquireFrameCommandBuffer();
+    CommandBuffer* acquireFrameCommandBuffer(Queue * queue);
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
