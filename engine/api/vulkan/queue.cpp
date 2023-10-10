@@ -37,6 +37,13 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence 
             .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
             .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
         };
+
+        std::vector<VkPipelineStageFlags> vkWaitStages;
+        if (submitInfo.waitStages.empty())
+        {
+            vkWaitStages.resize(submitInfo.waitSemaphores.size(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+            info.pWaitDstStageMask = vkWaitStages.data();
+        }
         vkSubmits.push_back(info);
     }
 

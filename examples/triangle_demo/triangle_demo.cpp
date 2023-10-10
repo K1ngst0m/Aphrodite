@@ -112,7 +112,6 @@ void triangle_demo::run()
 
         aph::vk::QueueSubmitInfo submitInfo{};
         submitInfo.commandBuffers.push_back(cb);
-        submitInfo.waitStages.push_back(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         submitInfo.waitSemaphores.push_back(m_renderer->getRenderSemaphore());
         submitInfo.signalSemaphores.push_back(m_renderer->getPresentSemaphore());
         queue->submit({submitInfo}, m_renderer->getFrameFence());

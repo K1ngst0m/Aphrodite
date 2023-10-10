@@ -84,7 +84,7 @@ struct StencilState
 
 struct RenderPipelineDynamicState final
 {
-    VkBool32 depthBiasEnable : 1 = VK_FALSE;
+    VkBool32 depthBiasEnable = VK_FALSE;
 };
 
 struct GraphicsPipelineCreateInfo
