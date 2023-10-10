@@ -106,6 +106,10 @@ void triangle_demo::run()
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
         cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {presentImage});
+        cb->insertDebugLabel({
+            .name  = "draw a triangle",
+            .color = {1.0f, 0.0f, 0.0f, 1.0f},
+        });
         cb->drawIndexed(3, 1, 0, 0, 0);
         cb->endRendering();
         cb->end();

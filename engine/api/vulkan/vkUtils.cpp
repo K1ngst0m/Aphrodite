@@ -216,4 +216,16 @@ VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples)
     }
     return VK_SAMPLE_COUNT_64_BIT;
 }
+
+VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
+{
+    VkDebugUtilsLabelEXT vkLabel{
+        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT,
+        .pNext = nullptr,
+        .pLabelName = label.name.c_str(),
+        .color = {label.color[0], label.color[1], label.color[2], label.color[3]},
+    };
+
+    return vkLabel;
+}
 }  // namespace aph::vk::utils

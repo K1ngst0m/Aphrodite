@@ -49,6 +49,7 @@ namespace aph::vk::utils
 VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
+VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
 }  // namespace aph::vk::utils
 
 namespace aph

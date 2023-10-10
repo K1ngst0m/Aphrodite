@@ -333,10 +333,6 @@ void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Ima
     m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(),
                                    dstImageLayout, 1, pRegions, filter);
 }
-uint32_t CommandBuffer::getQueueFamilyIndices() const
-{
-    return m_queueFamilyType;
-};
 
 void CommandBuffer::endRendering()
 {
@@ -551,5 +547,19 @@ void CommandBuffer::setViewport(const VkExtent2D& extent)
 {
     VkViewport viewport = aph::vk::init::viewport(extent);
     setViewport(viewport);
+}
+void CommandBuffer::beginDebugLabel(const DebugLabel& label)
+{
+    const VkDebugUtilsLabelEXT vkLabel = aph::vk::utils::VkCast(label);
+    vkCmdBeginDebugUtilsLabelEXT(getHandle(), &vkLabel);
+}
+void CommandBuffer::insertDebugLabel(const DebugLabel& label)
+{
+    const VkDebugUtilsLabelEXT vkLabel = aph::vk::utils::VkCast(label);
+    vkCmdInsertDebugUtilsLabelEXT(getHandle(), &vkLabel);
+}
+void CommandBuffer::endDebugLabel()
+{
+    vkCmdEndDebugUtilsLabelEXT(getHandle());
 }
 }  // namespace aph::vk

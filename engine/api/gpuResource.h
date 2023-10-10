@@ -55,6 +55,12 @@ struct Extent3D
     uint32_t depth  = {0};
 };
 
+struct DebugLabel
+{
+    std::string name;
+    float color[4];
+};
+
 struct DummyCreateInfo
 {
     uint32_t typeId;

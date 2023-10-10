@@ -128,7 +128,9 @@ public:
     void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,
                    uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter = VK_FILTER_LINEAR);
 
-    uint32_t getQueueFamilyIndices() const;
+    void beginDebugLabel(const DebugLabel& label);
+    void endDebugLabel();
+    void insertDebugLabel(const DebugLabel& label);
 
 private:
     void                   flushComputeCommand();
