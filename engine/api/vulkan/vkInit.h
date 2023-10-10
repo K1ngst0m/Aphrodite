@@ -5,6 +5,8 @@
 
 #include <vector>
 
+#include "../gpuResource.h"
+
 namespace aph::vk::init
 {
 
@@ -104,23 +106,52 @@ inline VkImageCreateInfo imageCreateInfo()
     return imageCreateInfo;
 }
 
-inline VkSamplerCreateInfo samplerCreateInfo()
+inline VkSamplerCreateInfo samplerCreateInfo(SamplerPreset preset = SamplerPreset::Linear)
 {
-    VkSamplerCreateInfo samplerCreateInfo{};
-    samplerCreateInfo.sType         = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter     = VK_FILTER_LINEAR;
-    samplerCreateInfo.minFilter     = VK_FILTER_LINEAR;
-    samplerCreateInfo.mipmapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerCreateInfo.addressModeU  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.addressModeV  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.addressModeW  = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerCreateInfo.mipLodBias    = 0.0f;
-    samplerCreateInfo.compareOp     = VK_COMPARE_OP_NEVER;
-    samplerCreateInfo.minLod        = 0.0f;
-    samplerCreateInfo.maxAnisotropy = 1.0f;
-    samplerCreateInfo.borderColor   = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+    VkSamplerCreateInfo ci{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    ci.magFilter = VK_FILTER_LINEAR;
+    ci.minFilter = VK_FILTER_LINEAR;
+    ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.anisotropyEnable = VK_FALSE;
+    ci.maxAnisotropy = 1.0f;
+    ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    ci.mipLodBias = 0.0f;
+    ci.minLod = 0.0f;
+    ci.maxLod = 1.0f;
+    ci.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
 
-    return samplerCreateInfo;
+    switch (preset)
+    {
+    case SamplerPreset::Nearest:
+        ci.magFilter = VK_FILTER_NEAREST;
+        ci.minFilter = VK_FILTER_NEAREST;
+        break;
+    case SamplerPreset::Linear:
+        ci.magFilter = VK_FILTER_LINEAR;
+        ci.minFilter = VK_FILTER_LINEAR;
+        break;
+    case SamplerPreset::Anisotropic:
+        ci.anisotropyEnable = VK_TRUE;
+        ci.maxAnisotropy = 16.0f;
+        break;
+    case SamplerPreset::Mipmap:
+        ci.minFilter = VK_FILTER_LINEAR;
+        ci.magFilter = VK_FILTER_LINEAR;
+        ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        ci.minLod = 0.0f;
+        ci.maxLod = 8.0f;
+        break;
+    case SamplerPreset::Border:
+        ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        break;
+    }
+
+    return ci;
 }
 
 inline VkImageViewCreateInfo imageViewCreateInfo()

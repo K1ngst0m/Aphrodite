@@ -48,6 +48,15 @@ enum class ResourceType
     STORAGE_BUFFER        = 6,
 };
 
+enum class SamplerPreset
+{
+    Nearest,
+    Linear,
+    Anisotropic,
+    Mipmap,
+    Border,
+};
+
 struct Extent3D
 {
     uint32_t width  = {0};
@@ -58,7 +67,7 @@ struct Extent3D
 struct DebugLabel
 {
     std::string name;
-    float color[4];
+    float       color[4];
 };
 
 struct DummyCreateInfo

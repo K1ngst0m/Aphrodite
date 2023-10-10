@@ -897,6 +897,54 @@ VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, Sampler** 
     return VK_SUCCESS;
 }
 
+VkResult Device::createSampler(SamplerPreset preset, Sampler** ppSampler, bool immutable)
+{
+    VkSamplerCreateInfo ci{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
+    ci.magFilter = VK_FILTER_LINEAR;
+    ci.minFilter = VK_FILTER_LINEAR;
+    ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.anisotropyEnable = VK_FALSE;
+    ci.maxAnisotropy = 1.0f;
+    ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    ci.mipLodBias = 0.0f;
+    ci.minLod = 0.0f;
+    ci.maxLod = 1.0f;
+    ci.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+
+    switch (preset)
+    {
+    case SamplerPreset::Nearest:
+        ci.magFilter = VK_FILTER_NEAREST;
+        ci.minFilter = VK_FILTER_NEAREST;
+        break;
+    case SamplerPreset::Linear:
+        ci.magFilter = VK_FILTER_LINEAR;
+        ci.minFilter = VK_FILTER_LINEAR;
+        break;
+    case SamplerPreset::Anisotropic:
+        ci.anisotropyEnable = VK_TRUE;
+        ci.maxAnisotropy = 16.0f;
+        break;
+    case SamplerPreset::Mipmap:
+        ci.minFilter = VK_FILTER_LINEAR;
+        ci.magFilter = VK_FILTER_LINEAR;
+        ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        ci.minLod = 0.0f;
+        ci.maxLod = 8.0f;
+        break;
+    case SamplerPreset::Border:
+        ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+        ci.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        break;
+    }
+
+    return createSampler(ci, ppSampler, immutable);
+}
+
 void Device::destroySampler(Sampler* pSampler)
 {
     m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), nullptr);
