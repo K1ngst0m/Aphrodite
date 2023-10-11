@@ -43,8 +43,6 @@ public:
 
 public:
     VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage);
-    VkResult createDeviceLocalImage(const ImageCreateInfo& createInfo, Image** ppImage,
-                                    const std::vector<uint8_t>& data);
     VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
     VkResult executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
 

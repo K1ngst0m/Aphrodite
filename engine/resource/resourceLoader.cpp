@@ -172,7 +172,97 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
         ci.extent = {img.width, img.height, 1};
     }
 
-    m_pDevice->createDeviceLocalImage(ci, info.ppImage, data);
+    bool           genMipmap = ci.mipLevels > 1;
+    const uint32_t width     = ci.extent.width;
+    const uint32_t height    = ci.extent.height;
+
+    // Load texture from image buffer
+    vk::Buffer* stagingBuffer;
+    {
+        vk::BufferCreateInfo bufferCI{
+            .size   = static_cast<uint32_t>(data.size()),
+            .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .domain = BufferDomain::Host,
+        };
+        m_pDevice->createBuffer(bufferCI, &stagingBuffer);
+
+        m_pDevice->mapMemory(stagingBuffer);
+        stagingBuffer->write(data.data());
+        m_pDevice->unMapMemory(stagingBuffer);
+    }
+
+    vk::Image* image{};
+    {
+        auto imageCI = ci;
+        imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCI.domain = ImageDomain::Device;
+        if(genMipmap)
+        {
+            imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        }
+
+        m_pDevice->createImage(imageCI, &image);
+
+        m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+            cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->copyBufferToImage(stagingBuffer, image);
+            if(genMipmap)
+            {
+                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            }
+        });
+
+        m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+            if(genMipmap)
+            {
+                // generate mipmap chains
+                for(int32_t i = 1; i < imageCI.mipLevels; i++)
+                {
+                    VkImageBlit imageBlit{};
+
+                    // Source
+                    imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    imageBlit.srcSubresource.layerCount = 1;
+                    imageBlit.srcSubresource.mipLevel   = i - 1;
+                    imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+                    imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+                    imageBlit.srcOffsets[1].z           = 1;
+
+                    // Destination
+                    imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                    imageBlit.dstSubresource.layerCount = 1;
+                    imageBlit.dstSubresource.mipLevel   = i;
+                    imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+                    imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+                    imageBlit.dstOffsets[1].z           = 1;
+
+                    VkImageSubresourceRange mipSubRange = {};
+                    mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
+                    mipSubRange.baseMipLevel            = i;
+                    mipSubRange.levelCount              = 1;
+                    mipSubRange.layerCount              = 1;
+
+                    // Prepare current mip level as image blit destination
+                    cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &mipSubRange,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                    // Blit from previous level
+                    cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+                    cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &mipSubRange,
+                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                }
+
+                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
+            else
+            {
+                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            }
+        });
+    }
+
+    m_pDevice->destroyBuffer(stagingBuffer);
+    *info.ppImage = image;
 }
 
 void ResourceLoader::loadBuffers(BufferLoadInfo& info)

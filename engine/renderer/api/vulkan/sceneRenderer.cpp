@@ -653,6 +653,7 @@ void SceneRenderer::_initGpuResources()
     auto images = m_scene->getImages();
     for(const auto& image : images)
     {
+        Image* texture{};
         ImageCreateInfo createInfo{
             .extent    = {image->width, image->height, 1},
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
@@ -661,8 +662,13 @@ void SceneRenderer::_initGpuResources()
             .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
-        Image* texture{};
-        m_pDevice->createDeviceLocalImage(createInfo, &texture, image->data);
+        aph::ImageLoadInfo loadInfo{
+            .data          = aph::asset::GetTextureDir() / "container2.png",
+            .containerType = aph::ImageContainerType::Png,
+            .pCreateInfo   = &createInfo,
+            .ppImage       = &texture,
+        };
+        m_pResourceLoader->loadImages(loadInfo);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }
 
