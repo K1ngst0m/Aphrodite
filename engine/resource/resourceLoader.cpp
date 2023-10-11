@@ -104,6 +104,28 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 namespace aph
 {
 
+ImageContainerType GetImageContainerType(const std::filesystem::path& path)
+{
+    if(path.extension() == ".ktx")
+    {
+        return ImageContainerType::Ktx;
+    }
+
+    if(path.extension() == ".png")
+    {
+        return ImageContainerType::Png;
+    }
+
+    if(path.extension() == ".jpg")
+    {
+        return ImageContainerType::Jpg;
+    }
+
+    CM_LOG_ERR("Unsupported image format.");
+
+    return ImageContainerType::Default;
+}
+
 ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
     m_createInfo(createInfo),
     m_pDevice(createInfo.pDevice)
@@ -124,28 +146,9 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
     {
         path = {std::get<std::string>(info.data)};
 
-        auto containerType = info.containerType;
-
-        if(info.containerType == ImageContainerType::Default)
-        {
-            if(path.extension() == ".ktx")
-            {
-                containerType = ImageContainerType::Ktx;
-            }
-            else if(path.extension() == ".png")
-            {
-                containerType = ImageContainerType::Png;
-            }
-            else if(path.extension() == ".jpg")
-            {
-                containerType = ImageContainerType::Jpg;
-            }
-            else
-            {
-                CM_LOG_ERR("Unsupported image format.");
-                APH_ASSERT(false);
-            }
-        }
+        auto containerType = info.containerType == ImageContainerType::Default
+                             ? GetImageContainerType(path)
+                             : info.containerType;
 
         switch(containerType)
         {

@@ -90,7 +90,7 @@ struct RenderPipelineDynamicState final
 struct GraphicsPipelineCreateInfo
 {
     RenderPipelineDynamicState dynamicState = {};
-    VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    VkPrimitiveTopology        topology     = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
     VertexInput vertexInput;
 
@@ -190,9 +190,8 @@ private:
     VkPipelineMultisampleStateCreateInfo   multisampleState_;
     VkPipelineDepthStencilStateCreateInfo  depthStencilState_;
 
-    uint32_t                            numColorAttachments_                                   = 0;
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentStates_[APH_MAX_COLOR_ATTACHMENTS] = {};
-    VkFormat                            colorAttachmentFormats_[APH_MAX_COLOR_ATTACHMENTS]     = {};
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates_ = {};
+    std::vector<VkFormat>                            colorAttachmentFormats_     = {};
 
     VkFormat depthAttachmentFormat_   = VK_FORMAT_UNDEFINED;
     VkFormat stencilAttachmentFormat_ = VK_FORMAT_UNDEFINED;
@@ -214,7 +213,7 @@ protected:
     ShaderProgram*      m_pProgram  = {};
     VkPipelineBindPoint m_bindPoint = {};
     VkPipelineCache     m_cache     = {};
-    RenderPipelineState m_rps = {};
+    RenderPipelineState m_rps       = {};
 };
 
 }  // namespace aph::vk

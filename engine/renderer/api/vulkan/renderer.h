@@ -19,38 +19,28 @@ public:
 
 public:
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
+    std::unique_ptr<Device> m_pDevice    = {};
+    SwapChain*              m_pSwapChain = {};
 
 public:
-    SwapChain* getSwapChain() const { return m_pSwapChain; }
-    Device*    getDevice() const { return m_pDevice; }
-    Shader*    getShaders(const std::filesystem::path& path);
-
-    Queue* getGraphicsQueue() const { return m_queue.graphics; }
-    Queue* getComputeQueue() const { return m_queue.compute; }
-    Queue* getTransferQueue() const { return m_queue.transfer; }
+    Shader* getShaders(const std::filesystem::path& path);
+    Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
     VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
     VkSemaphore getPresentSemaphore() { return m_presentSemaphore[m_frameIdx]; }
-    VkFence getFrameFence() { return m_frameFence[m_frameIdx]; }
+    VkFence     getFrameFence() { return m_frameFence[m_frameIdx]; }
 
-    CommandBuffer* acquireFrameCommandBuffer(Queue * queue);
+    CommandBuffer* acquireFrameCommandBuffer(Queue* queue);
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
 
-    Instance*  m_pInstance  = {};
-    Device*    m_pDevice    = {};
-    SwapChain* m_pSwapChain = {};
+    Instance* m_pInstance = {};
 
     VkSurfaceKHR    m_surface       = {};
     VkPipelineCache m_pipelineCache = {};
 
-    struct
-    {
-        Queue* graphics = {};
-        Queue* compute  = {};
-        Queue* transfer = {};
-    } m_queue;
+    std::unordered_map<QueueType, Queue*> m_queue;
 
     std::unordered_map<std::string, std::unique_ptr<Shader>> shaderModuleCaches = {};
 

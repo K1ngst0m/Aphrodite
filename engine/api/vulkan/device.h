@@ -38,8 +38,8 @@ private:
     Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle);
 
 public:
-    static VkResult Create(const DeviceCreateInfo& createInfo, Device** ppDevice);
-    static void     Destroy(Device* pDevice);
+    static std::unique_ptr<Device> Create(const DeviceCreateInfo& createInfo);
+    static void                    Destroy(Device* pDevice);
 
 public:
     VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage);

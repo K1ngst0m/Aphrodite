@@ -15,7 +15,7 @@ void base_texture::init()
     };
 
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
-    m_pDevice  = m_renderer->getDevice();
+    m_pDevice  = m_renderer->m_pDevice.get();
 
     // setup quad
     {
@@ -101,7 +101,7 @@ void base_texture::init()
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
                 .pProgram    = m_pShaderProgram,
-                .color       = {{.format = m_renderer->getSwapChain()->getFormat()}},
+                .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
             VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pPipeline));
@@ -132,7 +132,7 @@ void base_texture::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
-        auto* queue = m_renderer->getGraphicsQueue();
+        auto* queue = m_renderer->getDefaultQueue(aph::vk::QueueType::GRAPHICS);
 
         // draw and submit
         m_renderer->beginFrame();
@@ -143,7 +143,7 @@ void base_texture::run()
             .height = m_renderer->getWindowHeight(),
         };
 
-        aph::vk::Image* presentImage = m_renderer->getSwapChain()->getImage();
+        aph::vk::Image* presentImage = m_renderer->m_pSwapChain->getImage();
 
         cb->begin();
         cb->setViewport(extent);
@@ -173,7 +173,7 @@ void base_texture::run()
 
 void base_texture::finish()
 {
-    m_renderer->getDevice()->waitIdle();
+    m_renderer->m_pDevice->waitIdle();
     m_pDevice->destroyBuffer(m_pVB);
     m_pDevice->destroyBuffer(m_pIB);
     m_pDevice->destroyPipeline(m_pPipeline);

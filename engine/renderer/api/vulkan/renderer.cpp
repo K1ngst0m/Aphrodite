@@ -109,19 +109,21 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(0),
         };
 
-        VK_CHECK_RESULT(Device::Create(createInfo, &m_pDevice));
+        m_pDevice = Device::Create(createInfo);
+        APH_ASSERT(m_pDevice != nullptr);
 
         // get 3 type queue
-        m_queue.graphics = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
-        m_queue.compute  = m_pDevice->getQueueByFlags(QueueType::COMPUTE);
-        m_queue.transfer = m_pDevice->getQueueByFlags(QueueType::TRANSFER);
-        if(!m_queue.compute)
+        m_queue[QueueType::GRAPHICS] = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
+        m_queue[QueueType::COMPUTE]  = m_pDevice->getQueueByFlags(QueueType::COMPUTE);
+        m_queue[QueueType::TRANSFER] = m_pDevice->getQueueByFlags(QueueType::TRANSFER);
+
+        if(!m_queue[QueueType::COMPUTE])
         {
-            m_queue.compute = m_queue.graphics;
+            m_queue[QueueType::COMPUTE] = m_queue[QueueType::GRAPHICS];
         }
-        if(!m_queue.transfer)
+        if(!m_queue[QueueType::TRANSFER])
         {
-            m_queue.transfer = m_queue.compute;
+            m_queue[QueueType::TRANSFER] = m_queue[QueueType::COMPUTE];
         }
 
         // check sample count support
@@ -153,7 +155,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         m_frameFence.resize(m_config.maxFrames);
 
         {
-            m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice);
+            m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice.get());
             m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
             for(auto& fence : m_frameFence)
@@ -172,7 +174,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
     // init resource loader
     {
-        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{.pDevice = m_pDevice});
+        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{.pDevice = m_pDevice.get()});
     }
 
     // init ui
@@ -334,7 +336,7 @@ Renderer::~Renderer()
 
     m_pDevice->destroySwapchain(m_pSwapChain);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
-    Device::Destroy(m_pDevice);
+    Device::Destroy(m_pDevice.get());
     Instance::Destroy(m_pInstance);
 };
 
@@ -351,7 +353,7 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    auto* queue = getGraphicsQueue();
+    auto* queue = getDefaultQueue(QueueType::GRAPHICS);
     VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
 
     // clean the frame data
@@ -382,7 +384,7 @@ Shader* Renderer::getShaders(const std::filesystem::path& path)
 {
     if(!shaderModuleCaches.count(path))
     {
-        shaderModuleCaches[path] = Shader::Create(m_pDevice, path);
+        shaderModuleCaches[path] = Shader::Create(m_pDevice.get(), path);
     }
     return shaderModuleCaches[path].get();
 }

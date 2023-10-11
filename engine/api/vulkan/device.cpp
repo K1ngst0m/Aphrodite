@@ -20,7 +20,7 @@ Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevi
     getCreateInfo() = createInfo;
 }
 
-VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
+std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 {
     PhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
 
@@ -108,10 +108,15 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
     };
 
     VkDevice handle = VK_NULL_HANDLE;
-    _VR(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle));
+    auto     result = vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle);
+    if(result != VK_SUCCESS)
+    {
+        VK_LOG_ERR("Failed to create device: %s.", vk::utils::errorString(result));
+        return {};
+    }
 
     // Initialize Device class.
-    auto* device = new Device(createInfo, physicalDevice, handle);
+    auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
     volkLoadDeviceTable(&device->m_table, handle);
     device->m_supportedFeatures = supportedFeatures;
 
@@ -129,11 +134,8 @@ VkResult Device::Create(const DeviceCreateInfo& createInfo, Device** ppDevice)
         }
     }
 
-    // Copy address of object instance.
-    *ppDevice = device;
-
     // Return success.
-    return VK_SUCCESS;
+    return device;
 }
 
 void Device::Destroy(Device* pDevice)
@@ -151,8 +153,6 @@ void Device::Destroy(Device* pDevice)
     {
         pDevice->m_table.vkDestroyDevice(pDevice->m_handle, nullptr);
     }
-    delete pDevice;
-    pDevice = nullptr;
 }
 
 VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)

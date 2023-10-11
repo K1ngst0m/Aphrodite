@@ -147,14 +147,13 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::colorAttachments(const VkPipelineC
 {
     APH_ASSERT(states);
     APH_ASSERT(formats);
-    APH_ASSERT(numColorAttachments <= LVK_ARRAY_NUM_ELEMENTS(colorBlendAttachmentStates_));
-    APH_ASSERT(numColorAttachments <= LVK_ARRAY_NUM_ELEMENTS(colorAttachmentFormats_));
+    colorBlendAttachmentStates_.resize(numColorAttachments);
+    colorAttachmentFormats_.resize(numColorAttachments);
     for(uint32_t i = 0; i != numColorAttachments; i++)
     {
         colorBlendAttachmentStates_[i] = states[i];
         colorAttachmentFormats_[i]     = formats[i];
     }
-    numColorAttachments_ = numColorAttachments;
     return *this;
 }
 
@@ -254,14 +253,14 @@ VkResult VulkanPipelineBuilder::build(VkDevice device, VkPipelineCache pipelineC
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .logicOpEnable   = VK_FALSE,
         .logicOp         = VK_LOGIC_OP_COPY,
-        .attachmentCount = numColorAttachments_,
-        .pAttachments    = colorBlendAttachmentStates_,
+        .attachmentCount = static_cast<uint32_t>(colorBlendAttachmentStates_.size()),
+        .pAttachments    = colorBlendAttachmentStates_.data(),
     };
     const VkPipelineRenderingCreateInfo renderingInfo = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .pNext                   = nullptr,
-        .colorAttachmentCount    = numColorAttachments_,
-        .pColorAttachmentFormats = colorAttachmentFormats_,
+        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentFormats_.size()),
+        .pColorAttachmentFormats = colorAttachmentFormats_.data(),
         .depthAttachmentFormat   = depthAttachmentFormat_,
         .stencilAttachmentFormat = stencilAttachmentFormat_,
     };

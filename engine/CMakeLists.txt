@@ -15,6 +15,7 @@ file(GLOB base_src
   )
 
 add_library(engine STATIC ${base_src})
+aph_compiler_options(engine)
 
 target_include_directories(engine PUBLIC
                                   ../external/glm

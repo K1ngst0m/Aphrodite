@@ -73,7 +73,7 @@ void SceneRenderer::load(Scene* scene)
 
     _initSet();
 
-    auto* queue = getGraphicsQueue();
+    auto* queue = getDefaultQueue(QueueType::GRAPHICS);
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         m_pDevice->allocateThreadCommandBuffers(COMMAND_BUFFER_MAX, cb[idx], queue);
@@ -118,7 +118,7 @@ void SceneRenderer::cleanup()
 
 void SceneRenderer::recordAll()
 {
-    auto* queue     = getGraphicsQueue();
+    auto* queue     = getDefaultQueue(QueueType::GRAPHICS);
     auto* currentCB = cb[m_frameIdx];
 
     {
@@ -500,7 +500,7 @@ void SceneRenderer::_initGbuffer()
 
         GraphicsPipelineCreateInfo createInfo{
             .pProgram = program,
-            .color    = {{.format = getSwapChain()->getFormat()}},
+            .color    = {{.format = m_pSwapChain->getFormat()}},
         };
 
         VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));

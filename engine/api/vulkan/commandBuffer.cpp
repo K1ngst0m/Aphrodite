@@ -479,7 +479,7 @@ void CommandBuffer::flushGraphicsCommand()
     aph::utils::forEachBitRange(m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
 #ifdef APH_DEBUG
         for(unsigned i = binding; i < binding + bindingCount; i++)
-            VK_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
+            APH_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
 #endif
         m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
                                                m_commandState.vertexBinding.buffers + binding,
