@@ -1,6 +1,8 @@
 #include "resourceLoader.h"
 #include "api/vulkan/device.h"
 #include "tinyimageformat.h"
+
+#define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"
 
 namespace
@@ -91,6 +93,10 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
         .depth  = 1,
     };
 
+    textureCI.format = VK_FORMAT_R8G8B8A8_UNORM;
+
+    data = img->data;
+
     return true;
 }
 }  // namespace
@@ -106,64 +112,67 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 
 void ResourceLoader::loadImages(ImageLoadInfo& info)
 {
-    // if (std::holds_alternative<std::string>(info.data))
-    // {
-    //     std::filesystem::path path{std::get<std::string>(info.data)};
-    // }
+    std::filesystem::path path;
+    std::vector<uint8_t>  data;
+    vk::ImageCreateInfo   ci;
+    if(info.pCreateInfo)
+    {
+        ci = *info.pCreateInfo;
+    }
 
-    // auto containerType = ImageContainerType::Default;
+    if(std::holds_alternative<std::string>(info.data))
+    {
+        path = {std::get<std::string>(info.data)};
 
-    // if(info.containerType == ImageContainerType::Default)
-    // {
-    //     if(path.extension() == ".ktx")
-    //     {
-    //         containerType = ImageContainerType::Ktx;
-    //     }
-    //     else if(path.extension() == ".png")
-    //     {
-    //         containerType = ImageContainerType::Png;
-    //     }
-    //     else if(path.extension() == ".jpg")
-    //     {
-    //         containerType = ImageContainerType::Jpg;
-    //     }
-    //     else
-    //     {
-    //         CM_LOG_ERR("Unsupported image format.");
-    //         APH_ASSERT(false);
-    //     }
-    // }
+        auto containerType = info.containerType;
 
-    // vk::ImageCreateInfo ci;
+        if(info.containerType == ImageContainerType::Default)
+        {
+            if(path.extension() == ".ktx")
+            {
+                containerType = ImageContainerType::Ktx;
+            }
+            else if(path.extension() == ".png")
+            {
+                containerType = ImageContainerType::Png;
+            }
+            else if(path.extension() == ".jpg")
+            {
+                containerType = ImageContainerType::Jpg;
+            }
+            else
+            {
+                CM_LOG_ERR("Unsupported image format.");
+                APH_ASSERT(false);
+            }
+        }
 
-    // if(info.pImageCI)
-    // {
-    //     ci = *info.pImageCI;
-    // }
+        switch(containerType)
+        {
+        case ImageContainerType::Ktx:
+        {
+            loadKTX(path, &ci, data);
+        }
+        break;
+        case ImageContainerType::Png:
+        case ImageContainerType::Jpg:
+        {
+            loadPNGJPG(path, &ci, data);
+        }
+        break;
+        case ImageContainerType::Default:
+        case ImageContainerType::Dds:
+            APH_ASSERT(false);
+        }
+    }
+    else if(std::holds_alternative<ImageInfo>(info.data))
+    {
+        auto img  = std::get<ImageInfo>(info.data);
+        data      = img.data;
+        ci.extent = {img.width, img.height, 1};
+    }
 
-    // std::vector<uint8_t> data;
-
-    // switch(containerType)
-    // {
-    // case ImageContainerType::Ktx:
-    // {
-    //     loadKTX(path, &ci, data);
-    // }
-    // break;
-    // case ImageContainerType::Png:
-    // case ImageContainerType::Jpg:
-    // {
-    //     loadPNGJPG(path, &ci, data);
-    // }
-    // break;
-    // case ImageContainerType::Default:
-    // case ImageContainerType::Dds:
-    //     APH_ASSERT(false);
-    // }
-
-    // auto image = info.pImage;
-
-    // m_pDevice->createDeviceLocalImage(ci, &image, data);
+    m_pDevice->createDeviceLocalImage(ci, info.ppImage, data);
 }
 
 void ResourceLoader::loadBuffers(BufferLoadInfo& info)

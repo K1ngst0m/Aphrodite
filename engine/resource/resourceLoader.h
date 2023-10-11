@@ -28,7 +28,7 @@ struct ImageLoadInfo
     std::variant<std::string, ImageInfo> data;
     ImageContainerType                   containerType = {ImageContainerType::Default};
     vk::ImageCreateInfo*                 pCreateInfo   = {};
-    vk::Image*                           pImage        = {};
+    vk::Image**                          ppImage       = {};
 };
 
 struct BufferLoadInfo
