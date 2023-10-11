@@ -618,32 +618,35 @@ void SceneRenderer::_initGpuResources()
 
     // create index buffer
     {
-        auto             indicesList = m_scene->getIndices();
-        BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(indicesList.size()),
-            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_INDEX], indicesList.data());
+        auto                indicesList = m_scene->getIndices();
+        aph::BufferLoadInfo loadInfo{
+            .data       = indicesList.data(),
+            .createInfo = {.size  = static_cast<uint32_t>(indicesList.size() * sizeof(indicesList[0])),
+                           .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
+            .ppBuffer   = &m_buffers[BUFFER_SCENE_INDEX]};
+        m_pResourceLoader->loadBuffers(loadInfo);
     }
 
     // create vertex buffer
     {
-        auto             verticesList = m_scene->getVertices();
-        BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(verticesList.size()),
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_VERTEX], verticesList.data());
+        auto                verticesList = m_scene->getVertices();
+        aph::BufferLoadInfo loadInfo{
+            .data       = verticesList.data(),
+            .createInfo = {.size  = static_cast<uint32_t>(verticesList.size() * sizeof(verticesList[0])),
+                           .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+            .ppBuffer   = &m_buffers[BUFFER_SCENE_VERTEX]};
+        m_pResourceLoader->loadBuffers(loadInfo);
     }
 
     // create material buffer
     {
-        auto             materials = m_scene->getMaterials();
-        BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(materials.size() * sizeof(Material)),
-            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_SCENE_MATERIAL], materials.data());
+        auto                materials = m_scene->getMaterials();
+        aph::BufferLoadInfo loadInfo{
+            .data       = materials.data(),
+            .createInfo = {.size  = static_cast<uint32_t>(materials.size() * sizeof(materials[0])),
+                           .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
+            .ppBuffer   = &m_buffers[BUFFER_SCENE_MATERIAL]};
+        m_pResourceLoader->loadBuffers(loadInfo);
     }
 
     // load scene image to gpu
@@ -697,14 +700,17 @@ void SceneRenderer::_initGpuResources()
             .firstInstance = 0,
         });
 
-        BufferCreateInfo createInfo{
-            .size  = static_cast<uint32_t>(dispatchList.size() * sizeof(VkDispatchIndirectCommand)),
-            .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        };
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD], dispatchList.data());
+        aph::BufferLoadInfo loadInfo{
+            .data       = dispatchList.data(),
+            .createInfo = {.size  = static_cast<uint32_t>(dispatchList.size() * sizeof(dispatchList[0])),
+                           .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
+            .ppBuffer   = &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]};
+        m_pResourceLoader->loadBuffers(loadInfo);
 
-        createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(VkDrawIndirectCommand));
-        m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_INDIRECT_DRAW_CMD], drawList.data());
+        loadInfo.createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(drawList[0]));
+        loadInfo.ppBuffer        = &m_buffers[BUFFER_INDIRECT_DRAW_CMD];
+        loadInfo.data            = drawList.data();
+        m_pResourceLoader->loadBuffers(loadInfo);
     }
 
     {
@@ -748,11 +754,12 @@ void SceneRenderer::_initSkybox()
                                                1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
         // create vertex buffer
         {
-            BufferCreateInfo createInfo{
-                .size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(float)),
-                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            };
-            m_pDevice->createDeviceLocalBuffer(createInfo, &m_buffers[BUFFER_CUBE_VERTEX], skyboxVertices.data());
+            aph::BufferLoadInfo loadInfo{
+                .data       = (void*)skyboxVertices.data(),
+                .createInfo = {.size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(skyboxVertices[0])),
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+                .ppBuffer   = &m_buffers[BUFFER_CUBE_VERTEX]};
+            m_pResourceLoader->loadBuffers(loadInfo);
         }
     }
 

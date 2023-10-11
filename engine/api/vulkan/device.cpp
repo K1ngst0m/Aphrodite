@@ -624,40 +624,6 @@ VkResult Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, 
     return m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
 }
 
-VkResult Device::createDeviceLocalBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const void* data)
-{
-    // using staging buffer
-    Buffer* stagingBuffer{};
-    {
-        BufferCreateInfo stagingCI{
-            .size   = static_cast<uint32_t>(createInfo.size),
-            .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .domain = BufferDomain::Host,
-        };
-        _VR(createBuffer(stagingCI, &stagingBuffer));
-
-        createBuffer(stagingCI, &stagingBuffer);
-
-        mapMemory(stagingBuffer);
-        stagingBuffer->write(data);
-        unMapMemory(stagingBuffer);
-    }
-
-    Buffer* buffer = nullptr;
-    {
-        auto bufferCI   = createInfo;
-        bufferCI.domain = BufferDomain::Device;
-        bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        _VR(createBuffer(bufferCI, &buffer));
-    }
-
-    executeSingleCommands(QueueType::GRAPHICS,
-                          [&](CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, buffer, createInfo.size); });
-    *ppBuffer = buffer;
-    destroyBuffer(stagingBuffer);
-    return VK_SUCCESS;
-};
-
 VkResult Device::createDeviceLocalImage(const ImageCreateInfo& createInfo, Image** ppImage,
                                         const std::vector<uint8_t>& data)
 {
