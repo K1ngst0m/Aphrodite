@@ -1,27 +1,40 @@
-[[logo][file:https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/aph-logo.png]]
+[[file:https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/aph-logo.png]]
 
 * Aphrodite-next
 
-A pet engine written in C++, work in progress.
+  Aphrodite is a high-performance, Vulkan-based graphics engine designed for game development and graphics applications on Linux.
 
-[[editorUI][https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/screenshot.png]]
+[[file:https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/screenshot.png]]
+
+** Features
+
+  - Vulkan
+  - Resource Management
+  - Multi-threading
+  - Scene Management
+  - Built-in Windowing, Input, Event Support
+  - UI Support
+  - Shader Reflections
+  - Application Framework
 
 ** Cloning
 
-#+BEGIN_SRC bash
-git clone https://github.com/K1ngst0m/Aphrodite -b next
+  To clone the Aphrodite repository, execute the following commands:
 
-cd Aphrodite
-#+END_SRC
+  #+BEGIN_SRC bash
+  git clone https://github.com/K1ngst0m/Aphrodite -b next
+  cd Aphrodite
+  #+END_SRC
 
 ** Building and Running
 
-#+BEGIN_SRC bash
-cmake -B build && cmake --build build -- -j$(nproc)
+  To build and run the project, use the following commands:
 
-./build/bin/xxx
-#+END_SRC
+  #+BEGIN_SRC bash
+  cmake -B build && cmake --build build -- -j$(nproc)
+  ./build/bin/xxx
+  #+END_SRC
 
 ** Usage
 
-- see ~examples/xxxx/~
+  For usage examples, please refer to the ~examples/xxxx/~ directory.
