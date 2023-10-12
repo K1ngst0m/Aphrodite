@@ -132,9 +132,22 @@ void triangle_demo::finish()
     m_pDevice->destroyShaderProgram(m_pShaderProgram);
 }
 
-int main()
+int main(int argc, char** argv)
 {
     triangle_demo app;
+
+    // parse command
+    {
+        int               exitCode;
+        aph::CLICallbacks cbs;
+        cbs.add("--width", [&](aph::CLIParser& parser) { app.m_options.windowWidth = parser.nextUint(); });
+        cbs.add("--height", [&](aph::CLIParser& parser) { app.m_options.windowHeight = parser.nextUint(); });
+        cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
+        if(!aph::parseCliFiltered(std::move(cbs), argc, argv, exitCode))
+        {
+            return exitCode;
+        }
+    }
 
     app.init();
     app.run();
