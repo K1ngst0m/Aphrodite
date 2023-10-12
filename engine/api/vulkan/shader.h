@@ -95,15 +95,7 @@ public:
 
     ~ShaderProgram();
 
-    VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const
-    {
-        VkShaderStageFlags stage = 0;
-        size += offset;
-        const auto& constant = m_combineLayout.pushConstantRange;
-        stage |= constant.stageFlags;
-        offset += constant.size;
-        return stage;
-    }
+    VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
     ShaderMapList        getShaders() const { return m_shaders; }
@@ -113,9 +105,9 @@ public:
 private:
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
     void combineLayout(const ImmutableSamplerBank* samplerBank);
+    void createUpdateTemplates();
 
 private:
-    void                              createUpdateTemplates();
     Device*                           m_pDevice       = {};
     ShaderMapList                     m_shaders       = {};
     std::vector<DescriptorSetLayout*> m_pSetLayouts   = {};

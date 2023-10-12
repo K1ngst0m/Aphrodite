@@ -109,18 +109,16 @@ void base_texture::init()
 
         // descriptor set
         {
-            VkDescriptorImageInfo textureInfo{
-                .sampler     = m_pSampler->getHandle(),
-                .imageView   = m_pImage->getView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            };
-            m_textureSet = m_pPipeline->getProgram()->getSetLayout(0)->allocateSet();
-            std::vector<VkWriteDescriptorSet> writes{
-                aph::vk::init::writeDescriptorSet(m_textureSet, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0,
-                                                  &textureInfo),
-            };
-
-            vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
+            auto setLayout = m_pPipeline->getProgram()->getSetLayout(0);
+            m_textureSet   = setLayout->allocateSet();
+            setLayout->updateSet(
+                {
+                    .binding     = 0,
+                    .arrayOffset = 0,
+                    .images      = {m_pImage},
+                    .samplers    = {m_pSampler},
+                },
+                m_textureSet);
         }
     }
 }

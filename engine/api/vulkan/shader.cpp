@@ -592,4 +592,13 @@ ShaderProgram::~ShaderProgram()
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
 }
+VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32_t size) const
+{
+    VkShaderStageFlags stage = 0;
+    size += offset;
+    const auto& constant = m_combineLayout.pushConstantRange;
+    stage |= constant.stageFlags;
+    offset += constant.size;
+    return stage;
+}
 }  // namespace aph::vk
