@@ -19,6 +19,8 @@ set(SPIRV_SKIP_TESTS ON CACHE BOOL "" FORCE)
 set(SPIRV_CROSS_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "" FORCE)
 
+add_compile_options(-w)
+
 add_subdirectory(external/glfw)
 add_subdirectory(external/reckless)
 add_subdirectory(external/imgui)

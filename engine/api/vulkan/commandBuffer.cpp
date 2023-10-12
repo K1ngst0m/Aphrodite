@@ -92,8 +92,8 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_
 {
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
 
-    VkBuffer vkbuffer                             = pBuffer->getHandle();
-    m_commandState.vertexBinding.buffers[binding] = pBuffer->getHandle();
+    VkBuffer vkBuffer                             = pBuffer->getHandle();
+    m_commandState.vertexBinding.buffers[binding] = vkBuffer;
     m_commandState.vertexBinding.offsets[binding] = offset;
     m_commandState.vertexBinding.dirty |= 1u << binding;
 }

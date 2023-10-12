@@ -159,10 +159,10 @@ void base_texture::run()
         cb->endRendering();
         cb->end();
 
-        aph::vk::QueueSubmitInfo submitInfo{};
-        submitInfo.commandBuffers.push_back(cb);
-        submitInfo.waitSemaphores.push_back(m_renderer->getRenderSemaphore());
-        submitInfo.signalSemaphores.push_back(m_renderer->getPresentSemaphore());
+        aph::vk::QueueSubmitInfo submitInfo{.commandBuffers   = {cb},
+                                            .waitSemaphores   = {m_renderer->getRenderSemaphore()},
+                                            .signalSemaphores = {m_renderer->getPresentSemaphore()}};
+
         queue->submit({submitInfo}, m_renderer->getFrameFence());
 
         m_renderer->endFrame();
