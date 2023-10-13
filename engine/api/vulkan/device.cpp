@@ -344,11 +344,6 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
     return VK_SUCCESS;
 }
 
-PhysicalDevice* Device::getPhysicalDevice() const
-{
-    return m_physicalDevice;
-}
-
 void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
@@ -468,8 +463,10 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
 
     APH_ASSERT(createInfo.pVertex && createInfo.pFragment);
 
-    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, createInfo.pVertex->getHandle()));
-    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
+    shaderStages.push_back(
+        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, createInfo.pVertex->getHandle()));
+    shaderStages.push_back(
+        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
 
     auto program = new ShaderProgram(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
 
@@ -596,11 +593,11 @@ void Device::destroy(Pipeline* pipeline)
 VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     APH_ASSERT(createInfo.pCompute);
-    auto program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
-    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(program->getPipelineLayout());
-    ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                         program->getShader(ShaderStage::CS)->getHandle());
-    VkPipeline handle              = VK_NULL_HANDLE;
+    auto                        program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
+    VkComputePipelineCreateInfo ci      = init::computePipelineCreateInfo(program->getPipelineLayout());
+    ci.stage                            = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
+                                                                              program->getShader(ShaderStage::CS)->getHandle());
+    VkPipeline handle                   = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
     *ppPipeline = new Pipeline(this, createInfo, handle, program);
     return VK_SUCCESS;
@@ -736,7 +733,7 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
 
 VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
 {
-    VkSampler                sampler    = {};
+    VkSampler sampler = {};
     YcbcrData ycbcr;
 
     // default sampler lod values
@@ -751,23 +748,23 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
     }
 
     VkSamplerCreateInfo ci{
-        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext                   = nullptr,
-        .flags                   = 0,
-        .magFilter               = createInfo.magFilter,
-        .minFilter               = createInfo.minFilter,
-        .mipmapMode              = createInfo.mipMapMode,
-        .addressModeU            = createInfo.addressU,
-        .addressModeV            = createInfo.addressV,
-        .addressModeW            = createInfo.addressW,
-        .mipLodBias              = createInfo.mipLodBias,
-        .anisotropyEnable        = createInfo.maxAnisotropy > 0.0f ? VK_TRUE : VK_FALSE,
-        .maxAnisotropy           = createInfo.maxAnisotropy,
-        .compareEnable           = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
-        .compareOp               = createInfo.compareFunc,
-        .minLod                  = minSamplerLod,
-        .maxLod                  = maxSamplerLod,
-        .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext            = nullptr,
+        .flags            = 0,
+        .magFilter        = createInfo.magFilter,
+        .minFilter        = createInfo.minFilter,
+        .mipmapMode       = createInfo.mipMapMode,
+        .addressModeU     = createInfo.addressU,
+        .addressModeV     = createInfo.addressV,
+        .addressModeW     = createInfo.addressW,
+        .mipLodBias       = createInfo.mipLodBias,
+        .anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && getFeatures().samplerAnisotropy) ? VK_TRUE : VK_FALSE,
+        .maxAnisotropy    = createInfo.maxAnisotropy,
+        .compareEnable    = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
+        .compareOp        = createInfo.compareFunc,
+        .minLod           = minSamplerLod,
+        .maxLod           = maxSamplerLod,
+        .borderColor      = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
@@ -806,8 +803,8 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
 
         _VR(vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, nullptr, &ycbcr.conversion));
 
-        ycbcr.info.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
-        ycbcr.info.pNext = nullptr;
+        ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+        ycbcr.info.pNext      = nullptr;
         ycbcr.info.conversion = ycbcr.conversion;
 
         ci.pNext = &ycbcr.info;
@@ -825,7 +822,7 @@ void Device::destroy(Sampler* pSampler)
     pSampler = nullptr;
 }
 
-VkResult Device::executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
+VkResult Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
 {
     CommandBuffer* cmd = nullptr;
     _VR(allocateCommandBuffers(1, &cmd, queue));
@@ -843,7 +840,7 @@ VkResult Device::executeSingleCommands(Queue* queue, const std::function<void(Co
     return VK_SUCCESS;
 }
 
-VkResult Device::executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func)
+VkResult Device::executeSingleCommands(QueueType type, const CmdRecordCallBack&& func)
 {
     auto* queue = getQueueByFlags(type);
     return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
@@ -876,8 +873,4 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
     return VK_SUCCESS;
 }
 
-VkResult Device::resetCommandPool(VkCommandPool pPool)
-{
-    return m_table.vkResetCommandPool(getHandle(), pPool, 0);
-}
 }  // namespace aph::vk

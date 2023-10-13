@@ -21,7 +21,6 @@ public:
 
 private:
     aph::vk::Pipeline*      m_pPipeline      = {};
-    aph::vk::ShaderProgram* m_pShaderProgram = {};
     aph::vk::Buffer*        m_pVB            = {};
     aph::vk::Buffer*        m_pIB            = {};
 
