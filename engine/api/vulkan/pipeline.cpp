@@ -1,6 +1,7 @@
 #include "pipeline.h"
 #include "scene/mesh.h"
 #include "device.h"
+#include "shader.h"
 
 namespace aph::vk
 {
@@ -317,4 +318,10 @@ Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline h
     APH_ASSERT(pProgram);
     getHandle() = handle;
 }
+
+DescriptorSet* Pipeline::acquireSet(uint32_t idx) const
+{
+    return m_pProgram->getSetLayout(idx)->allocateSet();
+}
+
 }  // namespace aph::vk

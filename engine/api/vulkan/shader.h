@@ -10,6 +10,7 @@ class Device;
 class Sampler;
 class ImmutableSampler;
 class DescriptorSetLayout;
+class DescriptorSet;
 
 struct ShaderLayout
 {

@@ -3,8 +3,7 @@
 
 #include "buffer.h"
 #include "commandBuffer.h"
-#include "descriptorPool.h"
-#include "descriptorSetLayout.h"
+#include "descriptorSet.h"
 #include "image.h"
 #include "sampler.h"
 #include "physicalDevice.h"

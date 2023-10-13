@@ -79,13 +79,13 @@ void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 }
 
 void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
-                                      const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
+                                      const DescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
                                       const uint32_t* pDynamicOffset)
 {
     APH_ASSERT(m_commandState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
-                                            m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
-                                            descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffset);
+    m_pDeviceTable->vkCmdBindDescriptorSets(
+        m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getProgram()->getPipelineLayout(),
+        firstSet, descriptorSetCount, &pDescriptorSets->getHandle(), dynamicOffsetCount, pDynamicOffset);
 }
 
 void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_t offset)
@@ -360,18 +360,24 @@ void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uin
     flushGraphicsCommand();
     m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
-void CommandBuffer::bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet)
+void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet)
 {
     APH_ASSERT(m_commandState.pPipeline != nullptr);
+    std::vector<VkDescriptorSet> vkSets;
+    vkSets.reserve(descriptorSets.size());
+    for(auto set : descriptorSets)
+    {
+        vkSets.push_back(set->getHandle());
+    }
     m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
                                             m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
-                                            pDescriptorSets.size(), pDescriptorSets.data(), 0, nullptr);
+                                            vkSets.size(), vkSets.data(), 0, nullptr);
 }
 
 void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth)
 {
-    std::vector<AttachmentInfo>   colorAttachments = {};
-    AttachmentInfo depthAttachment  = {};
+    std::vector<AttachmentInfo> colorAttachments = {};
+    AttachmentInfo              depthAttachment  = {};
     colorAttachments.reserve(colors.size());
     for(auto color : colors)
     {

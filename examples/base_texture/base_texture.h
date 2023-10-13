@@ -20,13 +20,12 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline*      m_pPipeline      = {};
-    aph::vk::Buffer*        m_pVB            = {};
-    aph::vk::Buffer*        m_pIB            = {};
-    aph::vk::Sampler*       m_pSampler       = {};
-    aph::vk::Image*         m_pImage         = {};
-
-    VkDescriptorSet m_textureSet = {};
+    aph::vk::Pipeline*      m_pPipeline  = {};
+    aph::vk::Buffer*        m_pVB        = {};
+    aph::vk::Buffer*        m_pIB        = {};
+    aph::vk::Sampler*       m_pSampler   = {};
+    aph::vk::Image*         m_pImage     = {};
+    aph::vk::DescriptorSet* m_pTextureSet = {};
 
 private:
     std::unique_ptr<aph::WSI>          m_wsi      = {};

@@ -107,16 +107,13 @@ void base_texture::init()
 
         // descriptor set
         {
-            auto setLayout = m_pPipeline->getProgram()->getSetLayout(0);
-            m_textureSet   = setLayout->allocateSet();
-            setLayout->updateSet(
-                {
-                    .binding     = 0,
-                    .arrayOffset = 0,
-                    .images      = {m_pImage},
-                    .samplers    = {m_pSampler},
-                },
-                m_textureSet);
+            m_pTextureSet = m_pPipeline->acquireSet(0);
+            m_pTextureSet->update({
+                .binding     = 0,
+                .arrayOffset = 0,
+                .images      = {m_pImage},
+                .samplers    = {m_pSampler},
+            });
         }
     }
 }
@@ -147,7 +144,7 @@ void base_texture::run()
         cb->bindVertexBuffers(m_pVB);
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
-        cb->bindDescriptorSet({m_textureSet});
+        cb->bindDescriptorSet({m_pTextureSet});
         cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {presentImage});
         cb->insertDebugLabel({
             .name  = "draw a quad with texture",

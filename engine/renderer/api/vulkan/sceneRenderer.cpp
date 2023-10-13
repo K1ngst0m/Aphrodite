@@ -244,11 +244,11 @@ void SceneRenderer::_initSet()
     }
     // scene
     {
-        m_sceneSet = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(0)->allocateSet();
+        m_sceneSet = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->acquireSet(0);
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
-            init::writeDescriptorSet(m_sceneSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo),
+            init::writeDescriptorSet(m_sceneSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0, &sceneBufferInfo),
+            init::writeDescriptorSet(m_sceneSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_sceneSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 3, &lightBufferInfo),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -257,11 +257,11 @@ void SceneRenderer::_initSet()
     {
         m_geometrySet = m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]->getProgram()->getSetLayout(0)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
-            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
-            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
                                      textureInfos.size()),
-            init::writeDescriptorSet(m_geometrySet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -270,8 +270,8 @@ void SceneRenderer::_initSet()
     {
         m_skyboxSet = m_pipelines[PIPELINE_GRAPHICS_SKYBOX]->getProgram()->getSetLayout(0)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_skyboxSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
-            init::writeDescriptorSet(m_skyboxSet, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxImageInfo),
+            init::writeDescriptorSet(m_skyboxSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_skyboxSet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 6, &skyBoxImageInfo),
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -290,8 +290,8 @@ void SceneRenderer::_initSet()
 
             m_postFxSets[idx] = m_pipelines[PIPELINE_COMPUTE_POSTFX]->getProgram()->getSetLayout(0)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
-                init::writeDescriptorSet(m_postFxSets[idx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
             };
             vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
@@ -323,12 +323,12 @@ void SceneRenderer::_initSet()
                                                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             m_gbufferSets[idx] = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(2)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx], VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
             };
 
             vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -339,8 +339,8 @@ void SceneRenderer::_initSet()
     {
         m_shadowSet = m_pipelines[PIPELINE_GRAPHICS_SHADOW]->getProgram()->getSetLayout(0)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_shadowSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
-            init::writeDescriptorSet(m_shadowSet, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
+            init::writeDescriptorSet(m_shadowSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_shadowSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
         };
 
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -354,9 +354,9 @@ void SceneRenderer::_initSet()
         VkDescriptorImageInfo sampCubemapInfo{.sampler = m_samplers[SAMP_CUBEMAP]->getHandle()};
 
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 0, &sampTextureInfo),
-            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 1, &sampShadowInfo),
-            init::writeDescriptorSet(m_samplerSet, VK_DESCRIPTOR_TYPE_SAMPLER, 2, &sampCubemapInfo),
+            init::writeDescriptorSet(m_samplerSet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLER, 0, &sampTextureInfo),
+            init::writeDescriptorSet(m_samplerSet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLER, 1, &sampShadowInfo),
+            init::writeDescriptorSet(m_samplerSet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLER, 2, &sampCubemapInfo),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -954,9 +954,9 @@ void SceneRenderer::recordPostFX(CommandBuffer* pCommandBuffer)
             VkDescriptorImageInfo outputImageInfo{.imageView   = m_pSwapChain->getImage()->getView()->getHandle(),
                                                   .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             std::vector<VkWriteDescriptorSet> writes = {
-                init::writeDescriptorSet(m_postFxSets[m_frameIdx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
+                init::writeDescriptorSet(m_postFxSets[m_frameIdx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
                                          &inputImageInfo),
-                init::writeDescriptorSet(m_postFxSets[m_frameIdx], VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+                init::writeDescriptorSet(m_postFxSets[m_frameIdx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
                                          &outputImageInfo),
             };
             vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);

@@ -13,7 +13,7 @@ function(aph_compiler_options TARGET)
         POSITION_INDEPENDENT_CODE TRUE
     )
 
-    target_compile_features(${TARGET} PUBLIC cxx_std_17)
+    target_compile_features(${TARGET} PUBLIC cxx_std_20)
     target_compile_features(${TARGET} PUBLIC c_std_11)
 
     # Compiler flags for GCC/Clang

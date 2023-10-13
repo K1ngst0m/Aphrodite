@@ -14,6 +14,7 @@ class Image;
 class ImageView;
 class Sampler;
 class Queue;
+class DescriptorSet;
 
 struct CommandPoolCreateInfo
 {
@@ -107,8 +108,8 @@ public:
     void setScissor(const VkExtent2D& extent);
     void setViewport(const VkViewport& viewport);
     void setScissor(const VkRect2D& scissor);
-    void bindDescriptorSet(const std::vector<VkDescriptorSet>& pDescriptorSets, uint32_t firstSet = 0);
-    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets,
+    void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
+    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const DescriptorSet* pDescriptorSets,
                            uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, uint32_t offset = 0);

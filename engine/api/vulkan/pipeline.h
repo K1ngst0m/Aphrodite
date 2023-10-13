@@ -2,12 +2,16 @@
 #define PIPELINE_H_
 
 #include "api/gpuResource.h"
-#include "shader.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
 class Device;
+class DescriptorSet;
+class Sampler;
+class ShaderProgram;
+class Shader;
+struct ImmutableSamplerBank;
 
 enum
 {
@@ -209,8 +213,10 @@ public:
     Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle, ShaderProgram* pProgram);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle, ShaderProgram* pProgram);
 
-    ShaderProgram*      getProgram() { return m_pProgram; }
-    VkPipelineBindPoint getBindPoint() { return m_bindPoint; }
+    DescriptorSet* acquireSet(uint32_t idx) const;
+
+    ShaderProgram*      getProgram() const { return m_pProgram; }
+    VkPipelineBindPoint getBindPoint() const { return m_bindPoint; }
 
 protected:
     Device*             m_pDevice   = {};

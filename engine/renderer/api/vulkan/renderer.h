@@ -96,7 +96,7 @@ protected:
         uint32_t vertexCount   = {};
         uint32_t indexCount    = {};
 
-        VkDescriptorSet set = {};
+        DescriptorSet* set = {};
 
         float scale = {1.1f};
     } m_ui;
