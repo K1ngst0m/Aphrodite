@@ -64,7 +64,7 @@ static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType&
 
 // create descriptor set layout
 static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
-                                                      const ImmutableSampler* const*     pImmutableSamplers,
+                                                      const Sampler* const*              pImmutableSamplers,
                                                       const uint32_t*                    stageForBinds,
                                                       std::vector<VkDescriptorPoolSize>& poolSize)
 {
@@ -95,7 +95,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
         if(layout.sampledImageMask & (1u << i))
         {
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-                vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
 
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
@@ -155,7 +155,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
         if(layout.samplerMask & (1u << i))
         {
             if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-                vkImmutableSamplers[i] = pImmutableSamplers[i]->getSampler()->getHandle();
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
 
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});

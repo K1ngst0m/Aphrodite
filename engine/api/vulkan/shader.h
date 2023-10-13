@@ -7,6 +7,7 @@
 namespace aph::vk
 {
 class Device;
+class Sampler;
 class ImmutableSampler;
 class DescriptorSetLayout;
 
@@ -65,7 +66,7 @@ struct CombinedResourceLayout
 
 struct ImmutableSamplerBank
 {
-    const ImmutableSampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
+    const Sampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
 };
 
 class Shader : public ResourceHandle<VkShaderModule>

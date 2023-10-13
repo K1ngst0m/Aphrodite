@@ -48,44 +48,15 @@ class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
 {
 public:
     Sampler(Device* pDevice, const SamplerCreateInfo& createInfo, VkSampler handle, const YcbcrData* pYcbcr = nullptr);
+    VkSamplerYcbcrConversion getConversion() const { return m_ycbcr.conversion; }
+    bool                     isImmutable() const { return m_isImmutable; }
+    bool                     hasConversion() const { return m_ycbcr.conversion != VK_NULL_HANDLE; }
 
 private:
     Device* m_pDevice     = {};
     bool    m_isImmutable = {};
 
     YcbcrData m_ycbcr;
-};
-
-class ImmutableYcbcrConversion
-{
-public:
-    // ImmutableYcbcrConversion(Device* device, const VkSamplerYcbcrConversionCreateInfo& info);
-    ~ImmutableYcbcrConversion();
-    void operator=(const ImmutableYcbcrConversion&)           = delete;
-    ImmutableYcbcrConversion(const ImmutableYcbcrConversion&) = delete;
-
-    VkSamplerYcbcrConversion getConversion() const { return m_conversion; }
-
-private:
-    Device*                  m_pDevice    = {};
-    VkSamplerYcbcrConversion m_conversion = {};
-};
-
-class ImmutableSampler
-{
-public:
-    ImmutableSampler(Device* device, const SamplerCreateInfo& info, const ImmutableYcbcrConversion* ycbcr = nullptr);
-    void operator=(const ImmutableSampler&)   = delete;
-    ImmutableSampler(const ImmutableSampler&) = delete;
-
-    Sampler* getSampler() const { return m_pSampler; }
-
-    VkSamplerYcbcrConversion getYcbcrConversion() const;
-
-private:
-    Device*                         m_pDevice  = {};
-    const ImmutableYcbcrConversion* m_pYcbcr   = {};
-    Sampler*                        m_pSampler = {};
 };
 
 }  // namespace aph::vk
