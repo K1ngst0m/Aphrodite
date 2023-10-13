@@ -262,7 +262,7 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
     *ppBuffer = new Buffer(createInfo, buffer, memory);
 
     // bind buffer and memory
-    _VR(bindMemory(*ppBuffer));
+    _VR(m_table.vkBindBufferMemory(getHandle(), (*ppBuffer)->getHandle(), (*ppBuffer)->getMemory(), 0));
 
     return VK_SUCCESS;
 }
@@ -338,7 +338,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE)
     {
-        _VR(bindMemory(*ppImage));
+        _VR(m_table.vkBindImageMemory(getHandle(), (*ppImage)->getHandle(), (*ppImage)->getMemory(), 0));
     }
 
     return VK_SUCCESS;
@@ -639,16 +639,6 @@ VkResult Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, V
         return m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &pBuffer->getMapped());
     }
     return m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped);
-}
-
-VkResult Device::bindMemory(Buffer* pBuffer, VkDeviceSize offset)
-{
-    return m_table.vkBindBufferMemory(getHandle(), pBuffer->getHandle(), pBuffer->getMemory(), offset);
-}
-
-VkResult Device::bindMemory(Image* pImage, VkDeviceSize offset)
-{
-    return m_table.vkBindImageMemory(getHandle(), pImage->getHandle(), pImage->getMemory(), offset);
 }
 
 void Device::unMapMemory(Buffer* pBuffer)

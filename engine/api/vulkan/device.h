@@ -69,8 +69,6 @@ public:
 public:
     VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
     VkResult invalidateMemory(VkDeviceMemory memory, VkDeviceSize size = 0, VkDeviceSize offset = VK_WHOLE_SIZE);
-    VkResult bindMemory(Buffer* pBuffer, VkDeviceSize offset = 0);
-    VkResult bindMemory(Image* pImage, VkDeviceSize offset = 0);
     VkResult mapMemory(Buffer* pBuffer, void* mapped = nullptr, VkDeviceSize offset = 0,
                        VkDeviceSize size = VK_WHOLE_SIZE);
     void     unMapMemory(Buffer* pBuffer);
