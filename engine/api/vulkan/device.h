@@ -45,7 +45,7 @@ public:
     VkResult create(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
     VkResult create(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
     VkResult create(const ImageCreateInfo& createInfo, Image** ppImage);
-    VkResult create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
+    VkResult create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
     VkResult create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
     VkResult create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
     VkResult create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);

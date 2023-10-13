@@ -43,19 +43,20 @@ ImageView* Image::getView(VkFormat imageFormat)
                                  .levelCount     = m_createInfo.mipLevels,
                                  .baseArrayLayer = 0,
                                  .layerCount     = m_createInfo.arraySize},
+            .pImage           = this,
         };
         // cubemap
         if(m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arraySize == 6)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }
-        m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat], this);
+        m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]);
     }
 
     return m_imageViewFormatMap[imageFormat];
 }
 
-ImageView::ImageView(const ImageViewCreateInfo& createInfo, Image* pImage, VkImageView handle) : m_image(pImage)
+ImageView::ImageView(const ImageViewCreateInfo& createInfo, VkImageView handle) : m_image(createInfo.pImage)
 {
     getHandle()     = handle;
     getCreateInfo() = createInfo;

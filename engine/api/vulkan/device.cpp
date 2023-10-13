@@ -180,12 +180,12 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage)
+VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext    = nullptr,
-        .image    = pImage->getHandle(),
+        .image    = createInfo.pImage->getHandle(),
         .viewType = createInfo.viewType,
         .format   = createInfo.format,
     };
@@ -201,7 +201,7 @@ VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppIma
     VkImageView handle = VK_NULL_HANDLE;
     _VR(m_table.vkCreateImageView(getHandle(), &info, nullptr, &handle));
 
-    *ppImageView = new ImageView(createInfo, pImage, handle);
+    *ppImageView = new ImageView(createInfo, handle);
 
     return VK_SUCCESS;
 }
