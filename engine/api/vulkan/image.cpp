@@ -17,7 +17,7 @@ Image::~Image()
 {
     for(auto& [_, imageView] : m_imageViewFormatMap)
     {
-        m_pDevice->destroyImageView(imageView);
+        m_pDevice->destroy(imageView);
     }
 }
 
@@ -49,7 +49,7 @@ ImageView* Image::getView(VkFormat imageFormat)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }
-        m_pDevice->createImageView(createInfo, &m_imageViewFormatMap[imageFormat], this);
+        m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat], this);
     }
 
     return m_imageViewFormatMap[imageFormat];

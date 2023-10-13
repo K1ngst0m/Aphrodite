@@ -42,41 +42,35 @@ public:
     static void                    Destroy(Device* pDevice);
 
 public:
-    VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage);
-    VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
-    VkResult executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
+    VkResult create(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
+    VkResult create(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
+    VkResult create(const ImageCreateInfo& createInfo, Image** ppImage);
+    VkResult create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
+    VkResult create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
+    VkResult create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
+    VkResult create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    VkResult create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
 
 public:
-    VkResult createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable);
-    VkResult createSampler(SamplerPreset preset, Sampler** ppSampler, bool immutable);
-    VkResult createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
-    VkResult createImage(const ImageCreateInfo& createInfo, Image** ppImage);
-    VkResult createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage);
+    void destroy(ShaderProgram* pProgram);
+    void destroy(Buffer* pBuffer);
+    void destroy(Image* pImage);
+    void destroy(ImageView* pImageView);
+    void destroy(SwapChain* pSwapchain);
+    void destroy(VkCommandPool pPool);
+    void destroy(Pipeline* pipeline);
+    void destroy(Sampler* pSampler);
+
+public:
+    VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage);
     VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,
                                  const ImmutableSamplerBank* samplerBank = nullptr);
     VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* cs,
                                  const ImmutableSamplerBank* samplerBank = nullptr);
-    VkResult createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    VkResult createCommandPool(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
-    VkResult createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
-    VkResult createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
-    VkResult createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
-                                       DescriptorSetLayout**                  ppDescriptorSetLayout);
-    VkResult createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,
-                                       DescriptorSetLayout**                            ppDescriptorSetLayout);
 
+    VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
+    VkResult executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
     VkResult resetCommandPool(VkCommandPool pPool);
-
-public:
-    void destroyShaderProgram(ShaderProgram* pProgram);
-    void destroyBuffer(Buffer* pBuffer);
-    void destroyImage(Image* pImage);
-    void destroyImageView(ImageView* pImageView);
-    void destroySwapchain(SwapChain* pSwapchain);
-    void destroyCommandPool(VkCommandPool pPool);
-    void destroyPipeline(Pipeline* pipeline);
-    void destroyDescriptorSetLayout(DescriptorSetLayout* pLayout);
-    void destroySampler(Sampler* pSampler);
 
 public:
     VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);

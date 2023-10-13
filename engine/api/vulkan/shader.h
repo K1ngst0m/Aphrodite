@@ -105,7 +105,6 @@ public:
 private:
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
     void combineLayout(const ImmutableSamplerBank* samplerBank);
-    void createUpdateTemplates();
 
 private:
     Device*                           m_pDevice       = {};

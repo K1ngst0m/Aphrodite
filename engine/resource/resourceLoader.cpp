@@ -7,18 +7,25 @@
 
 namespace
 {
-inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo* pOutCI, std::vector<uint8_t>& data)
+inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
     if(!std::filesystem::exists(path))
     {
+        CM_LOG_ERR("File does not exist: %s", path.c_str());
         return false;
     }
 
     std::ifstream file(path, std::ios::binary | std::ios::ate);
-    ssize_t       ktxDataSize = file.tellg();
+    if(!file.is_open())
+    {
+        CM_LOG_ERR("Failed to open file: %s", path.c_str());
+        return false;
+    }
 
+    const auto ktxDataSize = static_cast<std::uint64_t>(file.tellg());
     if(ktxDataSize > UINT32_MAX)
     {
+        CM_LOG_ERR("File too large: %s", path.c_str());
         return false;
     }
 
@@ -47,7 +54,7 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo*
         return false;
     }
 
-    aph::vk::ImageCreateInfo& textureCI = *pOutCI;
+    aph::vk::ImageCreateInfo& textureCI = outCI;
     textureCI.extent                    = {
                            .width  = TinyKtx_Width(ctx),
                            .height = TinyKtx_Height(ctx),
@@ -76,7 +83,7 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo*
     return true;
 }
 
-inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateInfo* pOutCI, std::vector<uint8_t>& data)
+inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
     auto img = aph::utils::loadImageFromFile(path.c_str());
 
@@ -85,7 +92,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
         return false;
     }
 
-    aph::vk::ImageCreateInfo& textureCI = *pOutCI;
+    aph::vk::ImageCreateInfo& textureCI = outCI;
 
     textureCI.extent = {
         .width  = img->width,
@@ -132,7 +139,7 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 {
 }
 
-void ResourceLoader::loadImages(ImageLoadInfo& info)
+void ResourceLoader::load(ImageLoadInfo& info)
 {
     std::filesystem::path path;
     std::vector<uint8_t>  data;
@@ -146,21 +153,20 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
     {
         path = {std::get<std::string>(info.data)};
 
-        auto containerType = info.containerType == ImageContainerType::Default
-                             ? GetImageContainerType(path)
-                             : info.containerType;
+        auto containerType =
+            info.containerType == ImageContainerType::Default ? GetImageContainerType(path) : info.containerType;
 
         switch(containerType)
         {
         case ImageContainerType::Ktx:
         {
-            loadKTX(path, &ci, data);
+            loadKTX(path, ci, data);
         }
         break;
         case ImageContainerType::Png:
         case ImageContainerType::Jpg:
         {
-            loadPNGJPG(path, &ci, data);
+            loadPNGJPG(path, ci, data);
         }
         break;
         case ImageContainerType::Default:
@@ -187,7 +193,7 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        m_pDevice->createBuffer(bufferCI, &stagingBuffer);
+        m_pDevice->create(bufferCI, &stagingBuffer);
 
         m_pDevice->mapMemory(stagingBuffer);
         stagingBuffer->write(data.data());
@@ -204,7 +210,7 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
             imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
-        m_pDevice->createImage(imageCI, &image);
+        m_pDevice->create(imageCI, &image);
 
         m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -264,11 +270,11 @@ void ResourceLoader::loadImages(ImageLoadInfo& info)
         });
     }
 
-    m_pDevice->destroyBuffer(stagingBuffer);
+    m_pDevice->destroy(stagingBuffer);
     *info.ppImage = image;
 }
 
-void ResourceLoader::loadBuffers(BufferLoadInfo& info)
+void ResourceLoader::load(BufferLoadInfo& info)
 {
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
@@ -281,7 +287,7 @@ void ResourceLoader::loadBuffers(BufferLoadInfo& info)
             .domain = BufferDomain::Host,
         };
 
-        m_pDevice->createBuffer(stagingCI, &stagingBuffer);
+        m_pDevice->create(stagingCI, &stagingBuffer);
 
         m_pDevice->mapMemory(stagingBuffer);
         stagingBuffer->write(info.data);
@@ -291,13 +297,13 @@ void ResourceLoader::loadBuffers(BufferLoadInfo& info)
     {
         bufferCI.domain = BufferDomain::Device;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        m_pDevice->createBuffer(bufferCI, info.ppBuffer);
+        m_pDevice->create(bufferCI, info.ppBuffer);
     }
 
     m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
         cmd->copyBuffer(stagingBuffer, *info.ppBuffer, bufferCI.size);
     });
 
-    m_pDevice->destroyBuffer(stagingBuffer);
+    m_pDevice->destroy(stagingBuffer);
 }
 }  // namespace aph

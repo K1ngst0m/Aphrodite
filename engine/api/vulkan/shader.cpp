@@ -178,7 +178,12 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     VK_LOG_INFO("Creating descriptor set layout.");
 #endif
     DescriptorSetLayout* setLayout{};
-    VK_CHECK_RESULT(m_pDevice->createDescriptorSetLayout(info, &setLayout));
+    {
+        VkDescriptorSetLayout vkSetLayout;
+        VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, nullptr,
+                                                                                 &vkSetLayout));
+        setLayout = new DescriptorSetLayout(m_pDevice, info, vkSetLayout);
+    }
     return setLayout;
 };
 
@@ -576,19 +581,14 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
     auto table = m_pDevice->getDeviceTable();
     if(table->vkCreatePipelineLayout(m_pDevice->getHandle(), &info, nullptr, &m_pipeLayout) != VK_SUCCESS)
         VK_LOG_ERR("Failed to create pipeline layout.");
-
-    createUpdateTemplates();
-}
-
-void ShaderProgram::createUpdateTemplates()
-{
 }
 
 ShaderProgram::~ShaderProgram()
 {
     for(auto* setLayout : m_pSetLayouts)
     {
-        m_pDevice->destroyDescriptorSetLayout(setLayout);
+        vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), nullptr);
+        delete setLayout;
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
 }

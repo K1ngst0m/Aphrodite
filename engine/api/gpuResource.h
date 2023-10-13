@@ -54,7 +54,6 @@ enum class SamplerPreset
     Linear,
     Anisotropic,
     Mipmap,
-    Border,
 };
 
 struct Extent3D

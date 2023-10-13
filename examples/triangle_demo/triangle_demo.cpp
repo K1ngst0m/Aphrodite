@@ -39,7 +39,7 @@ void triangle_demo::init()
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
                 .ppBuffer   = &m_pVB};
 
-            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo);
         }
 
         // index buffer
@@ -50,7 +50,7 @@ void triangle_demo::init()
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
                 .ppBuffer   = &m_pIB};
-            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo);
         }
 
         // pipeline
@@ -73,7 +73,7 @@ void triangle_demo::init()
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pPipeline));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
         }
     }
 }
@@ -126,10 +126,10 @@ void triangle_demo::run()
 void triangle_demo::finish()
 {
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroyBuffer(m_pVB);
-    m_pDevice->destroyBuffer(m_pIB);
-    m_pDevice->destroyPipeline(m_pPipeline);
-    m_pDevice->destroyShaderProgram(m_pShaderProgram);
+    m_pDevice->destroy(m_pVB);
+    m_pDevice->destroy(m_pIB);
+    m_pDevice->destroy(m_pPipeline);
+    m_pDevice->destroy(m_pShaderProgram);
 }
 
 int main(int argc, char** argv)

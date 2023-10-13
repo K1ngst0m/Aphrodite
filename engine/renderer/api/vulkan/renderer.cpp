@@ -143,7 +143,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             .instance = m_pInstance,
             .wsi      = m_wsi,
         };
-        VK_CHECK_RESULT(m_pDevice->createSwapchain(createInfo, &m_pSwapChain));
+        VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pSwapChain));
     }
 
     // init default resources
@@ -334,7 +334,7 @@ Renderer::~Renderer()
 
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
 
-    m_pDevice->destroySwapchain(m_pSwapChain);
+    m_pDevice->destroy(m_pSwapChain);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
     Device::Destroy(m_pDevice.get());
     Instance::Destroy(m_pInstance);
@@ -471,9 +471,9 @@ bool Renderer::updateUIDrawData(float deltaTime)
             {
                 m_pDevice->waitIdle();
                 m_pDevice->unMapMemory(m_ui.pVertexBuffer);
-                m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
+                m_pDevice->destroy(m_ui.pVertexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.pVertexBuffer));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_ui.pVertexBuffer));
             m_ui.vertexCount = imDrawData->TotalVtxCount;
             m_pDevice->mapMemory(m_ui.pVertexBuffer);
             updateCmdBuffers = true;
@@ -488,9 +488,9 @@ bool Renderer::updateUIDrawData(float deltaTime)
             {
                 m_pDevice->waitIdle();
                 m_pDevice->unMapMemory(m_ui.pIndexBuffer);
-                m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
+                m_pDevice->destroy(m_ui.pIndexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->createBuffer(createInfo, &m_ui.pIndexBuffer));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_ui.pIndexBuffer));
             m_ui.indexCount = imDrawData->TotalIdxCount;
             m_pDevice->mapMemory(m_ui.pIndexBuffer);
             updateCmdBuffers = true;

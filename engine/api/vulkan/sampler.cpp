@@ -1,9 +1,9 @@
 #include "sampler.h"
 #include "device.h"
 
-using namespace aph::vk;
-
-ImmutableSampler::ImmutableSampler(Device* device, const VkSamplerCreateInfo& createInfo,
+namespace aph::vk
+{
+ImmutableSampler::ImmutableSampler(Device* device, const SamplerCreateInfo& createInfo,
                                    const ImmutableYcbcrConversion* ycbcr) :
     m_pDevice(device),
     m_pYcbcr(ycbcr)
@@ -14,16 +14,17 @@ ImmutableSampler::ImmutableSampler(Device* device, const VkSamplerCreateInfo& cr
     if(ycbcr)
     {
         // TODO
-        APH_ASSERT(false);
-        convInfo.conversion = ycbcr->getConversion();
-        info.pNext          = &convInfo;
+        // APH_ASSERT(false);
+        // convInfo.conversion = ycbcr->getConversion();
+        // info.pNext          = &convInfo;
     }
 
 #ifdef APH_DEBUG
     VK_LOG_INFO("Creating immutable sampler.\n");
 #endif
 
-    if(m_pDevice->createSampler(info, &m_pSampler, true) != VK_SUCCESS)
+    info.immutable = true;
+    if(m_pDevice->create(info, &m_pSampler) != VK_SUCCESS)
     {
         VK_LOG_ERR("Failed to create sampler.\n");
     }
@@ -34,10 +35,17 @@ VkSamplerYcbcrConversion aph::vk::ImmutableSampler::getYcbcrConversion() const
     APH_ASSERT(false);
     return m_pYcbcr ? m_pYcbcr->getConversion() : VK_NULL_HANDLE;
 }
-aph::vk::Sampler::Sampler(Device* pDevice, const VkSamplerCreateInfo& createInfo, VkSampler handle, bool immutable) :
+Sampler::Sampler(Device* pDevice, const SamplerCreateInfo& createInfo, VkSampler handle, const YcbcrData* pYcbcr) :
     m_pDevice(pDevice),
-    m_isImmutable(immutable)
+    m_isImmutable(createInfo.immutable)
 {
     getHandle()     = handle;
     getCreateInfo() = createInfo;
+
+    if(pYcbcr)
+    {
+        m_ycbcr.conversion = pYcbcr->conversion;
+        m_ycbcr.info       = pYcbcr->info;
+    }
 }
+}  // namespace aph::vk

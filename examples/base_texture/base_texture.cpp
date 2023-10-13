@@ -38,7 +38,7 @@ void base_texture::init()
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
                 .ppBuffer   = &m_pVB};
 
-            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo);
         }
 
         // index buffer
@@ -53,12 +53,12 @@ void base_texture::init()
                 .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
                 .ppBuffer   = &m_pIB};
-            m_renderer->m_pResourceLoader->loadBuffers(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo);
         }
 
         // image and sampler
         {
-            m_pDevice->createSampler(aph::SamplerPreset::Linear, &m_pSampler, false);
+            m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::Linear), &m_pSampler);
 
             aph::vk::ImageCreateInfo imageCI{
                 .alignment = 0,
@@ -76,7 +76,7 @@ void base_texture::init()
                 .ppImage       = &m_pImage,
             };
 
-            m_renderer->m_pResourceLoader->loadImages(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo);
 
             m_pDevice->executeSingleCommands(aph::vk::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
                 cmd->transitionImageLayout(m_pImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -104,7 +104,7 @@ void base_texture::init()
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
-            VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pPipeline));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
         }
 
         // descriptor set
@@ -172,12 +172,12 @@ void base_texture::run()
 void base_texture::finish()
 {
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroyBuffer(m_pVB);
-    m_pDevice->destroyBuffer(m_pIB);
-    m_pDevice->destroyPipeline(m_pPipeline);
-    m_pDevice->destroyShaderProgram(m_pShaderProgram);
-    m_pDevice->destroyImage(m_pImage);
-    m_pDevice->destroySampler(m_pSampler);
+    m_pDevice->destroy(m_pVB);
+    m_pDevice->destroy(m_pIB);
+    m_pDevice->destroy(m_pPipeline);
+    m_pDevice->destroy(m_pShaderProgram);
+    m_pDevice->destroy(m_pImage);
+    m_pDevice->destroy(m_pSampler);
 }
 
 int main(int argc, char** argv)

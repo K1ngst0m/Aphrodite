@@ -45,8 +45,8 @@ public:
 
     ~ResourceLoader() = default;
 
-    void loadImages(ImageLoadInfo& info);
-    void loadBuffers(BufferLoadInfo& info);
+    void load(ImageLoadInfo& info);
+    void load(BufferLoadInfo& info);
 
 private:
     ResourceLoaderCreateInfo m_createInfo;

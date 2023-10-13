@@ -32,12 +32,6 @@ private:
     void _loadScene();
 
 private:
-    enum SetLayoutIndex
-    {
-        SET_LAYOUT_SAMP,
-        SET_LAYOUT_MAX,
-    };
-
     enum SamplerIndex
     {
         SAMP_TEXTURE,
@@ -114,7 +108,6 @@ private:
     std::array<ShaderProgram*, SHADER_PROGRAM_MAX>   m_programs;
     std::array<Buffer*, BUFFER_MAX>                  m_buffers;
     std::array<Pipeline*, PIPELINE_MAX>              m_pipelines;
-    std::array<DescriptorSetLayout*, SET_LAYOUT_MAX> m_setLayouts;
     std::array<Sampler*, SAMP_MAX>                   m_samplers;
     std::array<std::vector<Image*>, IMAGE_MAX>       m_images;
 

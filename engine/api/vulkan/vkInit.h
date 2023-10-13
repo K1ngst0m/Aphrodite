@@ -143,12 +143,6 @@ inline VkSamplerCreateInfo samplerCreateInfo(SamplerPreset preset = SamplerPrese
         ci.minLod = 0.0f;
         ci.maxLod = 8.0f;
         break;
-    case SamplerPreset::Border:
-        ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        break;
     }
 
     return ci;

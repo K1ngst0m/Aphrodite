@@ -84,35 +84,30 @@ void SceneRenderer::cleanup()
 {
     for(auto* pipeline : m_pipelines)
     {
-        m_pDevice->destroyPipeline(pipeline);
+        m_pDevice->destroy(pipeline);
     }
 
     for(auto* program : m_programs)
     {
-        m_pDevice->destroyShaderProgram(program);
-    }
-
-    for(auto* setLayout : m_setLayouts)
-    {
-        m_pDevice->destroyDescriptorSetLayout(setLayout);
+        m_pDevice->destroy(program);
     }
 
     for(const auto& images : m_images)
     {
         for(auto* image : images)
         {
-            m_pDevice->destroyImage(image);
+            m_pDevice->destroy(image);
         }
     }
 
     for(auto* buffer : m_buffers)
     {
-        m_pDevice->destroyBuffer(buffer);
+        m_pDevice->destroy(buffer);
     }
 
     for(const auto& sampler : m_samplers)
     {
-        m_pDevice->destroySampler(sampler);
+        m_pDevice->destroy(sampler);
     }
 }
 
@@ -358,15 +353,7 @@ void SceneRenderer::_initSet()
 
     // sampler
     {
-        {
-            std::vector<VkDescriptorSetLayoutBinding> bindings{
-                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0),
-                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 1),
-                init::descriptorSetLayoutBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 2),
-            };
-            m_pDevice->createDescriptorSetLayout(bindings, &m_setLayouts[SET_LAYOUT_SAMP]);
-        }
-        m_samplerSet = m_setLayouts[SET_LAYOUT_SAMP]->allocateSet();
+        m_samplerSet = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(1)->allocateSet();
         VkDescriptorImageInfo sampTextureInfo{.sampler = m_samplers[SAMP_TEXTURE]->getHandle()};
         VkDescriptorImageInfo sampShadowInfo{.sampler = m_samplers[SAMP_SHADOW]->getHandle()};
         VkDescriptorImageInfo sampCubemapInfo{.sampler = m_samplers[SAMP_CUBEMAP]->getHandle()};
@@ -441,13 +428,13 @@ void SceneRenderer::_initGbuffer()
                 .imageType = VK_IMAGE_TYPE_2D,
                 .format    = VK_FORMAT_R16G16B16A16_SFLOAT,
             };
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &position));
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &normal));
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &mrao));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &position));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &normal));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &mrao));
 
             createInfo.format = VK_FORMAT_R8G8B8A8_UNORM;
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &albedo));
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &emissive));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &albedo));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &emissive));
         }
 
         {
@@ -460,7 +447,7 @@ void SceneRenderer::_initGbuffer()
                 .format = m_pDevice->getDepthFormat(),
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &depth));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
                 cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             });
@@ -487,7 +474,7 @@ void SceneRenderer::_initGbuffer()
                 },
         };
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
+        VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]));
     }
 
     // deferred light pbr pipeline
@@ -503,7 +490,7 @@ void SceneRenderer::_initGbuffer()
             .color    = {{.format = m_pSwapChain->getFormat()}},
         };
 
-        VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
+        VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
     }
 }
 
@@ -533,10 +520,10 @@ void SceneRenderer::_initGeneral()
                 .imageType = VK_IMAGE_TYPE_2D,
                 .format    = VK_FORMAT_B8G8R8A8_UNORM,
             };
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImage));
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorPostFx));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &colorImage));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &colorPostFx));
             createInfo.samples = m_sampleCount;
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &colorImageMS));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &colorImageMS));
         }
 
         {
@@ -549,9 +536,9 @@ void SceneRenderer::_initGeneral()
                 .format = m_pDevice->getDepthFormat(),
                 .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImage));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &depthImage));
             createInfo.samples = m_sampleCount;
-            VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depthImageMS));
+            VK_CHECK_RESULT(m_pDevice->create(createInfo, &depthImageMS));
 
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
                 cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
@@ -567,7 +554,7 @@ void SceneRenderer::_initGeneral()
             auto& program = m_programs[SHADER_PROGRAM_POSTFX];
             VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "postFX.comp")));
             VK_CHECK_RESULT(
-                m_pDevice->createComputePipeline({.pProgram = program}, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+                m_pDevice->create(ComputePipelineCreateInfo{.pProgram = program}, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
         }
     }
 }
@@ -582,7 +569,7 @@ void SceneRenderer::_initGpuResources()
             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .domain = BufferDomain::Host,
         };
-        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_INFO]);
+        m_pDevice->create(createInfo, &m_buffers[BUFFER_SCENE_INFO]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_INFO]);
     }
     // create camera buffer
@@ -592,7 +579,7 @@ void SceneRenderer::_initGpuResources()
             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .domain = BufferDomain::Host,
         };
-        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_CAMERA]);
+        m_pDevice->create(createInfo, &m_buffers[BUFFER_SCENE_CAMERA]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_CAMERA]);
     }
 
@@ -603,7 +590,7 @@ void SceneRenderer::_initGpuResources()
             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             .domain = BufferDomain::Host,
         };
-        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_LIGHT]);
+        m_pDevice->create(createInfo, &m_buffers[BUFFER_SCENE_LIGHT]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_LIGHT]);
     }
 
@@ -612,7 +599,7 @@ void SceneRenderer::_initGpuResources()
         BufferCreateInfo createInfo{.size   = static_cast<uint32_t>(m_meshNodeList.size() * sizeof(glm::mat4)),
                                     .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                     .domain = BufferDomain::Host};
-        m_pDevice->createBuffer(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM]);
+        m_pDevice->create(createInfo, &m_buffers[BUFFER_SCENE_TRANSFORM]);
         m_pDevice->mapMemory(m_buffers[BUFFER_SCENE_TRANSFORM]);
     }
 
@@ -624,7 +611,7 @@ void SceneRenderer::_initGpuResources()
             .createInfo = {.size  = static_cast<uint32_t>(indicesList.size() * sizeof(indicesList[0])),
                            .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
             .ppBuffer   = &m_buffers[BUFFER_SCENE_INDEX]};
-        m_pResourceLoader->loadBuffers(loadInfo);
+        m_pResourceLoader->load(loadInfo);
     }
 
     // create vertex buffer
@@ -635,7 +622,7 @@ void SceneRenderer::_initGpuResources()
             .createInfo = {.size  = static_cast<uint32_t>(verticesList.size() * sizeof(verticesList[0])),
                            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
             .ppBuffer   = &m_buffers[BUFFER_SCENE_VERTEX]};
-        m_pResourceLoader->loadBuffers(loadInfo);
+        m_pResourceLoader->load(loadInfo);
     }
 
     // create material buffer
@@ -646,7 +633,7 @@ void SceneRenderer::_initGpuResources()
             .createInfo = {.size  = static_cast<uint32_t>(materials.size() * sizeof(materials[0])),
                            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
             .ppBuffer   = &m_buffers[BUFFER_SCENE_MATERIAL]};
-        m_pResourceLoader->loadBuffers(loadInfo);
+        m_pResourceLoader->load(loadInfo);
     }
 
     // load scene image to gpu
@@ -668,7 +655,7 @@ void SceneRenderer::_initGpuResources()
             .pCreateInfo   = &createInfo,
             .ppImage       = &texture,
         };
-        m_pResourceLoader->loadImages(loadInfo);
+        m_pResourceLoader->load(loadInfo);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }
 
@@ -711,28 +698,27 @@ void SceneRenderer::_initGpuResources()
             .createInfo = {.size  = static_cast<uint32_t>(dispatchList.size() * sizeof(dispatchList[0])),
                            .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
             .ppBuffer   = &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]};
-        m_pResourceLoader->loadBuffers(loadInfo);
+        m_pResourceLoader->load(loadInfo);
 
         loadInfo.createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(drawList[0]));
         loadInfo.ppBuffer        = &m_buffers[BUFFER_INDIRECT_DRAW_CMD];
         loadInfo.data            = drawList.data();
-        m_pResourceLoader->loadBuffers(loadInfo);
+        m_pResourceLoader->load(loadInfo);
     }
 
     {
         // Create sampler
-        VkSamplerCreateInfo samplerInfo = init::samplerCreateInfo();
+        SamplerCreateInfo samplerInfo = init::samplerCreateInfo2(SamplerPreset::Linear);
         if(m_pDevice->getFeatures().samplerAnisotropy)
         {
             samplerInfo.maxAnisotropy    = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
-            samplerInfo.anisotropyEnable = VK_TRUE;
         }
-        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_CUBEMAP], true));
-        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_SHADOW], true));
+        VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
+        VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_SHADOW]));
 
+        samplerInfo.mipMapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
         samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
-        samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_samplers[SAMP_TEXTURE], true));
+        VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_TEXTURE]));
     }
 }
 
@@ -765,7 +751,7 @@ void SceneRenderer::_initSkybox()
                 .createInfo = {.size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(skyboxVertices[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
                 .ppBuffer   = &m_buffers[BUFFER_CUBE_VERTEX]};
-            m_pResourceLoader->loadBuffers(loadInfo);
+            m_pResourceLoader->load(loadInfo);
         }
     }
 
@@ -1090,7 +1076,7 @@ void SceneRenderer::_initShadow()
             .imageType = VK_IMAGE_TYPE_2D,
             .format    = m_pDevice->getDepthFormat(),
         };
-        VK_CHECK_RESULT(m_pDevice->createImage(createInfo, &depth));
+        VK_CHECK_RESULT(m_pDevice->create(createInfo, &depth));
         m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
             cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         });

@@ -142,11 +142,11 @@ void Device::Destroy(Device* pDevice)
 {
     for(auto commandPool : pDevice->m_threadCommandPools)
     {
-        pDevice->destroyCommandPool(commandPool);
+        pDevice->destroy(commandPool);
     }
     for(auto& [_, commandpool] : pDevice->m_commandPools)
     {
-        pDevice->destroyCommandPool(commandpool);
+        pDevice->destroy(commandpool);
     }
 
     if(pDevice->m_handle)
@@ -155,7 +155,7 @@ void Device::Destroy(Device* pDevice)
     }
 }
 
-VkResult Device::createCommandPool(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
+VkResult Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
 {
     VkCommandPoolCreateInfo cmdPoolInfo{
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -180,7 +180,7 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult Device::createImageView(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage)
+VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, Image* pImage)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -206,7 +206,7 @@ VkResult Device::createImageView(const ImageViewCreateInfo& createInfo, ImageVie
     return VK_SUCCESS;
 }
 
-VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
+VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -267,7 +267,7 @@ VkResult Device::createBuffer(const BufferCreateInfo& createInfo, Buffer** ppBuf
     return VK_SUCCESS;
 }
 
-VkResult Device::createImage(const ImageCreateInfo& createInfo, Image** ppImage)
+VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
 {
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -349,7 +349,7 @@ PhysicalDevice* Device::getPhysicalDevice() const
     return m_physicalDevice;
 }
 
-void Device::destroyBuffer(Buffer* pBuffer)
+void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
     {
@@ -360,7 +360,7 @@ void Device::destroyBuffer(Buffer* pBuffer)
     pBuffer = nullptr;
 }
 
-void Device::destroyImage(Image* pImage)
+void Device::destroy(Image* pImage)
 {
     if(pImage->getMemory() != VK_NULL_HANDLE)
     {
@@ -371,20 +371,20 @@ void Device::destroyImage(Image* pImage)
     pImage = nullptr;
 }
 
-void Device::destroyImageView(ImageView* pImageView)
+void Device::destroy(ImageView* pImageView)
 {
     vkDestroyImageView(m_handle, pImageView->getHandle(), nullptr);
     delete pImageView;
     pImageView = nullptr;
 }
 
-VkResult Device::createSwapchain(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
+VkResult Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
 {
     *ppSwapchain = new SwapChain(createInfo, this);
     return VK_SUCCESS;
 }
 
-void Device::destroySwapchain(SwapChain* pSwapchain)
+void Device::destroy(SwapChain* pSwapchain)
 {
     vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
     delete pSwapchain;
@@ -417,12 +417,12 @@ VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
 
     CommandPoolCreateInfo createInfo{.queue = queue};
     VkCommandPool         pool = nullptr;
-    createCommandPool(createInfo, &pool);
+    create(createInfo, &pool);
     m_commandPools[queueIndices] = pool;
     return pool;
 }
 
-void Device::destroyCommandPool(VkCommandPool pPool)
+void Device::destroy(VkCommandPool pPool)
 {
     vkDestroyCommandPool(getHandle(), pPool, nullptr);
     pPool = nullptr;
@@ -462,7 +462,7 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     }
 }
 
-VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
     for(const auto& [stage, sModule] : createInfo.pProgram->getShaders())
@@ -581,34 +581,14 @@ VkResult Device::createGraphicsPipeline(const GraphicsPipelineCreateInfo& create
     return VK_SUCCESS;
 }
 
-void Device::destroyPipeline(Pipeline* pipeline)
+void Device::destroy(Pipeline* pipeline)
 {
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
     pipeline = nullptr;
 }
 
-VkResult Device::createDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo,
-                                           DescriptorSetLayout**                  ppDescriptorSetLayout)
-{
-    VkDescriptorSetLayout setLayout;
-    _VR(m_table.vkCreateDescriptorSetLayout(m_handle, &createInfo, nullptr, &setLayout));
-    *ppDescriptorSetLayout = new DescriptorSetLayout(this, createInfo, setLayout);
-    return VK_SUCCESS;
-}
-VkResult Device::createDescriptorSetLayout(const std::vector<VkDescriptorSetLayoutBinding>& bindingds,
-                                           DescriptorSetLayout**                            ppDescriptorSetLayout)
-{
-    VkDescriptorSetLayoutCreateInfo createInfo = init::descriptorSetLayoutCreateInfo(bindingds);
-    return createDescriptorSetLayout(createInfo, ppDescriptorSetLayout);
-}
-
-void Device::destroyDescriptorSetLayout(DescriptorSetLayout* pLayout)
-{
-    m_table.vkDestroyDescriptorSetLayout(m_handle, pLayout->getHandle(), nullptr);
-    delete pLayout;
-}
-VkResult Device::createComputePipeline(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(createInfo.pProgram->getPipelineLayout());
     ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
@@ -687,7 +667,7 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
                 .domain = BufferDomain::Host,
             };
 
-            createBuffer(createInfo, &stagingBuffers[idx]);
+            create(createInfo, &stagingBuffers[idx]);
             mapMemory(stagingBuffers[idx]);
             stagingBuffers[idx]->write(image->data.data());
             unMapMemory(stagingBuffers[idx]);
@@ -735,7 +715,7 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
         .imageType = VK_IMAGE_TYPE_2D,
         .format    = VK_FORMAT_R8G8B8A8_UNORM,
     };
-    createImage(imageCI, &cubeMapImage);
+    create(imageCI, &cubeMapImage);
 
     executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCommandBuffer) {
         pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
@@ -750,70 +730,98 @@ VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& 
 
     for(auto* buffer : stagingBuffers)
     {
-        destroyBuffer(buffer);
+        destroy(buffer);
     }
 
     *ppImage = cubeMapImage;
     return VK_SUCCESS;
 }
 
-VkResult Device::createSampler(const VkSamplerCreateInfo& createInfo, Sampler** ppSampler, bool immutable)
+VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
 {
-    VkSampler handle;
-    _VR(m_table.vkCreateSampler(getHandle(), &createInfo, nullptr, &handle));
-    *ppSampler = new Sampler(this, createInfo, handle, immutable);
+    VkSampler                sampler    = {};
+    YcbcrData ycbcr;
+
+    // default sampler lod values
+    // used if not overriden by mSetLodRange or not Linear mipmaps
+    float minSamplerLod = 0;
+    float maxSamplerLod = createInfo.mipMapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR ? VK_LOD_CLAMP_NONE : 0;
+    // user provided lods
+    if(createInfo.setLodRange)
+    {
+        minSamplerLod = createInfo.minLod;
+        maxSamplerLod = createInfo.maxLod;
+    }
+
+    VkSamplerCreateInfo ci{
+        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext                   = nullptr,
+        .flags                   = 0,
+        .magFilter               = createInfo.magFilter,
+        .minFilter               = createInfo.minFilter,
+        .mipmapMode              = createInfo.mipMapMode,
+        .addressModeU            = createInfo.addressU,
+        .addressModeV            = createInfo.addressV,
+        .addressModeW            = createInfo.addressW,
+        .mipLodBias              = createInfo.mipLodBias,
+        .anisotropyEnable        = createInfo.maxAnisotropy > 0.0f ? VK_TRUE : VK_FALSE,
+        .maxAnisotropy           = createInfo.maxAnisotropy,
+        .compareEnable           = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
+        .compareOp               = createInfo.compareFunc,
+        .minLod                  = minSamplerLod,
+        .maxLod                  = maxSamplerLod,
+        .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
+
+    if(createInfo.pConvertInfo)
+    {
+        auto convertInfo = *createInfo.pConvertInfo;
+
+        // Check format props
+        {
+            VkFormatProperties formatProperties;
+            vkGetPhysicalDeviceFormatProperties(getPhysicalDevice()->getHandle(), convertInfo.format,
+                                                &formatProperties);
+            if(convertInfo.chromaOffsetX == VK_CHROMA_LOCATION_MIDPOINT)
+            {
+                APH_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT);
+            }
+            else if(convertInfo.chromaOffsetX == VK_CHROMA_LOCATION_COSITED_EVEN)
+            {
+                APH_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT);
+            }
+        }
+
+        VkSamplerYcbcrConversionCreateInfo vkConvertInfo{
+            .sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
+            .pNext      = nullptr,
+            .format     = convertInfo.format,
+            .ycbcrModel = convertInfo.model,
+            .ycbcrRange = convertInfo.range,
+            .components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+                           VK_COMPONENT_SWIZZLE_IDENTITY},
+            .xChromaOffset               = convertInfo.chromaOffsetX,
+            .yChromaOffset               = convertInfo.chromaOffsetY,
+            .chromaFilter                = convertInfo.chromaFilter,
+            .forceExplicitReconstruction = convertInfo.forceExplicitReconstruction ? VK_TRUE : VK_FALSE,
+        };
+
+        _VR(vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, nullptr, &ycbcr.conversion));
+
+        ycbcr.info.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+        ycbcr.info.pNext = nullptr;
+        ycbcr.info.conversion = ycbcr.conversion;
+
+        ci.pNext = &ycbcr.info;
+    }
+
+    _VR(m_table.vkCreateSampler(getHandle(), &ci, nullptr, &sampler));
+    *ppSampler = new Sampler(this, createInfo, sampler);
     return VK_SUCCESS;
 }
 
-VkResult Device::createSampler(SamplerPreset preset, Sampler** ppSampler, bool immutable)
-{
-    VkSamplerCreateInfo ci{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    ci.magFilter        = VK_FILTER_LINEAR;
-    ci.minFilter        = VK_FILTER_LINEAR;
-    ci.addressModeU     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressModeV     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressModeW     = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.anisotropyEnable = VK_FALSE;
-    ci.maxAnisotropy    = 1.0f;
-    ci.mipmapMode       = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    ci.mipLodBias       = 0.0f;
-    ci.minLod           = 0.0f;
-    ci.maxLod           = 1.0f;
-    ci.borderColor      = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
-
-    switch(preset)
-    {
-    case SamplerPreset::Nearest:
-        ci.magFilter = VK_FILTER_NEAREST;
-        ci.minFilter = VK_FILTER_NEAREST;
-        break;
-    case SamplerPreset::Linear:
-        ci.magFilter = VK_FILTER_LINEAR;
-        ci.minFilter = VK_FILTER_LINEAR;
-        break;
-    case SamplerPreset::Anisotropic:
-        ci.anisotropyEnable = VK_TRUE;
-        ci.maxAnisotropy    = 16.0f;
-        break;
-    case SamplerPreset::Mipmap:
-        ci.minFilter  = VK_FILTER_LINEAR;
-        ci.magFilter  = VK_FILTER_LINEAR;
-        ci.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        ci.minLod     = 0.0f;
-        ci.maxLod     = 8.0f;
-        break;
-    case SamplerPreset::Border:
-        ci.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-        ci.borderColor  = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        break;
-    }
-
-    return createSampler(ci, ppSampler, immutable);
-}
-
-void Device::destroySampler(Sampler* pSampler)
+void Device::destroy(Sampler* pSampler)
 {
     m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), nullptr);
     delete pSampler;
@@ -843,7 +851,7 @@ VkResult Device::executeSingleCommands(QueueType type, const std::function<void(
     auto* queue = getQueueByFlags(type);
     return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
 }
-void Device::destroyShaderProgram(ShaderProgram* pProgram)
+void Device::destroy(ShaderProgram* pProgram)
 {
     delete pProgram;
     pProgram = nullptr;
@@ -869,7 +877,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
     for(auto i = 0; i < commandBufferCount; i++)
     {
         VkCommandPool pool{};
-        createCommandPool(createInfo, &pool);
+        create(createInfo, &pool);
         std::vector<VkCommandBuffer> handles(commandBufferCount);
 
         // Allocate a new command buffer.
