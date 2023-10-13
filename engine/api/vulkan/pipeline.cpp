@@ -299,20 +299,22 @@ VkResult VulkanPipelineBuilder::build(VkDevice device, VkPipelineCache pipelineC
     return VK_SUCCESS;
 }
 
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle, ShaderProgram* pProgram) :
     m_pDevice(pDevice),
-    m_pProgram(createInfo.pProgram),
+    m_pProgram(pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE)
 {
+    APH_ASSERT(pProgram);
     getHandle() = handle;
 }
 
-Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle) :
+Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle, ShaderProgram* pProgram) :
     m_pDevice(pDevice),
-    m_pProgram(rps.createInfo.pProgram),
+    m_pProgram(pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS),
     m_rps(rps)
 {
+    APH_ASSERT(pProgram);
     getHandle() = handle;
 }
 }  // namespace aph::vk

@@ -52,7 +52,6 @@ public:
     VkResult create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
 
 public:
-    void destroy(ShaderProgram* pProgram);
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
     void destroy(ImageView* pImageView);
@@ -63,11 +62,6 @@ public:
 
 public:
     VkResult createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage);
-    VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,
-                                 const ImmutableSamplerBank* samplerBank = nullptr);
-    VkResult createShaderProgram(ShaderProgram** ppProgram, Shader* cs,
-                                 const ImmutableSamplerBank* samplerBank = nullptr);
-
     VkResult executeSingleCommands(QueueType type, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
     VkResult executeSingleCommands(Queue* queue, const std::function<void(CommandBuffer* pCmdBuffer)>&& func);
     VkResult resetCommandPool(VkCommandPool pPool);

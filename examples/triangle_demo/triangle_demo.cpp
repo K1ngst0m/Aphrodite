@@ -65,11 +65,10 @@ void triangle_demo::init()
             };
 
             auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
-            m_pDevice->createShaderProgram(&m_pShaderProgram, m_renderer->getShaders(shaderDir / "triangle.vert"),
-                                           m_renderer->getShaders(shaderDir / "triangle.frag"));
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pProgram    = m_pShaderProgram,
+                .pVertex     = m_renderer->getShaders(shaderDir / "triangle.vert"),
+                .pFragment   = m_renderer->getShaders(shaderDir / "triangle.frag"),
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
@@ -129,7 +128,6 @@ void triangle_demo::finish()
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pPipeline);
-    m_pDevice->destroy(m_pShaderProgram);
 }
 
 int main(int argc, char** argv)

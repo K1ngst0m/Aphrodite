@@ -87,11 +87,6 @@ void SceneRenderer::cleanup()
         m_pDevice->destroy(pipeline);
     }
 
-    for(auto* program : m_programs)
-    {
-        m_pDevice->destroy(program);
-    }
-
     for(const auto& images : m_images)
     {
         for(auto* image : images)
@@ -457,13 +452,11 @@ void SceneRenderer::_initGbuffer()
     // geometry graphics pipeline
     {
         // TODO vertex input
-        auto  shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        auto& program   = m_programs[SHADER_PROGRAM_DEFERRED_GEOMETRY];
-        m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "geometry.vert"),
-                                       getShaders(shaderDir / "geometry.frag"));
+        auto                       shaderDir    = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         std::vector<VkFormat>      colorFormats = {};
         GraphicsPipelineCreateInfo createInfo{
-            .pProgram = program,
+            .pVertex   = getShaders(shaderDir / "geometry.vert"),
+            .pFragment = getShaders(shaderDir / "geometry.frag"),
             .color =
                 {
                     {.format = VK_FORMAT_R16G16B16A16_SFLOAT},
@@ -480,14 +473,11 @@ void SceneRenderer::_initGbuffer()
     // deferred light pbr pipeline
     {
         // TODO vertex input
-        auto  shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
-        auto& program   = m_programs[SHADER_PROGRAM_DEFERRED_LIGHTING];
-        m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "pbr_deferred.vert"),
-                                       getShaders(shaderDir / "pbr_deferred.frag"));
-
+        auto                       shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         GraphicsPipelineCreateInfo createInfo{
-            .pProgram = program,
-            .color    = {{.format = m_pSwapChain->getFormat()}},
+            .pVertex   = getShaders(shaderDir / "pbr_deferred.vert"),
+            .pFragment = getShaders(shaderDir / "pbr_deferred.frag"),
+            .color     = {{.format = m_pSwapChain->getFormat()}},
         };
 
         VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pipelines[PIPELINE_GRAPHICS_LIGHTING]));
@@ -551,10 +541,8 @@ void SceneRenderer::_initGeneral()
     {
         std::filesystem::path shaderDir = asset::GetShaderDir(asset::ShaderType::GLSL) / "default";
         {
-            auto& program = m_programs[SHADER_PROGRAM_POSTFX];
-            VK_CHECK_RESULT(m_pDevice->createShaderProgram(&program, getShaders(shaderDir / "postFX.comp")));
-            VK_CHECK_RESULT(
-                m_pDevice->create(ComputePipelineCreateInfo{.pProgram = program}, &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
+            VK_CHECK_RESULT(m_pDevice->create({.pCompute = getShaders(shaderDir / "postFX.comp")},
+                                              &m_pipelines[PIPELINE_COMPUTE_POSTFX]));
         }
     }
 }
@@ -640,7 +628,7 @@ void SceneRenderer::_initGpuResources()
     auto images = m_scene->getImages();
     for(const auto& image : images)
     {
-        Image* texture{};
+        Image*          texture{};
         ImageCreateInfo createInfo{
             .extent    = {image->width, image->height, 1},
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
@@ -711,13 +699,13 @@ void SceneRenderer::_initGpuResources()
         SamplerCreateInfo samplerInfo = init::samplerCreateInfo2(SamplerPreset::Linear);
         if(m_pDevice->getFeatures().samplerAnisotropy)
         {
-            samplerInfo.maxAnisotropy    = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
+            samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
         }
         VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
         VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_SHADOW]));
 
         samplerInfo.mipMapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        samplerInfo.maxLod      = aph::utils::calculateFullMipLevels(2048, 2048);
+        samplerInfo.maxLod     = aph::utils::calculateFullMipLevels(2048, 2048);
         VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_TEXTURE]));
     }
 }

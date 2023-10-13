@@ -465,10 +465,13 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
 VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-    for(const auto& [stage, sModule] : createInfo.pProgram->getShaders())
-    {
-        shaderStages.push_back(init::pipelineShaderStageCreateInfo(utils::VkCast(stage), sModule->getHandle()));
-    }
+
+    APH_ASSERT(createInfo.pVertex && createInfo.pFragment);
+
+    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, createInfo.pVertex->getHandle()));
+    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
+
+    auto program = new ShaderProgram(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
 
     // create rps
     RenderPipelineState rps                                     = {.createInfo = createInfo};
@@ -574,15 +577,17 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
         .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
         .depthAttachmentFormat(createInfo.depthFormat)
         .stencilAttachmentFormat(createInfo.stencilFormat)
-        .build(getHandle(), VK_NULL_HANDLE, createInfo.pProgram->getPipelineLayout(), &handle, createInfo.debugName);
+        .build(getHandle(), VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
 
-    *ppPipeline = new Pipeline(this, rps, handle);
+    *ppPipeline = new Pipeline(this, rps, handle, program);
 
     return VK_SUCCESS;
 }
 
 void Device::destroy(Pipeline* pipeline)
 {
+    auto program = pipeline->getProgram();
+    delete program;
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
     delete pipeline;
     pipeline = nullptr;
@@ -590,12 +595,14 @@ void Device::destroy(Pipeline* pipeline)
 
 VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
-    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(createInfo.pProgram->getPipelineLayout());
+    APH_ASSERT(createInfo.pCompute);
+    auto program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
+    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(program->getPipelineLayout());
     ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                         createInfo.pProgram->getShader(ShaderStage::CS)->getHandle());
+                                                                         program->getShader(ShaderStage::CS)->getHandle());
     VkPipeline handle              = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
-    *ppPipeline = new Pipeline(this, createInfo, handle);
+    *ppPipeline = new Pipeline(this, createInfo, handle, program);
     return VK_SUCCESS;
 }
 
@@ -850,22 +857,6 @@ VkResult Device::executeSingleCommands(QueueType type, const std::function<void(
 {
     auto* queue = getQueueByFlags(type);
     return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
-}
-void Device::destroy(ShaderProgram* pProgram)
-{
-    delete pProgram;
-    pProgram = nullptr;
-}
-VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* cs, const ImmutableSamplerBank* samplerBank)
-{
-    *ppProgram = new ShaderProgram(this, cs, samplerBank);
-    return VK_SUCCESS;
-}
-VkResult Device::createShaderProgram(ShaderProgram** ppProgram, Shader* vs, Shader* fs,
-                                     const ImmutableSamplerBank* samplerBank)
-{
-    *ppProgram = new ShaderProgram(this, vs, fs, samplerBank);
-    return VK_SUCCESS;
 }
 
 VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,

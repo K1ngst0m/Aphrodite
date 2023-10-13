@@ -94,7 +94,10 @@ struct GraphicsPipelineCreateInfo
 
     VertexInput vertexInput;
 
-    ShaderProgram* pProgram{};
+    Shader* pVertex   = {};
+    Shader* pFragment = {};
+
+    ImmutableSamplerBank* pSamplerBank = {};
 
     ColorAttachment color[APH_MAX_COLOR_ATTACHMENTS] = {};
     VkFormat        depthFormat                      = VK_FORMAT_UNDEFINED;
@@ -141,7 +144,8 @@ struct RenderPipelineState
 
 struct ComputePipelineCreateInfo
 {
-    ShaderProgram* pProgram = {};
+    ImmutableSamplerBank* pSamplerBank = {};
+    Shader*               pCompute     = {};
 };
 
 class VulkanPipelineBuilder final
@@ -202,8 +206,8 @@ private:
 class Pipeline : public ResourceHandle<VkPipeline>
 {
 public:
-    Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle);
+    Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle, ShaderProgram* pProgram);
 
     ShaderProgram*      getProgram() { return m_pProgram; }
     VkPipelineBindPoint getBindPoint() { return m_bindPoint; }

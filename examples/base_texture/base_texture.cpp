@@ -95,12 +95,10 @@ void base_texture::init()
             };
 
             auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
-            auto vs        = m_renderer->getShaders(shaderDir / "texture.vert");
-            auto fs        = m_renderer->getShaders(shaderDir / "texture.frag");
-            m_pDevice->createShaderProgram(&m_pShaderProgram, vs, fs);
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pProgram    = m_pShaderProgram,
+                .pVertex     = m_renderer->getShaders(shaderDir / "texture.vert"),
+                .pFragment   = m_renderer->getShaders(shaderDir / "texture.frag"),
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
@@ -175,7 +173,6 @@ void base_texture::finish()
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pPipeline);
-    m_pDevice->destroy(m_pShaderProgram);
     m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);
 }
