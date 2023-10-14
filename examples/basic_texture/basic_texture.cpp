@@ -1,10 +1,10 @@
-#include "base_texture.h"
+#include "basic_texture.h"
 
-base_texture::base_texture() : aph::BaseApp("base_texture")
+basic_texture::basic_texture() : aph::BaseApp("base_texture")
 {
 }
 
-void base_texture::init()
+void basic_texture::init()
 {
     // setup window
     m_wsi = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
@@ -118,7 +118,7 @@ void base_texture::init()
     }
 }
 
-void base_texture::run()
+void basic_texture::run()
 {
     while(m_wsi->update())
     {
@@ -164,7 +164,7 @@ void base_texture::run()
     }
 }
 
-void base_texture::finish()
+void basic_texture::finish()
 {
     m_renderer->m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
@@ -176,7 +176,7 @@ void base_texture::finish()
 
 int main(int argc, char** argv)
 {
-    base_texture app;
+    basic_texture app;
 
     // parse command
     {

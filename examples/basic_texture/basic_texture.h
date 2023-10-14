@@ -4,10 +4,10 @@
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
 
-class base_texture : public aph::BaseApp
+class basic_texture : public aph::BaseApp
 {
 public:
-    base_texture();
+    basic_texture();
 
     void init() override;
     void run() override;
