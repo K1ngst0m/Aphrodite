@@ -11,14 +11,14 @@ SyncPrimitivesPool::~SyncPrimitivesPool()
 {
     // Destroy all created fences.
     for(auto* fence : m_allFences)
-        vkDestroyFence(m_device->getHandle(), fence, nullptr);
+        vkDestroyFence(m_device->getHandle(), fence, vk::vkAllocator());
 
     // Destroy all created semaphores.
     for(auto* semaphore : m_allSemaphores)
-        vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
+        vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
 
     for(auto* semaphore : m_allTimelineSemahpores)
-        vkDestroySemaphore(m_device->getHandle(), semaphore, nullptr);
+        vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
 }
 
 VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
@@ -41,7 +41,7 @@ VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
         {
             createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         }
-        result = vkCreateFence(m_device->getHandle(), &createInfo, nullptr, &fence);
+        result = vkCreateFence(m_device->getHandle(), &createInfo, vk::vkAllocator(), &fence);
         if(result == VK_SUCCESS)
             m_allFences.emplace(fence);
     }
@@ -95,7 +95,7 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, VkSemapho
     {
         VkSemaphoreCreateInfo createInfo = {};
         createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
+        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, vk::vkAllocator(), &pSemaphores[i]);
         if(result != VK_SUCCESS)
             break;
 
@@ -158,7 +158,7 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
             .pNext = &timelineCreateInfo,
             .flags = 0,
         };
-        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, nullptr, &pSemaphores[i]);
+        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, vk::vkAllocator(), &pSemaphores[i]);
         if(result != VK_SUCCESS)
         {
             break;

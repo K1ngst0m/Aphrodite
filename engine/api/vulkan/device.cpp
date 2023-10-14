@@ -1,6 +1,8 @@
 #include "device.h"
 #include "api/gpuResource.h"
 
+const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
+
 namespace aph::vk
 {
 
@@ -108,7 +110,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     };
 
     VkDevice handle = VK_NULL_HANDLE;
-    auto     result = vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, nullptr, &handle);
+    auto     result = vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, gVkAllocator, &handle);
     if(result != VK_SUCCESS)
     {
         VK_LOG_ERR("Failed to create device: %s.", vk::utils::errorString(result));
@@ -151,7 +153,7 @@ void Device::Destroy(Device* pDevice)
 
     if(pDevice->m_handle)
     {
-        pDevice->m_table.vkDestroyDevice(pDevice->m_handle, nullptr);
+        pDevice->m_table.vkDestroyDevice(pDevice->m_handle, gVkAllocator);
     }
 }
 
@@ -168,7 +170,7 @@ VkResult Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* 
     }
 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, nullptr, &cmdPool));
+    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &cmdPool));
     *ppPool = cmdPool;
     return VK_SUCCESS;
 }
@@ -199,7 +201,7 @@ VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppIma
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
     VkImageView handle = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateImageView(getHandle(), &info, nullptr, &handle));
+    _VR(m_table.vkCreateImageView(getHandle(), &info, gVkAllocator, &handle));
 
     *ppImageView = new ImageView(createInfo, handle);
 
@@ -216,7 +218,7 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VkBuffer buffer;
-    _VR(vkCreateBuffer(getHandle(), &bufferInfo, nullptr, &buffer));
+    _VR(vkCreateBuffer(getHandle(), &bufferInfo, gVkAllocator, &buffer));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -249,14 +251,14 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
     }
     else
     {
         VkMemoryAllocateInfo allocInfo = init::memoryAllocateInfo(
             memRequirements.memoryRequirements.size,
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits));
-        _VR(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
     *ppBuffer = new Buffer(createInfo, buffer, memory);
@@ -288,7 +290,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
     VkImage image;
-    _VR(m_table.vkCreateImage(m_handle, &imageCreateInfo, nullptr, &image));
+    _VR(m_table.vkCreateImage(m_handle, &imageCreateInfo, gVkAllocator, &image));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -320,7 +322,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
     }
     else
     {
@@ -331,7 +333,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
                 m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(m_handle, &allocInfo, nullptr, &memory));
+        _VR(vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
     *ppImage = new Image(this, createInfo, image, memory);
@@ -348,9 +350,9 @@ void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
     {
-        vkFreeMemory(m_handle, pBuffer->getMemory(), nullptr);
+        vkFreeMemory(m_handle, pBuffer->getMemory(), gVkAllocator);
     }
-    vkDestroyBuffer(m_handle, pBuffer->getHandle(), nullptr);
+    vkDestroyBuffer(m_handle, pBuffer->getHandle(), gVkAllocator);
     delete pBuffer;
     pBuffer = nullptr;
 }
@@ -359,16 +361,16 @@ void Device::destroy(Image* pImage)
 {
     if(pImage->getMemory() != VK_NULL_HANDLE)
     {
-        vkFreeMemory(m_handle, pImage->getMemory(), nullptr);
+        vkFreeMemory(m_handle, pImage->getMemory(), gVkAllocator);
     }
-    vkDestroyImage(m_handle, pImage->getHandle(), nullptr);
+    vkDestroyImage(m_handle, pImage->getHandle(), gVkAllocator);
     delete pImage;
     pImage = nullptr;
 }
 
 void Device::destroy(ImageView* pImageView)
 {
-    vkDestroyImageView(m_handle, pImageView->getHandle(), nullptr);
+    vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
     delete pImageView;
     pImageView = nullptr;
 }
@@ -381,7 +383,7 @@ VkResult Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwa
 
 void Device::destroy(SwapChain* pSwapchain)
 {
-    vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), nullptr);
+    vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), gVkAllocator);
     delete pSwapchain;
     pSwapchain = nullptr;
 }
@@ -419,7 +421,7 @@ VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
 
 void Device::destroy(VkCommandPool pPool)
 {
-    vkDestroyCommandPool(getHandle(), pPool, nullptr);
+    vkDestroyCommandPool(getHandle(), pPool, gVkAllocator);
     pPool = nullptr;
 }
 
@@ -585,7 +587,7 @@ void Device::destroy(Pipeline* pipeline)
 {
     auto program = pipeline->getProgram();
     delete program;
-    m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), nullptr);
+    m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), gVkAllocator);
     delete pipeline;
     pipeline = nullptr;
 }
@@ -598,7 +600,7 @@ VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** 
     ci.stage                            = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
                                                                               program->getShader(ShaderStage::CS)->getHandle());
     VkPipeline handle                   = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, nullptr, &handle));
+    _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, gVkAllocator, &handle));
     *ppPipeline = new Pipeline(this, createInfo, handle, program);
     return VK_SUCCESS;
 }
@@ -801,7 +803,7 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
             .forceExplicitReconstruction = convertInfo.forceExplicitReconstruction ? VK_TRUE : VK_FALSE,
         };
 
-        _VR(vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, nullptr, &ycbcr.conversion));
+        _VR(vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
 
         ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
         ycbcr.info.pNext      = nullptr;
@@ -810,14 +812,14 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
         ci.pNext = &ycbcr.info;
     }
 
-    _VR(m_table.vkCreateSampler(getHandle(), &ci, nullptr, &sampler));
+    _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
     *ppSampler = new Sampler(this, createInfo, sampler);
     return VK_SUCCESS;
 }
 
 void Device::destroy(Sampler* pSampler)
 {
-    m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), nullptr);
+    m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), gVkAllocator);
     delete pSampler;
     pSampler = nullptr;
 }

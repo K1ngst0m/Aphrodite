@@ -101,7 +101,7 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 {
     shaderc::Compiler compiler{};
     std::string       source;
-    auto success = aph::utils::readFile(filename, source);
+    auto              success = aph::utils::readFile(filename, source);
     APH_ASSERT(success);
     shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
     switch(getStageFromPath(filename))
@@ -149,7 +149,7 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
 std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
 {
     std::string source;
-    auto success = aph::utils::readFile(filename, source);
+    auto        success = aph::utils::readFile(filename, source);
     APH_ASSERT(success);
     uint32_t              size = source.size();
     std::vector<uint32_t> spirv(size / sizeof(uint32_t));
@@ -232,4 +232,80 @@ VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
 
     return vkLabel;
 }
+
 }  // namespace aph::vk::utils
+
+namespace aph::vk
+{
+
+#include <cstdlib>
+
+#ifndef _MSC_VER
+    #include <cstddef>
+    #define MAX_ALIGN alignof(max_align_t)
+#else
+/* long double might be 128-bit, but our callers do not need that anyway(?) */
+    #include <cstdint>
+    #define MAX_ALIGN alignof(uint64_t)
+#endif
+
+
+static VKAPI_ATTR void* VKAPI_CALL vkDefaultAlloc(void* pUserData, size_t size, size_t alignment,
+                                                  VkSystemAllocationScope allocationScope)
+{
+    APH_ASSERT(MAX_ALIGN % alignment == 0);
+    return malloc(size);
+}
+
+static VKAPI_ATTR void* VKAPI_CALL vkDefaultRealloc(void* pUserData, void* pOriginal, size_t size, size_t alignment,
+                                                    VkSystemAllocationScope allocationScope)
+{
+    APH_ASSERT(MAX_ALIGN % alignment == 0);
+    return realloc(pOriginal, size);
+}
+
+static VKAPI_ATTR void VKAPI_CALL vkDefaultFree(void* pUserData, void* pMemory)
+{
+    free(pMemory);
+}
+
+// #include "mmgr.h"
+static VKAPI_ATTR void* VKAPI_CALL vkMMgrAlloc(void* pUserData, size_t size, size_t alignment,
+                                               VkSystemAllocationScope allocationScope)
+{
+    VK_LOG_DEBUG("vulkan object alloc, size: %z, align: %z", size, alignment);
+    APH_ASSERT(MAX_ALIGN % alignment == 0);
+    return malloc(size);
+}
+
+static VKAPI_ATTR void* VKAPI_CALL vkMMgrRealloc(void* pUserData, void* pOriginal, size_t size, size_t alignment,
+                                                 VkSystemAllocationScope allocationScope)
+{
+    VK_LOG_DEBUG("vulkan object realloc, size: %z, align: %z", size, alignment);
+    APH_ASSERT(MAX_ALIGN % alignment == 0);
+    return realloc(pOriginal, size);
+}
+
+static VKAPI_ATTR void VKAPI_CALL vkMMgrFree(void* pUserData, void* pMemory)
+{
+    VK_LOG_DEBUG("vulkan object free, addr: %z", (size_t)pMemory);
+    free(pMemory);
+}
+
+#define MMGR_ALLOC
+const VkAllocationCallbacks* vkAllocator()
+{
+    static const VkAllocationCallbacks allocator = {
+    #ifdef MMGR_ALLOC
+        .pfnAllocation   = vkMMgrAlloc,
+        .pfnReallocation = vkMMgrRealloc,
+        .pfnFree         = vkMMgrFree,
+    #else
+        .pfnAllocation   = vkDefaultAlloc,
+        .pfnReallocation = vkDefaultRealloc,
+        .pfnFree         = vkDefaultFree,
+    #endif
+    };
+    return &allocator;
+}
+}  // namespace aph::vk

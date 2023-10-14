@@ -42,7 +42,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
     // Destroy all created pools.
     for(auto pool : m_pools)
     {
-        vkDestroyDescriptorPool(getDevice()->getHandle(), pool, nullptr);
+        vkDestroyDescriptorPool(getDevice()->getHandle(), pool, vkAllocator());
     }
 }
 
@@ -75,7 +75,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
                 createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
-            auto             result = vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, nullptr, &handle);
+            auto             result = vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle);
             if(result != VK_SUCCESS)
                 return VK_NULL_HANDLE;
 

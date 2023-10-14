@@ -70,4 +70,10 @@ constexpr unsigned VULKAN_NUM_SETS_PER_POOL    = 16;
 constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
 }  // namespace aph
 
+namespace aph::vk
+{
+const VkAllocationCallbacks* vkAllocator();
+const VkAllocationCallbacks* vkMMgrAllocator();
+}
+
 #endif  // VKLUTILS_H_

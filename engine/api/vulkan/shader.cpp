@@ -180,7 +180,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     DescriptorSetLayout* setLayout{};
     {
         VkDescriptorSetLayout vkSetLayout;
-        VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, nullptr,
+        VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vkAllocator(),
                                                                                  &vkSetLayout));
         setLayout = new DescriptorSetLayout(m_pDevice, info, vkSetLayout);
     }
@@ -207,7 +207,7 @@ std::unique_ptr<Shader> Shader::Create(Device* pDevice, const std::filesystem::p
     };
 
     VkShaderModule handle;
-    VK_CHECK_RESULT(vkCreateShaderModule(pDevice->getHandle(), &createInfo, nullptr, &handle));
+    VK_CHECK_RESULT(vkCreateShaderModule(pDevice->getHandle(), &createInfo, vkAllocator(), &handle));
 
     auto instance = std::unique_ptr<Shader>(new Shader(std::move(spvCode), handle, entrypoint));
     return instance;
@@ -579,7 +579,7 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
 #endif
 
     auto table = m_pDevice->getDeviceTable();
-    if(table->vkCreatePipelineLayout(m_pDevice->getHandle(), &info, nullptr, &m_pipeLayout) != VK_SUCCESS)
+    if(table->vkCreatePipelineLayout(m_pDevice->getHandle(), &info, vkAllocator(), &m_pipeLayout) != VK_SUCCESS)
         VK_LOG_ERR("Failed to create pipeline layout.");
 }
 
@@ -587,10 +587,10 @@ ShaderProgram::~ShaderProgram()
 {
     for(auto* setLayout : m_pSetLayouts)
     {
-        vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), nullptr);
+        vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), vkAllocator());
         delete setLayout;
     }
-    m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, nullptr);
+    m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, vkAllocator());
 }
 VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32_t size) const
 {

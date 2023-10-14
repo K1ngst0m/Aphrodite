@@ -168,7 +168,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         {
             VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
             VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreatePipelineCache(
-                m_pDevice->getHandle(), &pipelineCacheCreateInfo, nullptr, &m_pipelineCache));
+                m_pDevice->getHandle(), &pipelineCacheCreateInfo, vkAllocator(), &m_pipelineCache));
         }
     }
 
@@ -329,13 +329,13 @@ Renderer::~Renderer()
 
     for(const auto& [_, shaderModule] : shaderModuleCaches)
     {
-        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), nullptr);
+        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
     }
 
-    vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, nullptr);
+    vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pDevice->destroy(m_pSwapChain);
-    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, vk::vkAllocator());
     Device::Destroy(m_pDevice.get());
     Instance::Destroy(m_pInstance);
 };

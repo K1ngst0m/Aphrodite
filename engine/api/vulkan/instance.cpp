@@ -114,7 +114,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 #endif
 
     VkInstance handle = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, nullptr, &handle));
+    VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, vkAllocator(), &handle));
 
     volkLoadInstance(handle);
 
@@ -165,7 +165,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 #if defined(APH_DEBUG)
     {
         VK_CHECK_RESULT(
-            createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, nullptr, &instance->m_debugMessenger));
+            createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(), &instance->m_debugMessenger));
     }
 #endif
     // Return success.
@@ -175,8 +175,8 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 void Instance::Destroy(Instance* pInstance)
 {
 #ifdef APH_DEBUG
-    destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, nullptr);
+    destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, vkAllocator());
 #endif
-    vkDestroyInstance(pInstance->getHandle(), nullptr);
+    vkDestroyInstance(pInstance->getHandle(), vkAllocator());
 }
 }  // namespace aph::vk
