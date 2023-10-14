@@ -9,7 +9,9 @@ import string
 
 from optparse import OptionParser
 
-TargetDir = os.getcwd() + "/"; # target directory the source code downloaded to.
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+TargetDir = script_dir + "/"; # target directory the source code downloaded to.
 
 class GitRepo:
     def __init__(self, httpsUrl, moduleName, extractDir):
@@ -17,7 +19,7 @@ class GitRepo:
         self.moduleName = moduleName
         self.extractDir = extractDir
 
-    def GetRevision(self):
+    def GetBranch(self):
         SrcFile = TargetDir + "../CHANGES";
         if not os.path.exists(SrcFile):
             print("Error: " + SrcFile + " does not exist!!!");
@@ -28,20 +30,18 @@ class GitRepo:
         found = False;
         for line in lines:
             if (found == True):
-                if (line.find("Commit:") == 0):
-                    self.revision = line[7:];
+                if (line.find("Branch:") == 0):
+                    self.branch = line[7:];
                     break;
             if (self.moduleName.lower() in line.lower()):
                 found = True;
-            else:
-                found = False;
         revFile.close();
 
         if (found == False):
-            print("Error: Revision is not gotten from " + SrcFile + " correctly, please check it!!!")
-            exit(1)
+            print("Error: Branch is not gotten from " + SrcFile + " correctly, please check it!!!")
+            exit(0)
         else:
-            print("Get the revision of " + self.extractDir + ": " + self.revision);
+            print("Get the branch of " + self.extractDir + ": " + self.branch);
 
     def CheckOut(self):
         fullDstPath = os.path.join(TargetDir, self.extractDir)
@@ -50,13 +50,14 @@ class GitRepo:
 
         os.chdir(fullDstPath);
         os.system("git fetch");
-        os.system("git checkout " + self.revision);
+        os.system("git checkout -b" + self.branch);
 
 PACKAGES = [
-    # GitRepo("https://github.com/KhronosGroup/glslang.git",       "glslang",       "glslang"),
-    # GitRepo("https://github.com/KhronosGroup/SPIRV-Tools.git",   "spirv-tools",   "SPIRV-tools"),
-    # GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "SPIRV-tools/external/SPIRV-Headers"),
-    GitRepo("https://github.com/KhronosGroup/SPIRV-Cross.git",   "spirv-cross",   "SPIRV-cross"),
+    GitRepo("https://github.com/KhronosGroup/glslang.git",       "glslang",       "glslang"),
+    GitRepo("https://github.com/KhronosGroup/SPIRV-Tools.git",   "spirv-tools",   "spirv-tools"),
+    GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "spirv-headers"),
+    GitRepo("https://github.com/KhronosGroup/SPIRV-Cross.git",   "spirv-cross",   "spirv-cross"),
+    GitRepo("https://github.com/google/shaderc",   "shaderc",   "shaderc"),
 ]
 
 def GetOpt():
@@ -86,7 +87,7 @@ def DownloadSourceCode():
     os.utime('../CMakeLists.txt', None)
 
     for pkg in PACKAGES:
-        pkg.GetRevision()
+        pkg.GetBranch()
         pkg.CheckOut()
 
 GetOpt();

@@ -25,16 +25,17 @@ target_include_directories(engine PUBLIC
                                   ../external/tinyimageformat
                                   ../external/tinyktx
                                   ../external/tinydds
+                                  ../external/mmgr
+                                  ../external/glfw/include
 
                                   PRIVATE
                                   ./
-                                  ../external/libshaderc/include
-                                  ../external/glfw/include
+                                  ../external/shaderc/libshaderc/include
                                   ../external/imgui/include
                                   ../external/vulkan
                                   ../external/stb/include
                                   ../external/tinygltf/include
-                                  ../external/SPIRV-Cross
+                                  ../external/spirv-cross
                                   )
 
 target_link_libraries(engine PRIVATE
@@ -48,5 +49,6 @@ target_link_libraries(engine PRIVATE
   spirv-cross-core
   dl
   dw
+  # mmgr
   # spirv-cross-reflect
 )

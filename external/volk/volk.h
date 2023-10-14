@@ -47,7 +47,7 @@
 #			include <vulkan/vulkan_beta.h>
 #		endif
 #	else
-#		include <vulkan/vulkan.h>
+#		include "../vulkan/vulkan.h"
 #	endif
 #endif
 
