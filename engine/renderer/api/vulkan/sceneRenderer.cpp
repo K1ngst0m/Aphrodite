@@ -699,7 +699,7 @@ void SceneRenderer::_initGpuResources()
         SamplerCreateInfo samplerInfo = init::samplerCreateInfo2(SamplerPreset::Linear);
         if(m_pDevice->getFeatures().samplerAnisotropy)
         {
-            samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties().limits.maxSamplerAnisotropy;
+            samplerInfo.maxAnisotropy = m_pDevice->getPhysicalDevice()->getProperties()->limits.maxSamplerAnisotropy;
         }
         VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_CUBEMAP]));
         VK_CHECK_RESULT(m_pDevice->create(samplerInfo, &m_samplers[SAMP_SHADOW]));
@@ -975,7 +975,7 @@ void SceneRenderer::drawUI(float deltaTime)
 {
     ImGui::NewFrame();
     ui::drawWindow("Aphrodite - Info", {10, 10}, {0, 0}, m_ui.scale, [&]() {
-        ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties().deviceName);
+        ui::text("%s", m_pDevice->getPhysicalDevice()->getProperties()->deviceName);
         ui::text("%.2f ms/frame (%.1d fps)", (1000.0f / m_lastFPS), m_lastFPS);
         ui::text("resolution [ %.2f, %.2f ]", (float)m_wsi->getWidth(), (float)m_wsi->getHeight());
         ui::drawWithItemWidth(110.0f, m_ui.scale, [&]() {

@@ -128,7 +128,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
         // check sample count support
         {
-            auto limit  = createInfo.pPhysicalDevice->getProperties().limits;
+            auto limit  = createInfo.pPhysicalDevice->getProperties()->limits;
             auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
             if(!(counts & m_sampleCount))
             {

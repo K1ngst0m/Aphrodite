@@ -33,7 +33,7 @@ struct ImageLoadInfo
 
 struct BufferLoadInfo
 {
-    void*                data;
+    void*                data       = {};
     vk::BufferCreateInfo createInfo = {};
     vk::Buffer**         ppBuffer   = {};
 };

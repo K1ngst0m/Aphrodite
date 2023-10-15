@@ -46,6 +46,7 @@ public:
     uint32_t getMipLevels() const { return m_createInfo.mipLevels; }
     uint32_t getLayerCount() const { return m_createInfo.arraySize; }
     uint32_t getOffset() const { return m_createInfo.alignment; }
+    VkFormat getFormat() const { return m_createInfo.format; }
 
 private:
     Device*                                  m_pDevice            = {};

@@ -78,8 +78,15 @@ void basic_texture::init()
 
             m_renderer->m_pResourceLoader->load(loadInfo);
 
-            m_pDevice->executeSingleCommands(aph::vk::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
-                cmd->transitionImageLayout(m_pImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            m_pDevice->executeSingleCommands(aph::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
+                // cmd->transitionImageLayout(m_pImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+                aph::vk::ImageBarrier barrier{
+                    .pImage       = m_pImage,
+                    .currentState = aph::RESOURCE_STATE_UNDEFINED,
+                    .newState     = aph::RESOURCE_STATE_SHADER_RESOURCE,
+                };
+                cmd->insertBarrier({barrier});
             });
         }
 
@@ -125,7 +132,7 @@ void basic_texture::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
-        auto* queue = m_renderer->getDefaultQueue(aph::vk::QueueType::GRAPHICS);
+        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
 
         // draw and submit
         m_renderer->beginFrame();

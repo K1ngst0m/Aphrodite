@@ -18,7 +18,7 @@
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
 #ifdef APH_DEBUG
-#    define VK_CHECK_RESULT(f) \
+    #define VK_CHECK_RESULT(f) \
         { \
             VkResult res = (f); \
             if(res != VK_SUCCESS) \
@@ -29,7 +29,7 @@
             } \
         }
 #else
-#    define VK_CHECK_RESULT(f) (f)
+    #define VK_CHECK_RESULT(f) (f)
 #endif
 
 namespace aph::vk::utils
@@ -40,6 +40,8 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags    getImageAspect(VkFormat format);
 ShaderStage           getStageFromPath(std::string_view path);
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
+VkAccessFlags         getAccessFlags(ResourceState state);
+VkImageLayout         getImageLayout(ResourceState state);
 
 }  // namespace aph::vk::utils
 
@@ -74,6 +76,6 @@ namespace aph::vk
 {
 const VkAllocationCallbacks* vkAllocator();
 const VkAllocationCallbacks* vkMMgrAllocator();
-}
+}  // namespace aph::vk
 
 #endif  // VKLUTILS_H_

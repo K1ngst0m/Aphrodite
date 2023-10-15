@@ -212,7 +212,7 @@ void ResourceLoader::load(ImageLoadInfo& info)
 
         m_pDevice->create(imageCI, &image);
 
-        m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
             cmd->copyBufferToImage(stagingBuffer, image);
             if(genMipmap)
@@ -221,7 +221,7 @@ void ResourceLoader::load(ImageLoadInfo& info)
             }
         });
 
-        m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
             if(genMipmap)
             {
                 // generate mipmap chains
@@ -300,7 +300,7 @@ void ResourceLoader::load(BufferLoadInfo& info)
         m_pDevice->create(bufferCI, info.ppBuffer);
     }
 
-    m_pDevice->executeSingleCommands(vk::QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+    m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
         cmd->copyBuffer(stagingBuffer, *info.ppBuffer, bufferCI.size);
     });
 

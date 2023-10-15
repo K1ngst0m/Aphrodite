@@ -54,17 +54,17 @@ VkDescriptorType VkCast(ResourceType type)
 {
     switch(type)
     {
-    case ResourceType::SAMPLER:
+    case ResourceType::Sampler:
         return VK_DESCRIPTOR_TYPE_SAMPLER;
-    case ResourceType::SAMPLED_IMAGE:
+    case ResourceType::SampledImage:
         return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case ResourceType::COMBINE_SAMPLER_IMAGE:
+    case ResourceType::CombineSamplerImage:
         return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    case ResourceType::STORAGE_IMAGE:
+    case ResourceType::StorageImage:
         return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    case ResourceType::UNIFORM_BUFFER:
+    case ResourceType::UniformBuffer:
         return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case ResourceType::STORAGE_BUFFER:
+    case ResourceType::StorageBuffer:
         return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     default:
         assert("Invalid resource type.");
@@ -192,6 +192,7 @@ ShaderStage getStageFromPath(std::string_view path)
         return ShaderStage::CS;
     return ShaderStage::NA;
 }
+
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples)
 {
     if(numSamples <= 1)
@@ -233,9 +234,86 @@ VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
     return vkLabel;
 }
 
+VkAccessFlags getAccessFlags(ResourceState state)
+{
+    VkAccessFlags ret = 0;
+    if(state & RESOURCE_STATE_COPY_SOURCE)
+    {
+        ret |= VK_ACCESS_TRANSFER_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_COPY_DEST)
+    {
+        ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
+    }
+    if(state & RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
+    {
+        ret |= VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_INDEX_BUFFER)
+    {
+        ret |= VK_ACCESS_INDEX_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_UNORDERED_ACCESS)
+    {
+        ret |= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+    }
+    if(state & RESOURCE_STATE_INDIRECT_ARGUMENT)
+    {
+        ret |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_RENDER_TARGET)
+    {
+        ret |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    }
+    if(state & RESOURCE_STATE_DEPTH_WRITE)
+    {
+        ret |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    }
+    if(state & RESOURCE_STATE_SHADER_RESOURCE)
+    {
+        ret |= VK_ACCESS_SHADER_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_PRESENT)
+    {
+        ret |= VK_ACCESS_MEMORY_READ_BIT;
+    }
+    if(state & RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
+    {
+        ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+    }
+    return ret;
+}
+
+VkImageLayout getImageLayout(ResourceState state)
+{
+    if(state & RESOURCE_STATE_COPY_SOURCE)
+        return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+    if(state & RESOURCE_STATE_COPY_DEST)
+        return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+    if(state & RESOURCE_STATE_RENDER_TARGET)
+        return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    if(state & RESOURCE_STATE_DEPTH_WRITE)
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    if(state & RESOURCE_STATE_UNORDERED_ACCESS)
+        return VK_IMAGE_LAYOUT_GENERAL;
+
+    if(state & RESOURCE_STATE_SHADER_RESOURCE)
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    if(state & RESOURCE_STATE_PRESENT)
+        return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    if(state == RESOURCE_STATE_COMMON)
+        return VK_IMAGE_LAYOUT_GENERAL;
+
+    return VK_IMAGE_LAYOUT_UNDEFINED;
+}
 }  // namespace aph::vk::utils
 
-#include "common/allocator.h"
 namespace aph::vk
 {
 

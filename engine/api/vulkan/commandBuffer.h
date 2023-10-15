@@ -40,6 +40,29 @@ struct AttachmentInfo
     std::optional<VkClearValue>        clear;
 };
 
+struct BufferBarrier
+{
+    Buffer*       pBuffer;
+    ResourceState currentState;
+    ResourceState newState;
+    QueueType     queueType;
+    uint8_t       acquire;
+    uint8_t       release;
+};
+
+struct ImageBarrier
+{
+    Image*        pImage;
+    ResourceState currentState;
+    ResourceState newState;
+    QueueType     queueType;
+    uint8_t       acquire;
+    uint8_t       release;
+    uint8_t       subresourceBarrier;
+    uint8_t       mipLevel;
+    uint16_t      arrayLayer;
+};
+
 struct CommandState
 {
     struct ResourceBinding
@@ -88,7 +111,7 @@ struct CommandState
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
-    CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, uint32_t queueFamilyIndices);
+    CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, Queue* pQueue);
     ~CommandBuffer();
 
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
@@ -125,6 +148,10 @@ public:
               uint32_t stride = sizeof(VkDrawIndirectCommand));
 
     void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size);
+    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
+                       const std::vector<ImageBarrier>&  pImageBarriers);
     void transitionImageLayout(Image* image, VkImageLayout newLayout,
                                VkImageSubresourceRange* pSubResourceRange = nullptr,
                                VkPipelineStageFlags2    srcStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
@@ -142,11 +169,11 @@ private:
     void                   flushComputeCommand();
     void                   flushGraphicsCommand();
     Device*                m_pDevice          = {};
+    Queue*                 m_pQueue           = {};
     const VolkDeviceTable* m_pDeviceTable     = {};
     VkCommandPool          m_pool             = {};
     CommandBufferState     m_state            = {};
     bool                   m_submittedToQueue = {false};
-    uint32_t               m_queueFamilyType  = {};
 
 private:
     CommandState m_commandState = {};

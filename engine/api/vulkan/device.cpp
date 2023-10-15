@@ -444,7 +444,7 @@ VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuff
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queue->getFamilyIndex());
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queue);
     }
     return VK_SUCCESS;
 }
@@ -851,7 +851,6 @@ VkResult Device::executeSingleCommands(QueueType type, const CmdRecordCallBack&&
 VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,
                                               Queue* pQueue)
 {
-    auto                  queueIndices = pQueue->getFamilyIndex();
     CommandPoolCreateInfo createInfo{.queue = pQueue};
 
     for(auto i = 0; i < commandBufferCount; i++)
@@ -869,7 +868,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
             .commandBufferCount = commandBufferCount,
         };
         _VR(vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queueIndices);
+        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pQueue);
         m_threadCommandPools.push_back(pool);
     }
     return VK_SUCCESS;

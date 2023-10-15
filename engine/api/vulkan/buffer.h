@@ -17,13 +17,6 @@ struct BufferCreateInfo
     BufferDomain       domain    = {BufferDomain::Device};
 };
 
-struct BufferLoadInfo
-{
-    void*            data;
-    BufferCreateInfo createInfo = {};
-    Buffer**         ppBuffer   = {};
-};
-
 class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 {
 public:

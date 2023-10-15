@@ -37,6 +37,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "logger.h"
+#include "common/allocator.h"
 
 #define BACKWARD_HAS_DW 1
 #define BACKWARD_HAS_BACKTRACE_SYMBOL 1
@@ -108,12 +109,12 @@ struct ImageInfo
 namespace aph::utils
 {
 #ifdef __GNUC__
-#    define leading_zeroes(x) ((x) == 0 ? 32 : __builtin_clz(x))
-#    define trailing_zeroes(x) ((x) == 0 ? 32 : __builtin_ctz(x))
-#    define trailing_ones(x) __builtin_ctz(~uint32_t(x))
-#    define leading_zeroes64(x) ((x) == 0 ? 64 : __builtin_clzll(x))
-#    define trailing_zeroes64(x) ((x) == 0 ? 64 : __builtin_ctzll(x))
-#    define trailing_ones64(x) __builtin_ctzll(~uint64_t(x))
+    #define leading_zeroes(x) ((x) == 0 ? 32 : __builtin_clz(x))
+    #define trailing_zeroes(x) ((x) == 0 ? 32 : __builtin_ctz(x))
+    #define trailing_ones(x) __builtin_ctz(~uint32_t(x))
+    #define leading_zeroes64(x) ((x) == 0 ? 64 : __builtin_clzll(x))
+    #define trailing_zeroes64(x) ((x) == 0 ? 64 : __builtin_ctzll(x))
+    #define trailing_ones64(x) __builtin_ctzll(~uint64_t(x))
 #elif defined(_MSC_VER)
 namespace Internal
 {
@@ -154,14 +155,14 @@ static inline uint32_t ctz64(uint64_t x)
 }
 }  // namespace Internal
 
-#    define leading_zeroes(x) ::Util::Internal::clz(x)
-#    define trailing_zeroes(x) ::Util::Internal::ctz(x)
-#    define trailing_ones(x) ::Util::Internal::ctz(~uint32_t(x))
-#    define leading_zeroes64(x) ::Util::Internal::clz64(x)
-#    define trailing_zeroes64(x) ::Util::Internal::ctz64(x)
-#    define trailing_ones64(x) ::Util::Internal::ctz64(~uint64_t(x))
+    #define leading_zeroes(x) ::Util::Internal::clz(x)
+    #define trailing_zeroes(x) ::Util::Internal::ctz(x)
+    #define trailing_ones(x) ::Util::Internal::ctz(~uint32_t(x))
+    #define leading_zeroes64(x) ::Util::Internal::clz64(x)
+    #define trailing_zeroes64(x) ::Util::Internal::ctz64(x)
+    #define trailing_ones64(x) ::Util::Internal::ctz64(~uint64_t(x))
 #else
-#    error "Implement me."
+    #error "Implement me."
 #endif
 }  // namespace aph::utils
 
@@ -229,7 +230,7 @@ inline void forEachBitRange(uint32_t value, const T& func)
 namespace aph
 {
 #ifdef APH_DEBUG
-#    define APH_ASSERT(x) \
+    #define APH_ASSERT(x) \
         do \
         { \
             if(!bool(x)) \
@@ -240,7 +241,46 @@ namespace aph
             } \
         } while(0)
 #else
-#    define APH_ASSERT(x) ((void)0)
+    #define APH_ASSERT(x) ((void)0)
+#endif
+}  // namespace aph
+
+namespace aph
+{
+#ifdef __cplusplus
+    #ifndef MAKE_ENUM_FLAG
+        #define MAKE_ENUM_FLAG(TYPE, ENUM_TYPE) \
+            inline constexpr ENUM_TYPE operator|(ENUM_TYPE a, ENUM_TYPE b) \
+            { \
+                return ENUM_TYPE(((TYPE)a) | ((TYPE)b)); \
+            } \
+            inline ENUM_TYPE& operator|=(ENUM_TYPE& a, ENUM_TYPE b) \
+            { \
+                return (ENUM_TYPE&)(((TYPE&)a) |= ((TYPE)b)); \
+            } \
+            inline constexpr ENUM_TYPE operator&(ENUM_TYPE a, ENUM_TYPE b) \
+            { \
+                return ENUM_TYPE(((TYPE)a) & ((TYPE)b)); \
+            } \
+            inline ENUM_TYPE& operator&=(ENUM_TYPE& a, ENUM_TYPE b) \
+            { \
+                return (ENUM_TYPE&)(((TYPE&)a) &= ((TYPE)b)); \
+            } \
+            inline constexpr ENUM_TYPE operator~(ENUM_TYPE a) \
+            { \
+                return ENUM_TYPE(~((TYPE)a)); \
+            } \
+            inline constexpr ENUM_TYPE operator^(ENUM_TYPE a, ENUM_TYPE b) \
+            { \
+                return ENUM_TYPE(((TYPE)a) ^ ((TYPE)b)); \
+            } \
+            inline ENUM_TYPE& operator^=(ENUM_TYPE& a, ENUM_TYPE b) \
+            { \
+                return (ENUM_TYPE&)(((TYPE&)a) ^= ((TYPE)b)); \
+            }
+    #endif
+#else
+    #define MAKE_ENUM_FLAG(TYPE, ENUM_TYPE)
 #endif
 }  // namespace aph
 

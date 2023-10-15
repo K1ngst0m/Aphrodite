@@ -37,6 +37,23 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
     vkGetPhysicalDeviceProperties(getHandle(), &m_properties);
     vkGetPhysicalDeviceMemoryProperties(getHandle(), &m_memoryProperties);
 
+    m_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
+#if VK_EXT_fragment_shader_interlock
+    VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT fragmentShaderInterlockFeatures = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT};
+    m_features2.pNext = &fragmentShaderInterlockFeatures;
+#endif
+    vkGetPhysicalDeviceFeatures2(getHandle(), &m_features2);
+
+    // Get device properties
+    VkPhysicalDeviceSubgroupProperties subgroupProperties = {};
+    subgroupProperties.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
+    subgroupProperties.pNext                              = nullptr;
+    m_properties2.sType                                   = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
+    // subgroupProperties.pNext                              = m_properties2.pNext;
+    m_properties2.pNext                                   = &subgroupProperties;
+    vkGetPhysicalDeviceProperties2(getHandle(), &m_properties2);
+
     // Get list of supported extensions
     uint32_t extCount = 0;
     vkEnumerateDeviceExtensionProperties(getHandle(), nullptr, &extCount, nullptr);
@@ -50,6 +67,59 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
                 m_supportedExtensions.emplace_back(ext.extensionName);
             }
         }
+    }
+
+    {
+        auto* gpuProperties = &m_properties2;
+        auto* gpuSettings   = &m_settings;
+        auto* gpuFeatures   = &m_features2;
+        gpuSettings->uniformBufferAlignment =
+            (uint32_t)gpuProperties->properties.limits.minUniformBufferOffsetAlignment;
+        gpuSettings->uploadBufferTextureAlignment =
+            (uint32_t)gpuProperties->properties.limits.optimalBufferCopyOffsetAlignment;
+        gpuSettings->uploadBufferTextureRowAlignment =
+            (uint32_t)gpuProperties->properties.limits.optimalBufferCopyRowPitchAlignment;
+        gpuSettings->maxVertexInputBindings = gpuProperties->properties.limits.maxVertexInputBindings;
+        gpuSettings->multiDrawIndirect      = gpuFeatures->features.multiDrawIndirect;
+        gpuSettings->indirectRootConstant   = false;
+        gpuSettings->builtinDrawID          = true;
+
+        gpuSettings->waveLaneCount       = subgroupProperties.subgroupSize;
+        gpuSettings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
+        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
+            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
+
+#if VK_EXT_fragment_shader_interlock
+        gpuSettings->rovsSupported = (bool)fragmentShaderInterlockFeatures.fragmentShaderPixelInterlock;
+#endif
+        gpuSettings->tessellationSupported      = gpuFeatures->features.tessellationShader;
+        gpuSettings->geometryShaderSupported    = gpuFeatures->features.geometryShader;
+        gpuSettings->samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+
+        // save vendor and model Id as string
+        sprintf(gpuSettings->GpuVendorPreset.modelId, "%#x", gpuProperties->properties.deviceID);
+        sprintf(gpuSettings->GpuVendorPreset.vendorId, "%#x", gpuProperties->properties.vendorID);
+        strncpy(gpuSettings->GpuVendorPreset.gpuName, gpuProperties->properties.deviceName,
+                MAX_GPU_VENDOR_STRING_LENGTH);
+
+        // TODO: Fix once vulkan adds support for revision ID
+        strncpy(gpuSettings->GpuVendorPreset.revisionId, "0x00", MAX_GPU_VENDOR_STRING_LENGTH);
     }
 }
 
@@ -207,5 +277,84 @@ size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
         alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
     return alignedSize;
+}
+
+VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, VkAccessFlags accessFlags,
+                                                        QueueType queueType)
+{
+    VkPipelineStageFlags flags = 0;
+
+    auto * gpuSupport = pGPU->getSettings();
+    switch(queueType)
+    {
+    case aph::QueueType::GRAPHICS:
+    {
+        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+
+        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+        {
+            flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            if(gpuSupport->geometryShaderSupported)
+            {
+                flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+            }
+            if(gpuSupport->tessellationSupported)
+            {
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+            }
+            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+        }
+
+        if((accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
+            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        if((accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        if((accessFlags &
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+        break;
+    }
+    case aph::QueueType::COMPUTE:
+    {
+        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
+           (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
+           (accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 ||
+           (accessFlags &
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+        break;
+    }
+    case aph::QueueType::TRANSFER:
+        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    default:
+        break;
+    }
+
+    // Compatible with both compute and graphics queues
+    if((accessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) != 0)
+        flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+
+    if((accessFlags & (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT)) != 0)
+        flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    if((accessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
+        flags |= VK_PIPELINE_STAGE_HOST_BIT;
+
+    if(flags == 0)
+        flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+    return flags;
 }
 }  // namespace aph::vk

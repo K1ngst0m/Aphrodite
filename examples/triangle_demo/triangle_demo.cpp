@@ -84,7 +84,7 @@ void triangle_demo::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
-        auto* queue = m_renderer->getDefaultQueue(aph::vk::QueueType::GRAPHICS);
+        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
 
         // draw and submit
         m_renderer->beginFrame();

@@ -5,12 +5,12 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, uint32_t queueFamilyIndices) :
+CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, Queue* pQueue) :
     m_pDevice(pDevice),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
     m_state(CommandBufferState::INITIAL),
-    m_queueFamilyType(queueFamilyIndices)
+    m_pQueue(pQueue)
 {
     getHandle() = handle;
 }
@@ -505,8 +505,8 @@ void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type
 {
     switch(type)
     {
-    case ResourceType::UNIFORM_BUFFER:
-    case ResourceType::STORAGE_BUFFER:
+    case ResourceType::UniformBuffer:
+    case ResourceType::StorageBuffer:
     {
         auto& b                 = m_commandState.resourceBindings.bindings;
         b[set][binding]->buffer = {.buffer = buffer->getHandle(), .offset = offset, .range = size};
@@ -524,10 +524,10 @@ void CommandBuffer::bindTexture(uint32_t set, uint32_t binding, ResourceType typ
 {
     switch(type)
     {
-    case ResourceType::SAMPLER:
-    case ResourceType::SAMPLED_IMAGE:
-    case ResourceType::COMBINE_SAMPLER_IMAGE:
-    case ResourceType::STORAGE_IMAGE:
+    case ResourceType::Sampler:
+    case ResourceType::SampledImage:
+    case ResourceType::CombineSamplerImage:
+    case ResourceType::StorageImage:
     {
         auto& b                = m_commandState.resourceBindings.bindings;
         b[set][binding]->image = {
@@ -567,5 +567,147 @@ void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 void CommandBuffer::endDebugLabel()
 {
     vkCmdEndDebugUtilsLabelEXT(getHandle());
+}
+void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
+                                  const std::vector<ImageBarrier>&  pImageBarriers)
+{
+    uint32_t numTextureBarriers = pImageBarriers.size();
+    uint32_t numBufferBarriers  = pBufferBarriers.size();
+
+    VkImageMemoryBarrier* imageBarriers =
+        (numTextureBarriers) ? (VkImageMemoryBarrier*)alloca((numTextureBarriers) * sizeof(VkImageMemoryBarrier))
+                             : nullptr;
+    uint32_t imageBarrierCount = 0;
+
+    VkBufferMemoryBarrier* bufferBarriers =
+        numBufferBarriers ? (VkBufferMemoryBarrier*)alloca(numBufferBarriers * sizeof(VkBufferMemoryBarrier)) : nullptr;
+    uint32_t bufferBarrierCount = 0;
+
+    VkAccessFlags srcAccessFlags = 0;
+    VkAccessFlags dstAccessFlags = 0;
+
+    for(uint32_t i = 0; i < numBufferBarriers; ++i)
+    {
+        const BufferBarrier*   pTrans         = &pBufferBarriers[i];
+        Buffer*                pBuffer        = pTrans->pBuffer;
+        VkBufferMemoryBarrier* pBufferBarrier = nullptr;
+
+        if(RESOURCE_STATE_UNORDERED_ACCESS == pTrans->currentState &&
+           RESOURCE_STATE_UNORDERED_ACCESS == pTrans->newState)
+        {
+            pBufferBarrier        = &bufferBarriers[bufferBarrierCount++];
+            pBufferBarrier->sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            pBufferBarrier->pNext = nullptr;
+
+            pBufferBarrier->srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            pBufferBarrier->dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+        }
+        else
+        {
+            pBufferBarrier        = &bufferBarriers[bufferBarrierCount++];
+            pBufferBarrier->sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            pBufferBarrier->pNext = nullptr;
+
+            pBufferBarrier->srcAccessMask = utils::getAccessFlags(pTrans->currentState);
+            pBufferBarrier->dstAccessMask = utils::getAccessFlags(pTrans->newState);
+        }
+
+        if(pBufferBarrier)
+        {
+            pBufferBarrier->buffer = pBuffer->getHandle();
+            pBufferBarrier->size   = VK_WHOLE_SIZE;
+            pBufferBarrier->offset = 0;
+
+            if(pTrans->acquire)
+            {
+                pBufferBarrier->srcQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pBufferBarrier->dstQueueFamilyIndex = m_pQueue->getFamilyIndex();
+            }
+            else if(pTrans->release)
+            {
+                pBufferBarrier->srcQueueFamilyIndex = m_pQueue->getFamilyIndex();
+                pBufferBarrier->dstQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+            }
+            else
+            {
+                pBufferBarrier->srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                pBufferBarrier->dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            }
+
+            srcAccessFlags |= pBufferBarrier->srcAccessMask;
+            dstAccessFlags |= pBufferBarrier->dstAccessMask;
+        }
+    }
+
+    for(uint32_t i = 0; i < numTextureBarriers; ++i)
+    {
+        const ImageBarrier*   pTrans        = &pImageBarriers[i];
+        Image*                pTexture      = pTrans->pImage;
+        VkImageMemoryBarrier* pImageBarrier = nullptr;
+
+        if(RESOURCE_STATE_UNORDERED_ACCESS == pTrans->currentState &&
+           RESOURCE_STATE_UNORDERED_ACCESS == pTrans->newState)
+        {
+            pImageBarrier        = &imageBarriers[imageBarrierCount++];
+            pImageBarrier->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            pImageBarrier->pNext = nullptr;
+
+            pImageBarrier->srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            pImageBarrier->dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT;
+            pImageBarrier->oldLayout     = VK_IMAGE_LAYOUT_GENERAL;
+            pImageBarrier->newLayout     = VK_IMAGE_LAYOUT_GENERAL;
+        }
+        else
+        {
+            pImageBarrier        = &imageBarriers[imageBarrierCount++];
+            pImageBarrier->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            pImageBarrier->pNext = nullptr;
+
+            pImageBarrier->srcAccessMask = utils::getAccessFlags(pTrans->currentState);
+            pImageBarrier->dstAccessMask = utils::getAccessFlags(pTrans->newState);
+            pImageBarrier->oldLayout     = utils::getImageLayout(pTrans->currentState);
+            pImageBarrier->newLayout     = utils::getImageLayout(pTrans->newState);
+        }
+
+        if(pImageBarrier)
+        {
+            pImageBarrier->image                           = pTexture->getHandle();
+            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(pTexture->getFormat());
+            pImageBarrier->subresourceRange.baseMipLevel   = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
+            pImageBarrier->subresourceRange.levelCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_MIP_LEVELS;
+            pImageBarrier->subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;
+            pImageBarrier->subresourceRange.layerCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_ARRAY_LAYERS;
+
+            if(pTrans->acquire && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
+            {
+                pImageBarrier->srcQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pImageBarrier->dstQueueFamilyIndex = m_pQueue->getFamilyIndex();
+            }
+            else if(pTrans->release && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
+            {
+                pImageBarrier->srcQueueFamilyIndex = m_pQueue->getFamilyIndex();
+                pImageBarrier->dstQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+            }
+            else
+            {
+                pImageBarrier->srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                pImageBarrier->dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            }
+
+            srcAccessFlags |= pImageBarrier->srcAccessMask;
+            dstAccessFlags |= pImageBarrier->dstAccessMask;
+        }
+    }
+
+    VkPipelineStageFlags srcStageMask =
+        aph::vk::utils::determinePipelineStageFlags(m_pDevice->getPhysicalDevice(), srcAccessFlags, m_pQueue->getType());
+    VkPipelineStageFlags dstStageMask =
+        aph::vk::utils::determinePipelineStageFlags(m_pDevice->getPhysicalDevice(), dstAccessFlags, m_pQueue->getType());
+
+    if(bufferBarrierCount || imageBarrierCount)
+    {
+        vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers,
+                             imageBarrierCount, imageBarriers);
+    }
 }
 }  // namespace aph::vk
