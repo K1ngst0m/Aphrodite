@@ -12,3 +12,8 @@ build/
 /.ccls-cache/
 /log.txt
 /external/SPIRV-cross/
+/external/glslang/
+/external/shaderc/
+/external/spirv-cross/
+/external/spirv-headers/
+/external/spirv-tools/

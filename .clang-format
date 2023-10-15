@@ -29,7 +29,7 @@ SpacesInParentheses: 'false'
 TabWidth: '4'
 UseTab: Never
 AccessModifierOffset: '-4'
-IndentPPDirectives: 'AfterHash'
+IndentPPDirectives: 'BeforeHash'
 BraceWrapping:
   AfterCaseLabel:  true
   AfterClass:      true
