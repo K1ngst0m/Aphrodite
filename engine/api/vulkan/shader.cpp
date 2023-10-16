@@ -187,32 +187,6 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     return setLayout;
 };
 
-std::unique_ptr<Shader> Shader::Create(Device* pDevice, const std::filesystem::path& path,
-                                       const std::string& entrypoint, const ResourceLayout* pLayout)
-{
-    std::vector<uint32_t> spvCode;
-    if(path.extension() == ".spv")
-    {
-        spvCode = utils::loadSpvFromFile(path);
-    }
-    else if(utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
-    {
-        spvCode = utils::loadGlslFromFile(path);
-    }
-
-    VkShaderModuleCreateInfo createInfo{
-        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = spvCode.size() * sizeof(spvCode[0]),
-        .pCode    = spvCode.data(),
-    };
-
-    VkShaderModule handle;
-    VK_CHECK_RESULT(vkCreateShaderModule(pDevice->getHandle(), &createInfo, vkAllocator(), &handle));
-
-    auto instance = std::unique_ptr<Shader>(new Shader(std::move(spvCode), handle, entrypoint));
-    return instance;
-}
-
 Shader::Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint,
                const ResourceLayout* pLayout) :
     m_entrypoint(std::move(entrypoint)),

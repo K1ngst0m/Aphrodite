@@ -139,7 +139,11 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 {
 }
 
-void ResourceLoader::load(ImageLoadInfo& info)
+ResourceLoader::~ResourceLoader()
+{
+};
+
+void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
     std::filesystem::path path;
     std::vector<uint8_t>  data;
@@ -271,10 +275,10 @@ void ResourceLoader::load(ImageLoadInfo& info)
     }
 
     m_pDevice->destroy(stagingBuffer);
-    *info.ppImage = image;
+    *ppImage = image;
 }
 
-void ResourceLoader::load(BufferLoadInfo& info)
+void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 {
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
@@ -297,13 +301,77 @@ void ResourceLoader::load(BufferLoadInfo& info)
     {
         bufferCI.domain = BufferDomain::Device;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        m_pDevice->create(bufferCI, info.ppBuffer);
+        m_pDevice->create(bufferCI, ppBuffer);
     }
 
-    m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
-        cmd->copyBuffer(stagingBuffer, *info.ppBuffer, bufferCI.size);
-    });
+    m_pDevice->executeSingleCommands(
+        QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, bufferCI.size); });
 
     m_pDevice->destroy(stagingBuffer);
+}
+
+void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
+{
+    auto uuid = m_uuidGenerator.getUUID().str();
+
+    VkShaderModuleCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    };
+    std::vector<uint32_t> spvCode;
+    if(std::holds_alternative<std::string>(info.data))
+    {
+        std::filesystem::path path = std::get<std::string>(info.data);
+
+        // TODO override with new load info
+        if(m_shaderUUIDMap.count(path))
+        {
+            *ppShader = m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
+            return;
+        }
+
+        if(path.extension() == ".spv")
+        {
+            spvCode = vk::utils::loadSpvFromFile(path);
+        }
+        else if(vk::utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
+        {
+            spvCode = vk::utils::loadGlslFromFile(path);
+        }
+
+        createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);
+        createInfo.pCode    = spvCode.data();
+
+        m_shaderUUIDMap[path] = uuid;
+    }
+    else if(std::holds_alternative<std::vector<uint32_t>>(info.data))
+    {
+        auto& code          = std::get<std::vector<uint32_t>>(info.data);
+        createInfo.codeSize = code.size() * sizeof(code[0]);
+        createInfo.pCode    = code.data();
+
+        {
+            spvCode = code;
+        }
+    }
+
+    // TODO macro
+    {
+    }
+
+    VkShaderModule handle;
+    VK_CHECK_RESULT(vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
+
+    APH_ASSERT(!m_shaderModuleCaches.count(uuid));
+    m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
+
+    *ppShader = m_shaderModuleCaches[uuid].get();
+}
+
+void ResourceLoader::cleanup()
+{
+    for(const auto& [_, shaderModule] : m_shaderModuleCaches)
+    {
+        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
+    }
 }
 }  // namespace aph

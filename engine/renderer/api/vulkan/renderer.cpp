@@ -327,13 +327,9 @@ Renderer::~Renderer()
     // TODO
     m_pSyncPrimitivesPool.reset(nullptr);
 
-    for(const auto& [_, shaderModule] : shaderModuleCaches)
-    {
-        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
-    }
-
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
+    m_pResourceLoader->cleanup();
     m_pDevice->destroy(m_pSwapChain);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, vk::vkAllocator());
     Device::Destroy(m_pDevice.get());
@@ -378,15 +374,6 @@ void Renderer::endFrame()
         }
         m_tPrevEnd = tEnd;
     }
-}
-
-Shader* Renderer::getShaders(const std::filesystem::path& path)
-{
-    if(!shaderModuleCaches.count(path))
-    {
-        shaderModuleCaches[path] = Shader::Create(m_pDevice.get(), path);
-    }
-    return shaderModuleCaches[path].get();
 }
 
 void Renderer::UI::resize(uint32_t width, uint32_t height)
@@ -543,4 +530,10 @@ CommandBuffer* Renderer::acquireFrameCommandBuffer(Queue* queue)
     return cmd;
 }
 
+Shader* Renderer::getShaders(const std::filesystem::path& path) const
+{
+    Shader* shader = {};
+    m_pResourceLoader->load({.data = path}, &shader);
+    return shader;
+}
 }  // namespace aph::vk

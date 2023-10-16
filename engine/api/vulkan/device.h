@@ -90,7 +90,7 @@ public:
     VkResult waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 private:
-    VkCommandPool            getCommandPoolWithQueue(Queue* queue);
+    VkCommandPool getCommandPoolWithQueue(Queue* queue);
 
 private:
     VkPhysicalDeviceFeatures                    m_supportedFeatures{};

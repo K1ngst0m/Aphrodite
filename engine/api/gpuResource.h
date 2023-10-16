@@ -99,6 +99,12 @@ struct DebugLabel
     float       color[4];
 };
 
+struct ShaderMacro
+{
+    std::string definition;
+    std::string value;
+};
+
 struct DummyCreateInfo
 {
     uint32_t typeId;

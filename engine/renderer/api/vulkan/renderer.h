@@ -23,7 +23,7 @@ public:
     SwapChain*              m_pSwapChain = {};
 
 public:
-    Shader* getShaders(const std::filesystem::path& path);
+    Shader* getShaders(const std::filesystem::path& path) const;
     Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
     VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
@@ -41,9 +41,6 @@ protected:
     VkPipelineCache m_pipelineCache = {};
 
     std::unordered_map<QueueType, Queue*> m_queue;
-
-    std::unordered_map<std::string, std::unique_ptr<Shader>> shaderModuleCaches = {};
-
 protected:
     std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
     std::vector<VkSemaphore>            m_timelineMain        = {};

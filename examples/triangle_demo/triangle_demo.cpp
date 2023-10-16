@@ -36,10 +36,9 @@ void triangle_demo::init()
             aph::BufferLoadInfo loadInfo{
                 .data       = vertexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-                .ppBuffer   = &m_pVB};
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
 
-            m_renderer->m_pResourceLoader->load(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo, &m_pVB);
         }
 
         // index buffer
@@ -48,9 +47,8 @@ void triangle_demo::init()
             aph::BufferLoadInfo loadInfo{
                 .data       = indexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
-                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-                .ppBuffer   = &m_pIB};
-            m_renderer->m_pResourceLoader->load(loadInfo);
+                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+            m_renderer->m_pResourceLoader->load(loadInfo, &m_pIB);
         }
 
         // pipeline
@@ -65,10 +63,17 @@ void triangle_demo::init()
             };
 
             auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
+
+            aph::vk::Shader* pVS = {};
+            aph::vk::Shader* pFS = {};
+
+            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.frag"}, &pFS);
+
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pVertex     = m_renderer->getShaders(shaderDir / "triangle.vert"),
-                .pFragment   = m_renderer->getShaders(shaderDir / "triangle.frag"),
+                .pVertex     = pVS,
+                .pFragment   = pFS,
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 

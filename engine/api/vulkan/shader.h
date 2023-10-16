@@ -75,14 +75,11 @@ class Shader : public ResourceHandle<VkShaderModule>
     friend class ShaderProgram;
 
 public:
-    static std::unique_ptr<Shader> Create(Device* pDevice, const std::filesystem::path& path,
-                                          const std::string&    entrypoint = "main",
-                                          const ResourceLayout* pLayout    = nullptr);
+    Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main",
+           const ResourceLayout* pLayout = nullptr);
 
 private:
     static ResourceLayout ReflectLayout(const std::vector<uint32_t>& code);
-    Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main",
-           const ResourceLayout* pLayout = nullptr);
     std::string           m_entrypoint = {};
     std::vector<uint32_t> m_code       = {};
     ResourceLayout        m_layout     = {};

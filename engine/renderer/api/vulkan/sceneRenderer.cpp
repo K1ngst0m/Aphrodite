@@ -597,9 +597,8 @@ void SceneRenderer::_initGpuResources()
         aph::BufferLoadInfo loadInfo{
             .data       = indicesList.data(),
             .createInfo = {.size  = static_cast<uint32_t>(indicesList.size() * sizeof(indicesList[0])),
-                           .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-            .ppBuffer   = &m_buffers[BUFFER_SCENE_INDEX]};
-        m_pResourceLoader->load(loadInfo);
+                           .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+        m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_SCENE_INDEX]);
     }
 
     // create vertex buffer
@@ -608,9 +607,8 @@ void SceneRenderer::_initGpuResources()
         aph::BufferLoadInfo loadInfo{
             .data       = verticesList.data(),
             .createInfo = {.size  = static_cast<uint32_t>(verticesList.size() * sizeof(verticesList[0])),
-                           .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-            .ppBuffer   = &m_buffers[BUFFER_SCENE_VERTEX]};
-        m_pResourceLoader->load(loadInfo);
+                           .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
+        m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_SCENE_VERTEX]);
     }
 
     // create material buffer
@@ -619,9 +617,8 @@ void SceneRenderer::_initGpuResources()
         aph::BufferLoadInfo loadInfo{
             .data       = materials.data(),
             .createInfo = {.size  = static_cast<uint32_t>(materials.size() * sizeof(materials[0])),
-                           .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT},
-            .ppBuffer   = &m_buffers[BUFFER_SCENE_MATERIAL]};
-        m_pResourceLoader->load(loadInfo);
+                           .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT}};
+        m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_SCENE_MATERIAL]);
     }
 
     // load scene image to gpu
@@ -640,10 +637,9 @@ void SceneRenderer::_initGpuResources()
         aph::ImageLoadInfo loadInfo{
             .data          = aph::asset::GetTextureDir() / "container2.png",
             .containerType = aph::ImageContainerType::Png,
-            .pCreateInfo   = &createInfo,
-            .ppImage       = &texture,
+            .pCreateInfo   = &createInfo
         };
-        m_pResourceLoader->load(loadInfo);
+        m_pResourceLoader->load(loadInfo, &texture);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }
 
@@ -684,14 +680,12 @@ void SceneRenderer::_initGpuResources()
         aph::BufferLoadInfo loadInfo{
             .data       = dispatchList.data(),
             .createInfo = {.size  = static_cast<uint32_t>(dispatchList.size() * sizeof(dispatchList[0])),
-                           .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT},
-            .ppBuffer   = &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]};
-        m_pResourceLoader->load(loadInfo);
+                           .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT}};
+        m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_INDIRECT_DISPATCH_CMD]);
 
         loadInfo.createInfo.size = static_cast<uint32_t>(drawList.size() * sizeof(drawList[0]));
-        loadInfo.ppBuffer        = &m_buffers[BUFFER_INDIRECT_DRAW_CMD];
         loadInfo.data            = drawList.data();
-        m_pResourceLoader->load(loadInfo);
+        m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_INDIRECT_DRAW_CMD]);
     }
 
     {
@@ -737,9 +731,8 @@ void SceneRenderer::_initSkybox()
             aph::BufferLoadInfo loadInfo{
                 .data       = (void*)skyboxVertices.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(skyboxVertices.size() * sizeof(skyboxVertices[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-                .ppBuffer   = &m_buffers[BUFFER_CUBE_VERTEX]};
-            m_pResourceLoader->load(loadInfo);
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
+            m_pResourceLoader->load(loadInfo, &m_buffers[BUFFER_CUBE_VERTEX]);
         }
     }
 

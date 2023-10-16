@@ -35,10 +35,9 @@ void basic_texture::init()
             aph::BufferLoadInfo loadInfo{
                 .data       = vertices.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-                .ppBuffer   = &m_pVB};
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
 
-            m_renderer->m_pResourceLoader->load(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo, &m_pVB);
         }
 
         // index buffer
@@ -51,9 +50,8 @@ void basic_texture::init()
             aph::BufferLoadInfo loadInfo{
                 .data       = indices.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
-                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT},
-                .ppBuffer   = &m_pIB};
-            m_renderer->m_pResourceLoader->load(loadInfo);
+                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+            m_renderer->m_pResourceLoader->load(loadInfo, &m_pIB);
         }
 
         // image and sampler
@@ -69,14 +67,11 @@ void basic_texture::init()
                 .tiling    = VK_IMAGE_TILING_OPTIMAL,
             };
 
-            aph::ImageLoadInfo loadInfo{
-                .data          = aph::asset::GetTextureDir() / "container2.png",
-                .containerType = aph::ImageContainerType::Png,
-                .pCreateInfo   = &imageCI,
-                .ppImage       = &m_pImage,
-            };
+            aph::ImageLoadInfo loadInfo{.data          = aph::asset::GetTextureDir() / "container2.png",
+                                        .containerType = aph::ImageContainerType::Png,
+                                        .pCreateInfo   = &imageCI};
 
-            m_renderer->m_pResourceLoader->load(loadInfo);
+            m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
             m_pDevice->executeSingleCommands(aph::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
                 // cmd->transitionImageLayout(m_pImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -102,10 +97,17 @@ void basic_texture::init()
             };
 
             auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
+
+            aph::vk::Shader* pVS = {};
+            aph::vk::Shader* pFS = {};
+
+            m_renderer->m_pResourceLoader->load({.data = shaderDir / "texture.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = shaderDir / "texture.frag"}, &pFS);
+
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pVertex     = m_renderer->getShaders(shaderDir / "texture.vert"),
-                .pFragment   = m_renderer->getShaders(shaderDir / "texture.frag"),
+                .pVertex     = pVS,
+                .pFragment   = pFS,
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
