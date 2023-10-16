@@ -29,6 +29,8 @@ function(aph_compiler_options TARGET)
         # common options
         target_compile_options(${TARGET} PRIVATE
             -fdiagnostics-color=auto
+
+            -mavx2
         )
 
         target_link_options(${TARGET} PRIVATE

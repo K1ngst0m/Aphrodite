@@ -36,7 +36,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "logger.h"
+#include "common/logger.h"
+#include "common/uuid.h"
 #include "common/allocator.h"
 
 #define BACKWARD_HAS_DW 1
