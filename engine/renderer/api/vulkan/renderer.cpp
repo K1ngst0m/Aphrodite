@@ -140,8 +140,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // setup swapchain
     {
         SwapChainCreateInfo createInfo{
-            .instance = m_pInstance,
-            .wsi      = m_wsi,
+            .pInstance = m_pInstance,
+            .pWsi      = m_wsi,
         };
         VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pSwapChain));
     }

@@ -2,6 +2,9 @@
 #define VKLUTILS_H_
 
 #include "api/gpuResource.h"
+#if defined(__linux__)
+    #define VK_USE_PLATFORM_XCB_KHR
+#endif
 #define VK_NO_PROTOTYPES
 #include <volk.h>
 #include "vkInit.h"

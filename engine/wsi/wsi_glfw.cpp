@@ -65,17 +65,17 @@ static Key glfwKeyCast(int key)
 
 static void cursorCB(GLFWwindow* window, double x, double y)
 {
-    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
+    auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
-    static double lastX = glfw->getWidth() / 2;
-    static double lastY = glfw->getHeight() / 2;
+    static double lastX = wsi->getWidth() / 2;
+    static double lastY = wsi->getHeight() / 2;
 
     double deltaX = lastX - x;
     double deltaY = lastY - y;
     lastX         = x;
     lastY         = y;
 
-    glfw->pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+    wsi->pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
 }
 
 static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
@@ -95,11 +95,11 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
 
     auto  gkey = glfwKeyCast(key);
-    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
+    auto* wsi  = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
     if(action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
     {
-        glfw->close();
+        wsi->close();
     }
     else if(action == GLFW_PRESS && key == GLFW_KEY_1)
     {
@@ -109,13 +109,13 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
     else
     {
-        glfw->pushEvent(KeyboardEvent{gkey, state});
+        wsi->pushEvent(KeyboardEvent{gkey, state});
     }
 }
 
 static void buttonCB(GLFWwindow* window, int button, int action, int _)
 {
-    auto* glfw = static_cast<WSI*>(glfwGetWindowUserPointer(window));
+    auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
     MouseButton btn;
     switch(button)
@@ -135,7 +135,18 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    glfw->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+    wsi->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+}
+
+static void windowResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
+    wsi->resize(width, height);
+
+    WindowResizeEvent resizeEvent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
+    // Push the event to your event queue or handle it immediately
+    wsi->pushEvent(resizeEvent);
 }
 
 void WSI::init()
@@ -144,7 +155,7 @@ void WSI::init()
     assert(glfwVulkanSupported());
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     m_window    = (void*)glfwCreateWindow(m_width, m_height, "Aphrodite Engine", nullptr, nullptr);
     auto window = static_cast<GLFWwindow*>(m_window);
@@ -154,6 +165,7 @@ void WSI::init()
     glfwSetKeyCallback(window, keyCB);
     glfwSetCursorPosCallback(window, cursorCB);
     glfwSetMouseButtonCallback(window, buttonCB);
+    glfwSetFramebufferSizeCallback(window, windowResizeCallback);
 }
 
 VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
@@ -233,6 +245,20 @@ bool WSI::update()
         }
     }
 
+    {
+        auto& events   = m_windowResizeEvent.m_events;
+        auto& handlers = m_windowResizeEvent.m_handlers;
+        while(!events.empty())
+        {
+            auto e = events.front();
+            events.pop();
+            for(const auto& cb : handlers)
+            {
+                cb(e);
+            }
+        }
+    }
+
     return true;
 };
 
@@ -240,3 +266,9 @@ void WSI::close()
 {
     glfwSetWindowShouldClose((GLFWwindow*)m_window, true);
 };
+
+void WSI::resize(uint32_t width, uint32_t height)
+{
+    m_width  = width;
+    m_height = height;
+}

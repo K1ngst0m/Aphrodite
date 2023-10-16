@@ -3,20 +3,9 @@
 
 namespace
 {
-struct SwapChainSupportDetails
+aph::vk::SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, aph::WSI* wsi)
 {
-    VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
-
-    VkSurfaceFormatKHR preferedSurfaceFormat;
-    VkPresentModeKHR   preferedPresentMode;
-    VkExtent2D         preferedExtent;
-};
-
-SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, aph::WSI* wsi)
-{
-    SwapChainSupportDetails details;
+    aph::vk::SwapChainSupportDetails details;
 
     // surface cap
     {
@@ -65,24 +54,6 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
         }
     }
 
-    // extent
-    {
-        if(details.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-        {
-            details.preferedExtent = details.capabilities.currentExtent;
-        }
-        else
-        {
-            VkExtent2D actualExtent = {wsi->getFrameBufferWidth(), wsi->getFrameBufferHeight()};
-
-            actualExtent.width     = std::clamp(actualExtent.width, details.capabilities.minImageExtent.width,
-                                                details.capabilities.maxImageExtent.width);
-            actualExtent.height    = std::clamp(actualExtent.height, details.capabilities.minImageExtent.height,
-                                                details.capabilities.maxImageExtent.height);
-            details.preferedExtent = actualExtent;
-        }
-    }
-
     return details;
 }
 
@@ -91,17 +62,43 @@ SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDe
 namespace aph::vk
 {
 SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
-    m_pInstance(createInfo.instance),
+    m_pInstance(createInfo.pInstance),
     m_pDevice(pDevice),
-    m_pWSI(createInfo.wsi),
-    m_surface(createInfo.wsi->getSurface(m_pInstance))
+    m_pWSI(createInfo.pWsi)
 {
+    APH_ASSERT(createInfo.pInstance);
+    APH_ASSERT(createInfo.pWsi);
+
+    // Image count
+    m_createInfo            = createInfo;
+    m_createInfo.imageCount = createInfo.imageCount != 0 ? createInfo.imageCount : 2;
+
     reCreate();
 }
 
 VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
 {
-    return vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
+    VkResult res = VK_SUCCESS;
+    res = vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
+
+    if(res == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        m_imageIdx = -1;
+        if(fence != VK_NULL_HANDLE)
+        {
+            vkResetFences(m_pDevice->getHandle(), 1, &fence);
+        }
+        return VK_SUCCESS;
+    }
+
+    if(res == VK_SUBOPTIMAL_KHR)
+    {
+        VK_LOG_INFO(
+            "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
+        return VK_SUCCESS;
+    }
+
+    return res;
 }
 
 VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
@@ -132,14 +129,44 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     m_pDevice->waitIdle();
-    SwapChainSupportDetails swapChainSupport =
-        querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
+    m_images.clear();
+    if(getHandle() != VK_NULL_HANDLE)
+    {
+        vkDestroySwapchainKHR(m_pDevice->getHandle(), getHandle(), vkAllocator());
+    }
 
-    uint32_t minImageCount = std::max(swapChainSupport.capabilities.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
-    if(swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount)
+    if(m_surface != VK_NULL_HANDLE)
+    {
+        vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
+    }
+
+    m_surface        = m_createInfo.pWsi->getSurface(m_createInfo.pInstance);
+    swapChainSupport = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
+
+    auto& caps = swapChainSupport.capabilities;
+    if((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
+    {
+        VK_LOG_WARN("Changed requested SwapChain images {%u} to maximum allowed SwapChain images {%u}",
+                    m_createInfo.imageCount, caps.maxImageCount);
+        m_createInfo.imageCount = caps.maxImageCount;
+    }
+    if(m_createInfo.imageCount < caps.minImageCount)
+    {
+        VK_LOG_WARN("Changed requested SwapChain images {%u} to minimum required SwapChain images {%u}",
+                    m_createInfo.imageCount, caps.minImageCount);
+        m_createInfo.imageCount = caps.minImageCount;
+    }
+
+    uint32_t minImageCount = std::max(caps.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
+    if(caps.maxImageCount > 0 && minImageCount > caps.maxImageCount)
     {
         minImageCount = swapChainSupport.capabilities.maxImageCount;
     }
+
+    VkExtent2D extent = {};
+
+    extent.width  = std::clamp(m_pWSI->getFrameBufferWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+    extent.height = std::clamp(m_pWSI->getFrameBufferHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
     VkSwapchainCreateInfoKHR swapChainCreateInfo{
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -147,7 +174,7 @@ void SwapChain::reCreate()
         .minImageCount         = minImageCount,
         .imageFormat           = swapChainSupport.preferedSurfaceFormat.format,
         .imageColorSpace       = swapChainSupport.preferedSurfaceFormat.colorSpace,
-        .imageExtent           = swapChainSupport.preferedExtent,
+        .imageExtent           = extent,
         .imageArrayLayers      = 1,
         .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
         .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
@@ -160,10 +187,11 @@ void SwapChain::reCreate()
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
+    VK_CHECK_RESULT(
+        vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
 
     m_surfaceFormat = swapChainSupport.preferedSurfaceFormat;
-    m_extent        = swapChainSupport.preferedExtent;
+    m_extent        = extent;
 
     uint32_t imageCount;
     vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, nullptr);
@@ -174,14 +202,14 @@ void SwapChain::reCreate()
     for(auto handle : images)
     {
         ImageCreateInfo imageCreateInfo = {
-            .extent      = {m_extent.width, m_extent.height, 1},
-            .mipLevels   = 1,
+            .extent    = {m_extent.width, m_extent.height, 1},
+            .mipLevels = 1,
             .arraySize = 1,
-            .usage       = swapChainCreateInfo.imageUsage,
-            .samples     = VK_SAMPLE_COUNT_1_BIT,
-            .imageType   = VK_IMAGE_TYPE_2D,
-            .format      = getFormat(),
-            .tiling      = VK_IMAGE_TILING_OPTIMAL,
+            .usage     = swapChainCreateInfo.imageUsage,
+            .samples   = VK_SAMPLE_COUNT_1_BIT,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format    = getFormat(),
+            .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
         m_images.push_back(std::make_unique<Image>(m_pDevice, imageCreateInfo, handle));

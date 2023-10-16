@@ -12,6 +12,28 @@ class Instance;
 
 namespace aph
 {
+
+struct WindowHandle
+{
+#if defined(VK_USE_PLATFORM_XLIB_KHR)
+    Display* display;
+    Window   window;
+    Atom     xlib_wm_delete_window;
+    Colormap colormap;
+#elif defined(VK_USE_PLATFORM_XCB_KHR)
+    xcb_connection_t*        connection;
+    xcb_window_t             window;
+    xcb_screen_t*            screen;
+    xcb_intern_atom_reply_t* atom_wm_delete_window;
+#elif defined(__ANDROID__)
+    ANativeWindow*   window;
+    ANativeActivity* activity;
+    AConfiguration*  configuration;
+#else
+    void* window;  // hWnd
+#endif
+};
+
 class WSI
 {
 protected:
@@ -32,6 +54,7 @@ public:
     uint32_t getHeight() const { return m_height; }
     uint32_t getFrameBufferWidth() const;
     uint32_t getFrameBufferHeight() const;
+    void     resize(uint32_t width, uint32_t height);
 
     VkSurfaceKHR getSurface(vk::Instance* instance);
 
@@ -49,6 +72,10 @@ public:
         else if constexpr(std::is_same_v<TEvent, MouseButtonEvent>)
         {
             m_mouseButtonEvent.m_events.push(e);
+        }
+        else if constexpr(std::is_same_v<TEvent, WindowResizeEvent>)
+        {
+            m_windowResizeEvent.m_events.push(e);
         }
         else
         {
@@ -71,6 +98,10 @@ public:
         else if constexpr(std::is_same_v<TEvent, MouseButtonEvent>)
         {
             m_mouseButtonEvent.m_handlers.push_back(std::move(func));
+        }
+        else if constexpr(std::is_same_v<TEvent, WindowResizeEvent>)
+        {
+            m_windowResizeEvent.m_handlers.push_back(std::move(func));
         }
         else
         {
@@ -96,9 +127,14 @@ protected:
         std::vector<std::function<bool(const TEvent&)>> m_handlers;
     };
 
-    EventData<KeyboardEvent>    m_keyboardsEvent;
-    EventData<MouseMoveEvent>   m_mouseMoveEvent;
-    EventData<MouseButtonEvent> m_mouseButtonEvent;
+    EventData<KeyboardEvent>     m_keyboardsEvent;
+    EventData<MouseMoveEvent>    m_mouseMoveEvent;
+    EventData<MouseButtonEvent>  m_mouseButtonEvent;
+    EventData<WindowResizeEvent> m_windowResizeEvent;
+
+protected:
+    // TODO
+    WindowHandle* m_pHandle = {};
 };
 
 }  // namespace aph

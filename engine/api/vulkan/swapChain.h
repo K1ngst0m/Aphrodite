@@ -11,10 +11,26 @@ class Device;
 class Image;
 class Queue;
 
+struct SwapChainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR        capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR>   presentModes;
+
+    VkSurfaceFormatKHR preferedSurfaceFormat;
+    VkPresentModeKHR   preferedPresentMode;
+};
+
 struct SwapChainCreateInfo
 {
-    Instance* instance;
-    WSI*      wsi;
+    Instance* pInstance = {};
+    WSI*      pWsi      = {};
+
+    VkFormat     imageFormat;
+    VkClearValue clearValue;
+    uint32_t     imageCount;
+    bool         enableVsync;
+    bool         useFlipSwap;
 };
 
 class SwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
@@ -41,12 +57,11 @@ private:
     Device*                             m_pDevice{};
     WSI*                                m_pWSI{};
     std::vector<std::unique_ptr<Image>> m_images{};
+    SwapChainSupportDetails             swapChainSupport{};
 
     VkSurfaceKHR       m_surface{};
     VkSurfaceFormatKHR m_surfaceFormat{};
     VkExtent2D         m_extent{};
-
-    VkSemaphore m_acquireImageSemaphore{};
 
     uint32_t m_imageIdx{};
 
