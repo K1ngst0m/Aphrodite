@@ -19,18 +19,36 @@ public:
 
 public:
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<Device> m_pDevice    = {};
-    SwapChain*              m_pSwapChain = {};
+    std::unique_ptr<Device>         m_pDevice    = {};
+    SwapChain*                      m_pSwapChain = {};
 
 public:
+    void submit(Queue* pQueue, const std::vector<CommandBuffer*>& cmds, Image* pPresentImage = nullptr)
+    {
+        aph::vk::QueueSubmitInfo submitInfo{.commandBuffers = cmds, .waitSemaphores = {getRenderSemaphore()}};
+        VkSemaphore              presentSem = {};
+        if(pPresentImage)
+        {
+            presentSem                  = acquireSemahpore();
+            submitInfo.signalSemaphores = {presentSem};
+        }
+
+        pQueue->submit({submitInfo}, getFrameFence());
+
+        if(pPresentImage)
+        {
+            m_pSwapChain->presentImage(pQueue, {presentSem});
+        }
+    }
     Shader* getShaders(const std::filesystem::path& path) const;
     Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
     VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
-    VkSemaphore getPresentSemaphore() { return m_presentSemaphore[m_frameIdx]; }
     VkFence     getFrameFence() { return m_frameFence[m_frameIdx]; }
 
-    CommandBuffer* acquireFrameCommandBuffer(Queue* queue);
+    CommandBuffer* acquireCommandBuffer(Queue* queue);
+    VkSemaphore    acquireSemahpore();
+    VkFence        acquireFence();
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
@@ -41,18 +59,19 @@ protected:
     VkPipelineCache m_pipelineCache = {};
 
     std::unordered_map<QueueType, Queue*> m_queue;
+
 protected:
     std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
     std::vector<VkSemaphore>            m_timelineMain        = {};
     std::vector<VkSemaphore>            m_renderSemaphore     = {};
-    std::vector<VkSemaphore>            m_presentSemaphore    = {};
     std::vector<VkFence>                m_frameFence          = {};
 
 protected:
     struct FrameData
     {
         std::vector<CommandBuffer*> cmds;
-        // std::vector<CommandBuffer*> cmds;
+        std::vector<VkSemaphore>    semaphores;
+        std::vector<VkFence>        fences;
     };
     FrameData m_frameData;
 

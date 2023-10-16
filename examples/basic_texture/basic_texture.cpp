@@ -138,7 +138,7 @@ void basic_texture::run()
 
         // draw and submit
         m_renderer->beginFrame();
-        aph::vk::CommandBuffer* cb = m_renderer->acquireFrameCommandBuffer(queue);
+        aph::vk::CommandBuffer* cb = m_renderer->acquireCommandBuffer(queue);
 
         VkExtent2D extent{
             .width  = m_renderer->getWindowWidth(),
@@ -163,11 +163,7 @@ void basic_texture::run()
         cb->endRendering();
         cb->end();
 
-        aph::vk::QueueSubmitInfo submitInfo{.commandBuffers   = {cb},
-                                            .waitSemaphores   = {m_renderer->getRenderSemaphore()},
-                                            .signalSemaphores = {m_renderer->getPresentSemaphore()}};
-
-        queue->submit({submitInfo}, m_renderer->getFrameFence());
+        m_renderer->submit(queue, {cb}, presentImage);
 
         m_renderer->endFrame();
     }

@@ -164,7 +164,7 @@ void SceneRenderer::recordAll()
         submitInfos[COMMAND_BUFFER_POSTFX].waits.push_back({.semaphore = m_renderSemaphore[m_frameIdx]});
         submitInfos[COMMAND_BUFFER_POSTFX].waits.push_back({.semaphore = timelineMain, .value = 2});
 
-        submitInfos[COMMAND_BUFFER_POSTFX].signals.push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
+        // submitInfos[COMMAND_BUFFER_POSTFX].signals.push_back({.semaphore = m_presentSemaphore[m_frameIdx]});
         submitInfos[COMMAND_BUFFER_POSTFX].signals.push_back({.semaphore = timelineMain, .value = UINT64_MAX});
     }
 

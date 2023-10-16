@@ -151,17 +151,16 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     {
         m_timelineMain.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
-        m_presentSemaphore.resize(m_config.maxFrames);
         m_frameFence.resize(m_config.maxFrames);
 
         {
             m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice.get());
-            m_pSyncPrimitivesPool->acquireSemaphore(m_presentSemaphore.size(), m_presentSemaphore.data());
             m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
             for(auto& fence : m_frameFence)
             {
                 m_pSyncPrimitivesPool->acquireFence(fence);
             }
+            vkResetFences(m_pDevice->getHandle(), m_frameFence.size(), m_frameFence.data());
         }
 
         // pipeline cache
@@ -339,8 +338,6 @@ Renderer::~Renderer()
 void Renderer::beginFrame()
 {
     VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
-    vkWaitForFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx], VK_TRUE, UINT64_MAX);
-    vkResetFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx]);
 
     {
         m_timer = std::chrono::high_resolution_clock::now();
@@ -349,13 +346,22 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    auto* queue = getDefaultQueue(QueueType::GRAPHICS);
-    VK_CHECK_RESULT(m_pSwapChain->presentImage(queue, {m_presentSemaphore[m_frameIdx]}));
+    vkWaitForFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx], VK_TRUE, UINT64_MAX);
+    vkResetFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx]);
 
     // clean the frame data
     {
         m_pDevice->freeCommandBuffers(m_frameData.cmds.size(), m_frameData.cmds.data());
         m_frameData.cmds.clear();
+
+        m_pSyncPrimitivesPool->ReleaseSemaphores(m_frameData.semaphores.size(), m_frameData.semaphores.data());
+        m_frameData.semaphores.clear();
+
+        for(auto fence : m_frameData.fences)
+        {
+            m_pSyncPrimitivesPool->releaseFence(fence);
+        }
+        m_frameData.fences.clear();
     }
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
@@ -522,7 +528,7 @@ bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
     return true;
 }
 
-CommandBuffer* Renderer::acquireFrameCommandBuffer(Queue* queue)
+CommandBuffer* Renderer::acquireCommandBuffer(Queue* queue)
 {
     CommandBuffer* cmd;
     m_pDevice->allocateCommandBuffers(1, &cmd, queue);
@@ -536,4 +542,21 @@ Shader* Renderer::getShaders(const std::filesystem::path& path) const
     m_pResourceLoader->load({.data = path}, &shader);
     return shader;
 }
+
+VkSemaphore Renderer::acquireSemahpore()
+{
+    VkSemaphore sem;
+    m_pSyncPrimitivesPool->acquireSemaphore(1, &sem);
+    m_frameData.semaphores.push_back(sem);
+    return sem;
+}
+
+VkFence Renderer::acquireFence()
+{
+    VkFence fence;
+    m_pSyncPrimitivesPool->acquireFence(fence);
+    m_frameData.fences.push_back(fence);
+    return fence;
+}
+
 }  // namespace aph::vk
