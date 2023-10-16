@@ -46,6 +46,8 @@ private:
     VkSurfaceFormatKHR m_surfaceFormat{};
     VkExtent2D         m_extent{};
 
+    VkSemaphore m_acquireImageSemaphore{};
+
     uint32_t m_imageIdx{};
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;

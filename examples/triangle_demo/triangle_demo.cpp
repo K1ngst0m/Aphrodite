@@ -117,7 +117,7 @@ void triangle_demo::run()
         cb->endRendering();
         cb->end();
 
-        m_renderer->submit(queue, {cb}, presentImage);
+        m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
 
         m_renderer->endFrame();
     }

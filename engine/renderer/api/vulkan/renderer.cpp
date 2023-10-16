@@ -337,8 +337,6 @@ Renderer::~Renderer()
 
 void Renderer::beginFrame()
 {
-    VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(m_renderSemaphore[m_frameIdx]));
-
     {
         m_timer = std::chrono::high_resolution_clock::now();
     }
@@ -346,9 +344,6 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    vkWaitForFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx], VK_TRUE, UINT64_MAX);
-    vkResetFences(m_pDevice->getHandle(), 1, &m_frameFence[m_frameIdx]);
-
     // clean the frame data
     {
         m_pDevice->freeCommandBuffers(m_frameData.cmds.size(), m_frameData.cmds.data());
@@ -559,4 +554,32 @@ VkFence Renderer::acquireFence()
     return fence;
 }
 
+void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresentImage)
+{
+    // aph::vk::QueueSubmitInfo submitInfo{.commandBuffers = cmds, .waitSemaphores = {getRenderSemaphore()}};
+    VkSemaphore renderSem  = {};
+    VkSemaphore presentSem = {};
+
+    VkFence frameFence = acquireFence();
+    vkResetFences(m_pDevice->getHandle(), 1, &frameFence);
+
+    if(pPresentImage)
+    {
+        renderSem  = acquireSemahpore();
+        VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(renderSem));
+
+        presentSem = acquireSemahpore();
+        submitInfo.waitSemaphores.push_back(renderSem);
+        submitInfo.signalSemaphores.push_back(presentSem);
+    }
+
+    pQueue->submit({submitInfo}, frameFence);
+
+    if(pPresentImage)
+    {
+        m_pSwapChain->presentImage(pQueue, {presentSem});
+    }
+
+    vkWaitForFences(m_pDevice->getHandle(), 1, &frameFence, VK_TRUE, UINT64_MAX);
+}
 }  // namespace aph::vk

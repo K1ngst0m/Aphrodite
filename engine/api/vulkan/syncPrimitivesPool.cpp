@@ -35,8 +35,7 @@ VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
     // Else create a new one.
     else
     {
-        VkFenceCreateInfo createInfo = {};
-        createInfo.sType             = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         if(isSignaled)
         {
             createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;

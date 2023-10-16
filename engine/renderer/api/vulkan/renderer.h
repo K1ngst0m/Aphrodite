@@ -23,23 +23,7 @@ public:
     SwapChain*                      m_pSwapChain = {};
 
 public:
-    void submit(Queue* pQueue, const std::vector<CommandBuffer*>& cmds, Image* pPresentImage = nullptr)
-    {
-        aph::vk::QueueSubmitInfo submitInfo{.commandBuffers = cmds, .waitSemaphores = {getRenderSemaphore()}};
-        VkSemaphore              presentSem = {};
-        if(pPresentImage)
-        {
-            presentSem                  = acquireSemahpore();
-            submitInfo.signalSemaphores = {presentSem};
-        }
-
-        pQueue->submit({submitInfo}, getFrameFence());
-
-        if(pPresentImage)
-        {
-            m_pSwapChain->presentImage(pQueue, {presentSem});
-        }
-    }
+    void    submit(Queue* pQueue, QueueSubmitInfo submitInfos, Image* pPresentImage = nullptr);
     Shader* getShaders(const std::filesystem::path& path) const;
     Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
