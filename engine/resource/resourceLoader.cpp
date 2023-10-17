@@ -5,6 +5,12 @@
 #define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"
 
+#define TINYGLTF_IMPLEMENTATION
+#define TINYGLTF_NO_INCLUDE_STB_IMAGE
+#define TINYGLTF_NO_STB_IMAGE_WRITE
+#include <stb/stb_image.h>
+#include <tinygltf/tiny_gltf.h>
+
 namespace
 {
 inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
@@ -107,6 +113,86 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 
     return true;
 }
+}  // namespace
+
+namespace
+{
+inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry)
+{
+    auto path = std::filesystem::path{info.path};
+    auto ext  = path.extension();
+
+    bool               fileLoaded = false;
+    tinygltf::Model    inputModel;
+    tinygltf::TinyGLTF gltfContext;
+    std::string        error, warning;
+
+    if(ext == ".glb")
+    {
+        fileLoaded = gltfContext.LoadBinaryFromFile(&inputModel, &error, &warning, path);
+    }
+    else if(ext == ".gltf")
+    {
+        fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path);
+    }
+
+    if(fileLoaded)
+    {
+        // TODO gltf loading
+        *ppGeometry = new aph::Geometry;
+
+        // Iterate over each mesh
+        for(const auto& mesh : inputModel.meshes)
+        {
+            for(const auto& primitive : mesh.primitives)
+            {
+                // Index buffer
+                const tinygltf::Accessor&   indexAccessor   = inputModel.accessors[primitive.indices];
+                const tinygltf::BufferView& indexBufferView = inputModel.bufferViews[indexAccessor.bufferView];
+                const tinygltf::Buffer&     indexBuffer     = inputModel.buffers[indexBufferView.buffer];
+
+                {
+                    aph::vk::Buffer*    pIB;
+                    aph::BufferLoadInfo loadInfo{
+                        .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
+                        // TODO index type
+                        .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
+                                       .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+                    pLoader->load(loadInfo, &pIB);
+                    (*ppGeometry)->indexBuffer.push_back(pIB);
+                }
+
+                // Vertex buffers
+                for(const auto& attrib : primitive.attributes)
+                {
+                    const tinygltf::Accessor&   accessor   = inputModel.accessors[attrib.second];
+                    const tinygltf::BufferView& bufferView = inputModel.bufferViews[accessor.bufferView];
+                    const tinygltf::Buffer&     buffer     = inputModel.buffers[bufferView.buffer];
+
+                    aph::vk::Buffer*    pVB;
+                    aph::BufferLoadInfo loadInfo{
+                        .data = (void*)(buffer.data.data() + bufferView.byteOffset),
+                        .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
+                                       .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+                    };
+                    pLoader->load(loadInfo, &pVB);
+                    (*ppGeometry)->vertexBuffers.push_back(pVB);
+                    (*ppGeometry)->mVertexStrides.push_back(accessor.ByteStride(bufferView));
+                }
+
+                // TODO: Load draw arguments, handle materials, optimize geometry etc.
+
+            }  // End of iterating through primitives
+
+        }  // End of iterating through meshes
+    }
+    else
+    {
+        CM_LOG_ERR("%s", error);
+        return false;
+    }
+}
+
 }  // namespace
 
 namespace aph
@@ -376,6 +462,22 @@ void ResourceLoader::cleanup()
     for(const auto& [_, shaderModule] : m_shaderModuleCaches)
     {
         vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
+    }
+}
+
+void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
+{
+    auto path = std::filesystem::path{info.path};
+    auto ext  = path.extension();
+
+    if(ext == ".glb" || ext == ".gltf")
+    {
+        loadGLTF(this, info, ppGeometry);
+    }
+    else
+    {
+        CM_LOG_ERR("Unsupported model file type: %s.", ext);
+        APH_ASSERT(false);
     }
 }
 }  // namespace aph

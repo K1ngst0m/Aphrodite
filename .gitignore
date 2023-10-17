@@ -11,7 +11,6 @@ build/
 /compile_commands.json
 /.ccls-cache/
 /log.txt
-/external/SPIRV-cross/
 /external/glslang/
 /external/shaderc/
 /external/spirv-cross/

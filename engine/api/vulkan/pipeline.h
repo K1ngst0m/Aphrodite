@@ -22,48 +22,6 @@ enum
     APH_MAX_MIP_LEVELS = 16
 };
 
-struct VertexInput
-{
-    enum
-    {
-        APH_VERTEX_ATTRIBUTES_MAX = 16
-    };
-    enum
-    {
-        APH_VERTEX_BUFFER_MAX = 16
-    };
-    struct Attribute
-    {
-        uint32_t  location = 0;  // a buffer which contains this attribute stream
-        uint32_t  binding  = 0;
-        Format    format   = Format::Undefined;  // per-element format
-        uintptr_t offset   = 0;                  // an offset where the first element of this attribute stream starts
-    } attributes[APH_VERTEX_ATTRIBUTES_MAX];
-    struct InputBinding
-    {
-        uint32_t stride = 0;
-    } inputBindings[APH_VERTEX_BUFFER_MAX];
-
-    uint32_t getNumAttributes() const
-    {
-        uint32_t n = 0;
-        while(n < APH_VERTEX_ATTRIBUTES_MAX && attributes[n].format != Format::Undefined)
-        {
-            n++;
-        }
-        return n;
-    }
-    uint32_t getNumInputBindings() const
-    {
-        uint32_t n = 0;
-        while(n < APH_VERTEX_BUFFER_MAX && inputBindings[n].stride)
-        {
-            n++;
-        }
-        return n;
-    }
-};
-
 struct ColorAttachment
 {
     Format        format              = Format::Undefined;

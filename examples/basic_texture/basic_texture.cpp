@@ -88,7 +88,7 @@ void basic_texture::init()
 
         // pipeline
         {
-            const aph::vk::VertexInput vdesc = {
+            const aph::VertexInput vdesc = {
                 .attributes =
                     {
                         {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},

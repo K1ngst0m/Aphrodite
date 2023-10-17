@@ -3,6 +3,7 @@
 
 #include "common/common.h"
 #include "api/vulkan/device.h"
+#include "geometry.h"
 
 namespace aph
 {
@@ -43,6 +44,29 @@ struct ShaderLoadInfo
     std::vector<ShaderMacro>                         macros;
 };
 
+enum GeometryLoadFlags
+{
+    GEOMETRY_LOAD_FLAG_SHADOWED           = 0x1,
+    GEOMETRY_LOAD_FLAG_STRUCTURED_BUFFERS = 0x2,
+};
+
+enum MeshOptimizerFlags
+{
+    MESH_OPTIMIZATION_FLAG_OFF         = 0x0,
+    MESH_OPTIMIZATION_FLAG_VERTEXCACHE = 0x1,
+    MESH_OPTIMIZATION_FLAG_OVERDRAW    = 0x2,
+    MESH_OPTIMIZATION_FLAG_VERTEXFETCH = 0x4,
+    MESH_OPTIMIZATION_FLAG_ALL         = 0x7,
+};
+
+struct GeometryLoadInfo
+{
+    std::string        path;
+    GeometryLoadFlags  flags;
+    MeshOptimizerFlags optimizationFlags;
+    VertexInput*       pVertexLayout;
+};
+
 class ResourceLoader
 {
 public:
@@ -53,6 +77,7 @@ public:
     void load(const ImageLoadInfo& info, vk::Image** ppImage);
     void load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     void load(const ShaderLoadInfo& info, vk::Shader** ppShader);
+    void load(const GeometryLoadInfo& info, Geometry** ppGeometry);
 
     void cleanup();
 
