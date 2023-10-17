@@ -142,6 +142,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
         *ppGeometry = new aph::Geometry;
 
         // Iterate over each mesh
+        uint32_t vertexCount = 0;
         for(const auto& mesh : inputModel.meshes)
         {
             for(const auto& primitive : mesh.primitives)
@@ -169,22 +170,26 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
                     const tinygltf::BufferView& bufferView = inputModel.bufferViews[accessor.bufferView];
                     const tinygltf::Buffer&     buffer     = inputModel.buffers[bufferView.buffer];
 
+                    vertexCount += accessor.count;
+
                     aph::vk::Buffer*    pVB;
                     aph::BufferLoadInfo loadInfo{
-                        .data = (void*)(buffer.data.data() + bufferView.byteOffset),
+                        .data       = (void*)(buffer.data.data() + bufferView.byteOffset),
                         .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
                                        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
                     };
                     pLoader->load(loadInfo, &pVB);
                     (*ppGeometry)->vertexBuffers.push_back(pVB);
-                    (*ppGeometry)->mVertexStrides.push_back(accessor.ByteStride(bufferView));
+                    (*ppGeometry)->vertexStrides.push_back(accessor.ByteStride(bufferView));
                 }
 
                 // TODO: Load draw arguments, handle materials, optimize geometry etc.
 
             }  // End of iterating through primitives
+        }      // End of iterating through meshes
 
-        }  // End of iterating through meshes
+        const uint32_t indexStride = vertexCount > UINT16_MAX ? sizeof(uint32_t) : sizeof(uint16_t);
+        (*ppGeometry)->indexType = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
     }
     else
     {

@@ -10,10 +10,10 @@ struct Geometry
     static constexpr uint32_t MAX_VERTEX_BINDINGS = 15;
 
     std::vector<vk::Buffer*> indexBuffer;
-    uint32_t                 mIndexType;
+    IndexType                indexType;
 
     std::vector<vk::Buffer*> vertexBuffers;
-    std::vector<uint32_t>    mVertexStrides;
+    std::vector<uint32_t>    vertexStrides;
 
     std::vector<IndirectDrawIndexArguments*> drawArgs;
 };
