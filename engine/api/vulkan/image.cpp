@@ -21,9 +21,9 @@ Image::~Image()
     }
 }
 
-ImageView* Image::getView(VkFormat imageFormat)
+ImageView* Image::getView(Format imageFormat)
 {
-    if(imageFormat == VK_FORMAT_UNDEFINED)
+    if(imageFormat == Format::Undefined)
     {
         imageFormat = m_createInfo.format;
     }
@@ -38,7 +38,7 @@ ImageView* Image::getView(VkFormat imageFormat)
         ImageViewCreateInfo createInfo{
             .viewType         = imageTypeMap.at(m_createInfo.imageType),
             .format           = imageFormat,
-            .subresourceRange = {.aspectMask     = utils::getImageAspect(m_createInfo.format),
+            .subresourceRange = {.aspectMask     = utils::getImageAspect(utils::VkCast(m_createInfo.format)),
                                  .baseMipLevel   = 0,
                                  .levelCount     = m_createInfo.mipLevels,
                                  .baseArrayLayer = 0,

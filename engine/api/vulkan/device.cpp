@@ -189,10 +189,10 @@ VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppIma
         .pNext    = nullptr,
         .image    = createInfo.pImage->getHandle(),
         .viewType = createInfo.viewType,
-        .format   = createInfo.format,
+        .format   = utils::VkCast(createInfo.format),
     };
     info.subresourceRange = {
-        .aspectMask     = utils::getImageAspect(createInfo.format),
+        .aspectMask     = utils::getImageAspect(utils::VkCast(createInfo.format)),
         .baseMipLevel   = createInfo.subresourceRange.baseMipLevel,
         .levelCount     = createInfo.subresourceRange.levelCount,
         .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
@@ -274,8 +274,8 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags         = createInfo.flags,
-        .imageType     = static_cast<VkImageType>(createInfo.imageType),
-        .format        = static_cast<VkFormat>(createInfo.format),
+        .imageType     = createInfo.imageType,
+        .format        = utils::VkCast(createInfo.format),
         .mipLevels     = createInfo.mipLevels,
         .arrayLayers   = createInfo.arraySize,
         .samples       = static_cast<VkSampleCountFlagBits>(createInfo.samples),
@@ -483,7 +483,7 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
         const auto& attr = vstate.attributes[i];
 
         rps.vkAttributes[i] = {
-            .location = attr.location, .binding = attr.binding, .format = attr.format, .offset = (uint32_t)attr.offset};
+            .location = attr.location, .binding = attr.binding, .format = utils::VkCast(attr.format), .offset = (uint32_t)attr.offset};
 
         if(!bufferAlreadyBound[attr.binding])
         {
@@ -503,8 +503,8 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
     for(uint32_t i = 0; i != numColorAttachments; i++)
     {
         const auto& attachment = createInfo.color[i];
-        APH_ASSERT(attachment.format != VK_FORMAT_UNDEFINED);
-        colorAttachmentFormats[i] = attachment.format;
+        APH_ASSERT(attachment.format != Format::Undefined);
+        colorAttachmentFormats[i] = utils::VkCast(attachment.format);
         if(!attachment.blendEnabled)
         {
             colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{

@@ -61,8 +61,8 @@ void triangle_demo::init()
             const aph::vk::VertexInput vdesc = {
                 .attributes =
                     {
-                        {.location = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(VertexData, color)},
+                        {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},
+                        {.location = 1, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, color)},
                     },
                 .inputBindings = {{.stride = sizeof(VertexData)}},
             };

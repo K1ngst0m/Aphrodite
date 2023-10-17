@@ -71,9 +71,8 @@ void basic_texture::init()
                 .imageType = VK_IMAGE_TYPE_2D,
             };
 
-            aph::ImageLoadInfo loadInfo{.data          = aph::asset::GetTextureDir() / "container2.png",
-                                        .containerType = aph::ImageContainerType::Png,
-                                        .pCreateInfo   = &imageCI};
+            aph::ImageLoadInfo loadInfo{.data        = aph::asset::GetTextureDir() / "container2.png",
+                                        .pCreateInfo = &imageCI};
 
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
@@ -92,8 +91,8 @@ void basic_texture::init()
             const aph::vk::VertexInput vdesc = {
                 .attributes =
                     {
-                        {.location = 0, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(VertexData, uv)},
+                        {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},
+                        {.location = 1, .format = aph::Format::RG_F32, .offset = offsetof(VertexData, uv)},
                     },
                 .inputBindings = {{.stride = sizeof(VertexData)}},
             };

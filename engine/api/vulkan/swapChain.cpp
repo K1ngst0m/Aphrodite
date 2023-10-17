@@ -106,7 +106,7 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
     m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
         aph::vk::ImageBarrier barrier{
             .pImage       = m_images[m_imageIdx].get(),
-            .currentState = aph::RESOURCE_STATE_UNDEFINED,
+            .currentState = m_images[m_imageIdx]->getResourceState(),
             .newState     = aph::RESOURCE_STATE_PRESENT,
         };
         cmd->insertBarrier({barrier});

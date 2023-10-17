@@ -32,14 +32,14 @@ struct VertexInput
     {
         APH_VERTEX_BUFFER_MAX = 16
     };
-    struct VertexAttribute
+    struct Attribute
     {
         uint32_t  location = 0;  // a buffer which contains this attribute stream
         uint32_t  binding  = 0;
-        VkFormat  format   = VK_FORMAT_UNDEFINED;  // per-element format
-        uintptr_t offset   = 0;                    // an offset where the first element of this attribute stream starts
+        Format    format   = Format::Undefined;  // per-element format
+        uintptr_t offset   = 0;                  // an offset where the first element of this attribute stream starts
     } attributes[APH_VERTEX_ATTRIBUTES_MAX];
-    struct VertexInputBinding
+    struct InputBinding
     {
         uint32_t stride = 0;
     } inputBindings[APH_VERTEX_BUFFER_MAX];
@@ -47,7 +47,7 @@ struct VertexInput
     uint32_t getNumAttributes() const
     {
         uint32_t n = 0;
-        while(n < APH_VERTEX_ATTRIBUTES_MAX && attributes[n].format != VK_FORMAT_UNDEFINED)
+        while(n < APH_VERTEX_ATTRIBUTES_MAX && attributes[n].format != Format::Undefined)
         {
             n++;
         }
@@ -66,7 +66,7 @@ struct VertexInput
 
 struct ColorAttachment
 {
-    VkFormat      format              = VK_FORMAT_UNDEFINED;
+    Format        format              = Format::Undefined;
     bool          blendEnabled        = false;
     VkBlendOp     rgbBlendOp          = VK_BLEND_OP_ADD;
     VkBlendOp     alphaBlendOp        = VK_BLEND_OP_ADD;
@@ -121,7 +121,7 @@ struct GraphicsPipelineCreateInfo
     uint32_t getNumColorAttachments() const
     {
         uint32_t n = 0;
-        while(n < APH_MAX_COLOR_ATTACHMENTS && color[n].format != VK_FORMAT_UNDEFINED)
+        while(n < APH_MAX_COLOR_ATTACHMENTS && color[n].format != Format::Undefined)
         {
             n++;
         }

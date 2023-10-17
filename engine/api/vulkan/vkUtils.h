@@ -45,7 +45,7 @@ ShaderStage           getStageFromPath(std::string_view path);
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
 VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);
-
+Format                getFormatFromVk(VkFormat format);
 }  // namespace aph::vk::utils
 
 // convert
@@ -55,6 +55,8 @@ VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
+VkFormat              VkCast(TinyImageFormat format);
+VkFormat              VkCast(Format format);
 }  // namespace aph::vk::utils
 
 namespace aph

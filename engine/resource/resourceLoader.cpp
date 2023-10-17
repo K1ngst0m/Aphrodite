@@ -62,11 +62,12 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo&
     };
     textureCI.arraySize = std::max(1U, TinyKtx_ArraySlices(ctx));
     textureCI.mipLevels = std::max(1U, TinyKtx_NumberOfMipmaps(ctx));
-    textureCI.format = (VkFormat)TinyImageFormat_ToVkFormat(TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(ctx)));
+    textureCI.format    = aph::vk::utils::getFormatFromVk(
+        (VkFormat)TinyImageFormat_ToVkFormat(TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(ctx))));
     // textureCI.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     textureCI.sampleCount = 1;
 
-    if(textureCI.format == VK_FORMAT_UNDEFINED)
+    if(textureCI.format == aph::Format::Undefined)
     {
         TinyKtx_DestroyContext(ctx);
         return false;
@@ -100,7 +101,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
         .depth  = 1,
     };
 
-    textureCI.format = VK_FORMAT_R8G8B8A8_UNORM;
+    textureCI.format = aph::Format::RGBA_UN8;
 
     data = img->data;
 
@@ -255,12 +256,12 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
                     mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
-                    vk::ImageBarrier barrier {
-                        .pImage = image,
-                        .currentState = image->getResourceState(),
-                        .newState = RESOURCE_STATE_COPY_DST,
+                    vk::ImageBarrier barrier{
+                        .pImage             = image,
+                        .currentState       = image->getResourceState(),
+                        .newState           = RESOURCE_STATE_COPY_DST,
                         .subresourceBarrier = 1,
-                        .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
+                        .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
                     };
 
                     cmd->insertBarrier({barrier});
@@ -268,7 +269,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
                     cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
                     barrier.currentState = image->getResourceState();
-                    barrier.newState = RESOURCE_STATE_COPY_SRC;
+                    barrier.newState     = RESOURCE_STATE_COPY_SRC;
                     cmd->insertBarrier({barrier});
                 }
             }

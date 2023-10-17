@@ -319,7 +319,7 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
         aph::vk::ImageBarrier barrier{
             .pImage       = image,
             .currentState = image->getResourceState(),
-            .newState     = aph::RESOURCE_STATE_DEPTH_WRITE,
+            .newState     = aph::RESOURCE_STATE_DEPTH_STENCIL,
         };
         insertBarrier({barrier});
 
@@ -528,7 +528,7 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         if(pImageBarrier)
         {
             pImageBarrier->image                           = pImage->getHandle();
-            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(pImage->getFormat());
+            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(utils::VkCast(pImage->getFormat()));
             pImageBarrier->subresourceRange.baseMipLevel   = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
             pImageBarrier->subresourceRange.levelCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_MIP_LEVELS;
             pImageBarrier->subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;

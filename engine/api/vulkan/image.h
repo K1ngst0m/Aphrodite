@@ -23,7 +23,7 @@ struct ImageCreateInfo
     VkSampleCountFlags samples = {VK_SAMPLE_COUNT_1_BIT};
 
     VkImageType imageType = {VK_IMAGE_TYPE_2D};
-    VkFormat    format    = {VK_FORMAT_UNDEFINED};
+    Format      format    = {Format::Undefined};
 };
 
 class Image : public ResourceHandle<VkImage, ImageCreateInfo>
@@ -36,28 +36,28 @@ public:
 
     VkDeviceMemory getMemory() { return m_memory; }
 
-    ImageView* getView(VkFormat imageFormat = VK_FORMAT_UNDEFINED);
+    ImageView* getView(Format imageFormat = Format::Undefined);
 
     uint32_t      getWidth() const { return m_createInfo.extent.width; }
     uint32_t      getHeight() const { return m_createInfo.extent.height; }
     uint32_t      getDepth() const { return m_createInfo.extent.depth; }
     uint32_t      getMipLevels() const { return m_createInfo.mipLevels; }
     uint32_t      getLayerCount() const { return m_createInfo.arraySize; }
-    VkFormat      getFormat() const { return m_createInfo.format; }
+    Format        getFormat() const { return m_createInfo.format; }
     ResourceState getResourceState() const { return m_resourceState; }
 
 private:
-    Device*                                  m_pDevice            = {};
-    std::unordered_map<VkFormat, ImageView*> m_imageViewFormatMap = {};
-    VkImageLayout                            m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
-    VkDeviceMemory                           m_memory             = {};
-    ResourceState                            m_resourceState      = {};
+    Device*                                m_pDevice            = {};
+    std::unordered_map<Format, ImageView*> m_imageViewFormatMap = {};
+    VkImageLayout                          m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
+    VkDeviceMemory                         m_memory             = {};
+    ResourceState                          m_resourceState      = {};
 };
 
 struct ImageViewCreateInfo
 {
     VkImageViewType         viewType         = {VK_IMAGE_VIEW_TYPE_2D};
-    VkFormat                format           = {VK_FORMAT_UNDEFINED};
+    Format                  format           = {Format::Undefined};
     VkComponentMapping      components       = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
                                                 VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
     VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
@@ -69,7 +69,7 @@ class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 public:
     ImageView(const ImageViewCreateInfo& createInfo, VkImageView handle);
 
-    VkFormat                getFormat() const { return m_createInfo.format; }
+    Format                  getFormat() const { return m_createInfo.format; }
     VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
     VkImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
     VkComponentMapping      getComponentMapping() const { return m_createInfo.components; }

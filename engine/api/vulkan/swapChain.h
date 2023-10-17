@@ -46,11 +46,10 @@ public:
     void reCreate();
 
 public:
-    VkFormat getFormat() const { return m_surfaceFormat.format; }
     uint32_t getWidth() const { return m_extent.width; }
     uint32_t getHeight() const { return m_extent.height; }
-
-    Image* getImage() const { return m_images[m_imageIdx].get(); }
+    Image*   getImage() const { return m_images[m_imageIdx].get(); }
+    Format   getFormat() const { return utils::getFormatFromVk(m_surfaceFormat.format); }
 
 private:
     Instance*                           m_pInstance{};
