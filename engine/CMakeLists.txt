@@ -7,11 +7,12 @@ file(GLOB base_src
   wsi/*.cpp
   renderer/*.cpp
   api/vulkan/*.cpp
-  scene/*.cpp
   app/*.cpp
   resource/*.cpp
-  renderer/api/vulkan/sceneRenderer.cpp
   renderer/api/vulkan/renderer.cpp
+
+  # scene/*.cpp
+  # renderer/api/vulkan/sceneRenderer.cpp
   )
 
 add_library(engine STATIC ${base_src})
