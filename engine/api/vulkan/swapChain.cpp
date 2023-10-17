@@ -104,7 +104,12 @@ VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
 VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
 {
     m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
-        cmd->transitionImageLayout(m_images[m_imageIdx].get(), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+        aph::vk::ImageBarrier barrier{
+            .pImage       = m_images[m_imageIdx].get(),
+            .currentState = aph::RESOURCE_STATE_UNDEFINED,
+            .newState     = aph::RESOURCE_STATE_PRESENT,
+        };
+        cmd->insertBarrier({barrier});
     });
 
     VkPresentInfoKHR presentInfo = {
@@ -209,7 +214,6 @@ void SwapChain::reCreate()
             .samples   = VK_SAMPLE_COUNT_1_BIT,
             .imageType = VK_IMAGE_TYPE_2D,
             .format    = getFormat(),
-            .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
         m_images.push_back(std::make_unique<Image>(m_pDevice, imageCreateInfo, handle));

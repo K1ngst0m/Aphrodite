@@ -237,15 +237,15 @@ VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
 VkAccessFlags getAccessFlags(ResourceState state)
 {
     VkAccessFlags ret = 0;
-    if(state & RESOURCE_STATE_COPY_SOURCE)
+    if(state & RESOURCE_STATE_COPY_SRC)
     {
         ret |= VK_ACCESS_TRANSFER_READ_BIT;
     }
-    if(state & RESOURCE_STATE_COPY_DEST)
+    if(state & RESOURCE_STATE_COPY_DST)
     {
         ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
     }
-    if(state & RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER)
+    if(state & RESOURCE_STATE_VERTEX_AND_UNIFORM_BUFFER)
     {
         ret |= VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     }
@@ -286,10 +286,10 @@ VkAccessFlags getAccessFlags(ResourceState state)
 
 VkImageLayout getImageLayout(ResourceState state)
 {
-    if(state & RESOURCE_STATE_COPY_SOURCE)
+    if(state & RESOURCE_STATE_COPY_SRC)
         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-    if(state & RESOURCE_STATE_COPY_DEST)
+    if(state & RESOURCE_STATE_COPY_DST)
         return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
     if(state & RESOURCE_STATE_RENDER_TARGET)
@@ -307,7 +307,7 @@ VkImageLayout getImageLayout(ResourceState state)
     if(state & RESOURCE_STATE_PRESENT)
         return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    if(state == RESOURCE_STATE_COMMON)
+    if(state == RESOURCE_STATE_GENERAL)
         return VK_IMAGE_LAYOUT_GENERAL;
 
     return VK_IMAGE_LAYOUT_UNDEFINED;

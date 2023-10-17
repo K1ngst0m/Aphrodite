@@ -115,160 +115,6 @@ void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSiz
     VkBufferCopy copyRegion{.size = size};
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
-void CommandBuffer::transitionImageLayout(Image* image, VkImageLayout newLayout,
-                                          VkImageSubresourceRange* pSubResourceRange,
-                                          VkPipelineStageFlags2 srcStageMask, VkPipelineStageFlags2 dstStageMask)
-{
-    // early return
-    if(image->m_layout == newLayout)
-    {
-        return;
-    }
-
-    VkImageMemoryBarrier2 imageMemoryBarrier{
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .oldLayout           = image->m_layout,
-        .newLayout           = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = image->getHandle(),
-    };
-
-    const auto& imageCreateInfo = image->getCreateInfo();
-    if(pSubResourceRange)
-    {
-        imageMemoryBarrier.subresourceRange = *pSubResourceRange;
-    }
-    else
-    {
-        imageMemoryBarrier.subresourceRange = {
-            .aspectMask     = utils::getImageAspect(imageCreateInfo.format),
-            .baseMipLevel   = 0,
-            .levelCount     = imageCreateInfo.mipLevels,
-            .baseArrayLayer = 0,
-            .layerCount     = imageCreateInfo.arraySize,
-        };
-    }
-
-    {
-        imageMemoryBarrier.srcStageMask = srcStageMask;
-        imageMemoryBarrier.dstStageMask = dstStageMask;
-    }
-
-    // Source layouts (old)
-    // Source access mask controls actions that have to be finished on the old layout
-    // before it will be transitioned to the new layout
-    switch(image->m_layout)
-    {
-    case VK_IMAGE_LAYOUT_UNDEFINED:
-        // Image layout is undefined (or does not matter)
-        // Only valid as initial layout
-        // No flags required, listed only for completeness
-        imageMemoryBarrier.srcAccessMask = 0;
-        break;
-    case VK_IMAGE_LAYOUT_GENERAL:
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
-                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
-        break;
-    case VK_IMAGE_LAYOUT_PREINITIALIZED:
-        // Image is preinitialized
-        // Only valid as initial layout for linear images, preserves memory contents
-        // Make sure host writes have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        // Image is a color attachment
-        // Make sure any writes to the color buffer have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        // Image is a depth/stencil attachment
-        // Make sure any writes to the depth/stencil buffer have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        // Image is a transfer source
-        // Make sure any reads from the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        // Image is a transfer destination
-        // Make sure any writes to the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        // Image is read by a shader
-        // Make sure any shader reads from the image have been finished
-        imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-        break;
-    default:
-        // Other source layouts aren't handled (yet)
-        break;
-    }
-
-    // Target layouts (new)
-    // Destination access mask controls the dependency for the new image layout
-    switch(newLayout)
-    {
-    case VK_IMAGE_LAYOUT_GENERAL:
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT | VK_ACCESS_2_HOST_WRITE_BIT |
-                                           VK_ACCESS_2_MEMORY_READ_BIT | VK_ACCESS_2_MEMORY_WRITE_BIT;
-        break;
-    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-        // Image will be used as a transfer destination
-        // Make sure any writes to the image have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-        // Image will be used as a transfer source
-        // Make sure any reads from the image have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-        // Image will be used as a color attachment
-        // Make sure any writes to the color buffer have been finished
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-        // Image layout will be used as a depth/stencil attachment
-        // Make sure any writes to depth/stencil buffer have been finished
-        imageMemoryBarrier.dstAccessMask =
-            imageMemoryBarrier.dstAccessMask | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        break;
-
-    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-        // Image will be read in a shader (sampler, input attachment)
-        // Make sure any writes to the image have been finished
-        if(imageMemoryBarrier.srcAccessMask == 0)
-        {
-            imageMemoryBarrier.srcAccessMask = VK_ACCESS_2_HOST_WRITE_BIT | VK_ACCESS_2_TRANSFER_WRITE_BIT;
-        }
-        imageMemoryBarrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-        break;
-    default:
-        // Other source layouts aren't handled (yet)
-        break;
-    }
-
-    VkDependencyInfoKHR dependencyInfo = {
-        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pNext                   = nullptr,
-        .dependencyFlags         = 0,
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers    = &imageMemoryBarrier,
-    };
-
-    m_pDeviceTable->vkCmdPipelineBarrier2(m_handle, &dependencyInfo);
-    image->m_layout = newLayout;
-}
 
 void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions)
 {
@@ -423,9 +269,13 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
             vkColor.storeOp = color.storeOp.value();
         }
         vkColors.push_back(vkColor);
-        // debug layout
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+        aph::vk::ImageBarrier barrier{
+            .pImage       = image,
+            .currentState = image->getResourceState(),
+            .newState     = aph::RESOURCE_STATE_RENDER_TARGET,
+        };
+        insertBarrier({barrier});
     }
 
     VkRenderingInfo renderingInfo{
@@ -466,7 +316,13 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
         }
         // debug layout
         // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
-        transitionImageLayout(image, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+        aph::vk::ImageBarrier barrier{
+            .pImage       = image,
+            .currentState = image->getResourceState(),
+            .newState     = aph::RESOURCE_STATE_DEPTH_WRITE,
+        };
+        insertBarrier({barrier});
+
         renderingInfo.pDepthAttachment = &vkDepth;
     }
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
@@ -642,7 +498,7 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
     for(uint32_t i = 0; i < numTextureBarriers; ++i)
     {
         const ImageBarrier*   pTrans        = &pImageBarriers[i];
-        Image*                pTexture      = pTrans->pImage;
+        Image*                pImage        = pTrans->pImage;
         VkImageMemoryBarrier* pImageBarrier = nullptr;
 
         if(RESOURCE_STATE_UNORDERED_ACCESS == pTrans->currentState &&
@@ -671,8 +527,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
         if(pImageBarrier)
         {
-            pImageBarrier->image                           = pTexture->getHandle();
-            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(pTexture->getFormat());
+            pImageBarrier->image                           = pImage->getHandle();
+            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(pImage->getFormat());
             pImageBarrier->subresourceRange.baseMipLevel   = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
             pImageBarrier->subresourceRange.levelCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_MIP_LEVELS;
             pImageBarrier->subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;
@@ -697,17 +553,29 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
             srcAccessFlags |= pImageBarrier->srcAccessMask;
             dstAccessFlags |= pImageBarrier->dstAccessMask;
         }
+
+        pImage->m_resourceState = pTrans->newState;
+        pImage->m_layout        = pImageBarrier->newLayout;
     }
 
-    VkPipelineStageFlags srcStageMask =
-        aph::vk::utils::determinePipelineStageFlags(m_pDevice->getPhysicalDevice(), srcAccessFlags, m_pQueue->getType());
-    VkPipelineStageFlags dstStageMask =
-        aph::vk::utils::determinePipelineStageFlags(m_pDevice->getPhysicalDevice(), dstAccessFlags, m_pQueue->getType());
+    VkPipelineStageFlags srcStageMask = aph::vk::utils::determinePipelineStageFlags(
+        m_pDevice->getPhysicalDevice(), srcAccessFlags, m_pQueue->getType());
+    VkPipelineStageFlags dstStageMask = aph::vk::utils::determinePipelineStageFlags(
+        m_pDevice->getPhysicalDevice(), dstAccessFlags, m_pQueue->getType());
 
     if(bufferBarrierCount || imageBarrierCount)
     {
         vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers,
                              imageBarrierCount, imageBarriers);
     }
+}
+void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
+{
+    aph::vk::ImageBarrier barrier{
+        .pImage       = pImage,
+        .currentState = pImage->getResourceState(),
+        .newState     = newState,
+    };
+    insertBarrier({barrier});
 }
 }  // namespace aph::vk

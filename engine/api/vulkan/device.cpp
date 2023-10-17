@@ -279,10 +279,10 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
         .mipLevels     = createInfo.mipLevels,
         .arrayLayers   = createInfo.arraySize,
         .samples       = static_cast<VkSampleCountFlagBits>(createInfo.samples),
-        .tiling        = static_cast<VkImageTiling>(createInfo.tiling),
+        .tiling        = VK_IMAGE_TILING_OPTIMAL,
         .usage         = createInfo.usage,
         .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = static_cast<VkImageLayout>(createInfo.initialLayout),
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
     };
 
     imageCreateInfo.extent.width  = createInfo.extent.width;
@@ -643,94 +643,6 @@ VkResult Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, V
 void Device::unMapMemory(Buffer* pBuffer)
 {
     m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory());
-}
-
-VkResult Device::createCubeMap(const std::array<std::shared_ptr<ImageInfo>, 6>& images, Image** ppImage)
-{
-    uint32_t               cubeMapWidth{}, cubeMapHeight{};
-    uint32_t               mipLevels = 0;
-    std::array<Buffer*, 6> stagingBuffers;
-    for(auto idx = 0; idx < 6; idx++)
-    {
-        const auto& image = images[idx];
-        cubeMapWidth      = image->width;
-        cubeMapHeight     = image->height;
-
-        {
-            BufferCreateInfo createInfo{
-                .size   = static_cast<uint32_t>(image->data.size()),
-                .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                .domain = BufferDomain::Host,
-            };
-
-            create(createInfo, &stagingBuffers[idx]);
-            mapMemory(stagingBuffers[idx]);
-            stagingBuffers[idx]->write(image->data.data());
-            unMapMemory(stagingBuffers[idx]);
-        }
-    }
-    mipLevels = aph::utils::calculateFullMipLevels(cubeMapWidth, cubeMapHeight);
-
-    std::vector<VkBufferImageCopy> bufferCopyRegions;
-    for(uint32_t face = 0; face < 6; face++)
-    {
-        // TODO mip levels
-        auto level = 0;
-        // for(uint32_t level = 0; level < mipLevels; level++)
-        // {
-        VkBufferImageCopy bufferCopyRegion               = {};
-        bufferCopyRegion.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
-        bufferCopyRegion.imageSubresource.mipLevel       = level;
-        bufferCopyRegion.imageSubresource.baseArrayLayer = face;
-        bufferCopyRegion.imageSubresource.layerCount     = 1;
-        bufferCopyRegion.imageExtent.width               = cubeMapWidth >> level;
-        bufferCopyRegion.imageExtent.height              = cubeMapHeight >> level;
-        bufferCopyRegion.imageExtent.depth               = 1;
-        bufferCopyRegion.bufferOffset                    = 0;
-        bufferCopyRegions.push_back(bufferCopyRegion);
-        // }
-    }
-
-    // Image barrier for optimal image (target)
-    // Set initial layout for all array layers (faces) of the optimal (target) tiled texture
-    VkImageSubresourceRange subresourceRange = {
-        .aspectMask   = VK_IMAGE_ASPECT_COLOR_BIT,
-        .baseMipLevel = 0,
-        .levelCount   = mipLevels,
-        .layerCount   = 6,
-    };
-
-    Image*          cubeMapImage{};
-    ImageCreateInfo imageCI{
-        .extent    = {cubeMapWidth, cubeMapHeight, 1},
-        .flags     = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-        .mipLevels = mipLevels,
-        .arraySize = 6,
-        .usage     = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        .domain    = ImageDomain::Device,
-        .imageType = VK_IMAGE_TYPE_2D,
-        .format    = VK_FORMAT_R8G8B8A8_UNORM,
-    };
-    create(imageCI, &cubeMapImage);
-
-    executeSingleCommands(QueueType::GRAPHICS, [&](CommandBuffer* pCommandBuffer) {
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &subresourceRange);
-        // Copy the cube map faces from the staging buffer to the optimal tiled image
-        for(uint32_t idx = 0; idx < 6; idx++)
-        {
-            pCommandBuffer->copyBufferToImage(stagingBuffers[idx], cubeMapImage, {bufferCopyRegions[idx]});
-        }
-        pCommandBuffer->transitionImageLayout(cubeMapImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                              &subresourceRange);
-    });
-
-    for(auto* buffer : stagingBuffers)
-    {
-        destroy(buffer);
-    }
-
-    *ppImage = cubeMapImage;
-    return VK_SUCCESS;
 }
 
 VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)

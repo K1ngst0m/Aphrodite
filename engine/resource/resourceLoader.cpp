@@ -139,9 +139,7 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 {
 }
 
-ResourceLoader::~ResourceLoader()
-{
-};
+ResourceLoader::~ResourceLoader(){};
 
 void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
@@ -217,11 +215,12 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         m_pDevice->create(imageCI, &image);
 
         m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
-            cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+            cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
+
             cmd->copyBufferToImage(stagingBuffer, image);
             if(genMipmap)
             {
-                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+                cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_SRC);
             }
         });
 
@@ -256,21 +255,25 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
                     mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
-                    cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &mipSubRange,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                    vk::ImageBarrier barrier {
+                        .pImage = image,
+                        .currentState = image->getResourceState(),
+                        .newState = RESOURCE_STATE_COPY_DST,
+                        .subresourceBarrier = 1,
+                        .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
+                    };
+
+                    cmd->insertBarrier({barrier});
                     // Blit from previous level
                     cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-                    cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, &mipSubRange,
-                                               VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+                    barrier.currentState = image->getResourceState();
+                    barrier.newState = RESOURCE_STATE_COPY_SRC;
+                    cmd->insertBarrier({barrier});
                 }
+            }
 
-                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            }
-            else
-            {
-                cmd->transitionImageLayout(image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-            }
+            cmd->transitionImageLayout(image, RESOURCE_STATE_SHADER_RESOURCE);
         });
     }
 

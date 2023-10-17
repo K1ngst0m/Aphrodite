@@ -440,11 +440,15 @@ void SceneRenderer::_initGbuffer()
                 .usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .domain = ImageDomain::Device,
                 .format = m_pDevice->getDepthFormat(),
-                .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->create(createInfo, &depth));
             m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
-                cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+                aph::vk::ImageBarrier barrier{
+                    .pImage       = depth,
+                    .currentState = depth->getResourceState(),
+                    .newState     = aph::RESOURCE_STATE_DEPTH_WRITE,
+                };
+                cmd->insertBarrier({barrier});
             });
         }
     }
@@ -524,7 +528,6 @@ void SceneRenderer::_initGeneral()
                 .usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 .domain = ImageDomain::Device,
                 .format = m_pDevice->getDepthFormat(),
-                .tiling = VK_IMAGE_TILING_OPTIMAL,
             };
             VK_CHECK_RESULT(m_pDevice->create(createInfo, &depthImage));
             createInfo.samples = m_sampleCount;
@@ -631,7 +634,6 @@ void SceneRenderer::_initGpuResources()
             .mipLevels = aph::utils::calculateFullMipLevels(image->width, image->height),
             .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
             .format    = VK_FORMAT_R8G8B8A8_UNORM,
-            .tiling    = VK_IMAGE_TILING_OPTIMAL,
         };
 
         aph::ImageLoadInfo loadInfo{

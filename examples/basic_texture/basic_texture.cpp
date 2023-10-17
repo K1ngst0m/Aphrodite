@@ -69,7 +69,6 @@ void basic_texture::init()
                 .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
                 .domain    = aph::ImageDomain::Device,
                 .imageType = VK_IMAGE_TYPE_2D,
-                .tiling    = VK_IMAGE_TILING_OPTIMAL,
             };
 
             aph::ImageLoadInfo loadInfo{.data          = aph::asset::GetTextureDir() / "container2.png",
@@ -79,8 +78,6 @@ void basic_texture::init()
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
             m_pDevice->executeSingleCommands(aph::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
-                // cmd->transitionImageLayout(m_pImage, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
                 aph::vk::ImageBarrier barrier{
                     .pImage       = m_pImage,
                     .currentState = aph::RESOURCE_STATE_UNDEFINED,

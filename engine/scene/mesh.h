@@ -2,6 +2,7 @@
 #define MESH_H_
 
 #include "object.h"
+#include "api/gpuResource.h"
 
 namespace aph
 {

@@ -152,10 +152,7 @@ public:
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
                        const std::vector<ImageBarrier>&  pImageBarriers);
-    void transitionImageLayout(Image* image, VkImageLayout newLayout,
-                               VkImageSubresourceRange* pSubResourceRange = nullptr,
-                               VkPipelineStageFlags2    srcStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-                               VkPipelineStageFlags2    dstStageMask      = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+    void transitionImageLayout(Image* pImage, ResourceState newState);
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
     void copyImage(Image* srcImage, Image* dstImage);
     void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,
