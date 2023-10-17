@@ -44,19 +44,6 @@ struct Material
     uint32_t  id{0};
 };
 
-enum class IndexType
-{
-    NONE,
-    UINT16,
-    UINT32,
-};
-
-enum class PrimitiveTopology
-{
-    TRI_LIST,
-    TRI_STRIP,
-};
-
 struct Mesh : public Object
 {
     Mesh() : Object(Id::generateNewId<Mesh>(), ObjectType::MESH) {}

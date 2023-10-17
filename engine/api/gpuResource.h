@@ -169,6 +169,43 @@ struct GPUSettings
     uint8_t samplerAnisotropySupported : 1;
 };
 
+struct IndirectDrawArguments
+{
+    uint32_t vertexCount;
+    uint32_t instanceCount;
+    uint32_t firstVertex;
+    uint32_t firstInstance;
+};
+
+struct IndirectDrawIndexArguments
+{
+    uint32_t indexCount;
+    uint32_t instanceCount;
+    uint32_t firstIndex;
+    int32_t  vertexOffset;
+    uint32_t firstInstance;
+};
+
+struct IndirectDispatchArguments
+{
+    uint32_t x;
+    uint32_t y;
+    uint32_t z;
+};
+
+enum class IndexType
+{
+    NONE,
+    UINT16,
+    UINT32,
+};
+
+enum class PrimitiveTopology
+{
+    TRI_LIST,
+    TRI_STRIP,
+};
+
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
 class ResourceHandle
 {
