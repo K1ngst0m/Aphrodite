@@ -473,24 +473,26 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
     auto program = new ShaderProgram(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
 
     // create rps
-    RenderPipelineState rps                                     = {.createInfo = createInfo};
-    const VertexInput&  vstate                                  = rps.createInfo.vertexInput;
-    rps.numAttributes                                           = vstate.getNumAttributes();
-    bool bufferAlreadyBound[VertexInput::APH_VERTEX_BUFFER_MAX] = {};
+    RenderPipelineState rps    = {.createInfo = createInfo};
+    const VertexInput&  vstate = rps.createInfo.vertexInput;
+    rps.vkAttributes.resize(vstate.attributes.size());
+    std::vector<bool> bufferAlreadyBound(vstate.bindings.size());
 
-    for(uint32_t i = 0; i != rps.numAttributes; i++)
+    for(uint32_t i = 0; i != rps.vkAttributes.size(); i++)
     {
         const auto& attr = vstate.attributes[i];
 
-        rps.vkAttributes[i] = {
-            .location = attr.location, .binding = attr.binding, .format = utils::VkCast(attr.format), .offset = (uint32_t)attr.offset};
+        rps.vkAttributes[i] = {.location = attr.location,
+                               .binding  = attr.binding,
+                               .format   = utils::VkCast(attr.format),
+                               .offset   = (uint32_t)attr.offset};
 
         if(!bufferAlreadyBound[attr.binding])
         {
-            bufferAlreadyBound[attr.binding]  = true;
-            rps.vkBindings[rps.numBindings++] = {.binding   = attr.binding,
-                                                 .stride    = vstate.inputBindings[attr.binding].stride,
-                                                 .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
+            bufferAlreadyBound[attr.binding] = true;
+            rps.vkBindings.push_back({.binding   = attr.binding,
+                                      .stride    = vstate.bindings[attr.binding].stride,
+                                      .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
         }
     }
 
@@ -537,10 +539,10 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
 
     const VkPipelineVertexInputStateCreateInfo ciVertexInputState = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount   = rps.numBindings,
-        .pVertexBindingDescriptions      = rps.numBindings ? rps.vkBindings : nullptr,
-        .vertexAttributeDescriptionCount = rps.numAttributes,
-        .pVertexAttributeDescriptions    = rps.numAttributes ? rps.vkAttributes : nullptr,
+        .vertexBindingDescriptionCount   = static_cast<uint32_t>(rps.vkBindings.size()),
+        .pVertexBindingDescriptions      = !rps.vkBindings.empty() ? rps.vkBindings.data() : nullptr,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(rps.vkAttributes.size()),
+        .pVertexAttributeDescriptions    = !rps.vkAttributes.empty() ? rps.vkAttributes.data() : nullptr,
     };
 
     VkPipeline handle;

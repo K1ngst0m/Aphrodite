@@ -248,12 +248,6 @@ enum class PrimitiveTopology
 
 struct VertexInput
 {
-    enum
-    {
-        APH_VERTEX_ATTRIBUTES_MAX = 16,
-        APH_VERTEX_BUFFER_MAX = 16
-    };
-
     struct VertexAttribute
     {
         uint32_t  location = 0;
@@ -267,27 +261,8 @@ struct VertexInput
         uint32_t stride = 0;
     };
 
-    VertexAttribute    attributes[APH_VERTEX_ATTRIBUTES_MAX];
-    VertexInputBinding inputBindings[APH_VERTEX_BUFFER_MAX];
-
-    uint32_t getNumAttributes() const
-    {
-        uint32_t n = 0;
-        while(n < APH_VERTEX_ATTRIBUTES_MAX && attributes[n].format != Format::Undefined)
-        {
-            n++;
-        }
-        return n;
-    }
-    uint32_t getNumInputBindings() const
-    {
-        uint32_t n = 0;
-        while(n < APH_VERTEX_BUFFER_MAX && inputBindings[n].stride)
-        {
-            n++;
-        }
-        return n;
-    }
+    std::vector<VertexAttribute>    attributes;
+    std::vector<VertexInputBinding> bindings;
 };
 
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>

@@ -91,10 +91,8 @@ struct RenderPipelineState
 {
     GraphicsPipelineCreateInfo createInfo;
 
-    uint32_t                          numBindings                                          = 0;
-    uint32_t                          numAttributes                                        = 0;
-    VkVertexInputBindingDescription   vkBindings[VertexInput::APH_VERTEX_BUFFER_MAX]       = {};
-    VkVertexInputAttributeDescription vkAttributes[VertexInput::APH_VERTEX_ATTRIBUTES_MAX] = {};
+    std::vector<VkVertexInputBindingDescription>   vkBindings    = {};
+    std::vector<VkVertexInputAttributeDescription> vkAttributes  = {};
 
     // non-owning, cached the last pipeline layout from the context (if the context has a new layout, invalidate all
     // VkPipeline objects)

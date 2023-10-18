@@ -94,7 +94,7 @@ void basic_texture::init()
                         {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},
                         {.location = 1, .format = aph::Format::RG_F32, .offset = offsetof(VertexData, uv)},
                     },
-                .inputBindings = {{.stride = sizeof(VertexData)}},
+                .bindings = {{.stride = sizeof(VertexData)}},
             };
 
             auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
