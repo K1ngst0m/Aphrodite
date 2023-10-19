@@ -133,7 +133,7 @@ public:
     VulkanPipelineBuilder& depthAttachmentFormat(VkFormat format);
     VulkanPipelineBuilder& stencilAttachmentFormat(VkFormat format);
 
-    VkResult build(VkDevice device, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
+    VkResult build(Device* pDevice, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
                    VkPipeline* outPipeline, const char* debugName = nullptr) noexcept;
 
     static uint32_t getNumPipelinesCreated() { return numPipelinesCreated_; }

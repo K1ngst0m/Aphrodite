@@ -3,7 +3,7 @@
 
 namespace aph::vk
 {
-SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_device(device)
+SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_device(device), m_pDeviceTable(device->getDeviceTable())
 {
 }
 
@@ -11,14 +11,14 @@ SyncPrimitivesPool::~SyncPrimitivesPool()
 {
     // Destroy all created fences.
     for(auto* fence : m_allFences)
-        vkDestroyFence(m_device->getHandle(), fence, vk::vkAllocator());
+        m_pDeviceTable->vkDestroyFence(m_device->getHandle(), fence, vk::vkAllocator());
 
     // Destroy all created semaphores.
     for(auto* semaphore : m_allSemaphores)
-        vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
+        m_pDeviceTable->vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
 
     for(auto* semaphore : m_allTimelineSemahpores)
-        vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
+        m_pDeviceTable->vkDestroySemaphore(m_device->getHandle(), semaphore, vk::vkAllocator());
 }
 
 VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
@@ -40,7 +40,7 @@ VkResult SyncPrimitivesPool::acquireFence(VkFence& fence, bool isSignaled)
         {
             createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         }
-        result = vkCreateFence(m_device->getHandle(), &createInfo, vk::vkAllocator(), &fence);
+        result = m_pDeviceTable->vkCreateFence(m_device->getHandle(), &createInfo, vk::vkAllocator(), &fence);
         if(result == VK_SUCCESS)
             m_allFences.emplace(fence);
     }
@@ -54,7 +54,7 @@ VkResult SyncPrimitivesPool::releaseFence(VkFence fence)
     m_fenceLock.Lock();
     if(m_allFences.count(fence))
     {
-        VkResult result = vkResetFences(m_device->getHandle(), 1, &fence);
+        VkResult result = m_pDeviceTable->vkResetFences(m_device->getHandle(), 1, &fence);
         if(result != VK_SUCCESS)
         {
             m_fenceLock.Unlock();
@@ -157,7 +157,7 @@ VkResult SyncPrimitivesPool::acquireTimelineSemaphore(uint32_t semaphoreCount, V
             .pNext = &timelineCreateInfo,
             .flags = 0,
         };
-        result = vkCreateSemaphore(m_device->getHandle(), &createInfo, vk::vkAllocator(), &pSemaphores[i]);
+        result = m_pDeviceTable->vkCreateSemaphore(m_device->getHandle(), &createInfo, vk::vkAllocator(), &pSemaphores[i]);
         if(result != VK_SUCCESS)
         {
             break;

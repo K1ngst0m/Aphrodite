@@ -26,6 +26,7 @@ public:
 
 private:
     Device*                 m_device                      = {};
+    VolkDeviceTable*        m_pDeviceTable                = {};
     std::set<VkFence>       m_allFences                   = {};
     std::set<VkSemaphore>   m_allSemaphores               = {};
     std::set<VkSemaphore>   m_allTimelineSemahpores       = {};

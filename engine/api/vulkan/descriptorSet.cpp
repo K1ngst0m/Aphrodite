@@ -6,7 +6,7 @@ namespace aph::vk
 
 DescriptorSetLayout::DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
                                          VkDescriptorSetLayout handle) :
-    m_pDevice(device)
+    m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
 {
     getHandle() = handle;
 
@@ -36,13 +36,13 @@ DescriptorSetLayout::~DescriptorSetLayout()
     // Destroy all allocated descriptor sets.
     for(auto it : m_allocatedDescriptorSets)
     {
-        vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[it.second], 1, &it.first);
+        m_pDeviceTable->vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[it.second], 1, &it.first);
     }
 
     // Destroy all created pools.
     for(auto pool : m_pools)
     {
-        vkDestroyDescriptorPool(getDevice()->getHandle(), pool, vkAllocator());
+        m_pDeviceTable->vkDestroyDescriptorPool(getDevice()->getHandle(), pool, vkAllocator());
     }
 }
 
@@ -75,7 +75,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
                 createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
-            auto             result = vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle);
+            auto             result = m_pDeviceTable->vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle);
             if(result != VK_SUCCESS)
                 return VK_NULL_HANDLE;
 
@@ -104,7 +104,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     allocInfo.descriptorSetCount          = 1;
     allocInfo.pSetLayouts                 = &setLayout;
     VkDescriptorSet handle                = VK_NULL_HANDLE;
-    auto            result                = vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle);
+    auto            result                = m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle);
     if(result != VK_SUCCESS)
         return VK_NULL_HANDLE;
 
@@ -134,7 +134,7 @@ VkResult DescriptorSetLayout::freeSet(const DescriptorSet* pSet)
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
-    vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[poolIndex], 1, &descriptorSet);
+    m_pDeviceTable->vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[poolIndex], 1, &descriptorSet);
 
     // Remove descriptor set from allocatedDescriptorSets map.
     m_allocatedDescriptorSets.erase(descriptorSet);
@@ -246,7 +246,7 @@ VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const 
         break;
     }
 
-    vkUpdateDescriptorSets(m_pDevice->getHandle(), 1, &writeInfo, 0, nullptr);
+    m_pDeviceTable->vkUpdateDescriptorSets(m_pDevice->getHandle(), 1, &writeInfo, 0, nullptr);
 
     return VK_SUCCESS;
 }

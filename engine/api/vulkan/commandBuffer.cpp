@@ -193,12 +193,12 @@ void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_
 void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
 {
     flushComputeCommand();
-    vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
+    m_pDeviceTable->vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
 }
 void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
 {
     flushGraphicsCommand();
-    vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
+    m_pDeviceTable->vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
 }
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
                                 uint32_t firstInstance)
@@ -565,7 +565,7 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
     if(bufferBarrierCount || imageBarrierCount)
     {
-        vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers,
+        m_pDeviceTable->vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers,
                              imageBarrierCount, imageBarriers);
     }
 }

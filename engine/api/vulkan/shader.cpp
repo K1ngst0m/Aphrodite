@@ -561,7 +561,7 @@ ShaderProgram::~ShaderProgram()
 {
     for(auto* setLayout : m_pSetLayouts)
     {
-        vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), vkAllocator());
         delete setLayout;
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, vkAllocator());

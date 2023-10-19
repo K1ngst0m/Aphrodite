@@ -49,6 +49,7 @@ private:
     std::vector<VkDescriptorSetLayoutBinding> m_bindings = {};
 
 private:
+    VolkDeviceTable*                               m_pDeviceTable               = {};
     std::vector<VkDescriptorPoolSize>              m_poolSizes                  = {};
     uint32_t                                       m_maxSetsPerPool             = {50};
     std::vector<VkDescriptorPool>                  m_pools                      = {};

@@ -218,7 +218,7 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
     VkBuffer buffer;
-    _VR(vkCreateBuffer(getHandle(), &bufferInfo, gVkAllocator, &buffer));
+    _VR(m_table.vkCreateBuffer(getHandle(), &bufferInfo, gVkAllocator, &buffer));
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -251,14 +251,14 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
+        _VR(m_table.vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
     }
     else
     {
         VkMemoryAllocateInfo allocInfo = init::memoryAllocateInfo(
             memRequirements.memoryRequirements.size,
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits));
-        _VR(vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
+        _VR(m_table.vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
     *ppBuffer = new Buffer(createInfo, buffer, memory);
@@ -322,7 +322,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
             m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
+        _VR(m_table.vkAllocateMemory(getHandle(), &memoryAllocateInfo, gVkAllocator, &memory));
     }
     else
     {
@@ -333,7 +333,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
                 m_physicalDevice->findMemoryType(createInfo.domain, memRequirements.memoryRequirements.memoryTypeBits),
         };
 
-        _VR(vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
+        _VR(m_table.vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
     *ppImage = new Image(this, createInfo, image, memory);
@@ -352,7 +352,7 @@ void Device::destroy(Buffer* pBuffer)
     {
         vkFreeMemory(m_handle, pBuffer->getMemory(), gVkAllocator);
     }
-    vkDestroyBuffer(m_handle, pBuffer->getHandle(), gVkAllocator);
+    m_table.vkDestroyBuffer(m_handle, pBuffer->getHandle(), gVkAllocator);
     delete pBuffer;
     pBuffer = nullptr;
 }
@@ -363,14 +363,14 @@ void Device::destroy(Image* pImage)
     {
         vkFreeMemory(m_handle, pImage->getMemory(), gVkAllocator);
     }
-    vkDestroyImage(m_handle, pImage->getHandle(), gVkAllocator);
+    m_table.vkDestroyImage(m_handle, pImage->getHandle(), gVkAllocator);
     delete pImage;
     pImage = nullptr;
 }
 
 void Device::destroy(ImageView* pImageView)
 {
-    vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
+    m_table.vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
     delete pImageView;
     pImageView = nullptr;
 }
@@ -383,7 +383,7 @@ VkResult Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwa
 
 void Device::destroy(SwapChain* pSwapchain)
 {
-    vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), gVkAllocator);
+    m_table.vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), gVkAllocator);
     delete pSwapchain;
     pSwapchain = nullptr;
 }
@@ -400,7 +400,7 @@ Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
 
 VkResult Device::waitIdle()
 {
-    return vkDeviceWaitIdle(getHandle());
+    return m_table.vkDeviceWaitIdle(getHandle());
 }
 
 VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
@@ -421,7 +421,7 @@ VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
 
 void Device::destroy(VkCommandPool pPool)
 {
-    vkDestroyCommandPool(getHandle(), pPool, gVkAllocator);
+    m_table.vkDestroyCommandPool(getHandle(), pPool, gVkAllocator);
     pPool = nullptr;
 }
 
@@ -440,7 +440,7 @@ VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuff
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = commandBufferCount,
     };
-    _VR(vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
+    _VR(m_table.vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
@@ -578,7 +578,7 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
         .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
         .depthAttachmentFormat(createInfo.depthFormat)
         .stencilAttachmentFormat(createInfo.stencilFormat)
-        .build(getHandle(), VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
+        .build(this, VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
 
     *ppPipeline = new Pipeline(this, rps, handle, program);
 
@@ -717,7 +717,7 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
             .forceExplicitReconstruction = convertInfo.forceExplicitReconstruction ? VK_TRUE : VK_FALSE,
         };
 
-        _VR(vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
+        _VR(m_table.vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
 
         ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
         ycbcr.info.pNext      = nullptr;
@@ -781,7 +781,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
             .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .commandBufferCount = commandBufferCount,
         };
-        _VR(vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
+        _VR(m_table.vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
         ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pQueue);
         m_threadCommandPools.push_back(pool);
     }

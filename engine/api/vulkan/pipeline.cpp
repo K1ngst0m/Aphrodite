@@ -233,7 +233,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilMasks(VkStencilFaceFlags fa
     return *this;
 }
 
-VkResult VulkanPipelineBuilder::build(VkDevice device, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
+VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
                                       VkPipeline* outPipeline, const char* debugName) noexcept
 {
     const VkPipelineDynamicStateCreateInfo dynamicState = {
@@ -288,7 +288,7 @@ VkResult VulkanPipelineBuilder::build(VkDevice device, VkPipelineCache pipelineC
         .basePipelineIndex   = -1,
     };
 
-    const auto result = vkCreateGraphicsPipelines(device, pipelineCache, 1, &ci, vkAllocator(), outPipeline);
+    const auto result = vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1, &ci, vkAllocator(), outPipeline);
 
     if(result != VK_SUCCESS)
     {
