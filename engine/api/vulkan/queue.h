@@ -33,9 +33,9 @@ public:
     uint32_t     getIndex() const { return m_index; }
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
     QueueType    getType() const { return m_type; }
-    VkResult     waitIdle() { return vkQueueWaitIdle(getHandle()); }
-    VkResult     submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
-    VkResult     submit(const std::vector<QueueSubmitInfo2>& submitInfos);
+    Result       waitIdle() { return utils::getResult(vkQueueWaitIdle(getHandle())); }
+    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
+    Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
 
 private:
     uint32_t                m_queueFamilyIndex = {};

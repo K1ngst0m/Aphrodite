@@ -20,20 +20,23 @@
 // Default fence timeout in nanoseconds
 #define DEFAULT_FENCE_TIMEOUT 100000000000
 
+namespace aph::vk
+{
 #ifdef APH_DEBUG
-    #define VK_CHECK_RESULT(f) \
+    #define _VR(f) \
         { \
             VkResult res = (f); \
             if(res != VK_SUCCESS) \
             { \
-                CM_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s", aph::vk::utils::errorString(res), __FILE__, \
+                VK_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s", aph::vk::utils::errorString(res), __FILE__, \
                            __LINE__); \
                 std::abort(); \
             } \
         }
 #else
-    #define VK_CHECK_RESULT(f) (f)
+    #define _VR(f) (f)
 #endif
+}
 
 namespace aph::vk::utils
 {
@@ -46,6 +49,7 @@ VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
 VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);
 Format                getFormatFromVk(VkFormat format);
+Result                getResult(VkResult result);
 }  // namespace aph::vk::utils
 
 // convert

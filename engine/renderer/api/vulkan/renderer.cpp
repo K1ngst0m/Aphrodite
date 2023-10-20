@@ -91,7 +91,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             debugInfo.pUserData       = &m_frameIdx;
         }
 
-        VK_CHECK_RESULT(Instance::Create(instanceCreateInfo, &m_pInstance));
+        _VR(Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
@@ -143,7 +143,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             .pInstance = m_pInstance,
             .pWsi      = m_wsi,
         };
-        VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pSwapChain));
+        auto result = m_pDevice->create(createInfo, &m_pSwapChain);
+        APH_ASSERT(result.success());
     }
 
     // init default resources
@@ -165,9 +166,9 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
         // pipeline cache
         {
-            VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
-            VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreatePipelineCache(
-                m_pDevice->getHandle(), &pipelineCacheCreateInfo, vkAllocator(), &m_pipelineCache));
+            VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
+            _VR(m_pDevice->getDeviceTable()->vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo,
+                                                                   vkAllocator(), &m_pipelineCache));
         }
     }
 
@@ -223,7 +224,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //     samplerInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         //     samplerInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         //     samplerInfo.borderColor         = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        //     VK_CHECK_RESULT(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
+        //     _VR(m_pDevice->createSampler(samplerInfo, &m_ui.fontSampler, false));
         // }
 
         // // TODO setup pipeline
@@ -240,7 +241,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //     pipelineCreateInfo.depthStencil =
         //         init::pipelineDepthStencilStateCreateInfo(VK_FALSE, VK_FALSE, VK_COMPARE_OP_NEVER);
 
-        //     VK_CHECK_RESULT(m_pDevice->createShaderProgram(&m_ui.pProgram, getShaders(shaderDir / "uioverlay.vert"),
+        //     _VR(m_pDevice->createShaderProgram(&m_ui.pProgram, getShaders(shaderDir / "uioverlay.vert"),
         //                                                    getShaders(shaderDir / "uioverlay.frag")));
 
         //     pipelineCreateInfo.rasterizer.cullMode  = VK_CULL_MODE_NONE;
@@ -278,7 +279,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         //     vertexInputAttributes.data(); pipelineCreateInfo.vertexInputInfo                   = vertexInputInfo;
         //     pipelineCreateInfo.pProgram                          = m_ui.pProgram;
 
-        //     VK_CHECK_RESULT(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
+        //     _VR(m_pDevice->createGraphicsPipeline(pipelineCreateInfo, &m_ui.pipeline));
         // }
 
         // // setup descriptor
@@ -461,9 +462,10 @@ bool Renderer::updateUIDrawData(float deltaTime)
                 m_pDevice->unMapMemory(m_ui.pVertexBuffer);
                 m_pDevice->destroy(m_ui.pVertexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_ui.pVertexBuffer));
+            auto result = m_pDevice->create(createInfo, &m_ui.pVertexBuffer);
+            APH_ASSERT(result.success());
             m_ui.vertexCount = imDrawData->TotalVtxCount;
-            m_pDevice->mapMemory(m_ui.pVertexBuffer);
+            APH_CHECK_RESULT(m_pDevice->mapMemory(m_ui.pVertexBuffer));
             updateCmdBuffers = true;
         }
 
@@ -478,9 +480,10 @@ bool Renderer::updateUIDrawData(float deltaTime)
                 m_pDevice->unMapMemory(m_ui.pIndexBuffer);
                 m_pDevice->destroy(m_ui.pIndexBuffer);
             }
-            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_ui.pIndexBuffer));
+            auto result = m_pDevice->create(createInfo, &m_ui.pIndexBuffer);
+            APH_ASSERT(result.success());
             m_ui.indexCount = imDrawData->TotalIdxCount;
-            m_pDevice->mapMemory(m_ui.pIndexBuffer);
+            APH_CHECK_RESULT(m_pDevice->mapMemory(m_ui.pIndexBuffer));
             updateCmdBuffers = true;
         }
 
@@ -498,8 +501,8 @@ bool Renderer::updateUIDrawData(float deltaTime)
         }
 
         // Flush to make writes visible to GPU
-        m_pDevice->flushMemory(m_ui.pVertexBuffer->getMemory());
-        m_pDevice->flushMemory(m_ui.pIndexBuffer->getMemory());
+        APH_CHECK_RESULT(m_pDevice->flushMemory(m_ui.pVertexBuffer->getMemory()));
+        APH_CHECK_RESULT(m_pDevice->flushMemory(m_ui.pIndexBuffer->getMemory()));
 
         return updateCmdBuffers;
     }
@@ -526,7 +529,7 @@ bool Renderer::onUIMouseMove(const MouseMoveEvent& e)
 CommandBuffer* Renderer::acquireCommandBuffer(Queue* queue)
 {
     CommandBuffer* cmd;
-    m_pDevice->allocateCommandBuffers(1, &cmd, queue);
+    APH_CHECK_RESULT(m_pDevice->allocateCommandBuffers(1, &cmd, queue));
     m_frameData.cmds.push_back(cmd);
     return cmd;
 }
@@ -565,21 +568,21 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
 
     if(pPresentImage)
     {
-        renderSem  = acquireSemahpore();
-        VK_CHECK_RESULT(m_pSwapChain->acquireNextImage(renderSem));
+        renderSem = acquireSemahpore();
+        _VR(m_pSwapChain->acquireNextImage(renderSem));
 
         presentSem = acquireSemahpore();
         submitInfo.waitSemaphores.push_back(renderSem);
         submitInfo.signalSemaphores.push_back(presentSem);
     }
 
-    pQueue->submit({submitInfo}, frameFence);
+    APH_CHECK_RESULT(pQueue->submit({submitInfo}, frameFence));
 
     if(pPresentImage)
     {
         m_pSwapChain->presentImage(pQueue, {presentSem});
     }
 
-    vkWaitForFences(m_pDevice->getHandle(), 1, &frameFence, VK_TRUE, UINT64_MAX);
+    _VR(vkWaitForFences(m_pDevice->getHandle(), 1, &frameFence, VK_TRUE, UINT64_MAX));
 }
 }  // namespace aph::vk

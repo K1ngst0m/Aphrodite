@@ -180,7 +180,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     DescriptorSetLayout* setLayout{};
     {
         VkDescriptorSetLayout vkSetLayout;
-        VK_CHECK_RESULT(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vkAllocator(),
+        _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vkAllocator(),
                                                                                  &vkSetLayout));
         setLayout = new DescriptorSetLayout(m_pDevice, info, vkSetLayout);
     }
@@ -358,11 +358,11 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
 void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 {
     CombinedResourceLayout programLayout{};
-    if(m_shaders.count(ShaderStage::VS))
+    if(m_shaders.contains(ShaderStage::VS))
     {
         programLayout.attributeMask = m_shaders[ShaderStage::VS]->m_layout.inputMask;
     }
-    if(m_shaders.count(ShaderStage::FS) && m_shaders[ShaderStage::FS])
+    if(m_shaders.contains(ShaderStage::FS) && m_shaders[ShaderStage::FS])
     {
         programLayout.renderTargetMask = m_shaders[ShaderStage::FS]->m_layout.outputMask;
     }

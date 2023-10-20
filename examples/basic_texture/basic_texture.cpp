@@ -61,7 +61,7 @@ void basic_texture::init()
 
         // image and sampler
         {
-            m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::Linear), &m_pSampler);
+            APH_CHECK_RESULT(m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::Linear), &m_pSampler));
 
             aph::vk::ImageCreateInfo imageCI{
                 .alignment = 0,
@@ -76,14 +76,15 @@ void basic_texture::init()
 
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
-            m_pDevice->executeSingleCommands(aph::QueueType::GRAPHICS, [&](aph::vk::CommandBuffer* cmd) {
-                aph::vk::ImageBarrier barrier{
-                    .pImage       = m_pImage,
-                    .currentState = aph::RESOURCE_STATE_UNDEFINED,
-                    .newState     = aph::RESOURCE_STATE_SHADER_RESOURCE,
-                };
-                cmd->insertBarrier({barrier});
-            });
+            m_pDevice->executeSingleCommands(m_pDevice->getQueueByFlags(aph::QueueType::GRAPHICS),
+                                             [&](aph::vk::CommandBuffer* cmd) {
+                                                 aph::vk::ImageBarrier barrier{
+                                                     .pImage       = m_pImage,
+                                                     .currentState = aph::RESOURCE_STATE_UNDEFINED,
+                                                     .newState     = aph::RESOURCE_STATE_SHADER_RESOURCE,
+                                                 };
+                                                 cmd->insertBarrier({barrier});
+                                             });
         }
 
         // pipeline
@@ -112,7 +113,7 @@ void basic_texture::init()
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
-            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
+            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
         }
 
         // descriptor set

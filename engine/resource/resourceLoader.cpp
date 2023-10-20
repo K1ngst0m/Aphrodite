@@ -231,7 +231,8 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 {
 }
 
-ResourceLoader::~ResourceLoader(){};
+ResourceLoader::~ResourceLoader() = default;
+;
 
 void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
@@ -287,9 +288,9 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        m_pDevice->create(bufferCI, &stagingBuffer);
+        APH_CHECK_RESULT(m_pDevice->create(bufferCI, &stagingBuffer));
 
-        m_pDevice->mapMemory(stagingBuffer);
+        APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
         stagingBuffer->write(data.data());
         m_pDevice->unMapMemory(stagingBuffer);
     }
@@ -304,9 +305,10 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
-        m_pDevice->create(imageCI, &image);
+        APH_CHECK_RESULT(m_pDevice->create(imageCI, &image));
 
-        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+        auto queue = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
+        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
 
             cmd->copyBufferToImage(stagingBuffer, image);
@@ -316,7 +318,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             }
         });
 
-        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             if(genMipmap)
             {
                 // generate mipmap chains
@@ -386,9 +388,9 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
             .domain = BufferDomain::Host,
         };
 
-        m_pDevice->create(stagingCI, &stagingBuffer);
+        APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer));
 
-        m_pDevice->mapMemory(stagingBuffer);
+        APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
         stagingBuffer->write(info.data);
         m_pDevice->unMapMemory(stagingBuffer);
     }
@@ -396,11 +398,12 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     {
         bufferCI.domain = BufferDomain::Device;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        m_pDevice->create(bufferCI, ppBuffer);
+        APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer));
     }
 
+    auto queue = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
     m_pDevice->executeSingleCommands(
-        QueueType::GRAPHICS, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, bufferCI.size); });
+        queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, bufferCI.size); });
 
     m_pDevice->destroy(stagingBuffer);
 }
@@ -418,7 +421,7 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
         std::filesystem::path path = std::get<std::string>(info.data);
 
         // TODO override with new load info
-        if(m_shaderUUIDMap.count(path))
+        if(m_shaderUUIDMap.contains(path))
         {
             *ppShader = m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
             return;
@@ -454,9 +457,9 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
     }
 
     VkShaderModule handle;
-    VK_CHECK_RESULT(vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
+    _VR(vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
 
-    APH_ASSERT(!m_shaderModuleCaches.count(uuid));
+    APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
     m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
 
     *ppShader = m_shaderModuleCaches[uuid].get();

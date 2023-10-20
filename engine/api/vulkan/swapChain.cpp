@@ -192,8 +192,7 @@ void SwapChain::reCreate()
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VK_CHECK_RESULT(
-        vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
+    _VR(vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
 
     m_surfaceFormat = swapChainSupport.preferedSurfaceFormat;
     m_extent        = extent;

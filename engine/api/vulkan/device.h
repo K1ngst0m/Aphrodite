@@ -41,14 +41,14 @@ public:
     static void                    Destroy(Device* pDevice);
 
 public:
-    VkResult create(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
-    VkResult create(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
-    VkResult create(const ImageCreateInfo& createInfo, Image** ppImage);
-    VkResult create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
-    VkResult create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    VkResult create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
-    VkResult create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
-    VkResult create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
+    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
+    Result create(const ImageCreateInfo& createInfo, Image** ppImage);
+    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
+    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
+    Result create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
+    Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
 
 public:
     void destroy(Buffer* pBuffer);
@@ -61,19 +61,18 @@ public:
 
 public:
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    VkResult executeSingleCommands(QueueType type, const CmdRecordCallBack&& func);
-    VkResult executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
+    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
 
-    VkResult allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
-    VkResult allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
-    void     freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers);
+    Result allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
+    Result allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
+    void   freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers);
 
 public:
-    VkResult flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
-    VkResult invalidateMemory(VkDeviceMemory memory, VkDeviceSize size = 0, VkDeviceSize offset = VK_WHOLE_SIZE);
-    VkResult mapMemory(Buffer* pBuffer, void* mapped = nullptr, VkDeviceSize offset = 0,
-                       VkDeviceSize size = VK_WHOLE_SIZE);
-    void     unMapMemory(Buffer* pBuffer);
+    Result flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+    Result invalidateMemory(VkDeviceMemory memory, VkDeviceSize size = 0, VkDeviceSize offset = VK_WHOLE_SIZE);
+    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, VkDeviceSize offset = 0,
+                     VkDeviceSize size = VK_WHOLE_SIZE);
+    void   unMapMemory(Buffer* pBuffer);
 
 public:
     VolkDeviceTable*         getDeviceTable() { return &m_table; }
@@ -83,8 +82,8 @@ public:
     Queue*                   getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
 
 public:
-    VkResult waitIdle();
-    VkResult waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+    void   waitIdle();
+    Result waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 private:
     VkCommandPool getCommandPoolWithQueue(Queue* queue);

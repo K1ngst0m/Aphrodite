@@ -21,9 +21,8 @@ function(aph_compiler_options TARGET)
 
         # setup target compile warning
         target_compile_options(${TARGET} PRIVATE
-          -Wall
-
-          -Wno-sign-compare
+          -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
+          -Wno-sign-compare -Wcast-align
         )
 
         # common options

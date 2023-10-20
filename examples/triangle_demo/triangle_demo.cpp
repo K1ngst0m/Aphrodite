@@ -82,7 +82,7 @@ void triangle_demo::init()
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
-            VK_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
+            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
         }
     }
 }

@@ -24,9 +24,7 @@ set(SHADERC_SKIP_EXAMPLES ON CACHE BOOL "" FORCE)
 set(SHADERC_SKIP_COPYRIGHT_CHECK ON CACHE BOOL "" FORCE)
 set(SHADERC_THIRD_PARTY_ROOT_DIR "${CMAKE_SOURCE_DIR}/external" CACHE STRING "Third party path." FORCE)
 
-
-add_compile_options(-w)
-
+add_subdirectory(external)
 add_subdirectory(external/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(external/reckless EXCLUDE_FROM_ALL)
 add_subdirectory(external/imgui EXCLUDE_FROM_ALL)

@@ -11,7 +11,8 @@ namespace aph::vk
         VkResult res = (f); \
         if(res != VK_SUCCESS) \
         { \
-            return res; \
+            APH_ASSERT(false); \
+            VK_LOG_ERR("Check Result Failed."); \
         } \
     }
 
@@ -110,12 +111,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     };
 
     VkDevice handle = VK_NULL_HANDLE;
-    auto     result = vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, gVkAllocator, &handle);
-    if(result != VK_SUCCESS)
-    {
-        VK_LOG_ERR("Failed to create device: %s.", vk::utils::errorString(result));
-        return {};
-    }
+    _VR(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, gVkAllocator, &handle));
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
@@ -157,7 +153,7 @@ void Device::Destroy(Device* pDevice)
     }
 }
 
-VkResult Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
+Result Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
 {
     VkCommandPoolCreateInfo cmdPoolInfo{
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -172,7 +168,7 @@ VkResult Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* 
     VkCommandPool cmdPool = VK_NULL_HANDLE;
     _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &cmdPool));
     *ppPool = cmdPool;
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 VkFormat Device::getDepthFormat() const
@@ -182,7 +178,7 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView)
+Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -205,10 +201,10 @@ VkResult Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppIma
 
     *ppImageView = new ImageView(createInfo, handle);
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
-VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
+Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -266,10 +262,10 @@ VkResult Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
     // bind buffer and memory
     _VR(m_table.vkBindBufferMemory(getHandle(), (*ppBuffer)->getHandle(), (*ppBuffer)->getMemory(), 0));
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
-VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
+Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
 {
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -343,7 +339,7 @@ VkResult Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
         _VR(m_table.vkBindImageMemory(getHandle(), (*ppImage)->getHandle(), (*ppImage)->getMemory(), 0));
     }
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 void Device::destroy(Buffer* pBuffer)
@@ -375,10 +371,10 @@ void Device::destroy(ImageView* pImageView)
     pImageView = nullptr;
 }
 
-VkResult Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
+Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
 {
     *ppSwapchain = new SwapChain(createInfo, this);
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 void Device::destroy(SwapChain* pSwapchain)
@@ -398,23 +394,23 @@ Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
 }
 
-VkResult Device::waitIdle()
+void Device::waitIdle()
 {
-    return m_table.vkDeviceWaitIdle(getHandle());
+    m_table.vkDeviceWaitIdle(getHandle());
 }
 
 VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
 {
     auto queueIndices = queue->getFamilyIndex();
 
-    if(m_commandPools.count(queueIndices))
+    if(m_commandPools.contains(queueIndices))
     {
         return m_commandPools.at(queueIndices);
     }
 
     CommandPoolCreateInfo createInfo{.queue = queue};
     VkCommandPool         pool = nullptr;
-    create(createInfo, &pool);
+    APH_CHECK_RESULT(create(createInfo, &pool));
     m_commandPools[queueIndices] = pool;
     return pool;
 }
@@ -425,7 +421,7 @@ void Device::destroy(VkCommandPool pPool)
     pPool = nullptr;
 }
 
-VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
+Result Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
 {
     Queue*        queue = pQueue;
     VkCommandPool pool  = getCommandPoolWithQueue(queue);
@@ -446,7 +442,7 @@ VkResult Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuff
     {
         ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queue);
     }
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers)
@@ -459,7 +455,7 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     }
 }
 
-VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -582,7 +578,7 @@ VkResult Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline**
 
     *ppPipeline = new Pipeline(this, rps, handle, program);
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 void Device::destroy(Pipeline* pipeline)
@@ -594,7 +590,7 @@ void Device::destroy(Pipeline* pipeline)
     pipeline = nullptr;
 }
 
-VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
 {
     APH_ASSERT(createInfo.pCompute);
     auto                        program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
@@ -604,25 +600,15 @@ VkResult Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** 
     VkPipeline handle                   = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, gVkAllocator, &handle));
     *ppPipeline = new Pipeline(this, createInfo, handle, program);
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
-VkResult Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, uint32_t timeout)
+Result Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, uint32_t timeout)
 {
-    return m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX);
+    return utils::getResult(m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX));
 }
 
-VkResult Device::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
-{
-    VkMappedMemoryRange mappedRange = {
-        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = memory,
-        .offset = offset,
-        .size   = size,
-    };
-    return m_table.vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange);
-}
-VkResult Device::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
+Result Device::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
 {
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
@@ -630,16 +616,27 @@ VkResult Device::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDe
         .offset = offset,
         .size   = size,
     };
-    return m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange);
+    return utils::getResult(m_table.vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange));
+}
+Result Device::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
+{
+    VkMappedMemoryRange mappedRange = {
+        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+        .memory = memory,
+        .offset = offset,
+        .size   = size,
+    };
+    return utils::getResult(m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange));
 }
 
-VkResult Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
+Result Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
 {
     if(mapped == nullptr)
     {
-        return m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &pBuffer->getMapped());
+        return utils::getResult(
+            m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &pBuffer->getMapped()));
     }
-    return m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped);
+    return utils::getResult(m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped));
 }
 
 void Device::unMapMemory(Buffer* pBuffer)
@@ -647,7 +644,7 @@ void Device::unMapMemory(Buffer* pBuffer)
     m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
 
-VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
+Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
 {
     VkSampler sampler = {};
     YcbcrData ycbcr;
@@ -728,7 +725,7 @@ VkResult Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler
 
     _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
     *ppSampler = new Sampler(this, createInfo, sampler);
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 void Device::destroy(Sampler* pSampler)
@@ -738,39 +735,31 @@ void Device::destroy(Sampler* pSampler)
     pSampler = nullptr;
 }
 
-VkResult Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
+void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
 {
     CommandBuffer* cmd = nullptr;
-    _VR(allocateCommandBuffers(1, &cmd, queue));
+    APH_CHECK_RESULT(allocateCommandBuffers(1, &cmd, queue));
 
     _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
     func(cmd);
     _VR(cmd->end());
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    _VR(queue->submit({submitInfo}, VK_NULL_HANDLE));
-    _VR(queue->waitIdle());
+    APH_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
+    APH_CHECK_RESULT(queue->waitIdle());
 
     freeCommandBuffers(1, &cmd);
-
-    return VK_SUCCESS;
 }
 
-VkResult Device::executeSingleCommands(QueueType type, const CmdRecordCallBack&& func)
-{
-    auto* queue = getQueueByFlags(type);
-    return executeSingleCommands(queue, std::forward<const std::function<void(CommandBuffer * pCmdBuffer)>>(func));
-}
-
-VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,
-                                              Queue* pQueue)
+Result Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,
+                                            Queue* pQueue)
 {
     CommandPoolCreateInfo createInfo{.queue = pQueue};
 
     for(auto i = 0; i < commandBufferCount; i++)
     {
         VkCommandPool pool{};
-        create(createInfo, &pool);
+        APH_CHECK_RESULT(create(createInfo, &pool));
         std::vector<VkCommandBuffer> handles(commandBufferCount);
 
         // Allocate a new command buffer.
@@ -785,7 +774,7 @@ VkResult Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, Comma
         ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pQueue);
         m_threadCommandPools.push_back(pool);
     }
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 }  // namespace aph::vk

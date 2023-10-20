@@ -10,7 +10,7 @@ Queue::Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQ
     m_properties(propertiesd)
 {
     getHandle() = queue;
-    if (m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+    if(m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
     {
         m_type = QueueType::GRAPHICS;
     }
@@ -28,7 +28,7 @@ Queue::Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQ
     }
 }
 
-VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
+Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
 {
     std::vector<VkSubmitInfo>         vkSubmits;
     std::vector<VkCommandBuffer>      vkCmds;
@@ -67,10 +67,10 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence 
     }
 
     VkResult result = vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), fence);
-    return result;
+    return utils::getResult(result);
 }
 
-VkResult Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
+Result Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
 {
     std::vector<QueueSubmitInfo2> si = submitInfos;
     std::vector<VkSubmitInfo2>    vkSubmitInfos;
@@ -110,6 +110,6 @@ VkResult Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
             .pSignalSemaphoreInfos    = submitInfo.signals.data(),
         });
     }
-    return vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE);
+    return utils::getResult(vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE));
 }
 }  // namespace aph::vk

@@ -467,6 +467,17 @@ Format getFormatFromVk(VkFormat format)
         return Format::Undefined;
     }
 }
+
+Result getResult(VkResult result)
+{
+    switch(result)
+    {
+    case VK_SUCCESS:
+        return Result::Success;
+    default:
+        return Result::RuntimeError;
+    }
+}
 }  // namespace aph::vk::utils
 
 namespace aph::vk

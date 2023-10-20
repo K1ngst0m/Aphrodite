@@ -1,6 +1,7 @@
 #ifndef VKLCOMMON_H_
 #define VKLCOMMON_H_
 
+#include <utility>
 #include <variant>
 #include <algorithm>
 #include <array>
@@ -77,27 +78,55 @@ static backward::SignalHandling sh;
 
 namespace aph
 {
-enum class Result
+struct [[nodiscard("Result should be handled.")]] Result
 {
-    SUCCESS       = 0,
-    NOT_READY     = 1,
-    TIMEOUT       = 2,
-    INCOMPLETE    = 5,
-    ERROR_UNKNOWN = -1,
+    enum Code
+    {
+        Success,
+        ArgumentOutOfRange,
+        RuntimeError,
+    };
+
+    bool success() const { return m_code == Code::Success; };
+
+    Result(Code code, std::string msg = "") : m_code(code), m_msg(std::move(msg)) {}
+
+    std::string toString()
+    {
+        if(!m_msg.empty())
+        {
+            return m_msg;
+        }
+        switch(m_code)
+        {
+        case Success:
+            return "Success.";
+        case ArgumentOutOfRange:
+            return "Argument Out of Range.";
+        case RuntimeError:
+            return "Runtime Error.";
+        }
+    }
+
+private:
+    Code        m_code;
+    std::string m_msg;
 };
 
-enum class BaseType
-{
-    BOOL   = 0,
-    CHAR   = 1,
-    INT    = 2,
-    UINT   = 3,
-    UINT64 = 4,
-    HALF   = 5,
-    FLOAT  = 6,
-    DOUBLE = 7,
-    STRUCT = 8,
-};
+#ifdef APH_DEBUG
+    #define APH_CHECK_RESULT(f) \
+        { \
+            ::aph::Result res = (f); \
+            if(!res.success()) \
+            { \
+                CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, \
+                           __LINE__); \
+                std::abort(); \
+            } \
+        }
+#else
+    #define APH_CHECK_RESULT(f) (f)
+#endif
 
 struct ImageInfo
 {
@@ -244,6 +273,7 @@ namespace aph
 #else
     #define APH_ASSERT(x) ((void)0)
 #endif
+
 }  // namespace aph
 
 namespace aph
