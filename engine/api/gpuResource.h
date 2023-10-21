@@ -172,17 +172,17 @@ enum WaveOpsSupportFlags
 };
 MAKE_ENUM_FLAG(uint32_t, WaveOpsSupportFlags);
 
-constexpr uint8_t MAX_GPU_VENDOR_STRING_LENGTH = 256;  // max size for GPUVendorPreset strings
+constexpr uint32_t MAX_GPU_VENDOR_STRING_LENGTH = 256;  // max size for GPUVendorPreset strings
 
 struct GPUVendorPreset
 {
-    char     vendorId[MAX_GPU_VENDOR_STRING_LENGTH];
-    char     modelId[MAX_GPU_VENDOR_STRING_LENGTH];
-    char     revisionId[MAX_GPU_VENDOR_STRING_LENGTH];
-    char     gpuName[MAX_GPU_VENDOR_STRING_LENGTH];
-    char     gpuDriverVersion[MAX_GPU_VENDOR_STRING_LENGTH];
-    char     gpuDriverDate[MAX_GPU_VENDOR_STRING_LENGTH];
-    uint32_t rtCoresCount;
+    std::string vendorId;
+    std::string modelId;
+    std::string revisionId;
+    std::string gpuName;
+    std::string gpuDriverVersion;
+    std::string gpuDriverDate;
+    uint32_t    rtCoresCount;
 };
 
 struct GPUSettings

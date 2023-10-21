@@ -7,6 +7,7 @@
 #include "api/gpuResource.h"
 #include "common/assetManager.h"
 
+#include <volk.h>
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_vulkan.h>
 #include <imgui/imgui_impl_glfw.h>
@@ -56,20 +57,15 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     {
         volkInitialize();
 
-        std::vector<const char*> extensions{};
+
+        auto extensions = wsi->getRequiredExtensions();
+        #ifdef APH_DEBUG
+        if(m_config.flags & RENDER_CFG_DEBUG)
         {
-            uint32_t     glfwExtensionCount = 0;
-            const char** glfwExtensions;
-            glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-            extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
-            if(m_config.flags & RENDER_CFG_DEBUG)
-            {
-                extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-            }
-            extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-
+        #endif
+        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         InstanceCreateInfo instanceCreateInfo{.enabledExtensions = extensions};
 
         if(m_config.flags & RENDER_CFG_DEBUG)

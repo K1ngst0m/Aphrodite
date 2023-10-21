@@ -25,7 +25,6 @@
 #include <thread>
 #include <type_traits>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 #include <set>
 
@@ -41,9 +40,29 @@
 #include "common/uuid.h"
 #include "common/allocator.h"
 
-#define BACKWARD_HAS_DW 1
-#define BACKWARD_HAS_BACKTRACE_SYMBOL 1
-#include <backward-cpp/backward.hpp>
+namespace aph
+{
+#ifdef APH_DEBUG
+    #define APH_ASSERT(x) \
+        do \
+        { \
+            if(!bool(x)) \
+            { \
+                CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
+                LOG_FLUSH(); \
+                throw TracedException(); \
+            } \
+        } while(0)
+#else
+    #define APH_ASSERT(x) ((void)0)
+#endif
+
+}  // namespace aph
+
+namespace backward
+{
+class SignalHandling;
+}
 
 namespace aph
 {
@@ -53,27 +72,9 @@ public:
     TracedException() : std::runtime_error(_get_trace()) {}
 
 private:
-    std::string _get_trace()
-    {
-        std::ostringstream ss;
-
-        backward::StackTrace    stackTrace;
-        backward::TraceResolver resolver;
-        stackTrace.load_here();
-        resolver.load_stacktrace(stackTrace);
-
-        for(std::size_t i = 0; i < stackTrace.size(); ++i)
-        {
-            const backward::ResolvedTrace trace = resolver.resolve(stackTrace[i]);
-
-            ss << "#" << i << " at " << trace.object_function << "\n";
-        }
-
-        return ss.str();
-    }
+    std::string _get_trace();
 };
-
-static backward::SignalHandling sh;
+extern backward::SignalHandling sh;
 }  // namespace aph
 
 namespace aph
@@ -106,6 +107,9 @@ struct [[nodiscard("Result should be handled.")]] Result
         case RuntimeError:
             return "Runtime Error.";
         }
+
+        APH_ASSERT(false);
+        return "Unknown";
     }
 
 private:
@@ -119,8 +123,7 @@ private:
             ::aph::Result res = (f); \
             if(!res.success()) \
             { \
-                CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, \
-                           __LINE__); \
+                CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, __LINE__); \
                 std::abort(); \
             } \
         }
@@ -256,25 +259,6 @@ inline void forEachBitRange(uint32_t value, const T& func)
 }
 
 }  // namespace aph::utils
-
-namespace aph
-{
-#ifdef APH_DEBUG
-    #define APH_ASSERT(x) \
-        do \
-        { \
-            if(!bool(x)) \
-            { \
-                CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
-                LOG_FLUSH(); \
-                throw TracedException(); \
-            } \
-        } while(0)
-#else
-    #define APH_ASSERT(x) ((void)0)
-#endif
-
-}  // namespace aph
 
 namespace aph
 {

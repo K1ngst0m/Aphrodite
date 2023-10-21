@@ -136,66 +136,66 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
         fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path);
     }
 
-    if(fileLoaded)
-    {
-        // TODO gltf loading
-        *ppGeometry = new aph::Geometry;
-
-        // Iterate over each mesh
-        uint32_t vertexCount = 0;
-        for(const auto& mesh : inputModel.meshes)
-        {
-            for(const auto& primitive : mesh.primitives)
-            {
-                // Index buffer
-                const tinygltf::Accessor&   indexAccessor   = inputModel.accessors[primitive.indices];
-                const tinygltf::BufferView& indexBufferView = inputModel.bufferViews[indexAccessor.bufferView];
-                const tinygltf::Buffer&     indexBuffer     = inputModel.buffers[indexBufferView.buffer];
-
-                {
-                    aph::vk::Buffer*    pIB;
-                    aph::BufferLoadInfo loadInfo{
-                        .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
-                        // TODO index type
-                        .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
-                                       .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-                    pLoader->load(loadInfo, &pIB);
-                    (*ppGeometry)->indexBuffer.push_back(pIB);
-                }
-
-                // Vertex buffers
-                for(const auto& attrib : primitive.attributes)
-                {
-                    const tinygltf::Accessor&   accessor   = inputModel.accessors[attrib.second];
-                    const tinygltf::BufferView& bufferView = inputModel.bufferViews[accessor.bufferView];
-                    const tinygltf::Buffer&     buffer     = inputModel.buffers[bufferView.buffer];
-
-                    vertexCount += accessor.count;
-
-                    aph::vk::Buffer*    pVB;
-                    aph::BufferLoadInfo loadInfo{
-                        .data       = (void*)(buffer.data.data() + bufferView.byteOffset),
-                        .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
-                                       .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
-                    };
-                    pLoader->load(loadInfo, &pVB);
-                    (*ppGeometry)->vertexBuffers.push_back(pVB);
-                    (*ppGeometry)->vertexStrides.push_back(accessor.ByteStride(bufferView));
-                }
-
-                // TODO: Load draw arguments, handle materials, optimize geometry etc.
-
-            }  // End of iterating through primitives
-        }      // End of iterating through meshes
-
-        const uint32_t indexStride = vertexCount > UINT16_MAX ? sizeof(uint32_t) : sizeof(uint16_t);
-        (*ppGeometry)->indexType = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
-    }
-    else
+    if(!fileLoaded)
     {
         CM_LOG_ERR("%s", error);
         return false;
     }
+
+    // TODO gltf loading
+    *ppGeometry = new aph::Geometry;
+
+    // Iterate over each mesh
+    uint32_t vertexCount = 0;
+    for(const auto& mesh : inputModel.meshes)
+    {
+        for(const auto& primitive : mesh.primitives)
+        {
+            // Index buffer
+            const tinygltf::Accessor&   indexAccessor   = inputModel.accessors[primitive.indices];
+            const tinygltf::BufferView& indexBufferView = inputModel.bufferViews[indexAccessor.bufferView];
+            const tinygltf::Buffer&     indexBuffer     = inputModel.buffers[indexBufferView.buffer];
+
+            {
+                aph::vk::Buffer*    pIB;
+                aph::BufferLoadInfo loadInfo{
+                    .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
+                    // TODO index type
+                    .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
+                                   .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+                pLoader->load(loadInfo, &pIB);
+                (*ppGeometry)->indexBuffer.push_back(pIB);
+            }
+
+            // Vertex buffers
+            for(const auto& attrib : primitive.attributes)
+            {
+                const tinygltf::Accessor&   accessor   = inputModel.accessors[attrib.second];
+                const tinygltf::BufferView& bufferView = inputModel.bufferViews[accessor.bufferView];
+                const tinygltf::Buffer&     buffer     = inputModel.buffers[bufferView.buffer];
+
+                vertexCount += accessor.count;
+
+                aph::vk::Buffer*    pVB;
+                aph::BufferLoadInfo loadInfo{
+                    .data       = (void*)(buffer.data.data() + bufferView.byteOffset),
+                    .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
+                                   .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+                };
+                pLoader->load(loadInfo, &pVB);
+                (*ppGeometry)->vertexBuffers.push_back(pVB);
+                (*ppGeometry)->vertexStrides.push_back(accessor.ByteStride(bufferView));
+            }
+
+            // TODO: Load draw arguments, handle materials, optimize geometry etc.
+
+        }  // End of iterating through primitives
+    }      // End of iterating through meshes
+
+    const uint32_t indexStride = vertexCount > UINT16_MAX ? sizeof(uint32_t) : sizeof(uint16_t);
+    (*ppGeometry)->indexType   = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
+
+    return true;
 }
 
 }  // namespace
@@ -341,12 +341,6 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
                     imageBlit.dstOffsets[1].x           = int32_t(width >> i);
                     imageBlit.dstOffsets[1].y           = int32_t(height >> i);
                     imageBlit.dstOffsets[1].z           = 1;
-
-                    VkImageSubresourceRange mipSubRange = {};
-                    mipSubRange.aspectMask              = VK_IMAGE_ASPECT_COLOR_BIT;
-                    mipSubRange.baseMipLevel            = i;
-                    mipSubRange.levelCount              = 1;
-                    mipSubRange.layerCount              = 1;
 
                     // Prepare current mip level as image blit destination
                     vk::ImageBarrier barrier{

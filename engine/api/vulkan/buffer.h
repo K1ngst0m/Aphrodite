@@ -24,14 +24,14 @@ public:
 
     uint32_t       getSize() const { return m_createInfo.size; }
     uint32_t       getOffset() const { return m_createInfo.alignment; }
-    VkDeviceMemory getMemory() const { return memory; }
-    void*&         getMapped() { return mapped; };
+    VkDeviceMemory getMemory() const { return m_memory; }
+    void*&         getMapped() { return m_mapped; };
 
     void write(const void* data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
 
 private:
-    VkDeviceMemory memory = {};
-    void*          mapped = {};
+    VkDeviceMemory m_memory = {};
+    void*          m_mapped = {};
 };
 }  // namespace aph::vk
 

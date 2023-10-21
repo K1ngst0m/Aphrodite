@@ -28,7 +28,7 @@ ImageView* Image::getView(Format imageFormat)
         imageFormat = m_createInfo.format;
     }
 
-    if(!m_imageViewFormatMap.count(imageFormat))
+    if(!m_imageViewFormatMap.contains(imageFormat))
     {
         static const std::unordered_map<VkImageType, VkImageViewType> imageTypeMap{
             {VK_IMAGE_TYPE_1D, VK_IMAGE_VIEW_TYPE_1D},
@@ -50,7 +50,7 @@ ImageView* Image::getView(Format imageFormat)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }
-        m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]);
+        APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]));
     }
 
     return m_imageViewFormatMap[imageFormat];

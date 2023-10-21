@@ -113,13 +113,13 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
         gpuSettings->samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
 
         // save vendor and model Id as string
-        sprintf(gpuSettings->GpuVendorPreset.modelId, "%#x", gpuProperties->properties.deviceID);
-        sprintf(gpuSettings->GpuVendorPreset.vendorId, "%#x", gpuProperties->properties.vendorID);
-        strncpy(gpuSettings->GpuVendorPreset.gpuName, gpuProperties->properties.deviceName,
+        sprintf(gpuSettings->GpuVendorPreset.modelId.data(), "%#x", gpuProperties->properties.deviceID);
+        sprintf(gpuSettings->GpuVendorPreset.vendorId.data(), "%#x", gpuProperties->properties.vendorID);
+        strncpy(gpuSettings->GpuVendorPreset.gpuName.data(), gpuProperties->properties.deviceName,
                 MAX_GPU_VENDOR_STRING_LENGTH);
 
         // TODO: Fix once vulkan adds support for revision ID
-        strncpy(gpuSettings->GpuVendorPreset.revisionId, "0x00", MAX_GPU_VENDOR_STRING_LENGTH);
+        strncpy(gpuSettings->GpuVendorPreset.revisionId.data(), "0x00", MAX_GPU_VENDOR_STRING_LENGTH);
     }
 }
 

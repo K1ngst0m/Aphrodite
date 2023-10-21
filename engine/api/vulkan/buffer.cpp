@@ -4,7 +4,7 @@
 namespace aph::vk
 {
 
-Buffer::Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory) : memory(memory)
+Buffer::Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory) : m_memory(memory)
 {
     getHandle()     = buffer;
     getCreateInfo() = createInfo;
@@ -12,12 +12,12 @@ Buffer::Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemo
 
 void Buffer::write(const void* data, size_t offset, VkDeviceSize size) const
 {
-    assert(mapped);
+    assert(m_mapped);
     if(size == VK_WHOLE_SIZE)
     {
         size = getSize();
     }
-    uint8_t* pMapped = (uint8_t*)mapped;
+    uint8_t* pMapped = (uint8_t*)m_mapped;
     memcpy(pMapped + offset, data, size);
 }
 

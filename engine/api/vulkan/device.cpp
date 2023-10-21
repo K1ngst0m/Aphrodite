@@ -6,6 +6,8 @@ const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 namespace aph::vk
 {
 
+#ifdef _VR
+#undef _VR
 #define _VR(f) \
     { \
         VkResult res = (f); \
@@ -15,6 +17,7 @@ namespace aph::vk
             VK_LOG_ERR("Check Result Failed."); \
         } \
     }
+#endif
 
 Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle) :
     m_physicalDevice(pPhysicalDevice)

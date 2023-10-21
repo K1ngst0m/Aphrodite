@@ -5,7 +5,6 @@
 
 #include "api/vulkan/device.h"
 #include "api/vulkan/vkInit.h"
-#include "api/vulkan/vkUtils.h"
 
 #include "wsi/wsi.h"
 
@@ -26,5 +25,8 @@
 #include "scene/object.h"
 #include "scene/scene.h"
 #include "scene/node.h"
+
+#include "resource/resourceLoader.h"
+#include "resource/geometry.h"
 
 #endif  // APH_H_

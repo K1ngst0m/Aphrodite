@@ -459,15 +459,15 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
         }
     }
 
-    for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+    for(unsigned setIdx = 0; setIdx < VULKAN_NUM_DESCRIPTOR_SETS; setIdx++)
     {
-        if(programLayout.setInfos[i].stagesForSets != 0)
+        if(programLayout.setInfos[setIdx].stagesForSets != 0)
         {
-            programLayout.descriptorSetMask |= 1u << i;
+            programLayout.descriptorSetMask |= 1u << setIdx;
 
             for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {
-                auto& arraySize = programLayout.setInfos[i].shaderLayout.arraySize[binding];
+                auto& arraySize = programLayout.setInfos[setIdx].shaderLayout.arraySize[binding];
                 if(arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
                     for(unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
@@ -480,7 +480,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
                     }
 
                     // Allows us to have one unified descriptor set layout for bindless.
-                    programLayout.setInfos[i].stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
+                    programLayout.setInfos[setIdx].stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
                 }
                 else if(arraySize == 0)
                 {

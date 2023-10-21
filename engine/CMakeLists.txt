@@ -18,25 +18,25 @@ file(GLOB base_src
 add_library(engine STATIC ${base_src})
 aph_compiler_options(engine)
 
-target_include_directories(engine PUBLIC
+target_include_directories(engine SYSTEM PUBLIC
                                   ../external/glm
-                                  ../external/volk
                                   ../external/reckless/reckless/include
-                                  ../external/backward-cpp/include
                                   ../external/tinyimageformat
-                                  ../external/tinyktx
-                                  ../external/tinydds
-                                  ../external/mmgr
-                                  ../external/glfw/include
+                                  ../external/volk
 
                                   PRIVATE
                                   ./
+                                  ../external/backward-cpp/include
+                                  ../external/mmgr
+                                  ../external/glfw/include
                                   ../external/shaderc/libshaderc/include
                                   ../external/imgui/include
                                   ../external/vulkan
                                   ../external/stb/include
                                   ../external/tinygltf/include
                                   ../external/spirv-cross
+                                  ../external/tinyktx
+                                  ../external/tinydds
                                   )
 
 target_link_libraries(engine PRIVATE

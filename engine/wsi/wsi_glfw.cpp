@@ -1,5 +1,8 @@
 #include "wsi.h"
 #include "api/vulkan/instance.h"
+
+#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 using namespace aph;
@@ -271,4 +274,16 @@ void WSI::resize(uint32_t width, uint32_t height)
 {
     m_width  = width;
     m_height = height;
+}
+std::vector<const char*> aph::WSI::getRequiredExtensions()
+{
+    std::vector<const char*> extensions{};
+    {
+        uint32_t     glfwExtensionCount = 0;
+        const char** glfwExtensions;
+        glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    }
+    return extensions;
 }

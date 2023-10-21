@@ -1,8 +1,6 @@
 #ifndef RENDERER_H_
 #define RENDERER_H_
 
-#include <utility>
-
 #include "api/gpuResource.h"
 #include "common/common.h"
 #include "wsi/wsi.h"

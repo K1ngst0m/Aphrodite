@@ -7,10 +7,10 @@ namespace aph::vk
 
 CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, Queue* pQueue) :
     m_pDevice(pDevice),
+    m_pQueue(pQueue),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
-    m_state(CommandBufferState::INITIAL),
-    m_pQueue(pQueue)
+    m_state(CommandBufferState::INITIAL)
 {
     getHandle() = handle;
 }

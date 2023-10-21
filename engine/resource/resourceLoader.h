@@ -64,7 +64,7 @@ struct GeometryLoadInfo
     std::string        path;
     GeometryLoadFlags  flags;
     MeshOptimizerFlags optimizationFlags;
-    VertexInput*       pVertexLayout;
+    VertexInput        vertexInput;
 };
 
 class ResourceLoader

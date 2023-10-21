@@ -56,6 +56,8 @@ public:
     uint32_t getFrameBufferHeight() const;
     void     resize(uint32_t width, uint32_t height);
 
+    std::vector<const char*> getRequiredExtensions();
+
     VkSurfaceKHR getSurface(vk::Instance* instance);
 
     template <typename TEvent>

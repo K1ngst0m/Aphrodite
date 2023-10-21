@@ -14,6 +14,7 @@
 #include "syncPrimitivesPool.h"
 #include "vkInit.h"
 #include "vkUtils.h"
+#include <volk.h>
 
 namespace aph::vk
 {
