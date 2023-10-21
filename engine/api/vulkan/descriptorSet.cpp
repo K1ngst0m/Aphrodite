@@ -6,29 +6,29 @@ namespace aph::vk
 
 DescriptorSetLayout::DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
                                          VkDescriptorSetLayout handle) :
-    m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
+    m_pDevice(device),
+    m_pDeviceTable(device->getDeviceTable())
 {
     getHandle() = handle;
 
+    // fill bindings and count of types
     for(uint32_t idx = 0; idx < createInfo.bindingCount; idx++)
     {
-        auto &binding = createInfo.pBindings[idx];
+        auto& binding = createInfo.pBindings[idx];
         m_bindings.push_back(binding);
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
     }
 
+    // calculate pool sizes
     {
         m_poolSizes.resize(m_descriptorTypeCounts.size());
-        uint32_t index = 0;
-        for(auto [type, count] : m_descriptorTypeCounts)
+        for(uint32_t index = 0; auto [type, count] : m_descriptorTypeCounts)
         {
             m_poolSizes[index].type            = type;
-            m_poolSizes[index].descriptorCount = count * m_maxSetsPerPool;
+            m_poolSizes[index].descriptorCount = count * DESCRIPTOR_POOL_MAX_NUM_SET;
             ++index;
         }
     }
-
-    // m_pool      = std::make_unique<DescriptorPool>(this);
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
@@ -61,7 +61,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             VkDescriptorPoolCreateInfo createInfo = {
                 .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
                 .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                .maxSets       = m_maxSetsPerPool,
+                .maxSets       = DESCRIPTOR_POOL_MAX_NUM_SET,
                 .poolSizeCount = static_cast<uint32_t>(m_poolSizes.size()),
                 .pPoolSizes    = m_poolSizes.data(),
             };
@@ -70,14 +70,12 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
                 .maxInlineUniformBlockBindings =
                     static_cast<uint32_t>(m_descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
             };
-            if(m_descriptorTypeCounts.count(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
+            if(m_descriptorTypeCounts.contains(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
             {
                 createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
             }
             VkDescriptorPool handle = VK_NULL_HANDLE;
-            auto             result = m_pDeviceTable->vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle);
-            if(result != VK_SUCCESS)
-                return VK_NULL_HANDLE;
+            _VR(m_pDeviceTable->vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle));
 
             // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
@@ -85,8 +83,10 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             break;
         }
 
-        if(m_allocatedSets[m_currentAllocationPoolIndex] < m_maxSetsPerPool)
+        if(m_allocatedSets[m_currentAllocationPoolIndex] < DESCRIPTOR_POOL_MAX_NUM_SET)
+        {
             break;
+        }
 
         // Increment pool index.
         ++m_currentAllocationPoolIndex;
@@ -96,17 +96,14 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     ++m_allocatedSets[m_currentAllocationPoolIndex];
 
     // Allocate a new descriptor set from the current pool index.
-    VkDescriptorSetLayout setLayout = getHandle();
-
-    VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.sType                       = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool              = m_pools[m_currentAllocationPoolIndex];
-    allocInfo.descriptorSetCount          = 1;
-    allocInfo.pSetLayouts                 = &setLayout;
-    VkDescriptorSet handle                = VK_NULL_HANDLE;
-    auto            result                = m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle);
-    if(result != VK_SUCCESS)
-        return VK_NULL_HANDLE;
+    VkDescriptorSetAllocateInfo allocInfo = {
+        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        .descriptorPool     = m_pools[m_currentAllocationPoolIndex],
+        .descriptorSetCount = 1,
+        .pSetLayouts        = &getHandle(),
+    };
+    VkDescriptorSet handle = VK_NULL_HANDLE;
+    APH_ASSERT(m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle));
 
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.

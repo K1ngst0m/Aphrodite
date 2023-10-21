@@ -33,6 +33,11 @@ struct DescriptorUpdateInfo
 
 class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
 {
+    enum
+    {
+        DESCRIPTOR_POOL_MAX_NUM_SET = 50,
+    };
+
 public:
     DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
                         VkDescriptorSetLayout handle);
@@ -51,7 +56,6 @@ private:
 private:
     VolkDeviceTable*                               m_pDeviceTable               = {};
     std::vector<VkDescriptorPoolSize>              m_poolSizes                  = {};
-    uint32_t                                       m_maxSetsPerPool             = {50};
     std::vector<VkDescriptorPool>                  m_pools                      = {};
     std::vector<uint32_t>                          m_allocatedSets              = {};
     uint32_t                                       m_currentAllocationPoolIndex = {};
