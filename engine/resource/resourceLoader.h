@@ -37,6 +37,12 @@ struct BufferLoadInfo
     vk::BufferCreateInfo createInfo = {};
 };
 
+struct BufferUpdateInfo
+{
+    void*       data  = {};
+    MemoryRange range = {0, VK_WHOLE_SIZE};
+};
+
 struct ShaderLoadInfo
 {
     std::variant<std::string, std::vector<uint32_t>> data;
@@ -69,6 +75,11 @@ struct GeometryLoadInfo
 
 class ResourceLoader
 {
+    enum
+    {
+        LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20,
+    };
+
 public:
     ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
 
@@ -78,8 +89,12 @@ public:
     void load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     void load(const ShaderLoadInfo& info, vk::Shader** ppShader);
     void load(const GeometryLoadInfo& info, Geometry** ppGeometry);
+    void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
     void cleanup();
+
+private:
+    void writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
 
 private:
     ResourceLoaderCreateInfo m_createInfo;

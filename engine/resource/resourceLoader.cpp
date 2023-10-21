@@ -291,7 +291,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         APH_CHECK_RESULT(m_pDevice->create(bufferCI, &stagingBuffer));
 
         APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
-        stagingBuffer->write(data.data());
+        writeBuffer(stagingBuffer, data.data());
         m_pDevice->unMapMemory(stagingBuffer);
     }
 
@@ -373,33 +373,21 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 {
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
-    // using staging buffer
-    vk::Buffer* stagingBuffer{};
-    {
-        vk::BufferCreateInfo stagingCI{
-            .size   = static_cast<uint32_t>(bufferCI.size),
-            .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            .domain = BufferDomain::Host,
-        };
-
-        APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer));
-
-        APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
-        stagingBuffer->write(info.data);
-        m_pDevice->unMapMemory(stagingBuffer);
-    }
-
     {
         bufferCI.domain = BufferDomain::Device;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer));
     }
 
-    auto queue = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
-    m_pDevice->executeSingleCommands(
-        queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, bufferCI.size); });
-
-    m_pDevice->destroy(stagingBuffer);
+    // update buffer
+    {
+        this->update(
+            BufferUpdateInfo{
+                .data  = info.data,
+                .range = {0, info.createInfo.size},
+            },
+            ppBuffer);
+    }
 }
 
 void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
@@ -481,5 +469,73 @@ void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
         CM_LOG_ERR("Unsupported model file type: %s.", ext);
         APH_ASSERT(false);
     }
+}
+
+void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
+{
+    auto pBuffer    = *ppBuffer;
+    auto domain     = pBuffer->getCreateInfo().domain;
+    auto uploadSize = info.range.size;
+
+    // device only
+    if(domain == BufferDomain::Device || domain == BufferDomain::LinkedDeviceHostPreferDevice)
+    {
+        if(info.range.size == VK_WHOLE_SIZE)
+        {
+            uploadSize = pBuffer->getSize();
+        }
+        for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
+        {
+            MemoryRange copyRange = {
+                .offset = offset,
+                .size   = std::min(std::size_t{LIMIT_BUFFER_UPLOAD_SIZE}, {uploadSize - offset}),
+            };
+
+            // using staging buffer
+            vk::Buffer* stagingBuffer{};
+            {
+                vk::BufferCreateInfo stagingCI{
+                    .size   = static_cast<uint32_t>(copyRange.size),
+                    .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                    .domain = BufferDomain::Host,
+                };
+
+                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer));
+
+                APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
+                writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
+                m_pDevice->unMapMemory(stagingBuffer);
+            }
+
+            auto queue = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
+            m_pDevice->executeSingleCommands(
+                queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
+
+            m_pDevice->destroy(stagingBuffer);
+        }
+    }
+    else
+    {
+        writeBuffer(pBuffer, info.data, info.range);
+    }
+}
+
+void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range)
+{
+    auto domain = pBuffer->getCreateInfo().domain;
+    APH_ASSERT(domain != BufferDomain::Device && domain != BufferDomain::LinkedDeviceHostPreferDevice);
+    APH_ASSERT(pBuffer->getMapped());
+    if(range.size == 0)
+    {
+        range.size = VK_WHOLE_SIZE;
+    }
+
+    if(range.size == VK_WHOLE_SIZE || range.size == 0)
+    {
+        range.size = pBuffer->getSize();
+    }
+
+    uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
+    memcpy(pMapped + range.offset, data, range.size);
 }
 }  // namespace aph

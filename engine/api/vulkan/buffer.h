@@ -11,8 +11,8 @@ class Buffer;
 
 struct BufferCreateInfo
 {
-    uint32_t           size      = {0};
-    uint32_t           alignment = {0};
+    std::size_t        size      = {0};
+    std::size_t        alignment = {0};
     VkBufferUsageFlags usage     = {0};
     BufferDomain       domain    = {BufferDomain::Device};
 };
@@ -26,8 +26,6 @@ public:
     uint32_t       getOffset() const { return m_createInfo.alignment; }
     VkDeviceMemory getMemory() const { return m_memory; }
     void*&         getMapped() { return m_mapped; };
-
-    void write(const void* data, size_t offset = 0, VkDeviceSize size = VK_WHOLE_SIZE) const;
 
 private:
     VkDeviceMemory m_memory = {};

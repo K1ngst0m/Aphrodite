@@ -147,7 +147,7 @@ public:
     void draw(Buffer* pBuffer, VkDeviceSize offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(VkDrawIndirectCommand));
 
-    void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size);
+    void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range);
     void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,

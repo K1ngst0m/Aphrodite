@@ -110,9 +110,13 @@ void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pV
     m_pDeviceTable->vkCmdPushConstants(m_handle, m_commandState.pPipeline->getProgram()->getPipelineLayout(), stage,
                                        offset, size, pValues);
 }
-void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, VkDeviceSize size)
+void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range)
 {
-    VkBufferCopy copyRegion{.size = size};
+    VkBufferCopy copyRegion{
+        .srcOffset = 0,
+        .dstOffset = range.offset,
+        .size      = range.size,
+    };
     m_pDeviceTable->vkCmdCopyBuffer(m_handle, srcBuffer->getHandle(), dstBuffer->getHandle(), 1, &copyRegion);
 }
 
@@ -565,8 +569,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
     if(bufferBarrierCount || imageBarrierCount)
     {
-        m_pDeviceTable->vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount, bufferBarriers,
-                             imageBarrierCount, imageBarriers);
+        m_pDeviceTable->vkCmdPipelineBarrier(getHandle(), srcStageMask, dstStageMask, 0, 0, nullptr, bufferBarrierCount,
+                                             bufferBarriers, imageBarrierCount, imageBarriers);
     }
 }
 void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
