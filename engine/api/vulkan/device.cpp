@@ -7,16 +7,16 @@ namespace aph::vk
 {
 
 #ifdef _VR
-#undef _VR
-#define _VR(f) \
-    { \
-        VkResult res = (f); \
-        if(res != VK_SUCCESS) \
+    #undef _VR
+    #define _VR(f) \
         { \
-            APH_ASSERT(false); \
-            VK_LOG_ERR("Check Result Failed."); \
-        } \
-    }
+            VkResult res = (f); \
+            if(res != VK_SUCCESS) \
+            { \
+                APH_ASSERT(false); \
+                VK_LOG_ERR("Check Result Failed."); \
+            } \
+        }
 #endif
 
 Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle) :
@@ -453,8 +453,11 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     // Destroy all of the command buffers.
     for(auto i = 0U; i < commandBufferCount; ++i)
     {
-        delete ppCommandBuffers[i];
-        ppCommandBuffers = nullptr;
+        if(ppCommandBuffers != nullptr)
+        {
+            delete ppCommandBuffers[i];
+            ppCommandBuffers = nullptr;
+        }
     }
 }
 
@@ -611,35 +614,36 @@ Result Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, ui
     return utils::getResult(m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX));
 }
 
-Result Device::flushMemory(VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size)
+Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
 {
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
         .memory = memory,
-        .offset = offset,
-        .size   = size,
+        .offset = range.offset,
+        .size   = range.size,
     };
     return utils::getResult(m_table.vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange));
 }
-Result Device::invalidateMemory(VkDeviceMemory memory, VkDeviceSize size, VkDeviceSize offset)
+Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 {
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
         .memory = memory,
-        .offset = offset,
-        .size   = size,
+        .offset = range.offset,
+        .size   = range.size,
     };
     return utils::getResult(m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange));
 }
 
-Result Device::mapMemory(Buffer* pBuffer, void* mapped, VkDeviceSize offset, VkDeviceSize size)
+Result Device::mapMemory(Buffer* pBuffer, void* mapped, MemoryRange range)
 {
     if(mapped == nullptr)
     {
         return utils::getResult(
-            m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &pBuffer->getMapped()));
+            m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), range.offset, range.size, 0, &pBuffer->getMapped()));
     }
-    return utils::getResult(m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), offset, size, 0, &mapped));
+    return utils::getResult(
+        m_table.vkMapMemory(getHandle(), pBuffer->getMemory(), range.offset, range.size, 0, &mapped));
 }
 
 void Device::unMapMemory(Buffer* pBuffer)
@@ -752,32 +756,6 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
     APH_CHECK_RESULT(queue->waitIdle());
 
     freeCommandBuffers(1, &cmd);
-}
-
-Result Device::allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers,
-                                            Queue* pQueue)
-{
-    CommandPoolCreateInfo createInfo{.queue = pQueue};
-
-    for(auto i = 0; i < commandBufferCount; i++)
-    {
-        VkCommandPool pool{};
-        APH_CHECK_RESULT(create(createInfo, &pool));
-        std::vector<VkCommandBuffer> handles(commandBufferCount);
-
-        // Allocate a new command buffer.
-        VkCommandBufferAllocateInfo allocInfo = {
-            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext              = nullptr,
-            .commandPool        = pool,
-            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = commandBufferCount,
-        };
-        _VR(m_table.vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], pQueue);
-        m_threadCommandPools.push_back(pool);
-    }
-    return Result::Success;
 }
 
 }  // namespace aph::vk

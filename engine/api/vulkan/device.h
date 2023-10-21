@@ -62,17 +62,15 @@ public:
 
 public:
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
 
-    Result allocateThreadCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
+    void   executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
     Result allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
     void   freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers);
 
 public:
-    Result flushMemory(VkDeviceMemory memory, VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
-    Result invalidateMemory(VkDeviceMemory memory, VkDeviceSize size = 0, VkDeviceSize offset = VK_WHOLE_SIZE);
-    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, VkDeviceSize offset = 0,
-                     VkDeviceSize size = VK_WHOLE_SIZE);
+    Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
+    Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
+    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, MemoryRange range = {});
     void   unMapMemory(Buffer* pBuffer);
 
 public:

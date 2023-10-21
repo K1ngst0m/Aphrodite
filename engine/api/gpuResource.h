@@ -98,6 +98,12 @@ struct Extent3D
     uint32_t depth  = {0};
 };
 
+struct MemoryRange
+{
+    uint32_t offset = {0};
+    uint32_t size   = {0};
+};
+
 struct DebugLabel
 {
     std::string name;
