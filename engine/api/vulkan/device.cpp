@@ -141,37 +141,15 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
-    for(auto commandPool : pDevice->m_threadCommandPools)
-    {
-        pDevice->destroy(commandPool);
-    }
     for(auto& [_, commandpool] : pDevice->m_commandPools)
     {
-        pDevice->destroy(commandpool);
+        pDevice->m_table.vkDestroyCommandPool(pDevice->m_handle, commandpool, gVkAllocator);
     }
 
     if(pDevice->m_handle)
     {
         pDevice->m_table.vkDestroyDevice(pDevice->m_handle, gVkAllocator);
     }
-}
-
-Result Device::create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool)
-{
-    VkCommandPoolCreateInfo cmdPoolInfo{
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
-    };
-
-    if(createInfo.transient)
-    {
-        cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    }
-
-    VkCommandPool cmdPool = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &cmdPool));
-    *ppPool = cmdPool;
-    return Result::Success;
 }
 
 VkFormat Device::getDepthFormat() const
@@ -411,17 +389,23 @@ VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
         return m_commandPools.at(queueIndices);
     }
 
-    CommandPoolCreateInfo createInfo{.queue = queue};
-    VkCommandPool         pool = nullptr;
-    APH_CHECK_RESULT(create(createInfo, &pool));
+    VkCommandPool pool = nullptr;
+    {
+        CommandPoolCreateInfo   createInfo{.queue = queue};
+        VkCommandPoolCreateInfo cmdPoolInfo{
+            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+            .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
+        };
+
+        if(createInfo.transient)
+        {
+            cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        }
+
+        _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
+    }
     m_commandPools[queueIndices] = pool;
     return pool;
-}
-
-void Device::destroy(VkCommandPool pPool)
-{
-    m_table.vkDestroyCommandPool(getHandle(), pPool, gVkAllocator);
-    pPool = nullptr;
 }
 
 Result Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
@@ -616,6 +600,10 @@ Result Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, ui
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
 {
+    if(range.size == 0)
+    {
+        range.size = VK_WHOLE_SIZE;
+    }
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
         .memory = memory,
@@ -626,6 +614,10 @@ Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
 }
 Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 {
+    if(range.size == 0)
+    {
+        range.size = VK_WHOLE_SIZE;
+    }
     VkMappedMemoryRange mappedRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
         .memory = memory,
@@ -637,6 +629,10 @@ Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 
 Result Device::mapMemory(Buffer* pBuffer, void* mapped, MemoryRange range)
 {
+    if(range.size == 0)
+    {
+        range.size = VK_WHOLE_SIZE;
+    }
     if(mapped == nullptr)
     {
         return utils::getResult(
@@ -695,7 +691,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
         // Check format props
         {
             VkFormatProperties formatProperties;
-            vkGetPhysicalDeviceFormatProperties(getPhysicalDevice()->getHandle(), convertInfo.format,
+            vkGetPhysicalDeviceFormatProperties(getPhysicalDevice()->getHandle(), utils::VkCast(convertInfo.format),
                                                 &formatProperties);
             if(convertInfo.chromaOffsetX == VK_CHROMA_LOCATION_MIDPOINT)
             {
@@ -710,7 +706,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
         VkSamplerYcbcrConversionCreateInfo vkConvertInfo{
             .sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
             .pNext      = nullptr,
-            .format     = convertInfo.format,
+            .format     = utils::VkCast(convertInfo.format),
             .ycbcrModel = convertInfo.model,
             .ycbcrRange = convertInfo.range,
             .components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,

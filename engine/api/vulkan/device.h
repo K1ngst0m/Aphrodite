@@ -47,7 +47,6 @@ public:
     Result create(const ImageCreateInfo& createInfo, Image** ppImage);
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    Result create(const CommandPoolCreateInfo& createInfo, VkCommandPool* ppPool);
     Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
     Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
 
@@ -56,7 +55,6 @@ public:
     void destroy(Image* pImage);
     void destroy(ImageView* pImageView);
     void destroy(SwapChain* pSwapchain);
-    void destroy(VkCommandPool pPool);
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
 
@@ -93,7 +91,6 @@ private:
     VolkDeviceTable                             m_table{};
     std::vector<QueueFamily>                    m_queues;
     std::unordered_map<uint32_t, VkCommandPool> m_commandPools;
-    std::vector<VkCommandPool>                  m_threadCommandPools;
 };
 
 }  // namespace aph::vk

@@ -100,8 +100,8 @@ struct Extent3D
 
 struct MemoryRange
 {
-    uint32_t offset = {0};
-    uint32_t size   = {0};
+    std::size_t offset = {0};
+    std::size_t size   = {0};
 };
 
 struct DebugLabel
