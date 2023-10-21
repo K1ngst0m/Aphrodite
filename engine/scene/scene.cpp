@@ -24,7 +24,7 @@ void loadImages(std::vector<std::shared_ptr<ImageInfo>>& images, tinygltf::Model
         if(glTFImage.component == 3)
         {
             std::vector<uint8_t> rgba(newImage->data.size());
-            for(size_t i = 0; i < glTFImage.width * glTFImage.height; ++i)
+            for(std::size_t i = 0; i < glTFImage.width * glTFImage.height; ++i)
             {
                 memcpy(&rgba[4 * i], &glTFImage.image[3 * i], 3);
             }
@@ -42,7 +42,7 @@ void loadMaterials(std::vector<Material>& materials, tinygltf::Model& input, uin
 {
     materials.clear();
     materials.resize(input.materials.size());
-    for(size_t i = 0; i < input.materials.size(); i++)
+    for(std::size_t i = 0; i < input.materials.size(); i++)
     {
         auto& material = materials[i];
         material.id    = i;
@@ -186,7 +186,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                 }
 
                 // Append data to model's vertex buffer
-                for(size_t v = 0; v < vertexCount; v++)
+                for(std::size_t v = 0; v < vertexCount; v++)
                 {
                     Vertex vert{};
                     vert.pos    = glm::vec4(glm::make_vec3(&positionBuffer[v * 3]), 1.0f);
@@ -218,7 +218,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                     indexType     = IndexType::UINT32;
                     const auto* buf =
                         reinterpret_cast<const uint32_t*>(&buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-                    for(size_t index = 0; index < accessor.count; index++)
+                    for(std::size_t index = 0; index < accessor.count; index++)
                     {
                         dataPtr[index] = buf[index] + vertexStart;
                     }
@@ -233,7 +233,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                         indexType       = IndexType::UINT32;
                         const auto* buf = reinterpret_cast<const uint16_t*>(
                             &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-                        for(size_t index = 0; index < accessor.count; index++)
+                        for(std::size_t index = 0; index < accessor.count; index++)
                         {
                             dataPtr[index] = buf[index] + vertexStart;
                         }
@@ -245,7 +245,7 @@ void loadNodes(Scene* scene, std::vector<uint8_t>& verticesList, std::vector<uin
                         indexType       = IndexType::UINT16;
                         const auto* buf = reinterpret_cast<const uint16_t*>(
                             &buffer.data[accessor.byteOffset + bufferView.byteOffset]);
-                        for(size_t index = 0; index < accessor.count; index++)
+                        for(std::size_t index = 0; index < accessor.count; index++)
                         {
                             dataPtr[index] = buf[index] + vertexStart;
                         }

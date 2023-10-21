@@ -190,14 +190,14 @@ void SceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_INFO]->write(&sceneInfo, 0, sizeof(SceneInfo));
     }
 
-    for(uint32_t idx = 0; idx < m_meshNodeList.size(); idx++)
+    for(std::size_t idx = 0; idx < m_meshNodeList.size(); idx++)
     {
         const auto& node = m_meshNodeList[idx];
         auto        data = node->getTransform();
         m_buffers[BUFFER_SCENE_TRANSFORM]->write(&data, sizeof(glm::mat4) * idx, sizeof(glm::mat4));
     }
 
-    for(uint32_t idx = 0; idx < m_cameraList.size(); idx++)
+    for(std::size_t idx = 0; idx < m_cameraList.size(); idx++)
     {
         const auto& camera = m_cameraList[idx];
         CameraInfo  cameraData{
@@ -208,7 +208,7 @@ void SceneRenderer::update(float deltaTime)
         m_buffers[BUFFER_SCENE_CAMERA]->write(&cameraData, sizeof(CameraInfo) * idx, sizeof(CameraInfo));
     }
 
-    for(uint32_t idx = 0; idx < m_lightList.size(); idx++)
+    for(std::size_t idx = 0; idx < m_lightList.size(); idx++)
     {
         const auto& light = m_lightList[idx];
         LightInfo   lightData{
@@ -280,7 +280,7 @@ void SceneRenderer::_initSet()
     // postfx
     {
         m_postFxSets.resize(m_config.maxFrames);
-        for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
+        for(std::size_t idx = 0; idx < m_config.maxFrames; idx++)
         {
             VkDescriptorImageInfo inputImageInfo{
                 .imageView   = m_images[IMAGE_GENERAL_COLOR][idx]->getView()->getHandle(),
@@ -300,7 +300,7 @@ void SceneRenderer::_initSet()
     // gbuffer
     {
         m_gbufferSets.resize(m_config.maxFrames);
-        for(uint32_t idx = 0; idx < m_config.maxFrames; idx++)
+        for(std::size_t idx = 0; idx < m_config.maxFrames; idx++)
         {
             ImageView* positionAttachment = m_images[IMAGE_GBUFFER_POSITION][idx]->getView();
             ImageView* normalAttachment   = m_images[IMAGE_GBUFFER_NORMAL][idx]->getView();
@@ -1015,7 +1015,7 @@ void SceneRenderer::drawUI(float deltaTime)
                     }
                 }
 
-                for(uint32_t idx = 0; idx < m_lightList.size(); idx++)
+                for(std::size_t idx = 0; idx < m_lightList.size(); idx++)
                 {
                     char lightName[100];
                     sprintf(lightName, "light [%d]", idx);

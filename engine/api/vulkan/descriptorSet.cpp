@@ -12,7 +12,7 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const VkDescriptorSetLa
     getHandle() = handle;
 
     // fill bindings and count of types
-    for(uint32_t idx = 0; idx < createInfo.bindingCount; idx++)
+    for(std::size_t idx = 0; idx < createInfo.bindingCount; idx++)
     {
         auto& binding = createInfo.pBindings[idx];
         m_bindings.push_back(binding);
@@ -202,7 +202,7 @@ VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const 
         writeInfo.pImageInfo      = imageInfos.data();
         writeInfo.descriptorCount = imageInfos.size();
 
-        for(uint32_t idx = 0; idx < imageInfos.size(); idx++)
+        for(std::size_t idx = 0; idx < imageInfos.size(); idx++)
         {
             imageInfos[idx].sampler = data.samplers[idx]->getHandle();
         }

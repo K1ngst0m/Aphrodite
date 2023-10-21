@@ -51,7 +51,7 @@ std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY
     if(channels == 3)
     {
         std::vector<uint8_t> rgba(image->data.size());
-        for(size_t i = 0; i < width * height; ++i)
+        for(std::size_t i = 0; i < width * height; ++i)
         {
             memcpy(&rgba[4 * i], &img[3 * i], 3);
         }
@@ -68,7 +68,7 @@ std::shared_ptr<ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths)
 {
     std::array<std::shared_ptr<ImageInfo>, 6> skyboxImages;
-    for(uint32_t idx = 0; idx < 6; idx++)
+    for(std::size_t idx = 0; idx < 6; idx++)
     {
         skyboxImages[idx] = aph::utils::loadImageFromFile(paths[idx]);
     }
