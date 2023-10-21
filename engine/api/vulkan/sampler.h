@@ -10,7 +10,7 @@ class Device;
 
 struct SamplerConvertInfo
 {
-    VkFormat                      format = VK_FORMAT_UNDEFINED;
+    Format                        format = Format::Undefined;
     VkSamplerYcbcrModelConversion model;
     VkSamplerYcbcrRange           range;
     VkChromaLocation              chromaOffsetX;
