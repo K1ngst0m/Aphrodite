@@ -478,6 +478,19 @@ Result getResult(VkResult result)
         return Result::RuntimeError;
     }
 }
+VkIndexType VkCast(IndexType indexType)
+{
+    switch(indexType)
+    {
+    case IndexType::UINT16:
+        return VK_INDEX_TYPE_UINT16;
+    case IndexType::UINT32:
+        return VK_INDEX_TYPE_UINT32;
+    default:
+        APH_ASSERT(false);
+        return VK_INDEX_TYPE_NONE_KHR;
+    }
+}
 }  // namespace aph::vk::utils
 
 namespace aph::vk

@@ -118,7 +118,7 @@ void triangle_demo::run()
             .name  = "draw a triangle",
             .color = {1.0f, 0.0f, 0.0f, 1.0f},
         });
-        cb->drawIndexed(3, 1, 0, 0, 0);
+        cb->drawIndexed({3, 1, 0, 0, 0});
         cb->endRendering();
         cb->end();
 

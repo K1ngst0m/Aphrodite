@@ -15,7 +15,7 @@ struct Geometry
     std::vector<vk::Buffer*> vertexBuffers;
     std::vector<uint32_t>    vertexStrides;
 
-    std::vector<IndirectDrawIndexArguments*> drawArgs;
+    std::vector<DrawIndexArguments*> drawArgs;
 };
 }  // namespace aph
 

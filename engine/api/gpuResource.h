@@ -215,7 +215,7 @@ struct GPUSettings
     uint8_t samplerAnisotropySupported : 1;
 };
 
-struct IndirectDrawArguments
+struct DrawArguments
 {
     uint32_t vertexCount;
     uint32_t instanceCount;
@@ -223,16 +223,16 @@ struct IndirectDrawArguments
     uint32_t firstInstance;
 };
 
-struct IndirectDrawIndexArguments
+struct DrawIndexArguments
 {
     uint32_t indexCount;
     uint32_t instanceCount;
     uint32_t firstIndex;
-    int32_t  vertexOffset;
+    uint32_t vertexOffset;
     uint32_t firstInstance;
 };
 
-struct IndirectDispatchArguments
+struct DispatchArguments
 {
     uint32_t x;
     uint32_t y;

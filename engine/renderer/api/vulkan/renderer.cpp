@@ -57,14 +57,13 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     {
         volkInitialize();
 
-
         auto extensions = wsi->getRequiredExtensions();
-        #ifdef APH_DEBUG
+#ifdef APH_DEBUG
         if(m_config.flags & RENDER_CFG_DEBUG)
         {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
-        #endif
+#endif
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         InstanceCreateInfo instanceCreateInfo{.enabledExtensions = extensions};
 
@@ -385,8 +384,8 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
     if(m_config.flags & RENDER_CFG_UI)
     {
         ImDrawData* imDrawData   = ImGui::GetDrawData();
-        int32_t     vertexOffset = 0;
-        int32_t     indexOffset  = 0;
+        uint32_t    vertexOffset = 0;
+        uint32_t    indexOffset  = 0;
 
         if((!imDrawData) || (imDrawData->CmdListsCount == 0))
         {
@@ -402,7 +401,7 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
         pCommandBuffer->pushConstants(0, sizeof(m_ui.pushConstBlock), &m_ui.pushConstBlock);
 
         pCommandBuffer->bindVertexBuffers(m_ui.pVertexBuffer);
-        pCommandBuffer->bindIndexBuffers(m_ui.pIndexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        pCommandBuffer->bindIndexBuffers(m_ui.pIndexBuffer, 0, IndexType::UINT16);
 
         for(int32_t i = 0; i < imDrawData->CmdListsCount; i++)
         {
@@ -416,7 +415,7 @@ void Renderer::recordUIDraw(CommandBuffer* pCommandBuffer)
                 scissorRect.extent.width  = (uint32_t)(pcmd->ClipRect.z - pcmd->ClipRect.x);
                 scissorRect.extent.height = (uint32_t)(pcmd->ClipRect.w - pcmd->ClipRect.y);
                 pCommandBuffer->setScissor(scissorRect);
-                pCommandBuffer->drawIndexed(pcmd->ElemCount, 1, indexOffset, vertexOffset, 0);
+                pCommandBuffer->drawIndexed(DrawIndexArguments{pcmd->ElemCount, 1, indexOffset, vertexOffset, 0});
                 indexOffset += pcmd->ElemCount;
             }
             vertexOffset += cmd_list->VtxBuffer.Size;

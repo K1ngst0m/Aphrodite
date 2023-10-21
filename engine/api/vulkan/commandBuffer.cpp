@@ -88,7 +88,7 @@ void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetC
         firstSet, descriptorSetCount, &pDescriptorSets->getHandle(), dynamicOffsetCount, pDynamicOffset);
 }
 
-void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_t offset)
+void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::size_t offset)
 {
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
 
@@ -98,9 +98,9 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, uint32_
     m_commandState.vertexBinding.dirty |= 1u << binding;
 }
 
-void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, VkDeviceSize offset, VkIndexType indexType)
+void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexType indexType)
 {
-    m_commandState.index = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = indexType};
+    m_commandState.index = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = utils::VkCast(indexType)};
 }
 
 void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
@@ -170,10 +170,10 @@ void CommandBuffer::copyImage(Image* srcImage, Image* dstImage)
     m_pDeviceTable->vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                    dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 }
-void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance)
+void CommandBuffer::draw(DrawArguments args)
 {
     flushGraphicsCommand();
-    m_pDeviceTable->vkCmdDraw(m_handle, vertexCount, instanceCount, firstVertex, firstInstance);
+    m_pDeviceTable->vkCmdDraw(m_handle, args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
 
 void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage,
@@ -189,26 +189,26 @@ void CommandBuffer::endRendering()
     m_pDeviceTable->vkCmdEndRendering(getHandle());
 }
 
-void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+void CommandBuffer::dispatch(DispatchArguments args)
 {
     flushComputeCommand();
-    m_pDeviceTable->vkCmdDispatch(getHandle(), groupCountX, groupCountY, groupCountZ);
+    m_pDeviceTable->vkCmdDispatch(getHandle(), args.x, args.y, args.z);
 }
-void CommandBuffer::dispatch(Buffer* pBuffer, VkDeviceSize offset)
+void CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset)
 {
     flushComputeCommand();
     m_pDeviceTable->vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
 }
-void CommandBuffer::draw(Buffer* pBuffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride)
+void CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride)
 {
     flushGraphicsCommand();
     m_pDeviceTable->vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
 }
-void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t vertexOffset,
-                                uint32_t firstInstance)
+void CommandBuffer::drawIndexed(DrawIndexArguments args)
 {
     flushGraphicsCommand();
-    m_pDeviceTable->vkCmdDrawIndexed(m_handle, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+    m_pDeviceTable->vkCmdDrawIndexed(m_handle, args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
+                                     args.firstInstance);
 }
 void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet)
 {
@@ -360,50 +360,6 @@ void CommandBuffer::flushGraphicsCommand()
                                       m_commandState.pPipeline->getHandle());
 }
 
-void CommandBuffer::bindBuffer(uint32_t set, uint32_t binding, ResourceType type, Buffer* buffer, VkDeviceSize offset,
-                               VkDeviceSize size)
-{
-    switch(type)
-    {
-    case ResourceType::UniformBuffer:
-    case ResourceType::StorageBuffer:
-    {
-        auto& b                 = m_commandState.resourceBindings.bindings;
-        b[set][binding]->buffer = {.buffer = buffer->getHandle(), .offset = offset, .range = size};
-    }
-    break;
-    default:
-        APH_ASSERT(false);
-        VK_LOG_ERR("Invalid resources type binding.");
-        break;
-    }
-    m_commandState.resourceBindings.bindings[set][binding]->resType = utils::VkCast(type);
-}
-void CommandBuffer::bindTexture(uint32_t set, uint32_t binding, ResourceType type, ImageView* imageview,
-                                VkImageLayout layout, Sampler* sampler)
-{
-    switch(type)
-    {
-    case ResourceType::Sampler:
-    case ResourceType::SampledImage:
-    case ResourceType::CombineSamplerImage:
-    case ResourceType::StorageImage:
-    {
-        auto& b                = m_commandState.resourceBindings.bindings;
-        b[set][binding]->image = {
-            .sampler     = sampler->getHandle(),
-            .imageView   = imageview->getHandle(),
-            .imageLayout = layout,
-        };
-    }
-    break;
-    default:
-        APH_ASSERT(false);
-        VK_LOG_ERR("Invalid resources type binding.");
-        break;
-    }
-    m_commandState.resourceBindings.bindings[set][binding]->resType = utils::VkCast(type);
-}
 void CommandBuffer::setScissor(const VkExtent2D& extent)
 {
     VkRect2D scissor = aph::vk::init::rect2D(extent);

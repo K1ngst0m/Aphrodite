@@ -161,7 +161,7 @@ void basic_texture::run()
             .name  = "draw a quad with texture",
             .color = {0.5f, 0.3f, 0.2f, 1.0f},
         });
-        cb->drawIndexed(6, 1, 0, 0, 0);
+        cb->drawIndexed({6, 1, 0, 0, 0});
         cb->endRendering();
         cb->end();
 
