@@ -27,7 +27,7 @@ struct QueueSubmitInfo2
 class Queue : public ResourceHandle<VkQueue>
 {
 public:
-    Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
+    Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
 
     uint32_t     getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t     getIndex() const { return m_index; }

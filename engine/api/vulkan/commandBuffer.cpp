@@ -5,7 +5,8 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, Queue* pQueue) :
+CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, HandleType handle, Queue* pQueue) :
+    ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pQueue(pQueue),
     m_pDeviceTable(pDevice->getDeviceTable()),

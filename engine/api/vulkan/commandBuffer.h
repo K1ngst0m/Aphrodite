@@ -111,7 +111,7 @@ struct CommandState
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
-    CommandBuffer(Device* pDevice, VkCommandPool pool, VkCommandBuffer handle, Queue* pQueue);
+    CommandBuffer(Device* pDevice, VkCommandPool pool, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
 
     VkResult begin(VkCommandBufferUsageFlags flags = 0);

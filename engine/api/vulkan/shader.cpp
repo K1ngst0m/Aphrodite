@@ -187,12 +187,12 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     return setLayout;
 };
 
-Shader::Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint,
+Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint,
                const ResourceLayout* pLayout) :
+    ResourceHandle(handle),
     m_entrypoint(std::move(entrypoint)),
     m_code(std::move(code))
 {
-    getHandle() = shaderModule;
     m_layout    = pLayout ? *pLayout : ReflectLayout(m_code);
 }
 

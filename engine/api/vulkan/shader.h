@@ -75,7 +75,7 @@ class Shader : public ResourceHandle<VkShaderModule>
     friend class ShaderProgram;
 
 public:
-    Shader(std::vector<uint32_t> code, VkShaderModule shaderModule, std::string entrypoint = "main",
+    Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint = "main",
            const ResourceLayout* pLayout = nullptr);
 
 private:

@@ -47,7 +47,7 @@ struct YcbcrData
 class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
 {
 public:
-    Sampler(Device* pDevice, const SamplerCreateInfo& createInfo, VkSampler handle, const YcbcrData* pYcbcr = nullptr);
+    Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, const YcbcrData* pYcbcr = nullptr);
     VkSamplerYcbcrConversion getConversion() const { return m_ycbcr.conversion; }
     bool                     isImmutable() const { return m_isImmutable; }
     bool                     hasConversion() const { return m_ycbcr.conversion != VK_NULL_HANDLE; }

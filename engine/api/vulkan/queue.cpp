@@ -4,12 +4,12 @@
 namespace aph::vk
 {
 
-Queue::Queue(VkQueue queue, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
+Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
+    ResourceHandle(handle),
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
     m_properties(propertiesd)
 {
-    getHandle() = queue;
     if(m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
     {
         m_type = QueueType::GRAPHICS;

@@ -12,7 +12,7 @@ class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
     friend class Device;
 
 public:
-    PhysicalDevice(VkPhysicalDevice handle);
+    PhysicalDevice(HandleType handle);
 
     std::vector<uint32_t>             getQueueFamilyIndexByFlags(QueueType flags);
     bool                              isExtensionSupported(std::string_view extension) const;

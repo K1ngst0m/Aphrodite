@@ -19,11 +19,10 @@ namespace aph::vk
         }
 #endif
 
-Device::Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle) :
+Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle) :
+    ResourceHandle(handle, createInfo),
     m_physicalDevice(pPhysicalDevice)
 {
-    getHandle()     = handle;
-    getCreateInfo() = createInfo;
 }
 
 std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)

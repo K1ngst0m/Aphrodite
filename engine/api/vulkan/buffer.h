@@ -20,7 +20,7 @@ struct BufferCreateInfo
 class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 {
 public:
-    Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory);
+    Buffer(const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory);
 
     uint32_t       getSize() const { return m_createInfo.size; }
     uint32_t       getOffset() const { return m_createInfo.alignment; }

@@ -5,12 +5,11 @@
 namespace aph::vk
 {
 
-Image::Image(Device* pDevice, const ImageCreateInfo& createInfo, VkImage image, VkDeviceMemory memory) :
+Image::Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory) :
+    ResourceHandle(handle, createInfo),
     m_pDevice(pDevice),
     m_memory(memory)
 {
-    getHandle()     = image;
-    getCreateInfo() = createInfo;
 }
 
 Image::~Image()
@@ -56,9 +55,9 @@ ImageView* Image::getView(Format imageFormat)
     return m_imageViewFormatMap[imageFormat];
 }
 
-ImageView::ImageView(const ImageViewCreateInfo& createInfo, VkImageView handle) : m_image(createInfo.pImage)
+ImageView::ImageView(const CreateInfoType& createInfo, HandleType handle) :
+    ResourceHandle(handle, createInfo),
+    m_image(createInfo.pImage)
 {
-    getHandle()     = handle;
-    getCreateInfo() = createInfo;
 }
 }  // namespace aph::vk

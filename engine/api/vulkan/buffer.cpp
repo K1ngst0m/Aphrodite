@@ -4,10 +4,10 @@
 namespace aph::vk
 {
 
-Buffer::Buffer(const BufferCreateInfo& createInfo, VkBuffer buffer, VkDeviceMemory memory) : m_memory(memory)
+Buffer::Buffer(const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory) :
+    ResourceHandle(handle, createInfo),
+    m_memory(memory)
 {
-    getHandle()     = buffer;
-    getCreateInfo() = createInfo;
 }
 
 }  // namespace aph::vk

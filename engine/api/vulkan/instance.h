@@ -22,7 +22,7 @@ class PhysicalDevice;
 class Instance : public ResourceHandle<VkInstance, InstanceCreateInfo>
 {
 private:
-    Instance(const InstanceCreateInfo& createInfo, VkInstance instance);
+    Instance(const CreateInfoType& createInfo, HandleType handle);
 
 public:
     static VkResult Create(const InstanceCreateInfo& createInfo, Instance** ppInstance);

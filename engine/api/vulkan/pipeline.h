@@ -166,8 +166,8 @@ private:
 class Pipeline : public ResourceHandle<VkPipeline>
 {
 public:
-    Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle, ShaderProgram* pProgram);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
 
     DescriptorSet* acquireSet(uint32_t idx) const;
 

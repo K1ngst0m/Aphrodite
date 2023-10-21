@@ -61,7 +61,8 @@ aph::vk::SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkP
 
 namespace aph::vk
 {
-SwapChain::SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice) :
+SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
+    ResourceHandle(VK_NULL_HANDLE, createInfo),
     m_pInstance(createInfo.pInstance),
     m_pDevice(pDevice),
     m_pWSI(createInfo.pWsi)

@@ -4,8 +4,8 @@
 namespace aph::vk
 {
 
-DescriptorSetLayout::DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
-                                         VkDescriptorSetLayout handle) :
+DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle) :
+    ResourceHandle(handle, createInfo),
     m_pDevice(device),
     m_pDeviceTable(device->getDeviceTable())
 {

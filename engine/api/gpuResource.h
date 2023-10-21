@@ -275,7 +275,12 @@ template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
 class ResourceHandle
 {
 public:
-    ResourceHandle()
+    using HandleType     = T_Handle;
+    using CreateInfoType = T_CreateInfo;
+
+    ResourceHandle(HandleType handle, CreateInfoType createInfo = DummyCreateInfo{}) :
+        m_handle(handle),
+        m_createInfo(createInfo)
     {
         if constexpr(std::is_same_v<T_CreateInfo, DummyCreateInfo>)
         {

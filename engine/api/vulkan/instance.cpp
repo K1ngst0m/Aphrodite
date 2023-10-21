@@ -77,10 +77,9 @@ namespace aph::vk
         } \
     }
 
-Instance::Instance(const InstanceCreateInfo& createInfo, VkInstance instance)
+Instance::Instance(const CreateInfoType& createInfo, HandleType handle):
+    ResourceHandle(handle, createInfo)
 {
-    getHandle()     = instance;
-    getCreateInfo() = createInfo;
 };
 
 VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)

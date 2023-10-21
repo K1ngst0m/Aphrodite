@@ -31,7 +31,7 @@ class Image : public ResourceHandle<VkImage, ImageCreateInfo>
     friend class CommandBuffer;
 
 public:
-    Image(Device* pDevice, const ImageCreateInfo& createInfo, VkImage image, VkDeviceMemory memory = VK_NULL_HANDLE);
+    Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory = VK_NULL_HANDLE);
     ~Image();
 
     VkDeviceMemory getMemory() { return m_memory; }
@@ -67,7 +67,7 @@ struct ImageViewCreateInfo
 class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
 public:
-    ImageView(const ImageViewCreateInfo& createInfo, VkImageView handle);
+    ImageView(const CreateInfoType& createInfo, HandleType handle);
 
     Format                  getFormat() const { return m_createInfo.format; }
     VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }

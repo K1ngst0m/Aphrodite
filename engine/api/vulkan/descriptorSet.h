@@ -31,7 +31,7 @@ struct DescriptorUpdateInfo
     std::vector<Buffer*>  buffers;
 };
 
-class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
+class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
 {
     enum
     {
@@ -39,8 +39,7 @@ class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout>
     };
 
 public:
-    DescriptorSetLayout(Device* device, const VkDescriptorSetLayoutCreateInfo& createInfo,
-                        VkDescriptorSetLayout handle);
+    DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle);
     ~DescriptorSetLayout();
 
     Device*                      getDevice() const { return m_pDevice; }
@@ -67,7 +66,7 @@ private:
 class DescriptorSet : public ResourceHandle<VkDescriptorSet>
 {
 public:
-    DescriptorSet(DescriptorSetLayout* pLayout, VkDescriptorSet handle) : m_pLayout(pLayout) { getHandle() = handle; }
+    DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle) : ResourceHandle(handle), m_pLayout(pLayout) {}
 
     void update(const DescriptorUpdateInfo& updateInfo) { m_pLayout->updateSet(updateInfo, this); }
     void free() { m_pLayout->freeSet(this); }

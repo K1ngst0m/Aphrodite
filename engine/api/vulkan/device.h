@@ -35,7 +35,7 @@ struct DeviceCreateInfo
 class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>
 {
 private:
-    Device(const DeviceCreateInfo& createInfo, PhysicalDevice* pPhysicalDevice, VkDevice handle);
+    Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle);
 
 public:
     static std::unique_ptr<Device> Create(const DeviceCreateInfo& createInfo);

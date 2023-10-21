@@ -300,23 +300,23 @@ VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineC
     return VK_SUCCESS;
 }
 
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, VkPipeline handle, ShaderProgram* pProgram) :
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram) :
+    ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE)
 {
     APH_ASSERT(pProgram);
-    getHandle() = handle;
 }
 
-Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, VkPipeline handle, ShaderProgram* pProgram) :
+Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram) :
+    ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
     m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS),
     m_rps(rps)
 {
     APH_ASSERT(pProgram);
-    getHandle() = handle;
 }
 
 DescriptorSet* Pipeline::acquireSet(uint32_t idx) const

@@ -36,7 +36,7 @@ struct SwapChainCreateInfo
 class SwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
 {
 public:
-    SwapChain(const SwapChainCreateInfo& createInfo, Device* pDevice);
+    SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
     VkResult acquireNextImage(VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);

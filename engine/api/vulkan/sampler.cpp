@@ -3,13 +3,11 @@
 
 namespace aph::vk
 {
-Sampler::Sampler(Device* pDevice, const SamplerCreateInfo& createInfo, VkSampler handle, const YcbcrData* pYcbcr) :
+Sampler::Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, const YcbcrData* pYcbcr) :
+    ResourceHandle(handle, createInfo),
     m_pDevice(pDevice),
     m_isImmutable(createInfo.immutable)
 {
-    getHandle()     = handle;
-    getCreateInfo() = createInfo;
-
     if(pYcbcr)
     {
         m_ycbcr.conversion = pYcbcr->conversion;

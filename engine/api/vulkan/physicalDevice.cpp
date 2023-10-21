@@ -3,10 +3,8 @@
 namespace aph::vk
 {
 
-PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
+PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 {
-    getHandle() = handle;
-
     {
         uint32_t queueFamilyCount;
         vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, nullptr);
@@ -51,7 +49,7 @@ PhysicalDevice::PhysicalDevice(VkPhysicalDevice handle)
     subgroupProperties.pNext                              = nullptr;
     m_properties2.sType                                   = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
     // subgroupProperties.pNext                              = m_properties2.pNext;
-    m_properties2.pNext                                   = &subgroupProperties;
+    m_properties2.pNext = &subgroupProperties;
     vkGetPhysicalDeviceProperties2(getHandle(), &m_properties2);
 
     // Get list of supported extensions
@@ -284,7 +282,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
 {
     VkPipelineStageFlags flags = 0;
 
-    auto * gpuSupport = pGPU->getSettings();
+    auto* gpuSupport = pGPU->getSettings();
     switch(queueType)
     {
     case aph::QueueType::GRAPHICS:
