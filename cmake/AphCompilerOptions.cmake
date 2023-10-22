@@ -6,6 +6,10 @@ if(NOT ipo_supported)
     message(WARNING "IPO/LTO not supported: <${error}>")
 endif()
 
+# find linker
+find_program(GOLD_LINKER gold)
+find_program(MOLD_LINKER mold)
+
 function(aph_compiler_options TARGET)
     set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 20
@@ -19,6 +23,18 @@ function(aph_compiler_options TARGET)
         POSITION_INDEPENDENT_CODE TRUE
         INTERPROCEDURAL_OPTIMIZATION $<${ipo_supported}:TRUE>
     )
+
+    # Set the linker
+    if(GOLD_LINKER)
+        message(STATUS "${TARGET} Using gold as the linker")
+        set_target_properties(${TARGET} PROPERTIES LINKER_LANGUAGE CXX CXX_LINK_EXECUTABLE "${CMAKE_CXX_COMPILER} -fuse-ld=gold <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+    elseif(MOLD_LINKER)
+        message(STATUS "${TARGET} Using mold as the linker")
+        set_target_properties(${TARGET} PROPERTIES LINKER_LANGUAGE CXX CXX_LINK_EXECUTABLE "${CMAKE_CXX_COMPILER} -fuse-ld=mold <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+    else()
+        message(STATUS "Using system's default ld as the linker")
+        # No need to set anything as the default linker will be used.
+    endif()
 
     target_compile_features(${TARGET} PUBLIC cxx_std_20)
     target_compile_features(${TARGET} PUBLIC c_std_11)
