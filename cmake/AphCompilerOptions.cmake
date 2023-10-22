@@ -1,5 +1,11 @@
 include_guard()
 
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT error)
+if(NOT ipo_supported)
+    message(WARNING "IPO/LTO not supported: <${error}>")
+endif()
+
 function(aph_compiler_options TARGET)
     set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 20
@@ -11,6 +17,7 @@ function(aph_compiler_options TARGET)
         C_EXTENSIONS OFF
 
         POSITION_INDEPENDENT_CODE TRUE
+        INTERPROCEDURAL_OPTIMIZATION $<${ipo_supported}:TRUE>
     )
 
     target_compile_features(${TARGET} PUBLIC cxx_std_20)
