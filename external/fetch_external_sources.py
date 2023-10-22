@@ -53,6 +53,7 @@ class GitRepo:
         os.system("git checkout -b" + self.branch);
 
 PACKAGES = [
+    GitRepo("https://github.com/microsoft/mimalloc.git",       "mimalloc",       "mimalloc"),
     GitRepo("https://github.com/KhronosGroup/glslang.git",       "glslang",       "glslang"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Tools.git",   "spirv-tools",   "spirv-tools"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "spirv-headers"),

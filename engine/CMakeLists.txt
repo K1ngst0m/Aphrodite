@@ -40,6 +40,7 @@ target_include_directories(engine SYSTEM PUBLIC
                                   )
 
 target_link_libraries(engine PRIVATE
+  mimalloc-static
   glfw
   ${xcb_libraries}
   ${cmake_thread_libs_init}

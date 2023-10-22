@@ -17,3 +17,6 @@ Branch: 2021-01-15
 
 [shaderc]
 Branch: v2023.7
+
+[mimalloc]
+Branch: v2.1.2
