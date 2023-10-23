@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
 
-shader_src_list=$(find -L assets -iname '*.vert' -o -iname '*.frag' -o -iname '*.comp')
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+shader_src_list=$(find ${SCRIPT_DIR}/.. -L assets -iname '*.vert' -o -iname '*.frag' -o -iname '*.comp')
 
 for shader_src in $shader_src_list
 do
