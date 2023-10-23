@@ -24,7 +24,7 @@ jobs:
       run: sudo apt-get install libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libvulkan-dev mesa-common-dev libdwarf-dev libdw-dev
 
     - name: Run fetch_external.py
-      run: python3 external/fetch_external_sources.py
+      run: python3 scripts/fetch_external_sources.py
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.

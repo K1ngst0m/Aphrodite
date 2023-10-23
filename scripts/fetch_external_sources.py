@@ -11,7 +11,7 @@ from optparse import OptionParser
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-TargetDir = script_dir + "../external/"; # target directory the source code downloaded to.
+TargetDir = script_dir + "/../external/"; # target directory the source code downloaded to.
 
 class GitRepo:
     def __init__(self, httpsUrl, moduleName, extractDir):
