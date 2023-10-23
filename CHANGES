@@ -20,3 +20,6 @@ Branch: v2023.7
 
 [mimalloc]
 Branch: v2.1.2
+
+[glfw]
+Branch: 3.3.8
