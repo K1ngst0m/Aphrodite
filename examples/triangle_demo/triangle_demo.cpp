@@ -131,9 +131,7 @@ void triangle_demo::run()
 void triangle_demo::finish()
 {
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB);
-    m_pDevice->destroy(m_pIB);
-    m_pDevice->destroy(m_pPipeline);
+    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
 }
 
 int main(int argc, char** argv)

@@ -174,11 +174,7 @@ void basic_texture::run()
 void basic_texture::finish()
 {
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB);
-    m_pDevice->destroy(m_pIB);
-    m_pDevice->destroy(m_pPipeline);
-    m_pDevice->destroy(m_pImage);
-    m_pDevice->destroy(m_pSampler);
+    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pImage, m_pSampler);
 }
 
 int main(int argc, char** argv)

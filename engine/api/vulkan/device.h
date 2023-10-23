@@ -58,6 +58,13 @@ public:
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
 
+    template <typename... Args>
+    void destroy(Args... args)
+    {
+        auto destructor = [this](auto* ptr) { destroy(ptr); };
+        (destructor(args), ...);  // Use fold expression to call the lambda for each argument
+    }
+
 public:
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
 
