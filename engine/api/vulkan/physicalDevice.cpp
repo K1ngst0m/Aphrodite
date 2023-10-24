@@ -43,12 +43,14 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 #endif
     vkGetPhysicalDeviceFeatures2(getHandle(), &m_features2);
 
+    m_driverProperties       = {};
+    m_driverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
     // Get device properties
     VkPhysicalDeviceSubgroupProperties subgroupProperties = {};
     subgroupProperties.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-    subgroupProperties.pNext                              = nullptr;
-    m_properties2.sType                                   = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-    // subgroupProperties.pNext                              = m_properties2.pNext;
+    subgroupProperties.pNext                              = &m_driverProperties;
+
+    m_properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
     m_properties2.pNext = &subgroupProperties;
     vkGetPhysicalDeviceProperties2(getHandle(), &m_properties2);
 
@@ -68,16 +70,16 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
     }
 
     {
-        auto* gpuProperties = &m_properties2;
-        auto* gpuSettings   = &m_settings;
-        auto* gpuFeatures   = &m_features2;
+        auto* gpuProperties2 = &m_properties2;
+        auto* gpuSettings    = &m_settings;
+        auto* gpuFeatures    = &m_features2;
         gpuSettings->uniformBufferAlignment =
-            (uint32_t)gpuProperties->properties.limits.minUniformBufferOffsetAlignment;
+            (uint32_t)gpuProperties2->properties.limits.minUniformBufferOffsetAlignment;
         gpuSettings->uploadBufferTextureAlignment =
-            (uint32_t)gpuProperties->properties.limits.optimalBufferCopyOffsetAlignment;
+            (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyOffsetAlignment;
         gpuSettings->uploadBufferTextureRowAlignment =
-            (uint32_t)gpuProperties->properties.limits.optimalBufferCopyRowPitchAlignment;
-        gpuSettings->maxVertexInputBindings = gpuProperties->properties.limits.maxVertexInputBindings;
+            (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyRowPitchAlignment;
+        gpuSettings->maxVertexInputBindings = gpuProperties2->properties.limits.maxVertexInputBindings;
         gpuSettings->multiDrawIndirect      = gpuFeatures->features.multiDrawIndirect;
         gpuSettings->indirectRootConstant   = false;
         gpuSettings->builtinDrawID          = true;
@@ -111,13 +113,16 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         gpuSettings->samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
 
         // save vendor and model Id as string
-        sprintf(gpuSettings->GpuVendorPreset.modelId.data(), "%#x", gpuProperties->properties.deviceID);
-        sprintf(gpuSettings->GpuVendorPreset.vendorId.data(), "%#x", gpuProperties->properties.vendorID);
-        strncpy(gpuSettings->GpuVendorPreset.gpuName.data(), gpuProperties->properties.deviceName,
-                MAX_GPU_VENDOR_STRING_LENGTH);
+        gpuSettings->GpuVendorPreset.modelId  = std::format("{:#x}", gpuProperties2->properties.deviceID);
+        gpuSettings->GpuVendorPreset.vendorId = std::format("{:#x}", gpuProperties2->properties.vendorID);
+        gpuSettings->GpuVendorPreset.gpuName  = gpuProperties2->properties.deviceName;
+
+        // driver info
+        gpuSettings->GpuVendorPreset.gpuDriverVersion =
+            std::format("{} - {}", m_driverProperties.driverInfo, m_driverProperties.driverName);
 
         // TODO: Fix once vulkan adds support for revision ID
-        strncpy(gpuSettings->GpuVendorPreset.revisionId.data(), "0x00", MAX_GPU_VENDOR_STRING_LENGTH);
+        gpuSettings->GpuVendorPreset.revisionId = "0x00";
     }
 }
 
@@ -282,7 +287,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
 {
     VkPipelineStageFlags flags = 0;
 
-    auto* gpuSupport = pGPU->getSettings();
+    auto* gpuSupport = &pGPU->getSettings();
     switch(queueType)
     {
     case aph::QueueType::GRAPHICS:

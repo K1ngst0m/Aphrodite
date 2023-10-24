@@ -132,9 +132,16 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
         VK_CHECK_RESULT(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
 
         // Wrap native Vulkan handles in PhysicalDevice class.
-        for(auto& pd : physicalDevices)
+        for(uint32_t idx = 0; auto& pd : physicalDevices)
         {
             auto pdImpl = std::make_unique<PhysicalDevice>(pd);
+        #if APH_DEBUG
+            auto gpuSettings = pdImpl->getSettings();
+            VK_LOG_INFO(" == Device Info [%d] ==", idx);
+            VK_LOG_INFO("Device Name: %s", gpuSettings.GpuVendorPreset.gpuName);
+            VK_LOG_INFO("Driver Version: %s", gpuSettings.GpuVendorPreset.gpuDriverVersion);
+        #endif
+            idx++;
             instance->m_physicalDevices.push_back(std::move(pdImpl));
         }
     }

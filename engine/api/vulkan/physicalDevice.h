@@ -23,25 +23,27 @@ public:
                                                           VkFormatFeatureFlags features) const;
     size_t                            padUniformBufferSize(size_t originalSize) const;
     const VkPhysicalDeviceProperties* getProperties() const { return &m_properties; }
-    const GPUSettings*                getSettings() const { return &m_settings; }
+    const GPUSettings&                getSettings() const { return m_settings; }
 
 private:
-    GPUSettings                                          m_settings;
-    VkPhysicalDeviceProperties                           m_properties;
-    VkPhysicalDeviceProperties2                          m_properties2;
-    VkPhysicalDeviceFeatures                             m_features;
-    VkPhysicalDeviceFeatures2                            m_features2;
-    VkPhysicalDeviceMemoryProperties                     m_memoryProperties;
-    std::vector<std::string>                             m_supportedExtensions;
-    std::vector<VkQueueFamilyProperties>                 m_queueFamilyProperties;
-    std::unordered_map<QueueType, std::vector<uint32_t>> m_queueFamilyMap;
+    GPUSettings                                          m_settings              = {};
+    VkPhysicalDeviceDriverProperties                     m_driverProperties      = {};
+    VkPhysicalDeviceProperties                           m_properties            = {};
+    VkPhysicalDeviceProperties2                          m_properties2           = {};
+    VkPhysicalDeviceFeatures                             m_features              = {};
+    VkPhysicalDeviceFeatures2                            m_features2             = {};
+    VkPhysicalDeviceMemoryProperties                     m_memoryProperties      = {};
+    std::vector<std::string>                             m_supportedExtensions   = {};
+    std::vector<VkQueueFamilyProperties>                 m_queueFamilyProperties = {};
+    std::unordered_map<QueueType, std::vector<uint32_t>> m_queueFamilyMap        = {};
 };
 
 }  // namespace aph::vk
 
-namespace aph::vk::utils {
+namespace aph::vk::utils
+{
 // Determines pipeline stages involved for given accesses
 VkPipelineStageFlags determinePipelineStageFlags(PhysicalDevice* pGPU, VkAccessFlags accessFlags, QueueType queueType);
-        }
+}  // namespace aph::vk::utils
 
 #endif  // PHYSICALDEVICE_H_

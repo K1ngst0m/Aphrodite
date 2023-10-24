@@ -152,13 +152,13 @@ void SwapChain::reCreate()
     auto& caps = swapChainSupport.capabilities;
     if((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
     {
-        VK_LOG_WARN("Changed requested SwapChain images {%u} to maximum allowed SwapChain images {%u}",
+        VK_LOG_WARN("Changed requested SwapChain images {%d} to maximum allowed SwapChain images {%d}",
                     m_createInfo.imageCount, caps.maxImageCount);
         m_createInfo.imageCount = caps.maxImageCount;
     }
     if(m_createInfo.imageCount < caps.minImageCount)
     {
-        VK_LOG_WARN("Changed requested SwapChain images {%u} to minimum required SwapChain images {%u}",
+        VK_LOG_WARN("Changed requested SwapChain images {%d} to minimum required SwapChain images {%d}",
                     m_createInfo.imageCount, caps.minImageCount);
         m_createInfo.imageCount = caps.minImageCount;
     }

@@ -98,13 +98,15 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
         };
 
+        uint32_t gpuIdx = 0;
         DeviceCreateInfo createInfo{
             .enabledExtensions = deviceExtensions,
             // TODO select physical device
-            .pPhysicalDevice = m_pInstance->getPhysicalDevices(0),
+            .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
         };
 
         m_pDevice = Device::Create(createInfo);
+        VK_LOG_INFO("Select Device [%d].", gpuIdx);
         APH_ASSERT(m_pDevice != nullptr);
 
         // get 3 type queue
