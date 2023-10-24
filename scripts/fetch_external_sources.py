@@ -46,7 +46,7 @@ class GitRepo:
     def CheckOut(self):
         fullDstPath = os.path.join(TargetDir, self.extractDir)
         if not os.path.exists(fullDstPath):
-            os.system("git clone " + self.httpsUrl + " " + fullDstPath);
+            os.system(f"git clone {self.httpsUrl} {fullDstPath} -b {self.branch}")
 
         os.chdir(fullDstPath);
         os.system("git fetch");
