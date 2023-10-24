@@ -13,8 +13,6 @@ build/
 /log.txt
 /external/*
 !/external/backward-cpp
-!/external/glfw
-!/external/imgui
 !/external/mmgr
 !/external/reckless
 !/external/stb

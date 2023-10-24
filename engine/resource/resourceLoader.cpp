@@ -374,12 +374,13 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
     {
-        bufferCI.domain = BufferDomain::Device;
+        bufferCI.domain = bufferCI.domain;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer));
     }
 
     // update buffer
+    if (info.data)
     {
         this->update(
             BufferUpdateInfo{

@@ -68,6 +68,8 @@ public:
     uint32_t getWindowHeight() const { return m_wsi->getHeight(); };
     uint32_t getWindowAspectRatio() const { return m_wsi->getAspectRatio(); }
 
+    const RenderConfig& getConfig() const { return m_config; }
+
 protected:
     WSI*         m_wsi    = {};
     RenderConfig m_config = {};

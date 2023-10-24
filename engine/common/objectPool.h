@@ -12,21 +12,21 @@ public:
     template <typename... P>
     T* allocate(P&&... p)
     {
-        if(vacants.empty())
+        if(m_vacants.empty())
         {
-            unsigned num_objects = 64u << memory.size();
+            unsigned num_objects = 64u << m_memory.size();
             T*       ptr = static_cast<T*>(memAlignAlloc(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
             if(!ptr)
                 return nullptr;
 
             for(unsigned i = 0; i < num_objects; i++)
-                vacants.push_back(&ptr[i]);
+                m_vacants.push_back(&ptr[i]);
 
-            memory.emplace_back(ptr);
+            m_memory.emplace_back(ptr);
         }
 
-        T* ptr = vacants.back();
-        vacants.pop_back();
+        T* ptr = m_vacants.back();
+        m_vacants.pop_back();
         new(ptr) T(std::forward<P>(p)...);
         return ptr;
     }
@@ -34,24 +34,24 @@ public:
     void free(T* ptr)
     {
         ptr->~T();
-        vacants.push_back(ptr);
+        m_vacants.push_back(ptr);
     }
 
     void clear()
     {
-        vacants.clear();
-        memory.clear();
+        m_vacants.clear();
+        m_memory.clear();
     }
 
 protected:
-    std::vector<T*> vacants;
+    std::vector<T*> m_vacants;
 
     struct MallocDeleter
     {
         void operator()(T* ptr) { memalign_free(ptr); }
     };
 
-    std::vector<std::unique_ptr<T, MallocDeleter>> memory;
+    std::vector<std::unique_ptr<T, MallocDeleter>> m_memory;
 };
 }  // namespace aph
 

@@ -22,9 +22,9 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& c
     // calculate pool sizes
     {
         m_poolSizes.resize(m_descriptorTypeCounts.size());
-        for(uint32_t index = 0; auto [type, count] : m_descriptorTypeCounts)
+        for(uint32_t index = 0; auto [descriptorType, count] : m_descriptorTypeCounts)
         {
-            m_poolSizes[index].type            = type;
+            m_poolSizes[index].type            = descriptorType;
             m_poolSizes[index].descriptorCount = count * DESCRIPTOR_POOL_MAX_NUM_SET;
             ++index;
         }
@@ -153,8 +153,8 @@ VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const 
 {
     APH_ASSERT(data.binding < m_bindings.size());
 
-    auto&                               bindingInfo = m_bindings[data.binding];
-    VkDescriptorType                    type        = bindingInfo.descriptorType;
+    auto&                               bindingInfo    = m_bindings[data.binding];
+    VkDescriptorType                    descriptorType = bindingInfo.descriptorType;
     std::vector<VkDescriptorImageInfo>  imageInfos;
     std::vector<VkDescriptorBufferInfo> bufferInfos;
     VkWriteDescriptorSet                writeInfo{
@@ -162,9 +162,9 @@ VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const 
                        .dstSet          = set->getHandle(),
                        .dstBinding      = data.binding,
                        .dstArrayElement = data.arrayOffset,
-                       .descriptorType  = type,
+                       .descriptorType  = descriptorType,
     };
-    switch(type)
+    switch(descriptorType)
     {
     case VK_DESCRIPTOR_TYPE_SAMPLER:
     {
