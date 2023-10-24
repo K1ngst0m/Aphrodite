@@ -30,7 +30,7 @@ target_include_directories(engine SYSTEM PUBLIC
                                   ../external/mmgr
                                   ../external/glfw/include
                                   ../external/shaderc/libshaderc/include
-                                  ../external/imgui/include
+                                  ../external/imgui
                                   ../external/vulkan
                                   ../external/stb/include
                                   ../external/tinygltf/include

@@ -256,10 +256,10 @@ struct VertexInput
 {
     struct VertexAttribute
     {
-        uint32_t  location = 0;
-        uint32_t  binding  = 0;
-        Format    format   = Format::Undefined;
-        uintptr_t offset   = 0;
+        uint32_t location = 0;
+        uint32_t binding  = 0;
+        Format   format   = Format::Undefined;
+        uint32_t offset   = 0;
     };
 
     struct VertexInputBinding
@@ -301,5 +301,87 @@ protected:
 };
 
 }  // namespace aph
+
+namespace aph::utils
+{
+constexpr inline uint32_t getFormatSize(Format format)
+{
+    switch(format)
+    {
+    case Format::Undefined:
+        return 0;
+
+    case Format::R_UN8:
+        return 1;
+    case Format::R_UI16:
+        return 2;
+    case Format::R_UN16:
+        return 2;
+    case Format::R_F16:
+        return 2;
+    case Format::R_F32:
+        return 4;
+
+    case Format::RG_UN8:
+        return 2;
+    case Format::RG_UI16:
+        return 4;
+    case Format::RG_UN16:
+        return 4;
+    case Format::RG_F16:
+        return 4;
+    case Format::RG_F32:
+        return 8;
+
+    case Format::RGB_UN8:
+        return 3;
+    case Format::RGB_UI32:
+        return 12;
+    case Format::RGB_F16:
+        return 6;
+    case Format::RGB_F32:
+        return 12;
+
+    case Format::RGBA_UN8:
+        return 4;
+    case Format::RGBA_UI32:
+        return 16;
+    case Format::RGBA_F16:
+        return 8;
+    case Format::RGBA_F32:
+        return 16;
+    case Format::RGBA_SRGB8:
+        return 4;
+
+    case Format::BGRA_UN8:
+        return 4;
+    case Format::BGRA_SRGB8:
+        return 4;
+
+    // TODO assuming a block size of 4x4
+    case Format::ETC2_RGB8:
+        return 8;
+    case Format::ETC2_SRGB8:
+        return 8;
+    case Format::BC7_RGBA:
+        return 16;
+
+    case Format::Z_UN16:
+        return 2;
+    case Format::Z_UN24:
+        return 3;
+    case Format::Z_F32:
+        return 4;
+    case Format::Z_UN24_S_UI8:
+        return 4;  // 3 bytes for depth, 1 byte for stencil
+    case Format::Z_F32_S_UI8:
+        return 5;  // 4 bytes for depth, 1 byte for stencil
+
+    default:
+        return 0;
+    }
+}
+
+}  // namespace aph::utils
 
 #endif  // RESOURCE_H_
