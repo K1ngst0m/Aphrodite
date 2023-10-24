@@ -60,6 +60,7 @@ PACKAGES = [
     GitRepo("https://github.com/KhronosGroup/SPIRV-Cross.git",   "spirv-cross",   "spirv-cross"),
     GitRepo("https://github.com/google/shaderc",   "shaderc",   "shaderc"),
     GitRepo("https://github.com/glfw/glfw",   "glfw",   "glfw"),
+    GitRepo("https://github.com/ocornut/imgui",   "imgui",   "imgui"),
 ]
 
 def GetOpt():
