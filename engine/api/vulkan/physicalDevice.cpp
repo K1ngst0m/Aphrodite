@@ -274,9 +274,10 @@ VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candid
     assert("failed to find supported format!");
     return {};
 }
+
 std::vector<uint32_t> PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
 {
-    return m_queueFamilyMap.count(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
+    return m_queueFamilyMap.contains(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
 }
 size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
 {

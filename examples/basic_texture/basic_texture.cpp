@@ -136,6 +136,8 @@ void basic_texture::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
+        m_renderer->update(deltaTime);
+
         auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
 
         // draw and submit
@@ -169,6 +171,15 @@ void basic_texture::run()
 
         m_renderer->endFrame();
     }
+}
+
+void basic_texture::load()
+{
+    m_renderer->load();
+}
+void basic_texture::unload()
+{
+    m_renderer->unload();
 }
 
 void basic_texture::finish()

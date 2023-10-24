@@ -22,3 +22,4 @@ build/
 !/external/tinyktx
 !/external/volk
 !/external/vulkan
+!/external/imgui

@@ -523,10 +523,10 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
         }
     }
 
-    if(numSets > m_pDevice->getPhysicalDevice()->getProperties()->limits.maxBoundDescriptorSets)
+    if(numSets > m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
     {
         VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets,
-                   m_pDevice->getPhysicalDevice()->getProperties()->limits.maxBoundDescriptorSets);
+                   m_pDevice->getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
     }
 
     VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};

@@ -84,11 +84,11 @@ public:
     void   unMapMemory(Buffer* pBuffer);
 
 public:
-    VolkDeviceTable*         getDeviceTable() { return &m_table; }
-    PhysicalDevice*          getPhysicalDevice() const { return m_physicalDevice; }
-    VkPhysicalDeviceFeatures getFeatures() const { return m_supportedFeatures; }
-    VkFormat                 getDepthFormat() const;
-    Queue*                   getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
+    VolkDeviceTable*                getDeviceTable() { return &m_table; }
+    PhysicalDevice*                 getPhysicalDevice() const { return m_physicalDevice; }
+    const VkPhysicalDeviceFeatures& getFeatures() const { return m_supportedFeatures; }
+    VkFormat                        getDepthFormat() const;
+    Queue*                          getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
 
 public:
     void   waitIdle();

@@ -94,6 +94,8 @@ void triangle_demo::run()
         static float deltaTime = {};
         auto         timer     = aph::Timer(deltaTime);
 
+        m_renderer->update(deltaTime);
+
         auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
 
         // draw and submit
@@ -119,6 +121,7 @@ void triangle_demo::run()
             .color = {1.0f, 0.0f, 0.0f, 1.0f},
         });
         cb->drawIndexed({3, 1, 0, 0, 0});
+        m_renderer->pUI->draw(cb);
         cb->endRendering();
         cb->end();
 
@@ -132,6 +135,16 @@ void triangle_demo::finish()
 {
     m_renderer->m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
+}
+
+void triangle_demo::load()
+{
+    m_renderer->load();
+}
+
+void triangle_demo::unload()
+{
+    m_renderer->unload();
 }
 
 int main(int argc, char** argv)
@@ -152,6 +165,8 @@ int main(int argc, char** argv)
     }
 
     app.init();
+    app.load();
     app.run();
+    app.unload();
     app.finish();
 }

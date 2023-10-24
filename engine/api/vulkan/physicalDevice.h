@@ -22,7 +22,7 @@ public:
     VkFormat                          findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
                                                           VkFormatFeatureFlags features) const;
     size_t                            padUniformBufferSize(size_t originalSize) const;
-    const VkPhysicalDeviceProperties* getProperties() const { return &m_properties; }
+    const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
     const GPUSettings&                getSettings() const { return m_settings; }
 
 private:

@@ -12,9 +12,9 @@ class SceneRenderer : public Renderer
 public:
     SceneRenderer(WSI* wsi, const RenderConfig& config);
 
-    void load(Scene* scene);
+    void loadScene(Scene* scene);
     void cleanup();
-    void update(float deltaTime);
+    void update(float deltaTime) override;
     void recordAll();
     void recordShadow(CommandBuffer* pCommandBuffer);
     void recordDeferredGeometry(CommandBuffer* pCommandBuffer);

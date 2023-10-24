@@ -118,7 +118,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
     volkLoadDeviceTable(&device->m_table, handle);
-    device->m_supportedFeatures = supportedFeatures;
+    device->m_supportedFeatures = std::move(supportedFeatures);
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);

@@ -4,6 +4,7 @@
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
 #include "resource/resourceLoader.h"
+#include "uiRenderer.h"
 
 namespace aph::vk
 {
@@ -15,6 +16,11 @@ public:
 
     void beginFrame() override;
     void endFrame() override;
+
+public:
+    void load() override;
+    void unload() override;
+    void update(float deltaTime) override;
 
 public:
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
@@ -32,6 +38,10 @@ public:
     CommandBuffer* acquireCommandBuffer(Queue* queue);
     VkSemaphore    acquireSemahpore();
     VkFence        acquireFence();
+    Instance*      getInstance() const { return m_pInstance; }
+
+public:
+    UI * pUI = {};
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};

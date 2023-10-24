@@ -10,7 +10,9 @@ public:
     basic_texture();
 
     void init() override;
+    void load() override;
     void run() override;
+    void unload() override;
     void finish() override;
 
     struct

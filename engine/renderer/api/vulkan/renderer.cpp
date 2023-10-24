@@ -130,7 +130,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
         // check sample count support
         {
-            auto limit  = createInfo.pPhysicalDevice->getProperties()->limits;
+            auto limit  = createInfo.pPhysicalDevice->getProperties().limits;
             auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
             if(!(counts & m_sampleCount))
             {
@@ -178,28 +178,22 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     {
         m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{.pDevice = m_pDevice.get()});
     }
+
+    // init ui
+    if(m_config.flags & RENDER_CFG_UI)
+    {
+        pUI = new UI({
+            .pRenderer = this,
+            .flags     = UI_Docking,
+        });
+    }
 }
 
 Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        // if(m_ui.pVertexBuffer)
-        // {
-        //     m_pDevice->destroyBuffer(m_ui.pVertexBuffer);
-        // }
-        // if(m_ui.pIndexBuffer)
-        // {
-        //     m_pDevice->destroyBuffer(m_ui.pIndexBuffer);
-        // }
-        // m_pDevice->destroyImage(m_ui.pFontImage);
-        // m_pDevice->destroySampler(m_ui.fontSampler);
-        // m_pDevice->destroyShaderProgram(m_ui.pProgram);
-        // m_pDevice->destroyPipeline(m_ui.pipeline);
-        // if(ImGui::GetCurrentContext())
-        // {
-        //     ImGui::DestroyContext();
-        // }
+        delete pUI;
     }
 
     // TODO
@@ -315,4 +309,27 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
 
     _VR(vkWaitForFences(m_pDevice->getHandle(), 1, &frameFence, VK_TRUE, UINT64_MAX));
 }
+
+void Renderer::update(float deltaTime)
+{
+    if(m_config.flags & RENDER_CFG_UI)
+    {
+        pUI->update();
+    }
+}
+
+void Renderer::unload()
+{
+    if(m_config.flags & RENDER_CFG_UI)
+    {
+        pUI->unload();
+    }
+};
+void Renderer::load()
+{
+    if(m_config.flags & RENDER_CFG_UI)
+    {
+        pUI->load();
+    }
+};
 }  // namespace aph::vk

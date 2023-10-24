@@ -60,6 +60,11 @@ public:
     IRenderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(config) {}
     virtual ~IRenderer() = default;
 
+public:
+    virtual void load()                  = 0;
+    virtual void unload()                = 0;
+    virtual void update(float deltaTime) = 0;
+
     virtual void beginFrame() = 0;
     virtual void endFrame()   = 0;
 

@@ -5,6 +5,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "imgui_impl_glfw.h"
+
 using namespace aph;
 
 static Key glfwKeyCast(int key)
@@ -262,6 +264,7 @@ bool WSI::update()
         }
     }
 
+    ImGui_ImplGlfw_NewFrame();
     return true;
 };
 
@@ -275,6 +278,7 @@ void WSI::resize(uint32_t width, uint32_t height)
     m_width  = width;
     m_height = height;
 }
+
 std::vector<const char*> aph::WSI::getRequiredExtensions()
 {
     std::vector<const char*> extensions{};
@@ -283,7 +287,16 @@ std::vector<const char*> aph::WSI::getRequiredExtensions()
         const char** glfwExtensions;
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
         extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
     }
     return extensions;
+}
+
+bool WSI::initUI()
+{
+    return ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window, true);
+};
+
+void aph::WSI::deInitUI()
+{
+    ImGui_ImplGlfw_Shutdown();
 }

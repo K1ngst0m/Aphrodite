@@ -49,6 +49,8 @@ public:
     virtual ~WSI();
 
 public:
+    bool     initUI();
+    void     deInitUI();
     float    getAspectRatio() const { return static_cast<float>(m_width) / m_height; }
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
