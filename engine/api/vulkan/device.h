@@ -61,7 +61,12 @@ public:
     template <typename... Args>
     void destroy(Args... args)
     {
-        auto destructor = [this](auto* ptr) { destroy(ptr); };
+        auto destructor = [this](auto* ptr) {
+            APH_ASSERT(ptr != nullptr);
+            using Type = std::remove_pointer_t<decltype(ptr)>;
+            static_assert(Type::value, "Unsupported type for destroy");
+            destroy(ptr);
+        };
         (destructor(args), ...);  // Use fold expression to call the lambda for each argument
     }
 
