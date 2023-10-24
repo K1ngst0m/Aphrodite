@@ -22,8 +22,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 {
     static uint32_t   errCount = 0;
     std::stringstream msg;
-    uint32_t          frameId = *(uint32_t*)pUserData;
-    msg << "[frame:" << frameId << "] ";
+    if(messageType != VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
+    {
+        uint32_t frameId = *(uint32_t*)pUserData;
+        msg << "[fr:" << frameId << "] ";
+    }
     msg << pCallbackData->pMessage;
     switch(messageSeverity)
     {
@@ -98,7 +101,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
         };
 
-        uint32_t gpuIdx = 0;
+        uint32_t         gpuIdx = 0;
         DeviceCreateInfo createInfo{
             .enabledExtensions = deviceExtensions,
             // TODO select physical device
