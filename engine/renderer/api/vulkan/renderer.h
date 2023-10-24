@@ -2,7 +2,6 @@
 #define VULKAN_RENDERER_H_
 
 #include "api/vulkan/device.h"
-#include "api/vulkan/shader.h"
 #include "renderer/renderer.h"
 #include "resource/resourceLoader.h"
 
@@ -67,39 +66,6 @@ protected:
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_timer = {};
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
-
-protected:
-    bool onUIMouseMove(const MouseMoveEvent& e);
-    bool onUIMouseBtn(const MouseButtonEvent& e);
-    bool updateUIDrawData(float deltaTime);
-    void recordUIDraw(CommandBuffer* pCommandBuffer);
-    struct UI
-    {
-        void resize(uint32_t width, uint32_t height);
-        struct PushConstBlock
-        {
-            glm::vec2 scale;
-            glm::vec2 translate;
-        } pushConstBlock;
-
-        bool visible = {true};
-        bool updated = {false};
-
-        Image*           pFontImage  = {};
-        Sampler*         fontSampler = {};
-        VkDescriptorPool pool        = {};
-        Pipeline*        pipeline    = {};
-        ShaderProgram*   pProgram    = {};
-
-        Buffer*  pVertexBuffer = {};
-        Buffer*  pIndexBuffer  = {};
-        uint32_t vertexCount   = {};
-        uint32_t indexCount    = {};
-
-        DescriptorSet* set = {};
-
-        float scale = {1.1f};
-    } m_ui;
 };
 }  // namespace aph::vk
 
