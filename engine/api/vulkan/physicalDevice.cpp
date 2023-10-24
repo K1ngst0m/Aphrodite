@@ -112,14 +112,22 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         gpuSettings->geometryShaderSupported    = gpuFeatures->features.geometryShader;
         gpuSettings->samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
 
-        // save vendor and model Id as string
-        gpuSettings->GpuVendorPreset.modelId  = std::format("{:#x}", gpuProperties2->properties.deviceID);
-        gpuSettings->GpuVendorPreset.vendorId = std::format("{:#x}", gpuProperties2->properties.vendorID);
-        gpuSettings->GpuVendorPreset.gpuName  = gpuProperties2->properties.deviceName;
+        {
+            char buffer[1024];
 
-        // driver info
-        gpuSettings->GpuVendorPreset.gpuDriverVersion =
-            std::format("{} - {}", m_driverProperties.driverInfo, m_driverProperties.driverName);
+            std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.deviceID);
+            gpuSettings->GpuVendorPreset.modelId = buffer;
+
+            std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.vendorID);
+            gpuSettings->GpuVendorPreset.vendorId = buffer;
+
+            gpuSettings->GpuVendorPreset.gpuName = gpuProperties2->properties.deviceName;
+
+            // driver info
+            std::snprintf(buffer, sizeof(buffer), "%s - %s", m_driverProperties.driverInfo,
+                          m_driverProperties.driverName);
+            gpuSettings->GpuVendorPreset.gpuDriverVersion = buffer;
+        }
 
         // TODO: Fix once vulkan adds support for revision ID
         gpuSettings->GpuVendorPreset.revisionId = "0x00";

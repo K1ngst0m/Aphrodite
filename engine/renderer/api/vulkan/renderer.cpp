@@ -7,10 +7,7 @@
 #include "api/gpuResource.h"
 #include "common/assetManager.h"
 
-#include <volk.h>
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_vulkan.h>
-#include <imgui/imgui_impl_glfw.h>
+#include "volk.h"
 
 namespace aph::vk
 {
