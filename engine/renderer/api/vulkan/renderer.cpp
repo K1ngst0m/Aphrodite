@@ -20,7 +20,9 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
                                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                     void*                                       pUserData)
 {
+    static std::mutex errMutex;  // Mutex for thread safety
     static uint32_t   errCount = 0;
+
     std::stringstream msg;
     if(messageType != VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
     {
@@ -40,13 +42,16 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         VK_LOG_WARN("%s", msg.str());
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+    {
+        std::lock_guard<std::mutex> lock(errMutex);
         if(++errCount > 10)
         {
             VK_LOG_ERR("Too many errors, exit.");
             throw aph::TracedException();
         }
         VK_LOG_ERR("%s", msg.str());
-        break;
+    }
+    break;
 
     default:
         break;
