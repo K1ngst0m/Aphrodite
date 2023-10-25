@@ -34,6 +34,7 @@ target_include_directories(engine SYSTEM PUBLIC
                                   ${APH_EXTERNAL_DIR}/shaderc/libshaderc/include
                                   ${APH_EXTERNAL_DIR}/imgui
                                   ${APH_EXTERNAL_DIR}/vulkan
+                                  ${APH_EXTERNAL_DIR}/slang
                                   ${APH_EXTERNAL_DIR}/stb/include
                                   ${APH_EXTERNAL_DIR}/tinygltf/include
                                   ${APH_EXTERNAL_DIR}/spirv-cross
@@ -52,6 +53,7 @@ target_link_libraries(engine PRIVATE
   # imgui
   shaderc_shared
   spirv-cross-core
+  slang
   dl
   dw
   # mmgr

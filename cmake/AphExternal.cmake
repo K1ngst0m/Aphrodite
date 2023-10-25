@@ -41,6 +41,7 @@ add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/spirv-cross EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/shaderc EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
+add_subdirectory(${APH_EXTERNAL_DIR}/slang EXCLUDE_FROM_ALL)
 # add_subdirectory(external/mmgr EXCLUDE_FROM_ALL)
 
 find_package(PkgConfig REQUIRED)
