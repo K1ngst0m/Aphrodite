@@ -1,5 +1,4 @@
 #include "vkUtils.h"
-#include "shaderc/shaderc.hpp"
 
 namespace aph::vk::utils
 {
@@ -97,66 +96,6 @@ VkShaderStageFlagBits VkCast(ShaderStage stage)
     }
 }
 
-std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
-{
-    shaderc::Compiler compiler{};
-    std::string       source;
-    auto              success = aph::utils::readFile(filename, source);
-    APH_ASSERT(success);
-    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
-    switch(getStageFromPath(filename))
-    {
-    case ShaderStage::VS:
-        stage = shaderc_vertex_shader;
-        break;
-    case ShaderStage::FS:
-        stage = shaderc_fragment_shader;
-        break;
-    case ShaderStage::CS:
-        stage = shaderc_compute_shader;
-        break;
-    case ShaderStage::TCS:
-        stage = shaderc_tess_control_shader;
-        break;
-    case ShaderStage::TES:
-        stage = shaderc_tess_evaluation_shader;
-        break;
-    case ShaderStage::GS:
-        stage = shaderc_geometry_shader;
-        break;
-    case ShaderStage::TS:
-        stage = shaderc_task_shader;
-        break;
-    case ShaderStage::MS:
-        stage = shaderc_mesh_shader;
-        break;
-    default:
-        break;
-    }
-
-    shaderc::CompileOptions options{};
-    options.SetGenerateDebugInfo();
-    options.SetSourceLanguage(shaderc_source_language_glsl);
-    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-    options.SetTargetSpirv(shaderc_spirv_version_1_6);
-
-    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.c_str(), "main", options);
-    APH_ASSERT(result.GetCompilationStatus() == 0);
-    std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
-    return spirv;
-}
-
-std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
-{
-    std::string source;
-    auto        success = aph::utils::readFile(filename, source);
-    APH_ASSERT(success);
-    uint32_t              size = source.size();
-    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
-    memcpy(spirv.data(), source.data(), size);
-    return spirv;
-}
-
 VkImageAspectFlags getImageAspect(VkFormat format)
 {
     switch(format)
@@ -173,24 +112,6 @@ VkImageAspectFlags getImageAspect(VkFormat format)
     default:
         return VK_IMAGE_ASPECT_COLOR_BIT;
     }
-}
-
-ShaderStage getStageFromPath(std::string_view path)
-{
-    auto ext = std::filesystem::path(path).extension();
-    if(ext == ".vert")
-        return ShaderStage::VS;
-    if(ext == ".tesc")
-        return ShaderStage::TCS;
-    if(ext == ".tese")
-        return ShaderStage::TES;
-    if(ext == ".geom")
-        return ShaderStage::GS;
-    if(ext == ".frag")
-        return ShaderStage::FS;
-    if(ext == ".comp")
-        return ShaderStage::CS;
-    return ShaderStage::NA;
 }
 
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples)

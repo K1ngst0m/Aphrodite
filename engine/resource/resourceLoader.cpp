@@ -2,6 +2,8 @@
 #include "api/vulkan/device.h"
 #include "tinyimageformat.h"
 
+#include "shaderc/shaderc.hpp"
+
 #define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"
 
@@ -11,7 +13,7 @@
 #include <stb/stb_image.h>
 #include <tinygltf/tiny_gltf.h>
 
-namespace
+namespace loader::image
 {
 inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
@@ -114,6 +116,70 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
     return true;
 }
 }  // namespace
+
+namespace loader::shader
+{
+
+std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
+{
+    std::string source;
+    auto        success = aph::utils::readFile(filename, source);
+    APH_ASSERT(success);
+    uint32_t              size = source.size();
+    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
+    memcpy(spirv.data(), source.data(), size);
+    return spirv;
+}
+std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
+{
+    using namespace aph;
+    shaderc::Compiler compiler{};
+    std::string       source;
+    auto              success = aph::utils::readFile(filename, source);
+    APH_ASSERT(success);
+    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
+    switch(utils::getStageFromPath(filename))
+    {
+    case ShaderStage::VS:
+        stage = shaderc_vertex_shader;
+        break;
+    case ShaderStage::FS:
+        stage = shaderc_fragment_shader;
+        break;
+    case ShaderStage::CS:
+        stage = shaderc_compute_shader;
+        break;
+    case ShaderStage::TCS:
+        stage = shaderc_tess_control_shader;
+        break;
+    case ShaderStage::TES:
+        stage = shaderc_tess_evaluation_shader;
+        break;
+    case ShaderStage::GS:
+        stage = shaderc_geometry_shader;
+        break;
+    case ShaderStage::TS:
+        stage = shaderc_task_shader;
+        break;
+    case ShaderStage::MS:
+        stage = shaderc_mesh_shader;
+        break;
+    default:
+        break;
+    }
+
+    shaderc::CompileOptions options{};
+    options.SetGenerateDebugInfo();
+    options.SetSourceLanguage(shaderc_source_language_glsl);
+    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+    options.SetTargetSpirv(shaderc_spirv_version_1_6);
+
+    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.c_str(), "main", options);
+    APH_ASSERT(result.GetCompilationStatus() == 0);
+    std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
+    return spirv;
+}
+}
 
 namespace
 {
@@ -255,13 +321,13 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         {
         case ImageContainerType::Ktx:
         {
-            loadKTX(path, ci, data);
+            loader::image::loadKTX(path, ci, data);
         }
         break;
         case ImageContainerType::Png:
         case ImageContainerType::Jpg:
         {
-            loadPNGJPG(path, ci, data);
+            loader::image::loadPNGJPG(path, ci, data);
         }
         break;
         case ImageContainerType::Default:
@@ -412,11 +478,11 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
 
         if(path.extension() == ".spv")
         {
-            spvCode = vk::utils::loadSpvFromFile(path);
+            spvCode = loader::shader::loadSpvFromFile(path);
         }
-        else if(vk::utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
+        else if(utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
         {
-            spvCode = vk::utils::loadGlslFromFile(path);
+            spvCode = loader::shader::loadGlslFromFile(path);
         }
 
         createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);

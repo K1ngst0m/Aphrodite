@@ -25,7 +25,7 @@ namespace aph
             { \
                 CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
                 LOG_FLUSH(); \
-                throw TracedException(); \
+                throw aph::TracedException(); \
             } \
         } while(0)
 #else

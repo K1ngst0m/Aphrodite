@@ -37,10 +37,7 @@ namespace aph::vk
 namespace aph::vk::utils
 {
 std::string           errorString(VkResult errorCode);
-std::vector<uint32_t> loadSpvFromFile(const std::string& filename);
-std::vector<uint32_t> loadGlslFromFile(const std::string& filename);
 VkImageAspectFlags    getImageAspect(VkFormat format);
-ShaderStage           getStageFromPath(std::string_view path);
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
 VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);

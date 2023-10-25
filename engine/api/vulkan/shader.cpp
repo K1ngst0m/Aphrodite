@@ -218,10 +218,10 @@ ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerB
     createPipelineLayout(samplerBank);
 }
 
-ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& code)
+ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
 {
     using namespace spirv_cross;
-    Compiler compiler{code};
+    Compiler compiler{spvCode};
     auto     resources = compiler.get_shader_resources();
 
     ResourceLayout layout;
