@@ -192,14 +192,16 @@ void UI::unload()
 
 void UI::draw(CommandBuffer* pCmd)
 {
+    pCmd->beginDebugLabel({.name = "Drawing UI", .color = {0.4f, 0.3f, 0.2f, 1.0f}});
     ImDrawData* main_draw_data = ImGui::GetDrawData();
     ImGui_ImplVulkan_RenderDrawData(main_draw_data, pCmd->getHandle());
+    pCmd->endDebugLabel();
 }
 void UI::update()
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui::NewFrame();
-    if (m_showDemoWindow)
+    if(m_showDemoWindow)
     {
         ImGui::ShowDemoWindow(&m_showDemoWindow);
     }
