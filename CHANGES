@@ -1,19 +1,19 @@
 # Note: this file is parsed by fetch_external_sources.py to get the revision,
 # please do not move the lines and change the formats at will.
 
-Promotion history for /spvgen/external
+
 
 [glslang]
-Branch: 13.0.0
+Branch: vulkan-sdk-1.3.268
 
 [SPIRV-tools]
-Branch: v2023.2
+Branch: vulkan-sdk-1.3.268
 
 [SPIRV-headers]
-Branch: sdk-1.3.261.1
+Branch: vulkan-sdk-1.3.268
 
 [SPIRV-cross]
-Branch: 2021-01-15
+Branch: vulkan-sdk-1.3.268
 
 [shaderc]
 Branch: v2023.7

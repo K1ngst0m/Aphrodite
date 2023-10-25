@@ -1,4 +1,3 @@
-message("source dir ${CMAKE_SOURCE_DIR}")
 file(GLOB base_src
   common/*.cpp
   input/*.cpp
@@ -18,38 +17,28 @@ file(GLOB base_src
 
 )
 
-add_library(imgui SHARED
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_demo.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_draw.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_tables.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_widgets.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_impl_glfw.cpp
-  ${CMAKE_SOURCE_DIR}/external/imgui/imgui_impl_vulkan.cpp
-)
-
 add_library(engine STATIC ${base_src})
 aph_compiler_options(engine)
 
 target_include_directories(engine SYSTEM PUBLIC
-                                  ../external/glm
-                                  ../external/reckless/reckless/include
-                                  ../external/tinyimageformat
-                                  ../external/volk
+                                  ${APH_EXTERNAL_DIR}/glm
+                                  ${APH_EXTERNAL_DIR}/reckless/reckless/include
+                                  ${APH_EXTERNAL_DIR}/tinyimageformat
+                                  ${APH_EXTERNAL_DIR}/volk
 
                                   PRIVATE
-                                  ./
-                                  ../external/backward-cpp/include
-                                  ../external/mmgr
-                                  ../external/glfw/include
-                                  ../external/shaderc/libshaderc/include
-                                  ../external/imgui
-                                  ../external/vulkan
-                                  ../external/stb/include
-                                  ../external/tinygltf/include
-                                  ../external/spirv-cross
-                                  ../external/tinyktx
-                                  ../external/tinydds
+                                  ${APH_ENGINE_DIR}
+                                  ${APH_EXTERNAL_DIR}/backward-cpp/include
+                                  ${APH_EXTERNAL_DIR}/mmgr
+                                  ${APH_EXTERNAL_DIR}/glfw/include
+                                  ${APH_EXTERNAL_DIR}/shaderc/libshaderc/include
+                                  ${APH_EXTERNAL_DIR}/imgui
+                                  ${APH_EXTERNAL_DIR}/vulkan
+                                  ${APH_EXTERNAL_DIR}/stb/include
+                                  ${APH_EXTERNAL_DIR}/tinygltf/include
+                                  ${APH_EXTERNAL_DIR}/spirv-cross
+                                  ${APH_EXTERNAL_DIR}/tinyktx
+                                  ${APH_EXTERNAL_DIR}/tinydds
                                   )
 
 target_link_libraries(engine PRIVATE
