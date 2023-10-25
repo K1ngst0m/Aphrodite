@@ -120,7 +120,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 namespace loader::shader
 {
 
-std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
+std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
 {
     std::string source;
     auto        success = aph::utils::readFile(filename, source);
@@ -130,7 +130,7 @@ std::vector<uint32_t> loadSpvFromFile(const std::string& filename)
     memcpy(spirv.data(), source.data(), size);
     return spirv;
 }
-std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
+std::vector<uint32_t> loadGlslFromFile(std::string_view filename)
 {
     using namespace aph;
     shaderc::Compiler compiler{};
@@ -174,10 +174,16 @@ std::vector<uint32_t> loadGlslFromFile(const std::string& filename)
     options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
     options.SetTargetSpirv(shaderc_spirv_version_1_6);
 
-    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.c_str(), "main", options);
+    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.data(), "main", options);
     APH_ASSERT(result.GetCompilationStatus() == 0);
     std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
     return spirv;
+}
+std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
+{
+    APH_ASSERT(false);
+
+    return {};
 }
 }
 
@@ -478,11 +484,11 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
 
         if(path.extension() == ".spv")
         {
-            spvCode = loader::shader::loadSpvFromFile(path);
+            spvCode = loader::shader::loadSpvFromFile(path.string());
         }
         else if(utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
         {
-            spvCode = loader::shader::loadGlslFromFile(path);
+            spvCode = loader::shader::loadGlslFromFile(path.string());
         }
 
         createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);

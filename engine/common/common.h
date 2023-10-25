@@ -187,8 +187,8 @@ std::underlying_type_t<T> getUnderLyingType(T value)
 }
 std::shared_ptr<ImageInfo>                loadImageFromFile(std::string_view path, bool isFlipY = false);
 std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths);
-bool                                      readFile(const std::string& filename, std::vector<uint8_t>& data);
-bool                                      readFile(const std::string& filename, std::string& data);
+bool                                      readFile(std::string_view filename, std::vector<uint8_t>& data);
+bool                                      readFile(std::string_view filename, std::string& data);
 
 template <typename T>
 inline void forEachBit64(uint64_t value, const T& func)

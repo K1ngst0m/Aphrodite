@@ -74,12 +74,12 @@ std::array<std::shared_ptr<ImageInfo>, 6> loadSkyboxFromFile(std::array<std::str
     }
     return skyboxImages;
 }
-bool readFile(const std::string& filename, std::string& data)
+bool readFile(std::string_view filename, std::string& data)
 {
-    std::ifstream file(filename);
+    std::ifstream file(filename.data());
     if(!file.is_open())
     {
-        CM_LOG_ERR("Failed to open file: %s\n", filename);
+        CM_LOG_ERR("Failed to open file: %s\n", filename.data());
         return false;
     }
     std::stringstream buffer;
@@ -87,12 +87,12 @@ bool readFile(const std::string& filename, std::string& data)
     data = buffer.str();
     return true;
 }
-bool readFile(const std::string& filename, std::vector<uint8_t>& data)
+bool readFile(std::string_view filename, std::vector<uint8_t>& data)
 {
-    std::ifstream file{filename, std::ios::binary | std::ios::ate};
+    std::ifstream file{filename.data(), std::ios::binary | std::ios::ate};
     if(!file)
     {
-        CM_LOG_ERR("Failed to open file: %s\n", filename);
+        CM_LOG_ERR("Failed to open file: %s\n", filename.data());
         return false;
     }
 
@@ -105,7 +105,7 @@ bool readFile(const std::string& filename, std::vector<uint8_t>& data)
 
     if(!file.read(reinterpret_cast<char*>(data.data()), size))
     {
-        CM_LOG_ERR("Failed to read file: %s\n", filename);
+        CM_LOG_ERR("Failed to read file: %s\n", filename.data());
         return false;
     }
 
