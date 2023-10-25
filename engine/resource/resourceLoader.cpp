@@ -4,6 +4,11 @@
 
 #include "shaderc/shaderc.hpp"
 
+#include "slang.h"
+#include "slang-gfx.h"
+#include "slang-com-ptr.h"
+#include "slang-com-helper.h"
+
 #define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"
 
@@ -115,7 +120,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 
     return true;
 }
-}  // namespace
+}  // namespace loader::image
 
 namespace loader::shader
 {
@@ -179,13 +184,79 @@ std::vector<uint32_t> loadGlslFromFile(std::string_view filename)
     std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
     return spirv;
 }
+
 std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
 {
-    APH_ASSERT(false);
+    using namespace slang;
+    static Slang::ComPtr<IGlobalSession> globalSession;
+    slang::createGlobalSession(globalSession.writeRef());
 
-    return {};
+    {
+        SessionDesc             sessionDesc;
+
+        TargetDesc targetDesc;
+        targetDesc.format  = SLANG_SPIRV;
+        targetDesc.profile = globalSession->findProfile("glsl_450");
+        targetDesc.flags   = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+
+        sessionDesc.targets     = &targetDesc;
+        sessionDesc.targetCount = 1;
+
+        const char* searchPaths[]   = {"assets/shaders/slang"};
+        sessionDesc.searchPaths     = searchPaths;
+        sessionDesc.searchPathCount = 1;
+
+        Slang::ComPtr<ISession> session;
+        globalSession->createSession(sessionDesc, session.writeRef());
+
+        // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
+        // sessionDesc.preprocessorMacros = &fancyFlag;
+        // sessionDesc.preprocessorMacroCount = 1;
+
+        Slang::ComPtr<IBlob> diagnostics;
+        auto                 module = session->loadModule(filename.data(), diagnostics.writeRef());
+
+        if(diagnostics)
+        {
+            CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
+            APH_ASSERT(false);
+        }
+
+        Slang::ComPtr<IEntryPoint> entryVS;
+        module->findEntryPointByName("vertexMain", entryVS.writeRef());
+
+        Slang::ComPtr<IEntryPoint> entryFS;
+        module->findEntryPointByName("fragmentMain", entryFS.writeRef());
+
+        IComponentType* components[] = {module, entryVS, entryFS};
+
+        Slang::ComPtr<slang::IComponentType> linkedProgram;
+
+        SlangResult result =
+            session->createCompositeComponentType(components, 3, linkedProgram.writeRef(), diagnostics.writeRef());
+        APH_ASSERT(SLANG_SUCCEEDED(result));
+
+        Slang::ComPtr<slang::IBlob> spirvCode;
+        {
+            result = linkedProgram->getEntryPointCode(0, 0, spirvCode.writeRef(), diagnostics.writeRef());
+            if(diagnostics)
+            {
+                CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
+                APH_ASSERT(false);
+            }
+
+            APH_ASSERT(SLANG_SUCCEEDED(result));
+        }
+
+        {
+            std::vector<uint32_t> retSpvCode;
+            retSpvCode.resize(spirvCode->getBufferSize() / 4);
+            std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
+            return retSpvCode;
+        }
+    }
 }
-}
+}  // namespace loader::shader
 
 namespace
 {
@@ -304,7 +375,6 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 }
 
 ResourceLoader::~ResourceLoader() = default;
-;
 
 void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
@@ -452,7 +522,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     }
 
     // update buffer
-    if (info.data)
+    if(info.data)
     {
         this->update(
             BufferUpdateInfo{
@@ -486,10 +556,20 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
         {
             spvCode = loader::shader::loadSpvFromFile(path.string());
         }
-        else if(utils::getStageFromPath(path.c_str()) != ShaderStage::NA)
+        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" || path.extension() == ".geom")
         {
             spvCode = loader::shader::loadGlslFromFile(path.string());
         }
+        else if(path.extension() == ".slang")
+        {
+            spvCode = loader::shader::loadSlangFromFile(path.string());
+        }
+        else
+        {
+            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
+            APH_ASSERT(false);
+        }
+        APH_ASSERT(!spvCode.empty());
 
         createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);
         createInfo.pCode    = spvCode.data();

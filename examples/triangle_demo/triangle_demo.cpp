@@ -72,7 +72,8 @@ void triangle_demo::init()
             aph::vk::Shader* pVS = {};
             aph::vk::Shader* pFS = {};
 
-            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
+            // m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
             m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.frag"}, &pFS);
 
             aph::vk::GraphicsPipelineCreateInfo createInfo{
