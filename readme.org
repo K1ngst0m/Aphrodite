@@ -48,6 +48,8 @@
 - [[https://github.com/microsoft/mimalloc][mimalloc]] : Efficient memory allocator.
 - [[https://github.com/mattiasgeniar/reckless][reckless]] : High-performance logging.
 - [[https://github.com/google/shaderc][shaderc]] : Tools for shader compilation.
+- [[https://github.com/shader-slang/slang][slang]] : Tools for shader compilation.
 - [[https://github.com/nothings/stb][stb]] : Hanldes image operations.
 - [[https://github.com/syoyo/tinygltf][tinygltf]] : Handles GLTF file operations.
 - [[https://github.com/zeux/volk][volk]] : Simplifies Vulkan API function loading.
+
