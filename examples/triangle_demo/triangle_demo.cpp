@@ -19,7 +19,7 @@ void triangle_demo::init()
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->m_pDevice.get();
 
-    m_wsi->registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
+    m_wsi->m_eventManager.registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
         m_renderer->m_pSwapChain->reCreate();
         return true;
     });

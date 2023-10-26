@@ -80,7 +80,7 @@ static void cursorCB(GLFWwindow* window, double x, double y)
     lastX         = x;
     lastY         = y;
 
-    wsi->pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+    wsi->m_eventManager.pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
 }
 
 static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
@@ -114,7 +114,7 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
     else
     {
-        wsi->pushEvent(KeyboardEvent{gkey, state});
+        wsi->m_eventManager.pushEvent(KeyboardEvent{gkey, state});
     }
 }
 
@@ -140,7 +140,7 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    wsi->pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+    wsi->m_eventManager.pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height)
@@ -151,7 +151,7 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
     WindowResizeEvent resizeEvent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
     // Push the event to your event queue or handle it immediately
-    wsi->pushEvent(resizeEvent);
+    wsi->m_eventManager.pushEvent(resizeEvent);
 }
 
 void WSI::init()
@@ -193,62 +193,11 @@ bool WSI::update()
 
     glfwPollEvents();
 
-    {
-        auto& events   = m_keyboardsEvent.m_events;
-        auto& handlers = m_keyboardsEvent.m_handlers;
-
-        while(!events.empty())
-        {
-            auto e = events.front();
-            events.pop();
-            for(const auto& cb : handlers)
-            {
-                cb(e);
-            }
-        }
-    }
-
-    {
-        auto& events   = m_mouseMoveEvent.m_events;
-        auto& handlers = m_mouseMoveEvent.m_handlers;
-        while(!events.empty())
-        {
-            auto e = events.front();
-            events.pop();
-            for(const auto& cb : handlers)
-            {
-                cb(e);
-            }
-        }
-    }
-
-    {
-        auto& events   = m_mouseButtonEvent.m_events;
-        auto& handlers = m_mouseButtonEvent.m_handlers;
-        while(!events.empty())
-        {
-            auto e = events.front();
-            events.pop();
-            for(const auto& cb : handlers)
-            {
-                cb(e);
-            }
-        }
-    }
-
-    {
-        auto& events   = m_windowResizeEvent.m_events;
-        auto& handlers = m_windowResizeEvent.m_handlers;
-        while(!events.empty())
-        {
-            auto e = events.front();
-            events.pop();
-            for(const auto& cb : handlers)
-            {
-                cb(e);
-            }
-        }
-    }
+    m_eventManager.processAll();
+    // m_keyboardsEvent.process();
+    // m_mouseButtonEvent.process();
+    // m_mouseButtonEvent.process();
+    // m_windowResizeEvent.process();
 
     ImGui_ImplGlfw_NewFrame();
     return true;
@@ -267,7 +216,7 @@ void WSI::resize(uint32_t width, uint32_t height)
     int w, h;
     glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
 
-    if(w != m_width || h != m_height)
+    if (w != m_width || h != m_height)
     {
         glfwSetWindowSize((GLFWwindow*)m_window, m_width, m_height);
     }
