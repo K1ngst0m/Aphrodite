@@ -19,7 +19,7 @@ void basic_texture::init()
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->m_pDevice.get();
 
-    m_wsi->m_eventManager.registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
+    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
         m_renderer->m_pSwapChain->reCreate();
         return true;
     });

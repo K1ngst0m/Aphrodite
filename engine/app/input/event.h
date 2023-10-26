@@ -6,6 +6,7 @@
 
 #include <typeindex>
 #include <any>
+#include <mutex>
 
 namespace aph
 {
@@ -109,9 +110,18 @@ struct EventData
     }
 };
 
-struct EventManager
+class EventManager
 {
 public:
+    EventManager(const EventManager&) = delete;
+    EventManager& operator=(const EventManager&) = delete;
+
+    static EventManager& GetInstance()
+    {
+        static EventManager instance;
+        return instance;
+    }
+
     template <typename TEvent>
     void pushEvent(const TEvent& e)
     {
@@ -133,11 +143,16 @@ public:
     }
 
 private:
+    EventManager() = default;
+
+    std::mutex m_dataMapMutex;
+
     std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> eventDataMap;
 
     template <typename TEvent>
     EventData<TEvent>& getEventData()
     {
+        std::lock_guard<std::mutex> lock(m_dataMapMutex);
         auto ti = std::type_index(typeid(TEvent));
         if(!eventDataMap.contains(ti))
         {

@@ -80,7 +80,7 @@ static void cursorCB(GLFWwindow* window, double x, double y)
     lastX         = x;
     lastY         = y;
 
-    wsi->m_eventManager.pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+    EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
 }
 
 static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
@@ -114,14 +114,12 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
     else
     {
-        wsi->m_eventManager.pushEvent(KeyboardEvent{gkey, state});
+        EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
     }
 }
 
 static void buttonCB(GLFWwindow* window, int button, int action, int _)
 {
-    auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
-
     MouseButton btn;
     switch(button)
     {
@@ -140,7 +138,7 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    wsi->m_eventManager.pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+    EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height)
@@ -151,7 +149,7 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
     WindowResizeEvent resizeEvent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
     // Push the event to your event queue or handle it immediately
-    wsi->m_eventManager.pushEvent(resizeEvent);
+    EventManager::GetInstance().pushEvent(resizeEvent);
 }
 
 void WSI::init()
@@ -193,11 +191,7 @@ bool WSI::update()
 
     glfwPollEvents();
 
-    m_eventManager.processAll();
-    // m_keyboardsEvent.process();
-    // m_mouseButtonEvent.process();
-    // m_mouseButtonEvent.process();
-    // m_windowResizeEvent.process();
+    EventManager::GetInstance().processAll();
 
     ImGui_ImplGlfw_NewFrame();
     return true;

@@ -59,58 +59,6 @@ public:
 
     VkSurfaceKHR getSurface(vk::Instance* instance);
 
-    // template <typename TEvent>
-    // void pushEvent(const TEvent& e)
-    // {
-    //     if constexpr(std::is_same_v<TEvent, KeyboardEvent>)
-    //     {
-    //         m_keyboardsEvent.m_events.push(e);
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, MouseMoveEvent>)
-    //     {
-    //         m_mouseMoveEvent.m_events.push(e);
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, MouseButtonEvent>)
-    //     {
-    //         m_mouseButtonEvent.m_events.push(e);
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, WindowResizeEvent>)
-    //     {
-    //         m_windowResizeEvent.m_events.push(e);
-    //     }
-    //     else
-    //     {
-    //         CM_LOG_ERR("unexpected event type.");
-    //         APH_ASSERT(false);
-    //     }
-    // }
-
-    // template <typename TEvent>
-    // void registerEventHandler(std::function<bool(const TEvent&)>&& func)
-    // {
-    //     if constexpr(std::is_same_v<TEvent, KeyboardEvent>)
-    //     {
-    //         m_keyboardsEvent.m_handlers.push_back(std::move(func));
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, MouseMoveEvent>)
-    //     {
-    //         m_mouseMoveEvent.m_handlers.push_back(std::move(func));
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, MouseButtonEvent>)
-    //     {
-    //         m_mouseButtonEvent.m_handlers.push_back(std::move(func));
-    //     }
-    //     else if constexpr(std::is_same_v<TEvent, WindowResizeEvent>)
-    //     {
-    //         m_windowResizeEvent.m_handlers.push_back(std::move(func));
-    //     }
-    //     else
-    //     {
-    //         CM_LOG_ERR("unexpected event type.");
-    //         APH_ASSERT(false);
-    //     }
-    // }
-
     bool update();
     void close();
 
@@ -120,14 +68,6 @@ protected:
     void*    m_window = {};
     uint32_t m_width  = {};
     uint32_t m_height = {};
-
-    // EventData<KeyboardEvent>     m_keyboardsEvent;
-    // EventData<MouseMoveEvent>    m_mouseMoveEvent;
-    // EventData<MouseButtonEvent>  m_mouseButtonEvent;
-    // EventData<WindowResizeEvent> m_windowResizeEvent;
-
-public:
-    EventManager m_eventManager;
 
 protected:
     // TODO
