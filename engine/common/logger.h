@@ -1,77 +1,101 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
-#include <reckless/severity_log.hpp>
-#include <reckless/file_writer.hpp>
-#include <reckless/stdout_writer.hpp>
-
 namespace aph
 {
 class Logger
 {
-private:
-    using log_t = reckless::severity_log<reckless::indent<4>,      // 4 spaces of indent
-                                         ' ',                      // Field separator
-                                         reckless::severity_field  // Show severity marker (D/I/W/E) first
-                                         >;
-
-    Logger() : m_fileWriter{"log.txt"}, m_logger{&m_stdcoutWriter} {}
-
 public:
-    // Delete copy constructor and assignment operator
-    Logger(Logger const&)                  = delete;
-    Logger&       operator=(Logger const&) = delete;
+    enum class Level: uint8_t
+    {
+        Debug,
+        Info,
+        Warn,
+        Error,
+        None
+    };
+
+    void setLogLevel(Level level) { log_level = level; }
+
+    Logger(Logger const&)            = delete;
+    Logger& operator=(Logger const&) = delete;
+
     static Logger& Get()
     {
         static Logger instance;
         return instance;
     }
 
-public:
-    void flush() {}
+    void flush();
 
     template <typename... Args>
-    void debug(std::string_view fmt, Args&&... args);
+    void debug(std::string_view fmt, Args&&... args)
+    {
+        if(log_level <= Level::Debug)
+            log("D", fmt, std::forward<Args>(args)...);
+    }
 
     template <typename... Args>
-    void warn(std::string_view fmt, Args&&... args);
+    void warn(std::string_view fmt, Args&&... args)
+    {
+        if(log_level <= Level::Warn)
+            log("W", fmt, std::forward<Args>(args)...);
+    }
 
     template <typename... Args>
-    void info(std::string_view fmt, Args&&... args);
+    void info(std::string_view fmt, Args&&... args)
+    {
+        if(log_level <= Level::Info)
+            log("I", fmt, std::forward<Args>(args)...);
+    }
 
     template <typename... Args>
-    void error(std::string_view fmt, Args&&... args);
+    void error(std::string_view fmt, Args&&... args)
+    {
+        if(log_level <= Level::Error)
+            log("E", fmt, std::forward<Args>(args)...);
+    }
 
 private:
-    reckless::file_writer   m_fileWriter{"log.txt"};
-    reckless::stdout_writer m_stdcoutWriter{};
-    log_t                   m_logger;
+    Logger();
+
+    // conversion for most types
+    template<typename T>
+    T to_format(const T& val) {
+        return val;
+    }
+
+    // specialization for std::string
+    const char* to_format(const std::string& val) {
+        return val.c_str();
+    }
+
+    template <typename... Args>
+    void log(const char* level, std::string_view fmt, Args&&... args)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+
+        std::ostringstream ss;
+        ss << getCurrentTime() << " [" << level << "] ";
+        char buffer[512];
+        std::snprintf(buffer, sizeof(buffer), fmt.data(), to_format(args)...);
+        ss << buffer << "\n";
+
+        std::cout << ss.str();
+        if(file_stream.is_open())
+        {
+            file_stream << ss.str();
+        }
+    }
+
+    std::string getCurrentTime();
+
+    Level         log_level;
+    std::ofstream file_stream;
+    std::mutex    mutex;
 };
 
-template <typename... Args>
-void Logger::debug(std::string_view fmt, Args&&... args)
-{
-    m_logger.debug(fmt.data(), std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-void Logger::warn(std::string_view fmt, Args&&... args)
-{
-    m_logger.warn(fmt.data(), std::forward<Args>(args)...);
-}
-template <typename... Args>
-void Logger::info(std::string_view fmt, Args&&... args)
-{
-    m_logger.info(fmt.data(), std::forward<Args>(args)...);
-}
-template <typename... Args>
-void Logger::error(std::string_view fmt, Args&&... args)
-{
-    m_logger.error(fmt.data(), std::forward<Args>(args)...);
-}
 }  // namespace aph
-
-
 
 #define LOG_FLUSH() \
     do \

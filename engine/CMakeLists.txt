@@ -22,12 +22,11 @@ add_library(engine STATIC ${base_src})
 aph_compiler_options(engine)
 
 target_include_directories(engine SYSTEM PUBLIC
-                                  ${APH_EXTERNAL_DIR}/reckless/reckless/include
                                   ${APH_EXTERNAL_DIR}/volk
+                                  ${APH_EXTERNAL_DIR}/glm
 
                                   PRIVATE
                                   ${APH_ENGINE_DIR}
-                                  ${APH_EXTERNAL_DIR}/glm
                                   ${APH_EXTERNAL_DIR}/tinyimageformat
                                   ${APH_EXTERNAL_DIR}/backward-cpp/include
                                   ${APH_EXTERNAL_DIR}/mmgr
@@ -50,13 +49,9 @@ target_link_libraries(engine PRIVATE
   ${xcb_libraries}
   ${cmake_thread_libs_init}
   volk
-  reckless
-  # imgui
   shaderc_shared
   spirv-cross-core
   slang
   dl
   dw
-  # mmgr
-  # spirv-cross-reflect
 )
