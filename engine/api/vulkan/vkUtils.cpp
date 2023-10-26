@@ -49,28 +49,6 @@ VkShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
     return flags;
 }
 
-VkDescriptorType VkCast(ResourceType type)
-{
-    switch(type)
-    {
-    case ResourceType::Sampler:
-        return VK_DESCRIPTOR_TYPE_SAMPLER;
-    case ResourceType::SampledImage:
-        return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
-    case ResourceType::CombineSamplerImage:
-        return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    case ResourceType::StorageImage:
-        return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-    case ResourceType::UniformBuffer:
-        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    case ResourceType::StorageBuffer:
-        return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    default:
-        assert("Invalid resource type.");
-        return {};
-    }
-}
-
 VkShaderStageFlagBits VkCast(ShaderStage stage)
 {
     switch(stage)
@@ -411,6 +389,21 @@ VkIndexType VkCast(IndexType indexType)
         APH_ASSERT(false);
         return VK_INDEX_TYPE_NONE_KHR;
     }
+}
+
+VkResult setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle, std::string_view name)
+{
+    if(name.empty())
+    {
+        return VK_SUCCESS;
+    }
+    const VkDebugUtilsObjectNameInfoEXT ni = {
+        .sType        = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+        .objectType   = type,
+        .objectHandle = handle,
+        .pObjectName  = name.data(),
+    };
+    return vkSetDebugUtilsObjectNameEXT(device, &ni);
 }
 }  // namespace aph::vk::utils
 

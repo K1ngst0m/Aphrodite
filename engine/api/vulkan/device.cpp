@@ -114,6 +114,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     VkDevice handle = VK_NULL_HANDLE;
     _VR(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, gVkAllocator, &handle));
+    _VR(utils::setDebugObjectName(handle, VK_OBJECT_TYPE_DEVICE, reinterpret_cast<uint64_t>(handle), "Device"))
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
@@ -158,7 +159,7 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView)
+Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
 {
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -178,13 +179,14 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
 
     VkImageView handle = VK_NULL_HANDLE;
     _VR(m_table.vkCreateImageView(getHandle(), &info, gVkAllocator, &handle));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(handle), debugName))
 
     *ppImageView = new ImageView(createInfo, handle);
 
     return Result::Success;
 }
 
-Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
+Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std::string_view debugName)
 {
     // create buffer
     VkBufferCreateInfo bufferInfo{
@@ -195,6 +197,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
     };
     VkBuffer buffer;
     _VR(m_table.vkCreateBuffer(getHandle(), &bufferInfo, gVkAllocator, &buffer));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName))
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -245,7 +248,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
     return Result::Success;
 }
 
-Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
+Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName)
 {
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -267,6 +270,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage)
 
     VkImage image;
     _VR(m_table.vkCreateImage(m_handle, &imageCreateInfo, gVkAllocator, &image));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(image), debugName))
 
     VkMemoryDedicatedRequirementsKHR dedicatedRequirements = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS_KHR,
@@ -351,7 +355,7 @@ void Device::destroy(ImageView* pImageView)
     pImageView = nullptr;
 }
 
-Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain)
+Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName)
 {
     *ppSwapchain = new SwapChain(createInfo, this);
     return Result::Success;
@@ -444,7 +448,7 @@ void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppC
     }
 }
 
-Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
@@ -565,6 +569,7 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
         .stencilAttachmentFormat(createInfo.stencilFormat)
         .build(this, VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
 
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
     *ppPipeline = new Pipeline(this, rps, handle, program);
 
     return Result::Success;
@@ -579,7 +584,7 @@ void Device::destroy(Pipeline* pipeline)
     pipeline = nullptr;
 }
 
-Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline)
+Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
 {
     APH_ASSERT(createInfo.pCompute);
     auto                        program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
@@ -588,6 +593,7 @@ Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** pp
                                                                               program->getShader(ShaderStage::CS)->getHandle());
     VkPipeline handle                   = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, gVkAllocator, &handle));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
     *ppPipeline = new Pipeline(this, createInfo, handle, program);
     return Result::Success;
 }
@@ -646,7 +652,7 @@ void Device::unMapMemory(Buffer* pBuffer)
     m_table.vkUnmapMemory(getHandle(), pBuffer->getMemory());
 }
 
-Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
+Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
 {
     VkSampler sampler = {};
     YcbcrData ycbcr;
@@ -717,6 +723,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
         };
 
         _VR(m_table.vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION, reinterpret_cast<uint64_t>(ycbcr.conversion), debugName))
 
         ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
         ycbcr.info.pNext      = nullptr;
@@ -726,6 +733,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler)
     }
 
     _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler), debugName))
     *ppSampler = new Sampler(this, createInfo, sampler);
     return Result::Success;
 }

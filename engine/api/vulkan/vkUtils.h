@@ -32,7 +32,7 @@ namespace aph::vk
 #else
     #define _VR(f) (f)
 #endif
-}
+}  // namespace aph::vk
 
 namespace aph::vk::utils
 {
@@ -43,13 +43,13 @@ VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);
 Format                getFormatFromVk(VkFormat format);
 Result                getResult(VkResult result);
+VkResult              setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle, std::string_view name);
 }  // namespace aph::vk::utils
 
 // convert
 namespace aph::vk::utils
 {
 VkShaderStageFlagBits VkCast(ShaderStage stage);
-VkDescriptorType      VkCast(ResourceType type);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
 VkFormat              VkCast(TinyImageFormat format);

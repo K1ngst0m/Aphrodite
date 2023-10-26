@@ -42,13 +42,13 @@ public:
     static void                    Destroy(Device* pDevice);
 
 public:
-    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
-    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
-    Result create(const ImageCreateInfo& createInfo, Image** ppImage);
-    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
-    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline);
-    Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline);
+    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName = "");
+    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std::string_view debugName = "");
+    Result create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName = "");
+    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
+    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
+    Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
+    Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
 
 public:
     void destroy(Buffer* pBuffer);

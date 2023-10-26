@@ -85,7 +85,7 @@ UI::UI(const UICreateInfo& ci) :
     }
 
     // init imgui
-    // IMGUI_CHECKVERSION();
+    IMGUI_CHECKVERSION();
     m_pContext     = ImGui::CreateContext();
     auto& io       = ImGui::GetIO();
     io.IniFilename = ci.configFile.c_str();

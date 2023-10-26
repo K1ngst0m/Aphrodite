@@ -45,17 +45,6 @@ enum class ShaderStage : uint8_t
     MS  = 8,
 };
 
-enum class ResourceType : uint8_t
-{
-    Undefined           = 0,
-    Sampler             = 1,
-    SampledImage        = 2,
-    CombineSamplerImage = 3,
-    StorageImage        = 4,
-    UniformBuffer       = 5,
-    StorageBuffer       = 6,
-};
-
 enum ResourceState
 {
     RESOURCE_STATE_UNDEFINED                         = 0,
