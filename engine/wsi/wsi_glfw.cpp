@@ -180,20 +180,6 @@ VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
     return surface;
 };
 
-uint32_t WSI::getFrameBufferWidth() const
-{
-    int w, h;
-    glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
-    return w;
-};
-
-uint32_t WSI::getFrameBufferHeight() const
-{
-    int w, h;
-    glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
-    return h;
-};
-
 WSI::~WSI()
 {
     glfwDestroyWindow((GLFWwindow*)m_window);
@@ -277,6 +263,14 @@ void WSI::resize(uint32_t width, uint32_t height)
 {
     m_width  = width;
     m_height = height;
+
+    int w, h;
+    glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
+
+    if(w != m_width || h != m_height)
+    {
+        glfwSetWindowSize((GLFWwindow*)m_window, m_width, m_height);
+    }
 }
 
 std::vector<const char*> aph::WSI::getRequiredExtensions()

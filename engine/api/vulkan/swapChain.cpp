@@ -171,8 +171,8 @@ void SwapChain::reCreate()
 
     VkExtent2D extent = {};
 
-    extent.width  = std::clamp(m_pWSI->getFrameBufferWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
-    extent.height = std::clamp(m_pWSI->getFrameBufferHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
+    extent.width  = std::clamp(m_pWSI->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+    extent.height = std::clamp(m_pWSI->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
     VkSwapchainCreateInfoKHR swapChainCreateInfo{
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,

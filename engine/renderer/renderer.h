@@ -71,7 +71,6 @@ public:
     WSI*     getWSI() const { return m_wsi; }
     uint32_t getWindowWidth() const { return m_wsi->getWidth(); };
     uint32_t getWindowHeight() const { return m_wsi->getHeight(); };
-    uint32_t getWindowAspectRatio() const { return m_wsi->getAspectRatio(); }
 
     const RenderConfig& getConfig() const { return m_config; }
 

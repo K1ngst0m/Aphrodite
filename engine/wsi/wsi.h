@@ -51,11 +51,8 @@ public:
 public:
     bool     initUI();
     void     deInitUI();
-    float    getAspectRatio() const { return static_cast<float>(m_width) / m_height; }
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
-    uint32_t getFrameBufferWidth() const;
-    uint32_t getFrameBufferHeight() const;
     void     resize(uint32_t width, uint32_t height);
 
     std::vector<const char*> getRequiredExtensions();
