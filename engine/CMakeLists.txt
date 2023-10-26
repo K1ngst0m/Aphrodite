@@ -3,6 +3,7 @@ file(GLOB base_src
   input/*.cpp
   threads/*.cpp
   cli/*.cpp
+  module/*.cpp
   # ui/*.cpp
   wsi/*.cpp
   renderer/*.cpp
