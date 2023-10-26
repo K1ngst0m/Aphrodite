@@ -2,7 +2,6 @@
 #define GPU_RESOURCE_H_
 
 #include "common/common.h"
-#include "tinyimageformat.h"
 
 namespace aph
 {

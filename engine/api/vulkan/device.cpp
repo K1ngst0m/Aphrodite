@@ -1,5 +1,6 @@
 #include "device.h"
 #include "api/gpuResource.h"
+#include <volk.h>
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 

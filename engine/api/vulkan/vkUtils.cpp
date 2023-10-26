@@ -1,4 +1,5 @@
 #include "vkUtils.h"
+#include "volk.h"
 
 namespace aph::vk::utils
 {
@@ -216,10 +217,6 @@ VkImageLayout getImageLayout(ResourceState state)
     return VK_IMAGE_LAYOUT_UNDEFINED;
 }
 
-VkFormat VkCast(TinyImageFormat format)
-{
-    return static_cast<VkFormat>(TinyImageFormat_ToVkFormat(format));
-}
 VkFormat VkCast(Format format)
 {
     switch(format)

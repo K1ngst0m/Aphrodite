@@ -1,5 +1,7 @@
 #include "triangle_demo.h"
 
+#include "glm/glm.hpp"
+
 triangle_demo::triangle_demo() : aph::BaseApp("triangle_demo")
 {
 }

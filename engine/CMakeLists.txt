@@ -22,13 +22,13 @@ add_library(engine STATIC ${base_src})
 aph_compiler_options(engine)
 
 target_include_directories(engine SYSTEM PUBLIC
-                                  ${APH_EXTERNAL_DIR}/glm
                                   ${APH_EXTERNAL_DIR}/reckless/reckless/include
-                                  ${APH_EXTERNAL_DIR}/tinyimageformat
                                   ${APH_EXTERNAL_DIR}/volk
 
                                   PRIVATE
                                   ${APH_ENGINE_DIR}
+                                  ${APH_EXTERNAL_DIR}/glm
+                                  ${APH_EXTERNAL_DIR}/tinyimageformat
                                   ${APH_EXTERNAL_DIR}/backward-cpp/include
                                   ${APH_EXTERNAL_DIR}/mmgr
                                   ${APH_EXTERNAL_DIR}/glfw/include

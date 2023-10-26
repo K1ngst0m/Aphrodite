@@ -192,7 +192,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
     slang::createGlobalSession(globalSession.writeRef());
 
     {
-        SessionDesc             sessionDesc;
+        SessionDesc sessionDesc;
 
         TargetDesc targetDesc;
         targetDesc.format  = SLANG_SPIRV;
@@ -258,7 +258,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
 }
 }  // namespace loader::shader
 
-namespace
+namespace loader::geometry
 {
 inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry)
 {
@@ -341,7 +341,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
     return true;
 }
 
-}  // namespace
+}  // namespace loader::geometry
 
 namespace aph
 {
@@ -556,7 +556,8 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
         {
             spvCode = loader::shader::loadSpvFromFile(path.string());
         }
-        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" || path.extension() == ".geom")
+        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" ||
+                path.extension() == ".geom")
         {
             spvCode = loader::shader::loadGlslFromFile(path.string());
         }
@@ -615,7 +616,7 @@ void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 
     if(ext == ".glb" || ext == ".gltf")
     {
-        loadGLTF(this, info, ppGeometry);
+        loader::geometry::loadGLTF(this, info, ppGeometry);
     }
     else
     {
