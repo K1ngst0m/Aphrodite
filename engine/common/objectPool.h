@@ -48,10 +48,38 @@ protected:
 
     struct MallocDeleter
     {
-        void operator()(T* ptr) { memalign_free(ptr); }
+        void operator()(T* ptr) { memAlignFree(ptr); }
     };
 
     std::vector<std::unique_ptr<T, MallocDeleter>> m_memory;
+};
+
+template <typename T>
+class ThreadSafeObjectPool : private ObjectPool<T>
+{
+public:
+    template <typename... P>
+    T* allocate(P&&... p)
+    {
+        std::lock_guard<std::mutex> holder{m_lock};
+        return ObjectPool<T>::allocate(std::forward<P>(p)...);
+    }
+
+    void free(T* ptr)
+    {
+        ptr->~T();
+        std::lock_guard<std::mutex> holder{m_lock};
+        this->m_vacants.push_back(ptr);
+    }
+
+    void clear()
+    {
+        std::lock_guard<std::mutex> holder{m_lock};
+        ObjectPool<T>::clear();
+    }
+
+private:
+    std::mutex m_lock;
 };
 }  // namespace aph
 
