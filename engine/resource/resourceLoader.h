@@ -26,6 +26,7 @@ enum class ImageContainerType
 
 struct ImageLoadInfo
 {
+    std::string_view                     debugName     = {};
     std::variant<std::string, ImageInfo> data;
     ImageContainerType                   containerType = {ImageContainerType::Default};
     vk::ImageCreateInfo*                 pCreateInfo   = {};
@@ -33,14 +34,16 @@ struct ImageLoadInfo
 
 struct BufferLoadInfo
 {
+    std::string_view     debugName  = {};
     void*                data       = {};
     vk::BufferCreateInfo createInfo = {};
 };
 
 struct BufferUpdateInfo
 {
-    void*       data  = {};
-    MemoryRange range = {0, VK_WHOLE_SIZE};
+    void*            data      = {};
+    MemoryRange      range     = {0, VK_WHOLE_SIZE};
+    std::string_view debugName = {};
 };
 
 struct ShaderLoadInfo

@@ -54,7 +54,6 @@ protected:
     std::unordered_map<QueueType, Queue*> m_queue;
 
 protected:
-    std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
     std::vector<VkSemaphore>            m_timelineMain        = {};
     std::vector<VkSemaphore>            m_renderSemaphore     = {};
     std::vector<VkFence>                m_frameFence          = {};
@@ -68,6 +67,7 @@ protected:
     };
     FrameData m_frameData;
 
+    std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
 protected:
     uint32_t m_frameIdx     = {};
     float    m_frameTimer   = {};

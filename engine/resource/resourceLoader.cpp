@@ -513,7 +513,8 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        APH_CHECK_RESULT(m_pDevice->create(bufferCI, &stagingBuffer));
+        APH_CHECK_RESULT(
+            m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
         APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
         writeBuffer(stagingBuffer, data.data());
@@ -530,7 +531,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
-        APH_CHECK_RESULT(m_pDevice->create(imageCI, &image));
+        APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
         auto queue = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
         m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
@@ -601,7 +602,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     {
         bufferCI.domain = bufferCI.domain;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer));
+        APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
     }
 
     // update buffer
@@ -737,7 +738,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     .domain = BufferDomain::Host,
                 };
 
-                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer));
+                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
                 APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
                 writeBuffer(stagingBuffer, info.data, {0, copyRange.size});

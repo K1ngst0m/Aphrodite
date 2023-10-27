@@ -41,6 +41,7 @@ void triangle_demo::init()
             };
 
             aph::BufferLoadInfo loadInfo{
+                .debugName = "triangle::vertexBuffer",
                 .data       = vertexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
@@ -52,6 +53,7 @@ void triangle_demo::init()
         {
             std::array          indexArray{0U, 1U, 2U};
             aph::BufferLoadInfo loadInfo{
+                .debugName = "triangle::indexbuffer",
                 .data       = indexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
@@ -74,8 +76,8 @@ void triangle_demo::init()
             aph::vk::Shader* pVS = {};
             aph::vk::Shader* pFS = {};
 
-            m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            // m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
+            // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
             m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.frag"}, &pFS);
 
             aph::vk::GraphicsPipelineCreateInfo createInfo{
@@ -85,7 +87,7 @@ void triangle_demo::init()
                 .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
             };
 
-            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
+            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
     }
 }

@@ -26,7 +26,18 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         uint32_t frameId = *(uint32_t*)pUserData;
         msg << "[fr:" << frameId << "] ";
     }
+
+    for(uint32_t idx = 0; idx < pCallbackData->objectCount; idx++)
+    {
+        auto& obj = pCallbackData->pObjects[idx];
+        if(obj.pObjectName)
+        {
+            msg << "[name: " << obj.pObjectName << "]";
+        }
+    }
+
     msg << pCallbackData->pMessage;
+
     switch(messageSeverity)
     {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:

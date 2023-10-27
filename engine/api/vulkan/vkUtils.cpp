@@ -390,6 +390,7 @@ VkIndexType VkCast(IndexType indexType)
 
 VkResult setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle, std::string_view name)
 {
+#if APH_DEBUG
     if(name.empty())
     {
         return VK_SUCCESS;
@@ -401,6 +402,9 @@ VkResult setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle,
         .pObjectName  = name.data(),
     };
     return vkSetDebugUtilsObjectNameEXT(device, &ni);
+#else
+    return VK_SUCCESS;
+#endif
 }
 }  // namespace aph::vk::utils
 
