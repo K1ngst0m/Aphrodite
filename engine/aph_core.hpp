@@ -18,6 +18,7 @@
 #include "app/app.h"
 #include "app/input/input.h"
 #include "app/input/event.h"
+#include "app/input/eventManager.h"
 
 #include "scene/camera.h"
 #include "scene/mesh.h"

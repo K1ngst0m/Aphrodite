@@ -1,4 +1,5 @@
 #include "wsi.h"
+#include "app/input/eventManager.h"
 #include "api/vulkan/instance.h"
 
 #define GLFW_INCLUDE_NONE
