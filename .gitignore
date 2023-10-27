@@ -24,3 +24,4 @@ build/
 !/external/vulkan
 !/external/imgui
 !/external/slang
+/bin/

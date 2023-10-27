@@ -16,6 +16,7 @@ foreach(TEST_FILE ${TEST_FILES})
 
     # Create an executable for the test file
     add_executable(${TEST_TARGET} ${TEST_FILE})
+    aph_compiler_options(${TEST_TARGET})
 
     # Link necessary libraries, for instance, Catch2
     target_link_libraries(${TEST_TARGET} PRIVATE
