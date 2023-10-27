@@ -1,6 +1,5 @@
 #include "device.h"
 #include "api/gpuResource.h"
-#include <volk.h>
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
@@ -180,9 +179,10 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
 
     VkImageView handle = VK_NULL_HANDLE;
     _VR(m_table.vkCreateImageView(getHandle(), &info, gVkAllocator, &handle));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(handle), debugName))
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(handle),
+                                  debugName))
 
-    *ppImageView = new ImageView(createInfo, handle);
+    *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
 
     return Result::Success;
 }
@@ -241,7 +241,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
         _VR(m_table.vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
-    *ppBuffer = new Buffer(createInfo, buffer, memory);
+    *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer, memory);
 
     // bind buffer and memory
     _VR(m_table.vkBindBufferMemory(getHandle(), (*ppBuffer)->getHandle(), (*ppBuffer)->getMemory(), 0));
@@ -317,7 +317,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
         _VR(m_table.vkAllocateMemory(m_handle, &allocInfo, gVkAllocator, &memory));
     }
 
-    *ppImage = new Image(this, createInfo, image, memory);
+    *ppImage = m_resourcePool.image.allocate(this, createInfo, image, memory);
 
     if((*ppImage)->getMemory() != VK_NULL_HANDLE)
     {
@@ -334,8 +334,7 @@ void Device::destroy(Buffer* pBuffer)
         vkFreeMemory(m_handle, pBuffer->getMemory(), gVkAllocator);
     }
     m_table.vkDestroyBuffer(m_handle, pBuffer->getHandle(), gVkAllocator);
-    delete pBuffer;
-    pBuffer = nullptr;
+    m_resourcePool.buffer.free(pBuffer);
 }
 
 void Device::destroy(Image* pImage)
@@ -345,15 +344,13 @@ void Device::destroy(Image* pImage)
         vkFreeMemory(m_handle, pImage->getMemory(), gVkAllocator);
     }
     m_table.vkDestroyImage(m_handle, pImage->getHandle(), gVkAllocator);
-    delete pImage;
-    pImage = nullptr;
+    m_resourcePool.image.free(pImage);
 }
 
 void Device::destroy(ImageView* pImageView)
 {
     m_table.vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
-    delete pImageView;
-    pImageView = nullptr;
+    m_resourcePool.imageView.free(pImageView);
 }
 
 Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName)
@@ -460,7 +457,7 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
     shaderStages.push_back(
         init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
 
-    auto program = new ShaderProgram(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
+    auto program = m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
 
     // create rps
     RenderPipelineState rps    = {.createInfo = createInfo};
@@ -571,7 +568,7 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
         .build(this, VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
 
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
-    *ppPipeline = new Pipeline(this, rps, handle, program);
+    *ppPipeline = m_resourcePool.pipeline.allocate(this, rps, handle, program);
 
     return Result::Success;
 }
@@ -579,23 +576,23 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
 void Device::destroy(Pipeline* pipeline)
 {
     auto program = pipeline->getProgram();
-    delete program;
+    m_resourcePool.program.free(program);
+
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), gVkAllocator);
-    delete pipeline;
-    pipeline = nullptr;
+    m_resourcePool.pipeline.free(pipeline);
 }
 
 Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
 {
     APH_ASSERT(createInfo.pCompute);
-    auto                        program = new ShaderProgram(this, createInfo.pCompute, createInfo.pSamplerBank);
-    VkComputePipelineCreateInfo ci      = init::computePipelineCreateInfo(program->getPipelineLayout());
-    ci.stage                            = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                              program->getShader(ShaderStage::CS)->getHandle());
-    VkPipeline handle                   = VK_NULL_HANDLE;
+    auto program = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.pSamplerBank);
+    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(program->getPipelineLayout());
+    ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
+                                                                         program->getShader(ShaderStage::CS)->getHandle());
+    VkPipeline handle              = VK_NULL_HANDLE;
     _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, gVkAllocator, &handle));
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
-    *ppPipeline = new Pipeline(this, createInfo, handle, program);
+    *ppPipeline = m_resourcePool.pipeline.allocate(this, createInfo, handle, program);
     return Result::Success;
 }
 
@@ -724,7 +721,8 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
         };
 
         _VR(m_table.vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION, reinterpret_cast<uint64_t>(ycbcr.conversion), debugName))
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION,
+                                      reinterpret_cast<uint64_t>(ycbcr.conversion), debugName))
 
         ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
         ycbcr.info.pNext      = nullptr;
@@ -735,15 +733,14 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
 
     _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler), debugName))
-    *ppSampler = new Sampler(this, createInfo, sampler);
+    *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     return Result::Success;
 }
 
 void Device::destroy(Sampler* pSampler)
 {
     m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), gVkAllocator);
-    delete pSampler;
-    pSampler = nullptr;
+    m_resourcePool.sampler.free(pSampler);
 }
 
 void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)

@@ -14,7 +14,7 @@
 #include "syncPrimitivesPool.h"
 #include "vkInit.h"
 #include "vkUtils.h"
-#include <volk.h>
+#include "common/objectPool.h"
 
 namespace aph::vk
 {
@@ -50,7 +50,6 @@ public:
     Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
     Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
 
-public:
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
     void destroy(ImageView* pImageView);
@@ -103,6 +102,17 @@ private:
     VolkDeviceTable                             m_table{};
     std::vector<QueueFamily>                    m_queues;
     std::unordered_map<uint32_t, VkCommandPool> m_commandPools;
+
+private:
+    struct ResourceObjectPool
+    {
+        ThreadSafeObjectPool<Buffer>        buffer;
+        ThreadSafeObjectPool<Image>         image;
+        ThreadSafeObjectPool<Sampler>       sampler;
+        ThreadSafeObjectPool<ImageView>     imageView;
+        ThreadSafeObjectPool<Pipeline>      pipeline;
+        ThreadSafeObjectPool<ShaderProgram> program;
+    } m_resourcePool;
 };
 
 }  // namespace aph::vk
