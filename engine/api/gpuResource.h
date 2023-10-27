@@ -67,10 +67,17 @@ enum ResourceState
 
 enum class SamplerPreset : uint8_t
 {
-    Nearest,
-    Linear,
-    Anisotropic,
-    Mipmap,
+    NearestClamp,
+    LinearClamp,
+    TrilinearClamp,
+    NearestWrap,
+    LinearWrap,
+    TrilinearWrap,
+    NearestShadow,
+    LinearShadow,
+    DefaultGeometryFilterClamp,
+    DefaultGeometryFilterWrap,
+    Count
 };
 
 struct Extent2D

@@ -66,36 +66,85 @@ namespace aph::vk::init
 inline SamplerCreateInfo samplerCreateInfo2(SamplerPreset preset)
 {
     SamplerCreateInfo ci;
-    ci.magFilter     = VK_FILTER_LINEAR;
-    ci.minFilter     = VK_FILTER_LINEAR;
-    ci.addressU      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressV      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    ci.addressW      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    ci.maxLod        = VK_LOD_CLAMP_NONE;
     ci.maxAnisotropy = 1.0f;
-    ci.mipMapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    ci.mipLodBias    = 0.0f;
-    ci.minLod        = 0.0f;
-    ci.maxLod        = 1.0f;
 
     switch(preset)
     {
-    case SamplerPreset::Nearest:
-        ci.magFilter = VK_FILTER_NEAREST;
-        ci.minFilter = VK_FILTER_NEAREST;
+    case SamplerPreset::NearestShadow:
+    case SamplerPreset::LinearShadow:
+        ci.compareFunc = VK_COMPARE_OP_LESS_OR_EQUAL;
         break;
-    case SamplerPreset::Linear:
+    default:
+        break;
+    }
+
+    switch(preset)
+    {
+    case SamplerPreset::TrilinearClamp:
+    case SamplerPreset::TrilinearWrap:
+    case SamplerPreset::DefaultGeometryFilterWrap:
+    case SamplerPreset::DefaultGeometryFilterClamp:
+        ci.mipMapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        break;
+
+    default:
+        ci.mipMapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        break;
+    }
+
+    switch(preset)
+    {
+    case SamplerPreset::DefaultGeometryFilterClamp:
+    case SamplerPreset::DefaultGeometryFilterWrap:
+    case SamplerPreset::LinearClamp:
+    case SamplerPreset::LinearWrap:
+    case SamplerPreset::TrilinearClamp:
+    case SamplerPreset::TrilinearWrap:
+    case SamplerPreset::LinearShadow:
         ci.magFilter = VK_FILTER_LINEAR;
         ci.minFilter = VK_FILTER_LINEAR;
         break;
-    case SamplerPreset::Anisotropic:
+
+    default:
+        ci.magFilter = VK_FILTER_NEAREST;
+        ci.minFilter = VK_FILTER_NEAREST;
+        break;
+    }
+
+    switch(preset)
+    {
+    default:
+    case SamplerPreset::DefaultGeometryFilterWrap:
+    case SamplerPreset::LinearWrap:
+    case SamplerPreset::NearestWrap:
+    case SamplerPreset::TrilinearWrap:
+        ci.addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        ci.addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        ci.addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        break;
+
+    case SamplerPreset::DefaultGeometryFilterClamp:
+    case SamplerPreset::LinearClamp:
+    case SamplerPreset::NearestClamp:
+    case SamplerPreset::TrilinearClamp:
+    case SamplerPreset::NearestShadow:
+    case SamplerPreset::LinearShadow:
+        ci.addressU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        ci.addressV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        ci.addressW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        break;
+    }
+
+    switch(preset)
+    {
+    case SamplerPreset::DefaultGeometryFilterWrap:
+    case SamplerPreset::DefaultGeometryFilterClamp:
+        // TODO limited by device properties
         ci.maxAnisotropy = 16.0f;
         break;
-    case SamplerPreset::Mipmap:
-        ci.minFilter  = VK_FILTER_LINEAR;
-        ci.magFilter  = VK_FILTER_LINEAR;
-        ci.mipMapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        ci.minLod     = 0.0f;
-        ci.maxLod     = 8.0f;
+
+    default:
         break;
     }
 

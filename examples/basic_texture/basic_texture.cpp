@@ -63,7 +63,7 @@ void basic_texture::init()
 
         // image and sampler
         {
-            APH_CHECK_RESULT(m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::Linear), &m_pSampler));
+            APH_CHECK_RESULT(m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
             aph::vk::ImageCreateInfo imageCI{
                 .alignment = 0,
