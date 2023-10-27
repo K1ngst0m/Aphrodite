@@ -522,14 +522,16 @@ static TinyImageFormat TinyImageFormat_FromTinyDDSFormat(TinyDDS_Format fmt) {
 	case TDDS_AYUV: return TinyImageFormat_B8G8R8A8_UNORM;
 	case TDDS_Y410: return TinyImageFormat_A2B10G10R10_UNORM;
 	case TDDS_Y416: return TinyImageFormat_R16G16B16A16_UNORM;
-	case TDDS_NV12: return TinyImageFormat_G8_B8R8_2PLANE_420_UNORM;
-	case TDDS_P010: return TinyImageFormat_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16;
-	case TDDS_P016: return TinyImageFormat_G16_B16R16_2PLANE_420_UNORM;
-	case TDDS_420_OPAQUE: return TinyImageFormat_G8_B8_R8_3PLANE_420_UNORM;
-	case TDDS_YUY2: return TinyImageFormat_G8B8G8R8_422_UNORM;
-	case TDDS_Y210: return TinyImageFormat_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16;
-	case TDDS_Y216: return TinyImageFormat_G16B16G16R16_422_UNORM;
-	case TDDS_V208: return TinyImageFormat_G8_B8R8_2PLANE_422_UNORM;
+
+        // FIXME
+	case TDDS_NV12: break;;
+	case TDDS_P010: break;;
+	case TDDS_P016: break;;
+	case TDDS_420_OPAQUE: break;;
+	case TDDS_YUY2: break;;
+	case TDDS_Y210: break;;
+	case TDDS_Y216: break;;
+	case TDDS_V208: break;;
 
 	case TDDS_NV11:break;
 	case TDDS_AI44:break;
