@@ -13,8 +13,6 @@ set(APH_ENGINE_THREADS_DIR ${APH_ENGINE_DIR}/threads)
 file(GLOB ENGINE_BASE_SRC
   # ${APH_ENGINE_MODULE_DIR}/*.cpp
 
-  ${APH_ENGINE_API_DIR}/vulkan/*.cpp
-
   ${APH_ENGINE_RENDERER_DIR}/api/vulkan/renderer.h
   ${APH_ENGINE_RENDERER_DIR}/api/vulkan/renderer.cpp
   ${APH_ENGINE_RENDERER_DIR}/api/vulkan/uiRenderer.h
@@ -27,6 +25,7 @@ add_subdirectory(cli)
 add_subdirectory(threads)
 add_subdirectory(wsi)
 add_subdirectory(resource)
+add_subdirectory(api)
 
 add_library(engine STATIC ${ENGINE_BASE_SRC})
 aph_compiler_options(engine)
@@ -36,17 +35,12 @@ target_include_directories(engine SYSTEM PUBLIC
                                   ${APH_EXTERNAL_DIR}/glm
 
                                   PRIVATE
-                                  ${APH_EXTERNAL_DIR}/mmgr
-                                  ${APH_EXTERNAL_DIR}/glfw/include
-                                  ${APH_EXTERNAL_DIR}/shaderc/libshaderc/include
                                   ${APH_EXTERNAL_DIR}/imgui
-                                  ${APH_EXTERNAL_DIR}/vulkan
-                                  ${APH_EXTERNAL_DIR}/slang
 
                                   PUBLIC
                                   ${APH_ENGINE_DIR}
                                   )
-target_link_libraries(engine PRIVATE common app cli threads wsi resource)
+target_link_libraries(engine PRIVATE common app cli threads wsi resource api)
 
 target_link_libraries(engine PRIVATE
   mimalloc-static
