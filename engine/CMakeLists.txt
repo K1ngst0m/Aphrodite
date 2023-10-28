@@ -7,6 +7,7 @@ add_subdirectory(resource)
 add_subdirectory(api)
 add_subdirectory(renderer)
 add_subdirectory(filesystem)
+add_subdirectory(module)
 
 add_library(aph_engine INTERFACE)
 
@@ -24,6 +25,7 @@ target_link_libraries(aph_engine INTERFACE
   resource
   api
   renderer
+  aph_module
   aph_filesystem
 )
 
