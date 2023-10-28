@@ -1,0 +1,5 @@
+file(GLOB APH_FILESYSTEM_SRC ${APH_ENGINE_FILESYSTEM_DIR}/*.cpp)
+add_library(aph_filesystem STATIC ${APH_FILESYSTEM_SRC})
+aph_compiler_options(aph_filesystem)
+target_include_directories(aph_filesystem PRIVATE ${APH_ENGINE_DIR})
+target_link_libraries(aph_filesystem PRIVATE common)
