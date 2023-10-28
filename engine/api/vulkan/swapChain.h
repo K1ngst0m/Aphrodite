@@ -40,9 +40,9 @@ public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
-    VkResult acquireNextImage(VkSemaphore semaphore, Fence* pFence = {});
+    Result acquireNextImage(VkSemaphore semaphore, Fence* pFence = {});
 
-    VkResult presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores);
+    Result presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores);
 
     void reCreate();
 

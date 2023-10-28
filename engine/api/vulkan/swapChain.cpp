@@ -77,7 +77,7 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
     reCreate();
 }
 
-VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
+Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
 {
     VkResult res = VK_SUCCESS;
     res          = vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
@@ -90,20 +90,20 @@ VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
         {
             vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
         }
-        return VK_SUCCESS;
+        return Result::Success;
     }
 
     if(res == VK_SUBOPTIMAL_KHR)
     {
         VK_LOG_INFO(
             "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
-        return VK_SUCCESS;
+        return Result::Success;
     }
 
-    return res;
+    return utils::getResult(res);
 }
 
-VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores)
+Result SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores)
 {
     m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
         aph::vk::ImageBarrier barrier{
@@ -132,7 +132,7 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& w
     };
 
     VkResult result = vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
-    return result;
+    return utils::getResult(result);
 }
 
 SwapChain::~SwapChain()
