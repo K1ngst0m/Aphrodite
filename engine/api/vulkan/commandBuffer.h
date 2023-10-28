@@ -1,7 +1,6 @@
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

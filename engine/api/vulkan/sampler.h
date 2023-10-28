@@ -1,7 +1,6 @@
 #ifndef APH_SAMPLER_H
 #define APH_SAMPLER_H
 
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

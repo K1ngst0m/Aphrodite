@@ -1,7 +1,6 @@
 #ifndef VKLUTILS_H_
 #define VKLUTILS_H_
 
-#include "api/gpuResource.h"
 #if defined(__linux__)
     #define VK_USE_PLATFORM_XCB_KHR
 #endif
@@ -11,6 +10,8 @@
 #include "common/common.h"
 #include "common/logger.h"
 #include "common/objectPool.h"
+
+#include "../gpuResource.h"
 
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0

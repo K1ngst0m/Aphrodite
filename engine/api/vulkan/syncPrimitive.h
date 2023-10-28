@@ -3,7 +3,6 @@
 
 #include "common/objectPool.h"
 #include "threads/spinlock.h"
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

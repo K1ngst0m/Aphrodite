@@ -1,7 +1,6 @@
 #ifndef VULKAN_BUFFER_H_
 #define VULKAN_BUFFER_H_
 
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

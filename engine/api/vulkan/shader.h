@@ -1,7 +1,6 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

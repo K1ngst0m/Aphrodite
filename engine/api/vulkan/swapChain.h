@@ -2,7 +2,6 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "wsi/wsi.h"
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

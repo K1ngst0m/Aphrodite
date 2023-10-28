@@ -2,7 +2,6 @@
 
 #include "ui/ui.h"
 
-#include "api/gpuResource.h"
 #include "api/vulkan/vkUtils.h"
 #include "common/assetManager.h"
 

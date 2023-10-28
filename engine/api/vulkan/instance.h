@@ -2,7 +2,6 @@
 #define INSTANCE_H_
 
 #include "threads/threadPool.h"
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk

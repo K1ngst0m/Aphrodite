@@ -1,7 +1,6 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
-#include "api/gpuResource.h"
 #include "threads/spinlock.h"
 #include "vkUtils.h"
 

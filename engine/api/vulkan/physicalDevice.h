@@ -2,7 +2,6 @@
 #define PHYSICALDEVICE_H_
 
 #include "instance.h"
-#include "api/gpuResource.h"
 
 namespace aph::vk
 {

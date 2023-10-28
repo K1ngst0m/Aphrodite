@@ -4,7 +4,6 @@
 #include "scene/mesh.h"
 #include "common/common.h"
 
-#include "api/gpuResource.h"
 #include "common/assetManager.h"
 
 #include "volk.h"

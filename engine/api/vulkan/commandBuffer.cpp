@@ -1,5 +1,4 @@
 #include "commandBuffer.h"
-#include "api/gpuResource.h"
 #include "device.h"
 
 namespace aph::vk

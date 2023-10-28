@@ -1,7 +1,7 @@
 #ifndef VKLINIT_H_
 #define VKLINIT_H_
 
-#include <vulkan/vulkan.h>
+#include <volk.h>
 
 #include <vector>
 

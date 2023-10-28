@@ -1,7 +1,6 @@
 #ifndef PIPELINE_H_
 #define PIPELINE_H_
 
-#include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk
