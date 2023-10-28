@@ -26,9 +26,9 @@ enum class ImageDomain : uint8_t
 
 enum class QueueType : uint8_t
 {
-    GRAPHICS = 0,
-    COMPUTE  = 1,
-    TRANSFER = 2,
+    Graphics = 0,
+    Compute  = 1,
+    Transfer = 2,
 };
 
 enum class ShaderStage : uint8_t

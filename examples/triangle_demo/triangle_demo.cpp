@@ -101,7 +101,7 @@ void triangle_demo::run()
 
         m_renderer->update(deltaTime);
 
-        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
+        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
 
         // draw and submit
         m_renderer->beginFrame();

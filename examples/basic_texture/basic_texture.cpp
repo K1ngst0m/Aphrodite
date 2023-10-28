@@ -78,7 +78,7 @@ void basic_texture::init()
 
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
-            m_pDevice->executeSingleCommands(m_pDevice->getQueueByFlags(aph::QueueType::GRAPHICS),
+            m_pDevice->executeSingleCommands(m_pDevice->getQueueByFlags(aph::QueueType::Graphics),
                                              [&](aph::vk::CommandBuffer* cmd) {
                                                  aph::vk::ImageBarrier barrier{
                                                      .pImage       = m_pImage,
@@ -140,7 +140,7 @@ void basic_texture::run()
 
         m_renderer->update(deltaTime);
 
-        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::GRAPHICS);
+        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
 
         // draw and submit
         m_renderer->beginFrame();

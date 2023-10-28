@@ -126,17 +126,17 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         APH_ASSERT(m_pDevice != nullptr);
 
         // get 3 type queue
-        m_queue[QueueType::GRAPHICS] = m_pDevice->getQueueByFlags(QueueType::GRAPHICS);
-        m_queue[QueueType::COMPUTE]  = m_pDevice->getQueueByFlags(QueueType::COMPUTE);
-        m_queue[QueueType::TRANSFER] = m_pDevice->getQueueByFlags(QueueType::TRANSFER);
+        m_queue[QueueType::Graphics] = m_pDevice->getQueueByFlags(QueueType::Graphics);
+        m_queue[QueueType::Compute]  = m_pDevice->getQueueByFlags(QueueType::Compute);
+        m_queue[QueueType::Transfer] = m_pDevice->getQueueByFlags(QueueType::Transfer);
 
-        if(!m_queue[QueueType::COMPUTE])
+        if(!m_queue[QueueType::Compute])
         {
-            m_queue[QueueType::COMPUTE] = m_queue[QueueType::GRAPHICS];
+            m_queue[QueueType::Compute] = m_queue[QueueType::Graphics];
         }
-        if(!m_queue[QueueType::TRANSFER])
+        if(!m_queue[QueueType::Transfer])
         {
-            m_queue[QueueType::TRANSFER] = m_queue[QueueType::COMPUTE];
+            m_queue[QueueType::Transfer] = m_queue[QueueType::Compute];
         }
 
         // check sample count support

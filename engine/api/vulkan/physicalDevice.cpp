@@ -18,17 +18,17 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
             // universal queue
             if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
-                m_queueFamilyMap[QueueType::GRAPHICS].push_back(queueFamilyIndex);
+                m_queueFamilyMap[QueueType::Graphics].push_back(queueFamilyIndex);
             }
             // compute queue
             else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
             {
-                m_queueFamilyMap[QueueType::COMPUTE].push_back(queueFamilyIndex);
+                m_queueFamilyMap[QueueType::Compute].push_back(queueFamilyIndex);
             }
             // transfer queue
             else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
             {
-                m_queueFamilyMap[QueueType::TRANSFER].push_back(queueFamilyIndex);
+                m_queueFamilyMap[QueueType::Transfer].push_back(queueFamilyIndex);
             }
         }
     }
@@ -299,7 +299,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
     auto* gpuSupport = &pGPU->getSettings();
     switch(queueType)
     {
-    case aph::QueueType::GRAPHICS:
+    case aph::QueueType::Graphics:
     {
         if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
             flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
@@ -334,7 +334,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
 
         break;
     }
-    case aph::QueueType::COMPUTE:
+    case aph::QueueType::Compute:
     {
         if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
            (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
@@ -348,7 +348,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
 
         break;
     }
-    case aph::QueueType::TRANSFER:
+    case aph::QueueType::Transfer:
         return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     default:
         break;

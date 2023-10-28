@@ -12,15 +12,15 @@ Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const
 {
     if(m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
     {
-        m_type = QueueType::GRAPHICS;
+        m_type = QueueType::Graphics;
     }
     else if(m_properties.queueFlags & VK_QUEUE_COMPUTE_BIT)
     {
-        m_type = QueueType::COMPUTE;
+        m_type = QueueType::Compute;
     }
     else if(m_properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
     {
-        m_type = QueueType::TRANSFER;
+        m_type = QueueType::Transfer;
     }
     else
     {

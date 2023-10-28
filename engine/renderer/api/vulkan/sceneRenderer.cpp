@@ -73,7 +73,7 @@ void SceneRenderer::load(Scene* scene)
 
     _initSet();
 
-    auto* queue = getDefaultQueue(QueueType::GRAPHICS);
+    auto* queue = getDefaultQueue(QueueType::Graphics);
     for(auto idx = 0; idx < m_config.maxFrames; idx++)
     {
         m_pDevice->allocateThreadCommandBuffers(COMMAND_BUFFER_MAX, cb[idx], queue);
@@ -108,7 +108,7 @@ void SceneRenderer::cleanup()
 
 void SceneRenderer::recordAll()
 {
-    auto* queue     = getDefaultQueue(QueueType::GRAPHICS);
+    auto* queue     = getDefaultQueue(QueueType::Graphics);
     auto* currentCB = cb[m_frameIdx];
 
     {
@@ -442,7 +442,7 @@ void SceneRenderer::_initGbuffer()
                 .format = m_pDevice->getDepthFormat(),
             };
             VK_CHECK_RESULT(m_pDevice->create(createInfo, &depth));
-            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
+            m_pDevice->executeSingleCommands(QueueType::Graphics, [&](auto* cmd) {
                 aph::vk::ImageBarrier barrier{
                     .pImage       = depth,
                     .currentState = depth->getResourceState(),
@@ -533,7 +533,7 @@ void SceneRenderer::_initGeneral()
             createInfo.samples = m_sampleCount;
             VK_CHECK_RESULT(m_pDevice->create(createInfo, &depthImageMS));
 
-            m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
+            m_pDevice->executeSingleCommands(QueueType::Graphics, [&](auto* cmd) {
                 cmd->transitionImageLayout(depthImage, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
                 cmd->transitionImageLayout(depthImageMS, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             });
@@ -1060,7 +1060,7 @@ void SceneRenderer::_initShadow()
             .format    = m_pDevice->getDepthFormat(),
         };
         VK_CHECK_RESULT(m_pDevice->create(createInfo, &depth));
-        m_pDevice->executeSingleCommands(QueueType::GRAPHICS, [&](auto* cmd) {
+        m_pDevice->executeSingleCommands(QueueType::Graphics, [&](auto* cmd) {
             cmd->transitionImageLayout(depth, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
         });
     }
