@@ -2,7 +2,6 @@
 #define SYNCPRIMITIVESPOOL_H_
 
 #include "common/objectPool.h"
-#include "threads/spinlock.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -73,8 +72,8 @@ private:
     std::queue<VkSemaphore> m_availableSemaphores = {};
     ObjectPool<Fence>       m_fencePool           = {};
 
-    SpinLock m_fenceLock     = {};
-    SpinLock m_semaphoreLock = {};
+    std::mutex m_fenceLock     = {};
+    std::mutex m_semaphoreLock = {};
 };
 }  // namespace aph::vk
 

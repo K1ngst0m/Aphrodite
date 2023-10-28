@@ -49,7 +49,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
 DescriptorSet* DescriptorSetLayout::allocateSet()
 {
     // Safe guard access to internal resources across threads.
-    m_spinLock.Lock();
+    m_lock.lock();
 
     // Find the next pool to allocate from.
     while(true)
@@ -110,7 +110,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     m_allocatedDescriptorSets.emplace(handle, m_currentAllocationPoolIndex);
 
     // Unlock access to internal resources.
-    m_spinLock.Unlock();
+    m_lock.unlock();
 
     // Return descriptor set handle.
     auto pRetHandle = new DescriptorSet(this, handle);
@@ -122,7 +122,7 @@ VkResult DescriptorSetLayout::freeSet(const DescriptorSet* pSet)
     auto descriptorSet = pSet->getHandle();
 
     // Safe guard access to internal resources across threads.
-    m_spinLock.Lock();
+    m_lock.lock();
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
     auto it = m_allocatedDescriptorSets.find(descriptorSet);
@@ -143,7 +143,7 @@ VkResult DescriptorSetLayout::freeSet(const DescriptorSet* pSet)
     m_currentAllocationPoolIndex = poolIndex;
 
     // Unlock access to internal resources.
-    m_spinLock.Unlock();
+    m_lock.unlock();
 
     // Return success.
     return VK_SUCCESS;

@@ -17,60 +17,64 @@ VkResult SyncPrimitivesPool::acquireFence(Fence** ppFence, bool isSignaled)
     auto&    pFence = *ppFence;
 
     // See if there's a free fence available.
-    m_fenceLock.Lock();
-    if(!m_availableFences.empty())
     {
-        auto vkFence = m_availableFences.front();
-        pFence       = m_fencePool.allocate(m_pDevice, vkFence);
-        m_availableFences.pop();
-    }
-    // Else create a new one.
-    else
-    {
-        VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-        if(isSignaled)
+        std::lock_guard<std::mutex> lock{m_fenceLock};
+
+        if(!m_availableFences.empty())
         {
-            createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            auto vkFence = m_availableFences.front();
+            pFence       = m_fencePool.allocate(m_pDevice, vkFence);
+            m_availableFences.pop();
         }
-        VkFence vkFence;
-        result = m_pDeviceTable->vkCreateFence(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkFence);
-        if(result == VK_SUCCESS)
-        {
-            m_allFences.emplace(vkFence);
-            pFence = m_fencePool.allocate(m_pDevice, vkFence);
-        }
+        // Else create a new one.
         else
         {
-            APH_ASSERT(false);
+            VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+            if(isSignaled)
+            {
+                createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            }
+            VkFence vkFence;
+            result = m_pDeviceTable->vkCreateFence(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkFence);
+            if(result == VK_SUCCESS)
+            {
+                m_allFences.emplace(vkFence);
+                pFence = m_fencePool.allocate(m_pDevice, vkFence);
+            }
+            else
+            {
+                APH_ASSERT(false);
+            }
         }
     }
-    m_fenceLock.Unlock();
 
     return result;
 }
 
 VkResult SyncPrimitivesPool::releaseFence(Fence* pFence)
 {
-    m_fenceLock.Lock();
+    std::lock_guard<std::mutex> lock{m_fenceLock};
+
     if(m_allFences.contains(pFence->getHandle()))
     {
         VkResult result = m_pDeviceTable->vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
         if(result != VK_SUCCESS)
         {
-            m_fenceLock.Unlock();
+            m_fenceLock.unlock();
             return result;
         }
         m_availableFences.push(pFence->getHandle());
     }
-    m_fenceLock.Unlock();
+
     return VK_SUCCESS;
 }
 
 bool SyncPrimitivesPool::Exists(Fence* pFence)
 {
-    m_fenceLock.Lock();
+    std::lock_guard<std::mutex> lock{m_fenceLock};
+
     auto result = (m_allFences.find(pFence->getHandle()) != m_allFences.end());
-    m_fenceLock.Unlock();
+
     return result;
 }
 
@@ -79,7 +83,7 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore
     VkResult result = VK_SUCCESS;
 
     // See if there are free semaphores available.
-    m_semaphoreLock.Lock();
+    std::lock_guard<std::mutex> lock{m_semaphoreLock};
     while(!m_availableSemaphores.empty())
     {
         auto&       pSemaphore  = *ppSemaphores;
@@ -109,13 +113,12 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore
         m_allSemaphores.emplace(vkSemaphore);
     }
 
-    m_semaphoreLock.Unlock();
     return result;
 }
 
 VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
-    m_semaphoreLock.Lock();
+    std::lock_guard<std::mutex> lock{m_semaphoreLock};
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
         VkSemaphore vkSemaphore = ppSemaphores[i]->getHandle();
@@ -124,15 +127,13 @@ VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, Semaphor
             m_availableSemaphores.push(vkSemaphore);
         }
     }
-    m_semaphoreLock.Unlock();
     return VK_SUCCESS;
 }
 
 bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
 {
-    m_semaphoreLock.Lock();
+    std::lock_guard<std::mutex> lock{m_semaphoreLock};
     auto result = m_allSemaphores.contains(semaphore);
-    m_semaphoreLock.Unlock();
     return result;
 }
 

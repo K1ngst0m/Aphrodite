@@ -1,7 +1,6 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
-#include "threads/spinlock.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -59,7 +58,7 @@ private:
     uint32_t                                       m_currentAllocationPoolIndex = {};
     std::unordered_map<VkDescriptorSet, uint32_t>  m_allocatedDescriptorSets    = {};
     std::unordered_map<VkDescriptorType, uint32_t> m_descriptorTypeCounts       = {};
-    SpinLock                                       m_spinLock                   = {};
+    std::mutex                                     m_lock                       = {};
 };
 
 class DescriptorSet : public ResourceHandle<VkDescriptorSet>
