@@ -163,18 +163,18 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // init default resources
     if(m_config.flags & RENDER_CFG_DEFAULT_RES)
     {
-        m_timelineMain.resize(m_config.maxFrames);
         m_renderSemaphore.resize(m_config.maxFrames);
         m_frameFence.resize(m_config.maxFrames);
 
         {
-            m_pSyncPrimitivesPool = std::make_unique<SyncPrimitivesPool>(m_pDevice.get());
-            m_pSyncPrimitivesPool->acquireSemaphore(m_renderSemaphore.size(), m_renderSemaphore.data());
+            for(auto& semaphore : m_renderSemaphore)
+            {
+                semaphore = m_pDevice->acquireSemaphore();
+            }
             for(auto& fence : m_frameFence)
             {
-                m_pSyncPrimitivesPool->acquireFence(fence);
+                fence = m_pDevice->acquireFence(false);
             }
-            vkResetFences(m_pDevice->getHandle(), m_frameFence.size(), m_frameFence.data());
         }
 
         // pipeline cache
@@ -207,9 +207,6 @@ Renderer::~Renderer()
         delete pUI;
     }
 
-    // TODO
-    m_pSyncPrimitivesPool.reset(nullptr);
-
     vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pResourceLoader->cleanup();
@@ -233,12 +230,14 @@ void Renderer::endFrame()
         m_pDevice->freeCommandBuffers(m_frameData.cmds.size(), m_frameData.cmds.data());
         m_frameData.cmds.clear();
 
-        m_pSyncPrimitivesPool->ReleaseSemaphores(m_frameData.semaphores.size(), m_frameData.semaphores.data());
-        m_frameData.semaphores.clear();
+        for(auto semaphore : m_frameData.semaphores)
+        {
+            APH_CHECK_RESULT(m_pDevice->releaseSemaphore(semaphore));
+        }
 
         for(auto fence : m_frameData.fences)
         {
-            m_pSyncPrimitivesPool->releaseFence(fence);
+            APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
         }
         m_frameData.fences.clear();
     }
@@ -276,18 +275,16 @@ Shader* Renderer::getShaders(const std::filesystem::path& path) const
     return shader;
 }
 
-VkSemaphore Renderer::acquireSemahpore()
+Semaphore* Renderer::acquireSemahpore()
 {
-    VkSemaphore sem;
-    m_pSyncPrimitivesPool->acquireSemaphore(1, &sem);
+    Semaphore* sem = m_pDevice->acquireSemaphore();
     m_frameData.semaphores.push_back(sem);
     return sem;
 }
 
-VkFence Renderer::acquireFence()
+Fence* Renderer::acquireFence()
 {
-    VkFence fence;
-    m_pSyncPrimitivesPool->acquireFence(fence);
+    Fence* fence = m_pDevice->acquireFence();
     m_frameData.fences.push_back(fence);
     return fence;
 }
@@ -295,30 +292,30 @@ VkFence Renderer::acquireFence()
 void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresentImage)
 {
     // aph::vk::QueueSubmitInfo submitInfo{.commandBuffers = cmds, .waitSemaphores = {getRenderSemaphore()}};
-    VkSemaphore renderSem  = {};
-    VkSemaphore presentSem = {};
+    Semaphore* renderSem  = {};
+    Semaphore* presentSem = {};
 
-    VkFence frameFence = acquireFence();
-    vkResetFences(m_pDevice->getHandle(), 1, &frameFence);
-
-    if(pPresentImage)
-    {
-        renderSem = acquireSemahpore();
-        _VR(m_pSwapChain->acquireNextImage(renderSem));
-
-        presentSem = acquireSemahpore();
-        submitInfo.waitSemaphores.push_back(renderSem);
-        submitInfo.signalSemaphores.push_back(presentSem);
-    }
-
-    APH_CHECK_RESULT(pQueue->submit({submitInfo}, frameFence));
+    Fence* frameFence = m_pDevice->acquireFence(false);
+    m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &frameFence->getHandle());
 
     if(pPresentImage)
     {
-        m_pSwapChain->presentImage(pQueue, {presentSem});
+        renderSem = m_pDevice->acquireSemaphore();
+        _VR(m_pSwapChain->acquireNextImage(renderSem->getHandle()));
+
+        presentSem = m_pDevice->acquireSemaphore();
+        submitInfo.waitSemaphores.push_back(renderSem->getHandle());
+        submitInfo.signalSemaphores.push_back(presentSem->getHandle());
     }
 
-    _VR(vkWaitForFences(m_pDevice->getHandle(), 1, &frameFence, VK_TRUE, UINT64_MAX));
+    APH_CHECK_RESULT(pQueue->submit({submitInfo}, frameFence->getHandle()));
+
+    if(pPresentImage)
+    {
+        m_pSwapChain->presentImage(pQueue, {presentSem->getHandle()});
+    }
+
+    frameFence->wait();
 }
 
 void Renderer::update(float deltaTime)

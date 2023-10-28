@@ -11,7 +11,7 @@
 #include "queue.h"
 #include "shader.h"
 #include "swapChain.h"
-#include "syncPrimitivesPool.h"
+#include "syncPrimitive.h"
 #include "vkInit.h"
 #include "vkUtils.h"
 #include "common/objectPool.h"
@@ -83,6 +83,44 @@ public:
     void   unMapMemory(Buffer* pBuffer);
 
 public:
+    Semaphore* acquireSemaphore()
+    {
+        Semaphore* semaphore;
+        m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore);
+        return semaphore;
+    }
+
+    Result releaseSemaphore(Semaphore* semaphore)
+    {
+        if(semaphore != VK_NULL_HANDLE)
+        {
+            auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
+            if(result != VK_SUCCESS)
+            {
+                return Result::RuntimeError;
+            }
+        }
+        return Result::Success;
+    }
+
+    Fence* acquireFence(bool isSignaled = true)
+    {
+        Fence* pFence = {};
+        m_resourcePool.syncPrimitive.acquireFence(&pFence);
+        return pFence;
+    }
+
+    Result releaseFence(Fence* pFence)
+    {
+        auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
+        if(res != VK_SUCCESS)
+        {
+            return Result::RuntimeError;
+        }
+        return Result::Success;
+    }
+
+public:
     VolkDeviceTable*                getDeviceTable() { return &m_table; }
     PhysicalDevice*                 getPhysicalDevice() const { return m_physicalDevice; }
     const VkPhysicalDeviceFeatures& getFeatures() const { return m_supportedFeatures; }
@@ -112,6 +150,9 @@ private:
         ThreadSafeObjectPool<ImageView>     imageView;
         ThreadSafeObjectPool<Pipeline>      pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
+        SyncPrimitivesPool                  syncPrimitive;
+
+        ResourceObjectPool(Device* pDevcie): syncPrimitive(pDevcie){}
     } m_resourcePool;
 };
 

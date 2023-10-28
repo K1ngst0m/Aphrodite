@@ -32,16 +32,16 @@ public:
     Shader* getShaders(const std::filesystem::path& path) const;
     Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
-    VkSemaphore getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
-    VkFence     getFrameFence() { return m_frameFence[m_frameIdx]; }
+    Semaphore* getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
+    Fence*     getFrameFence() { return m_frameFence[m_frameIdx]; }
 
     CommandBuffer* acquireCommandBuffer(Queue* queue);
-    VkSemaphore    acquireSemahpore();
-    VkFence        acquireFence();
+    Semaphore*     acquireSemahpore();
+    Fence*         acquireFence();
     Instance*      getInstance() const { return m_pInstance; }
 
 public:
-    UI * pUI = {};
+    UI* pUI = {};
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
@@ -54,20 +54,18 @@ protected:
     std::unordered_map<QueueType, Queue*> m_queue;
 
 protected:
-    std::vector<VkSemaphore>            m_timelineMain        = {};
-    std::vector<VkSemaphore>            m_renderSemaphore     = {};
-    std::vector<VkFence>                m_frameFence          = {};
+    std::vector<Semaphore*> m_renderSemaphore = {};
+    std::vector<Fence*>     m_frameFence      = {};
 
 protected:
     struct FrameData
     {
         std::vector<CommandBuffer*> cmds;
-        std::vector<VkSemaphore>    semaphores;
-        std::vector<VkFence>        fences;
+        std::vector<Semaphore*>     semaphores;
+        std::vector<Fence*>         fences;
     };
     FrameData m_frameData;
 
-    std::unique_ptr<SyncPrimitivesPool> m_pSyncPrimitivesPool = {};
 protected:
     uint32_t m_frameIdx     = {};
     float    m_frameTimer   = {};

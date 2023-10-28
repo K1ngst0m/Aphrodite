@@ -21,7 +21,8 @@ namespace aph::vk
 
 Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle) :
     ResourceHandle(handle, createInfo),
-    m_physicalDevice(pPhysicalDevice)
+    m_physicalDevice(pPhysicalDevice),
+    m_resourcePool(this)
 {
 }
 
@@ -141,6 +142,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
+    pDevice->m_resourcePool.syncPrimitive.clear();
+
     for(auto& [_, commandpool] : pDevice->m_commandPools)
     {
         pDevice->m_table.vkDestroyCommandPool(pDevice->m_handle, commandpool, gVkAllocator);
@@ -457,7 +460,8 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
     shaderStages.push_back(
         init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
 
-    auto program = m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
+    auto program =
+        m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
 
     // create rps
     RenderPipelineState rps    = {.createInfo = createInfo};
