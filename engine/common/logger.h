@@ -6,7 +6,7 @@ namespace aph
 class Logger
 {
 public:
-    enum class Level: uint8_t
+    enum class Level : uint8_t
     {
         Debug,
         Info,
@@ -60,15 +60,15 @@ private:
     Logger();
 
     // conversion for most types
-    template<typename T>
-    T to_format(const T& val) {
+    template <typename T>
+    T to_format(const T& val)
+    {
         return val;
     }
 
-    // specialization for std::string
-    const char* to_format(const std::string& val) {
-        return val.c_str();
-    }
+    const char* to_format(const char* val) { return val; }
+    const char* to_format(const std::string& val) { return val.c_str(); }
+    const char* to_format(const std::filesystem::path& val) { return val.c_str(); }
 
     template <typename... Args>
     void log(const char* level, std::string_view fmt, Args&&... args)
