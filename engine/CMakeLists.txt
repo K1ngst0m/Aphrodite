@@ -1,24 +1,35 @@
-file(GLOB base_src
-  common/*.cpp
-  input/*.cpp
-  threads/*.cpp
-  cli/*.cpp
-  module/*.cpp
-  # ui/*.cpp
-  wsi/*.cpp
-  renderer/*.cpp
-  api/vulkan/*.cpp
-  app/*.cpp
-  resource/*.cpp
-  renderer/api/vulkan/renderer.h
-  renderer/api/vulkan/renderer.cpp
+set(APH_ENGINE_COMMON_DIR ${APH_ENGINE_DIR}/common)
+set(APH_ENGINE_API_DIR ${APH_ENGINE_DIR}/api)
+set(APH_ENGINE_RESOURCE_DIR ${APH_ENGINE_DIR}/resource)
+set(APH_ENGINE_CLI_DIR ${APH_ENGINE_DIR}/cli)
+set(APH_ENGINE_MODULE_DIR ${APH_ENGINE_DIR}/cmodule)
+set(APH_ENGINE_APP_DIR ${APH_ENGINE_DIR}/app)
+set(APH_ENGINE_RENDERER_DIR ${APH_ENGINE_DIR}/renderer)
+set(APH_ENGINE_WSI_DIR ${APH_ENGINE_DIR}/wsi)
+set(APH_ENGINE_THREADS_DIR ${APH_ENGINE_DIR}/threads)
+# set(APH_ENGINE_SCENE_DIR ${APH_ENGINE_DIR}/scene)
+# set(APH_ENGINE_UI_DIR ${APH_ENGINE_DIR}/ui)
 
-  renderer/api/vulkan/uiRenderer.h
-  renderer/api/vulkan/uiRenderer.cpp
+file(GLOB ENGINE_BASE_SRC
+  ${APH_ENGINE_INPUT_DIR}/*.cpp
+  ${APH_ENGINE_THREADS_DIR}/*.cpp
+  ${APH_ENGINE_CLI_DIR}/*.cpp
+  ${APH_ENGINE_MODULE_DIR}/*.cpp
+  ${APH_ENGINE_WSI_DIR}/*.cpp
+  ${APH_ENGINE_APP_DIR}/*.cpp
+  ${APH_ENGINE_RESOURCE_DIR}/*.cpp
 
+  ${APH_ENGINE_API_DIR}/vulkan/*.cpp
+
+  ${APH_ENGINE_RENDERER_DIR}/api/vulkan/renderer.h
+  ${APH_ENGINE_RENDERER_DIR}/api/vulkan/renderer.cpp
+  ${APH_ENGINE_RENDERER_DIR}/api/vulkan/uiRenderer.h
+  ${APH_ENGINE_RENDERER_DIR}/api/vulkan/uiRenderer.cpp
 )
 
-add_library(engine STATIC ${base_src})
+add_subdirectory(common)
+
+add_library(engine STATIC ${ENGINE_BASE_SRC})
 aph_compiler_options(engine)
 
 target_include_directories(engine SYSTEM PUBLIC
@@ -26,9 +37,7 @@ target_include_directories(engine SYSTEM PUBLIC
                                   ${APH_EXTERNAL_DIR}/glm
 
                                   PRIVATE
-                                  ${APH_ENGINE_DIR}
                                   ${APH_EXTERNAL_DIR}/tinyimageformat
-                                  ${APH_EXTERNAL_DIR}/backward-cpp/include
                                   ${APH_EXTERNAL_DIR}/mmgr
                                   ${APH_EXTERNAL_DIR}/glfw/include
                                   ${APH_EXTERNAL_DIR}/shaderc/libshaderc/include
@@ -37,10 +46,13 @@ target_include_directories(engine SYSTEM PUBLIC
                                   ${APH_EXTERNAL_DIR}/slang
                                   ${APH_EXTERNAL_DIR}/stb/include
                                   ${APH_EXTERNAL_DIR}/tinygltf/include
-                                  ${APH_EXTERNAL_DIR}/spirv-cross
                                   ${APH_EXTERNAL_DIR}/tinyktx
                                   ${APH_EXTERNAL_DIR}/tinydds
+
+                                  PUBLIC
+                                  ${APH_ENGINE_DIR}
                                   )
+target_link_libraries(engine PRIVATE common)
 
 target_link_libraries(engine PRIVATE
   mimalloc-static
