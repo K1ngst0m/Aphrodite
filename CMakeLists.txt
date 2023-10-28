@@ -6,16 +6,13 @@ project(Aphrodite)
 option(APH_ENABLE_TESTING "Enable testing for the APH project" OFF)
 
 set(APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
-set(APH_EXAMPLES_DIR ${APH_ROOT_DIR}/examples)
-set(APH_ENGINE_DIR ${APH_ROOT_DIR}/engine)
-set(APH_EXTERNAL_DIR ${APH_ROOT_DIR}/external)
-set(APH_OUTPUT_DIR ${APH_ROOT_DIR}/bin)
-
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APH_OUTPUT_DIR}")
 
+include(AphDefinitions)
 include(AphCompilerOptions)
 include(AphExternal)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APH_OUTPUT_DIR}")
 
 add_subdirectory(engine)
 add_subdirectory(examples)
