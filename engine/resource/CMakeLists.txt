@@ -8,8 +8,10 @@ target_include_directories(resource PRIVATE
   ${APH_EXTERNAL_DIR}/slang
   ${APH_EXTERNAL_DIR}/tinyktx
   ${APH_EXTERNAL_DIR}/tinydds
+  ${APH_EXTERNAL_DIR}/shaderc/libshaderc/include
   ${APH_EXTERNAL_DIR}/tinygltf/include
   ${APH_EXTERNAL_DIR}/stb/include
+  ${APH_EXTERNAL_DIR}/glm
 )
 
 target_link_libraries(resource PRIVATE slang)

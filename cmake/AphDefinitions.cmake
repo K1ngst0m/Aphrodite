@@ -1,6 +1,5 @@
 include_guard()
 
-set(APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
 set(APH_EXAMPLES_DIR ${APH_ROOT_DIR}/examples)
 set(APH_ENGINE_DIR ${APH_ROOT_DIR}/engine)
 set(APH_EXTERNAL_DIR ${APH_ROOT_DIR}/external)

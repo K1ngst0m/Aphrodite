@@ -3,4 +3,5 @@ add_library(threads STATIC ${API_THREADS_SRC})
 aph_compiler_options(threads)
 target_include_directories(threads PRIVATE
   ${APH_ENGINE_DIR}
+  ${APH_EXTERNAL_DIR}/glm
 )

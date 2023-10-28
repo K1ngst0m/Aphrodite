@@ -10,4 +10,4 @@ target_include_directories(renderer PRIVATE
   ${APH_EXTERNAL_DIR}/imgui
   ${APH_EXTERNAL_DIR}/glm
 )
-target_link_libraries(renderer PRIVATE api)
+target_link_libraries(renderer PRIVATE api imgui)

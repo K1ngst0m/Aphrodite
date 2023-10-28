@@ -6,5 +6,6 @@ target_include_directories(api PRIVATE
   ${APH_EXTERNAL_DIR}/volk
   ${APH_EXTERNAL_DIR}/spirv-cross
   ${APH_EXTERNAL_DIR}/vulkan
+  ${APH_EXTERNAL_DIR}/glm
 )
-target_link_libraries(api PRIVATE common threads volk)
+target_link_libraries(api PRIVATE common threads volk shaderc_shared spirv-cross-core)

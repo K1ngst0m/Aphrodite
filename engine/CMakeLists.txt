@@ -18,13 +18,8 @@ target_link_libraries(aph_engine INTERFACE common app cli threads wsi resource a
 
 target_link_libraries(aph_engine INTERFACE
   mimalloc-static
-  glfw
-  imgui
   ${xcb_libraries}
   ${cmake_thread_libs_init}
-  volk
-  shaderc_shared
-  spirv-cross-core
   dl
   dw
 )
