@@ -19,10 +19,11 @@ void basic_texture::init()
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->m_pDevice.get();
 
-    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
-        m_renderer->m_pSwapChain->reCreate();
-        return true;
-    });
+    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
+        [this](const aph::WindowResizeEvent& e) {
+            m_renderer->m_pSwapChain->reCreate();
+            return true;
+        });
 
     // setup quad
     {
@@ -63,7 +64,8 @@ void basic_texture::init()
 
         // image and sampler
         {
-            APH_CHECK_RESULT(m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
+            APH_CHECK_RESULT(
+                m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
             aph::vk::ImageCreateInfo imageCI{
                 .alignment = 0,
@@ -73,8 +75,7 @@ void basic_texture::init()
                 .imageType = VK_IMAGE_TYPE_2D,
             };
 
-            aph::ImageLoadInfo loadInfo{.data        = aph::asset::GetTextureDir() / "container2.png",
-                                        .pCreateInfo = &imageCI};
+            aph::ImageLoadInfo loadInfo{.data = "texture://container2.png", .pCreateInfo = &imageCI};
 
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
@@ -105,8 +106,8 @@ void basic_texture::init()
             aph::vk::Shader* pVS = {};
             aph::vk::Shader* pFS = {};
 
-            m_renderer->m_pResourceLoader->load({.data = shaderDir / "texture.vert"}, &pVS);
-            m_renderer->m_pResourceLoader->load({.data = shaderDir / "texture.frag"}, &pFS);
+            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/texture.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/texture.frag"}, &pFS);
 
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,

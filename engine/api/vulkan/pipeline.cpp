@@ -1,5 +1,4 @@
 #include "pipeline.h"
-#include "scene/mesh.h"
 #include "device.h"
 #include "shader.h"
 

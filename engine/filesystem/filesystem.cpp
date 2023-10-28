@@ -6,12 +6,12 @@ namespace aph
 
 Filesystem::Filesystem()
 {
-    m_protocols["assets"]       = "assets/";
-    m_protocols["models"]       = "assets/models";
-    m_protocols["fonts"]        = "assets/fonts";
+    m_protocols["asset"]        = "assets/";
+    m_protocols["model"]        = "assets/models";
+    m_protocols["font"]         = "assets/fonts";
     m_protocols["shader_glsl"]  = "assets/shaders/glsl";
     m_protocols["shader_slang"] = "assets/shaders/slang";
-    m_protocols["textures"]     = "assets/textures";
+    m_protocols["texture"]      = "assets/textures";
     m_protocols["file"]         = "";
 }
 

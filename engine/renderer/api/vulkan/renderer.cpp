@@ -1,7 +1,6 @@
 #include "renderer.h"
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
-#include "scene/mesh.h"
 #include "common/common.h"
 
 #include "common/assetManager.h"

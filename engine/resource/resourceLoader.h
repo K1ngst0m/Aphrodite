@@ -24,6 +24,13 @@ enum class ImageContainerType
     Jpg,
 };
 
+struct ImageInfo
+{
+    uint32_t             width  = {};
+    uint32_t             height = {};
+    std::vector<uint8_t> data   = {};
+};
+
 struct ImageLoadInfo
 {
     std::string_view                     debugName     = {};

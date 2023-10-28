@@ -71,14 +71,12 @@ void triangle_demo::init()
                 .bindings = {{.stride = sizeof(VertexData)}},
             };
 
-            auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
-
             aph::vk::Shader* pVS = {};
             aph::vk::Shader* pFS = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.vert"}, &pVS);
-            m_renderer->m_pResourceLoader->load({.data = shaderDir / "triangle.frag"}, &pFS);
+            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/triangle.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/triangle.frag"}, &pFS);
 
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,

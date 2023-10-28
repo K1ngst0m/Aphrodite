@@ -14,14 +14,16 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "common/singleton.h"
+
 namespace aph
 {
-class Filesystem
+class Filesystem final : public Singleton<Filesystem>
 {
 public:
     Filesystem();
 
-    ~Filesystem();
+    ~Filesystem() final;
 
     void* map(std::string_view path);
     void  unmap(void* data);
@@ -39,7 +41,6 @@ public:
     bool protocolExists(std::string_view protocol);
     void removeProtocol(std::string_view protocol);
 
-private:
     std::filesystem::path resolvePath(std::string_view inputPath);
 
 private:

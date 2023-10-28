@@ -20,13 +20,6 @@
 #include "app/input/event.h"
 #include "app/input/eventManager.h"
 
-#include "scene/camera.h"
-#include "scene/mesh.h"
-#include "scene/light.h"
-#include "scene/object.h"
-#include "scene/scene.h"
-#include "scene/node.h"
-
 #include "resource/resourceLoader.h"
 #include "resource/geometry.h"
 

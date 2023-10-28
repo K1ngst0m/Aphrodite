@@ -21,8 +21,55 @@
 #include <stb/stb_image.h>
 #include <tinygltf/tiny_gltf.h>
 
+#include "filesystem/filesystem.h"
+
 namespace loader::image
 {
+
+inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY = false)
+{
+    auto image = std::make_shared<aph::ImageInfo>();
+    stbi_set_flip_vertically_on_load(isFlipY);
+    int      width, height, channels;
+    uint8_t* img = stbi_load(path.data(), &width, &height, &channels, 0);
+    if(img == nullptr)
+    {
+        printf("Error in loading the image\n");
+        exit(0);
+    }
+    // printf("Loaded image with a width of %dpx, a height of %dpx and %d channels\n", width, height, channels);
+    image->width  = width;
+    image->height = height;
+
+    image->data.resize(width * height * 4);
+    if(channels == 3)
+    {
+        std::vector<uint8_t> rgba(image->data.size());
+        for(std::size_t i = 0; i < width * height; ++i)
+        {
+            memcpy(&rgba[4 * i], &img[3 * i], 3);
+        }
+        memcpy(image->data.data(), rgba.data(), image->data.size());
+    }
+    else
+    {
+        memcpy(image->data.data(), img, image->data.size());
+    }
+    stbi_image_free(img);
+
+    return image;
+}
+
+inline std::array<std::shared_ptr<aph::ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths)
+{
+    std::array<std::shared_ptr<aph::ImageInfo>, 6> skyboxImages;
+    for(std::size_t idx = 0; idx < 6; idx++)
+    {
+        skyboxImages[idx] = loadImageFromFile(paths[idx]);
+    }
+    return skyboxImages;
+}
+
 inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
     if(!std::filesystem::exists(path))
@@ -177,7 +224,7 @@ inline bool loadDDS(const std::filesystem::path& path, aph::vk::ImageCreateInfo&
 
 inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
-    auto img = aph::utils::loadImageFromFile(path.c_str());
+    auto img = loadImageFromFile(path.c_str());
 
     if(img == nullptr)
     {
@@ -205,9 +252,8 @@ namespace loader::shader
 
 std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
 {
-    std::string source;
-    auto        success = aph::utils::readFile(filename, source);
-    APH_ASSERT(success);
+    std::string source = aph::Filesystem::GetInstance().readFileToString(filename);
+    APH_ASSERT(!source.empty());
     uint32_t              size = source.size();
     std::vector<uint32_t> spirv(size / sizeof(uint32_t));
     memcpy(spirv.data(), source.data(), size);
@@ -217,9 +263,8 @@ std::vector<uint32_t> loadGlslFromFile(std::string_view filename)
 {
     using namespace aph;
     shaderc::Compiler compiler{};
-    std::string       source;
-    auto              success = aph::utils::readFile(filename, source);
-    APH_ASSERT(success);
+    std::string       source = aph::Filesystem::GetInstance().readFileToString(filename);
+    APH_ASSERT(!source.empty());
     shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
     switch(utils::getStageFromPath(filename))
     {
@@ -466,7 +511,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
     if(std::holds_alternative<std::string>(info.data))
     {
-        path = {std::get<std::string>(info.data)};
+        path = aph::Filesystem::GetInstance().resolvePath(std::get<std::string>(info.data));
 
         auto containerType =
             info.containerType == ImageContainerType::Default ? GetImageContainerType(path) : info.containerType;
@@ -738,7 +783,8 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     .domain = BufferDomain::Host,
                 };
 
-                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
+                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer,
+                                                   std::string{info.debugName} + std::string{"_staging"}));
 
                 APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
                 writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
