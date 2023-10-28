@@ -165,16 +165,17 @@ private:
 
 class Pipeline : public ResourceHandle<VkPipeline>
 {
+    friend class ObjectPool<Pipeline>;
 public:
-    Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
-
     DescriptorSet* acquireSet(uint32_t idx) const;
 
     ShaderProgram*      getProgram() const { return m_pProgram; }
     VkPipelineBindPoint getBindPoint() const { return m_bindPoint; }
 
 protected:
+    Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
+
     Device*             m_pDevice   = {};
     ShaderProgram*      m_pProgram  = {};
     VkPipelineBindPoint m_bindPoint = {};

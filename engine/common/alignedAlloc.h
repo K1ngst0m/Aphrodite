@@ -5,8 +5,8 @@
 
 namespace aph
 {
-void* memAlignAlloc(size_t boundary, size_t size);
-void* memAlignCalloc(size_t boundary, size_t size);
+void* memAlignAlloc(size_t alignment, size_t size);
+void* memAlignCalloc(size_t alignment, size_t size);
 void  memAlignFree(void* ptr);
 
 struct AlignedDeleter

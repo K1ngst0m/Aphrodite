@@ -48,15 +48,16 @@ public:
 public:
     uint32_t getWidth() const { return m_extent.width; }
     uint32_t getHeight() const { return m_extent.height; }
-    Image*   getImage() const { return m_images[m_imageIdx].get(); }
+    Image*   getImage() const { return m_images[m_imageIdx]; }
     Format   getFormat() const { return utils::getFormatFromVk(m_surfaceFormat.format); }
 
 private:
-    Instance*                           m_pInstance{};
-    Device*                             m_pDevice{};
-    WSI*                                m_pWSI{};
-    std::vector<std::unique_ptr<Image>> m_images{};
-    SwapChainSupportDetails             swapChainSupport{};
+    Instance*                   m_pInstance{};
+    Device*                     m_pDevice{};
+    WSI*                        m_pWSI{};
+    ThreadSafeObjectPool<Image> m_imagePools;
+    std::vector<Image*>         m_images{};
+    SwapChainSupportDetails     swapChainSupport{};
 
     VkSurfaceKHR       m_surface{};
     VkSurfaceFormatKHR m_surfaceFormat{};

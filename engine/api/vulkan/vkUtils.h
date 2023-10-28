@@ -10,6 +10,7 @@
 #include "vkInit.h"
 #include "common/common.h"
 #include "common/logger.h"
+#include "common/objectPool.h"
 
 // Custom define for better code readability
 #define VK_FLAGS_NONE 0

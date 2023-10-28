@@ -29,11 +29,9 @@ struct ImageCreateInfo
 class Image : public ResourceHandle<VkImage, ImageCreateInfo>
 {
     friend class CommandBuffer;
+    friend class ObjectPool<Image>;
 
 public:
-    Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory = VK_NULL_HANDLE);
-    ~Image();
-
     VkDeviceMemory getMemory() { return m_memory; }
 
     ImageView* getView(Format imageFormat = Format::Undefined);
@@ -47,6 +45,9 @@ public:
     ResourceState getResourceState() const { return m_resourceState; }
 
 private:
+    Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory = VK_NULL_HANDLE);
+    ~Image();
+
     Device*                                m_pDevice            = {};
     std::unordered_map<Format, ImageView*> m_imageViewFormatMap = {};
     VkImageLayout                          m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
@@ -66,9 +67,8 @@ struct ImageViewCreateInfo
 
 class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
+    friend class ObjectPool<ImageView>;
 public:
-    ImageView(const CreateInfoType& createInfo, HandleType handle);
-
     Format                  getFormat() const { return m_createInfo.format; }
     VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
     VkImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
@@ -77,6 +77,8 @@ public:
     Image* getImage() { return m_image; }
 
 private:
+    ImageView(const CreateInfoType& createInfo, HandleType handle);
+
     Image*                                                   m_image       = {};
     std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
 };

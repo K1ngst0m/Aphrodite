@@ -66,7 +66,7 @@ public:
             static_assert(Type::value, "Unsupported type for destroy");
             destroy(ptr);
         };
-        (destructor(args), ...);  // Use fold expression to call the lambda for each argument
+        (destructor(args), ...);
     }
 
 public:

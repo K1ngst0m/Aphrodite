@@ -17,12 +17,11 @@ class Fence : public ResourceHandle<VkFence>
     friend class ObjectPool<Fence>;
 
 public:
-    ~Fence();
-
     bool wait(uint64_t timeout = UINT64_MAX);
 
 private:
     Fence(Device* pDevice, HandleType handle) : ResourceHandle(handle), m_pDevice(pDevice) {}
+    ~Fence();
 
     Device*    m_pDevice      = {};
     bool       m_observedWait = {false};

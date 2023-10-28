@@ -19,15 +19,15 @@ struct BufferCreateInfo
 
 class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 {
+    friend class ObjectPool<Buffer>;
 public:
-    Buffer(const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory);
-
     uint32_t       getSize() const { return m_createInfo.size; }
     uint32_t       getOffset() const { return m_createInfo.alignment; }
     VkDeviceMemory getMemory() const { return m_memory; }
     void*&         getMapped() { return m_mapped; };
 
 private:
+    Buffer(const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory);
     VkDeviceMemory m_memory = {};
     void*          m_mapped = {};
 };

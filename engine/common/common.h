@@ -95,19 +95,15 @@ private:
     std::string m_msg;
 };
 
-#ifdef APH_DEBUG
-    #define APH_CHECK_RESULT(f) \
+#define APH_CHECK_RESULT(f) \
+    { \
+        ::aph::Result res = (f); \
+        if(!res.success()) \
         { \
-            ::aph::Result res = (f); \
-            if(!res.success()) \
-            { \
-                CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, __LINE__); \
-                std::abort(); \
-            } \
-        }
-#else
-    #define APH_CHECK_RESULT(f) (f)
-#endif
+            CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, __LINE__); \
+            std::abort(); \
+        } \
+    }
 
 struct ImageInfo
 {

@@ -67,9 +67,9 @@ public:
 
     void free(T* ptr)
     {
-        ptr->~T();
+        // TODO only lock vector push operation
         std::lock_guard<std::mutex> holder{m_lock};
-        this->m_vacants.push_back(ptr);
+        ObjectPool<T>::free(ptr);
     }
 
     void clear()

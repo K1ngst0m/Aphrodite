@@ -106,7 +106,7 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
 {
     m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
         aph::vk::ImageBarrier barrier{
-            .pImage       = m_images[m_imageIdx].get(),
+            .pImage       = m_images[m_imageIdx],
             .currentState = m_images[m_imageIdx]->getResourceState(),
             .newState     = aph::RESOURCE_STATE_PRESENT,
         };
@@ -129,13 +129,25 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
 
 SwapChain::~SwapChain()
 {
+    // TODO figure out why pool clear could not called object deleter
+    for (auto* image : m_images)
+    {
+        m_imagePools.free(image);
+    }
+    m_imagePools.clear();
+
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
 };
 
 void SwapChain::reCreate()
 {
     m_pDevice->waitIdle();
+    for (auto* image : m_images)
+    {
+        m_imagePools.free(image);
+    }
     m_images.clear();
+    m_imagePools.clear();
     if(getHandle() != VK_NULL_HANDLE)
     {
         vkDestroySwapchainKHR(m_pDevice->getHandle(), getHandle(), vkAllocator());
@@ -216,7 +228,7 @@ void SwapChain::reCreate()
             .format    = getFormat(),
         };
 
-        m_images.push_back(std::make_unique<Image>(m_pDevice, imageCreateInfo, handle));
+        m_images.push_back(m_imagePools.allocate(m_pDevice, imageCreateInfo, handle));
     }
 }
 }  // namespace aph::vk
