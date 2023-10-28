@@ -22,12 +22,12 @@ TEST_CASE("Test Filesystem Protocol Setup", "[Filesystem]")
 
     SECTION("Default protocols are set up")
     {
-        REQUIRE(fs.protocolExists("assets"));
-        REQUIRE(fs.protocolExists("models"));
-        REQUIRE(fs.protocolExists("fonts"));
+        REQUIRE(fs.protocolExists("asset"));
+        REQUIRE(fs.protocolExists("model"));
+        REQUIRE(fs.protocolExists("font"));
         REQUIRE(fs.protocolExists("shader_glsl"));
         REQUIRE(fs.protocolExists("shader_slang"));
-        REQUIRE(fs.protocolExists("textures"));
+        REQUIRE(fs.protocolExists("texture"));
     }
 
     SECTION("Add new protocol")
@@ -38,8 +38,8 @@ TEST_CASE("Test Filesystem Protocol Setup", "[Filesystem]")
 
     SECTION("Remove existing protocol")
     {
-        fs.removeProtocol("assets");
-        REQUIRE_FALSE(fs.protocolExists("assets"));
+        fs.removeProtocol("asset");
+        REQUIRE_FALSE(fs.protocolExists("asset"));
     }
 }
 
