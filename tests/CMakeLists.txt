@@ -20,7 +20,7 @@ foreach(TEST_FILE ${TEST_FILES})
 
     # Link necessary libraries, for instance, Catch2
     target_link_libraries(${TEST_TARGET} PRIVATE
-      engine
+      aph_engine
       Catch2::Catch2WithMain
     )
     target_include_directories(${TEST_TARGET} PRIVATE ${catch2_SOURCE_DIR}/single_include)

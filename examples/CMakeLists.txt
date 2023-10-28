@@ -23,7 +23,7 @@ function(buildExample EXAMPLE_PATH)
     add_executable(${EXAMPLE_NAME} ${MAIN_CPP} ${SOURCE} ${MAIN_HEADER} ${SHADERS_GLSL} ${SHADERS_HLSL} ${README_FILES})
     target_include_directories(${EXAMPLE_NAME} PRIVATE ../engine)
     aph_compiler_options(${EXAMPLE_NAME})
-    target_link_libraries(${EXAMPLE_NAME} PRIVATE engine)
+    target_link_libraries(${EXAMPLE_NAME} PRIVATE aph_engine)
 endfunction(buildExample)
 
 # Build all examples
