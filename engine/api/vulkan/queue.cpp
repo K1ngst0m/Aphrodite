@@ -28,11 +28,13 @@ Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const
     }
 }
 
-Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence)
+Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence)
 {
     std::vector<VkSubmitInfo>         vkSubmits;
     std::vector<VkCommandBuffer>      vkCmds;
     std::vector<VkPipelineStageFlags> vkWaitStages;
+    std::vector<VkSemaphore>          vkWaitSemaphores;
+    std::vector<VkSemaphore>          vkSignalSemaphores;
 
     for(const auto& submitInfo : submitInfos)
     {
@@ -44,15 +46,25 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fe
             vkCmds.push_back(cmd->getHandle());
         }
 
+        for(auto* sem : submitInfo.waitSemaphores)
+        {
+            vkWaitSemaphores.push_back(sem->getHandle());
+        }
+
+        for(auto* sem : submitInfo.signalSemaphores)
+        {
+            vkSignalSemaphores.push_back(sem->getHandle());
+        }
+
         VkSubmitInfo info{
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
-            .pWaitSemaphores      = submitInfo.waitSemaphores.data(),
+            .pWaitSemaphores      = vkWaitSemaphores.data(),
             .pWaitDstStageMask    = submitInfo.waitStages.data(),
             .commandBufferCount   = cmdSize,
             .pCommandBuffers      = &vkCmds[cmdOffset],
             .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
-            .pSignalSemaphores    = submitInfo.signalSemaphores.data(),
+            .pSignalSemaphores    = vkSignalSemaphores.data(),
         };
 
         if(submitInfo.waitStages.empty())
@@ -66,7 +78,8 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fe
         vkSubmits.push_back(info);
     }
 
-    VkResult result = vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), fence);
+    VkResult result =
+        vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
 

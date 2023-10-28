@@ -77,17 +77,18 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
     reCreate();
 }
 
-VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
+VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
 {
     VkResult res = VK_SUCCESS;
-    res = vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore, fence, &m_imageIdx);
+    res          = vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
+                                pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
     if(res == VK_ERROR_OUT_OF_DATE_KHR)
     {
         m_imageIdx = -1;
-        if(fence != VK_NULL_HANDLE)
+        if(pFence)
         {
-            vkResetFences(m_pDevice->getHandle(), 1, &fence);
+            vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
         }
         return VK_SUCCESS;
     }
@@ -102,7 +103,7 @@ VkResult SwapChain::acquireNextImage(VkSemaphore semaphore, VkFence fence)
     return res;
 }
 
-VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores)
+VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores)
 {
     m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
         aph::vk::ImageBarrier barrier{
@@ -113,10 +114,17 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
         cmd->insertBarrier({barrier});
     });
 
+    std::vector<VkSemaphore> vkSemaphores;
+    vkSemaphores.reserve(waitSemaphores.size());
+    for(auto sem : waitSemaphores)
+    {
+        vkSemaphores.push_back(sem->getHandle());
+    }
+
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
-        .pWaitSemaphores    = waitSemaphores.data(),
+        .pWaitSemaphores    = vkSemaphores.data(),
         .swapchainCount     = 1,
         .pSwapchains        = &getHandle(),
         .pImageIndices      = &m_imageIdx,
@@ -130,7 +138,7 @@ VkResult SwapChain::presentImage(Queue* pQueue, const std::vector<VkSemaphore>& 
 SwapChain::~SwapChain()
 {
     // TODO figure out why pool clear could not called object deleter
-    for (auto* image : m_images)
+    for(auto* image : m_images)
     {
         m_imagePools.free(image);
     }
@@ -142,7 +150,7 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     m_pDevice->waitIdle();
-    for (auto* image : m_images)
+    for(auto* image : m_images)
     {
         m_imagePools.free(image);
     }

@@ -8,13 +8,15 @@ namespace aph::vk
 {
 class Device;
 class CommandBuffer;
+class Semaphore;
+class Fence;
 
 struct QueueSubmitInfo
 {
     std::vector<CommandBuffer*>       commandBuffers;
     std::vector<VkPipelineStageFlags> waitStages;
-    std::vector<VkSemaphore>          waitSemaphores;
-    std::vector<VkSemaphore>          signalSemaphores;
+    std::vector<Semaphore*>           waitSemaphores;
+    std::vector<Semaphore*>           signalSemaphores;
 };
 
 struct QueueSubmitInfo2
@@ -34,7 +36,7 @@ public:
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
     QueueType    getType() const { return m_type; }
     Result       waitIdle() { return utils::getResult(vkQueueWaitIdle(getHandle())); }
-    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, VkFence fence);
+    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence);
     Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
 
 private:

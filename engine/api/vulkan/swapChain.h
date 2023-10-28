@@ -10,6 +10,8 @@ namespace aph::vk
 class Device;
 class Image;
 class Queue;
+class Semaphore;
+class Fence;
 
 struct SwapChainSupportDetails
 {
@@ -39,9 +41,9 @@ public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
-    VkResult acquireNextImage(VkSemaphore semaphore, VkFence fence = VK_NULL_HANDLE);
+    VkResult acquireNextImage(VkSemaphore semaphore, Fence* pFence = {});
 
-    VkResult presentImage(Queue* pQueue, const std::vector<VkSemaphore>& waitSemaphores);
+    VkResult presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores);
 
     void reCreate();
 
