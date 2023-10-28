@@ -21,6 +21,5 @@ add_subdirectory(engine)
 add_subdirectory(examples)
 
 if (APH_ENABLE_TESTING)
-    enable_testing()
     add_subdirectory(tests)
 endif()

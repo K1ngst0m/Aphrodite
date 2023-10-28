@@ -1,5 +1,7 @@
 Include(FetchContent)
 
+enable_testing()
+
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
@@ -34,3 +36,8 @@ foreach(TEST_FILE ${TEST_FILES})
     # that the name of the executable is the same as the name of the test.
     add_test(NAME ${TEST_TARGET} COMMAND ${TEST_TARGET})
 endforeach()
+
+add_custom_target(runtests
+    COMMAND ${CMAKE_CTEST_COMMAND}
+    COMMENT "Running all tests..."
+)
