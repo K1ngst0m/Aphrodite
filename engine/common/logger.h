@@ -69,6 +69,7 @@ private:
     const char* to_format(const char* val) { return val; }
     const char* to_format(const std::string& val) { return val.c_str(); }
     const char* to_format(const std::filesystem::path& val) { return val.c_str(); }
+    const char* to_format(std::string_view val) { return val.data(); }
 
     template <typename... Args>
     void log(const char* level, std::string_view fmt, Args&&... args)
@@ -79,13 +80,13 @@ private:
         ss << getCurrentTime() << " [" << level << "] ";
         char buffer[512];
         std::snprintf(buffer, sizeof(buffer), fmt.data(), to_format(args)...);
-        ss << buffer << "\n";
+        ss << buffer << '\n';
 
         std::cout << ss.str();
-        if(file_stream.is_open())
-        {
-            file_stream << ss.str();
-        }
+        // if(file_stream.is_open())
+        // {
+        //     file_stream << ss.str();
+        // }
     }
 
     std::string getCurrentTime();

@@ -20,13 +20,13 @@ concept is_lockable = requires(Lock&& lock) {
 
 template <typename T, typename Lock = std::mutex>
     requires is_lockable<Lock>
-class thread_safe_queue
+class ThreadSafeQueue
 {
 public:
     using value_type = T;
     using size_type  = typename std::deque<T>::size_type;
 
-    thread_safe_queue() = default;
+    ThreadSafeQueue() = default;
 
     void push_back(T&& value)
     {

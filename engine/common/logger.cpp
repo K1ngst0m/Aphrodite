@@ -15,7 +15,7 @@ Logger::Logger() : log_level(Level::Debug), file_stream("log.txt", std::ofstream
 {
     if(!file_stream.is_open())
     {
-        std::cerr << "Failed to open log file." << std::endl;
+        std::cerr << "Failed to open log file." << '\n';
     }
 }
 std::string Logger::getCurrentTime()

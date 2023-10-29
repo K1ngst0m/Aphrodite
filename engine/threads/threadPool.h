@@ -28,7 +28,7 @@ using DefaultFunctionType = std::move_only_function<void()>;
 #else
 using DefaultFunctionType = std::function<void()>;
 #endif
-}  // namespace details
+}  // namespace threads
 
 template <typename FunctionType = threads::DefaultFunctionType, typename ThreadType = std::jthread>
     requires std::invocable<FunctionType> && std::is_same_v<void, std::invoke_result_t<FunctionType>>
@@ -220,14 +220,14 @@ private:
 
     struct TaskItem
     {
-        aph::thread_safe_queue<FunctionType> tasks{};
-        std::binary_semaphore                signal{0};
+        aph::ThreadSafeQueue<FunctionType> tasks{};
+        std::binary_semaphore              signal{0};
     };
 
-    std::vector<ThreadType>             m_threads;
-    std::deque<TaskItem>                m_tasks;
-    aph::thread_safe_queue<std::size_t> m_priority_queue;
-    std::atomic_int_fast64_t            m_pending_tasks{};
+    std::vector<ThreadType>           m_threads;
+    std::deque<TaskItem>              m_tasks;
+    aph::ThreadSafeQueue<std::size_t> m_priority_queue;
+    std::atomic_int_fast64_t          m_pending_tasks{};
 };
 }  // namespace aph
 

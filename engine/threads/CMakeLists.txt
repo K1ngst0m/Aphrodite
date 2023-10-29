@@ -5,3 +5,4 @@ target_include_directories(threads PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/glm
 )
+target_link_libraries(threads PRIVATE common aph_allocator)
