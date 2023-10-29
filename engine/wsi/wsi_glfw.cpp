@@ -192,9 +192,11 @@ bool WSI::update()
 
     glfwPollEvents();
 
-    EventManager::GetInstance().processAll();
+    EventManager::GetInstance().processAllAsync();
 
     ImGui_ImplGlfw_NewFrame();
+
+    EventManager::GetInstance().flush();
     return true;
 };
 
