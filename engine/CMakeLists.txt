@@ -2,7 +2,7 @@ add_subdirectory(common)
 add_subdirectory(allocator)
 add_subdirectory(app)
 add_subdirectory(cli)
-add_subdirectory(threads)
+# add_subdirectory(threads)
 add_subdirectory(wsi)
 add_subdirectory(resource)
 add_subdirectory(api)
@@ -20,7 +20,7 @@ target_include_directories(aph_engine INTERFACE
 target_link_libraries(aph_engine INTERFACE
   common
   aph_allocator
-  threads
+  # threads
   aph_filesystem
   aph_module
   cli

@@ -161,10 +161,6 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
         }
     }
 
-    // Initialize the Instance's thread pool with a single worker thread for now.
-    // TODO: Assess background tasks and performance before increasing thread count.
-    instance->m_threadPool = std::make_unique<ThreadPool>(1);
-
     // Copy address of object instance.
     *ppInstance = instance;
 

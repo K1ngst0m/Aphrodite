@@ -11,7 +11,6 @@ target_include_directories(api PRIVATE
 target_link_libraries(api PRIVATE
   common
   aph_allocator
-  threads
   volk
   shaderc_shared
   spirv-cross-core

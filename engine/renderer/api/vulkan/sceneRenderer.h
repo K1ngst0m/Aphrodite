@@ -125,7 +125,6 @@ private:
     std::vector<SceneNode*>     m_meshNodeList;
     std::vector<Camera*>        m_cameraList;
     std::vector<Light*>         m_lightList;
-    std::unique_ptr<ThreadPool> m_threadPool{};
 };
 }  // namespace aph::vk
 

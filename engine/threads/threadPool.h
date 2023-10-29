@@ -1,109 +1,234 @@
-#ifndef THREADPOOL_H_
-#define THREADPOOL_H_
+#ifndef APH_THREADPOOL_H_
+#define APH_THREADPOOL_H_
 
-#include "common/common.h"
+#include <atomic>
+#include <barrier>
+#include <concepts>
+#include <deque>
+#include <functional>
+#include <future>
+#include <memory>
+#include <semaphore>
+#include <thread>
+#include <type_traits>
+#ifdef __has_include
+    #if __has_include(<version>)
+        #include <version>
+    #endif
+#endif
+
+#include "threadSafeQueue.h"
 
 namespace aph
 {
-// A thread-safe queue class.
-template <typename T>
-class ThreadSafeQueue
+namespace threads
 {
-public:
-    bool Empty()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_queue.empty();
-    }
+#ifdef __cpp_lib_move_only_function
+using DefaultFunctionType = std::move_only_function<void()>;
+#else
+using DefaultFunctionType = std::function<void()>;
+#endif
+}  // namespace details
 
-    void Clear()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        while(!m_queue.empty())
-            m_queue.pop();
-        m_condition.notify_all();
-    }
-
-    void Invalidate()
-    {
-        m_valid = false;
-        m_condition.notify_all();
-    }
-
-    void Push(const T& item)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        assert(m_valid);
-        m_queue.push(item);
-        lock.unlock();
-        m_condition.notify_one();
-    }
-
-    void Push(T&& item)
-    {
-        std::unique_lock<std::mutex> lock(m_mutex);
-        assert(m_valid);
-        m_queue.push(std::move(item));
-        lock.unlock();
-        m_condition.notify_one();
-    }
-
-    bool Pop(T& item)
-    {
-        // Wait for an item to be in the queue or the queue to be invalidated.
-        std::unique_lock<std::mutex> lock(m_mutex);
-        m_condition.wait(lock, [this](void) { return !m_queue.empty() || !m_valid; });
-
-        // Ensure queue is still valid since above predicate could fall through.
-        if(!m_valid)
-            return false;
-
-        // Get the item out of the queue.
-        item = std::move(m_queue.front());
-        m_queue.pop();
-        return true;
-    }
-
-private:
-    std::atomic_bool        m_valid{true};
-    std::queue<T>           m_queue;
-    std::mutex              m_mutex;
-    std::condition_variable m_condition;
-};
-
-// A ThreadPool class for parallel executions of tasks on across one or more threads.
+template <typename FunctionType = threads::DefaultFunctionType, typename ThreadType = std::jthread>
+    requires std::invocable<FunctionType> && std::is_same_v<void, std::invoke_result_t<FunctionType>>
 class ThreadPool
 {
 public:
-    // Task definition for code simplicity purposes.
-    using Task = std::function<void()>;
+    explicit ThreadPool(const unsigned int& number_of_threads = std::thread::hardware_concurrency()) :
+        m_tasks(number_of_threads)
+    {
+        std::size_t current_id = 0;
+        for(std::size_t i = 0; i < number_of_threads; ++i)
+        {
+            m_priority_queue.push_back(size_t(current_id));
+            try
+            {
+                m_threads.emplace_back([&, id = current_id](const std::stop_token& stop_tok) {
+                    do
+                    {
+                        // wait until signaled
+                        m_tasks[id].signal.acquire();
 
-    // Constructs the thread pool and sets the max thread count.
-    // No threads are allocated until tasks are added to the queue.
-    ThreadPool(uint32_t threadCount);
+                        do
+                        {
+                            // invoke the task
+                            while(auto task = m_tasks[id].tasks.pop_front())
+                            {
+                                try
+                                {
+                                    m_pending_tasks.fetch_sub(1, std::memory_order_release);
+                                    std::invoke(std::move(task.value()));
+                                }
+                                catch(...)
+                                {
+                                }
+                            }
 
-    // Blocks until all threads have completed.
-    ~ThreadPool();
+                            // try to steal a task
+                            for(std::size_t j = 1; j < m_tasks.size(); ++j)
+                            {
+                                const std::size_t index = (id + j) % m_tasks.size();
+                                if(auto task = m_tasks[index].tasks.steal())
+                                {
+                                    // steal a task
+                                    m_pending_tasks.fetch_sub(1, std::memory_order_release);
+                                    std::invoke(std::move(task.value()));
+                                    // stop stealing once we have invoked a stolen task
+                                    break;
+                                }
+                            }
 
-    // Adds a new task to the thread pool and returns a future handle.
-    std::shared_future<void> AddTask(Task&& task);
+                        } while(m_pending_tasks.load(std::memory_order_acquire) > 0);
 
-    // Clear any pending tasks.
-    void ClearPendingTasks();
+                        m_priority_queue.rotate_to_front(id);
 
-    // Waits on all threads to complete (blocking call).
-    void Wait();
+                    } while(!stop_tok.stop_requested());
+                });
+                // increment the thread id
+                ++current_id;
+            }
+            catch(...)
+            {
+                // catch all
 
-    // Cancels all pending tasks and waits for threads to complete current tasks.
-    void Abort();
+                // remove one item from the tasks
+                m_tasks.pop_back();
+
+                // remove our thread from the priority queue
+                std::ignore = m_priority_queue.pop_back();
+            }
+        }
+    }
+
+    ~ThreadPool()
+    {
+        // stop all threads
+        for(std::size_t i = 0; i < m_threads.size(); ++i)
+        {
+            m_threads[i].request_stop();
+            m_tasks[i].signal.release();
+            m_threads[i].join();
+        }
+    }
+
+    /// thread pool is non-copyable
+    ThreadPool(const ThreadPool&)            = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+
+    template <typename Function, typename... Args, typename ReturnType = std::invoke_result_t<Function&&, Args&&...>>
+        requires std::invocable<Function, Args...>
+    [[nodiscard]] std::future<ReturnType> enqueue(Function f, Args... args)
+    {
+#ifdef __cpp_lib_move_only_function
+        // we can do this in C++23 because we now have support for move only functions
+        std::promise<ReturnType> promise;
+        auto                     future = promise.get_future();
+        auto task = [func = std::move(f), ... largs = std::move(args), promise = std::move(promise)]() mutable {
+            try
+            {
+                if constexpr(std::is_same_v<ReturnType, void>)
+                {
+                    func(largs...);
+                    promise.set_value();
+                }
+                else
+                {
+                    promise.set_value(func(largs...));
+                }
+            }
+            catch(...)
+            {
+                promise.set_exception(std::current_exception());
+            }
+        };
+        enqueue_task(std::move(task));
+        return future;
+#else
+        /*
+         * use shared promise here so that we don't break the promise later (until C++23)
+         *
+         * with C++23 we can do the following:
+         *
+         * std::promise<ReturnType> promise;
+         * auto future = promise.get_future();
+         * auto task = [func = std::move(f), ...largs = std::move(args),
+                          promise = std::move(promise)]() mutable {...};
+         */
+        auto shared_promise = std::make_shared<std::promise<ReturnType>>();
+        auto task           = [func = std::move(f), ... largs = std::move(args), promise = shared_promise]() {
+            try
+            {
+                if constexpr(std::is_same_v<ReturnType, void>)
+                {
+                    func(largs...);
+                    promise->set_value();
+                }
+                else
+                {
+                    promise->set_value(func(largs...));
+                }
+            }
+            catch(...)
+            {
+                promise->set_exception(std::current_exception());
+            }
+        };
+
+        // get the future before enqueuing the task
+        auto future = shared_promise->get_future();
+        // enqueue the task
+        enqueueTask(std::move(task));
+        return future;
+#endif
+    }
+
+    template <typename Function, typename... Args>
+        requires std::invocable<Function, Args...> && std::is_same_v<void, std::invoke_result_t<Function&&, Args&&...>>
+    void enqueueDetach(Function&& func, Args&&... args)
+    {
+        enqueueTask(std::move(
+            [f = std::forward<Function>(func), ... largs = std::forward<Args>(args)]() mutable -> decltype(auto) {
+                // suppress exceptions
+                try
+                {
+                    std::invoke(f, largs...);
+                }
+                catch(...)
+                {
+                }
+            }));
+    }
+
+    [[nodiscard]] auto size() const { return m_threads.size(); }
 
 private:
-    std::stack<std::thread>                     m_threads;
-    ThreadSafeQueue<std::packaged_task<void()>> m_tasks;
-    std::atomic<uint32_t>                       m_activeThreads{0U};
-    std::mutex                                  m_threadsCompleteMutex;
-    std::condition_variable                     m_threadsCompleteCondition;
+    template <typename Function>
+    void enqueueTask(Function&& f)
+    {
+        auto i_opt = m_priority_queue.copy_front_and_rotate_to_back();
+        if(!i_opt.has_value())
+        {
+            // would only be a problem if there are zero threads
+            return;
+        }
+        auto i = *(i_opt);
+        m_pending_tasks.fetch_add(1, std::memory_order_relaxed);
+        m_tasks[i].tasks.push_back(std::forward<Function>(f));
+        m_tasks[i].signal.release();
+    }
+
+    struct TaskItem
+    {
+        aph::thread_safe_queue<FunctionType> tasks{};
+        std::binary_semaphore                signal{0};
+    };
+
+    std::vector<ThreadType>             m_threads;
+    std::deque<TaskItem>                m_tasks;
+    aph::thread_safe_queue<std::size_t> m_priority_queue;
+    std::atomic_int_fast64_t            m_pending_tasks{};
 };
 }  // namespace aph
 
-#endif  // THREADPOOL_H_
+#endif  // APH_THREADPOOL_H_

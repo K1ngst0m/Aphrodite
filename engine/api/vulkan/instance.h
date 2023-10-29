@@ -27,7 +27,6 @@ public:
     static VkResult Create(const InstanceCreateInfo& createInfo, Instance** ppInstance);
     static void     Destroy(Instance* pInstance);
 
-    ThreadPool*     getThreadPool() { return m_threadPool.get(); }
     PhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
 
 private:
@@ -36,7 +35,6 @@ private:
 #endif
     std::vector<const char*>                     m_supportedInstanceExtensions{};
     std::vector<std::unique_ptr<PhysicalDevice>> m_physicalDevices{};
-    std::unique_ptr<ThreadPool>                  m_threadPool{};
 };
 }  // namespace aph::vk
 

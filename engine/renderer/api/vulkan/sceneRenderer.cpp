@@ -55,7 +55,6 @@ namespace aph::vk
 {
 SceneRenderer::SceneRenderer(WSI* wsi, const RenderConfig& config) : Renderer(wsi, config)
 {
-    m_threadPool = std::make_unique<ThreadPool>(10);
 }
 
 void SceneRenderer::load(Scene* scene)
