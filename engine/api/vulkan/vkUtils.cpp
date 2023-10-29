@@ -1,6 +1,8 @@
 #include "vkUtils.h"
 #include "volk.h"
 
+#include "allocator/allocator.h"
+
 namespace aph::vk::utils
 {
 

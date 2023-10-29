@@ -1,8 +1,6 @@
 #ifndef ALIGNED_ALLOC_H_
 #define ALIGNED_ALLOC_H_
 
-#include "common.h"
-
 namespace aph
 {
 void* memAlignAlloc(size_t alignment, size_t size);

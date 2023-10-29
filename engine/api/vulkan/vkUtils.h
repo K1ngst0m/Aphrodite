@@ -9,7 +9,8 @@
 #include "vkInit.h"
 #include "common/common.h"
 #include "common/logger.h"
-#include "common/objectPool.h"
+
+#include "allocator/objectPool.h"
 
 #include "../gpuResource.h"
 

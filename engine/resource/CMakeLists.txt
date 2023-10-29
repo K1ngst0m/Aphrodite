@@ -14,4 +14,4 @@ target_include_directories(resource PRIVATE
   ${APH_EXTERNAL_DIR}/glm
 )
 
-target_link_libraries(resource PRIVATE slang)
+target_link_libraries(resource PRIVATE slang aph_filesystem shaderc_shared)

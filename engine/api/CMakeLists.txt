@@ -8,4 +8,11 @@ target_include_directories(api PRIVATE
   ${APH_EXTERNAL_DIR}/vulkan
   ${APH_EXTERNAL_DIR}/glm
 )
-target_link_libraries(api PRIVATE common threads volk shaderc_shared spirv-cross-core)
+target_link_libraries(api PRIVATE
+  common
+  aph_allocator
+  threads
+  volk
+  shaderc_shared
+  spirv-cross-core
+)

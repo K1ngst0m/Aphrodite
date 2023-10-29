@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
-#
+
 #include <thread>
 #include <set>
-#include "common/objectPool.h"
+#include "allocator/objectPool.h"
 
 // - Test allocation and deallocation for single objects.
 // - Test allocation and deallocation for multiple objects.

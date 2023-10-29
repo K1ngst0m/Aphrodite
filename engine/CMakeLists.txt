@@ -1,4 +1,5 @@
 add_subdirectory(common)
+add_subdirectory(allocator)
 add_subdirectory(app)
 add_subdirectory(cli)
 add_subdirectory(threads)
@@ -18,15 +19,16 @@ target_include_directories(aph_engine INTERFACE
                                   )
 target_link_libraries(aph_engine INTERFACE
   common
-  app
-  cli
+  aph_allocator
   threads
+  aph_filesystem
+  aph_module
+  cli
+  app
   wsi
   resource
   api
   renderer
-  aph_module
-  aph_filesystem
 )
 
 target_link_libraries(aph_engine INTERFACE
