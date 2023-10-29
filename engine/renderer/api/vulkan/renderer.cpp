@@ -3,8 +3,6 @@
 #include "renderer/renderer.h"
 #include "common/common.h"
 
-#include "common/assetManager.h"
-
 #include "volk.h"
 
 namespace aph::vk

@@ -101,8 +101,6 @@ void basic_texture::init()
                 .bindings = {{.stride = sizeof(VertexData)}},
             };
 
-            auto shaderDir = aph::asset::GetShaderDir(aph::asset::ShaderType::GLSL) / "default";
-
             aph::vk::Shader* pVS = {};
             aph::vk::Shader* pFS = {};
 

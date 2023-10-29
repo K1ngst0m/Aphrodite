@@ -9,7 +9,6 @@
 #include "wsi/wsi.h"
 
 #include "common/common.h"
-#include "common/assetManager.h"
 #include "common/timer.h"
 #include "common/logger.h"
 
