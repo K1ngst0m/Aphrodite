@@ -15,6 +15,7 @@ file(GLOB TEST_FILES *.cpp)
 foreach(TEST_FILE ${TEST_FILES})
     # Extract filename without extension to use as the test target name
     get_filename_component(TEST_TARGET ${TEST_FILE} NAME_WE)
+    set(TEST_TARGET "${TEST_TARGET}_t")
 
     # Create an executable for the test file
     add_executable(${TEST_TARGET} ${TEST_FILE})
