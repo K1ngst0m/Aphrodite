@@ -46,7 +46,6 @@
 - [[https://github.com/g-truc/glm][glm]] : Mathematics library.
 - [[https://github.com/ocornut/imgui][imgui]] : GUI.
 - [[https://github.com/microsoft/mimalloc][mimalloc]] : Efficient memory allocator.
-- [[https://github.com/mattiasgeniar/reckless][reckless]] : High-performance logging.
 - [[https://github.com/google/shaderc][shaderc]] : Tools for shader compilation.
 - [[https://github.com/shader-slang/slang][slang]] : Tools for shader compilation.
 - [[https://github.com/nothings/stb][stb]] : Hanldes image operations.
