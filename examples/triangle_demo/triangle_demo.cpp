@@ -136,7 +136,7 @@ void triangle_demo::run()
         timer.set("frame end");
 
         deltaTime = timer.interval("frame begin", "frame end");
-        CM_LOG_INFO("Fps: %.0f", 1 / deltaTime);
+        // CM_LOG_INFO("Fps: %.0f", 1 / deltaTime);
     }
 }
 

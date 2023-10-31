@@ -175,7 +175,7 @@ void basic_texture::run()
         timer.set("frame end");
 
         deltaTime = timer.interval("frame begin", "frame end");
-        CM_LOG_INFO("Fps: %f", deltaTime);
+        // CM_LOG_INFO("Fps: %f", deltaTime);
     }
 }
 
