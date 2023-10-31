@@ -134,14 +134,15 @@ void basic_texture::run()
 {
     while(m_wsi->update())
     {
-        static float deltaTime = {};
-        auto         timer     = aph::Timer(deltaTime);
+        static double deltaTime = {};
+        auto&         timer     = aph::Timer::GetInstance();
 
         m_renderer->update(deltaTime);
 
         auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
 
         // draw and submit
+        timer.set("frame begin");
         m_renderer->beginFrame();
         aph::vk::CommandBuffer* cb = m_renderer->acquireCommandBuffer(queue);
 
@@ -171,6 +172,10 @@ void basic_texture::run()
         m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
 
         m_renderer->endFrame();
+        timer.set("frame end");
+
+        deltaTime = timer.interval("frame begin", "frame end");
+        CM_LOG_INFO("Fps: %f", deltaTime);
     }
 }
 

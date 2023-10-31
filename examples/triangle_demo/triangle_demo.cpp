@@ -19,10 +19,11 @@ void triangle_demo::init()
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->m_pDevice.get();
 
-    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>([this](const aph::WindowResizeEvent& e) {
-        m_renderer->m_pSwapChain->reCreate();
-        return true;
-    });
+    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
+        [this](const aph::WindowResizeEvent& e) {
+            m_renderer->m_pSwapChain->reCreate();
+            return true;
+        });
 
     // setup triangle
     {
@@ -41,7 +42,7 @@ void triangle_demo::init()
             };
 
             aph::BufferLoadInfo loadInfo{
-                .debugName = "triangle::vertexBuffer",
+                .debugName  = "triangle::vertexBuffer",
                 .data       = vertexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
@@ -53,7 +54,7 @@ void triangle_demo::init()
         {
             std::array          indexArray{0U, 1U, 2U};
             aph::BufferLoadInfo loadInfo{
-                .debugName = "triangle::indexbuffer",
+                .debugName  = "triangle::indexbuffer",
                 .data       = indexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
@@ -94,14 +95,15 @@ void triangle_demo::run()
 {
     while(m_wsi->update())
     {
-        static float deltaTime = {};
-        auto         timer     = aph::Timer(deltaTime);
+        static double deltaTime = {};
+        auto&         timer     = aph::Timer::GetInstance();
 
         m_renderer->update(deltaTime);
 
         auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
 
         // draw and submit
+        timer.set("frame begin");
         m_renderer->beginFrame();
         aph::vk::CommandBuffer* cb = m_renderer->acquireCommandBuffer(queue);
 
@@ -131,6 +133,10 @@ void triangle_demo::run()
         m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
 
         m_renderer->endFrame();
+        timer.set("frame end");
+
+        deltaTime = timer.interval("frame begin", "frame end");
+        CM_LOG_INFO("Fps: %.0f", 1 / deltaTime);
     }
 }
 
