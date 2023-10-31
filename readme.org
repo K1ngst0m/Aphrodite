@@ -9,7 +9,7 @@
 ** Features
 
   - Vulkan
-  - Resource Management
+  - Async Resource Management
   - Multi-threading, Task Manager
   - Scene Management
   - Built-in Windowing, Input, Event Support
