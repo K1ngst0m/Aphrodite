@@ -1,4 +1,5 @@
 #include "taskManager.h"
+#include "threadUtils.h"
 #include "common/logger.h"
 #include "common/common.h"
 

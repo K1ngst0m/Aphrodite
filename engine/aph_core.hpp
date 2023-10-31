@@ -10,6 +10,7 @@
 
 #include "common/common.h"
 #include "common/timer.h"
+#include "common/profiler.h"
 #include "common/logger.h"
 
 #include "cli/cli.h"

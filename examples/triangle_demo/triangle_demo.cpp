@@ -1,13 +1,12 @@
 #include "triangle_demo.h"
 
-#include "glm/glm.hpp"
-
 triangle_demo::triangle_demo() : aph::BaseApp("triangle_demo")
 {
 }
 
 void triangle_demo::init()
 {
+    PROFILE_FUNCTION();
     // setup window
     m_wsi = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
 
@@ -95,6 +94,7 @@ void triangle_demo::run()
 {
     while(m_wsi->update())
     {
+        PROFILE_SCOPE("application loop");
         static double deltaTime = {};
         auto&         timer     = aph::Timer::GetInstance();
 
@@ -142,17 +142,20 @@ void triangle_demo::run()
 
 void triangle_demo::finish()
 {
+    PROFILE_FUNCTION();
     m_renderer->m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
 }
 
 void triangle_demo::load()
 {
+    PROFILE_FUNCTION();
     m_renderer->load();
 }
 
 void triangle_demo::unload()
 {
+    PROFILE_FUNCTION();
     m_renderer->unload();
 }
 

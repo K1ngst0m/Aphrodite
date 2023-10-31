@@ -1,11 +1,9 @@
 #ifndef APH_JOBSYSTEM_H_
 #define APH_JOBSYSTEM_H_
 
-#include "common/logger.h"
 #include "common/singleton.h"
 #include "allocator/objectPool.h"
 #include "threadPool.h"
-#include "threadUtils.h"
 
 namespace aph
 {
