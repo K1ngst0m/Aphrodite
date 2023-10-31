@@ -33,7 +33,7 @@ struct ImageInfo
 
 struct ImageLoadInfo
 {
-    std::string_view                     debugName     = {};
+    std::string_view                     debugName = {};
     std::variant<std::string, ImageInfo> data;
     ImageContainerType                   containerType = {ImageContainerType::Default};
     vk::ImageCreateInfo*                 pCreateInfo   = {};
@@ -95,6 +95,22 @@ public:
 
     ~ResourceLoader();
 
+    template <typename T_CreateInfo, typename T_Resource>
+    void loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
+    {
+        m_syncTokens.push_back(m_threadPool.enqueue([this, &info, ppResource]() { load(info, ppResource); }));
+        // TODO command pool multi thread support
+        wait();
+    }
+
+    void wait()
+    {
+        for(auto& syncToken : m_syncTokens)
+        {
+            syncToken.wait();
+        }
+    }
+
     void load(const ImageLoadInfo& info, vk::Image** ppImage);
     void load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     void load(const ShaderLoadInfo& info, vk::Shader** ppShader);
@@ -111,9 +127,11 @@ private:
     vk::Device*              m_pDevice = {};
 
 private:
+    ThreadPool<>                                                 m_threadPool;
     std::unordered_map<std::string, std::unique_ptr<vk::Shader>> m_shaderModuleCaches = {};
     uuid::UUIDGenerator<std::mt19937_64>                         m_uuidGenerator      = {};
     std::unordered_map<std::string, std::string>                 m_shaderUUIDMap      = {};
+    std::vector<std::future<void>>                               m_syncTokens;
 };
 }  // namespace aph
 
