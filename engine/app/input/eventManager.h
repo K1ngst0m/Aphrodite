@@ -4,7 +4,7 @@
 #include <typeindex>
 #include <any>
 #include <mutex>
-#include "threads/threadPool.h"
+#include "threads/taskManager.h"
 
 namespace aph
 {
@@ -59,44 +59,29 @@ public:
 
     void processAll()
     {
-        // TODO check that different event type don't cause data race
-        std::vector<std::future<void>> results;
-        results.reserve(eventDataMap.size());
-        for(auto& keyValue : eventDataMap)
-        {
-            results.push_back(m_threadPools.enqueue([&keyValue]() { keyValue.second.second(keyValue.second.first); }));
-        }
-        for(auto& result : results)
-        {
-            result.wait();
-        }
+        processAllAsync();
+        flush();
     }
 
     void processAllAsync()
     {
+        auto& taskManager = TaskManager::GetInstance();
+        auto  group       = taskManager.createTaskGroup("event processing");
         // TODO check that different event type don't cause data race
-        for(auto& keyValue : eventDataMap)
+        for(auto& [_, value] : eventDataMap)
         {
-            m_processingEvents.push_back(
-                m_threadPools.enqueue([&keyValue]() { keyValue.second.second(keyValue.second.first); }));
+            group->addTask([&value]() { value.second(value.first); });
         }
+        taskManager.submit(group);
     }
 
-    void flush()
-    {
-        for(auto& event : m_processingEvents)
-        {
-            event.wait();
-        }
-        m_processingEvents.clear();
-    }
+    void flush() { TaskManager::GetInstance().wait(); }
 
 private:
     EventManager() = default;
 
     std::mutex                     m_dataMapMutex;
     ThreadPool<>                   m_threadPools;
-    std::vector<std::future<void>> m_processingEvents;
 
     std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> eventDataMap;
 
