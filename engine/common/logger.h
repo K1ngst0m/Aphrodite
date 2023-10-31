@@ -1,11 +1,14 @@
 #ifndef LOGGER_H_
 #define LOGGER_H_
 
+#include "singleton.h"
+
 namespace aph
 {
-class Logger
+class Logger: public Singleton<Logger>
 {
 public:
+    Logger();
     enum class Level : uint8_t
     {
         Debug,
@@ -16,15 +19,6 @@ public:
     };
 
     void setLogLevel(Level level) { log_level = level; }
-
-    Logger(Logger const&)            = delete;
-    Logger& operator=(Logger const&) = delete;
-
-    static Logger& Get()
-    {
-        static Logger instance;
-        return instance;
-    }
 
     void flush();
 
@@ -57,7 +51,6 @@ public:
     }
 
 private:
-    Logger();
 
     // conversion for most types
     template <typename T>
@@ -101,50 +94,50 @@ private:
 #define LOG_FLUSH() \
     do \
     { \
-        ::aph::Logger::Get().flush(); \
+        ::aph::Logger::GetInstance().flush(); \
     } while(0)
 
 #define CM_LOG_DEBUG(...) \
     do \
     { \
-        ::aph::Logger::Get().debug("[APH] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().debug("[APH] " __VA_ARGS__); \
     } while(0)
 #define CM_LOG_WARN(...) \
     do \
     { \
-        ::aph::Logger::Get().warn("[APH] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().warn("[APH] " __VA_ARGS__); \
     } while(0)
 #define CM_LOG_INFO(...) \
     do \
     { \
-        ::aph::Logger::Get().info("[APH] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().info("[APH] " __VA_ARGS__); \
     } while(0)
 #define CM_LOG_ERR(...) \
     do \
     { \
-        ::aph::Logger::Get().error("[APH] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().error("[APH] " __VA_ARGS__); \
     } while(0)
 
 #define VK_LOG_DEBUG(...) \
     do \
     { \
-        ::aph::Logger::Get().debug("[VK] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().debug("[VK] " __VA_ARGS__); \
     } while(0)
 #define VK_LOG_WARN(...) \
     do \
     { \
-        ::aph::Logger::Get().warn("[VK] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().warn("[VK] " __VA_ARGS__); \
     } while(0)
 #define VK_LOG_INFO(...) \
     do \
     { \
-        ::aph::Logger::Get().info("[VK] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().info("[VK] " __VA_ARGS__); \
     } while(0)
 #define VK_LOG_ERR(...) \
     do \
     { \
-        ::aph::Logger::Get().error("[VK] " __VA_ARGS__); \
-        ::aph::Logger::Get().flush(); \
+        ::aph::Logger::GetInstance().error("[VK] " __VA_ARGS__); \
+        ::aph::Logger::GetInstance().flush(); \
     } while(0)
 
 #endif  // LOGGER_H_

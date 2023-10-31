@@ -11,7 +11,7 @@ void logThreadDebug(std::string_view fmt, Args&&... args)
     std::ostringstream ss;
     ss << "[THREAD: " << aph::thread::getName().c_str() << "] ";
     ss << fmt;
-    ::aph::Logger::Get().debug(ss.str(), std::forward<Args>(args)...);
+    ::aph::Logger::GetInstance().debug(ss.str(), std::forward<Args>(args)...);
 }
 
     #define THREAD_LOG_DEBUG(...) \
