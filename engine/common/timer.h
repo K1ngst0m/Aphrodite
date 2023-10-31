@@ -1,11 +1,11 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
-#include <iostream>
 #include <chrono>
 #include <unordered_map>
 #include <string>
 
+#include "common/logger.h"
 #include "common/singleton.h"
 
 namespace aph
@@ -18,19 +18,19 @@ public:
     void set(const std::string& tag) { tags[tag] = Clock::now(); }
 
     // Calculate the interval between two timestamps using their tags
-    double interval(const std::string& tag1, const std::string& tag2) const
+    double interval(std::string_view start, std::string_view end) const
     {
-        auto it1 = tags.find(tag1);
-        auto it2 = tags.find(tag2);
+        auto it1 = tags.find(start.data());
+        auto it2 = tags.find(end.data());
 
         if(it1 == tags.end() || it2 == tags.end())
         {
-            std::cerr << "One or both tags not found!" << '\n';
+            CM_LOG_ERR("One or both tags not found!");
             return 0.0;
         }
 
         Duration duration = it2->second - it1->second;
-        return duration.count();  // returns the interval in seconds
+        return duration.count();
     }
 
 private:
