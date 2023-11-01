@@ -9,7 +9,7 @@
 namespace aph
 {
 
-class EventManager
+class EventManager : public Singleton<EventManager>
 {
     template <typename TEvent>
     struct EventData
@@ -35,15 +35,6 @@ class EventManager
     };
 
 public:
-    EventManager(const EventManager&)            = delete;
-    EventManager& operator=(const EventManager&) = delete;
-
-    static EventManager& GetInstance()
-    {
-        static EventManager instance;
-        return instance;
-    }
-
     template <typename TEvent>
     void pushEvent(const TEvent& e)
     {
@@ -68,7 +59,7 @@ public:
         auto& taskManager = TaskManager::GetInstance();
         auto  group       = taskManager.createTaskGroup("event processing");
         // TODO check that different event type don't cause data race
-        for(auto& [_, value] : eventDataMap)
+        for(auto& [_, value] : m_eventDataMap)
         {
             group->addTask([&value]() { value.second(value.first); });
         }
@@ -78,23 +69,20 @@ public:
     void flush() { TaskManager::GetInstance().wait(); }
 
 private:
-    EventManager() = default;
+    std::mutex m_dataMapMutex;
 
-    std::mutex                     m_dataMapMutex;
-    ThreadPool<>                   m_threadPools;
-
-    std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> eventDataMap;
+    std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
 
     template <typename TEvent>
     EventData<TEvent>& getEventData()
     {
         auto ti = std::type_index(typeid(TEvent));
-        if(!eventDataMap.contains(ti))
+        if(!m_eventDataMap.contains(ti))
         {
-            eventDataMap[ti] = {EventData<TEvent>{},
-                                [](std::any& eventData) { std::any_cast<EventData<TEvent>&>(eventData).process(); }};
+            m_eventDataMap[ti] = {EventData<TEvent>{},
+                                  [](std::any& eventData) { std::any_cast<EventData<TEvent>&>(eventData).process(); }};
         }
-        return std::any_cast<EventData<TEvent>&>(eventDataMap[ti].first);
+        return std::any_cast<EventData<TEvent>&>(m_eventDataMap[ti].first);
     }
 };
 

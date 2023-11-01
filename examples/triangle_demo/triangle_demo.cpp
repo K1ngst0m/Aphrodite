@@ -12,7 +12,7 @@ void triangle_demo::init()
 
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_ALL,
-        .maxFrames = 1,
+        .maxFrames = 2,
     };
 
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);

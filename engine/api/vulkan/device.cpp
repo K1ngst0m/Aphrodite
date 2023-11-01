@@ -119,7 +119,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
     volkLoadDeviceTable(&device->m_table, handle);
-    device->m_supportedFeatures = std::move(supportedFeatures);
+    device->m_supportedFeatures = supportedFeatures;
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);
@@ -599,9 +599,14 @@ Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** pp
     return Result::Success;
 }
 
-Result Device::waitForFence(const std::vector<VkFence>& fences, bool waitAll, uint32_t timeout)
+Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
 {
-    return utils::getResult(m_table.vkWaitForFences(getHandle(), fences.size(), fences.data(), VK_TRUE, UINT64_MAX));
+    std::vector<VkFence> vkFences(fences.size());
+    for(auto idx = 0; idx < fences.size(); ++idx)
+    {
+        vkFences[idx] = fences[idx]->getHandle();
+    }
+    return utils::getResult(m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), VK_TRUE, UINT64_MAX));
 }
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)

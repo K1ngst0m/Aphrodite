@@ -2,6 +2,7 @@
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
 #include "common/common.h"
+#include "common/timer.h"
 
 #include "volk.h"
 
@@ -214,9 +215,7 @@ Renderer::~Renderer()
 
 void Renderer::beginFrame()
 {
-    {
-        m_timer = std::chrono::high_resolution_clock::now();
-    }
+    Timer::GetInstance().set("renderer: begin frame");
 }
 
 void Renderer::endFrame()
@@ -241,18 +240,10 @@ void Renderer::endFrame()
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 
     {
-        m_frameCounter++;
-        auto tEnd      = std::chrono::high_resolution_clock::now();
-        auto tDiff     = std::chrono::duration<double, std::milli>(tEnd - m_timer).count();
-        m_frameTimer   = (float)tDiff / 1000.0f;
-        float fpsTimer = (float)(std::chrono::duration<double, std::milli>(tEnd - m_lastTimestamp).count());
-        if(fpsTimer > 1000.0f)
-        {
-            m_lastFPS       = static_cast<uint32_t>((float)m_frameCounter * (1000.0f / fpsTimer));
-            m_frameCounter  = 0;
-            m_lastTimestamp = tEnd;
-        }
-        m_tPrevEnd = tEnd;
+        auto &timer = Timer::GetInstance();
+        timer.set("renderer: end frame");
+        m_frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
+        m_framePerSecond = 1 / m_frameTime;
     }
 }
 

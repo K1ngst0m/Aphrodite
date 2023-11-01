@@ -128,7 +128,7 @@ public:
 
 public:
     void   waitIdle();
-    Result waitForFence(const std::vector<VkFence>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+    Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 private:
     VkCommandPool getCommandPoolWithQueue(Queue* queue);
@@ -151,7 +151,7 @@ private:
         ThreadSafeObjectPool<ShaderProgram> program;
         SyncPrimitivesPool                  syncPrimitive;
 
-        ResourceObjectPool(Device* pDevcie): syncPrimitive(pDevcie){}
+        ResourceObjectPool(Device* pDevcie) : syncPrimitive(pDevcie) {}
     } m_resourcePool;
 };
 

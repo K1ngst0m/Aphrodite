@@ -67,13 +67,9 @@ protected:
     FrameData m_frameData;
 
 protected:
-    uint32_t m_frameIdx     = {};
-    float    m_frameTimer   = {};
-    uint32_t m_lastFPS      = {};
-    uint32_t m_frameCounter = {};
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_timer = {};
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTimestamp, m_tStart, m_tPrevEnd;
+    uint32_t m_frameIdx       = {};
+    double   m_frameTime      = {};
+    double   m_framePerSecond = {};
 };
 }  // namespace aph::vk
 
