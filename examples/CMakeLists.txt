@@ -35,7 +35,7 @@ endfunction(buildExamples)
 
 set(EXAMPLES
     triangle_demo
-    basic_texture
+    # basic_texture
     # scene_manager
 )
 

@@ -15,12 +15,6 @@ class Sampler;
 class Queue;
 class DescriptorSet;
 
-struct CommandPoolCreateInfo
-{
-    Queue* queue     = {};
-    bool   transient = {false};
-};
-
 enum class CommandBufferState
 {
     INITIAL,

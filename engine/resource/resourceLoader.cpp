@@ -577,7 +577,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
         auto queue = m_pDevice->getQueue(QueueType::Graphics);
-        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
+        executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
 
             cmd->copyBufferToImage(stagingBuffer, image);
@@ -587,7 +587,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             }
         });
 
-        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
+        executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             if(genMipmap)
             {
                 // generate mipmap chains
@@ -790,7 +790,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
             }
 
             auto queue = m_pDevice->getQueue(QueueType::Graphics);
-            m_pDevice->executeSingleCommands(
+            executeSingleCommands(
                 queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
 
             m_pDevice->destroy(stagingBuffer);
@@ -819,5 +819,25 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 
     uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
     memcpy(pMapped + range.offset, data, range.size);
+}
+void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func, vk::Fence* pFence)
+{
+    // TODO optimize pool creation
+    vk::CommandPool* pPool = {};
+    APH_CHECK_RESULT(m_pDevice->create(vk::CommandPoolCreateInfo{.queue = queue, .transient = true}, &pPool));
+
+    vk::CommandBuffer* cmd = nullptr;
+    APH_CHECK_RESULT(pPool->allocate(1, &cmd));
+
+    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    func(cmd);
+    _VR(cmd->end());
+
+    vk::QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
+    APH_CHECK_RESULT(queue->waitIdle());
+
+    pPool->free(1, &cmd);
+    m_pDevice->destroy(pPool);
 }
 }  // namespace aph

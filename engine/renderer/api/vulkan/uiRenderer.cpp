@@ -175,7 +175,7 @@ void UI::load()
 
     // load fonts
     {
-        m_pDevice->executeSingleCommands(
+        m_pRenderer->executeSingleCommands(
             m_pDefaultQueue, [](CommandBuffer* pCmd) { ImGui_ImplVulkan_CreateFontsTexture(pCmd->getHandle()); });
 
         ImGui_ImplVulkan_DestroyFontUploadObjects();

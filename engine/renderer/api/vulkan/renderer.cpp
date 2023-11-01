@@ -33,6 +33,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         }
     }
 
+    msg << " >>> ";
+
     msg << pCallbackData->pMessage;
 
     switch(messageSeverity)
@@ -109,6 +111,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
             VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+            VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
         };
 
         uint32_t         gpuIdx = 0;
@@ -160,25 +163,35 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // init default resources
     if(m_config.flags & RENDER_CFG_DEFAULT_RES)
     {
-        m_renderSemaphore.resize(m_config.maxFrames);
-        m_frameFence.resize(m_config.maxFrames);
-
-        {
-            for(auto& semaphore : m_renderSemaphore)
-            {
-                semaphore = m_pDevice->acquireSemaphore();
-            }
-            for(auto& fence : m_frameFence)
-            {
-                fence = m_pDevice->acquireFence(false);
-            }
-        }
-
         // pipeline cache
         {
             VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
             _VR(m_pDevice->getDeviceTable()->vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo,
                                                                    vkAllocator(), &m_pipelineCache));
+        }
+    }
+
+    // init frame data
+    {
+        m_frameData.resize(m_config.maxFrames);
+        for(auto& frameData : m_frameData)
+        {
+            frameData.renderSemaphore = m_pDevice->acquireSemaphore();
+            frameData.fence           = m_pDevice->acquireFence(false);
+
+            // TODO
+            VkQueryPoolCreateInfo createInfo{
+                .sType      = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+                .pNext      = nullptr,
+                .flags      = 0,
+                .queryType  = VK_QUERY_TYPE_TIMESTAMP,
+                .queryCount = 2,
+            };
+
+            m_pDevice->getDeviceTable()->vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(),
+                                                           &frameData.queryPool);
+            // TODO
+            // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
         }
     }
 
@@ -198,28 +211,15 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
     // init query pool
     {
-        m_queryPools.resize(m_config.maxFrames);
-
-        VkQueryPoolCreateInfo createInfo{
-            .sType      = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-            .pNext      = nullptr,
-            .flags      = 0,
-            .queryType  = VK_QUERY_TYPE_TIMESTAMP,
-            .queryCount = 2,
-        };
-
-        for(auto& queryPool : m_queryPools)
-        {
-            m_pDevice->getDeviceTable()->vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(), &queryPool);
-        }
     }
 }
 
 Renderer::~Renderer()
 {
-    for(auto& queryPool : m_queryPools)
+    resetFrameData();
+    for(auto& frameData : m_frameData)
     {
-        m_pDevice->getDeviceTable()->vkDestroyQueryPool(m_pDevice->getHandle(), queryPool, vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyQueryPool(m_pDevice->getHandle(), frameData.queryPool, vkAllocator());
     }
 
     if(m_config.flags & RENDER_CFG_UI)
@@ -243,22 +243,7 @@ void Renderer::beginFrame()
 
 void Renderer::endFrame()
 {
-    // clean the frame data
-    {
-        m_pDevice->freeCommandBuffers(m_frameData.cmds.size(), m_frameData.cmds.data());
-        m_frameData.cmds.clear();
-
-        for(auto semaphore : m_frameData.semaphores)
-        {
-            APH_CHECK_RESULT(m_pDevice->releaseSemaphore(semaphore));
-        }
-
-        for(auto fence : m_frameData.fences)
-        {
-            APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
-        }
-        m_frameData.fences.clear();
-    }
+    resetFrameData();
 
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 
@@ -270,12 +255,12 @@ void Renderer::endFrame()
     }
 }
 
-CommandBuffer* Renderer::acquireCommandBuffer(Queue* queue)
+CommandPool* Renderer::acquireCommandPool(Queue* queue, bool transient)
 {
-    CommandBuffer* cmd;
-    APH_CHECK_RESULT(m_pDevice->allocateCommandBuffers(1, &cmd, queue));
-    m_frameData.cmds.push_back(cmd);
-    return cmd;
+    CommandPool* cmdPool;
+    APH_CHECK_RESULT(m_pDevice->create({queue, transient}, &cmdPool));
+    m_frameData[m_frameIdx].cmdPools.push_back(cmdPool);
+    return cmdPool;
 }
 
 Shader* Renderer::getShaders(const std::filesystem::path& path) const
@@ -288,14 +273,14 @@ Shader* Renderer::getShaders(const std::filesystem::path& path) const
 Semaphore* Renderer::acquireSemahpore()
 {
     Semaphore* sem = m_pDevice->acquireSemaphore();
-    m_frameData.semaphores.push_back(sem);
+    m_frameData[m_frameIdx].semaphores.push_back(sem);
     return sem;
 }
 
 Fence* Renderer::acquireFence()
 {
     Fence* fence = m_pDevice->acquireFence();
-    m_frameData.fences.push_back(fence);
+    m_frameData[m_frameIdx].fences.push_back(fence);
     return fence;
 }
 
@@ -322,6 +307,15 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
 
     if(pPresentImage)
     {
+        executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
+            aph::vk::ImageBarrier barrier{
+                .pImage       = pPresentImage,
+                .currentState = pPresentImage->getResourceState(),
+                .newState     = aph::RESOURCE_STATE_PRESENT,
+            };
+            cmd->insertBarrier({barrier});
+        });
+
         APH_CHECK_RESULT(m_pSwapChain->presentImage(pQueue, {presentSem}));
     }
 
@@ -350,4 +344,31 @@ void Renderer::load()
         pUI->load();
     }
 };
+void Renderer::resetFrameData()
+{
+    // clean the frame data
+    auto& frameData = m_frameData[m_frameIdx];
+    {
+        for(auto pool : frameData.cmdPools)
+        {
+            m_pDevice->destroy(pool);
+        }
+        frameData.cmdPools.clear();
+
+        for(auto semaphore : frameData.semaphores)
+        {
+            APH_CHECK_RESULT(m_pDevice->releaseSemaphore(semaphore));
+        }
+        frameData.semaphores.clear();
+
+        for(auto fence : frameData.fences)
+        {
+            APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
+        }
+        frameData.fences.clear();
+
+        // TODO
+        // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
+    }
+}
 }  // namespace aph::vk

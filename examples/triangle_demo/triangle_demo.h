@@ -22,14 +22,15 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline*      m_pPipeline      = {};
-    aph::vk::Buffer*        m_pVB            = {};
-    aph::vk::Buffer*        m_pIB            = {};
+    aph::vk::Pipeline*    m_pPipeline = {};
+    aph::vk::Buffer*      m_pVB       = {};
+    aph::vk::Buffer*      m_pIB       = {};
+    aph::vk::CommandPool* m_pCmdPool  = {};
 
 private:
     std::unique_ptr<aph::WSI>          m_wsi      = {};
     std::unique_ptr<aph::vk::Renderer> m_renderer = {};
-    aph::vk::Device* m_pDevice = {};
+    aph::vk::Device*                   m_pDevice  = {};
 };
 
 #endif  // SCENE_MANAGER_H_

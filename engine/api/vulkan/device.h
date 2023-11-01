@@ -3,6 +3,7 @@
 
 #include "buffer.h"
 #include "commandBuffer.h"
+#include "commandPool.h"
 #include "descriptorSet.h"
 #include "image.h"
 #include "sampler.h"
@@ -56,6 +57,8 @@ public:
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
     Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
     Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
+    Result create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
+                  std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
@@ -63,6 +66,7 @@ public:
     void destroy(SwapChain* pSwapchain);
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
+    void destroy(CommandPool* pCommandPool);
 
     template <typename... Args>
     void destroy(Args... args)
@@ -77,13 +81,6 @@ public:
     }
 
 public:
-    using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-
-    void   executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
-    Result allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue);
-    void   freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers);
-
-public:
     Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
     Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
     Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, MemoryRange range = {});
@@ -96,10 +93,10 @@ public:
     Result     releaseFence(Fence* pFence);
 
 public:
-    VolkDeviceTable*                getDeviceTable() { return &m_table; }
-    PhysicalDevice*                 getPhysicalDevice() const { return m_physicalDevice; }
-    VkFormat                        getDepthFormat() const;
-    Queue*                          getQueue(QueueType flags, uint32_t queueIndex = 0);
+    VolkDeviceTable* getDeviceTable() { return &m_table; }
+    PhysicalDevice*  getPhysicalDevice() const { return m_physicalDevice; }
+    VkFormat         getDepthFormat() const;
+    Queue*           getQueue(QueueType flags, uint32_t queueIndex = 0);
 
     double getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                                TimeUnit unitType = TimeUnit::Seconds);
@@ -114,8 +111,7 @@ private:
     VolkDeviceTable          m_table{};
 
     using QueueFamily = std::vector<Queue*>;
-    std::vector<QueueFamily>                    m_queues;
-    std::unordered_map<uint32_t, VkCommandPool> m_commandPools;
+    std::vector<QueueFamily> m_queues;
 
 private:
     struct ResourceObjectPool
@@ -127,6 +123,7 @@ private:
         ThreadSafeObjectPool<Pipeline>      pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue>         queue;
+        ThreadSafeObjectPool<CommandPool>   commandPool;
         SyncPrimitivesPool                  syncPrimitive;
 
         ResourceObjectPool(Device* pDevcie) : syncPrimitive(pDevcie) {}

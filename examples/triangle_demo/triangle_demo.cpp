@@ -87,6 +87,12 @@ void triangle_demo::init()
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
+
+        // command pool
+        {
+            APH_CHECK_RESULT(m_pDevice->create(
+                aph::vk::CommandPoolCreateInfo{m_renderer->getDefaultQueue(aph::QueueType::Graphics)}, &m_pCmdPool));
+        }
     }
 }
 
@@ -105,7 +111,8 @@ void triangle_demo::run()
         // draw and submit
         timer.set("frame begin");
         m_renderer->beginFrame();
-        aph::vk::CommandBuffer* cb = m_renderer->acquireCommandBuffer(queue);
+        aph::vk::CommandBuffer* cb = {};
+        APH_CHECK_RESULT(m_pCmdPool->allocate(1, &cb));
 
         VkExtent2D extent{
             .width  = m_renderer->getWindowWidth(),
@@ -124,9 +131,7 @@ void triangle_demo::run()
 
         cb->begin();
         cb->setDebugName("triangle drawing command");
-
         cb->resetQueryPool(pool, 0, 2);
-
         cb->setViewport(extent);
         cb->setScissor(extent);
         cb->bindVertexBuffers(m_pVB);
@@ -162,7 +167,7 @@ void triangle_demo::finish()
 {
     PROFILE_FUNCTION();
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
+    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pCmdPool);
 }
 
 void triangle_demo::load()

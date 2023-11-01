@@ -105,15 +105,6 @@ Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
 
 Result SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores)
 {
-    m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
-        aph::vk::ImageBarrier barrier{
-            .pImage       = m_images[m_imageIdx],
-            .currentState = m_images[m_imageIdx]->getResourceState(),
-            .newState     = aph::RESOURCE_STATE_PRESENT,
-        };
-        cmd->insertBarrier({barrier});
-    });
-
     std::vector<VkSemaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
     for(auto sem : waitSemaphores)

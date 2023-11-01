@@ -99,7 +99,13 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .dynamicRendering = VK_TRUE,
     };
 
-    supportedFeatures2.pNext    = &dynamicRenderingFeature;
+    VkPhysicalDeviceHostQueryResetFeatures hostQueryResetFeature{
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+        .pNext = &dynamicRenderingFeature,
+        .hostQueryReset = VK_TRUE,
+    };
+
+    supportedFeatures2.pNext    = &hostQueryResetFeature;
     supportedFeatures2.features = supportedFeatures;
 
     // Create the Vulkan device.
@@ -143,11 +149,6 @@ void Device::Destroy(Device* pDevice)
 {
     pDevice->m_resourcePool.syncPrimitive.clear();
 
-    for(auto& [_, commandpool] : pDevice->m_commandPools)
-    {
-        pDevice->m_table.vkDestroyCommandPool(pDevice->m_handle, commandpool, gVkAllocator);
-    }
-
     if(pDevice->m_handle)
     {
         pDevice->m_table.vkDestroyDevice(pDevice->m_handle, gVkAllocator);
@@ -159,6 +160,27 @@ VkFormat Device::getDepthFormat() const
     return m_physicalDevice->findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, std::string_view debugName)
+{
+    VkCommandPoolCreateInfo cmdPoolInfo{
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
+    };
+
+    if(createInfo.transient)
+    {
+        cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    }
+
+    VkCommandPool pool;
+    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
+    utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)pool, debugName);
+
+    *ppCommandPool = m_resourcePool.commandPool.allocate(this, createInfo, pool);
+
+    return Result::Success;
 }
 
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
@@ -329,6 +351,15 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     return Result::Success;
 }
 
+void Device::destroy(CommandPool* pCommandPool)
+{
+    if(pCommandPool)
+    {
+        m_table.vkDestroyCommandPool(getHandle(), pCommandPool->getHandle(), vkAllocator());
+        m_resourcePool.commandPool.free(pCommandPool);
+    }
+}
+
 void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
@@ -381,70 +412,6 @@ Queue* Device::getQueue(QueueType flags, uint32_t queueIndex)
 void Device::waitIdle()
 {
     m_table.vkDeviceWaitIdle(getHandle());
-}
-
-Result Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
-{
-    Queue* queue = pQueue;
-
-    // get command pool
-    VkCommandPool pool = {};
-    {
-        auto queueIndices = queue->getFamilyIndex();
-
-        if(m_commandPools.contains(queueIndices))
-        {
-            pool = m_commandPools.at(queueIndices);
-        }
-        else
-        {
-            CommandPoolCreateInfo   createInfo{.queue = queue};
-            VkCommandPoolCreateInfo cmdPoolInfo{
-                .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-                .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
-            };
-
-            if(createInfo.transient)
-            {
-                cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            }
-
-            _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
-            m_commandPools[queueIndices] = pool;
-        }
-    }
-    APH_ASSERT(pool != VK_NULL_HANDLE);
-
-    std::vector<VkCommandBuffer> handles(commandBufferCount);
-
-    // Allocate a new command buffer.
-    VkCommandBufferAllocateInfo allocInfo = {
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext              = nullptr,
-        .commandPool        = pool,
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = commandBufferCount,
-    };
-    _VR(m_table.vkAllocateCommandBuffers(getHandle(), &allocInfo, handles.data()));
-
-    for(auto i = 0; i < commandBufferCount; i++)
-    {
-        ppCommandBuffers[i] = new CommandBuffer(this, pool, handles[i], queue);
-    }
-    return Result::Success;
-}
-
-void Device::freeCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers)
-{
-    // Destroy all of the command buffers.
-    for(auto i = 0U; i < commandBufferCount; ++i)
-    {
-        if(ppCommandBuffers != nullptr)
-        {
-            delete ppCommandBuffers[i];
-            ppCommandBuffers = nullptr;
-        }
-    }
 }
 
 Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
@@ -605,8 +572,8 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
     {
         vkFences[idx] = fences[idx]->getHandle();
     }
-    return utils::getResult(
-        m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), waitAll ? VK_TRUE : VK_FALSE, UINT64_MAX));
+    return utils::getResult(m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(),
+                                                    waitAll ? VK_TRUE : VK_FALSE, UINT64_MAX));
 }
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
@@ -675,23 +642,24 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
     }
 
     VkSamplerCreateInfo ci{
-        .sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext            = nullptr,
-        .flags            = 0,
-        .magFilter        = createInfo.magFilter,
-        .minFilter        = createInfo.minFilter,
-        .mipmapMode       = createInfo.mipMapMode,
-        .addressModeU     = createInfo.addressU,
-        .addressModeV     = createInfo.addressV,
-        .addressModeW     = createInfo.addressW,
-        .mipLodBias       = createInfo.mipLodBias,
-        .anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_supportedFeatures.samplerAnisotropy) ? VK_TRUE : VK_FALSE,
-        .maxAnisotropy    = createInfo.maxAnisotropy,
-        .compareEnable    = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
-        .compareOp        = createInfo.compareFunc,
-        .minLod           = minSamplerLod,
-        .maxLod           = maxSamplerLod,
-        .borderColor      = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext        = nullptr,
+        .flags        = 0,
+        .magFilter    = createInfo.magFilter,
+        .minFilter    = createInfo.minFilter,
+        .mipmapMode   = createInfo.mipMapMode,
+        .addressModeU = createInfo.addressU,
+        .addressModeV = createInfo.addressV,
+        .addressModeW = createInfo.addressW,
+        .mipLodBias   = createInfo.mipLodBias,
+        .anisotropyEnable =
+            (createInfo.maxAnisotropy > 0.0f && m_supportedFeatures.samplerAnisotropy) ? VK_TRUE : VK_FALSE,
+        .maxAnisotropy           = createInfo.maxAnisotropy,
+        .compareEnable           = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
+        .compareOp               = createInfo.compareFunc,
+        .minLod                  = minSamplerLod,
+        .maxLod                  = maxSamplerLod,
+        .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
@@ -749,22 +717,6 @@ void Device::destroy(Sampler* pSampler)
 {
     m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), gVkAllocator);
     m_resourcePool.sampler.free(pSampler);
-}
-
-void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
-{
-    CommandBuffer* cmd = nullptr;
-    APH_CHECK_RESULT(allocateCommandBuffers(1, &cmd, queue));
-
-    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-    func(cmd);
-    _VR(cmd->end());
-
-    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    APH_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
-    APH_CHECK_RESULT(queue->waitIdle());
-
-    freeCommandBuffers(1, &cmd);
 }
 
 double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)

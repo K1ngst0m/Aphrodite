@@ -32,15 +32,33 @@ public:
     Shader* getShaders(const std::filesystem::path& path) const;
     Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
 
-    Semaphore* getRenderSemaphore() { return m_renderSemaphore[m_frameIdx]; }
-    Fence*     getFrameFence() { return m_frameFence[m_frameIdx]; }
+    Semaphore* getRenderSemaphore() { return m_frameData[m_frameIdx].renderSemaphore; }
+    Fence*     getFrameFence() { return m_frameData[m_frameIdx].fence; }
 
-    CommandBuffer* acquireCommandBuffer(Queue* queue);
-    Semaphore*     acquireSemahpore();
-    Fence*         acquireFence();
-    Instance*      getInstance() const { return m_pInstance; }
+    CommandPool* acquireCommandPool(Queue* queue, bool transient = false);
+    Semaphore*   acquireSemahpore();
+    Fence*       acquireFence();
+    Instance*    getInstance() const { return m_pInstance; }
 
-    VkQueryPool getFrameQueryPool() const { return m_queryPools[m_frameIdx]; }
+    VkQueryPool getFrameQueryPool() const { return m_frameData[m_frameIdx].queryPool; }
+
+    using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
+    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func, Fence* pFence = nullptr)
+    {
+        auto           commandPool = acquireCommandPool(queue, true);
+        CommandBuffer* cmd         = nullptr;
+        APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
+
+        _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+        func(cmd);
+        _VR(cmd->end());
+
+        QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+        APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
+        APH_CHECK_RESULT(queue->waitIdle());
+
+        commandPool->free(1, &cmd);
+    }
 
 public:
     UI* pUI = {};
@@ -56,20 +74,19 @@ protected:
     std::unordered_map<QueueType, Queue*> m_queue;
 
 protected:
-    std::vector<VkQueryPool> m_queryPools = {};
-
-protected:
-    std::vector<Semaphore*> m_renderSemaphore = {};
-    std::vector<Fence*>     m_frameFence      = {};
-
-protected:
     struct FrameData
     {
-        std::vector<CommandBuffer*> cmds;
-        std::vector<Semaphore*>     semaphores;
-        std::vector<Fence*>         fences;
+        Semaphore*  renderSemaphore = {};
+        Fence*      fence           = {};
+        VkQueryPool queryPool       = {};
+
+        std::vector<CommandPool*> cmdPools;
+        std::vector<Semaphore*>   semaphores;
+        std::vector<Fence*>       fences;
     };
-    FrameData m_frameData;
+    std::vector<FrameData> m_frameData;
+
+    void resetFrameData();
 
 protected:
     uint32_t m_frameIdx       = {};
