@@ -39,24 +39,6 @@ private:
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
 };
 
-class CommandPoolAllocator
-{
-public:
-    CommandPoolAllocator(Device* pDevice) : m_pDevice(pDevice) {}
-
-    void allocate(uint32_t count, CommandBuffer** ppCommandBuffers, Queue* pQueue);
-    void allocateThread(uint32_t count, CommandBuffer** ppCommandBuffers, Queue* pQueue);
-
-private:
-    Device* m_pDevice = {};
-
-    struct
-    {
-        std::unordered_map<uint32_t, std::vector<VkCommandPool>> m_basic;
-        std::unordered_map<uint32_t, std::vector<VkCommandPool>> m_multiThreads;
-        std::unordered_map<uint32_t, std::vector<VkCommandPool>> m_transient;
-    } m_commandPools;
-};
 }  // namespace aph::vk
 
 #endif  // COMMANDPOOL_H_
