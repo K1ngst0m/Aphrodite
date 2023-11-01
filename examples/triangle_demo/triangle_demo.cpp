@@ -12,7 +12,7 @@ void triangle_demo::init()
 
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_ALL,
-        .maxFrames = 2,
+        .maxFrames = 1,
     };
 
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
@@ -31,14 +31,19 @@ void triangle_demo::init()
             glm::vec3 pos;
             glm::vec3 color;
         };
+
         // vertex buffer
+        std::vector<VertexData> vertexArray{
+            {.pos = {0.0f, -0.5f, 1.0f}, .color = {1.0f, 0.0f, 0.0f}},
+            {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
+            {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
+        };
+        std::array indexArray{0U, 1U, 2U};
+
+        auto & timer = aph::Timer::GetInstance();
+        timer.set("load begin");
         {
             // vertex: position, color
-            std::vector<VertexData> vertexArray{
-                {.pos = {0.0f, -0.5f, 1.0f}, .color = {1.0f, 0.0f, 0.0f}},
-                {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
-                {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
-            };
 
             aph::BufferLoadInfo loadInfo{
                 .debugName  = "triangle::vertexBuffer",
@@ -46,18 +51,17 @@ void triangle_demo::init()
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
 
-            m_renderer->m_pResourceLoader->load(loadInfo, &m_pVB);
+            m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
         }
 
         // index buffer
         {
-            std::array          indexArray{0U, 1U, 2U};
             aph::BufferLoadInfo loadInfo{
                 .debugName  = "triangle::indexbuffer",
                 .data       = indexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-            m_renderer->m_pResourceLoader->load(loadInfo, &m_pIB);
+            m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
         // pipeline
@@ -75,9 +79,10 @@ void triangle_demo::init()
             aph::vk::Shader* pFS = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/triangle.vert"}, &pVS);
-            m_renderer->m_pResourceLoader->load({.data = "shader_glsl://default/triangle.frag"}, &pFS);
+            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"}, &pVS);
+            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"}, &pFS);
 
+            m_renderer->m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
                 .pVertex     = pVS,
@@ -87,6 +92,9 @@ void triangle_demo::init()
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
+        timer.set("load end");
+        CM_LOG_INFO("load time : %lf", timer.interval("load begin", "load end"));
+
 
         // command pool
         {
@@ -158,7 +166,7 @@ void triangle_demo::run()
         deltaTime          = timer.interval("frame begin", "frame end");
         auto timeInSeconds = m_pDevice->getTimeQueryResults(pool, 0, 1, aph::vk::TimeUnit::Seconds);
 
-        CM_LOG_INFO("draw time: %lfs", timeInSeconds);
+        CM_LOG_DEBUG("draw time: %lfs", timeInSeconds);
         CM_LOG_DEBUG("Fps: %.0f", 1 / deltaTime);
     }
 }

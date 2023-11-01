@@ -1,5 +1,6 @@
 #include "queue.h"
 #include "device.h"
+#include <mutex>
 
 namespace aph::vk
 {
@@ -79,6 +80,7 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
         vkSubmits.push_back(info);
     }
 
+    std::lock_guard<std::mutex> lock{m_lock};
     VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
@@ -123,6 +125,8 @@ Result Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
             .pSignalSemaphoreInfos    = submitInfo.signals.data(),
         });
     }
+
+    std::lock_guard<std::mutex> lock{m_lock};
     return utils::getResult(m_pDevice->getDeviceTable()->vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE));
 }
 Result Queue::waitIdle()

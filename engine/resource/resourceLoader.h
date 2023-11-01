@@ -98,9 +98,7 @@ public:
     template <typename T_CreateInfo, typename T_Resource>
     void loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
     {
-        m_syncTokens.push_back(m_threadPool.enqueue([this, &info, ppResource]() { load(info, ppResource); }));
-        // TODO command pool multi thread support
-        wait();
+        m_syncTokens.push_back(m_threadPool.enqueue([this, info, ppResource]() { load(info, ppResource); }));
     }
 
     void wait()
@@ -109,6 +107,7 @@ public:
         {
             syncToken.wait();
         }
+        m_syncTokens.clear();
     }
 
     void load(const ImageLoadInfo& info, vk::Image** ppImage);

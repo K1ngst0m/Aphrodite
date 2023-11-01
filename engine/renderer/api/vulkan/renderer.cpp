@@ -290,15 +290,15 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
     Semaphore* renderSem  = {};
     Semaphore* presentSem = {};
 
-    Fence* frameFence = m_pDevice->acquireFence(false);
+    Fence* frameFence = acquireFence();
     m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &frameFence->getHandle());
 
     if(pPresentImage)
     {
-        renderSem = m_pDevice->acquireSemaphore();
+        renderSem = acquireSemahpore();
         APH_CHECK_RESULT(m_pSwapChain->acquireNextImage(renderSem->getHandle()));
 
-        presentSem = m_pDevice->acquireSemaphore();
+        presentSem = acquireSemahpore();
         submitInfo.waitSemaphores.push_back(renderSem);
         submitInfo.signalSemaphores.push_back(presentSem);
     }

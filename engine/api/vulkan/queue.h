@@ -40,6 +40,7 @@ public:
     Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
 
 private:
+    std::mutex              m_lock             = {};
     uint32_t                m_queueFamilyIndex = {};
     uint32_t                m_index            = {};
     VkQueueFamilyProperties m_properties       = {};

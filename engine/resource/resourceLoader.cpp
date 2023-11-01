@@ -790,8 +790,11 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
             }
 
             auto queue = m_pDevice->getQueue(QueueType::Graphics);
+
+            auto fence = m_pDevice->acquireFence();
             executeSingleCommands(
-                queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
+                queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); }, fence);
+            fence->wait();
 
             m_pDevice->destroy(stagingBuffer);
         }
