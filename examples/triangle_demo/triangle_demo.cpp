@@ -116,10 +116,15 @@ void triangle_demo::run()
 
         auto pool = m_renderer->getFrameQueryPool();
 
+        enum
+        {
+            TIMESTAMP_BEGIN_DRAW = 0,
+            TIMESTAMP_END_DRAW   = 1,
+        };
+
         cb->begin();
 
         cb->resetQueryPool(pool, 0, 2);
-        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, 0);
 
         cb->setViewport(extent);
         cb->setScissor(extent);
@@ -131,11 +136,12 @@ void triangle_demo::run()
             .name  = "draw a triangle",
             .color = {1.0f, 0.0f, 0.0f, 1.0f},
         });
+        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_BEGIN_DRAW);
         cb->drawIndexed({3, 1, 0, 0, 0});
+        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_END_DRAW);
         m_renderer->pUI->draw(cb);
         cb->endRendering();
 
-        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, 1);
         cb->end();
 
         m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
@@ -143,12 +149,11 @@ void triangle_demo::run()
         m_renderer->endFrame();
         timer.set("frame end");
 
-        deltaTime = timer.interval("frame begin", "frame end");
+        deltaTime          = timer.interval("frame begin", "frame end");
         auto timeInSeconds = m_pDevice->getTimeQueryResults(pool, 0, 1, aph::vk::TimeUnit::Seconds);
 
-        CM_LOG_INFO("command execution time: %ld", timeInSeconds);
-
-        // CM_LOG_INFO("Fps: %.0f", 1 / deltaTime);
+        CM_LOG_INFO("draw time: %ld", timeInSeconds);
+        CM_LOG_DEBUG("Fps: %.0f", 1 / deltaTime);
     }
 }
 

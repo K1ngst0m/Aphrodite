@@ -5,9 +5,7 @@
 #include "shaderc/shaderc.hpp"
 
 #include "slang.h"
-#include "slang-gfx.h"
 #include "slang-com-ptr.h"
-#include "slang-com-helper.h"
 
 #define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"

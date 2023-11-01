@@ -4,16 +4,16 @@ namespace aph
 {
 void Logger::flush()
 {
-    std::lock_guard<std::mutex> lock(mutex);
-    if(file_stream.is_open())
+    std::lock_guard<std::mutex> lock(m_mutex);
+    if(m_fileStream.is_open())
     {
-        file_stream.flush();
+        m_fileStream.flush();
     }
     std::cout.flush();
 }
-Logger::Logger() : log_level(Level::Debug), file_stream("log.txt", std::ofstream::app)
+Logger::Logger() : m_logLevel(Level::Debug), m_fileStream("log.txt", std::ofstream::app)
 {
-    if(!file_stream.is_open())
+    if(!m_fileStream.is_open())
     {
         std::cerr << "Failed to open log file." << '\n';
     }

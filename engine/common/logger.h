@@ -18,35 +18,35 @@ public:
         None
     };
 
-    void setLogLevel(Level level) { log_level = level; }
+    void setLogLevel(Level level) { m_logLevel = level; }
 
     void flush();
 
     template <typename... Args>
     void debug(std::string_view fmt, Args&&... args)
     {
-        if(log_level <= Level::Debug)
+        if(m_logLevel <= Level::Debug)
             log("D", fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void warn(std::string_view fmt, Args&&... args)
     {
-        if(log_level <= Level::Warn)
+        if(m_logLevel <= Level::Warn)
             log("W", fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void info(std::string_view fmt, Args&&... args)
     {
-        if(log_level <= Level::Info)
+        if(m_logLevel <= Level::Info)
             log("I", fmt, std::forward<Args>(args)...);
     }
 
     template <typename... Args>
     void error(std::string_view fmt, Args&&... args)
     {
-        if(log_level <= Level::Error)
+        if(m_logLevel <= Level::Error)
             log("E", fmt, std::forward<Args>(args)...);
     }
 
@@ -54,39 +54,39 @@ private:
 
     // conversion for most types
     template <typename T>
-    T to_format(const T& val)
+    T toFormat(const T& val)
     {
         return val;
     }
 
-    const char* to_format(const char* val) { return val; }
-    const char* to_format(const std::string& val) { return val.c_str(); }
-    const char* to_format(const std::filesystem::path& val) { return val.c_str(); }
-    const char* to_format(std::string_view val) { return val.data(); }
+    const char* toFormat(const char* val) { return val; }
+    const char* toFormat(const std::string& val) { return val.c_str(); }
+    const char* toFormat(const std::filesystem::path& val) { return val.c_str(); }
+    const char* toFormat(std::string_view val) { return val.data(); }
 
     template <typename... Args>
     void log(const char* level, std::string_view fmt, Args&&... args)
     {
-        std::lock_guard<std::mutex> lock(mutex);
+        std::lock_guard<std::mutex> lock(m_mutex);
 
         std::ostringstream ss;
         ss << getCurrentTime() << " [" << level << "] ";
         char buffer[512];
-        std::snprintf(buffer, sizeof(buffer), fmt.data(), to_format(args)...);
+        std::snprintf(buffer, sizeof(buffer), fmt.data(), toFormat(args)...);
         ss << buffer << '\n';
 
         std::cout << ss.str();
-        // if(file_stream.is_open())
-        // {
-        //     file_stream << ss.str();
-        // }
+        if(m_fileStream.is_open())
+        {
+            m_fileStream << ss.str();
+        }
     }
 
     std::string getCurrentTime();
 
-    Level         log_level;
-    std::ofstream file_stream;
-    std::mutex    mutex;
+    Level         m_logLevel;
+    std::ofstream m_fileStream;
+    std::mutex    m_mutex;
 };
 
 }  // namespace aph
