@@ -546,4 +546,8 @@ void CommandBuffer::writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool po
 {
     m_pDeviceTable->vkCmdWriteTimestamp(getHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, queryIndex);
 }
+void CommandBuffer::setDebugName(std::string_view debugName)
+{
+    utils::setDebugObjectName(m_pDevice->getHandle(), VK_OBJECT_TYPE_COMMAND_BUFFER, uint64_t(getHandle()), debugName);
+}
 }  // namespace aph::vk

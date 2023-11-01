@@ -117,6 +117,8 @@ public:
     VkResult end();
     VkResult reset();
 
+    void setDebugName(std::string_view debugName);
+
     void beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth = nullptr);
     void beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
     void endRendering();

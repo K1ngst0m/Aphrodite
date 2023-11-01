@@ -123,6 +123,7 @@ void triangle_demo::run()
         };
 
         cb->begin();
+        cb->setDebugName("triangle drawing command");
 
         cb->resetQueryPool(pool, 0, 2);
 
