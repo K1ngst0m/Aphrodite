@@ -47,8 +47,6 @@ private:
     Device*                 m_pDevice          = {};
 };
 
-using QueueFamily = std::vector<std::unique_ptr<Queue>>;
-
 }  // namespace aph::vk
 
 #endif  // QUEUE_H_

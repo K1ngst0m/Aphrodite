@@ -110,9 +110,11 @@ public:
     Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 private:
-    VkPhysicalDeviceFeatures                    m_supportedFeatures{};
-    PhysicalDevice*                             m_physicalDevice{};
-    VolkDeviceTable                             m_table{};
+    VkPhysicalDeviceFeatures m_supportedFeatures{};
+    PhysicalDevice*          m_physicalDevice{};
+    VolkDeviceTable          m_table{};
+
+    using QueueFamily = std::vector<Queue*>;
     std::vector<QueueFamily>                    m_queues;
     std::unordered_map<uint32_t, VkCommandPool> m_commandPools;
 
@@ -125,6 +127,7 @@ private:
         ThreadSafeObjectPool<ImageView>     imageView;
         ThreadSafeObjectPool<Pipeline>      pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
+        ThreadSafeObjectPool<Queue>         queue;
         SyncPrimitivesPool                  syncPrimitive;
 
         ResourceObjectPool(Device* pDevcie) : syncPrimitive(pDevcie) {}

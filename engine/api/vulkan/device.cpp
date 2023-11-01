@@ -130,7 +130,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         {
             VkQueue queue = VK_NULL_HANDLE;
             device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            device->m_queues[queueFamilyIndex][queueIndex] = std::make_unique<Queue>(
+            device->m_queues[queueFamilyIndex][queueIndex] = device->m_resourcePool.queue.allocate(
                 device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
@@ -375,7 +375,7 @@ Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
     {
         return nullptr;
     }
-    return m_queues[supportedQueueFamilyIndexList[0]][queueIndex].get();
+    return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
 }
 
 void Device::waitIdle()
