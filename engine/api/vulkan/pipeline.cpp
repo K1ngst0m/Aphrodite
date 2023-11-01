@@ -287,7 +287,7 @@ VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineC
         .basePipelineIndex   = -1,
     };
 
-    const auto result = vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1, &ci, vkAllocator(), outPipeline);
+    const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1, &ci, vkAllocator(), outPipeline);
 
     if(result != VK_SUCCESS)
     {

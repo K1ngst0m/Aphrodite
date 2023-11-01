@@ -80,7 +80,7 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
 Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
 {
     VkResult res = VK_SUCCESS;
-    res          = vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
+    res          = m_pDevice->getDeviceTable()->vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
                                 pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
     if(res == VK_ERROR_OUT_OF_DATE_KHR)
@@ -88,7 +88,7 @@ Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
         m_imageIdx = -1;
         if(pFence)
         {
-            vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
+            m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
         }
         return Result::Success;
     }
@@ -131,7 +131,7 @@ Result SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& wai
         .pResults           = nullptr,  // Optional
     };
 
-    VkResult result = vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
+    VkResult result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
     return utils::getResult(result);
 }
 
@@ -149,6 +149,7 @@ SwapChain::~SwapChain()
 
 void SwapChain::reCreate()
 {
+    auto deviceTable = m_pDevice->getDeviceTable();
     m_pDevice->waitIdle();
     for(auto* image : m_images)
     {
@@ -158,7 +159,7 @@ void SwapChain::reCreate()
     m_imagePools.clear();
     if(getHandle() != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(m_pDevice->getHandle(), getHandle(), vkAllocator());
+        deviceTable->vkDestroySwapchainKHR(m_pDevice->getHandle(), getHandle(), vkAllocator());
     }
 
     if(m_surface != VK_NULL_HANDLE)
@@ -213,15 +214,15 @@ void SwapChain::reCreate()
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    _VR(vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
+    _VR(deviceTable->vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
 
     m_surfaceFormat = swapChainSupport.preferedSurfaceFormat;
     m_extent        = extent;
 
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, nullptr);
+    deviceTable->vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, nullptr);
     std::vector<VkImage> images(imageCount);
-    vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, images.data());
+    deviceTable->vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.
     for(auto handle : images)

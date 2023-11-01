@@ -720,7 +720,7 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
     }
 
     VkShaderModule handle;
-    _VR(vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
+    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
 
     APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
     m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
@@ -732,7 +732,7 @@ void ResourceLoader::cleanup()
 {
     for(const auto& [_, shaderModule] : m_shaderModuleCaches)
     {
-        vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
     }
 }
 

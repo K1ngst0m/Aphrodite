@@ -131,7 +131,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             VkQueue queue = VK_NULL_HANDLE;
             device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
             device->m_queues[queueFamilyIndex][queueIndex] =
-                std::make_unique<Queue>(queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+                std::make_unique<Queue>(device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
 
@@ -212,7 +212,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
                                                                  nullptr, buffer};
 
     // create memory
-    vkGetBufferMemoryRequirements2(m_handle, &bufferRequirementsInfo, &memRequirements);
+    m_table.vkGetBufferMemoryRequirements2(m_handle, &bufferRequirementsInfo, &memRequirements);
 
     VkDeviceMemory memory;
     if(dedicatedRequirements.prefersDedicatedAllocation)
@@ -284,7 +284,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     const VkImageMemoryRequirementsInfo2 imageRequirementsInfo{VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
                                                                nullptr,  // pNext
                                                                image};
-    vkGetImageMemoryRequirements2(m_handle, &imageRequirementsInfo, &memRequirements);
+    m_table.vkGetImageMemoryRequirements2(m_handle, &imageRequirementsInfo, &memRequirements);
 
     VkDeviceMemory memory;
     if(dedicatedRequirements.prefersDedicatedAllocation)
@@ -333,7 +333,7 @@ void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
     {
-        vkFreeMemory(m_handle, pBuffer->getMemory(), gVkAllocator);
+        m_table.vkFreeMemory(m_handle, pBuffer->getMemory(), gVkAllocator);
     }
     m_table.vkDestroyBuffer(m_handle, pBuffer->getHandle(), gVkAllocator);
     m_resourcePool.buffer.free(pBuffer);
@@ -343,7 +343,7 @@ void Device::destroy(Image* pImage)
 {
     if(pImage->getMemory() != VK_NULL_HANDLE)
     {
-        vkFreeMemory(m_handle, pImage->getMemory(), gVkAllocator);
+        m_table.vkFreeMemory(m_handle, pImage->getMemory(), gVkAllocator);
     }
     m_table.vkDestroyImage(m_handle, pImage->getHandle(), gVkAllocator);
     m_resourcePool.image.free(pImage);
@@ -771,9 +771,9 @@ double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32
 {
     uint64_t firstTimeStamp, secondTimeStamp;
 
-    vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
+    m_table.vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
+    m_table.vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;

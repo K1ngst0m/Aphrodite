@@ -28,13 +28,14 @@ struct QueueSubmitInfo2
 class Queue : public ResourceHandle<VkQueue>
 {
 public:
-    Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& properties);
+    Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index,
+          const VkQueueFamilyProperties& properties);
 
     uint32_t     getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t     getIndex() const { return m_index; }
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
     QueueType    getType() const { return m_type; }
-    Result       waitIdle() { return utils::getResult(vkQueueWaitIdle(getHandle())); }
+    Result       waitIdle();
     Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence);
     Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
 
@@ -43,6 +44,7 @@ private:
     uint32_t                m_index            = {};
     VkQueueFamilyProperties m_properties       = {};
     QueueType               m_type             = {};
+    Device*                 m_pDevice          = {};
 };
 
 using QueueFamily = std::vector<std::unique_ptr<Queue>>;

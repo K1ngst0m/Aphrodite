@@ -115,7 +115,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     VkInstance handle = VK_NULL_HANDLE;
     VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, vkAllocator(), &handle));
 
-    volkLoadInstance(handle);
+    volkLoadInstanceOnly(handle);
 
     // Create a new Instance object to wrap Vulkan handle.
     auto* instance = new Instance(createInfo, handle);

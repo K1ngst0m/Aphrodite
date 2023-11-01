@@ -210,7 +210,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
 
         for(auto& queryPool : m_queryPools)
         {
-            vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(), &queryPool);
+            m_pDevice->getDeviceTable()->vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(), &queryPool);
         }
     }
 }
@@ -219,7 +219,7 @@ Renderer::~Renderer()
 {
     for(auto& queryPool : m_queryPools)
     {
-        vkDestroyQueryPool(m_pDevice->getHandle(), queryPool, vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyQueryPool(m_pDevice->getHandle(), queryPool, vkAllocator());
     }
 
     if(m_config.flags & RENDER_CFG_UI)
@@ -227,7 +227,7 @@ Renderer::~Renderer()
         delete pUI;
     }
 
-    vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
+    m_pDevice->getDeviceTable()->vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pResourceLoader->cleanup();
     m_pDevice->destroy(m_pSwapChain);

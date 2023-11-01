@@ -103,7 +103,7 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore
         VkSemaphore           vkSemaphore;
         VkSemaphoreCreateInfo createInfo = {};
         createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result          = vkCreateSemaphore(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkSemaphore);
+        result          = m_pDeviceTable->vkCreateSemaphore(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkSemaphore);
         ppSemaphores[i] = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
         if(result != VK_SUCCESS)
         {

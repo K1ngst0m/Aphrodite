@@ -4,11 +4,12 @@
 namespace aph::vk
 {
 
-Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
+Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
     ResourceHandle(handle),
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
-    m_properties(propertiesd)
+    m_properties(propertiesd),
+    m_pDevice(pDevice)
 {
     if(m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
     {
@@ -78,8 +79,7 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
         vkSubmits.push_back(info);
     }
 
-    VkResult result =
-        vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), pFence ? pFence->getHandle() : VK_NULL_HANDLE);
+    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
 
@@ -123,6 +123,10 @@ Result Queue::submit(const std::vector<QueueSubmitInfo2>& submitInfos)
             .pSignalSemaphoreInfos    = submitInfo.signals.data(),
         });
     }
-    return utils::getResult(vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE));
+    return utils::getResult(m_pDevice->getDeviceTable()->vkQueueSubmit2(getHandle(), vkSubmitInfos.size(), vkSubmitInfos.data(), VK_NULL_HANDLE));
+}
+Result Queue::waitIdle()
+{
+    return utils::getResult(m_pDevice->getDeviceTable()->vkQueueWaitIdle(getHandle()));
 }
 }  // namespace aph::vk
