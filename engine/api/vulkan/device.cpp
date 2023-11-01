@@ -368,7 +368,7 @@ void Device::destroy(SwapChain* pSwapchain)
     pSwapchain = nullptr;
 }
 
-Queue* Device::getQueueByFlags(QueueType flags, uint32_t queueIndex)
+Queue* Device::getQueue(QueueType flags, uint32_t queueIndex)
 {
     std::vector<uint32_t> supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
     if(supportedQueueFamilyIndexList.empty())
@@ -606,7 +606,7 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
         vkFences[idx] = fences[idx]->getHandle();
     }
     return utils::getResult(
-        m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), VK_TRUE, UINT64_MAX));
+        m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), waitAll ? VK_TRUE : VK_FALSE, UINT64_MAX));
 }
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
@@ -685,7 +685,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
         .addressModeV     = createInfo.addressV,
         .addressModeW     = createInfo.addressW,
         .mipLodBias       = createInfo.mipLodBias,
-        .anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && getFeatures().samplerAnisotropy) ? VK_TRUE : VK_FALSE,
+        .anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_supportedFeatures.samplerAnisotropy) ? VK_TRUE : VK_FALSE,
         .maxAnisotropy    = createInfo.maxAnisotropy,
         .compareEnable    = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
         .compareOp        = createInfo.compareFunc,

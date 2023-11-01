@@ -157,7 +157,7 @@ bool Fence::wait(uint64_t timeout)
     }
     else
     {
-        result = table->vkWaitForFences(m_pDevice->getHandle(), 1, &getHandle(), VK_TRUE, timeout) == VK_SUCCESS;
+        result = m_pDevice->waitForFence({this}, true, timeout).success();
     }
 
     if(result)

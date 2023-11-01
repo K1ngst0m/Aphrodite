@@ -98,9 +98,8 @@ public:
 public:
     VolkDeviceTable*                getDeviceTable() { return &m_table; }
     PhysicalDevice*                 getPhysicalDevice() const { return m_physicalDevice; }
-    const VkPhysicalDeviceFeatures& getFeatures() const { return m_supportedFeatures; }
     VkFormat                        getDepthFormat() const;
-    Queue*                          getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
+    Queue*                          getQueue(QueueType flags, uint32_t queueIndex = 0);
 
     double getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                                TimeUnit unitType = TimeUnit::Seconds);

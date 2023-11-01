@@ -81,7 +81,7 @@ UI::UI(const UICreateInfo& ci) :
 
     // getQueue
     {
-        m_pDefaultQueue = m_pDevice->getQueueByFlags(QueueType::Graphics);
+        m_pDefaultQueue = m_pDevice->getQueue(QueueType::Graphics);
     }
 
     // init imgui

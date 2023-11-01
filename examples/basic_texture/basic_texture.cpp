@@ -79,7 +79,7 @@ void basic_texture::init()
 
             m_renderer->m_pResourceLoader->load(loadInfo, &m_pImage);
 
-            m_pDevice->executeSingleCommands(m_pDevice->getQueueByFlags(aph::QueueType::Graphics),
+            m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics),
                                              [&](aph::vk::CommandBuffer* cmd) {
                                                  aph::vk::ImageBarrier barrier{
                                                      .pImage       = m_pImage,

@@ -436,13 +436,13 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
             if(pTrans->acquire)
             {
-                pBufferBarrier->srcQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pBufferBarrier->srcQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();
                 pBufferBarrier->dstQueueFamilyIndex = m_pQueue->getFamilyIndex();
             }
             else if(pTrans->release)
             {
                 pBufferBarrier->srcQueueFamilyIndex = m_pQueue->getFamilyIndex();
-                pBufferBarrier->dstQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pBufferBarrier->dstQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();
             }
             else
             {
@@ -496,13 +496,13 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
             if(pTrans->acquire && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
             {
-                pImageBarrier->srcQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pImageBarrier->srcQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();
                 pImageBarrier->dstQueueFamilyIndex = m_pQueue->getFamilyIndex();
             }
             else if(pTrans->release && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
             {
                 pImageBarrier->srcQueueFamilyIndex = m_pQueue->getFamilyIndex();
-                pImageBarrier->dstQueueFamilyIndex = m_pDevice->getQueueByFlags(pTrans->queueType)->getFamilyIndex();
+                pImageBarrier->dstQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();
             }
             else
             {

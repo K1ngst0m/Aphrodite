@@ -576,7 +576,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
         APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
-        auto queue = m_pDevice->getQueueByFlags(QueueType::Graphics);
+        auto queue = m_pDevice->getQueue(QueueType::Graphics);
         m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
 
@@ -789,7 +789,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 m_pDevice->unMapMemory(stagingBuffer);
             }
 
-            auto queue = m_pDevice->getQueueByFlags(QueueType::Graphics);
+            auto queue = m_pDevice->getQueue(QueueType::Graphics);
             m_pDevice->executeSingleCommands(
                 queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
 
