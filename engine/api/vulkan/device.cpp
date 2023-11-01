@@ -769,28 +769,29 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
 
 double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
 {
-    uint64_t timestamps[2];
-    vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(timestamps), timestamps, sizeof(uint64_t),
+    uint64_t firstTimeStamp, secondTimeStamp;
+
+    vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(timestamps), timestamps, sizeof(uint64_t),
+    vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
                           VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    uint64_t timeDifference = timestamps[1] - timestamps[0];
+    uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;
     auto     timeInSeconds  = timeDifference * period;
 
     switch(unitType)
     {
     case TimeUnit::Seconds:
-        return timeInSeconds;
+        return timeInSeconds * 1e-9;
     case TimeUnit::MillSeconds:
-        return timeInSeconds * 1e3;
+        return timeInSeconds * 1e-6;
     case TimeUnit::MicroSeconds:
-        return timeInSeconds * 1e6;
+        return timeInSeconds * 1e-3;
     case TimeUnit::NanoSeconds:
-        return timeInSeconds * 1e9;
+        return timeInSeconds;
     default:
         APH_ASSERT(false);
-        return timeInSeconds;  // Default to seconds if no valid unit is provided
+        return timeInSeconds * 1e-9;
     }
 }
 Semaphore* Device::acquireSemaphore()

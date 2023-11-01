@@ -152,7 +152,7 @@ void triangle_demo::run()
         deltaTime          = timer.interval("frame begin", "frame end");
         auto timeInSeconds = m_pDevice->getTimeQueryResults(pool, 0, 1, aph::vk::TimeUnit::Seconds);
 
-        CM_LOG_INFO("draw time: %ld", timeInSeconds);
+        CM_LOG_INFO("draw time: %lfs", timeInSeconds);
         CM_LOG_DEBUG("Fps: %.0f", 1 / deltaTime);
     }
 }
