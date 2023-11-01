@@ -130,8 +130,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         {
             VkQueue queue = VK_NULL_HANDLE;
             device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            device->m_queues[queueFamilyIndex][queueIndex] =
-                std::make_unique<Queue>(device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+            device->m_queues[queueFamilyIndex][queueIndex] = std::make_unique<Queue>(
+                device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
 
@@ -383,38 +383,37 @@ void Device::waitIdle()
     m_table.vkDeviceWaitIdle(getHandle());
 }
 
-VkCommandPool Device::getCommandPoolWithQueue(Queue* queue)
-{
-    auto queueIndices = queue->getFamilyIndex();
-
-    if(m_commandPools.contains(queueIndices))
-    {
-        return m_commandPools.at(queueIndices);
-    }
-
-    VkCommandPool pool = nullptr;
-    {
-        CommandPoolCreateInfo   createInfo{.queue = queue};
-        VkCommandPoolCreateInfo cmdPoolInfo{
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
-        };
-
-        if(createInfo.transient)
-        {
-            cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        }
-
-        _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
-    }
-    m_commandPools[queueIndices] = pool;
-    return pool;
-}
-
 Result Device::allocateCommandBuffers(uint32_t commandBufferCount, CommandBuffer** ppCommandBuffers, Queue* pQueue)
 {
-    Queue*        queue = pQueue;
-    VkCommandPool pool  = getCommandPoolWithQueue(queue);
+    Queue* queue = pQueue;
+
+    // get command pool
+    VkCommandPool pool = {};
+    {
+        auto queueIndices = queue->getFamilyIndex();
+
+        if(m_commandPools.contains(queueIndices))
+        {
+            pool = m_commandPools.at(queueIndices);
+        }
+        else
+        {
+            CommandPoolCreateInfo   createInfo{.queue = queue};
+            VkCommandPoolCreateInfo cmdPoolInfo{
+                .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
+            };
+
+            if(createInfo.transient)
+            {
+                cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+            }
+
+            _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
+            m_commandPools[queueIndices] = pool;
+        }
+    }
+    APH_ASSERT(pool != VK_NULL_HANDLE);
 
     std::vector<VkCommandBuffer> handles(commandBufferCount);
 
@@ -606,7 +605,8 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
     {
         vkFences[idx] = fences[idx]->getHandle();
     }
-    return utils::getResult(m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), VK_TRUE, UINT64_MAX));
+    return utils::getResult(
+        m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(), VK_TRUE, UINT64_MAX));
 }
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
@@ -772,9 +772,9 @@ double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32
     uint64_t firstTimeStamp, secondTimeStamp;
 
     m_table.vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
-                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    m_table.vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
-                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+                                  VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    m_table.vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp,
+                                  sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;
     auto     timeInSeconds  = timeDifference * period;

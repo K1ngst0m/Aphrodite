@@ -110,9 +110,6 @@ public:
     Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 private:
-    VkCommandPool getCommandPoolWithQueue(Queue* queue);
-
-private:
     VkPhysicalDeviceFeatures                    m_supportedFeatures{};
     PhysicalDevice*                             m_physicalDevice{};
     VolkDeviceTable                             m_table{};
