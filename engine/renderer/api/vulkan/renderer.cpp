@@ -195,10 +195,33 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             .flags     = UI_Docking,
         });
     }
+
+    // init query pool
+    {
+        m_queryPools.resize(m_config.maxFrames);
+
+        VkQueryPoolCreateInfo createInfo{
+            .sType      = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+            .pNext      = nullptr,
+            .flags      = 0,
+            .queryType  = VK_QUERY_TYPE_TIMESTAMP,
+            .queryCount = 2,
+        };
+
+        for(auto& queryPool : m_queryPools)
+        {
+            vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(), &queryPool);
+        }
+    }
 }
 
 Renderer::~Renderer()
 {
+    for(auto& queryPool : m_queryPools)
+    {
+        vkDestroyQueryPool(m_pDevice->getHandle(), queryPool, vkAllocator());
+    }
+
     if(m_config.flags & RENDER_CFG_UI)
     {
         delete pUI;
@@ -240,9 +263,9 @@ void Renderer::endFrame()
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 
     {
-        auto &timer = Timer::GetInstance();
+        auto& timer = Timer::GetInstance();
         timer.set("renderer: end frame");
-        m_frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
+        m_frameTime      = timer.interval("renderer: begin frame", "renderer: end frame");
         m_framePerSecond = 1 / m_frameTime;
     }
 }

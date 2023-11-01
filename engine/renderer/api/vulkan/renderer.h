@@ -40,6 +40,8 @@ public:
     Fence*         acquireFence();
     Instance*      getInstance() const { return m_pInstance; }
 
+    VkQueryPool getFrameQueryPool() const { return m_queryPools[m_frameIdx]; }
+
 public:
     UI* pUI = {};
 
@@ -52,6 +54,9 @@ protected:
     VkPipelineCache m_pipelineCache = {};
 
     std::unordered_map<QueueType, Queue*> m_queue;
+
+protected:
+    std::vector<VkQueryPool> m_queryPools = {};
 
 protected:
     std::vector<Semaphore*> m_renderSemaphore = {};

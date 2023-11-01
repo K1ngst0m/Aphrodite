@@ -152,6 +152,9 @@ public:
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
 
+    void resetQueryPool(VkQueryPool pool, uint32_t first = 0, uint32_t count = 1);
+    void writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool pool, uint32_t queryIndex);
+
 public:
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
     void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,

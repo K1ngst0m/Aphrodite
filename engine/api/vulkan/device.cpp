@@ -767,4 +767,63 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
     freeCommandBuffers(1, &cmd);
 }
 
+double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
+{
+    uint64_t timestamps[2];
+    vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(timestamps), timestamps, sizeof(uint64_t),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(timestamps), timestamps, sizeof(uint64_t),
+                          VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    uint64_t timeDifference = timestamps[1] - timestamps[0];
+    auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;
+    auto     timeInSeconds  = timeDifference * period;
+
+    switch(unitType)
+    {
+    case TimeUnit::Seconds:
+        return timeInSeconds;
+    case TimeUnit::MillSeconds:
+        return timeInSeconds * 1e3;
+    case TimeUnit::MicroSeconds:
+        return timeInSeconds * 1e6;
+    case TimeUnit::NanoSeconds:
+        return timeInSeconds * 1e9;
+    default:
+        APH_ASSERT(false);
+        return timeInSeconds;  // Default to seconds if no valid unit is provided
+    }
+}
+Semaphore* Device::acquireSemaphore()
+{
+    Semaphore* semaphore;
+    m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore);
+    return semaphore;
+}
+Result Device::releaseSemaphore(Semaphore* semaphore)
+{
+    if(semaphore != VK_NULL_HANDLE)
+    {
+        auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
+        if(result != VK_SUCCESS)
+        {
+            return Result::RuntimeError;
+        }
+    }
+    return Result::Success;
+}
+Fence* Device::acquireFence(bool isSignaled)
+{
+    Fence* pFence = {};
+    m_resourcePool.syncPrimitive.acquireFence(&pFence);
+    return pFence;
+}
+Result Device::releaseFence(Fence* pFence)
+{
+    auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
+    if(res != VK_SUCCESS)
+    {
+        return Result::RuntimeError;
+    }
+    return Result::Success;
+}
 }  // namespace aph::vk

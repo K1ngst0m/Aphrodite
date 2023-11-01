@@ -114,7 +114,13 @@ void triangle_demo::run()
 
         aph::vk::Image* presentImage = m_renderer->m_pSwapChain->getImage();
 
+        auto pool = m_renderer->getFrameQueryPool();
+
         cb->begin();
+
+        cb->resetQueryPool(pool, 0, 2);
+        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, 0);
+
         cb->setViewport(extent);
         cb->setScissor(extent);
         cb->bindVertexBuffers(m_pVB);
@@ -128,6 +134,8 @@ void triangle_demo::run()
         cb->drawIndexed({3, 1, 0, 0, 0});
         m_renderer->pUI->draw(cb);
         cb->endRendering();
+
+        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, 1);
         cb->end();
 
         m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
@@ -136,6 +144,10 @@ void triangle_demo::run()
         timer.set("frame end");
 
         deltaTime = timer.interval("frame begin", "frame end");
+        auto timeInSeconds = m_pDevice->getTimeQueryResults(pool, 0, 1, aph::vk::TimeUnit::Seconds);
+
+        CM_LOG_INFO("command execution time: %ld", timeInSeconds);
+
         // CM_LOG_INFO("Fps: %.0f", 1 / deltaTime);
     }
 }

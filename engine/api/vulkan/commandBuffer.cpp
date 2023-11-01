@@ -538,4 +538,12 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
     };
     insertBarrier({barrier});
 }
+void CommandBuffer::resetQueryPool(VkQueryPool pool, uint32_t first, uint32_t count)
+{
+    m_pDeviceTable->vkCmdResetQueryPool(getHandle(), pool, first, count);
+}
+void CommandBuffer::writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool pool, uint32_t queryIndex)
+{
+    m_pDeviceTable->vkCmdWriteTimestamp(getHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, queryIndex);
+}
 }  // namespace aph::vk

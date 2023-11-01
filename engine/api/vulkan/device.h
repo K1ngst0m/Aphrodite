@@ -18,6 +18,14 @@
 namespace aph::vk
 {
 
+enum class TimeUnit
+{
+    Seconds,
+    MillSeconds,
+    MicroSeconds,
+    NanoSeconds
+};
+
 enum DeviceCreateFlagBits
 {
     // TODO
@@ -82,42 +90,10 @@ public:
     void   unMapMemory(Buffer* pBuffer);
 
 public:
-    Semaphore* acquireSemaphore()
-    {
-        Semaphore* semaphore;
-        m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore);
-        return semaphore;
-    }
-
-    Result releaseSemaphore(Semaphore* semaphore)
-    {
-        if(semaphore != VK_NULL_HANDLE)
-        {
-            auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
-            if(result != VK_SUCCESS)
-            {
-                return Result::RuntimeError;
-            }
-        }
-        return Result::Success;
-    }
-
-    Fence* acquireFence(bool isSignaled = true)
-    {
-        Fence* pFence = {};
-        m_resourcePool.syncPrimitive.acquireFence(&pFence);
-        return pFence;
-    }
-
-    Result releaseFence(Fence* pFence)
-    {
-        auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
-        if(res != VK_SUCCESS)
-        {
-            return Result::RuntimeError;
-        }
-        return Result::Success;
-    }
+    Semaphore* acquireSemaphore();
+    Fence*     acquireFence(bool isSignaled = true);
+    Result     releaseSemaphore(Semaphore* semaphore);
+    Result     releaseFence(Fence* pFence);
 
 public:
     VolkDeviceTable*                getDeviceTable() { return &m_table; }
@@ -125,6 +101,9 @@ public:
     const VkPhysicalDeviceFeatures& getFeatures() const { return m_supportedFeatures; }
     VkFormat                        getDepthFormat() const;
     Queue*                          getQueueByFlags(QueueType flags, uint32_t queueIndex = 0);
+
+    double getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
+                               TimeUnit unitType = TimeUnit::Seconds);
 
 public:
     void   waitIdle();
