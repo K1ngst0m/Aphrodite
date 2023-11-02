@@ -49,9 +49,9 @@ public:
     void   release(uint32_t count, CommandPool** ppCommandPool);
 
 private:
+    Device*                                                 m_pDevice        = {};
     std::unordered_map<QueueType, std::set<CommandPool*>>   m_allPools       = {};
     std::unordered_map<QueueType, std::queue<CommandPool*>> m_availablePools = {};
-    Device*                                                 m_pDevice        = {};
     ThreadSafeObjectPool<CommandPool>                       m_resourcePool   = {};
     std::mutex                                              m_lock           = {};
 };

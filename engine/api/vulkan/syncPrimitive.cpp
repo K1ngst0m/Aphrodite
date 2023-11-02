@@ -11,15 +11,15 @@ void Fence::reset()
 {
     m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &getHandle());
 }
-SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
+SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device) : m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
 {
 }
 
-SyncPrimitivesPool::~SyncPrimitivesPool()
+SyncPrimitiveAllocator::~SyncPrimitiveAllocator()
 {
 }
 
-VkResult SyncPrimitivesPool::acquireFence(Fence** ppFence, bool isSignaled)
+VkResult SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
 {
     VkResult result = VK_SUCCESS;
     auto&    pFence = *ppFence;
@@ -59,7 +59,7 @@ VkResult SyncPrimitivesPool::acquireFence(Fence** ppFence, bool isSignaled)
     return result;
 }
 
-VkResult SyncPrimitivesPool::releaseFence(Fence* pFence)
+VkResult SyncPrimitiveAllocator::releaseFence(Fence* pFence)
 {
     std::lock_guard<std::mutex> lock{m_fenceLock};
 
@@ -77,7 +77,7 @@ VkResult SyncPrimitivesPool::releaseFence(Fence* pFence)
     return VK_SUCCESS;
 }
 
-bool SyncPrimitivesPool::Exists(Fence* pFence)
+bool SyncPrimitiveAllocator::Exists(Fence* pFence)
 {
     std::lock_guard<std::mutex> lock{m_fenceLock};
 
@@ -86,7 +86,7 @@ bool SyncPrimitivesPool::Exists(Fence* pFence)
     return result;
 }
 
-VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores)
+VkResult SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
     VkResult result = VK_SUCCESS;
 
@@ -125,7 +125,7 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore
     return result;
 }
 
-VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
+VkResult SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
     std::lock_guard<std::mutex> lock{m_semaphoreLock};
     for(auto i = 0U; i < semaphoreCount; ++i)
@@ -139,7 +139,7 @@ VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, Semaphor
     return VK_SUCCESS;
 }
 
-bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
+bool SyncPrimitiveAllocator::Exists(VkSemaphore semaphore)
 {
     std::lock_guard<std::mutex> lock{m_semaphoreLock};
     auto                        result = m_allSemaphores.contains(semaphore);
@@ -188,7 +188,7 @@ Fence::~Fence()
         vkResetFences(m_pDevice->getHandle(), 1, &getHandle());
     }
 }
-void SyncPrimitivesPool::clear()
+void SyncPrimitiveAllocator::clear()
 {
     // Destroy all created fences.
     for(auto* fence : m_allFences)

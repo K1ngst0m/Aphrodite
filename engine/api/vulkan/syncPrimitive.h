@@ -10,7 +10,7 @@ class Device;
 class Fence : public ResourceHandle<VkFence>
 {
     friend class Device;
-    friend class SyncPrimitivesPool;
+    friend class SyncPrimitiveAllocator;
     friend class ObjectPool<Fence>;
 
 public:
@@ -29,7 +29,7 @@ private:
 class Semaphore : public ResourceHandle<VkSemaphore>
 {
     friend class Device;
-    friend class SyncPrimitivesPool;
+    friend class SyncPrimitiveAllocator;
     friend class ObjectPool<Semaphore>;
 
 public:
@@ -42,12 +42,12 @@ private:
     Device* m_pDevice  = {};
 };
 
-class SyncPrimitivesPool
+class SyncPrimitiveAllocator
 {
 public:
-    SyncPrimitivesPool(Device* device);
+    SyncPrimitiveAllocator(Device* device);
 
-    ~SyncPrimitivesPool();
+    ~SyncPrimitiveAllocator();
 
     void clear();
 
@@ -64,13 +64,13 @@ private:
     Device*          m_pDevice      = {};
     VolkDeviceTable* m_pDeviceTable = {};
 
-    std::set<VkFence>     m_allFences       = {};
-    std::queue<VkFence>   m_availableFences = {};
-    ObjectPool<Semaphore> m_semaphorePool   = {};
+    std::set<VkFence>               m_allFences       = {};
+    std::queue<VkFence>             m_availableFences = {};
+    ThreadSafeObjectPool<Semaphore> m_semaphorePool   = {};
 
-    std::set<VkSemaphore>   m_allSemaphores       = {};
-    std::queue<VkSemaphore> m_availableSemaphores = {};
-    ObjectPool<Fence>       m_fencePool           = {};
+    std::set<VkSemaphore>       m_allSemaphores       = {};
+    std::queue<VkSemaphore>     m_availableSemaphores = {};
+    ThreadSafeObjectPool<Fence> m_fencePool           = {};
 
     std::mutex m_fenceLock     = {};
     std::mutex m_semaphoreLock = {};

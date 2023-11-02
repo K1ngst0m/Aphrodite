@@ -151,7 +151,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 void Device::Destroy(Device* pDevice)
 {
     pDevice->m_resourcePool.syncPrimitive.clear();
-    pDevice->m_resourcePool.commandPoolAllocator.clear();
+    pDevice->m_resourcePool.commandPool.clear();
 
     if(pDevice->m_handle)
     {
@@ -752,12 +752,12 @@ Result Device::releaseFence(Fence* pFence)
 CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 {
     CommandPool* pool = {};
-    APH_CHECK_RESULT(m_resourcePool.commandPoolAllocator.acquire(info, 1, &pool));
+    APH_CHECK_RESULT(m_resourcePool.commandPool.acquire(info, 1, &pool));
     return pool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
 {
-    m_resourcePool.commandPoolAllocator.release(1, &pPool);
+    m_resourcePool.commandPool.release(1, &pPool);
     return Result::Success;
 }
 }  // namespace aph::vk

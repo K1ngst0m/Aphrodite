@@ -65,6 +65,7 @@ public:
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
 
+    // TODO explicit "destroyable" object
     template <typename... Args>
     void destroy(Args... args)
     {
@@ -78,18 +79,18 @@ public:
     }
 
 public:
-    Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
-    Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
-    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, MemoryRange range = {});
-    void   unMapMemory(Buffer* pBuffer);
-
-public:
     CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();
     Fence*       acquireFence(bool isSignaled = true);
     Result       releaseSemaphore(Semaphore* semaphore);
     Result       releaseFence(Fence* pFence);
     Result       releaseCommandPool(CommandPool* pPool);
+
+public:
+    Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
+    Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
+    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, MemoryRange range = {});
+    void   unMapMemory(Buffer* pBuffer);
 
 public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }
@@ -122,10 +123,10 @@ private:
         ThreadSafeObjectPool<Pipeline>      pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue>         queue;
-        CommandPoolAllocator                commandPoolAllocator;
-        SyncPrimitivesPool                  syncPrimitive;
+        CommandPoolAllocator                commandPool;
+        SyncPrimitiveAllocator              syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) : commandPoolAllocator(pDevice), syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 
