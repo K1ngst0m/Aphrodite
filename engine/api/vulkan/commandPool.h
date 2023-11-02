@@ -39,6 +39,23 @@ private:
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
 };
 
+class CommandPoolAllocator
+{
+public:
+    CommandPoolAllocator(Device* pDevice) : m_pDevice(pDevice) {}
+    void clear();
+
+    Result acquire(const CommandPoolCreateInfo& createInfo, uint32_t count, CommandPool** ppCommandPool);
+    void   release(uint32_t count, CommandPool** ppCommandPool);
+
+private:
+    std::unordered_map<QueueType, std::set<CommandPool*>>   m_allPools       = {};
+    std::unordered_map<QueueType, std::queue<CommandPool*>> m_availablePools = {};
+    Device*                                                 m_pDevice        = {};
+    ThreadSafeObjectPool<CommandPool>                       m_resourcePool   = {};
+    std::mutex                                              m_lock           = {};
+};
+
 }  // namespace aph::vk
 
 #endif  // COMMANDPOOL_H_

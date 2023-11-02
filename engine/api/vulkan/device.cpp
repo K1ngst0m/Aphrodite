@@ -151,6 +151,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 void Device::Destroy(Device* pDevice)
 {
     pDevice->m_resourcePool.syncPrimitive.clear();
+    pDevice->m_resourcePool.commandPoolAllocator.clear();
 
     if(pDevice->m_handle)
     {
@@ -167,23 +168,7 @@ VkFormat Device::getDepthFormat() const
 
 Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, std::string_view debugName)
 {
-    VkCommandPoolCreateInfo cmdPoolInfo{
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
-    };
-
-    if(createInfo.transient)
-    {
-        cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    }
-
-    VkCommandPool pool;
-    _VR(m_table.vkCreateCommandPool(m_handle, &cmdPoolInfo, gVkAllocator, &pool));
-    utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)pool, debugName);
-
-    *ppCommandPool = m_resourcePool.commandPool.allocate(this, createInfo, pool);
-
-    return Result::Success;
+    return m_resourcePool.commandPoolAllocator.acquire(createInfo, 1, ppCommandPool);
 }
 
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
@@ -358,8 +343,7 @@ void Device::destroy(CommandPool* pCommandPool)
 {
     if(pCommandPool)
     {
-        m_table.vkDestroyCommandPool(getHandle(), pCommandPool->getHandle(), vkAllocator());
-        m_resourcePool.commandPool.free(pCommandPool);
+        m_resourcePool.commandPoolAllocator.release(1, &pCommandPool);
     }
 }
 

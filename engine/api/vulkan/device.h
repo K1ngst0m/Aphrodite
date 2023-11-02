@@ -123,10 +123,10 @@ private:
         ThreadSafeObjectPool<Pipeline>      pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue>         queue;
-        ThreadSafeObjectPool<CommandPool>   commandPool;
+        CommandPoolAllocator                commandPoolAllocator;
         SyncPrimitivesPool                  syncPrimitive;
 
-        ResourceObjectPool(Device* pDevcie) : syncPrimitive(pDevcie) {}
+        ResourceObjectPool(Device* pDevice) : commandPoolAllocator(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 
