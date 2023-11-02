@@ -1,4 +1,5 @@
 #include "resourceLoader.h"
+#include "common/profiler.h"
 #include "api/vulkan/device.h"
 #include "tinyimageformat.h"
 
@@ -771,10 +772,11 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 
         if(uploadSize <= 65536)
         {
+            PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
             auto fence = m_pDevice->acquireFence();
             executeSingleCommands(
                 m_pQueue,
-                [&](vk::CommandBuffer* cmd) {
+                [=](vk::CommandBuffer* cmd) {
                     cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
                 },
                 fence);
@@ -782,6 +784,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         }
         else
         {
+            PROFILE_SCOPE("loading data by: staging copy.");
             for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
             {
                 MemoryRange copyRange = {
@@ -808,7 +811,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 
                 auto fence = m_pDevice->acquireFence();
                 executeSingleCommands(
-                    m_pQueue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); },
+                    m_pQueue, [=](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); },
                     fence);
                 fence->wait();
 
@@ -818,6 +821,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
     }
     else
     {
+        PROFILE_SCOPE("loading data by: vkMapMemory.");
         writeBuffer(pBuffer, info.data, info.range);
     }
 }
