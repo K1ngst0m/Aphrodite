@@ -194,7 +194,10 @@ bool WSI::update()
 
     EventManager::GetInstance().processAllAsync();
 
-    ImGui_ImplGlfw_NewFrame();
+    if (m_enabledUI)
+    {
+        ImGui_ImplGlfw_NewFrame();
+    }
 
     EventManager::GetInstance().flush();
     return true;
@@ -233,10 +236,17 @@ std::vector<const char*> aph::WSI::getRequiredExtensions()
 
 bool WSI::initUI()
 {
-    return ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window, true);
+    if (m_enabledUI)
+    {
+        return ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window, true);
+    }
+    return false;
 };
 
 void aph::WSI::deInitUI()
 {
-    ImGui_ImplGlfw_Shutdown();
+    if (m_enabledUI)
+    {
+        ImGui_ImplGlfw_Shutdown();
+    }
 }

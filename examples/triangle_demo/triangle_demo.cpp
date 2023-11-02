@@ -8,10 +8,10 @@ void triangle_demo::init()
 {
     PROFILE_FUNCTION();
     // setup window
-    m_wsi = aph::WSI::Create(m_options.windowWidth, m_options.windowHeight);
+    m_wsi = aph::WSI::Create({m_options.windowWidth, m_options.windowHeight, false});
 
     aph::RenderConfig config{
-        .flags     = aph::RENDER_CFG_ALL,
+        .flags     = aph::RENDER_CFG_WITHOUT_UI,
         .maxFrames = 1,
     };
 

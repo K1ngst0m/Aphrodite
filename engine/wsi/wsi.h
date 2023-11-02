@@ -10,19 +10,32 @@ namespace aph::vk
 class Instance;
 }
 
+struct WSICreateInfo
+{
+    uint32_t width;
+    uint32_t height;
+    bool     enableUI;
+};
+
 namespace aph
 {
 
 class WSI
 {
 protected:
-    WSI(uint32_t width, uint32_t height) : m_width{width}, m_height(height) { init(); }
+    WSI(const WSICreateInfo& createInfo) :
+        m_width{createInfo.width},
+        m_height(createInfo.height),
+        m_enabledUI(createInfo.enableUI)
+    {
+        init();
+    }
 
 public:
-    static std::unique_ptr<WSI> Create(uint32_t width = 800, uint32_t height = 600)
+    static std::unique_ptr<WSI> Create(const WSICreateInfo& createInfo)
     {
-        CM_LOG_INFO("Init window: [%d, %d]", width, height);
-        return std::unique_ptr<WSI>(new WSI(width, height));
+        CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
+        return std::unique_ptr<WSI>(new WSI(createInfo));
     }
 
     virtual ~WSI();
@@ -44,9 +57,10 @@ public:
 protected:
     void init();
 
-    void*    m_window = {};
-    uint32_t m_width  = {};
-    uint32_t m_height = {};
+    void*    m_window    = {};
+    uint32_t m_width     = {};
+    uint32_t m_height    = {};
+    bool     m_enabledUI = {};
 };
 
 }  // namespace aph

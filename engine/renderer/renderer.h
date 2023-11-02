@@ -19,6 +19,7 @@ enum RenderConfigFlagBits
     RENDER_CFG_DEBUG       = (1 << 0),
     RENDER_CFG_UI          = (1 << 1),
     RENDER_CFG_DEFAULT_RES = (1 << 2),
+    RENDER_CFG_WITHOUT_UI  = RENDER_CFG_DEBUG | RENDER_CFG_DEFAULT_RES,
     RENDER_CFG_ALL         = RENDER_CFG_DEFAULT_RES | RENDER_CFG_UI
 #if defined(APH_DEBUG)
                      | RENDER_CFG_DEBUG
