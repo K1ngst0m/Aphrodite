@@ -5,7 +5,7 @@
 
 namespace aph
 {
-class Logger: public Singleton<Logger>
+class Logger : public Singleton<Logger>
 {
 public:
     Logger();
@@ -19,6 +19,7 @@ public:
     };
 
     void setLogLevel(Level level) { m_logLevel = level; }
+    void setEnableTime(bool value) { m_enableTime = value; }
 
     void flush();
 
@@ -51,7 +52,6 @@ public:
     }
 
 private:
-
     // conversion for most types
     template <typename T>
     T toFormat(const T& val)
@@ -70,7 +70,11 @@ private:
         std::lock_guard<std::mutex> lock(m_mutex);
 
         std::ostringstream ss;
-        ss << getCurrentTime() << " [" << level << "] ";
+        if (m_enableTime)
+        {
+            ss << getCurrentTime();
+        }
+        ss << " [" << level << "] ";
         char buffer[512];
         std::snprintf(buffer, sizeof(buffer), fmt.data(), toFormat(args)...);
         ss << buffer << '\n';
@@ -85,6 +89,7 @@ private:
     std::string getCurrentTime();
 
     Level         m_logLevel;
+    bool          m_enableTime = false;
     std::ofstream m_fileStream;
     std::mutex    m_mutex;
 };
