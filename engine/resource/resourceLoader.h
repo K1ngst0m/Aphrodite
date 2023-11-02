@@ -87,7 +87,8 @@ class ResourceLoader
 {
     enum
     {
-        LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20,
+        LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536,
+        LIMIT_BUFFER_UPLOAD_SIZE     = 8ull << 20,
     };
 
 public:

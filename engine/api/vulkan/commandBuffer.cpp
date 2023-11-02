@@ -4,25 +4,21 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, VkCommandPool pool, HandleType handle, Queue* pQueue) :
+CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue) :
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pQueue(pQueue),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
-    m_state(CommandBufferState::INITIAL)
+    m_state(CommandBufferState::Initial)
 {
-    getHandle() = handle;
 }
 
-CommandBuffer::~CommandBuffer()
-{
-    m_pDeviceTable->vkFreeCommandBuffers(m_pDevice->getHandle(), m_pool, 1, &getHandle());
-}
+CommandBuffer::~CommandBuffer() = default;
 
 VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
-    if(m_state == CommandBufferState::RECORDING)
+    if(m_state == CommandBufferState::Recording)
     {
         return VK_NOT_READY;
     }
@@ -40,19 +36,19 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 
     // Mark CommandBuffer as recording and reset internal state.
     m_commandState = {};
-    m_state        = CommandBufferState::RECORDING;
+    m_state        = CommandBufferState::Recording;
 
     return VK_SUCCESS;
 }
 
 VkResult CommandBuffer::end()
 {
-    if(m_state != CommandBufferState::RECORDING)
+    if(m_state != CommandBufferState::Recording)
     {
         return VK_NOT_READY;
     }
 
-    m_state = CommandBufferState::EXECUTABLE;
+    m_state = CommandBufferState::Executable;
 
     return m_pDeviceTable->vkEndCommandBuffer(m_handle);
 }
@@ -61,7 +57,7 @@ VkResult CommandBuffer::reset()
 {
     if(m_handle != VK_NULL_HANDLE)
         return m_pDeviceTable->vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-    m_state = CommandBufferState::INITIAL;
+    m_state = CommandBufferState::Initial;
     return VK_SUCCESS;
 }
 

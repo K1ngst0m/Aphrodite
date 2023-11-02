@@ -6,6 +6,7 @@
 namespace aph::vk
 {
 
+class CommandPool;
 class Device;
 class Pipeline;
 class Buffer;
@@ -17,11 +18,11 @@ class DescriptorSet;
 
 enum class CommandBufferState
 {
-    INITIAL,
-    RECORDING,
-    EXECUTABLE,
-    PENDING,
-    INVALID,
+    Initial,
+    Recording,
+    Executable,
+    Pending,
+    Invalid,
 };
 
 struct AttachmentInfo
@@ -104,7 +105,7 @@ struct CommandState
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
 public:
-    CommandBuffer(Device* pDevice, VkCommandPool pool, HandleType handle, Queue* pQueue);
+    CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
 
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
@@ -164,7 +165,7 @@ private:
     Device*                m_pDevice          = {};
     Queue*                 m_pQueue           = {};
     const VolkDeviceTable* m_pDeviceTable     = {};
-    VkCommandPool          m_pool             = {};
+    CommandPool*           m_pool             = {};
     CommandBufferState     m_state            = {};
     bool                   m_submittedToQueue = {false};
 

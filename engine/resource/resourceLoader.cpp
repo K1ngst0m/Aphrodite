@@ -770,7 +770,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
             uploadSize = pBuffer->getSize();
         }
 
-        if(uploadSize <= 65536)
+        if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
             auto fence = m_pDevice->acquireFence();
