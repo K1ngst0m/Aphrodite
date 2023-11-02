@@ -550,4 +550,8 @@ void CommandBuffer::setDebugName(std::string_view debugName)
 {
     utils::setDebugObjectName(m_pDevice->getHandle(), VK_OBJECT_TYPE_COMMAND_BUFFER, uint64_t(getHandle()), debugName);
 }
+void CommandBuffer::updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data)
+{
+    m_pDeviceTable->vkCmdUpdateBuffer(getHandle(), pBuffer->getHandle(), range.offset, range.size, data);
+}
 }  // namespace aph::vk

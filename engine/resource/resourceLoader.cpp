@@ -721,7 +721,8 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
     }
 
     VkShaderModule handle;
-    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &handle));
+    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
+                                                          &handle));
 
     APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
     m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
@@ -733,7 +734,8 @@ void ResourceLoader::cleanup()
 {
     for(const auto& [_, shaderModule] : m_shaderModuleCaches)
     {
-        m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(), vk::vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(),
+                                                           vk::vkAllocator());
     }
 }
 
@@ -766,36 +768,52 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         {
             uploadSize = pBuffer->getSize();
         }
-        for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
+
+        if(uploadSize <= 65536)
         {
-            MemoryRange copyRange = {
-                .offset = offset,
-                .size   = std::min(std::size_t{LIMIT_BUFFER_UPLOAD_SIZE}, {uploadSize - offset}),
-            };
-
-            // using staging buffer
-            vk::Buffer* stagingBuffer{};
-            {
-                vk::BufferCreateInfo stagingCI{
-                    .size   = static_cast<uint32_t>(copyRange.size),
-                    .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                    .domain = BufferDomain::Host,
-                };
-
-                APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer,
-                                                   std::string{info.debugName} + std::string{"_staging"}));
-
-                APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
-                writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
-                m_pDevice->unMapMemory(stagingBuffer);
-            }
-
             auto fence = m_pDevice->acquireFence();
             executeSingleCommands(
-                m_pQueue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); }, fence);
+                m_pQueue,
+                [&](vk::CommandBuffer* cmd) {
+                    cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
+                },
+                fence);
             fence->wait();
+        }
+        else
+        {
+            for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
+            {
+                MemoryRange copyRange = {
+                    .offset = offset,
+                    .size   = std::min(std::size_t{LIMIT_BUFFER_UPLOAD_SIZE}, {uploadSize - offset}),
+                };
 
-            m_pDevice->destroy(stagingBuffer);
+                // using staging buffer
+                vk::Buffer* stagingBuffer{};
+                {
+                    vk::BufferCreateInfo stagingCI{
+                        .size   = static_cast<uint32_t>(copyRange.size),
+                        .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        .domain = BufferDomain::Host,
+                    };
+
+                    APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer,
+                                                       std::string{info.debugName} + std::string{"_staging"}));
+
+                    APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
+                    writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
+                    m_pDevice->unMapMemory(stagingBuffer);
+                }
+
+                auto fence = m_pDevice->acquireFence();
+                executeSingleCommands(
+                    m_pQueue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); },
+                    fence);
+                fence->wait();
+
+                m_pDevice->destroy(stagingBuffer);
+            }
         }
     }
     else

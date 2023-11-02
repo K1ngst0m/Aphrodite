@@ -144,6 +144,8 @@ public:
     void transitionImageLayout(Image* pImage, ResourceState newState);
     void copyImage(Image* srcImage, Image* dstImage);
 
+    void updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data);
+
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
