@@ -40,7 +40,7 @@ void triangle_demo::init()
         };
         std::array indexArray{0U, 1U, 2U};
 
-        auto & timer = aph::Timer::GetInstance();
+        auto& timer = aph::Timer::GetInstance();
         timer.set("load begin");
         {
             // vertex: position, color
@@ -79,8 +79,10 @@ void triangle_demo::init()
             aph::vk::Shader* pFS = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"}, &pVS);
-            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"}, &pFS);
+            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"},
+                                                     &pVS);
+            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"},
+                                                     &pFS);
 
             m_renderer->m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
@@ -95,11 +97,9 @@ void triangle_demo::init()
         timer.set("load end");
         CM_LOG_INFO("load time : %lf", timer.interval("load begin", "load end"));
 
-
         // command pool
         {
-            APH_CHECK_RESULT(m_pDevice->create(
-                aph::vk::CommandPoolCreateInfo{m_renderer->getDefaultQueue(aph::QueueType::Graphics)}, &m_pCmdPool));
+            m_pCmdPool = m_pDevice->acquireCommandPool({m_renderer->getDefaultQueue(aph::QueueType::Graphics)});
         }
     }
 }
@@ -153,7 +153,7 @@ void triangle_demo::run()
         cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_BEGIN_DRAW);
         cb->drawIndexed({3, 1, 0, 0, 0});
         cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_END_DRAW);
-        m_renderer->pUI->draw(cb);
+        // m_renderer->pUI->draw(cb);
         cb->endRendering();
 
         cb->end();
@@ -175,7 +175,7 @@ void triangle_demo::finish()
 {
     PROFILE_FUNCTION();
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pCmdPool);
+    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
 }
 
 void triangle_demo::load()

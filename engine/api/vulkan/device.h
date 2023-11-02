@@ -57,8 +57,6 @@ public:
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
     Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
     Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
-    Result create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
-                  std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
@@ -66,7 +64,6 @@ public:
     void destroy(SwapChain* pSwapchain);
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
-    void destroy(CommandPool* pCommandPool);
 
     template <typename... Args>
     void destroy(Args... args)
@@ -87,10 +84,12 @@ public:
     void   unMapMemory(Buffer* pBuffer);
 
 public:
-    Semaphore* acquireSemaphore();
-    Fence*     acquireFence(bool isSignaled = true);
-    Result     releaseSemaphore(Semaphore* semaphore);
-    Result     releaseFence(Fence* pFence);
+    CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
+    Semaphore*   acquireSemaphore();
+    Fence*       acquireFence(bool isSignaled = true);
+    Result       releaseSemaphore(Semaphore* semaphore);
+    Result       releaseFence(Fence* pFence);
+    Result       releaseCommandPool(CommandPool* pPool);
 
 public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }

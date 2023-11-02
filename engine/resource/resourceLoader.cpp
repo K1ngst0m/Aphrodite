@@ -824,9 +824,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 }
 void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func, vk::Fence* pFence)
 {
-    // TODO optimize pool creation
-    vk::CommandPool* pPool = {};
-    APH_CHECK_RESULT(m_pDevice->create(vk::CommandPoolCreateInfo{.queue = queue, .transient = true}, &pPool));
+    vk::CommandPool* pPool = m_pDevice->acquireCommandPool({.queue = queue, .transient = true});
 
     vk::CommandBuffer* cmd = nullptr;
     APH_CHECK_RESULT(pPool->allocate(1, &cmd));
@@ -840,6 +838,6 @@ void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCall
     APH_CHECK_RESULT(queue->waitIdle());
 
     pPool->free(1, &cmd);
-    m_pDevice->destroy(pPool);
+    APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pPool));
 }
 }  // namespace aph

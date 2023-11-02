@@ -107,10 +107,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // create device
     {
         const std::vector<const char*> deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,
-            VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,  VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
             VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
         };
 
@@ -257,8 +255,7 @@ void Renderer::endFrame()
 
 CommandPool* Renderer::acquireCommandPool(Queue* queue, bool transient)
 {
-    CommandPool* cmdPool;
-    APH_CHECK_RESULT(m_pDevice->create({queue, transient}, &cmdPool));
+    CommandPool* cmdPool = m_pDevice->acquireCommandPool({queue, transient});
     m_frameData[m_frameIdx].cmdPools.push_back(cmdPool);
     return cmdPool;
 }
@@ -351,7 +348,7 @@ void Renderer::resetFrameData()
     {
         for(auto pool : frameData.cmdPools)
         {
-            m_pDevice->destroy(pool);
+            APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pool));
         }
         frameData.cmdPools.clear();
 

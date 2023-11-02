@@ -166,11 +166,6 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, std::string_view debugName)
-{
-    return m_resourcePool.commandPoolAllocator.acquire(createInfo, 1, ppCommandPool);
-}
-
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
 {
     VkImageViewCreateInfo info{
@@ -337,14 +332,6 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     }
 
     return Result::Success;
-}
-
-void Device::destroy(CommandPool* pCommandPool)
-{
-    if(pCommandPool)
-    {
-        m_resourcePool.commandPoolAllocator.release(1, &pCommandPool);
-    }
 }
 
 void Device::destroy(Buffer* pBuffer)
@@ -760,6 +747,17 @@ Result Device::releaseFence(Fence* pFence)
     {
         return Result::RuntimeError;
     }
+    return Result::Success;
+}
+CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
+{
+    CommandPool* pool = {};
+    APH_CHECK_RESULT(m_resourcePool.commandPoolAllocator.acquire(info, 1, &pool));
+    return pool;
+}
+Result Device::releaseCommandPool(CommandPool* pPool)
+{
+    m_resourcePool.commandPoolAllocator.release(1, &pPool);
     return Result::Success;
 }
 }  // namespace aph::vk
