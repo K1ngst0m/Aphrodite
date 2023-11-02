@@ -10,7 +10,7 @@
 
   - Vulkan
   - Async Resource Management
-  - Multi-threading, Task Manager
+  - Multi-threading, Job System
   - Scene Management
   - Built-in Windowing, Input, Event Support
   - UI Support
