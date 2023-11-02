@@ -3,6 +3,14 @@
 
 namespace aph::vk
 {
+Fence::Fence(Device* pDevice, HandleType handle) : ResourceHandle(handle), m_pDevice(pDevice)
+{
+    reset();
+}
+void Fence::reset()
+{
+    m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &getHandle());
+}
 SyncPrimitivesPool::SyncPrimitivesPool(Device* device) : m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
 {
 }
@@ -103,7 +111,8 @@ VkResult SyncPrimitivesPool::acquireSemaphore(uint32_t semaphoreCount, Semaphore
         VkSemaphore           vkSemaphore;
         VkSemaphoreCreateInfo createInfo = {};
         createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result          = m_pDeviceTable->vkCreateSemaphore(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkSemaphore);
+        result =
+            m_pDeviceTable->vkCreateSemaphore(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkSemaphore);
         ppSemaphores[i] = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
         if(result != VK_SUCCESS)
         {
@@ -133,7 +142,7 @@ VkResult SyncPrimitivesPool::ReleaseSemaphores(uint32_t semaphoreCount, Semaphor
 bool SyncPrimitivesPool::Exists(VkSemaphore semaphore)
 {
     std::lock_guard<std::mutex> lock{m_semaphoreLock};
-    auto result = m_allSemaphores.contains(semaphore);
+    auto                        result = m_allSemaphores.contains(semaphore);
     return result;
 }
 

@@ -38,6 +38,7 @@ public:
     Result       waitIdle();
     Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence);
     Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
+    Result       present(const VkPresentInfoKHR& presentInfo);
 
 private:
     std::mutex              m_lock             = {};

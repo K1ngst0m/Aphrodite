@@ -133,4 +133,11 @@ Result Queue::waitIdle()
 {
     return utils::getResult(m_pDevice->getDeviceTable()->vkQueueWaitIdle(getHandle()));
 }
+
+Result Queue::present(const VkPresentInfoKHR& presentInfo)
+{
+    std::lock_guard<std::mutex> lock{m_lock};
+    VkResult result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(getHandle(), &presentInfo);
+    return utils::getResult(result);
+}
 }  // namespace aph::vk

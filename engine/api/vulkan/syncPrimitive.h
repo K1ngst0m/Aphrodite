@@ -15,9 +15,10 @@ class Fence : public ResourceHandle<VkFence>
 
 public:
     bool wait(uint64_t timeout = UINT64_MAX);
+    void reset();
 
 private:
-    Fence(Device* pDevice, HandleType handle) : ResourceHandle(handle), m_pDevice(pDevice) {}
+    Fence(Device* pDevice, HandleType handle);
     ~Fence();
 
     Device*    m_pDevice      = {};

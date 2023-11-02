@@ -122,8 +122,7 @@ Result SwapChain::presentImage(Queue* pQueue, const std::vector<Semaphore*>& wai
         .pResults           = nullptr,  // Optional
     };
 
-    VkResult result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(pQueue->getHandle(), &presentInfo);
-    return utils::getResult(result);
+    return pQueue->present(presentInfo);
 }
 
 SwapChain::~SwapChain()
@@ -194,7 +193,7 @@ void SwapChain::reCreate()
         .imageColorSpace       = swapChainSupport.preferedSurfaceFormat.colorSpace,
         .imageExtent           = extent,
         .imageArrayLayers      = 1,
-        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT,
+        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices   = nullptr,
