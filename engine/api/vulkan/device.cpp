@@ -29,8 +29,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 {
     PhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
 
-    auto queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
-    auto queueFamilyCount      = queueFamilyProperties.size();
+    const auto& queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
+    const auto  queueFamilyCount      = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
@@ -39,10 +39,13 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     {
         const float defaultPriority = 1.0f;
         priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
-        queueCreateInfos[i].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfos[i].queueFamilyIndex = i;
-        queueCreateInfos[i].queueCount       = queueFamilyProperties[i].queueCount;
-        queueCreateInfos[i].pQueuePriorities = priorities[i].data();
+
+        queueCreateInfos[i] = {
+            .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .queueFamilyIndex = i,
+            .queueCount       = queueFamilyProperties[i].queueCount,
+            .pQueuePriorities = priorities[i].data(),
+        };
     }
 
     // Enable all physical device available features.
@@ -100,8 +103,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     };
 
     VkPhysicalDeviceHostQueryResetFeatures hostQueryResetFeature{
-        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-        .pNext = &dynamicRenderingFeature,
+        .sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
+        .pNext          = &dynamicRenderingFeature,
         .hostQueryReset = VK_TRUE,
     };
 
@@ -401,11 +404,7 @@ void Device::destroy(SwapChain* pSwapchain)
 
 Queue* Device::getQueue(QueueType flags, uint32_t queueIndex)
 {
-    std::vector<uint32_t> supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
-    if(supportedQueueFamilyIndexList.empty())
-    {
-        return nullptr;
-    }
+    const auto& supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
 }
 

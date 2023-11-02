@@ -125,8 +125,9 @@ private:
     void executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func, vk::Fence* pFence = nullptr);
 
 private:
-    ResourceLoaderCreateInfo      m_createInfo;
-    vk::Device*                   m_pDevice = {};
+    ResourceLoaderCreateInfo m_createInfo;
+    vk::Device*              m_pDevice = {};
+    vk::Queue*               m_pQueue  = {};
 
 private:
     ThreadPool<>                                                 m_threadPool;

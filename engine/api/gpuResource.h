@@ -29,6 +29,7 @@ enum class QueueType : uint8_t
     Graphics = 0,
     Compute  = 1,
     Transfer = 2,
+    Count,
 };
 
 enum class ShaderStage : uint8_t

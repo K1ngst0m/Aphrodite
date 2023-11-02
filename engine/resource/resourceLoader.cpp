@@ -493,6 +493,7 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
     m_createInfo(createInfo),
     m_pDevice(createInfo.pDevice)
 {
+    m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
 }
 
 ResourceLoader::~ResourceLoader() = default;
@@ -576,7 +577,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
         APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
-        auto queue = m_pDevice->getQueue(QueueType::Graphics);
+        auto queue = m_pQueue;
         executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
 
@@ -789,11 +790,9 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 m_pDevice->unMapMemory(stagingBuffer);
             }
 
-            auto queue = m_pDevice->getQueue(QueueType::Graphics);
-
             auto fence = m_pDevice->acquireFence();
             executeSingleCommands(
-                queue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); }, fence);
+                m_pQueue, [&](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); }, fence);
             fence->wait();
 
             m_pDevice->destroy(stagingBuffer);

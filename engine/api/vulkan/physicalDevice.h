@@ -13,7 +13,7 @@ class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 public:
     PhysicalDevice(HandleType handle);
 
-    std::vector<uint32_t>             getQueueFamilyIndexByFlags(QueueType flags);
+    const std::vector<uint32_t>&      getQueueFamilyIndexByFlags(QueueType flags);
     bool                              isExtensionSupported(std::string_view extension) const;
     uint32_t                          findMemoryType(BufferDomain domain, uint32_t mask) const;
     uint32_t                          findMemoryType(ImageDomain domain, uint32_t mask) const;

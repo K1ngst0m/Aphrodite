@@ -8,7 +8,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
     {
         uint32_t queueFamilyCount;
         vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, nullptr);
-        assert(queueFamilyCount > 0);
+        APH_ASSERT(queueFamilyCount > 0);
         m_queueFamilyProperties.resize(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, m_queueFamilyProperties.data());
         for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
@@ -18,17 +18,24 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
             // universal queue
             if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
+                VK_LOG_INFO("Found graphics queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Graphics].push_back(queueFamilyIndex);
             }
             // compute queue
             else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
             {
+                VK_LOG_INFO("Found compute queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Compute].push_back(queueFamilyIndex);
             }
             // transfer queue
             else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
             {
+                VK_LOG_INFO("Found transfer queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Transfer].push_back(queueFamilyIndex);
+            }
+            else
+            {
+                APH_ASSERT(false);
             }
         }
     }
@@ -275,10 +282,22 @@ VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candid
     return {};
 }
 
-std::vector<uint32_t> PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
+const std::vector<uint32_t>& PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
 {
-    return m_queueFamilyMap.contains(flags) ? m_queueFamilyMap[flags] : std::vector<uint32_t>();
+    for (auto i = static_cast<int>(flags); i >= 0; --i)
+    {
+        QueueType type = static_cast<QueueType>(i);
+
+        if (m_queueFamilyMap.contains(type))
+        {
+            return m_queueFamilyMap.at(type);
+        }
+        CM_LOG_WARN("could not found queue type (transfer or compute), fallback to next.");
+    }
+    APH_ASSERT(false);
+    return m_queueFamilyMap.at(QueueType::Graphics);
 }
+
 size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
 {
     // Calculate required alignment based on minimum device offset alignment
