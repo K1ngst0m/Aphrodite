@@ -56,7 +56,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
             VK_LOG_ERR("Too many errors, exit.");
             throw aph::TracedException();
         }
-        VK_LOG_ERR("%s", msg.str());
+        VK_LOG_ERR("%s", msg.str().c_str());
     }
     break;
 
@@ -283,7 +283,6 @@ Fence* Renderer::acquireFence()
 
 void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresentImage)
 {
-    // aph::vk::QueueSubmitInfo submitInfo{.commandBuffers = cmds, .waitSemaphores = {getRenderSemaphore()}};
     Semaphore* renderSem  = {};
     Semaphore* presentSem = {};
 
@@ -304,13 +303,12 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
 
     if(pPresentImage)
     {
+        auto pSwapchainImage = m_pSwapChain->getImage();
         executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
-            aph::vk::ImageBarrier barrier{
-                .pImage       = pPresentImage,
-                .currentState = pPresentImage->getResourceState(),
-                .newState     = aph::RESOURCE_STATE_PRESENT,
-            };
-            cmd->insertBarrier({barrier});
+            cmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
+            cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
+            cmd->blitImage(pPresentImage, pSwapchainImage);
+            cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
         });
 
         APH_CHECK_RESULT(m_pSwapChain->presentImage(pQueue, {presentSem}));
@@ -367,5 +365,22 @@ void Renderer::resetFrameData()
         // TODO
         // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
     }
+}
+void Renderer::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
+{
+    auto*          commandPool = acquireCommandPool(queue, true);
+    CommandBuffer* cmd         = nullptr;
+    APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
+
+    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    func(cmd);
+    _VR(cmd->end());
+
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    auto            fence = m_pDevice->acquireFence();
+    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
+    fence->wait();
+
+    commandPool->free(1, &cmd);
 }
 }  // namespace aph::vk

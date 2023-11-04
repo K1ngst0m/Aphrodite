@@ -589,51 +589,52 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             }
         });
 
-        executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
-            if(genMipmap)
-            {
-                // generate mipmap chains
-                for(int32_t i = 1; i < imageCI.mipLevels; i++)
-                {
-                    VkImageBlit imageBlit{};
+        // TODO mip map opeartions
+        // executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
+        //     if(genMipmap)
+        //     {
+        //         // generate mipmap chains
+        //         for(int32_t i = 1; i < imageCI.mipLevels; i++)
+        //         {
+        //             VkImageBlit imageBlit{};
 
-                    // Source
-                    imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                    imageBlit.srcSubresource.layerCount = 1;
-                    imageBlit.srcSubresource.mipLevel   = i - 1;
-                    imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-                    imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-                    imageBlit.srcOffsets[1].z           = 1;
+        //             // Source
+        //             imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //             imageBlit.srcSubresource.layerCount = 1;
+        //             imageBlit.srcSubresource.mipLevel   = i - 1;
+        //             imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
+        //             imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
+        //             imageBlit.srcOffsets[1].z           = 1;
 
-                    // Destination
-                    imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-                    imageBlit.dstSubresource.layerCount = 1;
-                    imageBlit.dstSubresource.mipLevel   = i;
-                    imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-                    imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-                    imageBlit.dstOffsets[1].z           = 1;
+        //             // Destination
+        //             imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        //             imageBlit.dstSubresource.layerCount = 1;
+        //             imageBlit.dstSubresource.mipLevel   = i;
+        //             imageBlit.dstOffsets[1].x           = int32_t(width >> i);
+        //             imageBlit.dstOffsets[1].y           = int32_t(height >> i);
+        //             imageBlit.dstOffsets[1].z           = 1;
 
-                    // Prepare current mip level as image blit destination
-                    vk::ImageBarrier barrier{
-                        .pImage             = image,
-                        .currentState       = image->getResourceState(),
-                        .newState           = RESOURCE_STATE_COPY_DST,
-                        .subresourceBarrier = 1,
-                        .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
-                    };
+        //             // Prepare current mip level as image blit destination
+        //             vk::ImageBarrier barrier{
+        //                 .pImage             = image,
+        //                 .currentState       = image->getResourceState(),
+        //                 .newState           = RESOURCE_STATE_COPY_DST,
+        //                 .subresourceBarrier = 1,
+        //                 .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
+        //             };
 
-                    cmd->insertBarrier({barrier});
-                    // Blit from previous level
-                    cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
-                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-                    barrier.currentState = image->getResourceState();
-                    barrier.newState     = RESOURCE_STATE_COPY_SRC;
-                    cmd->insertBarrier({barrier});
-                }
-            }
+        //             cmd->insertBarrier({barrier});
+        //             // Blit from previous level
+        //             cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
+        //                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+        //             barrier.currentState = image->getResourceState();
+        //             barrier.newState     = RESOURCE_STATE_COPY_SRC;
+        //             cmd->insertBarrier({barrier});
+        //         }
+        //     }
 
-            cmd->transitionImageLayout(image, RESOURCE_STATE_SHADER_RESOURCE);
-        });
+        //     cmd->transitionImageLayout(image, RESOURCE_STATE_SHADER_RESOURCE);
+        // });
     }
 
     m_pDevice->destroy(stagingBuffer);

@@ -43,22 +43,7 @@ public:
     VkQueryPool getFrameQueryPool() const { return m_frameData[m_frameIdx].queryPool; }
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func, Fence* pFence = nullptr)
-    {
-        auto           commandPool = acquireCommandPool(queue, true);
-        CommandBuffer* cmd         = nullptr;
-        APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
-
-        _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-        func(cmd);
-        _VR(cmd->end());
-
-        QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-        APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
-        APH_CHECK_RESULT(queue->waitIdle());
-
-        commandPool->free(1, &cmd);
-    }
+    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
 
 public:
     UI* pUI = {};

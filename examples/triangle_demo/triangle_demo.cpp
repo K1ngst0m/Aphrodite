@@ -64,6 +64,19 @@ void triangle_demo::init()
             m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
+        // render target
+        {
+            aph::vk::ImageCreateInfo createInfo{
+                .extent = {m_wsi->getWidth(), m_wsi->getHeight(), 1},
+                .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                .domain = aph::ImageDomain::Device,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = aph::Format::BGRA_UN8,
+            };
+
+            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
+        }
+
         // pipeline
         {
             const aph::VertexInput vdesc = {
@@ -127,8 +140,6 @@ void triangle_demo::run()
             .height = m_renderer->getWindowHeight(),
         };
 
-        aph::vk::Image* presentImage = m_renderer->m_pSwapChain->getImage();
-
         auto pool = m_renderer->getFrameQueryPool();
 
         enum
@@ -145,7 +156,7 @@ void triangle_demo::run()
         cb->bindVertexBuffers(m_pVB);
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
-        cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {presentImage});
+        cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {m_pRenderTarget});
         cb->insertDebugLabel({
             .name  = "draw a triangle",
             .color = {1.0f, 0.0f, 0.0f, 1.0f},
@@ -158,7 +169,7 @@ void triangle_demo::run()
 
         cb->end();
 
-        m_renderer->submit(queue, {.commandBuffers = {cb}}, presentImage);
+        m_renderer->submit(queue, {.commandBuffers = {cb}}, m_pRenderTarget);
 
         m_renderer->endFrame();
         timer.set("frame end");
@@ -175,7 +186,7 @@ void triangle_demo::finish()
 {
     PROFILE_FUNCTION();
     m_renderer->m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline);
+    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pRenderTarget);
 }
 
 void triangle_demo::load()

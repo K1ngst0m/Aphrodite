@@ -80,8 +80,9 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
 Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
 {
     VkResult res = VK_SUCCESS;
-    res          = m_pDevice->getDeviceTable()->vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
-                                pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
+    res =
+        m_pDevice->getDeviceTable()->vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
+                                                           pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
     if(res == VK_ERROR_OUT_OF_DATE_KHR)
     {
@@ -193,7 +194,7 @@ void SwapChain::reCreate()
         .imageColorSpace       = swapChainSupport.preferedSurfaceFormat.colorSpace,
         .imageExtent           = extent,
         .imageArrayLayers      = 1,
-        .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        .imageUsage            = VK_IMAGE_USAGE_TRANSFER_DST_BIT,
         .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices   = nullptr,
@@ -204,7 +205,7 @@ void SwapChain::reCreate()
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    _VR(deviceTable->vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vk::vkAllocator(), &getHandle()));
+    _VR(deviceTable->vkCreateSwapchainKHR(m_pDevice->getHandle(), &swapChainCreateInfo, vkAllocator(), &getHandle()));
 
     m_surfaceFormat = swapChainSupport.preferedSurfaceFormat;
     m_extent        = extent;
@@ -227,7 +228,24 @@ void SwapChain::reCreate()
             .format    = getFormat(),
         };
 
-        m_images.push_back(m_imagePools.allocate(m_pDevice, imageCreateInfo, handle));
+        auto pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
+
+        {
+            // auto               queue = m_pDevice->getQueue(QueueType::Graphics);
+            // auto*              pPool = m_pDevice->acquireCommandPool({.queue = queue, .transient = true});
+            // vk::CommandBuffer* cmd   = nullptr;
+            // APH_CHECK_RESULT(pPool->allocate(1, &cmd));
+            // _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+            // cmd->transitionImageLayout(pImage, ResourceState::RESOURCE_STATE_PRESENT);
+            // _VR(cmd->end());
+            // vk::QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+            // APH_CHECK_RESULT(queue->submit({submitInfo}));
+            // APH_CHECK_RESULT(queue->waitIdle());
+            // pPool->free(1, &cmd);
+            // APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pPool));
+        }
+
+        m_images.push_back(pImage);
     }
 }
 }  // namespace aph::vk
