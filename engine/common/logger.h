@@ -75,7 +75,7 @@ private:
             ss << getCurrentTime();
         }
         ss << " [" << level << "] ";
-        char buffer[512];
+        char buffer[1024];
         std::snprintf(buffer, sizeof(buffer), fmt.data(), toFormat(args)...);
         ss << buffer << '\n';
 

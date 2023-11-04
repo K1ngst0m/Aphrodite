@@ -87,6 +87,7 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
 
 Result Queue::waitIdle()
 {
+    std::lock_guard<std::mutex> holder{m_lock};
     return utils::getResult(m_pDevice->getDeviceTable()->vkQueueWaitIdle(getHandle()));
 }
 

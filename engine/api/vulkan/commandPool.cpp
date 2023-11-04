@@ -23,6 +23,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
         ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, this, handles[i], m_pQueue);
         m_allocatedCommandBuffers.push_back(ppCommandBuffers[i]);
     }
+    CM_LOG_DEBUG("command buffer allocate, avail count %ld, all count %ld", m_allocatedCommandBuffers.size());
     return Result::Success;
 }
 void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
@@ -85,6 +86,7 @@ Result CommandPoolAllocator::acquire(const CommandPoolCreateInfo& createInfo, ui
         allPools.emplace(ppCommandPool[i]);
     }
 
+    CM_LOG_DEBUG("command pool acquire, avail count %ld, all count %ld", m_availablePools.size(), m_allPools.size());
     return Result::Success;
 }
 
@@ -102,6 +104,7 @@ void CommandPoolAllocator::release(uint32_t count, CommandPool** ppCommandPool)
             m_availablePools[queueType].push(ppCommandPool[i]);
         }
     }
+    CM_LOG_DEBUG("command pool release, avail count %ld, all count %ld", m_availablePools.size(), m_allPools.size());
 }
 void CommandPoolAllocator::clear()
 {
@@ -112,5 +115,7 @@ void CommandPoolAllocator::clear()
             m_pDevice->getDeviceTable()->vkDestroyCommandPool(m_pDevice->getHandle(), pool->getHandle(), vkAllocator());
         }
     }
+    m_allPools.clear();
+    m_availablePools.clear();
 }
 }  // namespace aph::vk
