@@ -18,13 +18,6 @@ struct QueueSubmitInfo
     std::vector<Semaphore*>           signalSemaphores;
 };
 
-struct QueueSubmitInfo2
-{
-    std::vector<VkCommandBufferSubmitInfo> commands;
-    std::vector<VkSemaphoreSubmitInfo>     waits;
-    std::vector<VkSemaphoreSubmitInfo>     signals;
-};
-
 class Queue : public ResourceHandle<VkQueue>
 {
 public:
@@ -36,8 +29,7 @@ public:
     VkQueueFlags getFlags() const { return m_properties.queueFlags; }
     QueueType    getType() const { return m_type; }
     Result       waitIdle();
-    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence);
-    Result       submit(const std::vector<QueueSubmitInfo2>& submitInfos);
+    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence = nullptr);
     Result       present(const VkPresentInfoKHR& presentInfo);
 
 private:
