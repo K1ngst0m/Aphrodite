@@ -172,12 +172,53 @@ void CommandBuffer::draw(DrawArguments args)
     m_pDeviceTable->vkCmdDraw(m_handle, args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
 
-void CommandBuffer::blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage,
-                              VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions,
-                              VkFilter filter)
+void CommandBuffer::blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
+                              const ImageBlitInfo& dstBlitInfo, VkFilter filter)
 {
-    m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImageLayout, dstImage->getHandle(),
-                                   dstImageLayout, 1, pRegions, filter);
+    const auto addOffset = [](const VkOffset3D& a, const VkOffset3D& b) -> VkOffset3D {
+        return {a.x + b.x, a.y + b.y, a.z + b.z};
+    };
+
+    const auto isExtentValid = [](const VkOffset3D& extent) -> bool {
+        return extent.x != 0 || extent.y != 0 || extent.z != 0;
+    };
+
+    VkImageBlit vkBlitInfo = {
+        .srcSubresource = {.aspectMask     = utils::getImageAspect(utils::VkCast(srcImage->getFormat())),
+                           .mipLevel       = srcBlitInfo.level,
+                           .baseArrayLayer = srcBlitInfo.baseLayer,
+                           .layerCount     = srcBlitInfo.layerCount},
+        .dstSubresource = {.aspectMask     = utils::getImageAspect(utils::VkCast(dstImage->getFormat())),
+                           .mipLevel       = dstBlitInfo.level,
+                           .baseArrayLayer = dstBlitInfo.baseLayer,
+                           .layerCount     = dstBlitInfo.layerCount},
+    };
+
+    vkBlitInfo.srcOffsets[0] = {srcBlitInfo.offset};
+
+    if(isExtentValid(srcBlitInfo.extent))
+    {
+        vkBlitInfo.srcOffsets[1] = addOffset(srcBlitInfo.offset, srcBlitInfo.extent);
+    }
+    else
+    {
+        vkBlitInfo.srcOffsets[1] = {static_cast<int32_t>(srcImage->getWidth()),
+                                    static_cast<int32_t>(srcImage->getHeight()), 1};
+    }
+
+    vkBlitInfo.dstOffsets[0] = {dstBlitInfo.offset};
+    if(isExtentValid(dstBlitInfo.extent))
+    {
+        vkBlitInfo.dstOffsets[1] = addOffset(dstBlitInfo.offset, dstBlitInfo.extent);
+    }
+    else
+    {
+        vkBlitInfo.dstOffsets[1] = {static_cast<int32_t>(dstImage->getWidth()),
+                                    static_cast<int32_t>(dstImage->getHeight()), 1};
+    }
+
+    m_pDeviceTable->vkCmdBlitImage(m_handle, srcImage->getHandle(), srcImage->m_layout, dstImage->getHandle(),
+                                   dstImage->m_layout, 1, &vkBlitInfo, filter);
 }
 
 void CommandBuffer::endRendering()

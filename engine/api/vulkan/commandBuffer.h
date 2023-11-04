@@ -34,6 +34,16 @@ struct AttachmentInfo
     std::optional<VkClearValue>        clear;
 };
 
+struct ImageBlitInfo
+{
+    VkOffset3D offset = {};
+    VkOffset3D extent = {};
+
+    uint32_t level      = 0;
+    uint32_t baseLayer  = 0;
+    uint32_t layerCount = 1;
+};
+
 struct BufferBarrier
 {
     Buffer*       pBuffer;
@@ -156,8 +166,8 @@ public:
 
 public:
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
-    void blitImage(Image* srcImage, VkImageLayout srcImageLayout, Image* dstImage, VkImageLayout dstImageLayout,
-                   uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter = VK_FILTER_LINEAR);
+    void blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
+                   const ImageBlitInfo& dstBlitInfo = {}, VkFilter filter = VK_FILTER_LINEAR);
 
 private:
     void                   flushComputeCommand();
