@@ -773,14 +773,9 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
-            auto fence = m_pDevice->acquireFence();
-            executeSingleCommands(
-                m_pQueue,
-                [=](vk::CommandBuffer* cmd) {
-                    cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
-                },
-                fence);
-            fence->wait();
+            executeSingleCommands(m_pQueue, [=](vk::CommandBuffer* cmd) {
+                cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
+            });
         }
         else
         {
@@ -809,11 +804,8 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     m_pDevice->unMapMemory(stagingBuffer);
                 }
 
-                auto fence = m_pDevice->acquireFence();
                 executeSingleCommands(
-                    m_pQueue, [=](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); },
-                    fence);
-                fence->wait();
+                    m_pQueue, [=](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }
@@ -844,7 +836,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
     memcpy(pMapped + range.offset, data, range.size);
 }
-void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func, vk::Fence* pFence)
+void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func)
 {
     vk::CommandPool* pPool = m_pDevice->acquireCommandPool({.queue = queue, .transient = true});
 
@@ -855,10 +847,11 @@ void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCall
     func(cmd);
     _VR(cmd->end());
 
-    vk::QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
+    vk::QueueSubmitInfo         submitInfo{.commandBuffers = {cmd}};
+    std::lock_guard<std::mutex> holder{m_updateLock};
+    APH_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
+    // TODO return sync token
     APH_CHECK_RESULT(queue->waitIdle());
-
     pPool->free(1, &cmd);
     APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pPool));
 }

@@ -123,7 +123,7 @@ private:
     void writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
 
     using CmdRecordCallBack = std::function<void(vk::CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func, vk::Fence* pFence = nullptr);
+    void executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func);
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -136,6 +136,7 @@ private:
     uuid::UUIDGenerator<std::mt19937_64>                         m_uuidGenerator      = {};
     std::unordered_map<std::string, std::string>                 m_shaderUUIDMap      = {};
     std::vector<std::future<void>>                               m_syncTokens;
+    std::mutex                                                   m_updateLock;
 };
 }  // namespace aph
 
