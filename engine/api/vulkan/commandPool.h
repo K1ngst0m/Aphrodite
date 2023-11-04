@@ -26,6 +26,7 @@ public:
     }
     ~CommandPool();
 
+    CommandBuffer* allocate();
     Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
     void   free(uint32_t count, CommandBuffer** ppCommandBuffers);
     void   reset();

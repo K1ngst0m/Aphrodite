@@ -40,11 +40,6 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
     }
 }
 
-void CommandPool::reset()
-{
-    m_pDevice->getDeviceTable()->vkResetCommandPool(m_pDevice->getHandle(), getHandle(), 0);
-}
-
 CommandPool::~CommandPool() = default;
 
 Result CommandPoolAllocator::acquire(const CommandPoolCreateInfo& createInfo, uint32_t count,
@@ -122,5 +117,12 @@ void CommandPoolAllocator::clear()
     }
     m_allPools.clear();
     m_availablePools.clear();
+}
+
+CommandBuffer* CommandPool::allocate()
+{
+    CommandBuffer* pCmd = {};
+    APH_CHECK_RESULT(allocate(1, &pCmd));
+    return pCmd;
 }
 }  // namespace aph::vk
