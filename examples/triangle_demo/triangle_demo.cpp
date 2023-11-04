@@ -12,7 +12,7 @@ void triangle_demo::init()
 
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_WITHOUT_UI,
-        .maxFrames = 1,
+        .maxFrames = 3,
     };
 
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
@@ -116,11 +116,6 @@ void triangle_demo::init()
         }
         timer.set("load end");
         CM_LOG_DEBUG("load time : %lf", timer.interval("load begin", "load end"));
-
-        // command pool
-        {
-            m_pCmdPool = m_pDevice->acquireCommandPool({m_renderer->getDefaultQueue(aph::QueueType::Graphics)});
-        }
     }
 }
 
@@ -139,8 +134,9 @@ void triangle_demo::run()
 
         // draw and submit
         m_renderer->beginFrame();
+        auto * pCmdPool = m_renderer->acquireCommandPool(queue);
         aph::vk::CommandBuffer* cb = {};
-        APH_CHECK_RESULT(m_pCmdPool->allocate(1, &cb));
+        APH_CHECK_RESULT(pCmdPool->allocate(1, &cb));
 
         cb->begin();
         cb->bindVertexBuffers(m_pVB);

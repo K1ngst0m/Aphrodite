@@ -347,6 +347,7 @@ void Renderer::resetFrameData()
     {
         for(auto pool : frameData.cmdPools)
         {
+            pool->reset();
             APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pool));
         }
         frameData.cmdPools.clear();

@@ -28,6 +28,7 @@ public:
 
     Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
     void   free(uint32_t count, CommandBuffer** ppCommandBuffers);
+    void   reset();
 
     bool isOnRecord() const { return m_onRecord; }
 
