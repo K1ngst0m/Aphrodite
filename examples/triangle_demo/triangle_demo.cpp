@@ -125,8 +125,13 @@ void triangle_demo::run()
     {
         PROFILE_SCOPE("application loop");
         static double deltaTime = {};
-        auto&         timer     = aph::Timer::GetInstance();
-        timer.set("loop begin");
+        enum : uint32_t
+        {
+            TIMELINE_LOOP_BEGIN,
+            TIMELINE_LOOP_END,
+        };
+        auto& timer = aph::Timer::GetInstance();
+        timer.set(TIMELINE_LOOP_BEGIN);
 
         m_renderer->update(deltaTime);
 
@@ -134,26 +139,24 @@ void triangle_demo::run()
 
         // draw and submit
         m_renderer->beginFrame();
-        auto * pCmdPool = m_renderer->acquireCommandPool(queue);
-        aph::vk::CommandBuffer* cb = {};
-        APH_CHECK_RESULT(pCmdPool->allocate(1, &cb));
+        auto* pCmd = m_renderer->acquireCommandPool(queue)->allocate();
 
-        cb->begin();
-        cb->bindVertexBuffers(m_pVB);
-        cb->bindIndexBuffers(m_pIB);
-        cb->bindPipeline(m_pPipeline);
-        cb->beginRendering({m_pRenderTarget});
-        cb->drawIndexed({3, 1, 0, 0, 0});
-        cb->endRendering();
+        pCmd->begin();
+        pCmd->bindVertexBuffers(m_pVB);
+        pCmd->bindIndexBuffers(m_pIB);
+        pCmd->bindPipeline(m_pPipeline);
+        pCmd->beginRendering({m_pRenderTarget});
+        pCmd->drawIndexed({3, 1, 0, 0, 0});
+        pCmd->endRendering();
 
-        cb->end();
+        pCmd->end();
 
-        m_renderer->submit(queue, {.commandBuffers = {cb}}, m_pRenderTarget);
+        m_renderer->submit(queue, {.commandBuffers = {pCmd}}, m_pRenderTarget);
 
         m_renderer->endFrame();
 
-        timer.set("loop end");
-        deltaTime = timer.interval("loop begin", "loop end");
+        timer.set(TIMELINE_LOOP_END);
+        deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
     }
 }
 
