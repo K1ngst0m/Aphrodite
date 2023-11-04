@@ -250,6 +250,7 @@ void Renderer::endFrame()
         timer.set("renderer: end frame");
         m_frameTime      = timer.interval("renderer: begin frame", "renderer: end frame");
         m_framePerSecond = 1 / m_frameTime;
+        CM_LOG_DEBUG("Fps: %.0f", m_framePerSecond);
     }
 }
 

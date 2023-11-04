@@ -67,11 +67,11 @@ void triangle_demo::init()
         // render target
         {
             aph::vk::ImageCreateInfo createInfo{
-                .extent = {m_wsi->getWidth(), m_wsi->getHeight(), 1},
-                .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                .domain = aph::ImageDomain::Device,
+                .extent    = {m_wsi->getWidth(), m_wsi->getHeight(), 1},
+                .usage     = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                .domain    = aph::ImageDomain::Device,
                 .imageType = VK_IMAGE_TYPE_2D,
-                .format = aph::Format::BGRA_UN8,
+                .format    = aph::Format::BGRA_UN8,
             };
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
@@ -108,7 +108,7 @@ void triangle_demo::init()
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
         timer.set("load end");
-        CM_LOG_INFO("load time : %lf", timer.interval("load begin", "load end"));
+        CM_LOG_DEBUG("load time : %lf", timer.interval("load begin", "load end"));
 
         // command pool
         {
@@ -124,40 +124,23 @@ void triangle_demo::run()
         PROFILE_SCOPE("application loop");
         static double deltaTime = {};
         auto&         timer     = aph::Timer::GetInstance();
+        timer.set("loop begin");
 
         m_renderer->update(deltaTime);
 
         auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
 
         // draw and submit
-        timer.set("frame begin");
         m_renderer->beginFrame();
         aph::vk::CommandBuffer* cb = {};
         APH_CHECK_RESULT(m_pCmdPool->allocate(1, &cb));
 
-        auto pool = m_renderer->getFrameQueryPool();
-
-        enum
-        {
-            TIMESTAMP_BEGIN_DRAW = 0,
-            TIMESTAMP_END_DRAW   = 1,
-        };
-
         cb->begin();
-        cb->setDebugName("triangle drawing command");
-        cb->resetQueryPool(pool, 0, 2);
         cb->bindVertexBuffers(m_pVB);
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
         cb->beginRendering({m_pRenderTarget});
-        cb->insertDebugLabel({
-            .name  = "draw a triangle",
-            .color = {1.0f, 0.0f, 0.0f, 1.0f},
-        });
-        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_BEGIN_DRAW);
         cb->drawIndexed({3, 1, 0, 0, 0});
-        cb->writeTimeStamp(VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, TIMESTAMP_END_DRAW);
-        // m_renderer->pUI->draw(cb);
         cb->endRendering();
 
         cb->end();
@@ -165,13 +148,9 @@ void triangle_demo::run()
         m_renderer->submit(queue, {.commandBuffers = {cb}}, m_pRenderTarget);
 
         m_renderer->endFrame();
-        timer.set("frame end");
 
-        deltaTime          = timer.interval("frame begin", "frame end");
-        auto timeInSeconds = m_pDevice->getTimeQueryResults(pool, 0, 1, aph::vk::TimeUnit::Seconds);
-
-        CM_LOG_DEBUG("draw time: %lfs", timeInSeconds);
-        CM_LOG_DEBUG("Fps: %.0f", 1 / deltaTime);
+        timer.set("loop end");
+        deltaTime = timer.interval("loop begin", "loop end");
     }
 }
 
