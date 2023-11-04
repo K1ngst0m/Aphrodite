@@ -61,14 +61,6 @@ VkResult CommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void CommandBuffer::setViewport(const VkViewport& viewport)
-{
-    m_commandState.viewport = viewport;
-}
-void CommandBuffer::setScissor(const VkRect2D& scissor)
-{
-    m_commandState.scissor = scissor;
-}
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
     m_commandState.pPipeline = pPipeline;
@@ -261,7 +253,7 @@ void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSet*>& descrip
                                             vkSets.size(), vkSets.data(), 0, nullptr);
 }
 
-void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth)
+void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
 {
     std::vector<AttachmentInfo> colorAttachments = {};
     AttachmentInfo              depthAttachment  = {};
@@ -272,11 +264,10 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Image*
     }
 
     depthAttachment = {.image = depth};
-    beginRendering(renderArea, colorAttachments, depthAttachment);
+    beginRendering(colorAttachments, depthAttachment);
 }
 
-void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors,
-                                   const AttachmentInfo& depth)
+void CommandBuffer::beginRendering(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth)
 {
     m_commandState.colorAttachments = colors;
     m_commandState.depthAttachment  = depth;
@@ -318,6 +309,12 @@ void CommandBuffer::beginRendering(VkRect2D renderArea, const std::vector<Attach
         };
         insertBarrier({barrier});
     }
+
+    VkRect2D renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
+    VkViewport viewPort = aph::vk::init::viewport(renderArea.extent);
+
+    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewPort);
+    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &renderArea);
 
     VkRenderingInfo renderingInfo{
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -376,9 +373,6 @@ void CommandBuffer::flushComputeCommand()
 }
 void CommandBuffer::flushGraphicsCommand()
 {
-    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &m_commandState.viewport);
-    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &m_commandState.scissor);
-
     aph::utils::forEachBitRange(m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
 #ifdef APH_DEBUG
         for(unsigned i = binding; i < binding + bindingCount; i++)
@@ -397,16 +391,6 @@ void CommandBuffer::flushGraphicsCommand()
                                       m_commandState.pPipeline->getHandle());
 }
 
-void CommandBuffer::setScissor(const VkExtent2D& extent)
-{
-    VkRect2D scissor = aph::vk::init::rect2D(extent);
-    setScissor(scissor);
-}
-void CommandBuffer::setViewport(const VkExtent2D& extent)
-{
-    VkViewport viewport = aph::vk::init::viewport(extent);
-    setViewport(viewport);
-}
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)
 {
     const VkDebugUtilsLabelEXT vkLabel = aph::vk::utils::VkCast(label);

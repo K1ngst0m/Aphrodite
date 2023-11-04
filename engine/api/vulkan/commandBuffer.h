@@ -103,8 +103,6 @@ struct CommandState
     };
 
     Pipeline*                     pPipeline        = {};
-    VkViewport                    viewport         = {};
-    VkRect2D                      scissor          = {};
     std::vector<AttachmentInfo>   colorAttachments = {};
     std::optional<AttachmentInfo> depthAttachment  = {};
     ResourceBindings              resourceBindings = {};
@@ -124,14 +122,10 @@ public:
 
     void setDebugName(std::string_view debugName);
 
-    void beginRendering(VkRect2D renderArea, const std::vector<Image*>& colors, Image* depth = nullptr);
-    void beginRendering(VkRect2D renderArea, const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
+    void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
+    void beginRendering(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
     void endRendering();
 
-    void setViewport(const VkExtent2D& extent);
-    void setScissor(const VkExtent2D& extent);
-    void setViewport(const VkViewport& viewport);
-    void setScissor(const VkRect2D& scissor);
     void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
     void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const DescriptorSet* pDescriptorSets,
                            uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);

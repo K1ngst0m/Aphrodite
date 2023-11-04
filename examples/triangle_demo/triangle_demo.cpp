@@ -135,11 +135,6 @@ void triangle_demo::run()
         aph::vk::CommandBuffer* cb = {};
         APH_CHECK_RESULT(m_pCmdPool->allocate(1, &cb));
 
-        VkExtent2D extent{
-            .width  = m_renderer->getWindowWidth(),
-            .height = m_renderer->getWindowHeight(),
-        };
-
         auto pool = m_renderer->getFrameQueryPool();
 
         enum
@@ -151,12 +146,10 @@ void triangle_demo::run()
         cb->begin();
         cb->setDebugName("triangle drawing command");
         cb->resetQueryPool(pool, 0, 2);
-        cb->setViewport(extent);
-        cb->setScissor(extent);
         cb->bindVertexBuffers(m_pVB);
         cb->bindIndexBuffers(m_pIB);
         cb->bindPipeline(m_pPipeline);
-        cb->beginRendering({.offset = {0, 0}, .extent = {extent}}, {m_pRenderTarget});
+        cb->beginRendering({m_pRenderTarget});
         cb->insertDebugLabel({
             .name  = "draw a triangle",
             .color = {1.0f, 0.0f, 0.0f, 1.0f},
