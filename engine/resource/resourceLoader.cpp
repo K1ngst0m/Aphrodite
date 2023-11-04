@@ -847,12 +847,13 @@ void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCall
     func(cmd);
     _VR(cmd->end());
 
-    vk::QueueSubmitInfo         submitInfo{.commandBuffers = {cmd}};
-    std::lock_guard<std::mutex> holder{m_updateLock};
-    APH_CHECK_RESULT(queue->submit({submitInfo}, VK_NULL_HANDLE));
-    // TODO return sync token
-    APH_CHECK_RESULT(queue->waitIdle());
+    // TODO give sync token to outside
+    auto fence = m_pDevice->acquireFence();
+    vk::QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
+    fence->wait();
     pPool->free(1, &cmd);
+    APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
     APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pPool));
 }
 }  // namespace aph
