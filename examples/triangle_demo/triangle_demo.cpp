@@ -71,10 +71,17 @@ void triangle_demo::init()
                 .usage     = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 .domain    = aph::ImageDomain::Device,
                 .imageType = VK_IMAGE_TYPE_2D,
-                .format    = aph::Format::BGRA_UN8,
+                .format    = m_renderer->m_pSwapChain->getFormat(),
             };
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
+
+            aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
+                [createInfo, this](const aph::WindowResizeEvent& e) {
+                    m_pDevice->destroy(m_pRenderTarget);
+                    APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
+                    return true;
+                });
         }
 
         // pipeline
