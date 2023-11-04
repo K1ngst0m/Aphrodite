@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "taskManager.h"
 #include "threadUtils.h"
 #include "common/logger.h"
@@ -65,7 +67,7 @@ TaskManager::~TaskManager()
     m_taskPool.clear();
 }
 
-TaskGroup* TaskManager::createTaskGroup(std::string_view desc)
+TaskGroup* TaskManager::createTaskGroup(const std::string& desc)
 {
     CM_LOG_DEBUG("create task group [%s]", desc);
     auto group     = m_taskGroupPool.allocate(this, desc);
@@ -74,7 +76,7 @@ TaskGroup* TaskManager::createTaskGroup(std::string_view desc)
     return group;
 }
 
-void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string_view desc)
+void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, const std::string& desc)
 {
     CM_LOG_DEBUG("add task [%s]", desc);
     Task* task = m_taskPool.allocate(pGroup->m_pDeps, std::move(func), desc);
@@ -102,7 +104,7 @@ void TaskManager::submit(TaskGroup* pGroup)
     removeTaskGroup(pGroup);
 }
 
-TaskGroup::TaskGroup(TaskManager* manager, std::string_view desc) : m_pManager(manager), m_desc(desc)
+TaskGroup::TaskGroup(TaskManager* manager, std::string desc) : m_pManager(manager), m_desc(std::move(desc))
 {
 }
 
@@ -149,7 +151,7 @@ bool TaskGroup::poll()
     return m_pDeps->m_pendingTaskCount.load(std::memory_order_acquire) == 0;
 }
 
-void TaskGroup::addTask(TaskFunc&& func, std::string_view desc)
+void TaskGroup::addTask(TaskFunc&& func, const std::string& desc)
 {
     m_pManager->addTask(this, std::move(func), desc);
 }

@@ -1,6 +1,8 @@
 #ifndef APH_JOBSYSTEM_H_
 #define APH_JOBSYSTEM_H_
 
+#include <utility>
+
 #include "common/singleton.h"
 #include "allocator/objectPool.h"
 #include "threadPool.h"
@@ -48,10 +50,10 @@ struct Task
     std::string m_desc     = {};
 
 private:
-    Task(TaskDeps* pDeps, TaskFunc&& func, std::string_view desc) :
+    Task(TaskDeps* pDeps, TaskFunc&& func, std::string desc) :
         m_callable(std::forward<TaskFunc>(func)),
         m_pDeps(pDeps),
-        m_desc(desc)
+        m_desc(std::move(desc))
     {
     }
 };
@@ -66,10 +68,10 @@ public:
     void flush();
     void wait();
     bool poll();
-    void addTask(TaskFunc&& func, std::string_view desc = "untitled");
+    void addTask(TaskFunc&& func, const std::string& desc = "untitled");
 
 private:
-    explicit TaskGroup(TaskManager* manager, std::string_view desc);
+    explicit TaskGroup(TaskManager* manager, std::string desc);
     TaskManager* m_pManager = {};
     TaskDeps*    m_pDeps    = {};
     std::string  m_desc     = {};
@@ -82,13 +84,13 @@ public:
     TaskManager();
     ~TaskManager() final;
 
-    TaskGroup* createTaskGroup(std::string_view desc = "untitled");
+    TaskGroup* createTaskGroup(const std::string& desc = "untitled");
     void       removeTaskGroup(TaskGroup* pGroup);
     void       setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
 
     void scheduleTasks(const std::vector<Task*>& taskList);
 
-    void addTask(TaskGroup* pGroup, TaskFunc&& func, std::string_view desc = "untitled");
+    void addTask(TaskGroup* pGroup, TaskFunc&& func, const std::string& desc = "untitled");
 
     void submit(TaskGroup* pGroup);
 

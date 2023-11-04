@@ -42,13 +42,13 @@ struct ImageLoadInfo
 struct BufferLoadInfo
 {
     std::string_view     debugName  = {};
-    void*                data       = {};
+    const void*          data       = {};
     vk::BufferCreateInfo createInfo = {};
 };
 
 struct BufferUpdateInfo
 {
-    void*            data      = {};
+    const void*      data      = {};
     MemoryRange      range     = {0, VK_WHOLE_SIZE};
     std::string_view debugName = {};
 };

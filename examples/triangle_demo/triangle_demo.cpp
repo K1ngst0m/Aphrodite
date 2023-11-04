@@ -33,12 +33,11 @@ void triangle_demo::init()
         };
 
         // vertex buffer
-        std::vector<VertexData> vertexArray{
+        const std::vector<VertexData> vertexArray{
             {.pos = {0.0f, -0.5f, 1.0f}, .color = {1.0f, 0.0f, 0.0f}},
             {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
             {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
         };
-        std::array indexArray{0U, 1U, 2U};
 
         auto& timer = aph::Timer::GetInstance();
         timer.set("load begin");
@@ -54,6 +53,7 @@ void triangle_demo::init()
             m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
         }
 
+        constexpr std::array indexArray{0U, 1U, 2U};
         // index buffer
         {
             aph::BufferLoadInfo loadInfo{
