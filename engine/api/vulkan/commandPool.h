@@ -27,9 +27,9 @@ public:
     ~CommandPool();
 
     CommandBuffer* allocate();
-    Result allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
-    void   free(uint32_t count, CommandBuffer** ppCommandBuffers);
-    void   reset();
+    Result         allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
+    void           free(uint32_t count, CommandBuffer** ppCommandBuffers);
+    void           reset(bool freeMemory = false);
 
     bool isOnRecord() const { return m_onRecord; }
 
@@ -39,6 +39,7 @@ private:
     bool                                m_onRecord                = {};
     std::vector<CommandBuffer*>         m_allocatedCommandBuffers = {};
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
+    std::mutex                          m_lock;
 };
 
 class CommandPoolAllocator
