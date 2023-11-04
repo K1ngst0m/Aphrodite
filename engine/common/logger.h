@@ -62,7 +62,7 @@ private:
     const char* toFormat(const char* val) { return val; }
     const char* toFormat(const std::string& val) { return val.c_str(); }
     const char* toFormat(const std::filesystem::path& val) { return val.c_str(); }
-    const char* toFormat(std::string_view val) { return val.data(); }
+    const char* toFormat(std::string_view val) { assert(false); }
 
     template <typename... Args>
     void log(const char* level, std::string_view fmt, Args&&... args)
@@ -70,7 +70,7 @@ private:
         std::lock_guard<std::mutex> lock(m_mutex);
 
         std::ostringstream ss;
-        if (m_enableTime)
+        if(m_enableTime)
         {
             ss << getCurrentTime();
         }
@@ -95,6 +95,32 @@ private:
 };
 
 }  // namespace aph
+
+#define LOG_SETUP_LEVEL_DEBUG() \
+    do \
+    { \
+        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Debug); \
+    } while(0)
+#define LOG_SETUP_LEVEL_INFO() \
+    do \
+    { \
+        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Info); \
+    } while(0)
+#define LOG_SETUP_LEVEL_WARN() \
+    do \
+    { \
+        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Warn); \
+    } while(0)
+#define LOG_SETUP_LEVEL_ERR() \
+    do \
+    { \
+        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Error); \
+    } while(0)
+#define LOG_SETUP_LEVEL_NONE() \
+    do \
+    { \
+        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::None); \
+    } while(0)
 
 #define LOG_FLUSH() \
     do \

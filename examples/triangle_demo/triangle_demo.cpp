@@ -192,6 +192,8 @@ void triangle_demo::unload()
 
 int main(int argc, char** argv)
 {
+    LOG_SETUP_LEVEL_INFO();
+
     triangle_demo app;
 
     // parse command
