@@ -1,5 +1,3 @@
-[[file:https://raw.githubusercontent.com/k1ngst0m/assets_dir/master/.github/aphrodite/aph-logo.png]]
-
 * Aphrodite
 
   Aphrodite is a high-performance, Vulkan-based graphics engine designed for game development and graphics applications on Linux.
