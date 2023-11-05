@@ -308,7 +308,20 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
         executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
             cmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
             cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
-            cmd->blitImage(pPresentImage, pSwapchainImage);
+
+            if(pPresentImage->getWidth() == pSwapchainImage->getWidth() &&
+               pPresentImage->getHeight() == pSwapchainImage->getHeight() &&
+               pPresentImage->getDepth() == pSwapchainImage->getDepth())
+            {
+                VK_LOG_DEBUG("copy image to swapchain.");
+                cmd->copyImage(pPresentImage, pSwapchainImage);
+            }
+            else
+            {
+                VK_LOG_DEBUG("blit image to swapchain.");
+                cmd->blitImage(pPresentImage, pSwapchainImage);
+            }
+
             cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
         });
 

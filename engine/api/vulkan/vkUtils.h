@@ -41,6 +41,7 @@ namespace aph::vk::utils
 {
 std::string           errorString(VkResult errorCode);
 VkImageAspectFlags    getImageAspect(VkFormat format);
+VkImageAspectFlags    getImageAspect(Format format);
 VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
 VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);

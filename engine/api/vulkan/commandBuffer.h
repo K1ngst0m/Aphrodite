@@ -44,6 +44,17 @@ struct ImageBlitInfo
     uint32_t layerCount = 1;
 };
 
+struct ImageCopyInfo
+{
+    VkOffset3D               offset       = {0, 0, 0};
+    VkImageSubresourceLayers subResources = {
+        .aspectMask     = VK_IMAGE_ASPECT_NONE,
+        .mipLevel       = 0,
+        .baseArrayLayer = 0,
+        .layerCount     = 1,
+    };
+};
+
 struct BufferBarrier
 {
     Buffer*       pBuffer;
@@ -116,12 +127,12 @@ public:
     CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
 
+public:
     VkResult begin(VkCommandBufferUsageFlags flags = 0);
     VkResult end();
     VkResult reset();
 
-    void setDebugName(std::string_view debugName);
-
+public:
     void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
     void beginRendering(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
     void endRendering();
@@ -134,6 +145,7 @@ public:
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
 
+public:
     void drawIndexed(DrawIndexArguments args);
     void dispatch(Buffer* pBuffer, std::size_t offset = 0);
     void dispatch(DispatchArguments args);
@@ -141,16 +153,8 @@ public:
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(VkDrawIndirectCommand));
 
-    void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range);
-    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
-                       const std::vector<ImageBarrier>&  pImageBarriers);
-    void transitionImageLayout(Image* pImage, ResourceState newState);
-    void copyImage(Image* srcImage, Image* dstImage);
-
-    void updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data);
-
+public:
+    void setDebugName(std::string_view debugName);
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
@@ -159,6 +163,17 @@ public:
     void writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool pool, uint32_t queryIndex);
 
 public:
+    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
+                       const std::vector<ImageBarrier>&  pImageBarriers);
+    void transitionImageLayout(Image* pImage, ResourceState newState);
+
+public:
+    void updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data);
+    void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range);
+    void copyImage(Image* srcImage, Image* dstImage, VkExtent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
+                   const ImageCopyInfo& dstCopyInfo = {});
     void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
     void blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
                    const ImageBlitInfo& dstBlitInfo = {}, VkFilter filter = VK_FILTER_LINEAR);

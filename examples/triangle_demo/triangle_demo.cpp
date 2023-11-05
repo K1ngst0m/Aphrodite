@@ -18,12 +18,6 @@ void triangle_demo::init()
     m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice  = m_renderer->m_pDevice.get();
 
-    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
-        [this](const aph::WindowResizeEvent& e) {
-            m_renderer->m_pSwapChain->reCreate();
-            return true;
-        });
-
     // setup triangle
     {
         struct VertexData
@@ -78,8 +72,11 @@ void triangle_demo::init()
 
             aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
                 [createInfo, this](const aph::WindowResizeEvent& e) {
+                    m_renderer->m_pSwapChain->reCreate();
                     m_pDevice->destroy(m_pRenderTarget);
-                    APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
+                    auto newCreateInfo   = createInfo;
+                    newCreateInfo.extent = {m_wsi->getWidth(), m_wsi->getHeight(), 1};
+                    APH_CHECK_RESULT(m_pDevice->create(newCreateInfo, &m_pRenderTarget));
                     return true;
                 });
         }

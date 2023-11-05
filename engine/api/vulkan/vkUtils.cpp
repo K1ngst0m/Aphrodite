@@ -408,6 +408,10 @@ VkResult setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle,
     return VK_SUCCESS;
 #endif
 }
+VkImageAspectFlags getImageAspect(Format format)
+{
+    return getImageAspect(VkCast(format));
+}
 }  // namespace aph::vk::utils
 
 namespace aph::vk

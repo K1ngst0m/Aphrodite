@@ -135,25 +135,40 @@ void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::v
                                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions.size(), regions.data());
     }
 }
-void CommandBuffer::copyImage(Image* srcImage, Image* dstImage)
+void CommandBuffer::copyImage(Image* srcImage, Image* dstImage, VkExtent3D extent, const ImageCopyInfo& srcCopyInfo,
+                              const ImageCopyInfo& dstCopyInfo)
 {
+    APH_ASSERT(srcImage && dstImage);
+    if(extent.depth == 0 || extent.width == 0 || extent.height == 0)
+    {
+        APH_ASSERT(srcImage->getWidth() == dstImage->getWidth());
+        APH_ASSERT(srcImage->getHeight() == dstImage->getHeight());
+        APH_ASSERT(srcImage->getDepth() == dstImage->getDepth());
+
+        extent = {srcImage->getWidth(), srcImage->getHeight(), srcImage->getDepth()};
+    }
+
     // Copy region for transfer from framebuffer to cube face
-    VkImageCopy copyRegion = {};
-    copyRegion.srcOffset   = {0, 0, 0};
-    copyRegion.dstOffset   = {0, 0, 0};
+    VkImageCopy copyRegion = {.srcSubresource = srcCopyInfo.subResources,
+                              .srcOffset      = srcCopyInfo.offset,
+                              .dstSubresource = dstCopyInfo.subResources,
+                              .dstOffset      = dstCopyInfo.offset,
+                              .extent         = extent};
 
-    VkImageSubresourceLayers subresourceLayers{
-        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-        .mipLevel       = 0,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
+    if(copyRegion.dstSubresource.aspectMask == VK_IMAGE_ASPECT_NONE)
+    {
+        copyRegion.dstSubresource.aspectMask = utils::getImageAspect(dstImage->getFormat());
+    }
+    if(copyRegion.srcSubresource.aspectMask == VK_IMAGE_ASPECT_NONE)
+    {
+        copyRegion.srcSubresource.aspectMask = utils::getImageAspect(srcImage->getFormat());
+    }
 
-    copyRegion.srcSubresource = subresourceLayers;
-    copyRegion.dstSubresource = subresourceLayers;
-    copyRegion.extent.width   = srcImage->getWidth();
-    copyRegion.extent.height  = srcImage->getHeight();
-    copyRegion.extent.depth   = 1;
+    APH_ASSERT(copyRegion.srcSubresource.aspectMask == copyRegion.dstSubresource.aspectMask);
+
+    copyRegion.extent.width  = srcImage->getWidth();
+    copyRegion.extent.height = srcImage->getHeight();
+    copyRegion.extent.depth  = 1;
 
     m_pDeviceTable->vkCmdCopyImage(m_handle, srcImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                    dstImage->getHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
@@ -310,8 +325,8 @@ void CommandBuffer::beginRendering(const std::vector<AttachmentInfo>& colors, co
         insertBarrier({barrier});
     }
 
-    VkRect2D renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
-    VkViewport viewPort = aph::vk::init::viewport(renderArea.extent);
+    VkRect2D   renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
+    VkViewport viewPort   = aph::vk::init::viewport(renderArea.extent);
 
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewPort);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &renderArea);
