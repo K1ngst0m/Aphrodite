@@ -1,7 +1,6 @@
 file(GLOB RENDERER_VULKAN_SRC
   ${APH_ENGINE_RENDERER_DIR}/api/vulkan/uiRenderer.cpp
   ${APH_ENGINE_RENDERER_DIR}/api/vulkan/renderer.cpp
-  ${APH_ENGINE_RENDERER_DIR}/renderGraph/renderGraph.cpp
 )
 add_library(renderer STATIC ${RENDERER_VULKAN_SRC})
 aph_compiler_options(renderer)

@@ -9,6 +9,7 @@ add_subdirectory(api)
 add_subdirectory(renderer)
 add_subdirectory(filesystem)
 add_subdirectory(module)
+add_subdirectory(renderGraph)
 
 add_library(aph_engine INTERFACE)
 
@@ -29,6 +30,7 @@ target_link_libraries(aph_engine INTERFACE
   resource
   api
   renderer
+  rendergraph
 )
 
 target_link_libraries(aph_engine INTERFACE

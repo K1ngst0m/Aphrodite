@@ -18,10 +18,10 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
     }
 
     auto  index = m_passes.size();
-    auto* node  = m_resourcePool.renderPass.allocate(this, index, queueType, name);
-    m_passes.emplace_back(node);
+    auto* pass  = m_resourcePool.renderPass.allocate(this, index, queueType, name);
+    m_passes.emplace_back(pass);
     m_renderPassMap[name.data()] = index;
-    return node;
+    return pass;
 }
 
 RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
