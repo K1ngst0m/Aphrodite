@@ -270,8 +270,9 @@ void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSet*>& descrip
 
 void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
 {
-    std::vector<AttachmentInfo> colorAttachments = {};
-    AttachmentInfo              depthAttachment  = {};
+    RenderingInfo                renderingInfo;
+    std::vector<AttachmentInfo>& colorAttachments = renderingInfo.colors;
+    AttachmentInfo&              depthAttachment  = renderingInfo.depth;
     colorAttachments.reserve(colors.size());
     for(auto color : colors)
     {
@@ -279,13 +280,16 @@ void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* dep
     }
 
     depthAttachment = {.image = depth};
-    beginRendering(colorAttachments, depthAttachment);
+    beginRendering(renderingInfo);
 }
 
-void CommandBuffer::beginRendering(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth)
+void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
-    m_commandState.colorAttachments = colors;
-    m_commandState.depthAttachment  = depth;
+    m_commandState.colorAttachments = renderingInfo.colors;
+    m_commandState.depthAttachment  = renderingInfo.depth;
+    auto & colors = renderingInfo.colors;
+    auto & depth = renderingInfo.depth;
+
     APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
     std::vector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
@@ -331,7 +335,7 @@ void CommandBuffer::beginRendering(const std::vector<AttachmentInfo>& colors, co
     m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewPort);
     m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &renderArea);
 
-    VkRenderingInfo renderingInfo{
+    VkRenderingInfo vkRenderingInfo{
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
         .renderArea           = renderArea,
         .layerCount           = 1,
@@ -376,9 +380,9 @@ void CommandBuffer::beginRendering(const std::vector<AttachmentInfo>& colors, co
         };
         insertBarrier({barrier});
 
-        renderingInfo.pDepthAttachment = &vkDepth;
+        vkRenderingInfo.pDepthAttachment = &vkDepth;
     }
-    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &renderingInfo);
+    m_pDeviceTable->vkCmdBeginRendering(getHandle(), &vkRenderingInfo);
 }
 
 void CommandBuffer::flushComputeCommand()

@@ -34,6 +34,13 @@ struct AttachmentInfo
     std::optional<VkClearValue>        clear;
 };
 
+struct RenderingInfo
+{
+    std::vector<AttachmentInfo> colors     = {};
+    AttachmentInfo              depth      = {};
+    std::optional<VkRect2D>     renderArea = {};
+};
+
 struct ImageBlitInfo
 {
     VkOffset3D offset = {};
@@ -134,7 +141,7 @@ public:
 
 public:
     void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
-    void beginRendering(const std::vector<AttachmentInfo>& colors, const AttachmentInfo& depth);
+    void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
     void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
