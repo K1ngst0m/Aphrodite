@@ -10,7 +10,7 @@ CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, HandleType hand
     m_pQueue(pQueue),
     m_pDeviceTable(pDevice->getDeviceTable()),
     m_pool(pool),
-    m_state(CommandBufferState::Initial)
+    m_state(RecordState::Initial)
 {
 }
 
@@ -18,7 +18,7 @@ CommandBuffer::~CommandBuffer() = default;
 
 VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 {
-    if(m_state == CommandBufferState::Recording)
+    if(m_state == RecordState::Recording)
     {
         return VK_NOT_READY;
     }
@@ -36,19 +36,19 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
 
     // Mark CommandBuffer as recording and reset internal state.
     m_commandState = {};
-    m_state        = CommandBufferState::Recording;
+    m_state        = RecordState::Recording;
 
     return VK_SUCCESS;
 }
 
 VkResult CommandBuffer::end()
 {
-    if(m_state != CommandBufferState::Recording)
+    if(m_state != RecordState::Recording)
     {
         return VK_NOT_READY;
     }
 
-    m_state = CommandBufferState::Executable;
+    m_state = RecordState::Executable;
 
     return m_pDeviceTable->vkEndCommandBuffer(m_handle);
 }
@@ -57,23 +57,13 @@ VkResult CommandBuffer::reset()
 {
     if(m_handle != VK_NULL_HANDLE)
         return m_pDeviceTable->vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-    m_state = CommandBufferState::Initial;
+    m_state = RecordState::Initial;
     return VK_SUCCESS;
 }
 
 void CommandBuffer::bindPipeline(Pipeline* pPipeline)
 {
     m_commandState.pPipeline = pPipeline;
-}
-
-void CommandBuffer::bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount,
-                                      const DescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount,
-                                      const uint32_t* pDynamicOffset)
-{
-    APH_ASSERT(m_commandState.pPipeline != nullptr);
-    m_pDeviceTable->vkCmdBindDescriptorSets(
-        m_handle, m_commandState.pPipeline->getBindPoint(), m_commandState.pPipeline->getProgram()->getPipelineLayout(),
-        firstSet, descriptorSetCount, &pDescriptorSets->getHandle(), dynamicOffsetCount, pDynamicOffset);
 }
 
 void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::size_t offset)

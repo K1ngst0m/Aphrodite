@@ -16,15 +16,6 @@ class Sampler;
 class Queue;
 class DescriptorSet;
 
-enum class CommandBufferState
-{
-    Initial,
-    Recording,
-    Executable,
-    Pending,
-    Invalid,
-};
-
 struct AttachmentInfo
 {
     Image*                             image{};
@@ -85,51 +76,60 @@ struct ImageBarrier
     uint16_t      arrayLayer;
 };
 
-struct CommandState
-{
-    struct ResourceBinding
-    {
-        union
-        {
-            VkDescriptorBufferInfo buffer;
-            VkDescriptorImageInfo  image;
-            VkBufferView           bufferView;
-        };
-        std::size_t      dynamicOffset;
-        VkDescriptorType resType;
-    };
-
-    struct ResourceBindings
-    {
-        std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
-        uint8_t                        pushConstantData[VULKAN_PUSH_CONSTANT_SIZE];
-        uint32_t                       dirty = 0;
-    };
-
-    struct IndexState
-    {
-        VkBuffer    buffer;
-        std::size_t offset;
-        VkIndexType indexType;
-    };
-
-    struct VertexBindingState
-    {
-        VkBuffer    buffers[VULKAN_NUM_VERTEX_BUFFERS];
-        std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS];
-        uint32_t    dirty = 0;
-    };
-
-    Pipeline*                     pPipeline        = {};
-    std::vector<AttachmentInfo>   colorAttachments = {};
-    std::optional<AttachmentInfo> depthAttachment  = {};
-    ResourceBindings              resourceBindings = {};
-    IndexState                    index            = {};
-    VertexBindingState            vertexBinding    = {};
-};
-
 class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 {
+    enum class RecordState
+    {
+        Initial,
+        Recording,
+        Executable,
+        Pending,
+        Invalid,
+    };
+
+    struct CommandState
+    {
+        struct ResourceBinding
+        {
+            union
+            {
+                VkDescriptorBufferInfo buffer;
+                VkDescriptorImageInfo  image;
+                VkBufferView           bufferView;
+            };
+            std::size_t      dynamicOffset;
+            VkDescriptorType resType;
+        };
+
+        struct ResourceBindings
+        {
+            std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
+            uint8_t                        pushConstantData[VULKAN_PUSH_CONSTANT_SIZE];
+            uint32_t                       dirty = 0;
+        };
+
+        struct IndexState
+        {
+            VkBuffer    buffer;
+            std::size_t offset;
+            VkIndexType indexType;
+        };
+
+        struct VertexBindingState
+        {
+            VkBuffer    buffers[VULKAN_NUM_VERTEX_BUFFERS];
+            std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS];
+            uint32_t    dirty = 0;
+        };
+
+        Pipeline*                     pPipeline        = {};
+        std::vector<AttachmentInfo>   colorAttachments = {};
+        std::optional<AttachmentInfo> depthAttachment  = {};
+        ResourceBindings              resourceBindings = {};
+        IndexState                    index            = {};
+        VertexBindingState            vertexBinding    = {};
+    };
+
 public:
     CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
@@ -145,8 +145,6 @@ public:
     void endRendering();
 
     void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
-    void bindDescriptorSet(uint32_t firstSet, uint32_t descriptorSetCount, const DescriptorSet* pDescriptorSets,
-                           uint32_t dynamicOffsetCount = 0, const uint32_t* pDynamicOffset = nullptr);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
@@ -186,17 +184,17 @@ public:
                    const ImageBlitInfo& dstBlitInfo = {}, VkFilter filter = VK_FILTER_LINEAR);
 
 private:
-    void                   flushComputeCommand();
-    void                   flushGraphicsCommand();
+    void         flushComputeCommand();
+    void         flushGraphicsCommand();
+    CommandState m_commandState = {};
+
+private:
     Device*                m_pDevice          = {};
     Queue*                 m_pQueue           = {};
     const VolkDeviceTable* m_pDeviceTable     = {};
     CommandPool*           m_pool             = {};
-    CommandBufferState     m_state            = {};
+    RecordState            m_state            = {};
     bool                   m_submittedToQueue = {false};
-
-private:
-    CommandState m_commandState = {};
 };
 }  // namespace aph::vk
 
