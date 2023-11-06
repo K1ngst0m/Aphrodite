@@ -172,7 +172,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
     // init ui
     if(m_config.flags & RENDER_CFG_UI)
     {
-        pUI = new UI({
+        m_pUI = new UI({
             .pRenderer = this,
             .flags     = UI_Docking,
         });
@@ -183,7 +183,7 @@ Renderer::~Renderer()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        delete pUI;
+        delete m_pUI;
     }
 
     m_pDevice->getDeviceTable()->vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
@@ -200,18 +200,11 @@ void Renderer::nextFrame()
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 }
 
-Shader* Renderer::getShaders(const std::filesystem::path& path) const
-{
-    Shader* shader = {};
-    m_pResourceLoader->load({.data = path}, &shader);
-    return shader;
-}
-
 void Renderer::update(float deltaTime)
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        pUI->update();
+        m_pUI->update();
     }
 }
 
@@ -219,14 +212,14 @@ void Renderer::unload()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        pUI->unload();
+        m_pUI->unload();
     }
 };
 void Renderer::load()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
-        pUI->load();
+        m_pUI->load();
     }
 };
 }  // namespace aph::vk

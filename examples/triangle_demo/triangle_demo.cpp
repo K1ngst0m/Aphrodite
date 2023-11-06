@@ -15,8 +15,10 @@ void triangle_demo::init()
         .maxFrames = 3,
     };
 
-    m_renderer = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
-    m_pDevice  = m_renderer->m_pDevice.get();
+    m_renderer        = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
+    m_pDevice         = m_renderer->getDevice();
+    m_pSwapChain      = m_renderer->getSwapchain();
+    m_pResourceLoader = m_renderer->getResourceLoader();
 
     // setup triangle
     {
@@ -44,7 +46,7 @@ void triangle_demo::init()
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
 
-            m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
+            m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
         }
 
         constexpr std::array indexArray{0U, 1U, 2U};
@@ -55,7 +57,7 @@ void triangle_demo::init()
                 .data       = indexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-            m_renderer->m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
+            m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
         // render target
@@ -65,14 +67,14 @@ void triangle_demo::init()
                 .usage     = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 .domain    = aph::ImageDomain::Device,
                 .imageType = VK_IMAGE_TYPE_2D,
-                .format    = m_renderer->m_pSwapChain->getFormat(),
+                .format    = m_pSwapChain->getFormat(),
             };
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
 
             aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
                 [createInfo, this](const aph::WindowResizeEvent& e) {
-                    m_renderer->m_pSwapChain->reCreate();
+                    m_pSwapChain->reCreate();
                     m_pDevice->destroy(m_pRenderTarget);
                     auto newCreateInfo   = createInfo;
                     newCreateInfo.extent = {m_wsi->getWidth(), m_wsi->getHeight(), 1};
@@ -96,17 +98,17 @@ void triangle_demo::init()
             aph::vk::Shader* pFS = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"},
+            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"},
                                                      &pVS);
-            m_renderer->m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"},
+            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"},
                                                      &pFS);
 
-            m_renderer->m_pResourceLoader->wait();
+            m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
                 .pVertex     = pVS,
                 .pFragment   = pFS,
-                .color       = {{.format = m_renderer->m_pSwapChain->getFormat()}},
+                .color       = {{.format = m_pSwapChain->getFormat()}},
             };
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
@@ -149,7 +151,7 @@ void triangle_demo::run()
             pCmd->end();
         });
 
-        graph->execute(m_pRenderTarget, m_renderer->m_pSwapChain);
+        graph->execute(m_pRenderTarget, m_pSwapChain);
 
         timer.set(TIMELINE_LOOP_END);
         deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
@@ -159,7 +161,7 @@ void triangle_demo::run()
 void triangle_demo::finish()
 {
     PROFILE_FUNCTION();
-    m_renderer->m_pDevice->waitIdle();
+    m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pRenderTarget);
 }
 

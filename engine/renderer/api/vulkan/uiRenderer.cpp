@@ -15,7 +15,7 @@ enum
 UI::UI(const UICreateInfo& ci) :
     m_pWSI(ci.pRenderer->getWSI()),
     m_pRenderer(ci.pRenderer),
-    m_pDevice(ci.pRenderer->m_pDevice.get())
+    m_pDevice(ci.pRenderer->getDevice())
 {
 #if 0
     // create sampler
@@ -163,13 +163,13 @@ void UI::load()
         initInfo.Queue                     = m_pDefaultQueue->getHandle();
         initInfo.PipelineCache             = VK_NULL_HANDLE;
         initInfo.DescriptorPool            = m_pool;
-        initInfo.MinImageCount             = m_pRenderer->m_pSwapChain->getCreateInfo().imageCount;
-        initInfo.ImageCount                = m_pRenderer->m_pSwapChain->getCreateInfo().imageCount;
+        initInfo.MinImageCount             = m_pRenderer->getSwapchain()->getCreateInfo().imageCount;
+        initInfo.ImageCount                = m_pRenderer->getSwapchain()->getCreateInfo().imageCount;
         initInfo.MSAASamples               = VK_SAMPLE_COUNT_1_BIT;
         initInfo.Allocator                 = vkAllocator();
         initInfo.CheckVkResultFn           = checkResult;
         initInfo.UseDynamicRendering       = true;
-        initInfo.ColorAttachmentFormat     = utils::VkCast(m_pRenderer->m_pSwapChain->getFormat());
+        initInfo.ColorAttachmentFormat     = utils::VkCast(m_pRenderer->getSwapchain()->getFormat());
         ImGui_ImplVulkan_Init(&initInfo, VK_NULL_HANDLE);
     }
 

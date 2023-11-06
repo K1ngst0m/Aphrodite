@@ -23,27 +23,26 @@ public:
     void update(float deltaTime) override;
 
 public:
-    std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<Device>         m_pDevice    = {};
-    SwapChain*                      m_pSwapChain = {};
-
-public:
-    Shader*   getShaders(const std::filesystem::path& path) const;
-    Instance* getInstance() const { return m_pInstance; }
-
-public:
-    RenderGraph* getGraph() { return m_frameGraph[m_frameIdx].get(); }
-
-public:
-    UI* pUI = {};
+    SwapChain*      getSwapchain() const { return m_pSwapChain; }
+    ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
+    Instance*       getInstance() const { return m_pInstance; }
+    Device*         getDevice() const { return m_pDevice.get(); }
+    RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
+    UI*             getUI() const { return m_pUI; }
 
 protected:
     VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
 
-    Instance* m_pInstance = {};
+    Instance*                       m_pInstance  = {};
+    SwapChain*                      m_pSwapChain = {};
+    std::unique_ptr<ResourceLoader> m_pResourceLoader;
+    std::unique_ptr<Device>         m_pDevice = {};
 
     VkSurfaceKHR    m_surface       = {};
     VkPipelineCache m_pipelineCache = {};
+
+protected:
+    UI* m_pUI = {};
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;

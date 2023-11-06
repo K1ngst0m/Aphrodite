@@ -28,9 +28,11 @@ private:
     aph::vk::Image*    m_pRenderTarget = {};
 
 private:
-    std::unique_ptr<aph::WSI>          m_wsi      = {};
-    std::unique_ptr<aph::vk::Renderer> m_renderer = {};
-    aph::vk::Device*                   m_pDevice  = {};
+    std::unique_ptr<aph::WSI>          m_wsi             = {};
+    std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
+    aph::vk::Device*                   m_pDevice         = {};
+    aph::ResourceLoader*               m_pResourceLoader = {};
+    aph::vk::SwapChain*                m_pSwapChain      = {};
 };
 
 #endif  // SCENE_MANAGER_H_
