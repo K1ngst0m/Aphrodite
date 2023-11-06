@@ -34,8 +34,14 @@ namespace aph::vk
 {
 class Renderer
 {
-public:
+private:
     Renderer(WSI* wsi, const RenderConfig& config);
+
+public:
+    static std::unique_ptr<Renderer> Create(WSI* wsi, const RenderConfig& config)
+    {
+        return std::unique_ptr<Renderer>(new Renderer(wsi, config));
+    }
     ~Renderer();
 
     void nextFrame();
