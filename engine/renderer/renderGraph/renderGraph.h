@@ -48,87 +48,9 @@ public:
 
     RenderPass* createPass(const std::string& name, QueueType queueType);
 
-    void execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
-    {
-        auto& timer = Timer::GetInstance();
-        timer.set("renderer: begin frame");
-
-        auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-
-        m_pRenderTarget = pImage;
-
-        for(auto* pass : m_passes)
-        {
-            auto& cmdPool = pass->m_res.pCmdPools;
-            if(cmdPool == nullptr)
-            {
-                cmdPool = m_pDevice->acquireCommandPool({queue, false});
-            }
-            vk::CommandBuffer* pCmd = cmdPool->allocate();
-            pass->m_executeCB(pCmd);
-
-            // submission
-            {
-                vk::QueueSubmitInfo submitInfo{.commandBuffers = {pCmd}};
-
-                vk::Semaphore* renderSem  = {};
-                vk::Semaphore* presentSem = {};
-
-                vk::Fence* frameFence = m_pDevice->acquireFence();
-                frameFence->reset();
-
-                auto& pPresentImage = pImage;
-                if(pPresentImage)
-                {
-                    renderSem = m_pDevice->acquireSemaphore();
-                    APH_CHECK_RESULT(pSwapChain->acquireNextImage(renderSem->getHandle()));
-
-                    presentSem = m_pDevice->acquireSemaphore();
-                    submitInfo.waitSemaphores.push_back(renderSem);
-                    submitInfo.signalSemaphores.push_back(presentSem);
-                }
-
-                APH_CHECK_RESULT(queue->submit({submitInfo}, frameFence));
-
-                if(pPresentImage)
-                {
-                    auto pSwapchainImage = pSwapChain->getImage();
-
-                    // transisiton && copy
-                    m_pDevice->executeSingleCommands(queue, [pPresentImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
-                        pCopyCmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
-                        pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
-
-                        if(pPresentImage->getWidth() == pSwapchainImage->getWidth() &&
-                           pPresentImage->getHeight() == pSwapchainImage->getHeight() &&
-                           pPresentImage->getDepth() == pSwapchainImage->getDepth())
-                        {
-                            VK_LOG_DEBUG("copy image to swapchain.");
-                            pCopyCmd->copyImage(pPresentImage, pSwapchainImage);
-                        }
-                        else
-                        {
-                            VK_LOG_DEBUG("blit image to swapchain.");
-                            pCopyCmd->blitImage(pPresentImage, pSwapchainImage);
-                        }
-
-                        pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
-                    });
-                    APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
-                }
-
-                frameFence->wait();
-            }
-        }
-
-        timer.set("renderer: end frame");
-        m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
-        m_frameData.fps       = 1 / m_frameData.frameTime;
-        CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
-    }
+    void execute(vk::Image* pImage, vk::SwapChain* pSwapChain = nullptr);
 
 private:
-    void        submit() {}
     vk::Device* m_pDevice = {};
 
     std::vector<RenderPass*>                  m_passes;
