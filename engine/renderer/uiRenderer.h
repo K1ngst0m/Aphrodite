@@ -2,13 +2,14 @@
 #define UIRENDERER_H_
 
 #include "api/vulkan/device.h"
-#include "renderer/renderer.h"
 #include "resource/resourceLoader.h"
 
 class ImGuiContext;
 
 namespace aph::vk
 {
+
+class Renderer;
 
 enum UIFlags
 {

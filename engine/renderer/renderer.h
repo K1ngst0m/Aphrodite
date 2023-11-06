@@ -1,18 +1,13 @@
-#ifndef RENDERER_H_
-#define RENDERER_H_
+#ifndef VULKAN_RENDERER_H_
+#define VULKAN_RENDERER_H_
 
-#include "api/gpuResource.h"
-#include "common/common.h"
-#include "wsi/wsi.h"
+#include "api/vulkan/device.h"
+#include "renderGraph/renderGraph.h"
+#include "resource/resourceLoader.h"
+#include "uiRenderer.h"
 
 namespace aph
 {
-
-namespace vk
-{
-class SceneRenderer;
-class Renderer;
-};  // namespace vk
 
 enum RenderConfigFlagBits
 {
@@ -33,38 +28,30 @@ struct RenderConfig
     RenderConfigFlags flags     = RENDER_CFG_ALL;
     uint32_t          maxFrames = {2};
 };
+}  // namespace aph
 
-class IRenderer
+namespace aph::vk
+{
+class Renderer
 {
 public:
-    template <typename TRenderer>
-    static std::unique_ptr<TRenderer> Create(WSI* window, const RenderConfig& config)
-    {
-        std::unique_ptr<TRenderer> renderer = {};
-        if constexpr(std::is_same_v<TRenderer, vk::Renderer>)
-        {
-            CM_LOG_INFO("Init Common Renderer.");
-            renderer = std::make_unique<vk::Renderer>(window, config);
-        }
-        else if constexpr(std::is_same_v<TRenderer, vk::SceneRenderer>)
-        {
-            CM_LOG_INFO("Init Scene Renderer.");
-            renderer = std::make_unique<vk::SceneRenderer>(window, config);
-        }
-        else
-        {
-            CM_LOG_ERR("Current type of the renderer is not supported.");
-            APH_ASSERT(false);
-        }
-        return renderer;
-    }
-    IRenderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(config) {}
-    virtual ~IRenderer() = default;
+    Renderer(WSI* wsi, const RenderConfig& config);
+    ~Renderer();
+
+    void nextFrame();
 
 public:
-    virtual void load()                  = 0;
-    virtual void unload()                = 0;
-    virtual void update(float deltaTime) = 0;
+    void load();
+    void unload();
+    void update(float deltaTime);
+
+public:
+    SwapChain*      getSwapchain() const { return m_pSwapChain; }
+    ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
+    Instance*       getInstance() const { return m_pInstance; }
+    Device*         getDevice() const { return m_pDevice.get(); }
+    RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
+    UI*             getUI() const { return m_pUI; }
 
     WSI*     getWSI() const { return m_wsi; }
     uint32_t getWindowWidth() const { return m_wsi->getWidth(); };
@@ -73,9 +60,26 @@ public:
     const RenderConfig& getConfig() const { return m_config; }
 
 protected:
+    VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
+
+    Instance*                       m_pInstance  = {};
+    SwapChain*                      m_pSwapChain = {};
+    std::unique_ptr<ResourceLoader> m_pResourceLoader;
+    std::unique_ptr<Device>         m_pDevice = {};
+
+    VkSurfaceKHR    m_surface       = {};
+    VkPipelineCache m_pipelineCache = {};
+
+protected:
+    UI* m_pUI = {};
+
     WSI*         m_wsi    = {};
     RenderConfig m_config = {};
-};
-}  // namespace aph
 
-#endif  // RENDERER_H_
+protected:
+    std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
+    uint32_t                                  m_frameIdx = {};
+};
+}  // namespace aph::vk
+
+#endif  // VULKANRENDERER_H_

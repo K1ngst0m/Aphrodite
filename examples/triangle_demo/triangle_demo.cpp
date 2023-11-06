@@ -15,7 +15,7 @@ void triangle_demo::init()
         .maxFrames = 3,
     };
 
-    m_renderer        = aph::IRenderer::Create<aph::vk::Renderer>(m_wsi.get(), config);
+    m_renderer        = std::make_unique<aph::vk::Renderer>(m_wsi.get(), config);
     m_pDevice         = m_renderer->getDevice();
     m_pSwapChain      = m_renderer->getSwapchain();
     m_pResourceLoader = m_renderer->getResourceLoader();

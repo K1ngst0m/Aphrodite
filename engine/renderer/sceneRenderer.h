@@ -14,7 +14,7 @@ public:
 
     void loadScene(Scene* scene);
     void cleanup();
-    void update(float deltaTime) override;
+    void update(float deltaTime);
     void recordAll();
     void recordShadow(CommandBuffer* pCommandBuffer);
     void recordDeferredGeometry(CommandBuffer* pCommandBuffer);

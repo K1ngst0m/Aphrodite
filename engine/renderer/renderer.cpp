@@ -66,7 +66,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     return VK_FALSE;
 }
 
-Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config)
+Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(config)
 {
     // create instance
     {
