@@ -169,27 +169,12 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         }
     }
 
-    // init frame data
+    // init graph
     {
-        m_frameData.resize(m_config.maxFrames);
-        for(auto& frameData : m_frameData)
+        m_frameGraph.resize(m_config.maxFrames);
+        for (auto& graph : m_frameGraph)
         {
-            frameData.renderSemaphore = m_pDevice->acquireSemaphore();
-            frameData.fence           = m_pDevice->acquireFence(false);
-
-            // TODO
-            VkQueryPoolCreateInfo createInfo{
-                .sType      = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-                .pNext      = nullptr,
-                .flags      = 0,
-                .queryType  = VK_QUERY_TYPE_TIMESTAMP,
-                .queryCount = 2,
-            };
-
-            m_pDevice->getDeviceTable()->vkCreateQueryPool(m_pDevice->getHandle(), &createInfo, vkAllocator(),
-                                                           &frameData.queryPool);
-            // TODO
-            // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
+            graph = std::make_unique<RenderGraph>(m_pDevice.get());
         }
     }
 
@@ -206,20 +191,10 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
             .flags     = UI_Docking,
         });
     }
-
-    // init query pool
-    {
-    }
 }
 
 Renderer::~Renderer()
 {
-    resetFrameData();
-    for(auto& frameData : m_frameData)
-    {
-        m_pDevice->getDeviceTable()->vkDestroyQueryPool(m_pDevice->getHandle(), frameData.queryPool, vkAllocator());
-    }
-
     if(m_config.flags & RENDER_CFG_UI)
     {
         delete pUI;
@@ -236,7 +211,6 @@ Renderer::~Renderer()
 
 void Renderer::nextFrame()
 {
-    resetFrameData();
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 }
 
@@ -245,69 +219,6 @@ Shader* Renderer::getShaders(const std::filesystem::path& path) const
     Shader* shader = {};
     m_pResourceLoader->load({.data = path}, &shader);
     return shader;
-}
-
-Semaphore* Renderer::acquireSemahpore()
-{
-    Semaphore* sem = m_pDevice->acquireSemaphore();
-    m_frameData[m_frameIdx].semaphores.push_back(sem);
-    return sem;
-}
-
-Fence* Renderer::acquireFence()
-{
-    Fence* fence = m_pDevice->acquireFence();
-    m_frameData[m_frameIdx].fences.push_back(fence);
-    return fence;
-}
-
-void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresentImage)
-{
-    Semaphore* renderSem  = {};
-    Semaphore* presentSem = {};
-
-    Fence* frameFence = acquireFence();
-    m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &frameFence->getHandle());
-
-    if(pPresentImage)
-    {
-        renderSem = acquireSemahpore();
-        APH_CHECK_RESULT(m_pSwapChain->acquireNextImage(renderSem->getHandle()));
-
-        presentSem = acquireSemahpore();
-        submitInfo.waitSemaphores.push_back(renderSem);
-        submitInfo.signalSemaphores.push_back(presentSem);
-    }
-
-    APH_CHECK_RESULT(pQueue->submit({submitInfo}, frameFence));
-
-    if(pPresentImage)
-    {
-        auto pSwapchainImage = m_pSwapChain->getImage();
-        m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
-            cmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
-            cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
-
-            if(pPresentImage->getWidth() == pSwapchainImage->getWidth() &&
-               pPresentImage->getHeight() == pSwapchainImage->getHeight() &&
-               pPresentImage->getDepth() == pSwapchainImage->getDepth())
-            {
-                VK_LOG_DEBUG("copy image to swapchain.");
-                cmd->copyImage(pPresentImage, pSwapchainImage);
-            }
-            else
-            {
-                VK_LOG_DEBUG("blit image to swapchain.");
-                cmd->blitImage(pPresentImage, pSwapchainImage);
-            }
-
-            cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
-        });
-
-        APH_CHECK_RESULT(m_pSwapChain->presentImage(pQueue, {presentSem}));
-    }
-
-    frameFence->wait();
 }
 
 void Renderer::update(float deltaTime)
@@ -332,32 +243,4 @@ void Renderer::load()
         pUI->load();
     }
 };
-void Renderer::resetFrameData()
-{
-    // clean the frame data
-    auto& frameData = m_frameData[m_frameIdx];
-    {
-        for(auto pool : frameData.cmdPools)
-        {
-            pool->reset();
-            APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pool));
-        }
-        frameData.cmdPools.clear();
-
-        for(auto semaphore : frameData.semaphores)
-        {
-            APH_CHECK_RESULT(m_pDevice->releaseSemaphore(semaphore));
-        }
-        frameData.semaphores.clear();
-
-        for(auto fence : frameData.fences)
-        {
-            APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
-        }
-        frameData.fences.clear();
-
-        // TODO
-        // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
-    }
-}
 }  // namespace aph::vk

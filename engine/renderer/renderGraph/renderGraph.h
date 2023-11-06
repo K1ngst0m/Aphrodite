@@ -75,7 +75,7 @@ public:
                 vk::Semaphore* presentSem = {};
 
                 vk::Fence* frameFence = m_pDevice->acquireFence();
-                m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &frameFence->getHandle());
+                frameFence->reset();
 
                 auto& pPresentImage = pImage;
                 if(pPresentImage)

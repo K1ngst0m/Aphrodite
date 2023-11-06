@@ -28,28 +28,12 @@ public:
     SwapChain*                      m_pSwapChain = {};
 
 public:
-    void    submit(Queue* pQueue, QueueSubmitInfo submitInfos, Image* pPresentImage = nullptr);
-    Shader* getShaders(const std::filesystem::path& path) const;
-    Queue*  getDefaultQueue(QueueType type) const { return m_queue.at(type); }
-
-    Semaphore* getRenderSemaphore() { return m_frameData[m_frameIdx].renderSemaphore; }
-    Fence*     getFrameFence() { return m_frameData[m_frameIdx].fence; }
-
-    Semaphore*   acquireSemahpore();
-    Fence*       acquireFence();
-    Instance*    getInstance() const { return m_pInstance; }
-
-    VkQueryPool getFrameQueryPool() const { return m_frameData[m_frameIdx].queryPool; }
+    Shader*   getShaders(const std::filesystem::path& path) const;
+    Queue*    getDefaultQueue(QueueType type) const { return m_queue.at(type); }
+    Instance* getInstance() const { return m_pInstance; }
 
 public:
-    RenderGraph* getGraph()
-    {
-        if(!m_frameData[m_frameIdx].pGraph)
-        {
-            m_frameData[m_frameIdx].pGraph = std::make_unique<RenderGraph>(m_pDevice.get());
-        }
-        return m_frameData[m_frameIdx].pGraph.get();
-    }
+    RenderGraph* getGraph() { return m_frameGraph[m_frameIdx].get(); }
 
 public:
     UI* pUI = {};
@@ -65,25 +49,8 @@ protected:
     std::unordered_map<QueueType, Queue*> m_queue;
 
 protected:
-    struct FrameData
-    {
-        Semaphore*  renderSemaphore = {};
-        Fence*      fence           = {};
-        VkQueryPool queryPool       = {};
-
-        std::unique_ptr<RenderGraph> pGraph;
-        std::vector<CommandPool*>    cmdPools;
-        std::vector<Semaphore*>      semaphores;
-        std::vector<Fence*>          fences;
-    };
-    std::vector<FrameData> m_frameData;
-
-    void resetFrameData();
-
-protected:
-    uint32_t m_frameIdx       = {};
-    double   m_frameTime      = {};
-    double   m_framePerSecond = {};
+    std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
+    uint32_t                                  m_frameIdx = {};
 };
 }  // namespace aph::vk
 
