@@ -132,23 +132,24 @@ void triangle_demo::run()
 
         m_renderer->update(deltaTime);
 
-        auto* queue = m_renderer->getDefaultQueue(aph::QueueType::Graphics);
-
         // draw and submit
         m_renderer->beginFrame();
-        auto* pCmd = m_renderer->acquireCommandPool(queue)->allocate();
 
-        pCmd->begin();
-        pCmd->bindVertexBuffers(m_pVB);
-        pCmd->bindIndexBuffers(m_pIB);
-        pCmd->bindPipeline(m_pPipeline);
-        pCmd->beginRendering({m_pRenderTarget});
-        pCmd->drawIndexed({3, 1, 0, 0, 0});
-        pCmd->endRendering();
+        auto graph    = m_renderer->getGraph();
+        auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
 
-        pCmd->end();
+        drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
+            pCmd->begin();
+            pCmd->bindVertexBuffers(m_pVB);
+            pCmd->bindIndexBuffers(m_pIB);
+            pCmd->bindPipeline(m_pPipeline);
+            pCmd->beginRendering({m_pRenderTarget});
+            pCmd->drawIndexed({3, 1, 0, 0, 0});
+            pCmd->endRendering();
+            pCmd->end();
+        });
 
-        m_renderer->submit(queue, {.commandBuffers = {pCmd}}, m_pRenderTarget);
+        graph->execute(m_pRenderTarget, m_renderer->m_pSwapChain);
 
         m_renderer->endFrame();
 

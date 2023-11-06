@@ -2,6 +2,7 @@
 #define VULKAN_RENDERER_H_
 
 #include "api/vulkan/device.h"
+#include "renderer/renderGraph/renderGraph.h"
 #include "renderer/renderer.h"
 #include "resource/resourceLoader.h"
 #include "uiRenderer.h"
@@ -46,6 +47,16 @@ public:
     void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
 
 public:
+    RenderGraph* getGraph()
+    {
+        if(!m_frameData[m_frameIdx].pGraph)
+        {
+            m_frameData[m_frameIdx].pGraph = std::make_unique<RenderGraph>(m_pDevice.get());
+        }
+        return m_frameData[m_frameIdx].pGraph.get();
+    }
+
+public:
     UI* pUI = {};
 
 protected:
@@ -65,9 +76,10 @@ protected:
         Fence*      fence           = {};
         VkQueryPool queryPool       = {};
 
-        std::vector<CommandPool*> cmdPools;
-        std::vector<Semaphore*>   semaphores;
-        std::vector<Fence*>       fences;
+        std::unique_ptr<RenderGraph> pGraph;
+        std::vector<CommandPool*>    cmdPools;
+        std::vector<Semaphore*>      semaphores;
+        std::vector<Fence*>          fences;
     };
     std::vector<FrameData> m_frameData;
 

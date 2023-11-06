@@ -22,10 +22,10 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline*    m_pPipeline     = {};
-    aph::vk::Buffer*      m_pVB           = {};
-    aph::vk::Buffer*      m_pIB           = {};
-    aph::vk::Image*       m_pRenderTarget = {};
+    aph::vk::Pipeline* m_pPipeline     = {};
+    aph::vk::Buffer*   m_pVB           = {};
+    aph::vk::Buffer*   m_pIB           = {};
+    aph::vk::Image*    m_pRenderTarget = {};
 
 private:
     std::unique_ptr<aph::WSI>          m_wsi      = {};
