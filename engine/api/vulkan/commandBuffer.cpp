@@ -191,11 +191,11 @@ void CommandBuffer::blitImage(Image* srcImage, Image* dstImage, const ImageBlitI
     };
 
     VkImageBlit vkBlitInfo = {
-        .srcSubresource = {.aspectMask     = utils::getImageAspect(utils::VkCast(srcImage->getFormat())),
+        .srcSubresource = {.aspectMask     = utils::getImageAspect(srcImage->getFormat()),
                            .mipLevel       = srcBlitInfo.level,
                            .baseArrayLayer = srcBlitInfo.baseLayer,
                            .layerCount     = srcBlitInfo.layerCount},
-        .dstSubresource = {.aspectMask     = utils::getImageAspect(utils::VkCast(dstImage->getFormat())),
+        .dstSubresource = {.aspectMask     = utils::getImageAspect(dstImage->getFormat()),
                            .mipLevel       = dstBlitInfo.level,
                            .baseArrayLayer = dstBlitInfo.baseLayer,
                            .layerCount     = dstBlitInfo.layerCount},
@@ -291,6 +291,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     auto & depth = renderingInfo.depth;
 
     APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
+
     std::vector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
     vkColors.reserve(m_commandState.colorAttachments.size());
@@ -528,7 +529,7 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         if(pImageBarrier)
         {
             pImageBarrier->image                           = pImage->getHandle();
-            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(utils::VkCast(pImage->getFormat()));
+            pImageBarrier->subresourceRange.aspectMask     = utils::getImageAspect(pImage->getFormat());
             pImageBarrier->subresourceRange.baseMipLevel   = pTrans->subresourceBarrier ? pTrans->mipLevel : 0;
             pImageBarrier->subresourceRange.levelCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_MIP_LEVELS;
             pImageBarrier->subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;
