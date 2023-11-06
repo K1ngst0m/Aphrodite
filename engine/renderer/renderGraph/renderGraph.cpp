@@ -38,8 +38,8 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
 
     vk::QueueSubmitInfo frameSubmitInfo{};
 
-    auto& taskMgr = TaskManager::GetInstance();
-    auto  taskgrp = taskMgr.createTaskGroup();
+    auto&      taskMgr = TaskManager::GetInstance();
+    auto       taskgrp = taskMgr.createTaskGroup();
     std::mutex submitLock;
     for(auto* pass : m_passes)
     {
@@ -52,6 +52,8 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
                 }
                 vk::CommandBuffer* pCmd = cmdPool->allocate();
                 pCmd->begin();
+                pCmd->setDebugName(pass->m_name);
+                pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                 pCmd->beginRendering(pass->m_res.colorOut);
                 pass->m_executeCB(pCmd);
                 pCmd->endRendering();
