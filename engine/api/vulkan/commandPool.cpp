@@ -60,7 +60,7 @@ Result CommandPoolAllocator::acquire(const CommandPoolCreateInfo& createInfo, ui
     {
         auto& availPools = m_availablePools[queueType];
 
-        while(!m_availablePools.empty())
+        while(!availPools.empty())
         {
             auto& cbPool = *ppCommandPool;
             cbPool       = availPools.front();
