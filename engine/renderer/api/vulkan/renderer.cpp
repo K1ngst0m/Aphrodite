@@ -123,20 +123,6 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : IRenderer(wsi, config
         VK_LOG_INFO("Select Device [%d].", gpuIdx);
         APH_ASSERT(m_pDevice != nullptr);
 
-        // get 3 type queue
-        m_queue[QueueType::Graphics] = m_pDevice->getQueue(QueueType::Graphics);
-        m_queue[QueueType::Compute]  = m_pDevice->getQueue(QueueType::Compute);
-        m_queue[QueueType::Transfer] = m_pDevice->getQueue(QueueType::Transfer);
-
-        if(!m_queue[QueueType::Compute])
-        {
-            m_queue[QueueType::Compute] = m_queue[QueueType::Graphics];
-        }
-        if(!m_queue[QueueType::Transfer])
-        {
-            m_queue[QueueType::Transfer] = m_queue[QueueType::Compute];
-        }
-
         // check sample count support
         {
             auto limit  = createInfo.pPhysicalDevice->getProperties().limits;

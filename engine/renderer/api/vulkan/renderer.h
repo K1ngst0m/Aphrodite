@@ -29,7 +29,6 @@ public:
 
 public:
     Shader*   getShaders(const std::filesystem::path& path) const;
-    Queue*    getDefaultQueue(QueueType type) const { return m_queue.at(type); }
     Instance* getInstance() const { return m_pInstance; }
 
 public:
@@ -45,8 +44,6 @@ protected:
 
     VkSurfaceKHR    m_surface       = {};
     VkPipelineCache m_pipelineCache = {};
-
-    std::unordered_map<QueueType, Queue*> m_queue;
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
