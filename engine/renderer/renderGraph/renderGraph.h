@@ -15,6 +15,8 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
+    void addColorOutput(vk::Image* pImage);
+
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
     using ClearColorCallBack        = std::function<bool(uint32_t, VkClearColorValue*)>;
@@ -31,7 +33,9 @@ private:
 private:
     struct
     {
-        vk::CommandPool* pCmdPools = {};
+        std::unordered_set<vk::Image*> colorOutMap;
+        std::vector<vk::Image*>        colorOut;
+        vk::CommandPool*               pCmdPools = {};
     } m_res;
 
 private:
@@ -47,6 +51,14 @@ public:
     RenderGraph(vk::Device* pDevice);
 
     RenderPass* createPass(const std::string& name, QueueType queueType);
+    RenderPass* getPass(const std::string& name)
+    {
+        if(m_renderPassMap.contains(name))
+        {
+            return m_passes[m_renderPassMap[name]];
+        }
+        return nullptr;
+    }
 
     void execute(vk::Image* pImage, vk::SwapChain* pSwapChain = nullptr);
 

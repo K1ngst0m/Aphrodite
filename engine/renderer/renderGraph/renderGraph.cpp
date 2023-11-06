@@ -52,7 +52,9 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
                 }
                 vk::CommandBuffer* pCmd = cmdPool->allocate();
                 pCmd->begin();
+                pCmd->beginRendering(pass->m_res.colorOut);
                 pass->m_executeCB(pCmd);
+                pCmd->endRendering();
                 pCmd->end();
 
                 // lock
@@ -118,5 +120,13 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
     m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
     m_frameData.fps       = 1 / m_frameData.frameTime;
     CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
+}
+void RenderPass::addColorOutput(vk::Image* pImage)
+{
+    if(!m_res.colorOutMap.contains(pImage))
+    {
+        m_res.colorOut.push_back(pImage);
+        m_res.colorOutMap.insert(pImage);
+    }
 }
 }  // namespace aph

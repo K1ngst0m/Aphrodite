@@ -98,10 +98,8 @@ void triangle_demo::init()
             aph::vk::Shader* pFS = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"},
-                                                     &pVS);
-            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"},
-                                                     &pFS);
+            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"}, &pVS);
+            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"}, &pFS);
 
             m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
@@ -139,14 +137,13 @@ void triangle_demo::run()
 
         auto graph    = m_renderer->getGraph();
         auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
+        drawPass->addColorOutput(m_pRenderTarget);
 
         drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
             pCmd->bindPipeline(m_pPipeline);
-            pCmd->beginRendering({m_pRenderTarget});
             pCmd->drawIndexed({3, 1, 0, 0, 0});
-            pCmd->endRendering();
         });
 
         graph->execute(m_pRenderTarget, m_pSwapChain);
