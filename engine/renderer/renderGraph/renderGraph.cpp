@@ -1,4 +1,5 @@
 #include "renderGraph.h"
+#include "threads/taskManager.h"
 
 namespace aph
 {
@@ -37,17 +38,30 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
 
     vk::QueueSubmitInfo frameSubmitInfo{};
 
+    auto& taskMgr = TaskManager::GetInstance();
+    auto  taskgrp = taskMgr.createTaskGroup();
+    std::mutex submitLock;
     for(auto* pass : m_passes)
     {
-        auto& cmdPool = pass->m_res.pCmdPools;
-        if(cmdPool == nullptr)
-        {
-            cmdPool = m_pDevice->acquireCommandPool({queue, false});
-        }
-        vk::CommandBuffer* pCmd = cmdPool->allocate();
-        pass->m_executeCB(pCmd);
-        frameSubmitInfo.commandBuffers.push_back(pCmd);
+        taskgrp->addTask(
+            [this, pass, queue, &frameSubmitInfo, &submitLock]() {
+                auto& cmdPool = pass->m_res.pCmdPools;
+                if(cmdPool == nullptr)
+                {
+                    cmdPool = m_pDevice->acquireCommandPool({queue, false});
+                }
+                vk::CommandBuffer* pCmd = cmdPool->allocate();
+                pCmd->begin();
+                pass->m_executeCB(pCmd);
+                pCmd->end();
+
+                // lock
+                std::lock_guard<std::mutex> holder{submitLock};
+                frameSubmitInfo.commandBuffers.push_back(pCmd);
+            },
+            pass->m_name);
     }
+    taskMgr.submit(taskgrp);
 
     // submission
     {
@@ -67,6 +81,7 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
             frameSubmitInfo.signalSemaphores.push_back(presentSem);
         }
 
+        taskMgr.wait();
         APH_CHECK_RESULT(queue->submit({frameSubmitInfo}, frameFence));
 
         if(pSwapChain)

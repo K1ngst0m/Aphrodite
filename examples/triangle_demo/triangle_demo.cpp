@@ -141,14 +141,12 @@ void triangle_demo::run()
         auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
 
         drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
-            pCmd->begin();
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
             pCmd->bindPipeline(m_pPipeline);
             pCmd->beginRendering({m_pRenderTarget});
             pCmd->drawIndexed({3, 1, 0, 0, 0});
             pCmd->endRendering();
-            pCmd->end();
         });
 
         graph->execute(m_pRenderTarget, m_pSwapChain);
