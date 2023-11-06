@@ -234,24 +234,10 @@ Renderer::~Renderer()
     Instance::Destroy(m_pInstance);
 };
 
-void Renderer::beginFrame()
-{
-    Timer::GetInstance().set("renderer: begin frame");
-}
-
-void Renderer::endFrame()
+void Renderer::nextFrame()
 {
     resetFrameData();
-
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
-
-    {
-        auto& timer = Timer::GetInstance();
-        timer.set("renderer: end frame");
-        m_frameTime      = timer.interval("renderer: begin frame", "renderer: end frame");
-        m_framePerSecond = 1 / m_frameTime;
-        CM_LOG_DEBUG("Fps: %.0f", m_framePerSecond);
-    }
 }
 
 CommandPool* Renderer::acquireCommandPool(Queue* queue, bool transient)

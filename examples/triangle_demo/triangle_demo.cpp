@@ -133,7 +133,7 @@ void triangle_demo::run()
         m_renderer->update(deltaTime);
 
         // draw and submit
-        m_renderer->beginFrame();
+        m_renderer->nextFrame();
 
         auto graph    = m_renderer->getGraph();
         auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
@@ -150,8 +150,6 @@ void triangle_demo::run()
         });
 
         graph->execute(m_pRenderTarget, m_renderer->m_pSwapChain);
-
-        m_renderer->endFrame();
 
         timer.set(TIMELINE_LOOP_END);
         deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);

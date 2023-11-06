@@ -15,8 +15,7 @@ public:
     Renderer(WSI* wsi, const RenderConfig& config);
     ~Renderer() override;
 
-    void beginFrame() override;
-    void endFrame() override;
+    void nextFrame();
 
 public:
     void load() override;

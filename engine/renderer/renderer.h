@@ -66,9 +66,6 @@ public:
     virtual void unload()                = 0;
     virtual void update(float deltaTime) = 0;
 
-    virtual void beginFrame() = 0;
-    virtual void endFrame()   = 0;
-
     WSI*     getWSI() const { return m_wsi; }
     uint32_t getWindowWidth() const { return m_wsi->getWidth(); };
     uint32_t getWindowHeight() const { return m_wsi->getHeight(); };

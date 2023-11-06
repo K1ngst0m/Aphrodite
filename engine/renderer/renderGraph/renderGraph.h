@@ -2,8 +2,7 @@
 #define APH_RDG_H_
 
 #include "api/vulkan/device.h"
-
-#include <unordered_set>
+#include "common/timer.h"
 
 namespace aph
 {
@@ -51,6 +50,9 @@ public:
 
     void execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
     {
+        auto& timer = Timer::GetInstance();
+        timer.set("renderer: begin frame");
+
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
         m_pRenderTarget = pImage;
@@ -127,9 +129,15 @@ public:
                 frameFence->wait();
             }
         }
+
+        timer.set("renderer: end frame");
+        m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
+        m_frameData.fps       = 1 / m_frameData.frameTime;
+        CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
     }
 
 private:
+    void        submit() {}
     vk::Device* m_pDevice = {};
 
     std::vector<RenderPass*>                  m_passes;
@@ -139,6 +147,8 @@ private:
 
     struct
     {
+        double frameTime;
+        double fps;
     } m_frameData;
 
     struct
