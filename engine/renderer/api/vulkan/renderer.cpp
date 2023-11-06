@@ -240,13 +240,6 @@ void Renderer::nextFrame()
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
 }
 
-CommandPool* Renderer::acquireCommandPool(Queue* queue, bool transient)
-{
-    CommandPool* cmdPool = m_pDevice->acquireCommandPool({queue, transient});
-    m_frameData[m_frameIdx].cmdPools.push_back(cmdPool);
-    return cmdPool;
-}
-
 Shader* Renderer::getShaders(const std::filesystem::path& path) const
 {
     Shader* shader = {};
@@ -291,7 +284,7 @@ void Renderer::submit(Queue* pQueue, QueueSubmitInfo submitInfo, Image* pPresent
     if(pPresentImage)
     {
         auto pSwapchainImage = m_pSwapChain->getImage();
-        executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(pQueue, [&](CommandBuffer* cmd) {
             cmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
             cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
 
@@ -366,22 +359,5 @@ void Renderer::resetFrameData()
         // TODO
         // m_pDevice->getDeviceTable()->vkResetQueryPool(m_pDevice->getHandle(), frameData.queryPool, 0, 2);
     }
-}
-void Renderer::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
-{
-    auto*          commandPool = acquireCommandPool(queue, true);
-    CommandBuffer* cmd         = nullptr;
-    APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
-
-    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-    func(cmd);
-    _VR(cmd->end());
-
-    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    auto            fence = m_pDevice->acquireFence();
-    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
-    fence->wait();
-
-    commandPool->free(1, &cmd);
 }
 }  // namespace aph::vk

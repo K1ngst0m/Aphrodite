@@ -86,6 +86,9 @@ public:
     Result       releaseFence(Fence* pFence);
     Result       releaseCommandPool(CommandPool* pPool);
 
+    using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
+    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
+
 public:
     Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
     Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});

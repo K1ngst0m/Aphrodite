@@ -760,4 +760,22 @@ Result Device::releaseCommandPool(CommandPool* pPool)
     m_resourcePool.commandPool.release(1, &pPool);
     return Result::Success;
 }
+void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
+{
+    CommandPool*   commandPool = acquireCommandPool({queue, true});
+    CommandBuffer* cmd         = nullptr;
+    APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
+
+    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    func(cmd);
+    _VR(cmd->end());
+
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
+    auto            fence = acquireFence();
+    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
+    fence->wait();
+
+    commandPool->free(1, &cmd);
+    APH_CHECK_RESULT(releaseCommandPool(commandPool));
+}
 }  // namespace aph::vk

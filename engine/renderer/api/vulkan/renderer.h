@@ -35,15 +35,11 @@ public:
     Semaphore* getRenderSemaphore() { return m_frameData[m_frameIdx].renderSemaphore; }
     Fence*     getFrameFence() { return m_frameData[m_frameIdx].fence; }
 
-    CommandPool* acquireCommandPool(Queue* queue, bool transient = false);
     Semaphore*   acquireSemahpore();
     Fence*       acquireFence();
     Instance*    getInstance() const { return m_pInstance; }
 
     VkQueryPool getFrameQueryPool() const { return m_frameData[m_frameIdx].queryPool; }
-
-    using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
 
 public:
     RenderGraph* getGraph()

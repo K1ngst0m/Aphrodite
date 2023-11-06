@@ -579,7 +579,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
         auto queue = m_pQueue;
-        executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
 
             cmd->copyBufferToImage(stagingBuffer, image);
@@ -774,7 +774,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
-            executeSingleCommands(m_pQueue, [=](vk::CommandBuffer* cmd) {
+            m_pDevice->executeSingleCommands(m_pQueue, [=](vk::CommandBuffer* cmd) {
                 cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
             });
         }
@@ -805,7 +805,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     m_pDevice->unMapMemory(stagingBuffer);
                 }
 
-                executeSingleCommands(
+                m_pDevice->executeSingleCommands(
                     m_pQueue, [=](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
@@ -836,25 +836,5 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 
     uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
     memcpy(pMapped + range.offset, data, range.size);
-}
-void ResourceLoader::executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func)
-{
-    vk::CommandPool* pPool = m_pDevice->acquireCommandPool({.queue = queue, .transient = true});
-
-    vk::CommandBuffer* cmd = nullptr;
-    APH_CHECK_RESULT(pPool->allocate(1, &cmd));
-
-    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-    func(cmd);
-    _VR(cmd->end());
-
-    // TODO give sync token to outside
-    auto fence = m_pDevice->acquireFence();
-    vk::QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
-    fence->wait();
-    pPool->free(1, &cmd);
-    APH_CHECK_RESULT(m_pDevice->releaseFence(fence));
-    APH_CHECK_RESULT(m_pDevice->releaseCommandPool(pPool));
 }
 }  // namespace aph

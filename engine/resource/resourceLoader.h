@@ -122,9 +122,6 @@ public:
 private:
     void writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
 
-    using CmdRecordCallBack = std::function<void(vk::CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(vk::Queue* queue, const CmdRecordCallBack&& func);
-
 private:
     ResourceLoaderCreateInfo m_createInfo;
     vk::Device*              m_pDevice = {};

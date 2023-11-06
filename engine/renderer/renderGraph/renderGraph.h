@@ -95,34 +95,25 @@ public:
                     auto pSwapchainImage = pSwapChain->getImage();
 
                     // transisiton && copy
-                    {
-                        vk::CommandBuffer* cmd = pass->m_res.pCmdPools->allocate();
-                        _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
-                        cmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
-                        cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
+                    m_pDevice->executeSingleCommands(queue, [pPresentImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
+                        pCopyCmd->transitionImageLayout(pPresentImage, RESOURCE_STATE_COPY_SRC);
+                        pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
 
                         if(pPresentImage->getWidth() == pSwapchainImage->getWidth() &&
                            pPresentImage->getHeight() == pSwapchainImage->getHeight() &&
                            pPresentImage->getDepth() == pSwapchainImage->getDepth())
                         {
                             VK_LOG_DEBUG("copy image to swapchain.");
-                            cmd->copyImage(pPresentImage, pSwapchainImage);
+                            pCopyCmd->copyImage(pPresentImage, pSwapchainImage);
                         }
                         else
                         {
                             VK_LOG_DEBUG("blit image to swapchain.");
-                            cmd->blitImage(pPresentImage, pSwapchainImage);
+                            pCopyCmd->blitImage(pPresentImage, pSwapchainImage);
                         }
 
-                        cmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
-                        _VR(cmd->end());
-
-                        vk::QueueSubmitInfo copySubmit{.commandBuffers = {cmd}};
-                        auto                fence = m_pDevice->acquireFence();
-                        APH_CHECK_RESULT(queue->submit({copySubmit}, fence));
-                        fence->wait();
-                    }
-
+                        pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
+                    });
                     APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
                 }
 
