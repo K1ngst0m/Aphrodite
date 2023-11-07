@@ -94,8 +94,6 @@ void triangle_demo::init()
                 .bindings = {{.stride = sizeof(VertexData)}},
             };
 
-            aph::vk::ShaderProgram* pProgram = {};
-
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
                                                    {aph::ShaderStage::VS, {"shader_glsl://default/triangle.vert"}},
@@ -159,7 +157,11 @@ void triangle_demo::finish()
 {
     PROFILE_FUNCTION();
     m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB, m_pIB, m_pPipeline, m_pRenderTarget);
+    m_pDevice->destroy(m_pVB);
+    m_pDevice->destroy(m_pIB);
+    m_pDevice->destroy(m_pPipeline);
+    m_pDevice->destroy(m_pRenderTarget);
+    m_pDevice->destroy(pProgram);
 }
 
 void triangle_demo::load()

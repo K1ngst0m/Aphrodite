@@ -26,6 +26,7 @@ private:
     aph::vk::Buffer*   m_pVB           = {};
     aph::vk::Buffer*   m_pIB           = {};
     aph::vk::Image*    m_pRenderTarget = {};
+    aph::vk::ShaderProgram* pProgram = {};
 
 private:
     std::unique_ptr<aph::WSI>          m_wsi             = {};

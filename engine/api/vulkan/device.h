@@ -67,19 +67,6 @@ public:
     void destroy(Sampler* pSampler);
     void destroy(ShaderProgram* pProgram);
 
-    // TODO explicit "destroyable" object
-    template <typename... Args>
-    void destroy(Args... args)
-    {
-        auto destructor = [this](auto* ptr) {
-            APH_ASSERT(ptr != nullptr);
-            using Type = std::remove_pointer_t<decltype(ptr)>;
-            static_assert(Type::value, "Unsupported type for destroy");
-            destroy(ptr);
-        };
-        (destructor(args), ...);
-    }
-
 public:
     CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();

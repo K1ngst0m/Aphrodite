@@ -150,6 +150,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
+    pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.commandPool.clear();
 
