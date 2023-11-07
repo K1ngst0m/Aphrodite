@@ -112,6 +112,13 @@ struct ShaderMacro
     std::string value;
 };
 
+struct ShaderConstant
+{
+    const void* pValue;
+    uint32_t    mIndex;
+    uint32_t    mSize;
+};
+
 struct DummyCreateInfo
 {
     uint32_t typeId;
@@ -274,9 +281,7 @@ public:
     using HandleType     = T_Handle;
     using CreateInfoType = T_CreateInfo;
 
-    ResourceHandle(HandleType handle, CreateInfoType createInfo = {}) :
-        m_handle(handle),
-        m_createInfo(createInfo)
+    ResourceHandle(HandleType handle, CreateInfoType createInfo = {}) : m_handle(handle), m_createInfo(createInfo)
     {
         if constexpr(std::is_same_v<T_CreateInfo, DummyCreateInfo>)
         {

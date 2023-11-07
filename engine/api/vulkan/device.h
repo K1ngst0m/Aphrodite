@@ -55,6 +55,7 @@ public:
     Result create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName = "");
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
+    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName = "");
     Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
     Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
 
@@ -64,6 +65,7 @@ public:
     void destroy(SwapChain* pSwapchain);
     void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
+    void destroy(ShaderProgram* pProgram);
 
     // TODO explicit "destroyable" object
     template <typename... Args>

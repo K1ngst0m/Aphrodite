@@ -166,6 +166,24 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
+Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName)
+{
+    // TODO
+    if(createInfo.pVertex && createInfo.pFragment)
+    {
+        *ppPipeline = m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.samplerBank);
+    }
+    else if(createInfo.pCompute)
+    {
+        *ppPipeline = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.samplerBank);
+    }
+    else
+    {
+        APH_ASSERT(false);
+    }
+    return Result::Success;
+}
+
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
 {
     VkImageViewCreateInfo info{
@@ -334,6 +352,11 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     return Result::Success;
 }
 
+void Device::destroy(ShaderProgram* pProgram)
+{
+    m_resourcePool.program.free(pProgram);
+}
+
 void Device::destroy(Buffer* pBuffer)
 {
     if(pBuffer->getMemory() != VK_NULL_HANDLE)
@@ -388,15 +411,13 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
 {
     std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-    APH_ASSERT(createInfo.pVertex && createInfo.pFragment);
+    auto& pProgram = createInfo.pProgram;
+    APH_ASSERT(pProgram);
 
-    shaderStages.push_back(
-        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, createInfo.pVertex->getHandle()));
-    shaderStages.push_back(
-        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, createInfo.pFragment->getHandle()));
-
-    auto program =
-        m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.pSamplerBank);
+    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT,
+                                                               pProgram->getShader(ShaderStage::VS)->getHandle()));
+    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                               pProgram->getShader(ShaderStage::FS)->getHandle()));
 
     // create rps
     RenderPipelineState rps    = {.createInfo = createInfo};
@@ -504,19 +525,16 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
         .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
         .depthAttachmentFormat(createInfo.depthFormat)
         .stencilAttachmentFormat(createInfo.stencilFormat)
-        .build(this, VK_NULL_HANDLE, program->getPipelineLayout(), &handle, createInfo.debugName);
+        .build(this, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle, createInfo.debugName);
 
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
-    *ppPipeline = m_resourcePool.pipeline.allocate(this, rps, handle, program);
+    *ppPipeline = m_resourcePool.pipeline.allocate(this, rps, handle, pProgram);
 
     return Result::Success;
 }
 
 void Device::destroy(Pipeline* pipeline)
 {
-    auto program = pipeline->getProgram();
-    m_resourcePool.program.free(program);
-
     m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), gVkAllocator);
     m_resourcePool.pipeline.free(pipeline);
 }
@@ -524,7 +542,7 @@ void Device::destroy(Pipeline* pipeline)
 Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
 {
     APH_ASSERT(createInfo.pCompute);
-    auto program = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.pSamplerBank);
+    ShaderProgram* program = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.pSamplerBank);
     VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(program->getPipelineLayout());
     ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
                                                                          program->getShader(ShaderStage::CS)->getHandle());

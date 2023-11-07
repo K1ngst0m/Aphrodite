@@ -94,18 +94,20 @@ void triangle_demo::init()
                 .bindings = {{.stride = sizeof(VertexData)}},
             };
 
-            aph::vk::Shader* pVS = {};
-            aph::vk::Shader* pFS = {};
+            aph::vk::ShaderProgram* pProgram = {};
 
             // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
-            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.vert"}, &pVS);
-            m_pResourceLoader->loadAsync(aph::ShaderLoadInfo{.data = "shader_glsl://default/triangle.frag"}, &pFS);
+            aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
+                                                   {aph::ShaderStage::VS, {"shader_glsl://default/triangle.vert"}},
+                                                   {aph::ShaderStage::FS, {"shader_glsl://default/triangle.frag"}},
+                                               }};
+
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &pProgram);
 
             m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pVertex     = pVS,
-                .pFragment   = pFS,
+                .pProgram    = pProgram,
                 .color       = {{.format = m_pSwapChain->getFormat()}},
             };
 

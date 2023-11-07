@@ -55,8 +55,7 @@ struct GraphicsPipelineCreateInfo
 
     VertexInput vertexInput;
 
-    Shader* pVertex   = {};
-    Shader* pFragment = {};
+    ShaderProgram * pProgram = {};
 
     ImmutableSamplerBank* pSamplerBank = {};
 

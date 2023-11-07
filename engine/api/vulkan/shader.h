@@ -85,8 +85,17 @@ private:
 };
 using ShaderMapList = std::unordered_map<ShaderStage, Shader*>;
 
+struct ProgramCreateInfo
+{
+    Shader*               pVertex     = {};
+    Shader*               pFragment   = {};
+    Shader*               pCompute    = {};
+    ImmutableSamplerBank* samplerBank = {};
+};
+
 class ShaderProgram
 {
+    friend class ObjectPool<ShaderProgram>;
 public:
     ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
@@ -96,7 +105,7 @@ public:
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
-    ShaderMapList        getShaders() const { return m_shaders; }
+    const ShaderMapList& getShaders() const { return m_shaders; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
     VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
 

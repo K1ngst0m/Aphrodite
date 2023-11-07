@@ -546,7 +546,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         ci.extent = {img.width, img.height, 1};
     }
 
-    bool           genMipmap = ci.mipLevels > 1;
+    bool genMipmap = ci.mipLevels > 1;
     // const uint32_t width     = ci.extent.width;
     // const uint32_t height    = ci.extent.height;
 
@@ -663,73 +663,39 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     }
 }
 
-void ResourceLoader::load(const ShaderLoadInfo& info, vk::Shader** ppShader)
+void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
-    auto uuid = m_uuidGenerator.getUUID().str();
-
-    VkShaderModuleCreateInfo createInfo{
-        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-    };
-    std::vector<uint32_t> spvCode;
-    if(std::holds_alternative<std::string>(info.data))
+    std::unordered_map<ShaderStage, vk::Shader*> shaderList;
+    for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
-        std::filesystem::path path = std::get<std::string>(info.data);
-
-        // TODO override with new load info
-        if(m_shaderUUIDMap.contains(path))
-        {
-            *ppShader = m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
-            return;
-        }
-
-        if(path.extension() == ".spv")
-        {
-            spvCode = loader::shader::loadSpvFromFile(path.string());
-        }
-        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" ||
-                path.extension() == ".geom")
-        {
-            spvCode = loader::shader::loadGlslFromFile(path.string());
-        }
-        else if(path.extension() == ".slang")
-        {
-            spvCode = loader::shader::loadSlangFromFile(path.string());
-        }
-        else
-        {
-            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
-            APH_ASSERT(false);
-        }
-        APH_ASSERT(!spvCode.empty());
-
-        createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);
-        createInfo.pCode    = spvCode.data();
-
-        m_shaderUUIDMap[path] = uuid;
-    }
-    else if(std::holds_alternative<std::vector<uint32_t>>(info.data))
-    {
-        auto& code          = std::get<std::vector<uint32_t>>(info.data);
-        createInfo.codeSize = code.size() * sizeof(code[0]);
-        createInfo.pCode    = code.data();
-
-        {
-            spvCode = code;
-        }
+        auto shader       = loadShader(stage, stageLoadInfo);
+        shaderList[stage] = shader;
     }
 
-    // TODO macro
+    // vs + fs
+    if(shaderList.contains(ShaderStage::VS) && shaderList.contains(ShaderStage::FS))
     {
+        APH_CHECK_RESULT(m_pDevice->create(
+            vk::ProgramCreateInfo{
+                .pVertex   = shaderList[ShaderStage::VS],
+                .pFragment = shaderList[ShaderStage::FS],
+            },
+            ppProgram));
     }
-
-    VkShaderModule handle;
-    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
-                                                          &handle));
-
-    APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
-    m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
-
-    *ppShader = m_shaderModuleCaches[uuid].get();
+    // cs
+    else if(shaderList.contains(ShaderStage::CS))
+    {
+        APH_CHECK_RESULT(m_pDevice->create(
+            vk::ProgramCreateInfo{
+                .pCompute = shaderList[ShaderStage::CS],
+            },
+            ppProgram));
+    }
+    else
+    {
+        // TODO
+        APH_ASSERT(false);
+    }
 }
 
 void ResourceLoader::cleanup()
@@ -836,5 +802,72 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 
     uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
     memcpy(pMapped + range.offset, data, range.size);
+}
+
+vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadInfo& info)
+{
+    auto                     uuid = m_uuidGenerator.getUUID().str();
+    VkShaderModuleCreateInfo createInfo{
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+    };
+    std::vector<uint32_t> spvCode;
+    if(std::holds_alternative<std::string>(info.data))
+    {
+        std::filesystem::path path = std::get<std::string>(info.data);
+
+        // TODO override with new load info
+        if(m_shaderUUIDMap.contains(path))
+        {
+            return m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
+        }
+
+        if(path.extension() == ".spv")
+        {
+            spvCode = loader::shader::loadSpvFromFile(path.string());
+        }
+        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" ||
+                path.extension() == ".geom")
+        {
+            spvCode = loader::shader::loadGlslFromFile(path.string());
+        }
+        else if(path.extension() == ".slang")
+        {
+            spvCode = loader::shader::loadSlangFromFile(path.string());
+        }
+        else
+        {
+            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
+            APH_ASSERT(false);
+        }
+        APH_ASSERT(!spvCode.empty());
+
+        createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);
+        createInfo.pCode    = spvCode.data();
+
+        m_shaderUUIDMap[path] = uuid;
+    }
+    else if(std::holds_alternative<std::vector<uint32_t>>(info.data))
+    {
+        auto& code          = std::get<std::vector<uint32_t>>(info.data);
+        createInfo.codeSize = code.size() * sizeof(code[0]);
+        createInfo.pCode    = code.data();
+
+        {
+            spvCode = code;
+        }
+    }
+
+    // TODO macro
+    {
+    }
+
+    VkShaderModule handle;
+    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
+                                                          &handle));
+
+    APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
+    m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
+
+    return m_shaderModuleCaches[uuid].get();
 }
 }  // namespace aph
