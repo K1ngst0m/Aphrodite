@@ -31,8 +31,6 @@ class Image : public ResourceHandle<VkImage, ImageCreateInfo>
     friend class ObjectPool<Image>;
 
 public:
-    VkDeviceMemory getMemory() { return m_memory; }
-
     ImageView* getView(Format imageFormat = Format::Undefined);
 
     uint32_t      getWidth() const { return m_createInfo.extent.width; }
@@ -44,13 +42,12 @@ public:
     ResourceState getResourceState() const { return m_resourceState; }
 
 private:
-    Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory = VK_NULL_HANDLE);
+    Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
     ~Image();
 
     Device*                                m_pDevice            = {};
     std::unordered_map<Format, ImageView*> m_imageViewFormatMap = {};
     VkImageLayout                          m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
-    VkDeviceMemory                         m_memory             = {};
     ResourceState                          m_resourceState      = {};
 };
 

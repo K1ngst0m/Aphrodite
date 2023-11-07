@@ -9,10 +9,9 @@
 namespace aph::vk
 {
 
-[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
-                                                    VkDebugUtilsMessageTypeFlagsEXT             messageType,
-                                                    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                    void*                                       pUserData)
+[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL
+debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
+              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
     static std::mutex errMutex;  // Mutex for thread safety
     static uint32_t   errCount = 0;
@@ -68,7 +67,7 @@ namespace aph::vk
 
 Renderer::Renderer(const RenderConfig& config) : m_config(config)
 {
-    m_wsi = WSI::Create({config.width, config.height, (config.flags & RENDER_CFG_UI) != 0});
+    m_wsi     = WSI::Create({config.width, config.height, (config.flags & RENDER_CFG_UI) != 0});
     auto& wsi = m_wsi;
     // create instance
     {
@@ -124,6 +123,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             .enabledExtensions = deviceExtensions,
             // TODO select physical device
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
+            .pInstance       = m_pInstance,
         };
 
         m_pDevice = Device::Create(createInfo);

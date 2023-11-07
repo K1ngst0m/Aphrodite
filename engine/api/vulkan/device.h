@@ -1,6 +1,7 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
+#include "instance.h"
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
@@ -15,6 +16,10 @@
 #include "syncPrimitive.h"
 #include "vkInit.h"
 #include "vkUtils.h"
+
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
+#include "vk_mem_alloc.h"
 
 namespace aph::vk
 {
@@ -38,6 +43,7 @@ struct DeviceCreateInfo
     DeviceCreateFlags        flags;
     std::vector<const char*> enabledExtensions;
     PhysicalDevice*          pPhysicalDevice = nullptr;
+    Instance*                pInstance       = nullptr;
 };
 
 class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>
@@ -108,6 +114,7 @@ private:
 private:
     struct ResourceObjectPool
     {
+        VmaAllocator                        gpu;
         ThreadSafeObjectPool<Buffer>        buffer;
         ThreadSafeObjectPool<Image>         image;
         ThreadSafeObjectPool<Sampler>       sampler;
@@ -120,6 +127,9 @@ private:
 
         ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
+
+    std::unordered_map<Buffer*, VmaAllocation> m_bufferMemoryMap;
+    std::unordered_map<Image*, VmaAllocation>  m_imageMemoryMap;
 };
 
 }  // namespace aph::vk

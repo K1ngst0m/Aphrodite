@@ -4,9 +4,8 @@
 namespace aph::vk
 {
 
-Buffer::Buffer(const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory) :
-    ResourceHandle(handle, createInfo),
-    m_memory(memory)
+Buffer::Buffer(const CreateInfoType& createInfo, HandleType handle) :
+    ResourceHandle(handle, createInfo)
 {
 }
 

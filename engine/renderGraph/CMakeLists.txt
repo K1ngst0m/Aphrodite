@@ -7,5 +7,6 @@ target_include_directories(rendergraph PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/volk
   ${APH_EXTERNAL_DIR}/glm
+  ${APH_EXTERNAL_DIR}/vma/include
 )
 target_link_libraries(rendergraph PRIVATE api)

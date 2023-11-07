@@ -5,10 +5,9 @@
 namespace aph::vk
 {
 
-Image::Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, VkDeviceMemory memory) :
+Image::Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle) :
     ResourceHandle(handle, createInfo),
-    m_pDevice(pDevice),
-    m_memory(memory)
+    m_pDevice(pDevice)
 {
 }
 

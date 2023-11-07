@@ -36,6 +36,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(${APH_EXTERNAL_DIR})
 add_subdirectory(${APH_EXTERNAL_DIR}/mimalloc EXCLUDE_FROM_ALL)
+add_subdirectory(${APH_EXTERNAL_DIR}/vma EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/glfw EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/spirv-cross EXCLUDE_FROM_ALL)
