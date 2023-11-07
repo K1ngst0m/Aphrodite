@@ -6,5 +6,6 @@ aph_compiler_options(rendergraph)
 target_include_directories(rendergraph PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/volk
+  ${APH_EXTERNAL_DIR}/glm
 )
 target_link_libraries(rendergraph PRIVATE api)

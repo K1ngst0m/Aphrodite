@@ -142,6 +142,11 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
 }
 
+static void errorCB(int error, const char* description)
+{
+    CM_LOG_ERR("Error: %s\n", description);
+}
+
 static void windowResizeCallback(GLFWwindow* window, int width, int height)
 {
     auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
@@ -155,21 +160,28 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
 
 void WSI::init()
 {
-    assert(glfwInit());
-    assert(glfwVulkanSupported());
+    bool res = glfwInit();
+    APH_ASSERT(res);
+    res = glfwVulkanSupported();
+    APH_ASSERT(res);
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    m_window    = (void*)glfwCreateWindow(m_width, m_height, "Aphrodite Engine", nullptr, nullptr);
+    m_window = (void*)glfwCreateWindow(m_width, m_height, "Aphrodite Engine", nullptr, nullptr);
+    if(!res || m_window == nullptr)
+    {
+        CM_LOG_ERR("Could not create window.");
+    }
     auto window = static_cast<GLFWwindow*>(m_window);
-    assert(window);
+    APH_ASSERT(window);
 
     glfwSetWindowUserPointer(window, this);
     glfwSetKeyCallback(window, keyCB);
     glfwSetCursorPosCallback(window, cursorCB);
     glfwSetMouseButtonCallback(window, buttonCB);
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
+    glfwSetErrorCallback(errorCB);
 }
 
 VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
@@ -194,7 +206,7 @@ bool WSI::update()
 
     EventManager::GetInstance().processAllAsync();
 
-    if (m_enabledUI)
+    if(m_enabledUI)
     {
         ImGui_ImplGlfw_NewFrame();
     }
@@ -216,7 +228,7 @@ void WSI::resize(uint32_t width, uint32_t height)
     int w, h;
     glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
 
-    if (w != m_width || h != m_height)
+    if(w != m_width || h != m_height)
     {
         glfwSetWindowSize((GLFWwindow*)m_window, m_width, m_height);
     }
@@ -236,7 +248,7 @@ std::vector<const char*> aph::WSI::getRequiredExtensions()
 
 bool WSI::initUI()
 {
-    if (m_enabledUI)
+    if(m_enabledUI)
     {
         return ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window, true);
     }
@@ -245,7 +257,7 @@ bool WSI::initUI()
 
 void aph::WSI::deInitUI()
 {
-    if (m_enabledUI)
+    if(m_enabledUI)
     {
         ImGui_ImplGlfw_Shutdown();
     }

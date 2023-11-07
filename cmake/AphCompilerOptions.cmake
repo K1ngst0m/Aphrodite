@@ -68,6 +68,7 @@ function(aph_compiler_options TARGET)
             >
 
             $<$<CONFIG:Release>:
+                # -O0 -ggdb -g # for debugging
                 -O3
             >
         )

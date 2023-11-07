@@ -277,8 +277,8 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
     m_commandState.colorAttachments = renderingInfo.colors;
     m_commandState.depthAttachment  = renderingInfo.depth;
-    auto & colors = renderingInfo.colors;
-    auto & depth = renderingInfo.depth;
+    auto& colors                    = renderingInfo.colors;
+    auto& depth                     = renderingInfo.depth;
 
     APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
 
@@ -403,17 +403,23 @@ void CommandBuffer::flushGraphicsCommand()
 
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)
 {
+#ifdef APH_DEBUG
     const VkDebugUtilsLabelEXT vkLabel = aph::vk::utils::VkCast(label);
     vkCmdBeginDebugUtilsLabelEXT(getHandle(), &vkLabel);
+#endif
 }
 void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 {
+#ifdef APH_DEBUG
     const VkDebugUtilsLabelEXT vkLabel = aph::vk::utils::VkCast(label);
     vkCmdInsertDebugUtilsLabelEXT(getHandle(), &vkLabel);
+#endif
 }
 void CommandBuffer::endDebugLabel()
 {
+#ifdef APH_DEBUG
     vkCmdEndDebugUtilsLabelEXT(getHandle());
+#endif
 }
 void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
                                   const std::vector<ImageBarrier>&  pImageBarriers)

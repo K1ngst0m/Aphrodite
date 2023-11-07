@@ -547,8 +547,8 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
     }
 
     bool           genMipmap = ci.mipLevels > 1;
-    const uint32_t width     = ci.extent.width;
-    const uint32_t height    = ci.extent.height;
+    // const uint32_t width     = ci.extent.width;
+    // const uint32_t height    = ci.extent.height;
 
     // Load texture from image buffer
     vk::Buffer* stagingBuffer;

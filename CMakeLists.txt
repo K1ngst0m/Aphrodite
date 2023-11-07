@@ -12,7 +12,8 @@ include(AphDefinitions)
 include(AphCompilerOptions)
 include(AphExternal)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${APH_OUTPUT_DIR}")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${APH_OUTPUT_DIR}/debug")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${APH_OUTPUT_DIR}/release")
 
 add_subdirectory(engine)
 add_subdirectory(examples)

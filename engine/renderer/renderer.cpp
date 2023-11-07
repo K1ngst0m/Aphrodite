@@ -9,7 +9,7 @@
 namespace aph::vk
 {
 
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
+[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT      messageSeverity,
                                                     VkDebugUtilsMessageTypeFlagsEXT             messageType,
                                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                     void*                                       pUserData)
@@ -80,6 +80,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(
         }
 #endif
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        // extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        // extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
         InstanceCreateInfo instanceCreateInfo{.enabledExtensions = extensions};
 
         if(m_config.flags & RENDER_CFG_DEBUG)
@@ -87,6 +89,8 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(
             instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
         }
 
+#ifdef APH_DEBUG
+        if(m_config.flags & RENDER_CFG_DEBUG)
         {
             auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
             debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -100,6 +104,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(
             debugInfo.pfnUserCallback = debugCallback;
             debugInfo.pUserData       = &m_frameIdx;
         }
+#endif
 
         _VR(Instance::Create(instanceCreateInfo, &m_pInstance));
     }
@@ -158,7 +163,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(
     // init graph
     {
         m_frameGraph.resize(m_config.maxFrames);
-        for (auto& graph : m_frameGraph)
+        for(auto& graph : m_frameGraph)
         {
             graph = std::make_unique<RenderGraph>(m_pDevice.get());
         }

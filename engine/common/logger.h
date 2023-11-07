@@ -62,7 +62,7 @@ private:
     const char* toFormat(const char* val) { return val; }
     const char* toFormat(const std::string& val) { return val.c_str(); }
     const char* toFormat(const std::filesystem::path& val) { return val.c_str(); }
-    const char* toFormat(std::string_view val) { assert(false); }
+    const char* toFormat(std::string_view val) { return val.data(); }
 
     template <typename... Args>
     void log(const char* level, std::string_view fmt, Args&&... args)
