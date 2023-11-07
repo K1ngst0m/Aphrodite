@@ -20,24 +20,27 @@ void logThreadDebug(std::string_view fmt, Args&&... args)
     #define THREAD_LOG_DEBUG(...) \
         do \
         { \
-            logThreadDebug( __VA_ARGS__); \
+            logThreadDebug(__VA_ARGS__); \
         } while(0)
 }  // namespace
 #else
-#define THREAD_LOG_DEBUG(...)(void(0));
+    #define THREAD_LOG_DEBUG(...) (void(0));
 #endif
 
 namespace aph
 {
 
-TaskManager::TaskManager()
+TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_description(std::move(description))
 {
+    CM_LOG_INFO("Task Manager [%s] init.", m_description);
     aph::thread::setName("main");
     m_totalTaskCount.store(0);
     m_completedTaskCount.store(0);
 
-    // uint32_t threadCount    = std::thread::hardware_concurrency();
-    uint32_t threadCount    = 2;
+    if(threadCount == 0)
+    {
+        threadCount = std::thread::hardware_concurrency();
+    }
     m_threadData.threadPool = std::make_unique<ThreadPool<>>(threadCount);
 
     for(auto idx = 0; idx < threadCount; idx++)
@@ -114,6 +117,11 @@ TaskGroup::~TaskGroup()
     {
         flush();
     }
+}
+
+void TaskGroup::submit()
+{
+    m_pManager->submit(this);
 }
 
 void TaskGroup::flush()

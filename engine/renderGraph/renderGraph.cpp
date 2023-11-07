@@ -38,7 +38,7 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
 
     vk::QueueSubmitInfo frameSubmitInfo{};
 
-    auto&      taskMgr = TaskManager::GetInstance();
+    auto&      taskMgr = m_taskManager;
     auto       taskgrp = taskMgr.createTaskGroup();
     std::mutex submitLock;
     for(auto* pass : m_passes)
@@ -130,5 +130,13 @@ void RenderPass::addColorOutput(vk::Image* pImage)
         m_res.colorOut.push_back(pImage);
         m_res.colorOutMap.insert(pImage);
     }
+}
+RenderPass* RenderGraph::getPass(const std::string& name)
+{
+    if(m_renderPassMap.contains(name))
+    {
+        return m_passes[m_renderPassMap[name]];
+    }
+    return nullptr;
 }
 }  // namespace aph

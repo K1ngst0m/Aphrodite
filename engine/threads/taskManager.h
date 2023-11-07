@@ -65,6 +65,7 @@ class TaskGroup
 
 public:
     ~TaskGroup();
+    void submit();
     void flush();
     void wait();
     bool poll();
@@ -78,11 +79,11 @@ private:
     bool         m_flushed  = {false};
 };
 
-class TaskManager final : public Singleton<TaskManager>
+class TaskManager final
 {
 public:
-    TaskManager();
-    ~TaskManager() final;
+    TaskManager(uint32_t threadCount = 0, std::string description = {});
+    ~TaskManager();
 
     TaskGroup* createTaskGroup(const std::string& desc = "untitled");
     void       removeTaskGroup(TaskGroup* pGroup);
@@ -119,6 +120,9 @@ private:
     ThreadSafeObjectPool<Task>      m_taskPool;
     ThreadSafeObjectPool<TaskGroup> m_taskGroupPool;
     ThreadSafeObjectPool<TaskDeps>  m_taskDepsPool;
+
+private:
+    std::string m_description;
 };
 
 }  // namespace aph

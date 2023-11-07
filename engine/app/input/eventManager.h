@@ -56,19 +56,19 @@ public:
 
     void processAllAsync()
     {
-        auto& taskManager = TaskManager::GetInstance();
-        auto  group       = taskManager.createTaskGroup("event processing");
+        auto  group       = m_taskManager.createTaskGroup("event processing");
         // TODO check that different event type don't cause data race
         for(auto& [_, value] : m_eventDataMap)
         {
             group->addTask([&value]() { value.second(value.first); });
         }
-        taskManager.submit(group);
+        m_taskManager.submit(group);
     }
 
-    void flush() { TaskManager::GetInstance().wait(); }
+    void flush() { m_taskManager.wait(); }
 
 private:
+    TaskManager m_taskManager = {5, "Event Manager"};
     std::mutex m_dataMapMutex;
 
     std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;

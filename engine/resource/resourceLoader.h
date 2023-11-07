@@ -4,6 +4,7 @@
 #include "common/common.h"
 #include "api/vulkan/device.h"
 #include "geometry.h"
+#include "threads/taskManager.h"
 
 namespace aph
 {
@@ -105,21 +106,16 @@ public:
     template <typename T_CreateInfo, typename T_Resource>
     void loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
     {
-        m_syncTokens.push_back(m_threadPool.enqueue([this, info, ppResource]() { load(info, ppResource); }));
+        auto taskGroup = m_taskManager.createTaskGroup("resource loader.");
+        taskGroup->addTask([this, info, ppResource]() { load(info, ppResource); });
+        taskGroup->submit();
     }
 
-    void wait()
-    {
-        for(auto& syncToken : m_syncTokens)
-        {
-            syncToken.wait();
-        }
-        m_syncTokens.clear();
-    }
+    void wait() { m_taskManager.wait(); }
 
     void load(const ImageLoadInfo& info, vk::Image** ppImage);
     void load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
-    void load(const ShaderLoadInfo& info, vk::ShaderProgram** ppShader);
+    void load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
     void load(const GeometryLoadInfo& info, Geometry** ppGeometry);
     void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
@@ -131,15 +127,14 @@ private:
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
-    vk::Device*              m_pDevice = {};
-    vk::Queue*               m_pQueue  = {};
+    TaskManager              m_taskManager = {5, "Resource Loader"};
+    vk::Device*              m_pDevice     = {};
+    vk::Queue*               m_pQueue      = {};
 
 private:
-    ThreadPool<>                                                 m_threadPool;
     std::unordered_map<std::string, std::unique_ptr<vk::Shader>> m_shaderModuleCaches = {};
     uuid::UUIDGenerator<std::mt19937_64>                         m_uuidGenerator      = {};
     std::unordered_map<std::string, std::string>                 m_shaderUUIDMap      = {};
-    std::vector<std::future<void>>                               m_syncTokens;
     std::mutex                                                   m_updateLock;
 };
 }  // namespace aph
