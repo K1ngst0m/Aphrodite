@@ -22,15 +22,15 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline* m_pPipeline     = {};
-    aph::vk::Buffer*   m_pVB           = {};
-    aph::vk::Buffer*   m_pIB           = {};
-    aph::vk::Image*    m_pRenderTarget = {};
-    aph::vk::ShaderProgram* pProgram = {};
+    aph::vk::Pipeline*      m_pPipeline     = {};
+    aph::vk::Buffer*        m_pVB           = {};
+    aph::vk::Buffer*        m_pIB           = {};
+    aph::vk::Image*         m_pRenderTarget = {};
+    aph::vk::ShaderProgram* pProgram        = {};
 
 private:
-    std::unique_ptr<aph::WSI>          m_wsi             = {};
     std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
+    aph::WSI*                          m_pWSI             = {};
     aph::vk::Device*                   m_pDevice         = {};
     aph::ResourceLoader*               m_pResourceLoader = {};
     aph::vk::SwapChain*                m_pSwapChain      = {};

@@ -66,8 +66,10 @@ namespace aph::vk
     return VK_FALSE;
 }
 
-Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(config)
+Renderer::Renderer(const RenderConfig& config) : m_config(config)
 {
+    m_wsi = WSI::Create({config.width, config.height, (config.flags & RENDER_CFG_UI) != 0});
+    auto& wsi = m_wsi;
     // create instance
     {
         volkInitialize();
@@ -143,7 +145,7 @@ Renderer::Renderer(WSI* wsi, const RenderConfig& config) : m_wsi(wsi), m_config(
     {
         SwapChainCreateInfo createInfo{
             .pInstance = m_pInstance,
-            .pWsi      = m_wsi,
+            .pWsi      = m_wsi.get(),
         };
         auto result = m_pDevice->create(createInfo, &m_pSwapChain);
         APH_ASSERT(result.success());

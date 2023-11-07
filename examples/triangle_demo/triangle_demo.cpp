@@ -7,18 +7,19 @@ triangle_demo::triangle_demo() : aph::BaseApp("triangle_demo")
 void triangle_demo::init()
 {
     PROFILE_FUNCTION();
-    // setup window
-    m_wsi = aph::WSI::Create({m_options.windowWidth, m_options.windowHeight, false});
 
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_WITHOUT_UI,
         .maxFrames = 3,
+        .width     = m_options.windowWidth,
+        .height    = m_options.windowHeight,
     };
 
-    m_renderer        = aph::vk::Renderer::Create(m_wsi.get(), config);
+    m_renderer        = aph::vk::Renderer::Create(config);
     m_pDevice         = m_renderer->getDevice();
     m_pSwapChain      = m_renderer->getSwapchain();
     m_pResourceLoader = m_renderer->getResourceLoader();
+    m_pWSI            = m_renderer->getWSI();
 
     // setup triangle
     {
@@ -63,7 +64,7 @@ void triangle_demo::init()
         // render target
         {
             aph::vk::ImageCreateInfo createInfo{
-                .extent    = {m_wsi->getWidth(), m_wsi->getHeight(), 1},
+                .extent    = {m_pWSI->getWidth(), m_pWSI->getHeight(), 1},
                 .usage     = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 .domain    = aph::ImageDomain::Device,
                 .imageType = VK_IMAGE_TYPE_2D,
@@ -77,7 +78,7 @@ void triangle_demo::init()
                     m_pSwapChain->reCreate();
                     m_pDevice->destroy(m_pRenderTarget);
                     auto newCreateInfo   = createInfo;
-                    newCreateInfo.extent = {m_wsi->getWidth(), m_wsi->getHeight(), 1};
+                    newCreateInfo.extent = {m_pWSI->getWidth(), m_pWSI->getHeight(), 1};
                     APH_CHECK_RESULT(m_pDevice->create(newCreateInfo, &m_pRenderTarget));
                     return true;
                 });
@@ -118,7 +119,7 @@ void triangle_demo::init()
 
 void triangle_demo::run()
 {
-    while(m_wsi->update())
+    while(m_pWSI->update())
     {
         PROFILE_SCOPE("application loop");
         static double deltaTime = {};

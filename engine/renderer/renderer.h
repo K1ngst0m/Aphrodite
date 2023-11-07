@@ -27,6 +27,8 @@ struct RenderConfig
 {
     RenderConfigFlags flags     = RENDER_CFG_ALL;
     uint32_t          maxFrames = {2};
+    uint32_t          width;
+    uint32_t          height;
 };
 }  // namespace aph
 
@@ -35,12 +37,12 @@ namespace aph::vk
 class Renderer
 {
 private:
-    Renderer(WSI* wsi, const RenderConfig& config);
+    Renderer(const RenderConfig& config);
 
 public:
-    static std::unique_ptr<Renderer> Create(WSI* wsi, const RenderConfig& config)
+    static std::unique_ptr<Renderer> Create(const RenderConfig& config)
     {
-        return std::unique_ptr<Renderer>(new Renderer(wsi, config));
+        return std::unique_ptr<Renderer>(new Renderer(config));
     }
     ~Renderer();
 
@@ -58,10 +60,7 @@ public:
     Device*         getDevice() const { return m_pDevice.get(); }
     RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
     UI*             getUI() const { return m_pUI; }
-
-    WSI*     getWSI() const { return m_wsi; }
-    uint32_t getWindowWidth() const { return m_wsi->getWidth(); };
-    uint32_t getWindowHeight() const { return m_wsi->getHeight(); };
+    WSI*            getWSI() const { return m_wsi.get(); }
 
     const RenderConfig& getConfig() const { return m_config; }
 
@@ -79,8 +78,9 @@ protected:
 protected:
     UI* m_pUI = {};
 
-    WSI*         m_wsi    = {};
     RenderConfig m_config = {};
+
+    std::unique_ptr<WSI> m_wsi = {};
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
