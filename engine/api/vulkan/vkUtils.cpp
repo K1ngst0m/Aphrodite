@@ -417,19 +417,19 @@ VkImageAspectFlags getImageAspect(Format format)
 namespace aph::vk
 {
 
-static VKAPI_ATTR void* VKAPI_CALL vkMMgrAlloc(void* pUserData, size_t size, size_t alignment,
-                                               VkSystemAllocationScope allocationScope)
+static VKAPI_ATTR void* VKAPI_CALL vkAphAlloc(void* pUserData, size_t size, size_t alignment,
+                                              VkSystemAllocationScope allocationScope)
 {
     return memory::aph_memalign(alignment, size);
 }
 
-static VKAPI_ATTR void* VKAPI_CALL vkMMgrRealloc(void* pUserData, void* pOriginal, size_t size, size_t alignment,
-                                                 VkSystemAllocationScope allocationScope)
+static VKAPI_ATTR void* VKAPI_CALL vkAphRealloc(void* pUserData, void* pOriginal, size_t size, size_t alignment,
+                                                VkSystemAllocationScope allocationScope)
 {
     return memory::aph_realloc(pOriginal, size);
 }
 
-static VKAPI_ATTR void VKAPI_CALL vkMMgrFree(void* pUserData, void* pMemory)
+static VKAPI_ATTR void VKAPI_CALL vkAphFree(void* pUserData, void* pMemory)
 {
     return memory::aph_free(pMemory);
 }
@@ -437,9 +437,9 @@ static VKAPI_ATTR void VKAPI_CALL vkMMgrFree(void* pUserData, void* pMemory)
 const VkAllocationCallbacks* vkAllocator()
 {
     static const VkAllocationCallbacks allocator = {
-        .pfnAllocation   = vkMMgrAlloc,
-        .pfnReallocation = vkMMgrRealloc,
-        .pfnFree         = vkMMgrFree,
+        .pfnAllocation   = vkAphAlloc,
+        .pfnReallocation = vkAphRealloc,
+        .pfnFree         = vkAphFree,
     };
     return &allocator;
 }

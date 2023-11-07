@@ -36,49 +36,6 @@
 // #define ENABLE_MEMORY_TRACKING
 namespace aph::memory
 {
-#if defined(ENABLE_MEMORY_TRACKING)
-    #include "mmgr.cpp"
-
-void* malloc_internal(size_t size, const char* f, int l, const char* sf)
-{
-    return memalign_internal(MIN_ALLOC_ALIGNMENT, size, f, l, sf);
-}
-
-void* calloc_internal(size_t count, size_t size, const char* f, int l, const char* sf)
-{
-    return calloc_memalign_internal(count, MIN_ALLOC_ALIGNMENT, size, f, l, sf);
-}
-
-void* memalign_internal(size_t align, size_t size, const char* f, int l, const char* sf)
-{
-    void* pMemAlign = m_allocator(f, l, sf, m_alloc_malloc, align, size);
-
-    return pMemAlign;
-}
-
-void* calloc_memalign_internal(size_t count, size_t align, size_t size, const char* f, int l, const char* sf)
-{
-    size = ALIGN_TO(size, align);
-
-    void* pMemAlign = m_allocator(f, l, sf, m_alloc_calloc, align, size * count);
-
-    return pMemAlign;
-}
-
-void* realloc_internal(void* ptr, size_t size, const char* f, int l, const char* sf)
-{
-    void* pRealloc = m_reallocator(f, l, sf, m_alloc_realloc, size, ptr);
-
-    return pRealloc;
-}
-
-void free_internal(void* ptr, const char* f, int l, const char* sf)
-{
-    m_deallocator(f, l, sf, m_alloc_free, ptr);
-}
-
-#else
-
 void* malloc_internal(size_t size, const char* f, int l, const char* sf)
 {
     return std::malloc(size);
@@ -119,5 +76,4 @@ void free_internal(void* ptr, const char* f, int l, const char* sf)
 {
     std::free(ptr);
 }
-#endif
 }  // namespace aph::memory

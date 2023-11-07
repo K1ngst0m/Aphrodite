@@ -81,7 +81,6 @@ constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
 namespace aph::vk
 {
 const VkAllocationCallbacks* vkAllocator();
-const VkAllocationCallbacks* vkMMgrAllocator();
 }  // namespace aph::vk
 
 #endif  // VKLUTILS_H_
