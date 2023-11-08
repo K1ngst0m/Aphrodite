@@ -54,6 +54,7 @@ class GitRepo:
 
 PACKAGES = [
     GitRepo("https://github.com/microsoft/mimalloc.git",       "mimalloc",       "mimalloc"),
+    GitRepo("https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator",       "vma",       "vma"),
     GitRepo("https://github.com/KhronosGroup/glslang.git",       "glslang",       "glslang"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Tools.git",   "spirv-tools",   "spirv-tools"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "spirv-headers"),

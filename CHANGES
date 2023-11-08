@@ -23,3 +23,6 @@ Branch: v2.1.2
 
 [glfw]
 Branch: 3.3.8
+
+[vma]
+Branch: master
