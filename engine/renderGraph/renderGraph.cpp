@@ -94,8 +94,8 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
 
             // transisiton && copy
             m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
-                pCopyCmd->transitionImageLayout(pImage, RESOURCE_STATE_COPY_SRC);
-                pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_COPY_DST);
+                pCopyCmd->transitionImageLayout(pImage, ResourceState::CopySource);
+                pCopyCmd->transitionImageLayout(pSwapchainImage, ResourceState::CopyDest);
 
                 if(pImage->getWidth() == pSwapchainImage->getWidth() &&
                    pImage->getHeight() == pSwapchainImage->getHeight() &&
@@ -110,7 +110,7 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
                     pCopyCmd->blitImage(pImage, pSwapchainImage);
                 }
 
-                pCopyCmd->transitionImageLayout(pSwapchainImage, RESOURCE_STATE_PRESENT);
+                pCopyCmd->transitionImageLayout(pSwapchainImage, ResourceState::Present);
             });
             APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
         }

@@ -580,12 +580,12 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
         auto queue = m_pQueue;
         m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
-            cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_DST);
+            cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
 
             cmd->copyBufferToImage(stagingBuffer, image);
             if(genMipmap)
             {
-                cmd->transitionImageLayout(image, aph::RESOURCE_STATE_COPY_SRC);
+                cmd->transitionImageLayout(image, aph::ResourceState::CopySource);
             }
         });
 

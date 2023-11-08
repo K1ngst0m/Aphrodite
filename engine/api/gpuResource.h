@@ -42,26 +42,28 @@ enum class ShaderStage : uint8_t
     MS  = 8,
 };
 
-enum ResourceState
+enum class ResourceState : uint32_t
 {
-    RESOURCE_STATE_UNDEFINED                         = 0,
-    RESOURCE_STATE_VERTEX_BUFFER                     = 0x1,
-    RESOURCE_STATE_UNIFORM_BUFFER                    = 0x2,
-    RESOURCE_STATE_INDEX_BUFFER                      = 0x4,
-    RESOURCE_STATE_RENDER_TARGET                     = 0x8,
-    RESOURCE_STATE_UNORDERED_ACCESS                  = 0x10,
-    RESOURCE_STATE_DEPTH_STENCIL                     = 0x20,
-    RESOURCE_STATE_SHADER_RESOURCE                   = 0x40,
-    RESOURCE_STATE_STREAM_OUT                        = 0x80,
-    RESOURCE_STATE_INDIRECT_ARGUMENT                 = 0x100,
-    RESOURCE_STATE_COPY_DST                          = 0x200,
-    RESOURCE_STATE_COPY_SRC                          = 0x400,
-    RESOURCE_STATE_GENERIC_READ                      = ((((((0x1 | 0x2) | 0x4) | 0x40) | 0x100) | 0x400) | 0x800),
-    RESOURCE_STATE_PRESENT                           = 0x800,
-    RESOURCE_STATE_GENERAL                           = 0x1000,
-    RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE = 0x2000,
-    RESOURCE_STATE_SHADING_RATE_SOURCE               = 0x4000,
+    Undefined        = 0,
+    General          = 0x00000001,
+    UniformBuffer    = 0x00000002,
+    VertexBuffer     = 0x00000004,
+    IndexBuffer      = 0x00000008,
+    IndirectArgument = 0x00000010,
+    ShaderResource   = 0x00000020,
+    UnorderedAccess  = 0x00000040,
+    RenderTarget     = 0x00000080,
+    DepthStencil     = 0x00000100,
+    StreamOut        = 0x00000200,
+    CopyDest         = 0x00000400,
+    CopySource       = 0x00000800,
+    ResolveDest      = 0x00001000,
+    ResolveSource    = 0x00002000,
+    Present          = 0x00004000,
+    AccelStructRead  = 0x00008000,
+    AccelStructWrite = 0x00010000,
 };
+MAKE_ENUM_CLASS_FLAG(ResourceState);
 
 enum class SamplerPreset : uint8_t
 {

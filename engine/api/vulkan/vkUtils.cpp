@@ -139,81 +139,85 @@ VkDebugUtilsLabelEXT VkCast(const DebugLabel& label)
 VkAccessFlags getAccessFlags(ResourceState state)
 {
     VkAccessFlags ret = 0;
-    if(state & RESOURCE_STATE_COPY_SRC)
+    if((state & ResourceState::CopySource) != 0)
     {
         ret |= VK_ACCESS_TRANSFER_READ_BIT;
     }
-    if(state & RESOURCE_STATE_COPY_DST)
+    if((state & ResourceState::CopyDest) != 0)
     {
         ret |= VK_ACCESS_TRANSFER_WRITE_BIT;
     }
-    if(state & RESOURCE_STATE_VERTEX_BUFFER)
+    if((state & ResourceState::VertexBuffer) != 0)
     {
         ret |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     }
-    if(state & RESOURCE_STATE_UNIFORM_BUFFER)
+    if((state & ResourceState::UniformBuffer) != 0)
     {
         ret |= VK_ACCESS_UNIFORM_READ_BIT;
     }
-    if(state & RESOURCE_STATE_INDEX_BUFFER)
+    if((state & ResourceState::IndexBuffer) != 0)
     {
         ret |= VK_ACCESS_INDEX_READ_BIT;
     }
-    if(state & RESOURCE_STATE_UNORDERED_ACCESS)
+    if((state & ResourceState::UnorderedAccess) != 0)
     {
         ret |= VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
     }
-    if(state & RESOURCE_STATE_INDIRECT_ARGUMENT)
+    if((state & ResourceState::IndirectArgument) != 0)
     {
         ret |= VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
     }
-    if(state & RESOURCE_STATE_RENDER_TARGET)
+    if((state & ResourceState::RenderTarget) != 0)
     {
         ret |= VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     }
-    if(state & RESOURCE_STATE_DEPTH_STENCIL)
+    if((state & ResourceState::DepthStencil) != 0)
     {
         ret |= VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     }
-    if(state & RESOURCE_STATE_SHADER_RESOURCE)
+    if((state & ResourceState::ShaderResource) != 0)
     {
         ret |= VK_ACCESS_SHADER_READ_BIT;
     }
-    if(state & RESOURCE_STATE_PRESENT)
+    if((state & ResourceState::Present) != 0)
     {
         ret |= VK_ACCESS_MEMORY_READ_BIT;
     }
-    if(state & RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
+    if((state & ResourceState::AccelStructRead) != 0)
     {
-        ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+        ret |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
+    }
+    if((state & ResourceState::AccelStructWrite) != 0)
+    {
+        ret |= VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
     }
     return ret;
 }
 
 VkImageLayout getImageLayout(ResourceState state)
 {
-    if(state & RESOURCE_STATE_COPY_SRC)
+    if((state & ResourceState::CopySource) != 0)
         return VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 
-    if(state & RESOURCE_STATE_COPY_DST)
+    if((state & ResourceState::CopyDest) != 0)
         return VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
-    if(state & RESOURCE_STATE_RENDER_TARGET)
+    if((state & ResourceState::RenderTarget) != 0)
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-    if(state & RESOURCE_STATE_DEPTH_STENCIL)
+    if((state & ResourceState::DepthStencil) != 0)
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-    if(state & RESOURCE_STATE_UNORDERED_ACCESS)
+    if((state & ResourceState::UnorderedAccess) != 0)
         return VK_IMAGE_LAYOUT_GENERAL;
 
-    if(state & RESOURCE_STATE_SHADER_RESOURCE)
+    if((state & ResourceState::ShaderResource) != 0)
         return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    if(state & RESOURCE_STATE_PRESENT)
+    if((state & ResourceState::Present) != 0)
         return VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-    if(state == RESOURCE_STATE_GENERAL)
+    if((state & ResourceState::General) != 0)
         return VK_IMAGE_LAYOUT_GENERAL;
 
     return VK_IMAGE_LAYOUT_UNDEFINED;

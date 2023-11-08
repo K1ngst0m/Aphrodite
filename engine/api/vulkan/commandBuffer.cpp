@@ -315,7 +315,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
         aph::vk::ImageBarrier barrier{
             .pImage       = image,
             .currentState = image->getResourceState(),
-            .newState     = aph::RESOURCE_STATE_RENDER_TARGET,
+            .newState     = ResourceState::RenderTarget,
         };
         insertBarrier({barrier});
     }
@@ -367,7 +367,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
         aph::vk::ImageBarrier barrier{
             .pImage       = image,
             .currentState = image->getResourceState(),
-            .newState     = aph::RESOURCE_STATE_DEPTH_STENCIL,
+            .newState     = ResourceState::DepthStencil,
         };
         insertBarrier({barrier});
 
@@ -445,8 +445,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         Buffer*                pBuffer        = pTrans->pBuffer;
         VkBufferMemoryBarrier* pBufferBarrier = nullptr;
 
-        if(RESOURCE_STATE_UNORDERED_ACCESS == pTrans->currentState &&
-           RESOURCE_STATE_UNORDERED_ACCESS == pTrans->newState)
+        if(ResourceState::UnorderedAccess == pTrans->currentState &&
+           ResourceState::UnorderedAccess == pTrans->newState)
         {
             pBufferBarrier        = &bufferBarriers[bufferBarrierCount++];
             pBufferBarrier->sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -498,8 +498,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         Image*                pImage        = pTrans->pImage;
         VkImageMemoryBarrier* pImageBarrier = nullptr;
 
-        if(RESOURCE_STATE_UNORDERED_ACCESS == pTrans->currentState &&
-           RESOURCE_STATE_UNORDERED_ACCESS == pTrans->newState)
+        if(ResourceState::UnorderedAccess == pTrans->currentState &&
+           ResourceState::UnorderedAccess == pTrans->newState)
         {
             pImageBarrier        = &imageBarriers[imageBarrierCount++];
             pImageBarrier->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -531,12 +531,12 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
             pImageBarrier->subresourceRange.baseArrayLayer = pTrans->subresourceBarrier ? pTrans->arrayLayer : 0;
             pImageBarrier->subresourceRange.layerCount     = pTrans->subresourceBarrier ? 1 : VK_REMAINING_ARRAY_LAYERS;
 
-            if(pTrans->acquire && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
+            if(pTrans->acquire && pTrans->currentState != ResourceState::Undefined)
             {
                 pImageBarrier->srcQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();
                 pImageBarrier->dstQueueFamilyIndex = m_pQueue->getFamilyIndex();
             }
-            else if(pTrans->release && pTrans->currentState != RESOURCE_STATE_UNDEFINED)
+            else if(pTrans->release && pTrans->currentState != ResourceState::Undefined)
             {
                 pImageBarrier->srcQueueFamilyIndex = m_pQueue->getFamilyIndex();
                 pImageBarrier->dstQueueFamilyIndex = m_pDevice->getQueue(pTrans->queueType)->getFamilyIndex();

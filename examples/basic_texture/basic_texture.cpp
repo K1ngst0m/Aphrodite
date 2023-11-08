@@ -44,8 +44,8 @@ void basic_texture::init()
         // vertex buffer
         {
             aph::BufferLoadInfo loadInfo{
-                .debugName = "quad::vertexBuffer",
-                .data = vertices.data(),
+                .debugName  = "quad::vertexBuffer",
+                .data       = vertices.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
 
@@ -82,8 +82,8 @@ void basic_texture::init()
                                              [&](aph::vk::CommandBuffer* cmd) {
                                                  aph::vk::ImageBarrier barrier{
                                                      .pImage       = m_pImage,
-                                                     .currentState = aph::RESOURCE_STATE_UNDEFINED,
-                                                     .newState     = aph::RESOURCE_STATE_SHADER_RESOURCE,
+                                                     .currentState = aph::ResourceState::Undefined,
+                                                     .newState     = aph::ResourceState::ShaderResource,
                                                  };
                                                  cmd->insertBarrier({barrier});
                                              });

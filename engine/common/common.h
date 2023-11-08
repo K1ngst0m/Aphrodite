@@ -266,6 +266,33 @@ namespace aph
 #else
     #define MAKE_ENUM_FLAG(TYPE, ENUM_TYPE)
 #endif
+
+#define MAKE_ENUM_CLASS_FLAG(T) \
+    inline T operator|(T a, T b) \
+    { \
+        return T(uint32_t(a) | uint32_t(b)); \
+    } \
+    inline T operator&(T a, T b) \
+    { \
+        return T(uint32_t(a) & uint32_t(b)); \
+    } /* NOLINT(bugprone-macro-parentheses) */ \
+    inline T operator~(T a) \
+    { \
+        return T(~uint32_t(a)); \
+    } /* NOLINT(bugprone-macro-parentheses) */ \
+    inline bool operator!(T a) \
+    { \
+        return uint32_t(a) == 0; \
+    } \
+    inline bool operator==(T a, uint32_t b) \
+    { \
+        return uint32_t(a) == b; \
+    } \
+    inline bool operator!=(T a, uint32_t b) \
+    { \
+        return uint32_t(a) != b; \
+    }
+
 }  // namespace aph
 
 #endif  // VKLCOMMON_H_
