@@ -125,43 +125,88 @@ struct DummyCreateInfo
 
 enum class Format : uint8_t
 {
-    Undefined = 0,
+    Undefined,
 
-    R_UN8,
-    R_UI16,
-    R_UN16,
-    R_F16,
-    R_F32,
+    R8_UINT,
+    R8_SINT,
+    R8_UNORM,
+    R8_SNORM,
+    RG8_UINT,
+    RG8_SINT,
+    RG8_UNORM,
+    RG8_SNORM,
+    RGB8_UINT,
+    RGB8_SINT,
+    RGB8_UNORM,
+    RGB8_SNORM,
+    R16_UINT,
+    R16_SINT,
+    R16_UNORM,
+    R16_SNORM,
+    R16_FLOAT,
+    BGRA4_UNORM,
+    B5G6R5_UNORM,
+    B5G5R5A1_UNORM,
+    RGBA8_UINT,
+    RGBA8_SINT,
+    RGBA8_UNORM,
+    RGBA8_SNORM,
+    BGRA8_UNORM,
+    SRGBA8_UNORM,
+    SBGRA8_UNORM,
+    R10G10B10A2_UNORM,
+    R11G11B10_FLOAT,
+    RG16_UINT,
+    RG16_SINT,
+    RG16_UNORM,
+    RG16_SNORM,
+    RG16_FLOAT,
+    RGB16_UINT,
+    RGB16_SINT,
+    RGB16_UNORM,
+    RGB16_SNORM,
+    RGB16_FLOAT,
+    R32_UINT,
+    R32_SINT,
+    R32_FLOAT,
+    RGBA16_UINT,
+    RGBA16_SINT,
+    RGBA16_FLOAT,
+    RGBA16_UNORM,
+    RGBA16_SNORM,
+    RG32_UINT,
+    RG32_SINT,
+    RG32_FLOAT,
+    RGB32_UINT,
+    RGB32_SINT,
+    RGB32_FLOAT,
+    RGBA32_UINT,
+    RGBA32_SINT,
+    RGBA32_FLOAT,
 
-    RG_UN8,
-    RG_UI16,
-    RG_UN16,
-    RG_F16,
-    RG_F32,
+    D16,
+    D24S8,
+    X24G8_UINT,
+    D32,
+    D32S8,
+    X32G8_UINT,
 
-    RGB_UN8,
-    RGB_UI32,
-    RGB_F16,
-    RGB_F32,
+    BC1_UNORM,
+    BC1_UNORM_SRGB,
+    BC2_UNORM,
+    BC2_UNORM_SRGB,
+    BC3_UNORM,
+    BC3_UNORM_SRGB,
+    BC4_UNORM,
+    BC4_SNORM,
+    BC5_UNORM,
+    BC5_SNORM,
+    BC6H_UFLOAT,
+    BC6H_SFLOAT,
+    BC7_UNORM,
+    BC7_UNORM_SRGB,
 
-    RGBA_UN8,
-    RGBA_UI32,
-    RGBA_F16,
-    RGBA_F32,
-    RGBA_SRGB8,
-
-    BGRA_UN8,
-    BGRA_SRGB8,
-
-    ETC2_RGB8,
-    ETC2_SRGB8,
-    BC7_RGBA,
-
-    Z_UN16,
-    Z_UN24,
-    Z_F32,
-    Z_UN24_S_UI8,
-    Z_F32_S_UI8,
+    COUNT,
 };
 
 enum WaveOpsSupportFlags
@@ -320,84 +365,6 @@ inline ShaderStage getStageFromPath(std::string_view path)
     if(ext == ".comp")
         return ShaderStage::CS;
     return ShaderStage::NA;
-}
-
-constexpr inline uint32_t getFormatSize(Format format)
-{
-    switch(format)
-    {
-    case Format::Undefined:
-        return 0;
-
-    case Format::R_UN8:
-        return 1;
-    case Format::R_UI16:
-        return 2;
-    case Format::R_UN16:
-        return 2;
-    case Format::R_F16:
-        return 2;
-    case Format::R_F32:
-        return 4;
-
-    case Format::RG_UN8:
-        return 2;
-    case Format::RG_UI16:
-        return 4;
-    case Format::RG_UN16:
-        return 4;
-    case Format::RG_F16:
-        return 4;
-    case Format::RG_F32:
-        return 8;
-
-    case Format::RGB_UN8:
-        return 3;
-    case Format::RGB_UI32:
-        return 12;
-    case Format::RGB_F16:
-        return 6;
-    case Format::RGB_F32:
-        return 12;
-
-    case Format::RGBA_UN8:
-        return 4;
-    case Format::RGBA_UI32:
-        return 16;
-    case Format::RGBA_F16:
-        return 8;
-    case Format::RGBA_F32:
-        return 16;
-    case Format::RGBA_SRGB8:
-        return 4;
-
-    case Format::BGRA_UN8:
-        return 4;
-    case Format::BGRA_SRGB8:
-        return 4;
-
-    // TODO assuming a block size of 4x4
-    case Format::ETC2_RGB8:
-        return 8;
-    case Format::ETC2_SRGB8:
-        return 8;
-    case Format::BC7_RGBA:
-        return 16;
-
-    case Format::Z_UN16:
-        return 2;
-    case Format::Z_UN24:
-        return 3;
-    case Format::Z_F32:
-        return 4;
-    case Format::Z_UN24_S_UI8:
-        return 4;  // 3 bytes for depth, 1 byte for stencil
-    case Format::Z_F32_S_UI8:
-        return 5;  // 4 bytes for depth, 1 byte for stencil
-
-    default:
-        return 0;
-    }
 }
 
 }  // namespace aph::utils

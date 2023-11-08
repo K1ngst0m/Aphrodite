@@ -117,8 +117,8 @@ void basic_texture::init()
             const aph::VertexInput vdesc = {
                 .attributes =
                     {
-                        {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = aph::Format::RG_F32, .offset = offsetof(VertexData, uv)},
+                        {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
+                        {.location = 1, .format = aph::Format::RG32_FLOAT, .offset = offsetof(VertexData, uv)},
                     },
                 .bindings = {{.stride = sizeof(VertexData)}},
             };

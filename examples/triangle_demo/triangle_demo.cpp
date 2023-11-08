@@ -90,8 +90,8 @@ void triangle_demo::init()
             const aph::VertexInput vdesc = {
                 .attributes =
                     {
-                        {.location = 0, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = aph::Format::RGB_F32, .offset = offsetof(VertexData, color)},
+                        {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
+                        {.location = 1, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, color)},
                     },
                 .bindings = {{.stride = sizeof(VertexData)}},
             };

@@ -238,7 +238,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
         .depth  = 1,
     };
 
-    textureCI.format = aph::Format::RGBA_UN8;
+    textureCI.format = aph::Format::RGBA8_UINT;
 
     data = img->data;
 
