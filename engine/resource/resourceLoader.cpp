@@ -730,7 +730,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
     auto uploadSize = info.range.size;
 
     // device only
-    if(domain == BufferDomain::Device || domain == BufferDomain::LinkedDeviceHostPreferDevice)
+    if(domain == BufferDomain::Device)
     {
         if(info.range.size == VK_WHOLE_SIZE)
         {
@@ -788,7 +788,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range)
 {
     auto domain = pBuffer->getCreateInfo().domain;
-    APH_ASSERT(domain != BufferDomain::Device && domain != BufferDomain::LinkedDeviceHostPreferDevice);
+    APH_ASSERT(domain != BufferDomain::Device);
     APH_ASSERT(pBuffer->getMapped());
     if(range.size == 0)
     {

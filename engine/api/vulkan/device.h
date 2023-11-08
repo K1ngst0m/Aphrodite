@@ -17,12 +17,9 @@
 #include "vkInit.h"
 #include "vkUtils.h"
 
-#define VMA_STATIC_VULKAN_FUNCTIONS 0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-#include "vk_mem_alloc.h"
-
 namespace aph::vk
 {
+class DeviceAllocator;
 
 enum class TimeUnit
 {
@@ -87,8 +84,8 @@ public:
 public:
     Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
     Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
-    Result mapMemory(Buffer* pBuffer, void* mapped = nullptr, MemoryRange range = {});
-    void   unMapMemory(Buffer* pBuffer);
+    Result mapMemory(Buffer* pBuffer, void** ppMapped = nullptr) const;
+    void   unMapMemory(Buffer* pBuffer) const;
 
 public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }
@@ -114,7 +111,7 @@ private:
 private:
     struct ResourceObjectPool
     {
-        VmaAllocator                        gpu;
+        DeviceAllocator*                    gpu;
         ThreadSafeObjectPool<Buffer>        buffer;
         ThreadSafeObjectPool<Image>         image;
         ThreadSafeObjectPool<Sampler>       sampler;
@@ -127,9 +124,6 @@ private:
 
         ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
-
-    std::unordered_map<Buffer*, VmaAllocation> m_bufferMemoryMap;
-    std::unordered_map<Image*, VmaAllocation>  m_imageMemoryMap;
 };
 
 }  // namespace aph::vk

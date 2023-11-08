@@ -201,13 +201,6 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
         prio[2] = prio[1];
         break;
 
-    case BufferDomain::LinkedDeviceHostPreferDevice:
-        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        prio[1] = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-        prio[2] = prio[1];
-        break;
-
     case BufferDomain::Host:
         prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
@@ -218,20 +211,6 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
         prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
         prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         prio[2] = prio[1];
-        break;
-
-    case BufferDomain::CachedCoherentHostPreferCached:
-        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
-        prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        break;
-
-    case BufferDomain::CachedCoherentHostPreferCoherent:
-        prio[0] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
-                  VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        prio[1] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        prio[2] = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
         break;
     }
 

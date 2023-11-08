@@ -7,13 +7,10 @@ namespace aph
 {
 enum class BufferDomain : uint8_t
 {
-    Device,                            // Device local. Probably not visible from CPU.
-    LinkedDeviceHost,                  // On desktop, directly mapped VRAM over PCI.
-    LinkedDeviceHostPreferDevice,      // Prefer device local of host visible.
-    Host,                              // Host-only, needs to be synced to GPU. Might be device local as well on iGPUs.
-    CachedHost,                        //
-    CachedCoherentHostPreferCoherent,  // Aim for both cached and coherent, but prefer COHERENT
-    CachedCoherentHostPreferCached,    // Aim for both cached and coherent, but prefer CACHED
+    Device,            // Device local. Probably not visible from CPU.
+    LinkedDeviceHost,  // On desktop, directly mapped VRAM over PCI.
+    Host,              // Host-only, needs to be synced to GPU. Might be device local as well on iGPUs.
+    CachedHost,        //
 };
 
 enum class ImageDomain : uint8_t

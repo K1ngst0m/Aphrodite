@@ -1,7 +1,5 @@
 #include "device.h"
-
-#define VMA_IMPLEMENTATION
-#include "vk_mem_alloc.h"
+#include "allocator.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
@@ -147,47 +145,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    // vma initialization
-    {
-        auto&              table           = device->m_table;
-        VmaVulkanFunctions vulkanFunctions = {
-            .vkGetInstanceProcAddr                   = vkGetInstanceProcAddr,
-            .vkGetDeviceProcAddr                     = vkGetDeviceProcAddr,
-            .vkGetPhysicalDeviceProperties           = vkGetPhysicalDeviceProperties,
-            .vkGetPhysicalDeviceMemoryProperties     = vkGetPhysicalDeviceMemoryProperties,
-            .vkAllocateMemory                        = table.vkAllocateMemory,
-            .vkFreeMemory                            = table.vkFreeMemory,
-            .vkMapMemory                             = table.vkMapMemory,
-            .vkUnmapMemory                           = table.vkUnmapMemory,
-            .vkFlushMappedMemoryRanges               = table.vkFlushMappedMemoryRanges,
-            .vkInvalidateMappedMemoryRanges          = table.vkInvalidateMappedMemoryRanges,
-            .vkBindBufferMemory                      = table.vkBindBufferMemory,
-            .vkBindImageMemory                       = table.vkBindImageMemory,
-            .vkGetBufferMemoryRequirements           = table.vkGetBufferMemoryRequirements,
-            .vkGetImageMemoryRequirements            = table.vkGetImageMemoryRequirements,
-            .vkCreateBuffer                          = table.vkCreateBuffer,
-            .vkDestroyBuffer                         = table.vkDestroyBuffer,
-            .vkCreateImage                           = table.vkCreateImage,
-            .vkDestroyImage                          = table.vkDestroyImage,
-            .vkCmdCopyBuffer                         = table.vkCmdCopyBuffer,
-            .vkGetBufferMemoryRequirements2KHR       = table.vkGetBufferMemoryRequirements2,
-            .vkGetImageMemoryRequirements2KHR        = table.vkGetImageMemoryRequirements2,
-            .vkBindBufferMemory2KHR                  = table.vkBindBufferMemory2,
-            .vkBindImageMemory2KHR                   = table.vkBindImageMemory2,
-            .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
-            .vkGetDeviceBufferMemoryRequirements     = table.vkGetDeviceBufferMemoryRequirements,
-            .vkGetDeviceImageMemoryRequirements      = table.vkGetDeviceImageMemoryRequirements,
-        };
-
-        VmaAllocatorCreateInfo allocatorCreateInfo = {};
-        allocatorCreateInfo.vulkanApiVersion       = VK_API_VERSION_1_3;
-        allocatorCreateInfo.physicalDevice         = device->m_physicalDevice->getHandle();
-        allocatorCreateInfo.device                 = device->getHandle();
-        allocatorCreateInfo.instance               = createInfo.pInstance->getHandle();
-        allocatorCreateInfo.pVulkanFunctions       = &vulkanFunctions;
-
-        vmaCreateAllocator(&allocatorCreateInfo, &device->m_resourcePool.gpu);
-    }
+    // TODO
+    device->m_resourcePool.gpu = new VMADeviceAllocator(createInfo.pInstance, device.get());
 
     // Return success.
     return device;
@@ -195,7 +154,9 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
-    vmaDestroyAllocator(pDevice->m_resourcePool.gpu);
+    // TODO
+    delete pDevice->m_resourcePool.gpu;
+
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.commandPool.clear();
@@ -271,14 +232,10 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
     };
 
     VkBuffer                buffer;
-    VmaAllocationCreateInfo allocInfo = {.usage = VMA_MEMORY_USAGE_AUTO};
-    VmaAllocation           allocation;
-
-    vmaCreateBuffer(m_resourcePool.gpu, &bufferInfo, &allocInfo, &buffer, &allocation, nullptr);
+    m_table.vkCreateBuffer(getHandle(), &bufferInfo, vkAllocator(), &buffer);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName))
-
     *ppBuffer                    = m_resourcePool.buffer.allocate(createInfo, buffer);
-    m_bufferMemoryMap[*ppBuffer] = allocation;
+    m_resourcePool.gpu->allocate(*ppBuffer);
 
     return Result::Success;
 }
@@ -303,12 +260,10 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     imageCreateInfo.extent.height = createInfo.extent.height;
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
-    VkImage                 image;
-    VmaAllocationCreateInfo allocInfo = {.usage = VMA_MEMORY_USAGE_AUTO};
-    VmaAllocation           allocation;
-    vmaCreateImage(m_resourcePool.gpu, &imageCreateInfo, &allocInfo, &image, &allocation, nullptr);
+    VkImage image;
+    m_table.vkCreateImage(getHandle(), &imageCreateInfo, vkAllocator(), &image);
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
-    m_imageMemoryMap[*ppImage] = allocation;
+    m_resourcePool.gpu->allocate(*ppImage);
 
     return Result::Success;
 }
@@ -320,13 +275,15 @@ void Device::destroy(ShaderProgram* pProgram)
 
 void Device::destroy(Buffer* pBuffer)
 {
-    vmaDestroyBuffer(m_resourcePool.gpu, pBuffer->getHandle(), m_bufferMemoryMap[pBuffer]);
+    m_resourcePool.gpu->free(pBuffer);
+    m_table.vkDestroyBuffer(getHandle(), pBuffer->getHandle(), vkAllocator());
     m_resourcePool.buffer.free(pBuffer);
 }
 
 void Device::destroy(Image* pImage)
 {
-    vmaDestroyImage(m_resourcePool.gpu, pImage->getHandle(), m_imageMemoryMap[pImage]);
+    m_resourcePool.gpu->free(pImage);
+    m_table.vkDestroyImage(getHandle(), pImage->getHandle(), vkAllocator());
     m_resourcePool.image.free(pImage);
 }
 
@@ -546,22 +503,18 @@ Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
     return utils::getResult(m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange));
 }
 
-Result Device::mapMemory(Buffer* pBuffer, void* mapped, MemoryRange range)
+Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
 {
-    if(range.size == 0)
+    if(ppMapped == nullptr)
     {
-        range.size = VK_WHOLE_SIZE;
+        return m_resourcePool.gpu->map(pBuffer, ppMapped);
     }
-    if(mapped == nullptr)
-    {
-        return utils::getResult(vmaMapMemory(m_resourcePool.gpu, m_bufferMemoryMap[pBuffer], &pBuffer->getMapped()));
-    }
-    return utils::getResult(vmaMapMemory(m_resourcePool.gpu, m_bufferMemoryMap[pBuffer], &mapped));
+    return m_resourcePool.gpu->map(pBuffer, &pBuffer->getMapped());
 }
 
-void Device::unMapMemory(Buffer* pBuffer)
+void Device::unMapMemory(Buffer* pBuffer) const
 {
-    vmaUnmapMemory(m_resourcePool.gpu, m_bufferMemoryMap[pBuffer]);
+    m_resourcePool.gpu->unMap(pBuffer);
 }
 
 Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
