@@ -22,17 +22,21 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline*      m_pPipeline  = {};
-    aph::vk::Buffer*        m_pVB        = {};
-    aph::vk::Buffer*        m_pIB        = {};
-    aph::vk::Sampler*       m_pSampler   = {};
-    aph::vk::Image*         m_pImage     = {};
-    aph::vk::DescriptorSet* m_pTextureSet = {};
+    aph::vk::Pipeline*      m_pPipeline     = {};
+    aph::vk::Buffer*        m_pVB           = {};
+    aph::vk::Buffer*        m_pIB           = {};
+    aph::vk::Sampler*       m_pSampler      = {};
+    aph::vk::Image*         m_pImage        = {};
+    aph::vk::Image*         m_pRenderTarget = {};
+    aph::vk::DescriptorSet* m_pTextureSet   = {};
+    aph::vk::ShaderProgram* m_pProgram      = {};
 
 private:
-    std::unique_ptr<aph::WSI>          m_wsi      = {};
-    std::unique_ptr<aph::vk::Renderer> m_renderer = {};
-    aph::vk::Device*                   m_pDevice  = {};
+    std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
+    aph::WSI*                          m_pWSI            = {};
+    aph::vk::Device*                   m_pDevice         = {};
+    aph::ResourceLoader*               m_pResourceLoader = {};
+    aph::vk::SwapChain*                m_pSwapChain      = {};
 };
 
 #endif  // SCENE_MANAGER_H_

@@ -103,7 +103,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
         .pSetLayouts        = &getHandle(),
     };
     VkDescriptorSet handle = VK_NULL_HANDLE;
-    APH_ASSERT(m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle));
+    _VR(m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle));
 
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
