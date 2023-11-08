@@ -8,6 +8,7 @@ void triangle_demo::init()
 {
     PROFILE_FUNCTION();
 
+    // setup window
     aph::RenderConfig config{
         .flags     = aph::RENDER_CFG_WITHOUT_UI,
         .maxFrames = 3,
@@ -101,12 +102,12 @@ void triangle_demo::init()
                                                    {aph::ShaderStage::FS, {"shader_glsl://default/triangle.frag"}},
                                                }};
 
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &pProgram);
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
 
             m_pResourceLoader->wait();
             aph::vk::GraphicsPipelineCreateInfo createInfo{
                 .vertexInput = vdesc,
-                .pProgram    = pProgram,
+                .pProgram    = m_pProgram,
                 .color       = {{.format = m_pSwapChain->getFormat()}},
             };
 
@@ -162,7 +163,7 @@ void triangle_demo::finish()
     m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pPipeline);
     m_pDevice->destroy(m_pRenderTarget);
-    m_pDevice->destroy(pProgram);
+    m_pDevice->destroy(m_pProgram);
 }
 
 void triangle_demo::load()
