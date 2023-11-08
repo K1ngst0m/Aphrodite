@@ -7,6 +7,18 @@
 
 namespace aph::vk
 {
+const std::unordered_map<ImageDomain, VmaMemoryUsage> m_imageDomainUsageMap = {
+    {ImageDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY},
+    {ImageDomain::Transient, VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED},
+    {ImageDomain::LinearHost, VMA_MEMORY_USAGE_CPU_TO_GPU},
+    {ImageDomain::LinearHostCached, VMA_MEMORY_USAGE_GPU_TO_CPU},
+};
+const std::unordered_map<BufferDomain, VmaMemoryUsage> m_bufferDomainUsageMap = {
+    {BufferDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY},
+    {BufferDomain::LinkedDeviceHost, VMA_MEMORY_USAGE_CPU_TO_GPU},
+    {BufferDomain::Host, VMA_MEMORY_USAGE_CPU_ONLY},
+    {BufferDomain::CachedHost, VMA_MEMORY_USAGE_GPU_TO_CPU},
+};
 
 VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
 {
@@ -65,7 +77,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_UNKNOWN;
     if(m_bufferDomainUsageMap.contains(bufferCI.domain))
     {
-        usage = m_bufferDomainUsageMap[bufferCI.domain];
+        usage = m_bufferDomainUsageMap.at(bufferCI.domain);
     }
 
     VmaAllocationCreateInfo allocCreateInfo = {.usage = usage};
@@ -86,7 +98,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     VmaMemoryUsage usage = VMA_MEMORY_USAGE_UNKNOWN;
     if(m_imageDomainUsageMap.contains(bufferCI.domain))
     {
-        usage = m_imageDomainUsageMap[bufferCI.domain];
+        usage = m_imageDomainUsageMap.at(bufferCI.domain);
     }
 
     VmaAllocationCreateInfo allocCreateInfo = {.usage = usage};
@@ -101,33 +113,35 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
 void VMADeviceAllocator::free(Image* pImage)
 {
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     vmaFreeMemory(m_allocator, alloc->getHandle());
+    m_imageMemoryMap.erase(pImage);
 }
 void VMADeviceAllocator::free(Buffer* pBuffer)
 {
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
     vmaFreeMemory(m_allocator, alloc->getHandle());
+    m_bufferMemoryMap.erase(pBuffer);
 }
 Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
 {
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
     return utils::getResult(vmaMapMemory(m_allocator, alloc->getHandle(), ppData));
 }
 Result VMADeviceAllocator::map(Image* pImage, void** ppData)
 {
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     return utils::getResult(vmaMapMemory(m_allocator, alloc->getHandle(), ppData));
 }
 void VMADeviceAllocator::unMap(Buffer* pBuffer)
 {
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
     vmaUnmapMemory(m_allocator, alloc->getHandle());
 }
 void VMADeviceAllocator::unMap(Image* pImage)
 {
-    auto alloc = dynamic_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
+    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     vmaUnmapMemory(m_allocator, alloc->getHandle());
 }
 void VMADeviceAllocator::clear()

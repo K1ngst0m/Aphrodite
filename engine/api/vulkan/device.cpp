@@ -130,6 +130,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
     volkLoadDeviceTable(&device->m_table, handle);
     device->m_supportedFeatures = supportedFeatures;
+    // TODO
+    device->m_resourcePool.gpu = new VMADeviceAllocator(createInfo.pInstance, device.get());
 
     // Get handles to all of the previously enumerated and created queues.
     device->m_queues.resize(queueFamilyCount);
@@ -144,9 +146,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
                 device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
         }
     }
-
-    // TODO
-    device->m_resourcePool.gpu = new VMADeviceAllocator(createInfo.pInstance, device.get());
 
     // Return success.
     return device;

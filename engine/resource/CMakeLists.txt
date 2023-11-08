@@ -12,7 +12,6 @@ target_include_directories(resource PRIVATE
   ${APH_EXTERNAL_DIR}/tinygltf/include
   ${APH_EXTERNAL_DIR}/stb/include
   ${APH_EXTERNAL_DIR}/glm
-  ${APH_EXTERNAL_DIR}/vma/include
 )
 
 target_link_libraries(resource PRIVATE slang aph_filesystem shaderc_shared)

@@ -16,7 +16,6 @@ add_library(aph_engine INTERFACE)
 target_include_directories(aph_engine INTERFACE
                                   ${APH_EXTERNAL_DIR}/volk
                                   ${APH_EXTERNAL_DIR}/glm
-                                  ${APH_EXTERNAL_DIR}/vma/include
                                   ${APH_ENGINE_DIR}
                                   )
 target_link_libraries(aph_engine INTERFACE

@@ -20,9 +20,6 @@ class PhysicalDevice;
 
 class Instance : public ResourceHandle<VkInstance, InstanceCreateInfo>
 {
-private:
-    Instance(const CreateInfoType& createInfo, HandleType handle);
-
 public:
     static VkResult Create(const InstanceCreateInfo& createInfo, Instance** ppInstance);
     static void     Destroy(Instance* pInstance);
@@ -33,6 +30,7 @@ private:
 #ifdef APH_DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{};
 #endif
+    Instance(const CreateInfoType& createInfo, HandleType handle);
     std::vector<const char*>                     m_supportedInstanceExtensions{};
     std::vector<std::unique_ptr<PhysicalDevice>> m_physicalDevices{};
 };
