@@ -543,10 +543,6 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         ci.extent = {img.width, img.height, 1};
     }
 
-    bool genMipmap = ci.mipLevels > 1;
-    // const uint32_t width     = ci.extent.width;
-    // const uint32_t height    = ci.extent.height;
-
     // Load texture from image buffer
     vk::Buffer* stagingBuffer;
     {
@@ -564,7 +560,10 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
     }
 
     vk::Image* image{};
+
     {
+        bool genMipmap = ci.mipLevels > 1;
+
         auto imageCI = ci;
         imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         imageCI.domain = ImageDomain::Device;
@@ -576,62 +575,54 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
 
         auto queue = m_pQueue;
+
+        // mip map opeartions
         m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
             cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
-
             cmd->copyBufferToImage(stagingBuffer, image);
+
             if(genMipmap)
             {
                 cmd->transitionImageLayout(image, aph::ResourceState::CopySource);
+                int32_t width  = ci.extent.width;
+                int32_t height = ci.extent.height;
+
+                // generate mipmap chains
+                for(int32_t i = 1; i < imageCI.mipLevels; i++)
+                {
+                    vk::ImageBlitInfo srcBlitInfo{
+                        .extent     = {int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1},
+                        .level      = static_cast<uint32_t>(i - 1),
+                        .layerCount = 1,
+                    };
+
+                    vk::ImageBlitInfo dstBlitInfo{
+                        .extent     = {int32_t(width >> i), int32_t(height >> i), 1},
+                        .level      = static_cast<uint32_t>(i),
+                        .layerCount = 1,
+                    };
+
+                    // Prepare current mip level as image blit destination
+                    vk::ImageBarrier barrier{
+                        .pImage             = image,
+                        .currentState       = image->getResourceState(),
+                        .newState           = ResourceState::CopyDest,
+                        .subresourceBarrier = 1,
+                        .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
+                    };
+                    cmd->insertBarrier({barrier});
+
+                    // Blit from previous level
+                    cmd->blitImage(image, image, srcBlitInfo, dstBlitInfo);
+
+                    barrier.currentState = image->getResourceState();
+                    barrier.newState     = ResourceState::CopySource;
+                    cmd->insertBarrier({barrier});
+                }
             }
+
+            cmd->transitionImageLayout(image, ResourceState::ShaderResource);
         });
-
-        // TODO mip map opeartions
-        // executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
-        //     if(genMipmap)
-        //     {
-        //         // generate mipmap chains
-        //         for(int32_t i = 1; i < imageCI.mipLevels; i++)
-        //         {
-        //             VkImageBlit imageBlit{};
-
-        //             // Source
-        //             imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //             imageBlit.srcSubresource.layerCount = 1;
-        //             imageBlit.srcSubresource.mipLevel   = i - 1;
-        //             imageBlit.srcOffsets[1].x           = int32_t(width >> (i - 1));
-        //             imageBlit.srcOffsets[1].y           = int32_t(height >> (i - 1));
-        //             imageBlit.srcOffsets[1].z           = 1;
-
-        //             // Destination
-        //             imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        //             imageBlit.dstSubresource.layerCount = 1;
-        //             imageBlit.dstSubresource.mipLevel   = i;
-        //             imageBlit.dstOffsets[1].x           = int32_t(width >> i);
-        //             imageBlit.dstOffsets[1].y           = int32_t(height >> i);
-        //             imageBlit.dstOffsets[1].z           = 1;
-
-        //             // Prepare current mip level as image blit destination
-        //             vk::ImageBarrier barrier{
-        //                 .pImage             = image,
-        //                 .currentState       = image->getResourceState(),
-        //                 .newState           = RESOURCE_STATE_COPY_DST,
-        //                 .subresourceBarrier = 1,
-        //                 .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
-        //             };
-
-        //             cmd->insertBarrier({barrier});
-        //             // Blit from previous level
-        //             cmd->blitImage(image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image,
-        //                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-        //             barrier.currentState = image->getResourceState();
-        //             barrier.newState     = RESOURCE_STATE_COPY_SRC;
-        //             cmd->insertBarrier({barrier});
-        //         }
-        //     }
-
-        //     cmd->transitionImageLayout(image, RESOURCE_STATE_SHADER_RESOURCE);
-        // });
     }
 
     m_pDevice->destroy(stagingBuffer);
