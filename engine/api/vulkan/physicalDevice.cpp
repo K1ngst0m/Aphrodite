@@ -18,19 +18,19 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
             // universal queue
             if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
             {
-                VK_LOG_INFO("Found graphics queue %lu", queueFamilyIndex);
+                VK_LOG_DEBUG("Found graphics queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Graphics].push_back(queueFamilyIndex);
             }
             // compute queue
             else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
             {
-                VK_LOG_INFO("Found compute queue %lu", queueFamilyIndex);
+                VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Compute].push_back(queueFamilyIndex);
             }
             // transfer queue
             else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
             {
-                VK_LOG_INFO("Found transfer queue %lu", queueFamilyIndex);
+                VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Transfer].push_back(queueFamilyIndex);
             }
             else
