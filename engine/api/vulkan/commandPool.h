@@ -52,11 +52,11 @@ public:
     void   release(uint32_t count, CommandPool** ppCommandPool);
 
 private:
-    Device*                                                 m_pDevice        = {};
-    std::unordered_map<QueueType, std::set<CommandPool*>>   m_allPools       = {};
-    std::unordered_map<QueueType, std::queue<CommandPool*>> m_availablePools = {};
-    ThreadSafeObjectPool<CommandPool>                       m_resourcePool   = {};
-    std::mutex                                              m_lock           = {};
+    Device*                                      m_pDevice        = {};
+    HashMap<QueueType, std::set<CommandPool*>>   m_allPools       = {};
+    HashMap<QueueType, std::queue<CommandPool*>> m_availablePools = {};
+    ThreadSafeObjectPool<CommandPool>            m_resourcePool   = {};
+    std::mutex                                   m_lock           = {};
 };
 
 }  // namespace aph::vk

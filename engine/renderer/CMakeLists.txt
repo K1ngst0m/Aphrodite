@@ -9,5 +9,6 @@ target_include_directories(renderer PRIVATE
   ${APH_EXTERNAL_DIR}/volk
   ${APH_EXTERNAL_DIR}/imgui
   ${APH_EXTERNAL_DIR}/glm
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
 target_link_libraries(renderer PRIVATE api imgui)

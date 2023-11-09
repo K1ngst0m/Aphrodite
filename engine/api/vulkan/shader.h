@@ -61,7 +61,7 @@ struct CombinedResourceLayout
     uint32_t bindlessDescriptorSetMask = {};
     uint32_t combinedSpecConstantMask  = {};
 
-    std::unordered_map<ShaderStage, uint32_t> specConstantMask = {};
+    HashMap<ShaderStage, uint32_t> specConstantMask = {};
 };
 
 struct ImmutableSamplerBank
@@ -83,7 +83,7 @@ private:
     std::vector<uint32_t> m_code       = {};
     ResourceLayout        m_layout     = {};
 };
-using ShaderMapList = std::unordered_map<ShaderStage, Shader*>;
+using ShaderMapList = HashMap<ShaderStage, Shader*>;
 
 struct ProgramCreateInfo
 {

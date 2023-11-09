@@ -57,11 +57,11 @@ public:
     void execute(vk::Image* pImage, vk::SwapChain* pSwapChain = nullptr);
 
 private:
-    vk::Device* m_pDevice = {};
+    vk::Device* m_pDevice     = {};
     TaskManager m_taskManager = {5, "Render Graph"};
 
-    std::vector<RenderPass*>                  m_passes;
-    std::unordered_map<std::string, uint32_t> m_renderPassMap;
+    std::vector<RenderPass*>       m_passes;
+    HashMap<std::string, uint32_t> m_renderPassMap;
 
     vk::Image* m_pRenderTarget = {};
 

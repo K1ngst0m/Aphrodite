@@ -39,8 +39,8 @@ public:
     virtual void              clear()                             = 0;
 
 protected:
-    std::unordered_map<Buffer*, DeviceAllocation*> m_bufferMemoryMap;
-    std::unordered_map<Image*, DeviceAllocation*>  m_imageMemoryMap;
+    HashMap<Buffer*, DeviceAllocation*> m_bufferMemoryMap;
+    HashMap<Image*, DeviceAllocation*>  m_imageMemoryMap;
 };
 
 class VMADeviceAllocation final : public DeviceAllocation

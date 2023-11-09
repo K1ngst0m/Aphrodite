@@ -35,6 +35,7 @@ add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/spirv-cross EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/slang EXCLUDE_FROM_ALL)
+add_subdirectory(${APH_EXTERNAL_DIR}/unordered_dense EXCLUDE_FROM_ALL)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(xcb REQUIRED IMPORTED_TARGET xcb)

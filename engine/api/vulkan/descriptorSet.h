@@ -51,14 +51,14 @@ private:
     std::vector<VkDescriptorSetLayoutBinding> m_bindings = {};
 
 private:
-    VolkDeviceTable*                               m_pDeviceTable               = {};
-    std::vector<VkDescriptorPoolSize>              m_poolSizes                  = {};
-    std::vector<VkDescriptorPool>                  m_pools                      = {};
-    std::vector<uint32_t>                          m_allocatedSets              = {};
-    uint32_t                                       m_currentAllocationPoolIndex = {};
-    std::unordered_map<VkDescriptorSet, uint32_t>  m_allocatedDescriptorSets    = {};
-    std::unordered_map<VkDescriptorType, uint32_t> m_descriptorTypeCounts       = {};
-    std::mutex                                     m_lock                       = {};
+    VolkDeviceTable*                    m_pDeviceTable               = {};
+    std::vector<VkDescriptorPoolSize>   m_poolSizes                  = {};
+    std::vector<VkDescriptorPool>       m_pools                      = {};
+    std::vector<uint32_t>               m_allocatedSets              = {};
+    uint32_t                            m_currentAllocationPoolIndex = {};
+    HashMap<VkDescriptorSet, uint32_t>  m_allocatedDescriptorSets    = {};
+    HashMap<VkDescriptorType, uint32_t> m_descriptorTypeCounts       = {};
+    std::mutex                          m_lock                       = {};
 };
 
 class DescriptorSet : public ResourceHandle<VkDescriptorSet>

@@ -3,6 +3,7 @@
 
 #include "common/common.h"
 #include "api/vulkan/device.h"
+#include "common/hash.h"
 #include "geometry.h"
 #include "threads/taskManager.h"
 
@@ -63,8 +64,8 @@ struct ShaderStageLoadInfo
 
 struct ShaderLoadInfo
 {
-    std::unordered_map<ShaderStage, ShaderStageLoadInfo> stageInfo;
-    std::vector<ShaderConstant>                          constants;
+    HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
+    std::vector<ShaderConstant>               constants;
 };
 
 enum GeometryLoadFlags
@@ -132,10 +133,10 @@ private:
     vk::Queue*               m_pQueue      = {};
 
 private:
-    std::unordered_map<std::string, std::unique_ptr<vk::Shader>> m_shaderModuleCaches = {};
-    uuid::UUIDGenerator<std::mt19937_64>                         m_uuidGenerator      = {};
-    std::unordered_map<std::string, std::string>                 m_shaderUUIDMap      = {};
-    std::mutex                                                   m_updateLock;
+    HashMap<std::string, std::unique_ptr<vk::Shader>> m_shaderModuleCaches = {};
+    uuid::UUIDGenerator<std::mt19937_64>              m_uuidGenerator      = {};
+    HashMap<std::string, std::string>                 m_shaderUUIDMap      = {};
+    std::mutex                                        m_updateLock;
 };
 }  // namespace aph
 

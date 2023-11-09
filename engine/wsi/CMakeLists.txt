@@ -6,6 +6,7 @@ target_include_directories(wsi PRIVATE
   ${APH_EXTERNAL_DIR}/volk
   ${APH_EXTERNAL_DIR}/imgui
   ${APH_EXTERNAL_DIR}/glm
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
 
 target_link_libraries(wsi PRIVATE imgui glfw)

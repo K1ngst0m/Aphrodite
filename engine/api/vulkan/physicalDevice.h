@@ -25,16 +25,16 @@ public:
     const GPUSettings&                getSettings() const { return m_settings; }
 
 private:
-    GPUSettings                                          m_settings              = {};
-    VkPhysicalDeviceDriverProperties                     m_driverProperties      = {};
-    VkPhysicalDeviceProperties                           m_properties            = {};
-    VkPhysicalDeviceProperties2                          m_properties2           = {};
-    VkPhysicalDeviceFeatures                             m_features              = {};
-    VkPhysicalDeviceFeatures2                            m_features2             = {};
-    VkPhysicalDeviceMemoryProperties                     m_memoryProperties      = {};
-    std::vector<std::string>                             m_supportedExtensions   = {};
-    std::vector<VkQueueFamilyProperties>                 m_queueFamilyProperties = {};
-    std::unordered_map<QueueType, std::vector<uint32_t>> m_queueFamilyMap        = {};
+    GPUSettings                               m_settings              = {};
+    VkPhysicalDeviceDriverProperties          m_driverProperties      = {};
+    VkPhysicalDeviceProperties                m_properties            = {};
+    VkPhysicalDeviceProperties2               m_properties2           = {};
+    VkPhysicalDeviceFeatures                  m_features              = {};
+    VkPhysicalDeviceFeatures2                 m_features2             = {};
+    VkPhysicalDeviceMemoryProperties          m_memoryProperties      = {};
+    std::vector<std::string>                  m_supportedExtensions   = {};
+    std::vector<VkQueueFamilyProperties>      m_queueFamilyProperties = {};
+    HashMap<QueueType, std::vector<uint32_t>> m_queueFamilyMap        = {};
 };
 
 }  // namespace aph::vk

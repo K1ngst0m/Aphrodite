@@ -4,6 +4,7 @@
 #include <typeindex>
 #include <any>
 #include <mutex>
+#include "common/hash.h"
 #include "threads/taskManager.h"
 
 namespace aph
@@ -71,7 +72,7 @@ private:
     TaskManager m_taskManager = {5, "Event Manager"};
     std::mutex m_dataMapMutex;
 
-    std::unordered_map<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
+    HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
 
     template <typename TEvent>
     EventData<TEvent>& getEventData()

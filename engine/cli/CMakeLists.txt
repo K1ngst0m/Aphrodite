@@ -4,4 +4,5 @@ aph_compiler_options(cli)
 target_include_directories(cli PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/glm
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )

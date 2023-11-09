@@ -4,6 +4,7 @@ aph_compiler_options(common)
 target_include_directories(common PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/backward-cpp/include
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
   ${APH_EXTERNAL_DIR}/glm
   ${APH_EXTERNAL_DIR}/stb/include
 )

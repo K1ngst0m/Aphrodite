@@ -1,10 +1,7 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
-#include <chrono>
-#include <unordered_map>
-#include <string>
-
+#include "common/hash.h"
 #include "common/logger.h"
 #include "common/singleton.h"
 
@@ -35,7 +32,7 @@ public:
     }
 
     // Calculate the interval between two timestamps using their tags
-    double interval(uint32_t start, uint32_t end) const
+    double interval(uint32_t start, uint32_t end)
     {
         auto it1 = m_numMap.find(start);
         auto it2 = m_numMap.find(end);
@@ -47,6 +44,7 @@ public:
         }
 
         Duration duration = it2->second - it1->second;
+
         return duration.count();
     }
 
@@ -55,8 +53,8 @@ private:
     using TimePoint = std::chrono::time_point<Clock>;
     using Duration  = std::chrono::duration<double>;
 
-    std::unordered_map<std::string, TimePoint> m_strMap;
-    std::unordered_map<uint32_t, TimePoint>    m_numMap;
+    HashMap<std::string, TimePoint> m_strMap;
+    HashMap<uint32_t, TimePoint>    m_numMap;
 };
 
 }  // namespace aph

@@ -17,6 +17,7 @@ target_include_directories(aph_engine INTERFACE
                                   ${APH_EXTERNAL_DIR}/volk
                                   ${APH_EXTERNAL_DIR}/glm
                                   ${APH_ENGINE_DIR}
+                                  ${APH_EXTERNAL_DIR}/unordered_dense/include
                                   )
 target_link_libraries(aph_engine INTERFACE
   common
@@ -39,4 +40,5 @@ target_link_libraries(aph_engine INTERFACE
   ${cmake_thread_libs_init}
   dl
   dw
+  unordered_dense::unordered_dense
 )

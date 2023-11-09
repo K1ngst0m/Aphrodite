@@ -23,3 +23,6 @@ Branch: 3.3.8
 
 [vma]
 Branch: master
+
+[unordered_dense]
+Branch: v4.1.2

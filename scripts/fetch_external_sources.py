@@ -60,6 +60,7 @@ PACKAGES = [
     GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "spirv-headers"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Cross.git",   "spirv-cross",   "spirv-cross"),
     GitRepo("https://github.com/glfw/glfw",   "glfw",   "glfw"),
+    GitRepo("https://github.com/martinus/unordered_dense",   "unordered_dense",   "unordered_dense"),
 ]
 
 def GetOpt():

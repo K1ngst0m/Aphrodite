@@ -45,10 +45,10 @@ private:
     Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
     ~Image();
 
-    Device*                                m_pDevice            = {};
-    std::unordered_map<Format, ImageView*> m_imageViewFormatMap = {};
-    VkImageLayout                          m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
-    ResourceState                          m_resourceState      = {};
+    Device*                     m_pDevice            = {};
+    HashMap<Format, ImageView*> m_imageViewFormatMap = {};
+    VkImageLayout               m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
+    ResourceState               m_resourceState      = {};
 };
 
 struct ImageViewCreateInfo
@@ -64,6 +64,7 @@ struct ImageViewCreateInfo
 class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
 {
     friend class ObjectPool<ImageView>;
+
 public:
     Format                  getFormat() const { return m_createInfo.format; }
     VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
@@ -75,8 +76,8 @@ public:
 private:
     ImageView(const CreateInfoType& createInfo, HandleType handle);
 
-    Image*                                                   m_image       = {};
-    std::unordered_map<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
+    Image*                                        m_image       = {};
+    HashMap<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
 };
 
 }  // namespace aph::vk

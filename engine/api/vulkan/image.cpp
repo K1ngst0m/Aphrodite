@@ -28,7 +28,7 @@ ImageView* Image::getView(Format imageFormat)
 
     if(!m_imageViewFormatMap.contains(imageFormat))
     {
-        static const std::unordered_map<VkImageType, VkImageViewType> imageTypeMap{
+        static const HashMap<VkImageType, VkImageViewType> imageTypeMap{
             {VK_IMAGE_TYPE_1D, VK_IMAGE_VIEW_TYPE_1D},
             {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D},
             {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D},

@@ -4,6 +4,7 @@ aph_compiler_options(api)
 target_include_directories(api PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/volk
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
   ${APH_EXTERNAL_DIR}/spirv-cross
   ${APH_EXTERNAL_DIR}/vulkan
   ${APH_EXTERNAL_DIR}/glm

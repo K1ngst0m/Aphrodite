@@ -13,6 +13,7 @@
 
 #include "common/logger.h"
 #include "common/uuid.h"
+#include "common/hash.h"
 
 #define APH_CONCAT_IMPL(x, y) x##y
 #define APH_MACRO_CONCAT(x, y) APH_CONCAT_IMPL(x, y)

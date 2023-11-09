@@ -7,13 +7,13 @@
 
 namespace aph::vk
 {
-const std::unordered_map<ImageDomain, VmaMemoryUsage> m_imageDomainUsageMap = {
+const HashMap<ImageDomain, VmaMemoryUsage> m_imageDomainUsageMap = {
     {ImageDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY},
     {ImageDomain::Transient, VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED},
     {ImageDomain::LinearHost, VMA_MEMORY_USAGE_CPU_TO_GPU},
     {ImageDomain::LinearHostCached, VMA_MEMORY_USAGE_GPU_TO_CPU},
 };
-const std::unordered_map<BufferDomain, VmaMemoryUsage> m_bufferDomainUsageMap = {
+const HashMap<BufferDomain, VmaMemoryUsage> m_bufferDomainUsageMap = {
     {BufferDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY},
     {BufferDomain::LinkedDeviceHost, VMA_MEMORY_USAGE_CPU_TO_GPU},
     {BufferDomain::Host, VMA_MEMORY_USAGE_CPU_ONLY},

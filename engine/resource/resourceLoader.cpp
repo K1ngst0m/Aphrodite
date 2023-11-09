@@ -615,7 +615,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 
 void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
-    std::unordered_map<ShaderStage, vk::Shader*> shaderList;
+    HashMap<ShaderStage, vk::Shader*> shaderList;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
         auto shader       = loadShader(stage, stageLoadInfo);

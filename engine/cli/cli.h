@@ -2,6 +2,7 @@
 #define APH_CLI_H_
 
 #include "common/common.h"
+#include "common/hash.h"
 
 namespace aph
 {
@@ -11,9 +12,9 @@ struct CLICallbacks
 {
     void add(const char* cli, const std::function<void(CLIParser&)>& func) { m_callbacks[cli] = func; }
 
-    std::unordered_map<std::string, std::function<void(CLIParser&)>> m_callbacks;
-    std::function<void()>                                            m_errorHandler;
-    std::function<void(const char*)>                                 m_defaultHandler;
+    HashMap<std::string, std::function<void(CLIParser&)>> m_callbacks;
+    std::function<void()>                                 m_errorHandler;
+    std::function<void(const char*)>                      m_defaultHandler;
 };
 
 class CLIParser

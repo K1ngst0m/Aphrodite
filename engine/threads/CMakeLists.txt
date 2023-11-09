@@ -4,5 +4,6 @@ aph_compiler_options(threads)
 target_include_directories(threads PRIVATE
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/glm
+  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
 target_link_libraries(threads PRIVATE common aph_allocator)
