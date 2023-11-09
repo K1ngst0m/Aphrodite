@@ -22,7 +22,6 @@ private:
     ~Fence();
 
     Device*    m_pDevice      = {};
-    bool       m_observedWait = {false};
     std::mutex m_lock         = {};
 };
 

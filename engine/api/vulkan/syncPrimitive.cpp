@@ -155,11 +155,6 @@ bool Fence::wait(uint64_t timeout)
     // when waiting for a timeline semaphore in parallel with same value as well.
     std::lock_guard<std::mutex> holder{m_lock};
 
-    if(m_observedWait)
-    {
-        return true;
-    }
-
     if(timeout == 0)
     {
         result = table->vkGetFenceStatus(m_pDevice->getHandle(), getHandle()) == VK_SUCCESS;
@@ -169,11 +164,7 @@ bool Fence::wait(uint64_t timeout)
         result = m_pDevice->waitForFence({this}, true, timeout).success();
     }
 
-    if(result)
-    {
-        m_observedWait = true;
-    }
-    else
+    if(!result)
     {
         VK_LOG_ERR("Failed to wait for fence!");
     }
