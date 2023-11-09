@@ -7,8 +7,49 @@
 
 namespace aph
 {
-
 class RenderGraph;
+class RenderPass;
+
+struct PassImageInfo
+{
+    Extent3D extent;
+    Format   format  = Format::Undefined;
+    uint32_t samples = 1;
+    uint32_t levels  = 1;
+    uint32_t layers  = 1;
+};
+
+struct PassBufferInfo
+{
+    VkDeviceSize       size  = 0;
+    VkBufferUsageFlags usage = 0;
+};
+
+struct PassResource
+{
+    enum class Type
+    {
+        Image,
+        Buffer,
+    };
+
+    Type type;
+
+    HashSet<RenderPass*> writePasses;
+    HashSet<RenderPass*> readPasses;
+};
+
+struct PassImageResource : public PassResource
+{
+    PassImageInfo     imageInfo = {};
+    VkImageUsageFlags usage     = {};
+};
+
+struct PassBufferResource : public PassResource
+{
+    PassBufferInfo bufferInfo;
+};
+
 class RenderPass
 {
     friend class RenderGraph;
@@ -16,7 +57,7 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
-    void addColorOutput(vk::Image* pImage);
+    PassImageResource* addColorOutput(const std::string& name, const PassImageInfo& info);
 
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
@@ -34,9 +75,9 @@ private:
 private:
     struct
     {
-        std::unordered_set<vk::Image*> colorOutMap;
-        std::vector<vk::Image*>        colorOut;
-        vk::CommandPool*               pCmdPools = {};
+        std::vector<PassImageResource*> colorOutMap;
+        HashSet<PassImageResource*>     colorOutSet;
+        vk::CommandPool*                pCmdPools = {};
     } m_res;
 
 private:
@@ -50,18 +91,40 @@ class RenderGraph
 {
 public:
     RenderGraph(vk::Device* pDevice);
+    ~RenderGraph();
 
     RenderPass* createPass(const std::string& name, QueueType queueType);
     RenderPass* getPass(const std::string& name);
 
-    void execute(vk::Image* pImage, vk::SwapChain* pSwapChain = nullptr);
+    void execute(vk::SwapChain* pSwapChain = nullptr);
+
+    PassResource* getResource(const std::string& name, PassResource::Type type)
+    {
+        if(m_passResourceMap.contains(name))
+        {
+            auto res = m_passResources.at(m_passResourceMap[name]);
+            APH_ASSERT(res->type == type);
+            return res;
+        }
+
+        std::size_t idx = m_passResources.size();
+        auto        res = m_resourcePool.passResource.allocate();
+        m_passResources.emplace_back(res);
+        m_passResourceMap[name] = idx;
+        return res;
+    }
 
 private:
     vk::Device* m_pDevice     = {};
     TaskManager m_taskManager = {5, "Render Graph"};
 
-    std::vector<RenderPass*>       m_passes;
-    HashMap<std::string, uint32_t> m_renderPassMap;
+    std::vector<RenderPass*>          m_passes;
+    HashMap<std::string, std::size_t> m_renderPassMap;
+
+    std::vector<PassResource*>        m_passResources;
+    HashMap<std::string, std::size_t> m_passResourceMap;
+
+    HashMap<PassResource*, vk::Image*> m_buildImageResources;
 
     vk::Image* m_pRenderTarget = {};
 
@@ -73,7 +136,8 @@ private:
 
     struct
     {
-        ThreadSafeObjectPool<RenderPass> renderPass;
+        ThreadSafeObjectPool<PassResource> passResource;
+        ThreadSafeObjectPool<RenderPass>   renderPass;
     } m_resourcePool;
 };
 

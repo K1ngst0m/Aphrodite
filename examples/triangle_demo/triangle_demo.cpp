@@ -22,6 +22,12 @@ void triangle_demo::init()
     m_pResourceLoader = m_renderer->getResourceLoader();
     m_pWSI            = m_renderer->getWSI();
 
+    aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
+        [this](const aph::WindowResizeEvent& e) {
+            m_pSwapChain->reCreate();
+            return true;
+        });
+
     // setup triangle
     {
         struct VertexData
@@ -60,29 +66,6 @@ void triangle_demo::init()
                 .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
             m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
-        }
-
-        // render target
-        {
-            aph::vk::ImageCreateInfo createInfo{
-                .extent    = {m_pWSI->getWidth(), m_pWSI->getHeight(), 1},
-                .usage     = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                .domain    = aph::ImageDomain::Device,
-                .imageType = VK_IMAGE_TYPE_2D,
-                .format    = m_pSwapChain->getFormat(),
-            };
-
-            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pRenderTarget));
-
-            aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
-                [createInfo, this](const aph::WindowResizeEvent& e) {
-                    m_pSwapChain->reCreate();
-                    m_pDevice->destroy(m_pRenderTarget);
-                    auto newCreateInfo   = createInfo;
-                    newCreateInfo.extent = {m_pWSI->getWidth(), m_pWSI->getHeight(), 1};
-                    APH_CHECK_RESULT(m_pDevice->create(newCreateInfo, &m_pRenderTarget));
-                    return true;
-                });
         }
 
         // pipeline
@@ -138,7 +121,12 @@ void triangle_demo::run()
 
         auto graph    = m_renderer->getGraph();
         auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
-        drawPass->addColorOutput(m_pRenderTarget);
+
+        drawPass->addColorOutput("render target",
+                                    {
+                                        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                        .format = m_pSwapChain->getFormat(),
+                                    });
 
         drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
@@ -147,7 +135,7 @@ void triangle_demo::run()
             pCmd->drawIndexed({3, 1, 0, 0, 0});
         });
 
-        graph->execute(m_pRenderTarget, m_pSwapChain);
+        graph->execute(m_pSwapChain);
 
         timer.set(TIMELINE_LOOP_END);
         deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
@@ -161,7 +149,6 @@ void triangle_demo::finish()
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pPipeline);
-    m_pDevice->destroy(m_pRenderTarget);
     m_pDevice->destroy(m_pProgram);
 }
 

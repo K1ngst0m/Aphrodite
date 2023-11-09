@@ -188,6 +188,10 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
 Renderer::~Renderer()
 {
+    for(auto& graph : m_frameGraph)
+    {
+        graph.reset();
+    }
     m_pDevice->getDeviceTable()->vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pResourceLoader->cleanup();

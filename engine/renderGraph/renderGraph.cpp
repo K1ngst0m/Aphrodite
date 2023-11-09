@@ -10,6 +10,30 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
     m_name(name)
 {
 }
+
+PassImageResource* RenderPass::addColorOutput(const std::string& name, const PassImageInfo& info)
+{
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    if(m_res.colorOutSet.contains(res))
+    {
+        return res;
+    }
+    m_res.colorOutSet.insert(res);
+    res->imageInfo = info;
+    res->writePasses.insert(this);
+    res->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    m_res.colorOutMap.push_back(res);
+    return res;
+}
+
+RenderPass* RenderGraph::getPass(const std::string& name)
+{
+    if(m_renderPassMap.contains(name))
+    {
+        return m_passes[m_renderPassMap[name]];
+    }
+    return nullptr;
+}
 RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
 {
     if(m_renderPassMap.contains(name))
@@ -27,14 +51,12 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
 RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
-void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
+void RenderGraph::execute(vk::SwapChain* pSwapChain)
 {
     auto& timer = Timer::GetInstance();
     timer.set("renderer: begin frame");
 
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-
-    m_pRenderTarget = pImage;
 
     vk::QueueSubmitInfo frameSubmitInfo{};
 
@@ -43,8 +65,33 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
     std::mutex submitLock;
     for(auto* pass : m_passes)
     {
+        std::vector<vk::Image*> colorImages;
+
+        for(auto colorAttachment : pass->m_res.colorOutMap)
+        {
+            if(!m_buildImageResources.contains(colorAttachment))
+            {
+                vk::Image*          pImage = {};
+                vk::ImageCreateInfo createInfo{
+                    .extent = colorAttachment->imageInfo.extent,
+                    // TODO only final output target would be used for copy src
+                    .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                    .domain    = ImageDomain::Device,
+                    .imageType = VK_IMAGE_TYPE_2D,
+                    .format    = colorAttachment->imageInfo.format,
+                };
+                APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
+                m_buildImageResources[colorAttachment] = pImage;
+            }
+
+            colorImages.push_back(m_buildImageResources[colorAttachment]);
+            m_pRenderTarget = m_buildImageResources[colorAttachment];
+        }
+
+        APH_ASSERT(!colorImages.empty());
+
         taskgrp->addTask(
-            [this, pass, queue, &frameSubmitInfo, &submitLock]() {
+            [this, pass, queue, &frameSubmitInfo, &submitLock, colorImages]() {
                 auto& cmdPool = pass->m_res.pCmdPools;
                 if(cmdPool == nullptr)
                 {
@@ -54,7 +101,7 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
                 pCmd->begin();
                 pCmd->setDebugName(pass->m_name);
                 pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
-                pCmd->beginRendering(pass->m_res.colorOut);
+                pCmd->beginRendering(colorImages);
                 pass->m_executeCB(pCmd);
                 pCmd->endRendering();
                 pCmd->end();
@@ -92,6 +139,7 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
         {
             auto pSwapchainImage = pSwapChain->getImage();
 
+            auto pImage = m_pRenderTarget;
             // transisiton && copy
             m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
                 pCopyCmd->transitionImageLayout(pImage, ResourceState::CopySource);
@@ -123,20 +171,12 @@ void RenderGraph::execute(vk::Image* pImage, vk::SwapChain* pSwapChain)
     m_frameData.fps       = 1 / m_frameData.frameTime;
     CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
 }
-void RenderPass::addColorOutput(vk::Image* pImage)
+
+RenderGraph::~RenderGraph()
 {
-    if(!m_res.colorOutMap.contains(pImage))
+    for(auto [_, image] : m_buildImageResources)
     {
-        m_res.colorOut.push_back(pImage);
-        m_res.colorOutMap.insert(pImage);
+        m_pDevice->destroy(image);
     }
-}
-RenderPass* RenderGraph::getPass(const std::string& name)
-{
-    if(m_renderPassMap.contains(name))
-    {
-        return m_passes[m_renderPassMap[name]];
-    }
-    return nullptr;
 }
 }  // namespace aph
