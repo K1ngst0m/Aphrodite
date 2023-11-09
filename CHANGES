@@ -15,9 +15,6 @@ Branch: vulkan-sdk-1.3.268
 [SPIRV-cross]
 Branch: vulkan-sdk-1.3.268
 
-[shaderc]
-Branch: v2023.7
-
 [mimalloc]
 Branch: v2.1.2
 

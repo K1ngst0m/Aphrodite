@@ -14,7 +14,6 @@ target_link_libraries(api PRIVATE
   aph_allocator
   threads
   volk
-  shaderc_shared
   spirv-cross-core
   GPUOpen::VulkanMemoryAllocator
 )

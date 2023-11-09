@@ -59,7 +59,6 @@ PACKAGES = [
     GitRepo("https://github.com/KhronosGroup/SPIRV-Tools.git",   "spirv-tools",   "spirv-tools"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Headers.git", "spirv-headers", "spirv-headers"),
     GitRepo("https://github.com/KhronosGroup/SPIRV-Cross.git",   "spirv-cross",   "spirv-cross"),
-    GitRepo("https://github.com/google/shaderc",   "shaderc",   "shaderc"),
     GitRepo("https://github.com/glfw/glfw",   "glfw",   "glfw"),
 ]
 

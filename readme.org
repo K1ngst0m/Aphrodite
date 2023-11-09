@@ -45,7 +45,6 @@
 - [[https://github.com/g-truc/glm][glm]]
 - [[https://github.com/ocornut/imgui][imgui]]
 - [[https://github.com/microsoft/mimalloc][mimalloc]]
-- [[https://github.com/google/shaderc][shaderc]]
 - [[https://github.com/shader-slang/slang][slang]]
 - [[https://github.com/nothings/stb][stb]]
 - [[https://github.com/syoyo/tinygltf][tinygltf]]

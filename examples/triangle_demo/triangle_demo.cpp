@@ -99,8 +99,6 @@ void triangle_demo::init()
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
                                                    {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
                                                    {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
-                                                   // {aph::ShaderStage::VS, {"shader_glsl://default/triangle.vert"}},
-                                                   // {aph::ShaderStage::FS, {"shader_glsl://default/triangle.frag"}},
                                                }};
 
             m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);

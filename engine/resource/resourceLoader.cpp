@@ -3,8 +3,6 @@
 #include "api/vulkan/device.h"
 #include "tinyimageformat.h"
 
-#include "shaderc/shaderc.hpp"
-
 #include "slang.h"
 #include "slang-com-ptr.h"
 
@@ -258,54 +256,6 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
     memcpy(spirv.data(), source.data(), size);
     return spirv;
 }
-std::vector<uint32_t> loadGlslFromFile(std::string_view filename)
-{
-    using namespace aph;
-    shaderc::Compiler compiler{};
-    std::string       source = aph::Filesystem::GetInstance().readFileToString(filename);
-    APH_ASSERT(!source.empty());
-    shaderc_shader_kind stage = shaderc_glsl_infer_from_source;
-    switch(utils::getStageFromPath(filename))
-    {
-    case ShaderStage::VS:
-        stage = shaderc_vertex_shader;
-        break;
-    case ShaderStage::FS:
-        stage = shaderc_fragment_shader;
-        break;
-    case ShaderStage::CS:
-        stage = shaderc_compute_shader;
-        break;
-    case ShaderStage::TCS:
-        stage = shaderc_tess_control_shader;
-        break;
-    case ShaderStage::TES:
-        stage = shaderc_tess_evaluation_shader;
-        break;
-    case ShaderStage::GS:
-        stage = shaderc_geometry_shader;
-        break;
-    case ShaderStage::TS:
-        stage = shaderc_task_shader;
-        break;
-    case ShaderStage::MS:
-        stage = shaderc_mesh_shader;
-        break;
-    default:
-        break;
-    }
-
-    shaderc::CompileOptions options{};
-    options.SetGenerateDebugInfo();
-    options.SetSourceLanguage(shaderc_source_language_glsl);
-    options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-    options.SetTargetSpirv(shaderc_spirv_version_1_6);
-
-    auto result = compiler.CompileGlslToSpv(source.data(), source.size(), stage, filename.data(), "main", options);
-    APH_ASSERT(result.GetCompilationStatus() == 0);
-    std::vector<uint32_t> spirv{result.cbegin(), result.cend()};
-    return spirv;
-}
 
 std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderStage stage)
 {
@@ -346,7 +296,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
         }
 
         Slang::ComPtr<IEntryPoint> entryPoint;
-        switch (stage)
+        switch(stage)
         {
         case aph::ShaderStage::VS:
             module->findEntryPointByName("vertexMain", entryPoint.writeRef());
@@ -824,11 +774,6 @@ vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadI
         if(path.extension() == ".spv")
         {
             spvCode = loader::shader::loadSpvFromFile(path.string());
-        }
-        else if(path.extension() == ".vert" || path.extension() == ".frag" || path.extension() == ".comp" ||
-                path.extension() == ".geom")
-        {
-            spvCode = loader::shader::loadGlslFromFile(path.string());
         }
         else if(path.extension() == ".slang")
         {
