@@ -51,7 +51,7 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
 RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
-void RenderGraph::execute(vk::SwapChain* pSwapChain)
+void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
 {
     auto& timer = Timer::GetInstance();
     timer.set("renderer: begin frame");
@@ -85,7 +85,6 @@ void RenderGraph::execute(vk::SwapChain* pSwapChain)
             }
 
             colorImages.push_back(m_buildImageResources[colorAttachment]);
-            m_pRenderTarget = m_buildImageResources[colorAttachment];
         }
 
         APH_ASSERT(!colorImages.empty());
@@ -139,7 +138,7 @@ void RenderGraph::execute(vk::SwapChain* pSwapChain)
         {
             auto pSwapchainImage = pSwapChain->getImage();
 
-            auto pImage = m_pRenderTarget;
+            auto pImage = m_buildImageResources[m_passResources[m_passResourceMap[output]]];
             // transisiton && copy
             m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
                 pCopyCmd->transitionImageLayout(pImage, ResourceState::CopySource);

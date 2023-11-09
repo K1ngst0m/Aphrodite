@@ -176,7 +176,7 @@ void basic_texture::run()
             pCmd->drawIndexed({6, 1, 0, 0, 0});
         });
 
-        graph->execute(m_pSwapChain);
+        graph->execute("render target", m_pSwapChain);
 
         timer.set(TIMELINE_LOOP_END);
         deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);

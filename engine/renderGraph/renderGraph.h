@@ -96,7 +96,7 @@ public:
     RenderPass* createPass(const std::string& name, QueueType queueType);
     RenderPass* getPass(const std::string& name);
 
-    void execute(vk::SwapChain* pSwapChain = nullptr);
+    void execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
 
     PassResource* getResource(const std::string& name, PassResource::Type type)
     {
@@ -125,8 +125,6 @@ private:
     HashMap<std::string, std::size_t> m_passResourceMap;
 
     HashMap<PassResource*, vk::Image*> m_buildImageResources;
-
-    vk::Image* m_pRenderTarget = {};
 
     struct
     {
