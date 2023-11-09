@@ -2,46 +2,49 @@
 struct AssembledVertex
 {
     float3 position : POSITION;
-    float3 color : COLOR;
+    float2 uv : TEXCOORD0;
 };
 
 // Output of the vertex shader, and input to the fragment shader.
 struct CoarseVertex
 {
-    float3 color: COLOR;
+    float2 uv : TEXCOORD0;
 };
 
 // Output of the fragment shader
 struct Fragment
 {
-    float4 color: SV_TARGET;
+    float4 color : SV_TARGET;
 };
 
 // Vertex  Shader
-
 struct VertexStageOutput
 {
     CoarseVertex coarseVertex : CoarseVertex;
     float4       sv_position : SV_Position;
 };
 
-[shader("vertex")] VertexStageOutput
-vertexMain(AssembledVertex assembledVertex) {
+[shader("vertex")]
+VertexStageOutput vertexMain(AssembledVertex assembledVertex) {
     VertexStageOutput output;
 
     float3 position = assembledVertex.position;
-    float3 color    = assembledVertex.color;
+    float2 uv       = assembledVertex.uv;
 
-    output.coarseVertex.color = color;
-    output.sv_position        = float4(position, 1.0);
+    output.coarseVertex.uv = uv;
+    output.sv_position     = float4(position, 1.0);
 
     return output;
 }
 
-// Fragment Shader
-[shader("fragment")] float4 fragmentMain(CoarseVertex coarseVertex : CoarseVertex) : SV_Target
-{
-    float3 color = coarseVertex.color;
+[[vk::binding(0, 0)]] Texture2D tex;
+[[vk::binding(1, 0)]] SamplerState samp;
 
-    return float4(color, 1.0);
+// Fragment Shader
+[shader("fragment")]
+float4 fragmentMain(CoarseVertex coarseVertex : CoarseVertex) : SV_Target
+{
+    float4 color = tex.Sample(samp, coarseVertex.uv);
+
+    return color;
 }

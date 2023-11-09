@@ -110,8 +110,8 @@ void basic_texture::init()
             };
 
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
-                                                   {aph::ShaderStage::VS, {"shader_glsl://default/texture.vert"}},
-                                                   {aph::ShaderStage::FS, {"shader_glsl://default/texture.frag"}},
+                                                   {aph::ShaderStage::VS, {"shader_slang://texture.slang"}},
+                                                   {aph::ShaderStage::FS, {"shader_slang://texture.slang"}},
                                                }};
             m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
             m_pResourceLoader->wait();
@@ -132,6 +132,12 @@ void basic_texture::init()
                 .binding     = 0,
                 .arrayOffset = 0,
                 .images      = {m_pImage},
+                .samplers    = {},
+            });
+            m_pTextureSet->update({
+                .binding     = 1,
+                .arrayOffset = 0,
+                .images      = {},
                 .samplers    = {m_pSampler},
             });
         }
