@@ -20,7 +20,6 @@ struct ResourceLoaderCreateInfo
 enum class ImageContainerType
 {
     Default = 0,
-    Dds,
     Ktx,
     Png,
     Jpg,

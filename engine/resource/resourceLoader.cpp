@@ -1,16 +1,12 @@
 #include "resourceLoader.h"
 #include "common/profiler.h"
 #include "api/vulkan/device.h"
-#include "tinyimageformat.h"
 
 #include "slang.h"
 #include "slang-com-ptr.h"
 
 #define TINYKTX_IMPLEMENTATION
 #include "tinyktx.h"
-
-#define TINYDDS_IMPLEMENTATION
-#include "tinydds.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_INCLUDE_STB_IMAGE
@@ -122,8 +118,7 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo&
     };
     textureCI.arraySize = std::max(1U, TinyKtx_ArraySlices(ctx));
     textureCI.mipLevels = std::max(1U, TinyKtx_NumberOfMipmaps(ctx));
-    textureCI.format    = aph::vk::utils::getFormatFromVk(
-        (VkFormat)TinyImageFormat_ToVkFormat(TinyImageFormat_FromTinyKtxFormat(TinyKtx_GetFormat(ctx))));
+    textureCI.format    = aph::vk::utils::getFormatFromVk((VkFormat)TinyKtx_GetFormat(ctx));
     // textureCI.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
     textureCI.sampleCount = 1;
 
@@ -140,81 +135,6 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo&
     }
 
     TinyKtx_DestroyContext(ctx);
-
-    return true;
-}
-
-inline bool loadDDS(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
-{
-    if(!std::filesystem::exists(path))
-    {
-        CM_LOG_ERR("File does not exist: %s", path.c_str());
-        return false;
-    }
-
-    std::ifstream file(path, std::ios::binary | std::ios::ate);
-    if(!file.is_open())
-    {
-        CM_LOG_ERR("Failed to open file: %s", path.c_str());
-        return false;
-    }
-
-    const auto ddsDataSize = static_cast<std::uint64_t>(file.tellg());
-    if(ddsDataSize > UINT32_MAX)
-    {
-        CM_LOG_ERR("File too large: %s", path.c_str());
-        return false;
-    }
-
-    file.seekg(0);
-
-    TinyDDS_Callbacks callbacks{[](void* user, char const* msg) { CM_LOG_ERR("%s", msg); },
-                                [](void* user, size_t size) { return malloc(size); },
-                                [](void* user, void* memory) { free(memory); },
-                                [](void* user, void* buffer, size_t byteCount) {
-                                    auto ifs = static_cast<std::ifstream*>(user);
-                                    ifs->read((char*)buffer, byteCount);
-                                    return (size_t)ifs->gcount();
-                                },
-                                [](void* user, int64_t offset) {
-                                    auto ifs = static_cast<std::ifstream*>(user);
-                                    ifs->seekg(offset);
-                                    return !ifs->fail();
-                                },
-                                [](void* user) { return (int64_t)(static_cast<std::ifstream*>(user)->tellg()); }};
-
-    TinyDDS_ContextHandle ctx        = TinyDDS_CreateContext(&callbacks, &file);
-    bool                  headerOkay = TinyDDS_ReadHeader(ctx);
-    if(!headerOkay)
-    {
-        TinyDDS_DestroyContext(ctx);
-        return false;
-    }
-
-    aph::vk::ImageCreateInfo& textureCI = outCI;
-    textureCI.extent                    = {
-                           .width  = TinyDDS_Width(ctx),
-                           .height = TinyDDS_Height(ctx),
-                           .depth  = std::max(1U, TinyDDS_Depth(ctx)),
-    };
-    textureCI.arraySize = std::max(1U, TinyDDS_ArraySlices(ctx));
-    textureCI.mipLevels = std::max(1U, TinyDDS_NumberOfMipmaps(ctx));
-    textureCI.format    = aph::vk::utils::getFormatFromVk(
-        (VkFormat)TinyImageFormat_ToVkFormat(TinyImageFormat_FromTinyDDSFormat(TinyDDS_GetFormat(ctx))));
-    textureCI.sampleCount = 1;
-
-    if(textureCI.format == aph::Format::Undefined)
-    {
-        TinyDDS_DestroyContext(ctx);
-        return false;
-    }
-
-    if(TinyDDS_IsCubemap(ctx))
-    {
-        textureCI.arraySize *= 6;
-    }
-
-    TinyDDS_DestroyContext(ctx);
 
     return true;
 }
@@ -486,11 +406,6 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         case ImageContainerType::Jpg:
         {
             loader::image::loadPNGJPG(path, ci, data);
-        }
-        break;
-        case ImageContainerType::Dds:
-        {
-            loader::image::loadDDS(path, ci, data);
         }
         break;
         case ImageContainerType::Default:
