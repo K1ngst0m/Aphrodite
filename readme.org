@@ -40,14 +40,15 @@
 
 ** Third Party Libraries
 
-- [[https://github.com/bombela/backward-cpp][backward-cpp]] : Provide stack trace details.
-- [[https://github.com/glfw/glfw][glfw]] : Provides window and input handling.
-- [[https://github.com/g-truc/glm][glm]] : Mathematics library.
-- [[https://github.com/ocornut/imgui][imgui]] : GUI.
-- [[https://github.com/microsoft/mimalloc][mimalloc]] : Efficient memory allocator.
-- [[https://github.com/google/shaderc][shaderc]] : Tools for shader compilation.
-- [[https://github.com/shader-slang/slang][slang]] : Tools for shader compilation.
-- [[https://github.com/nothings/stb][stb]] : Hanldes image operations.
-- [[https://github.com/syoyo/tinygltf][tinygltf]] : Handles GLTF file operations.
-- [[https://github.com/zeux/volk][volk]] : Simplifies Vulkan API function loading.
+- [[https://github.com/bombela/backward-cpp][backward-cpp]]
+- [[https://github.com/glfw/glfw][glfw]]
+- [[https://github.com/g-truc/glm][glm]]
+- [[https://github.com/ocornut/imgui][imgui]]
+- [[https://github.com/microsoft/mimalloc][mimalloc]]
+- [[https://github.com/google/shaderc][shaderc]]
+- [[https://github.com/shader-slang/slang][slang]]
+- [[https://github.com/nothings/stb][stb]]
+- [[https://github.com/syoyo/tinygltf][tinygltf]]
+- [[https://github.com/zeux/volk][volk]]
+- [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][vma]]
 
