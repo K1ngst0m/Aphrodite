@@ -81,6 +81,40 @@ void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
     auto& timer = Timer::GetInstance();
     timer.set("renderer: begin frame");
 
+    auto fence = executeAsync(output, pSwapChain);
+    fence->wait();
+
+    timer.set("renderer: end frame");
+    m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
+    m_frameData.fps       = 1 / m_frameData.frameTime;
+    CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
+}
+
+RenderGraph::~RenderGraph()
+{
+    for(auto [_, image] : m_buildImageResources)
+    {
+        m_pDevice->destroy(image);
+    }
+}
+PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
+{
+    if(m_passResourceMap.contains(name))
+    {
+        auto res = m_passResources.at(m_passResourceMap[name]);
+        APH_ASSERT(res->type == type);
+        return res;
+    }
+
+    std::size_t idx = m_passResources.size();
+    auto        res = m_resourcePool.passResource.allocate();
+    m_passResources.emplace_back(res);
+    m_passResourceMap[name] = idx;
+    return res;
+}
+
+vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* pSwapChain)
+{
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
     vk::QueueSubmitInfo frameSubmitInfo{};
@@ -176,35 +210,7 @@ void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
             APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
         }
 
-        frameFence->wait();
+        return frameFence;
     }
-
-    timer.set("renderer: end frame");
-    m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
-    m_frameData.fps       = 1 / m_frameData.frameTime;
-    CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
-}
-
-RenderGraph::~RenderGraph()
-{
-    for(auto [_, image] : m_buildImageResources)
-    {
-        m_pDevice->destroy(image);
-    }
-}
-PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
-{
-    if(m_passResourceMap.contains(name))
-    {
-        auto res = m_passResources.at(m_passResourceMap[name]);
-        APH_ASSERT(res->type == type);
-        return res;
-    }
-
-    std::size_t idx = m_passResources.size();
-    auto        res = m_resourcePool.passResource.allocate();
-    m_passResources.emplace_back(res);
-    m_passResourceMap[name] = idx;
-    return res;
 }
 }  // namespace aph

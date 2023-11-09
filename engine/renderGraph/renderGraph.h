@@ -100,6 +100,7 @@ public:
 
     void build();
     void execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
+    vk::Fence* executeAsync(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
 
 private:
     vk::Device* m_pDevice     = {};
