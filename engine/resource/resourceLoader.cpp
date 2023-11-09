@@ -238,7 +238,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
         .depth  = 1,
     };
 
-    textureCI.format = aph::Format::RGBA8_UINT;
+    textureCI.format = aph::Format::RGBA8_UNORM;
 
     data = img->data;
 
@@ -504,10 +504,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
     std::filesystem::path path;
     std::vector<uint8_t>  data;
     vk::ImageCreateInfo   ci;
-    if(info.pCreateInfo)
-    {
-        ci = *info.pCreateInfo;
-    }
+    ci = info.createInfo;
 
     if(std::holds_alternative<std::string>(info.data))
     {

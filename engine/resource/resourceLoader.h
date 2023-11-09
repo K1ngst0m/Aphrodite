@@ -37,7 +37,7 @@ struct ImageLoadInfo
     std::string_view                     debugName = {};
     std::variant<std::string, ImageInfo> data;
     ImageContainerType                   containerType = {ImageContainerType::Default};
-    vk::ImageCreateInfo*                 pCreateInfo   = {};
+    vk::ImageCreateInfo                  createInfo    = {};
 };
 
 struct BufferLoadInfo

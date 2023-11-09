@@ -58,7 +58,7 @@ void basic_texture::init()
                 .data       = indices.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-            m_pResourceLoader->load(loadInfo, &m_pIB);
+            m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
         // image and sampler
@@ -66,27 +66,15 @@ void basic_texture::init()
             APH_CHECK_RESULT(
                 m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
-            aph::vk::ImageCreateInfo imageCI{
-                .alignment = 0,
-                .arraySize = 1,
-                .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
-                .domain    = aph::ImageDomain::Device,
-                .imageType = VK_IMAGE_TYPE_2D,
-            };
-
-            aph::ImageLoadInfo loadInfo{.data = "texture://container2.png", .pCreateInfo = &imageCI};
-
-            m_pResourceLoader->load(loadInfo, &m_pImage);
-
-            m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics),
-                                             [&](aph::vk::CommandBuffer* cmd) {
-                                                 aph::vk::ImageBarrier barrier{
-                                                     .pImage       = m_pImage,
-                                                     .currentState = aph::ResourceState::Undefined,
-                                                     .newState     = aph::ResourceState::ShaderResource,
-                                                 };
-                                                 cmd->insertBarrier({barrier});
-                                             });
+            aph::ImageLoadInfo loadInfo{.data       = "texture://container2.png",
+                                        .createInfo = {
+                                            .alignment = 0,
+                                            .arraySize = 1,
+                                            .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
+                                            .domain    = aph::ImageDomain::Device,
+                                            .imageType = VK_IMAGE_TYPE_2D,
+                                        }};
+            m_pResourceLoader->loadAsync(loadInfo, &m_pImage);
         }
 
         // render target
@@ -149,6 +137,16 @@ void basic_texture::init()
                 .samplers    = {m_pSampler},
             });
         }
+
+        m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics),
+                                         [this](aph::vk::CommandBuffer* cmd) {
+                                             aph::vk::ImageBarrier barrier{
+                                                 .pImage       = m_pImage,
+                                                 .currentState = aph::ResourceState::Undefined,
+                                                 .newState     = aph::ResourceState::ShaderResource,
+                                             };
+                                             cmd->insertBarrier({barrier});
+                                         });
     }
 }
 
