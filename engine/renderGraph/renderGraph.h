@@ -96,23 +96,10 @@ public:
     RenderPass* createPass(const std::string& name, QueueType queueType);
     RenderPass* getPass(const std::string& name);
 
+    PassResource* getResource(const std::string& name, PassResource::Type type);
+
+    void build();
     void execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
-
-    PassResource* getResource(const std::string& name, PassResource::Type type)
-    {
-        if(m_passResourceMap.contains(name))
-        {
-            auto res = m_passResources.at(m_passResourceMap[name]);
-            APH_ASSERT(res->type == type);
-            return res;
-        }
-
-        std::size_t idx = m_passResources.size();
-        auto        res = m_resourcePool.passResource.allocate();
-        m_passResources.emplace_back(res);
-        m_passResourceMap[name] = idx;
-        return res;
-    }
 
 private:
     vk::Device* m_pDevice     = {};

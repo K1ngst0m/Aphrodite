@@ -51,22 +51,11 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
 RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
-void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
+
+void RenderGraph::build()
 {
-    auto& timer = Timer::GetInstance();
-    timer.set("renderer: begin frame");
-
-    auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-
-    vk::QueueSubmitInfo frameSubmitInfo{};
-
-    auto&      taskMgr = m_taskManager;
-    auto       taskgrp = taskMgr.createTaskGroup();
-    std::mutex submitLock;
     for(auto* pass : m_passes)
     {
-        std::vector<vk::Image*> colorImages;
-
         for(auto colorAttachment : pass->m_res.colorOutMap)
         {
             if(!m_buildImageResources.contains(colorAttachment))
@@ -83,7 +72,32 @@ void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
                 APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
                 m_buildImageResources[colorAttachment] = pImage;
             }
+        }
+    }
+}
 
+void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
+{
+    auto& timer = Timer::GetInstance();
+    timer.set("renderer: begin frame");
+
+    auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
+
+    vk::QueueSubmitInfo frameSubmitInfo{};
+
+    auto&      taskMgr = m_taskManager;
+    auto       taskgrp = taskMgr.createTaskGroup();
+    std::mutex submitLock;
+
+    build();
+
+    for(auto* pass : m_passes)
+    {
+        std::vector<vk::Image*> colorImages;
+
+        colorImages.reserve(pass->m_res.colorOutMap.size());
+        for(auto colorAttachment : pass->m_res.colorOutMap)
+        {
             colorImages.push_back(m_buildImageResources[colorAttachment]);
         }
 
@@ -177,5 +191,20 @@ RenderGraph::~RenderGraph()
     {
         m_pDevice->destroy(image);
     }
+}
+PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
+{
+    if(m_passResourceMap.contains(name))
+    {
+        auto res = m_passResources.at(m_passResourceMap[name]);
+        APH_ASSERT(res->type == type);
+        return res;
+    }
+
+    std::size_t idx = m_passResources.size();
+    auto        res = m_resourcePool.passResource.allocate();
+    m_passResources.emplace_back(res);
+    m_passResourceMap[name] = idx;
+    return res;
 }
 }  // namespace aph
