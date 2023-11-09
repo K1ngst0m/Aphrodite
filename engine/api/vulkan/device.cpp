@@ -352,12 +352,12 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
         }
     }
 
-    const uint32_t numColorAttachments = createInfo.getNumColorAttachments();
 
     // Not all attachments are valid. We need to create color blend attachments only for active attachments
     VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[APH_MAX_COLOR_ATTACHMENTS] = {};
     VkFormat                            colorAttachmentFormats[APH_MAX_COLOR_ATTACHMENTS]     = {};
 
+    const uint32_t numColorAttachments = createInfo.color.size();
     for(uint32_t i = 0; i != numColorAttachments; i++)
     {
         const auto& attachment = createInfo.color[i];

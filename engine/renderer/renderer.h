@@ -58,9 +58,9 @@ public:
     SwapChain*      getSwapchain() const { return m_pSwapChain; }
     ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
     Device*         getDevice() const { return m_pDevice.get(); }
-    RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
     UI*             getUI() const { return m_pUI.get(); }
     WSI*            getWSI() const { return m_wsi.get(); }
+    RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
 
     const RenderConfig& getConfig() const { return m_config; }
 

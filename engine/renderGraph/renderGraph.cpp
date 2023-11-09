@@ -188,7 +188,7 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
 
             auto pImage = m_buildImageResources[m_passResources[m_passResourceMap[output]]];
             // transisiton && copy
-            m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](vk::CommandBuffer* pCopyCmd) {
+            m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](auto* pCopyCmd) {
                 pCopyCmd->transitionImageLayout(pImage, ResourceState::CopySource);
                 pCopyCmd->transitionImageLayout(pSwapchainImage, ResourceState::CopyDest);
 

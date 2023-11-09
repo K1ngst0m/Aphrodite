@@ -125,15 +125,14 @@ void basic_texture::init()
             });
         }
 
-        m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics),
-                                         [this](aph::vk::CommandBuffer* cmd) {
-                                             aph::vk::ImageBarrier barrier{
-                                                 .pImage       = m_pImage,
-                                                 .currentState = aph::ResourceState::Undefined,
-                                                 .newState     = aph::ResourceState::ShaderResource,
-                                             };
-                                             cmd->insertBarrier({barrier});
-                                         });
+        m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics), [this](auto* cmd) {
+            aph::vk::ImageBarrier barrier{
+                .pImage       = m_pImage,
+                .currentState = aph::ResourceState::Undefined,
+                .newState     = aph::ResourceState::ShaderResource,
+            };
+            cmd->insertBarrier({barrier});
+        });
     }
 }
 
@@ -159,12 +158,12 @@ void basic_texture::run()
         auto graph    = m_renderer->getGraph();
         auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
         drawPass->addColorOutput("render target",
-                                    {
-                                        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-                                        .format = m_pSwapChain->getFormat(),
-                                    });
+                                 {
+                                     .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                     .format = m_pSwapChain->getFormat(),
+                                 });
 
-        drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
+        drawPass->recordExecute([this](auto* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
             pCmd->bindPipeline(m_pPipeline);

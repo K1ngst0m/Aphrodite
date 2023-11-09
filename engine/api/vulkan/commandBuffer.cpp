@@ -278,7 +278,6 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     m_commandState.colorAttachments = renderingInfo.colors;
     m_commandState.depthAttachment  = renderingInfo.depth;
     auto& colors                    = renderingInfo.colors;
-    auto& depth                     = renderingInfo.depth;
 
     APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
 

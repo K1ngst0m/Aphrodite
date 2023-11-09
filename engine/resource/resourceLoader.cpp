@@ -454,7 +454,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         auto queue = m_pQueue;
 
         // mip map opeartions
-        m_pDevice->executeSingleCommands(queue, [&](vk::CommandBuffer* cmd) {
+        m_pDevice->executeSingleCommands(queue, [&](auto* cmd) {
             cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
             cmd->copyBufferToImage(stagingBuffer, image);
 
@@ -605,7 +605,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeSingleCommands(m_pQueue, [=](vk::CommandBuffer* cmd) {
+            m_pDevice->executeSingleCommands(m_pQueue, [=](auto* cmd) {
                 cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
             });
         }
@@ -637,7 +637,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 }
 
                 m_pDevice->executeSingleCommands(
-                    m_pQueue, [=](vk::CommandBuffer* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
+                    m_pQueue, [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }

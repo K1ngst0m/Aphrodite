@@ -138,7 +138,8 @@ void UI::load()
             poolInfo.maxSets                    = 1;
             poolInfo.poolSizeCount              = (uint32_t)IM_ARRAYSIZE(poolSizes);
             poolInfo.pPoolSizes                 = poolSizes;
-            _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorPool(m_pDevice->getHandle(), &poolInfo, vkAllocator(), &m_pool));
+            _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorPool(m_pDevice->getHandle(), &poolInfo, vkAllocator(),
+                                                                    &m_pool));
         }
 
         auto checkResult = [](VkResult err) {
@@ -175,8 +176,8 @@ void UI::load()
 
     // load fonts
     {
-        m_pDevice->executeSingleCommands(
-            m_pDefaultQueue, [](CommandBuffer* pCmd) { ImGui_ImplVulkan_CreateFontsTexture(pCmd->getHandle()); });
+        m_pDevice->executeSingleCommands(m_pDefaultQueue,
+                                         [](auto* pCmd) { ImGui_ImplVulkan_CreateFontsTexture(pCmd->getHandle()); });
 
         ImGui_ImplVulkan_DestroyFontUploadObjects();
     }

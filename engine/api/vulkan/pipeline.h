@@ -55,13 +55,13 @@ struct GraphicsPipelineCreateInfo
 
     VertexInput vertexInput;
 
-    ShaderProgram * pProgram = {};
+    ShaderProgram* pProgram = {};
 
     ImmutableSamplerBank* pSamplerBank = {};
 
-    ColorAttachment color[APH_MAX_COLOR_ATTACHMENTS] = {};
-    VkFormat        depthFormat                      = VK_FORMAT_UNDEFINED;
-    VkFormat        stencilFormat                    = VK_FORMAT_UNDEFINED;
+    std::vector<ColorAttachment> color         = {};
+    VkFormat                     depthFormat   = VK_FORMAT_UNDEFINED;
+    VkFormat                     stencilFormat = VK_FORMAT_UNDEFINED;
 
     VkCullModeFlags cullMode         = VK_CULL_MODE_NONE;
     VkFrontFace     frontFaceWinding = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -73,24 +73,14 @@ struct GraphicsPipelineCreateInfo
     uint32_t samplesCount = 1u;
 
     const char* debugName = "";
-
-    uint32_t getNumColorAttachments() const
-    {
-        uint32_t n = 0;
-        while(n < APH_MAX_COLOR_ATTACHMENTS && color[n].format != Format::Undefined)
-        {
-            n++;
-        }
-        return n;
-    }
 };
 
 struct RenderPipelineState
 {
     GraphicsPipelineCreateInfo createInfo;
 
-    std::vector<VkVertexInputBindingDescription>   vkBindings    = {};
-    std::vector<VkVertexInputAttributeDescription> vkAttributes  = {};
+    std::vector<VkVertexInputBindingDescription>   vkBindings   = {};
+    std::vector<VkVertexInputAttributeDescription> vkAttributes = {};
 
     // non-owning, cached the last pipeline layout from the context (if the context has a new layout, invalidate all
     // VkPipeline objects)
@@ -164,6 +154,7 @@ private:
 class Pipeline : public ResourceHandle<VkPipeline>
 {
     friend class ObjectPool<Pipeline>;
+
 public:
     DescriptorSet* acquireSet(uint32_t idx) const;
 

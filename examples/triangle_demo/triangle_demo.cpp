@@ -128,7 +128,7 @@ void triangle_demo::run()
                                         .format = m_pSwapChain->getFormat(),
                                     });
 
-        drawPass->recordExecute([this](aph::vk::CommandBuffer* pCmd) {
+        drawPass->recordExecute([this](auto* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
             pCmd->bindPipeline(m_pPipeline);
