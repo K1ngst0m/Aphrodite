@@ -1,7 +1,5 @@
 #include "basic_texture.h"
 
-#include "glm/glm.hpp"
-
 basic_texture::basic_texture() : aph::BaseApp("base_texture")
 {
 }

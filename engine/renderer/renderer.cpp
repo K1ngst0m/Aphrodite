@@ -179,7 +179,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     // init ui
     if(m_config.flags & RENDER_CFG_UI)
     {
-        m_pUI = new UI({
+        m_pUI = std::make_unique<UI>(UICreateInfo{
             .pRenderer = this,
             .flags     = UI_Docking,
         });
@@ -188,11 +188,6 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
 Renderer::~Renderer()
 {
-    if(m_config.flags & RENDER_CFG_UI)
-    {
-        delete m_pUI;
-    }
-
     m_pDevice->getDeviceTable()->vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pResourceLoader->cleanup();

@@ -54,37 +54,33 @@ public:
     void update(float deltaTime);
 
 public:
+    Instance*       getInstance() const { return m_pInstance; }
     SwapChain*      getSwapchain() const { return m_pSwapChain; }
     ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
-    Instance*       getInstance() const { return m_pInstance; }
     Device*         getDevice() const { return m_pDevice.get(); }
     RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
-    UI*             getUI() const { return m_pUI; }
+    UI*             getUI() const { return m_pUI.get(); }
     WSI*            getWSI() const { return m_wsi.get(); }
 
     const RenderConfig& getConfig() const { return m_config; }
 
 protected:
-    VkSampleCountFlagBits m_sampleCount = {VK_SAMPLE_COUNT_1_BIT};
-
-    Instance*                       m_pInstance  = {};
-    SwapChain*                      m_pSwapChain = {};
-    std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<Device>         m_pDevice = {};
-
-    VkSurfaceKHR    m_surface       = {};
-    VkPipelineCache m_pipelineCache = {};
-
-protected:
-    UI* m_pUI = {};
-
-    RenderConfig m_config = {};
-
-    std::unique_ptr<WSI> m_wsi = {};
+    VkSampleCountFlagBits m_sampleCount   = {VK_SAMPLE_COUNT_1_BIT};
+    VkSurfaceKHR          m_surface       = {};
+    VkPipelineCache       m_pipelineCache = {};
+    RenderConfig          m_config        = {};
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
     uint32_t                                  m_frameIdx = {};
+
+protected:
+    Instance*                       m_pInstance  = {};
+    SwapChain*                      m_pSwapChain = {};
+    std::unique_ptr<ResourceLoader> m_pResourceLoader;
+    std::unique_ptr<Device>         m_pDevice = {};
+    std::unique_ptr<UI>             m_pUI     = {};
+    std::unique_ptr<WSI>            m_wsi     = {};
 };
 }  // namespace aph::vk
 
