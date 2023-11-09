@@ -96,10 +96,11 @@ void triangle_demo::init()
                 .bindings = {{.stride = sizeof(VertexData)}},
             };
 
-            // m_renderer->m_pResourceLoader->load({.data = "triangle.slang"}, &pVS);
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
-                                                   {aph::ShaderStage::VS, {"shader_glsl://default/triangle.vert"}},
-                                                   {aph::ShaderStage::FS, {"shader_glsl://default/triangle.frag"}},
+                                                   {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
+                                                   {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
+                                                   // {aph::ShaderStage::VS, {"shader_glsl://default/triangle.vert"}},
+                                                   // {aph::ShaderStage::FS, {"shader_glsl://default/triangle.frag"}},
                                                }};
 
             m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);

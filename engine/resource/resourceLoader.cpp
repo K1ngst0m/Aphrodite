@@ -307,8 +307,9 @@ std::vector<uint32_t> loadGlslFromFile(std::string_view filename)
     return spirv;
 }
 
-std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
+std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderStage stage)
 {
+    auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
@@ -336,7 +337,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
         // sessionDesc.preprocessorMacroCount = 1;
 
         Slang::ComPtr<IBlob> diagnostics;
-        auto                 module = session->loadModule(filename.data(), diagnostics.writeRef());
+        auto                 module = session->loadModule(fname.c_str(), diagnostics.writeRef());
 
         if(diagnostics)
         {
@@ -344,18 +345,29 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename)
             APH_ASSERT(false);
         }
 
-        Slang::ComPtr<IEntryPoint> entryVS;
-        module->findEntryPointByName("vertexMain", entryVS.writeRef());
+        Slang::ComPtr<IEntryPoint> entryPoint;
+        switch (stage)
+        {
+        case aph::ShaderStage::VS:
+            module->findEntryPointByName("vertexMain", entryPoint.writeRef());
+            break;
+        case aph::ShaderStage::FS:
+            module->findEntryPointByName("fragmentMain", entryPoint.writeRef());
+            break;
+        case aph::ShaderStage::CS:
+            module->findEntryPointByName("computeMain", entryPoint.writeRef());
+            break;
+        default:
+            APH_ASSERT(false);
+            break;
+        }
 
-        Slang::ComPtr<IEntryPoint> entryFS;
-        module->findEntryPointByName("fragmentMain", entryFS.writeRef());
-
-        IComponentType* components[] = {module, entryVS, entryFS};
+        IComponentType* components[] = {module, entryPoint};
 
         Slang::ComPtr<slang::IComponentType> linkedProgram;
 
         SlangResult result =
-            session->createCompositeComponentType(components, 3, linkedProgram.writeRef(), diagnostics.writeRef());
+            session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
         APH_ASSERT(SLANG_SUCCEEDED(result));
 
         Slang::ComPtr<slang::IBlob> spirvCode;
@@ -804,10 +816,10 @@ vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadI
         std::filesystem::path path = std::get<std::string>(info.data);
 
         // TODO override with new load info
-        if(m_shaderUUIDMap.contains(path))
-        {
-            return m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
-        }
+        // if(m_shaderUUIDMap.contains(path))
+        // {
+        //     return m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
+        // }
 
         if(path.extension() == ".spv")
         {
@@ -820,7 +832,7 @@ vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadI
         }
         else if(path.extension() == ".slang")
         {
-            spvCode = loader::shader::loadSlangFromFile(path.string());
+            spvCode = loader::shader::loadSlangFromFile(path.string(), stage);
         }
         else
         {
