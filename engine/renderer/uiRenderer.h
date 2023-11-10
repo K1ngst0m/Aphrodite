@@ -5,6 +5,7 @@
 #include "resource/resourceLoader.h"
 
 class ImGuiContext;
+class ImFont;
 
 namespace aph::vk
 {
@@ -32,15 +33,17 @@ public:
     ~UI();
 
     using UIUpdateCallback = std::function<void()>;
-    void record(UIUpdateCallback && func)
-    {
-        m_upateCB = std::move(func);
-    }
+    void record(UIUpdateCallback&& func) { m_upateCB = std::move(func); }
     void update();
     void load();
     void unload();
 
     void draw(CommandBuffer* pCmd);
+
+public:
+    uint32_t addFont(std::string_view fontPath, float pixelSize);
+    void     pushFont(uint32_t id) const;
+    void     popFont() const;
 
 private:
     WSI*          m_pWSI     = {};
@@ -60,6 +63,8 @@ private:
 
     uint32_t m_frameIdx       = 0;
     bool     m_showDemoWindow = false;
+
+    std::vector<ImFont*> m_fonts;
 };
 }  // namespace aph::vk
 

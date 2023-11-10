@@ -1,5 +1,6 @@
 #include "uiRenderer.h"
 #include "renderer.h"
+#include "filesystem/filesystem.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
@@ -35,6 +36,7 @@ UI::UI(const UICreateInfo& ci) :
         style.WindowRounding              = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
+    addFont("font://Roboto-Medium.ttf", 18.0f);
 
     m_showDemoWindow = ci.flags & UI_Demo;
 }
@@ -134,11 +136,29 @@ void UI::update()
     {
         ImGui::ShowDemoWindow(&m_showDemoWindow);
     }
-    if (m_upateCB)
+    if(m_upateCB)
     {
         m_upateCB();
     }
     ImGui::Render();
 }
 
+uint32_t UI::addFont(std::string_view fontPath, float pixelSize)
+{
+    ImGuiIO& io = ImGui::GetIO();
+    auto font = io.Fonts->AddFontFromFileTTF(aph::Filesystem::GetInstance().resolvePath(fontPath).c_str(), pixelSize);
+    m_fonts.push_back(font);
+    return m_fonts.size() - 1;
+}
+
+void UI::pushFont(uint32_t id) const
+{
+    APH_ASSERT(id >= m_fonts.size());
+    ImGui::PushFont(m_fonts[id]);
+}
+
+void UI::popFont() const
+{
+    ImGui::PopFont();
+}
 }  // namespace aph::vk
