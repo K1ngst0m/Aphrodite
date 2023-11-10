@@ -5,6 +5,7 @@
 
 namespace aph
 {
+#if 1
 template <class Key,
           class T,
           class Hash = ::ankerl::unordered_dense::hash<Key>,
@@ -19,6 +20,12 @@ template <class Key,
           class AllocatorOrContainer = std::allocator<Key>,
           class Bucket = ::ankerl::unordered_dense::bucket_type::standard>
 using HashSet = ::ankerl::unordered_dense::set<Key, Hash, KeyEqual, AllocatorOrContainer, Bucket>;
+#else
+template <class Key, class Hash>
+using HashMap = std::unordered_map<Key, Hash>;
+template <class Key>
+using HashSet = std::unordered_set<Key>;
+#endif
 }  // namespace aph
 
 #endif
