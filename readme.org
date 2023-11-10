@@ -36,7 +36,100 @@
 
 ** Usage
 
-  For usage examples, please refer to the ~examples/xxxx/~ directory.
+  For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
+
+  - Resource Loading
+
+    #+BEGIN_SRC c
+    // loading vertex buffer
+    aph::BufferLoadInfo loadInfo{
+        .debugName  = "triangle::vertexBuffer",
+        .data       = vertexArray.data(),
+        .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
+                        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
+
+    m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
+
+    // loading texture
+
+    aph::ImageLoadInfo loadInfo{.data       = "texture://container2.png",
+                                .createInfo = {
+                                    .alignment = 0,
+                                    .arraySize = 1,
+                                    .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
+                                    .domain    = aph::ImageDomain::Device,
+                                    .imageType = VK_IMAGE_TYPE_2D,
+                                }};
+    m_pResourceLoader->loadAsync(loadInfo, &m_pImage);
+
+    // loading shader
+    aph::ShaderLoadInfo shaderLoadInfo{.stageInfo =
+            {
+              {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
+              {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
+            }};
+    m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
+
+    // ...
+
+    // wait for resource loading complete
+    m_pResourceLoader->wait();
+    #+END_SRC
+
+  - Resource Binding
+
+    #+BEGIN_SRC c
+    m_pTextureSet = m_pPipeline->acquireSet(0);
+    m_pTextureSet->update({
+        .binding     = 0,
+        .arrayOffset = 0,
+        .images      = {m_pImage},
+        .samplers    = {},
+    });
+    m_pTextureSet->update({
+        .binding     = 1,
+        .arrayOffset = 0,
+        .images      = {},
+        .samplers    = {m_pSampler},
+    });
+    #+END_SRC
+
+  - Frame Graph Operations
+
+    #+BEGIN_SRC c
+    // record graph execution
+    m_renderer->recordGraph([this](auto* graph) {
+        auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
+        drawPass->setColorOutput("render target",
+                                    {
+                                        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                        .format = m_pSwapChain->getFormat(),
+                                    });
+        drawPass->addTextureInput("container texture");
+
+        drawPass->recordExecute([this](auto* pCmd) {
+            pCmd->bindVertexBuffers(m_pVB);
+            pCmd->bindIndexBuffers(m_pIB);
+            pCmd->bindPipeline(m_pPipeline);
+            pCmd->bindDescriptorSet({m_pTextureSet});
+            pCmd->insertDebugLabel({
+                .name  = "draw a quad with texture",
+                .color = {0.5f, 0.3f, 0.2f, 1.0f},
+            });
+            pCmd->drawIndexed({6, 1, 0, 0, 0});
+        });
+    });
+
+    ...
+
+    // render loop
+    {
+        ...
+        m_renderer->nextFrame();
+        m_renderer->getGraph()->execute("render target", m_pSwapChain);
+        ...
+    }
+    #+END_SRC
 
 ** Third Party Libraries
 
