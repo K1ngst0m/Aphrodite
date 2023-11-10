@@ -62,6 +62,8 @@ public:
     WSI*            getWSI() const { return m_wsi.get(); }
     RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
 
+    void recordGraph(std::function<void(RenderGraph*)>&& func);
+
     const RenderConfig& getConfig() const { return m_config; }
 
 protected:
@@ -75,8 +77,9 @@ protected:
     uint32_t                                  m_frameIdx = {};
 
 protected:
-    Instance*                       m_pInstance  = {};
-    SwapChain*                      m_pSwapChain = {};
+    Instance*                       m_pInstance   = {};
+    SwapChain*                      m_pSwapChain  = {};
+    TaskManager                     m_taskManager = {5, "renderer"};
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
     std::unique_ptr<Device>         m_pDevice = {};
     std::unique_ptr<UI>             m_pUI     = {};

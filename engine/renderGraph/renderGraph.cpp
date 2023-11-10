@@ -11,15 +11,21 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
 {
 }
 
-PassImageResource* RenderPass::addColorOutput(const std::string& name, const PassImageInfo& info)
+PassImageResource* RenderPass::addTextureInput(const std::string& name)
 {
-    if(m_pRenderGraph->hasResource(name))
-    {
-        auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-        return res;
-    }
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-    res->addInfo(info);
+    res->addReadPass(this);
+    res->addUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+    res->setResourceState(ResourceState::ShaderResource);
+    res->addAccessFlags(VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+    m_res.textureIn.push_back(res);
+    return res;
+}
+
+PassImageResource* RenderPass::setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex)
+{
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    res->setInfo(info);
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     m_res.colorOutMap.push_back(res);
@@ -28,13 +34,8 @@ PassImageResource* RenderPass::addColorOutput(const std::string& name, const Pas
 
 PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, const PassImageInfo& info)
 {
-    if(m_pRenderGraph->hasResource(name))
-    {
-        auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-        return res;
-    }
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-    res->addInfo(info);
+    res->setInfo(info);
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     m_res.depthOut = res;
@@ -71,6 +72,10 @@ void RenderGraph::build(const std::string& output)
 {
     for(auto* pass : m_passes)
     {
+        for(auto textureInput : pass->m_res.textureIn)
+        {
+        }
+
         for(auto colorAttachment : pass->m_res.colorOutMap)
         {
             if(!m_buildRes.image.contains(colorAttachment))
@@ -264,5 +269,15 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
 
         return frameFence;
     }
+}
+vk::Image* RenderGraph::getBuildResource(PassImageResource* pResource) const
+{
+    APH_ASSERT(m_buildRes.image.contains(pResource));
+    return m_buildRes.image.at(pResource);
+}
+vk::Buffer* RenderGraph::getBuildResource(PassBufferResource* pResource) const
+{
+    APH_ASSERT(m_buildRes.buffer.contains(pResource));
+    return m_buildRes.buffer.at(pResource);
 }
 }  // namespace aph

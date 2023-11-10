@@ -228,4 +228,14 @@ void Renderer::load()
         m_pUI->load();
     }
 };
+void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
+{
+    for(auto& pGraph : m_frameGraph)
+    {
+        auto taskGroup = m_taskManager.createTaskGroup("frame graph");
+        taskGroup->addTask([&pGraph, func]() { func(pGraph.get()); });
+        m_taskManager.submit(taskGroup);
+    }
+    m_taskManager.wait();
+}
 }  // namespace aph::vk

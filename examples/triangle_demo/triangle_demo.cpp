@@ -97,6 +97,24 @@ void triangle_demo::init()
         }
         timer.set("load end");
         CM_LOG_DEBUG("load time : %lf", timer.interval("load begin", "load end"));
+
+        // record graph execution
+        m_renderer->recordGraph([this](auto* graph) {
+            auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
+
+            drawPass->setColorOutput("render target",
+                                     {
+                                         .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                         .format = m_pSwapChain->getFormat(),
+                                     });
+
+            drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->bindVertexBuffers(m_pVB);
+                pCmd->bindIndexBuffers(m_pIB);
+                pCmd->bindPipeline(m_pPipeline);
+                pCmd->drawIndexed({3, 1, 0, 0, 0});
+            });
+        });
     }
 }
 
@@ -119,21 +137,7 @@ void triangle_demo::run()
         // draw and submit
         m_renderer->nextFrame();
 
-        auto graph    = m_renderer->getGraph();
-        auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
-
-        drawPass->addColorOutput("render target",
-                                 {
-                                     .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-                                     .format = m_pSwapChain->getFormat(),
-                                 });
-
-        drawPass->recordExecute([this](auto* pCmd) {
-            pCmd->bindVertexBuffers(m_pVB);
-            pCmd->bindIndexBuffers(m_pIB);
-            pCmd->bindPipeline(m_pPipeline);
-            pCmd->drawIndexed({3, 1, 0, 0, 0});
-        });
+        auto graph = m_renderer->getGraph();
 
         graph->execute("render target", m_pSwapChain);
 

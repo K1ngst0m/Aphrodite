@@ -38,19 +38,29 @@ public:
 
     void addWritePass(RenderPass* pPass) { m_writePasses.insert(pPass); }
     void addReadPass(RenderPass* pPass) { m_readPasses.insert(pPass); }
-    Type getType() const { return m_type; }
+    void setResourceState(ResourceState state) { m_resourceState = state; }
+    void addPipelineStage(VkPipelineStageFlagBits2 stage) { m_pipelineStages |= stage; }
+    void addAccessFlags(VkAccessFlagBits2 flag) { m_accessFlags |= flag; }
+
+    Type                  getType() const { return m_type; }
+    ResourceState         getResourceState() const { return m_resourceState; }
+    VkPipelineStageFlags2 getPipelineStage() const { return m_pipelineStages; }
+    VkAccessFlags2        getAccessFlags() const { return m_accessFlags; }
 
 protected:
-    Type                 m_type;
-    HashSet<RenderPass*> m_writePasses;
-    HashSet<RenderPass*> m_readPasses;
+    Type                  m_type;
+    HashSet<RenderPass*>  m_writePasses;
+    HashSet<RenderPass*>  m_readPasses;
+    ResourceState         m_resourceState  = ResourceState::Undefined;
+    VkPipelineStageFlags2 m_pipelineStages = 0;
+    VkAccessFlags2        m_accessFlags    = 0;
 };
 
 class PassImageResource : public PassResource
 {
 public:
-    PassImageResource(Type type): PassResource(type){}
-    void addInfo(const PassImageInfo& info) { m_info = info; }
+    PassImageResource(Type type) : PassResource(type) {}
+    void setInfo(const PassImageInfo& info) { m_info = info; }
     void addUsage(VkImageUsageFlags usage) { m_usage |= usage; }
 
     const PassImageInfo& getInfo() const { return m_info; }
@@ -64,7 +74,7 @@ private:
 class PassBufferResource : public PassResource
 {
 public:
-    PassBufferResource(Type type): PassResource(type){}
+    PassBufferResource(Type type) : PassResource(type) {}
     void addInfo(const PassBufferInfo& info) { m_info = info; }
     void addUsage(VkBufferUsageFlags usage) { m_usage |= usage; }
 
@@ -83,7 +93,8 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
-    PassImageResource* addColorOutput(const std::string& name, const PassImageInfo& info);
+    PassImageResource* addTextureInput(const std::string& name);
+    PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex = 0);
     PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
 
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
@@ -102,6 +113,7 @@ private:
 private:
     struct
     {
+        std::vector<PassImageResource*> textureIn;
         std::vector<PassImageResource*> colorOutMap;
         PassImageResource*              depthOut  = {};
         vk::CommandPool*                pCmdPools = {};
@@ -125,6 +137,8 @@ public:
 
     PassResource* getResource(const std::string& name, PassResource::Type type);
     bool          hasResource(const std::string& name) const { return m_passResourceMap.contains(name); }
+    vk::Image*    getBuildResource(PassImageResource* pResource) const;
+    vk::Buffer*   getBuildResource(PassBufferResource* pResource) const;
 
     void       build(const std::string& output);
     void       execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);

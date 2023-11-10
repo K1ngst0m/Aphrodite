@@ -133,6 +133,29 @@ void basic_texture::init()
             };
             cmd->insertBarrier({barrier});
         });
+
+        // record graph execution
+        m_renderer->recordGraph([this](auto* graph) {
+            auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
+            drawPass->setColorOutput("render target",
+                                     {
+                                         .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                         .format = m_pSwapChain->getFormat(),
+                                     });
+            drawPass->addTextureInput("container texture");
+
+            drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->bindVertexBuffers(m_pVB);
+                pCmd->bindIndexBuffers(m_pIB);
+                pCmd->bindPipeline(m_pPipeline);
+                pCmd->bindDescriptorSet({m_pTextureSet});
+                pCmd->insertDebugLabel({
+                    .name  = "draw a quad with texture",
+                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                });
+                pCmd->drawIndexed({6, 1, 0, 0, 0});
+            });
+        });
     }
 }
 
@@ -155,25 +178,7 @@ void basic_texture::run()
         // draw and submit
         m_renderer->nextFrame();
 
-        auto graph    = m_renderer->getGraph();
-        auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
-        drawPass->addColorOutput("render target",
-                                 {
-                                     .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-                                     .format = m_pSwapChain->getFormat(),
-                                 });
-
-        drawPass->recordExecute([this](auto* pCmd) {
-            pCmd->bindVertexBuffers(m_pVB);
-            pCmd->bindIndexBuffers(m_pIB);
-            pCmd->bindPipeline(m_pPipeline);
-            pCmd->bindDescriptorSet({m_pTextureSet});
-            pCmd->insertDebugLabel({
-                .name  = "draw a quad with texture",
-                .color = {0.5f, 0.3f, 0.2f, 1.0f},
-            });
-            pCmd->drawIndexed({6, 1, 0, 0, 0});
-        });
+        auto graph = m_renderer->getGraph();
 
         graph->execute("render target", m_pSwapChain);
 
