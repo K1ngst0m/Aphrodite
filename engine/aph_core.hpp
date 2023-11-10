@@ -16,9 +16,10 @@
 #include "cli/cli.h"
 
 #include "app/app.h"
-#include "app/input/input.h"
-#include "app/input/event.h"
-#include "app/input/eventManager.h"
+
+#include "input/input.h"
+#include "event/event.h"
+#include "event/eventManager.h"
 
 #include "resource/resourceLoader.h"
 #include "resource/geometry.h"

@@ -1,4 +1,5 @@
 add_subdirectory(common)
+add_subdirectory(event)
 add_subdirectory(math)
 add_subdirectory(allocator)
 add_subdirectory(app)

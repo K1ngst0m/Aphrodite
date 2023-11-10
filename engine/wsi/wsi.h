@@ -1,7 +1,7 @@
 #ifndef WSI_H_
 #define WSI_H_
 
-#include "app/input/event.h"
+#include "event/event.h"
 #include "common/common.h"
 #include "api/vulkan/vkUtils.h"
 

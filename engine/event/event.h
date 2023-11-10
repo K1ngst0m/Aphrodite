@@ -2,7 +2,7 @@
 #define APH_EVENT_H
 
 #include "common/common.h"
-#include "input.h"
+#include "input/input.h"
 
 namespace aph
 {
