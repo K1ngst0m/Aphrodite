@@ -72,10 +72,6 @@ void RenderGraph::build(const std::string& output)
 {
     for(auto* pass : m_passes)
     {
-        for(auto textureInput : pass->m_res.textureIn)
-        {
-        }
-
         for(auto colorAttachment : pass->m_res.colorOutMap)
         {
             if(!m_buildRes.image.contains(colorAttachment))
@@ -201,6 +197,7 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
                 {
                     cmdPool = m_pDevice->acquireCommandPool({queue, false});
                 }
+                cmdPool->reset();
                 vk::CommandBuffer* pCmd = cmdPool->allocate();
                 pCmd->begin();
                 pCmd->setDebugName(pass->m_name);
