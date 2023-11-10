@@ -15,8 +15,9 @@ add_subdirectory(renderGraph)
 add_library(aph_engine INTERFACE)
 
 target_include_directories(aph_engine INTERFACE
-                                  ${APH_EXTERNAL_DIR}/volk
                                   ${APH_ENGINE_DIR}
+                                  SYSTEM INTERFACE
+                                  ${APH_EXTERNAL_DIR}/volk
                                   ${APH_EXTERNAL_DIR}/unordered_dense/include
                                   )
 target_link_libraries(aph_engine INTERFACE

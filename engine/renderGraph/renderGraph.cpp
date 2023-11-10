@@ -18,10 +18,10 @@ PassImageResource* RenderPass::addColorOutput(const std::string& name, const Pas
         auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
         return res;
     }
-    auto* res      = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-    res->imageInfo = info;
-    res->writePasses.insert(this);
-    res->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    res->addInfo(info);
+    res->addWritePass(this);
+    res->addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     m_res.colorOutMap.push_back(res);
     return res;
 }
@@ -33,10 +33,10 @@ PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, co
         auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
         return res;
     }
-    auto* res      = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-    res->imageInfo = info;
-    res->writePasses.insert(this);
-    res->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    res->addInfo(info);
+    res->addWritePass(this);
+    res->addUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
     m_res.depthOut = res;
     return res;
 }
@@ -77,11 +77,11 @@ void RenderGraph::build(const std::string& output)
             {
                 vk::Image*          pImage = {};
                 vk::ImageCreateInfo createInfo{
-                    .extent    = colorAttachment->imageInfo.extent,
-                    .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                    .extent    = colorAttachment->getInfo().extent,
+                    .usage     = colorAttachment->getUsage(),
                     .domain    = ImageDomain::Device,
                     .imageType = VK_IMAGE_TYPE_2D,
-                    .format    = colorAttachment->imageInfo.format,
+                    .format    = colorAttachment->getInfo().format,
                 };
                 if(!output.empty() && m_passResourceMap.contains(output))
                 {
@@ -98,11 +98,11 @@ void RenderGraph::build(const std::string& output)
             {
                 vk::Image*          pImage = {};
                 vk::ImageCreateInfo createInfo{
-                    .extent    = depthAttachment->imageInfo.extent,
-                    .usage     = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    .extent    = depthAttachment->getInfo().extent,
+                    .usage     = depthAttachment->getUsage(),
                     .domain    = ImageDomain::Device,
                     .imageType = VK_IMAGE_TYPE_2D,
-                    .format    = depthAttachment->imageInfo.format,
+                    .format    = depthAttachment->getInfo().format,
                 };
                 APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
                 m_buildRes.image[depthAttachment] = pImage;
@@ -137,12 +137,24 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     if(m_passResourceMap.contains(name))
     {
         auto res = m_passResources.at(m_passResourceMap[name]);
-        APH_ASSERT(res->type == type);
+        APH_ASSERT(res->getType() == type);
         return res;
     }
 
-    std::size_t idx = m_passResources.size();
-    auto        res = m_resourcePool.passResource.allocate();
+    std::size_t   idx = m_passResources.size();
+    PassResource* res = {};
+    switch(type)
+    {
+    case PassResource::Type::Image:
+        res = m_resourcePool.passImageResource.allocate(type);
+        break;
+    case PassResource::Type::Buffer:
+        res = m_resourcePool.passBufferResource.allocate(type);
+        break;
+    }
+
+    APH_ASSERT(res);
+
     m_passResources.emplace_back(res);
     m_passResourceMap[name] = idx;
     return res;

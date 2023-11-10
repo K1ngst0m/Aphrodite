@@ -25,29 +25,55 @@ struct PassBufferInfo
     VkBufferUsageFlags usage = 0;
 };
 
-struct PassResource
+class PassResource
 {
+public:
     enum class Type
     {
         Image,
         Buffer,
     };
 
-    Type type;
+    PassResource(Type type) : m_type(type) {}
 
-    HashSet<RenderPass*> writePasses;
-    HashSet<RenderPass*> readPasses;
+    void addWritePass(RenderPass* pPass) { m_writePasses.insert(pPass); }
+    void addReadPass(RenderPass* pPass) { m_readPasses.insert(pPass); }
+    Type getType() const { return m_type; }
+
+protected:
+    Type                 m_type;
+    HashSet<RenderPass*> m_writePasses;
+    HashSet<RenderPass*> m_readPasses;
 };
 
-struct PassImageResource : public PassResource
+class PassImageResource : public PassResource
 {
-    PassImageInfo     imageInfo = {};
-    VkImageUsageFlags usage     = {};
+public:
+    PassImageResource(Type type): PassResource(type){}
+    void addInfo(const PassImageInfo& info) { m_info = info; }
+    void addUsage(VkImageUsageFlags usage) { m_usage |= usage; }
+
+    const PassImageInfo& getInfo() const { return m_info; }
+    VkImageUsageFlags    getUsage() const { return m_usage; }
+
+private:
+    PassImageInfo     m_info  = {};
+    VkImageUsageFlags m_usage = {};
 };
 
-struct PassBufferResource : public PassResource
+class PassBufferResource : public PassResource
 {
-    PassBufferInfo bufferInfo;
+public:
+    PassBufferResource(Type type): PassResource(type){}
+    void addInfo(const PassBufferInfo& info) { m_info = info; }
+    void addUsage(VkBufferUsageFlags usage) { m_usage |= usage; }
+
+    const PassBufferInfo& getInfo() const { return m_info; }
+    VkBufferUsageFlags    getUsage() const { return m_usage; }
+
+private:
+    PassBufferInfo     m_info;
+    VkBufferUsageFlags m_usage;
 };
 
 class RenderPass
@@ -128,8 +154,9 @@ private:
 
     struct
     {
-        ThreadSafeObjectPool<PassResource> passResource;
-        ThreadSafeObjectPool<RenderPass>   renderPass;
+        ThreadSafeObjectPool<PassBufferResource> passBufferResource;
+        ThreadSafeObjectPool<PassImageResource>  passImageResource;
+        ThreadSafeObjectPool<RenderPass>         renderPass;
     } m_resourcePool;
 };
 
