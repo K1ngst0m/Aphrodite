@@ -6,8 +6,8 @@ target_include_directories(resource PRIVATE
   ${APH_EXTERNAL_DIR}/volk
   ${APH_EXTERNAL_DIR}/slang
   ${APH_EXTERNAL_DIR}/tinyktx
-  ${APH_EXTERNAL_DIR}/tinygltf/include
   ${APH_EXTERNAL_DIR}/stb/include
+  ${APH_EXTERNAL_DIR}/tinygltf
   ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
 

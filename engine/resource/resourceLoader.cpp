@@ -11,8 +11,9 @@
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_INCLUDE_STB_IMAGE
 #define TINYGLTF_NO_STB_IMAGE_WRITE
-#include <stb/stb_image.h>
-#include <tinygltf/tiny_gltf.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
+#include "tiny_gltf.h"
 
 #include "filesystem/filesystem.h"
 

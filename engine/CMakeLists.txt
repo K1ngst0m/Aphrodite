@@ -35,12 +35,6 @@ target_link_libraries(aph_engine INTERFACE
   rendergraph
 )
 
-add_compile_definitions(
-GLM_FORCE_RADIANS
-GLM_FORCE_DEPTH_ZERO_TO_ONE
-GLM_ENABLE_EXPERIMENTAL
-)
-
 target_link_libraries(aph_engine INTERFACE
   mimalloc-static
   ${xcb_libraries}

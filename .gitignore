@@ -14,8 +14,6 @@ build/
 /external/*
 !/external/backward-cpp
 !/external/reckless
-!/external/stb
-!/external/tinygltf
 !/external/tinyktx
 !/external/volk
 !/external/vulkan

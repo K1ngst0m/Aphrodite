@@ -263,13 +263,13 @@ VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candid
 
 const std::vector<uint32_t>& PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
 {
-    for (auto i = static_cast<int>(flags); i >= 0; --i)
+    for(auto i = static_cast<int>(flags); i >= 0; --i)
     {
-        QueueType type = static_cast<QueueType>(i);
+        QueueType queueType = static_cast<QueueType>(i);
 
-        if (m_queueFamilyMap.contains(type))
+        if(m_queueFamilyMap.contains(queueType))
         {
-            return m_queueFamilyMap.at(type);
+            return m_queueFamilyMap.at(queueType);
         }
         CM_LOG_WARN("could not found queue type (transfer or compute), fallback to next.");
     }

@@ -1,6 +1,4 @@
 #include "common.h"
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
 
 #define BACKWARD_HAS_DW 1
 #define BACKWARD_HAS_BACKTRACE_SYMBOL 1

@@ -26,3 +26,6 @@ Branch: master
 
 [unordered_dense]
 Branch: v4.1.2
+
+[tinygltf]
+Branch: v2.8.18
