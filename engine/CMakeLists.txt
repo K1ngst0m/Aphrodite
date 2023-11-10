@@ -11,6 +11,7 @@ add_subdirectory(renderer)
 add_subdirectory(filesystem)
 add_subdirectory(module)
 add_subdirectory(renderGraph)
+add_subdirectory(ui)
 
 add_library(aph_engine INTERFACE)
 
@@ -27,6 +28,7 @@ target_link_libraries(aph_engine INTERFACE
   threads
   aph_filesystem
   aph_module
+  aph_ui
   cli
   app
   wsi
