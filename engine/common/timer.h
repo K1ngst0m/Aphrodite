@@ -12,8 +12,15 @@ class Timer : public Singleton<Timer>
 {
 public:
     // Set a timestamp with a specific tag
-    void set(const std::string& tag) { m_strMap[tag] = Clock::now(); }
-    void set(uint32_t tag) { m_numMap[tag] = Clock::now(); }
+    void set(const std::string& tag) {
+        std::lock_guard<std::mutex> m_holder{m_lock};
+        m_strMap[tag] = Clock::now();
+    }
+    void set(uint32_t tag)
+    {
+        std::lock_guard<std::mutex> m_holder{m_lock};
+        m_numMap[tag] = Clock::now();
+    }
 
     // Calculate the interval between two timestamps using their tags
     double interval(std::string_view start, std::string_view end) const
@@ -55,6 +62,7 @@ private:
 
     HashMap<std::string, TimePoint> m_strMap;
     HashMap<uint32_t, TimePoint>    m_numMap;
+    std::mutex                      m_lock;
 };
 
 }  // namespace aph
