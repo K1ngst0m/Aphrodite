@@ -13,16 +13,31 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
 
 PassImageResource* RenderPass::addColorOutput(const std::string& name, const PassImageInfo& info)
 {
-    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
-    if(m_res.colorOutSet.contains(res))
+    if(m_pRenderGraph->hasResource(name))
     {
+        auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
         return res;
     }
-    m_res.colorOutSet.insert(res);
+    auto* res      = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->imageInfo = info;
     res->writePasses.insert(this);
     res->usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     m_res.colorOutMap.push_back(res);
+    return res;
+}
+
+PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, const PassImageInfo& info)
+{
+    if(m_pRenderGraph->hasResource(name))
+    {
+        auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+        return res;
+    }
+    auto* res      = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    res->imageInfo = info;
+    res->writePasses.insert(this);
+    res->usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    m_res.depthOut = res;
     return res;
 }
 
@@ -52,25 +67,45 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
 
-void RenderGraph::build()
+void RenderGraph::build(const std::string& output)
 {
     for(auto* pass : m_passes)
     {
         for(auto colorAttachment : pass->m_res.colorOutMap)
         {
-            if(!m_buildImageResources.contains(colorAttachment))
+            if(!m_buildRes.image.contains(colorAttachment))
             {
                 vk::Image*          pImage = {};
                 vk::ImageCreateInfo createInfo{
-                    .extent = colorAttachment->imageInfo.extent,
-                    // TODO only final output target would be used for copy src
-                    .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                    .extent    = colorAttachment->imageInfo.extent,
+                    .usage     = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                     .domain    = ImageDomain::Device,
                     .imageType = VK_IMAGE_TYPE_2D,
                     .format    = colorAttachment->imageInfo.format,
                 };
+                if(!output.empty() && m_passResourceMap.contains(output))
+                {
+                    createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                }
                 APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
-                m_buildImageResources[colorAttachment] = pImage;
+                m_buildRes.image[colorAttachment] = pImage;
+            }
+        }
+
+        {
+            auto depthAttachment = pass->m_res.depthOut;
+            if(depthAttachment && !m_buildRes.image.contains(depthAttachment))
+            {
+                vk::Image*          pImage = {};
+                vk::ImageCreateInfo createInfo{
+                    .extent    = depthAttachment->imageInfo.extent,
+                    .usage     = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    .domain    = ImageDomain::Device,
+                    .imageType = VK_IMAGE_TYPE_2D,
+                    .format    = depthAttachment->imageInfo.format,
+                };
+                APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
+                m_buildRes.image[depthAttachment] = pImage;
             }
         }
     }
@@ -92,7 +127,7 @@ void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
 
 RenderGraph::~RenderGraph()
 {
-    for(auto [_, image] : m_buildImageResources)
+    for(auto [_, image] : m_buildRes.image)
     {
         m_pDevice->destroy(image);
     }
@@ -123,22 +158,27 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
     auto       taskgrp = taskMgr.createTaskGroup();
     std::mutex submitLock;
 
-    build();
+    build(output);
 
     for(auto* pass : m_passes)
     {
         std::vector<vk::Image*> colorImages;
+        vk::Image*              pDepthImage = {};
 
         colorImages.reserve(pass->m_res.colorOutMap.size());
         for(auto colorAttachment : pass->m_res.colorOutMap)
         {
-            colorImages.push_back(m_buildImageResources[colorAttachment]);
+            colorImages.push_back(m_buildRes.image[colorAttachment]);
+        }
+        if(pass->m_res.depthOut)
+        {
+            pDepthImage = m_buildRes.image[pass->m_res.depthOut];
         }
 
         APH_ASSERT(!colorImages.empty());
 
         taskgrp->addTask(
-            [this, pass, queue, &frameSubmitInfo, &submitLock, colorImages]() {
+            [this, pass, queue, &frameSubmitInfo, &submitLock, colorImages, pDepthImage]() {
                 auto& cmdPool = pass->m_res.pCmdPools;
                 if(cmdPool == nullptr)
                 {
@@ -148,7 +188,7 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
                 pCmd->begin();
                 pCmd->setDebugName(pass->m_name);
                 pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
-                pCmd->beginRendering(colorImages);
+                pCmd->beginRendering(colorImages, pDepthImage);
                 pass->m_executeCB(pCmd);
                 pCmd->endRendering();
                 pCmd->end();
@@ -186,7 +226,7 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
         {
             auto pSwapchainImage = pSwapChain->getImage();
 
-            auto pImage = m_buildImageResources[m_passResources[m_passResourceMap[output]]];
+            auto pImage = m_buildRes.image[m_passResources[m_passResourceMap[output]]];
             // transisiton && copy
             m_pDevice->executeSingleCommands(queue, [pImage, pSwapchainImage](auto* pCopyCmd) {
                 pCopyCmd->transitionImageLayout(pImage, ResourceState::CopySource);

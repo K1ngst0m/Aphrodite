@@ -58,6 +58,7 @@ public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
     PassImageResource* addColorOutput(const std::string& name, const PassImageInfo& info);
+    PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
 
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
@@ -76,7 +77,7 @@ private:
     struct
     {
         std::vector<PassImageResource*> colorOutMap;
-        HashSet<PassImageResource*>     colorOutSet;
+        PassImageResource*              depthOut  = {};
         vk::CommandPool*                pCmdPools = {};
     } m_res;
 
@@ -97,9 +98,10 @@ public:
     RenderPass* getPass(const std::string& name);
 
     PassResource* getResource(const std::string& name, PassResource::Type type);
+    bool          hasResource(const std::string& name) const { return m_passResourceMap.contains(name); }
 
-    void build();
-    void execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
+    void       build(const std::string& output);
+    void       execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
     vk::Fence* executeAsync(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
 
 private:
@@ -112,7 +114,11 @@ private:
     std::vector<PassResource*>        m_passResources;
     HashMap<std::string, std::size_t> m_passResourceMap;
 
-    HashMap<PassResource*, vk::Image*> m_buildImageResources;
+    struct
+    {
+        HashMap<PassResource*, vk::Image*>  image;
+        HashMap<PassResource*, vk::Buffer*> buffer;
+    } m_buildRes;
 
     struct
     {
