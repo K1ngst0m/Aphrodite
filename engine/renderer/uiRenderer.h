@@ -16,6 +16,7 @@ enum UIFlags
     UI_Docking,
     UI_Demo,
 };
+MAKE_ENUM_FLAG(uint32_t, UIFlags);
 
 struct UICreateInfo
 {
@@ -30,6 +31,11 @@ public:
     UI(const UICreateInfo& ci);
     ~UI();
 
+    using UIUpdateCallback = std::function<void()>;
+    void record(UIUpdateCallback && func)
+    {
+        m_upateCB = std::move(func);
+    }
     void update();
     void load();
     void unload();
@@ -42,6 +48,8 @@ private:
 
     bool m_updated = {false};
 
+    UIUpdateCallback m_upateCB = {};
+
 private:
     Renderer* m_pRenderer = {};
     Device*   m_pDevice   = {};
@@ -52,18 +60,6 @@ private:
 
     uint32_t m_frameIdx       = 0;
     bool     m_showDemoWindow = false;
-
-#if 0
-private:
-    VertexInput m_vertexInput = {};
-    DescriptorSet*       m_pSet            = {};
-    Image*               m_pFontImage      = {};
-    Sampler*             m_pDefaultSampler = {};
-    Pipeline*            m_pPipeline       = {};
-    Buffer*              m_pVertexBuffer   = {};
-    Buffer*              m_pIndexBuffer    = {};
-    std::vector<Buffer*> m_pUniformBuffers = {};
-#endif
 };
 }  // namespace aph::vk
 

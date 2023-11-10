@@ -15,75 +15,9 @@ enum
 UI::UI(const UICreateInfo& ci) :
     m_pWSI(ci.pRenderer->getWSI()),
     m_pRenderer(ci.pRenderer),
-    m_pDevice(ci.pRenderer->getDevice())
+    m_pDevice(ci.pRenderer->getDevice()),
+    m_pDefaultQueue(m_pDevice->getQueue(QueueType::Graphics))
 {
-#if 0
-    // create sampler
-    {
-        SamplerCreateInfo samplerCI = init::samplerCreateInfo2(SamplerPreset::Linear);
-        APH_CHECK_RESULT(m_pDevice->create(samplerCI, &m_pDefaultSampler));
-    }
-
-    // init vertex buffer
-    {
-        BufferLoadInfo loadInfo{.createInfo = {
-                                    .size   = VERTEX_BUFFER_SIZE * m_pRenderer->getConfig().maxFrames,
-                                    .usage  = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                                    .domain = BufferDomain::LinkedDeviceHostPreferDevice,
-                                }};
-
-        m_pRenderer->m_pResourceLoader->load(loadInfo, &m_pVertexBuffer);
-    }
-
-    // init index buffer
-    {
-        BufferLoadInfo loadInfo{.createInfo = {
-                                    .size   = INDEX_BUFFER_SIZE * m_pRenderer->getConfig().maxFrames,
-                                    .usage  = VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                    .domain = BufferDomain::LinkedDeviceHostPreferDevice,
-                                }};
-        m_pRenderer->m_pResourceLoader->load(loadInfo, &m_pIndexBuffer);
-    }
-
-    // frame uniform buffer
-    {
-        BufferLoadInfo loadInfo = {.createInfo = {
-                                       .size   = sizeof(mat4),
-                                       .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                       .domain = BufferDomain::LinkedDeviceHostPreferDevice,
-                                   }};
-
-        m_pUniformBuffers.resize(m_pRenderer->getConfig().maxFrames);
-        for(auto& buffer : m_pUniformBuffers)
-        {
-            m_pRenderer->m_pResourceLoader->load(loadInfo, &buffer);
-        }
-    }
-
-    // init vertex input layout
-    {
-        struct VertexLayout
-        {
-            vec2   pos;
-            vec2   uv;
-            i8vec4 color;
-        };
-
-        m_vertexInput.attributes = {
-            {0, 0, Format::RG_F32, offsetof(VertexLayout, pos)},
-            {1, 0, Format::RG_F32, offsetof(VertexLayout, uv)},
-            {2, 0, Format::RGBA_UN8, offsetof(VertexLayout, color)},
-        };
-
-        m_vertexInput.bindings = {{.stride = sizeof(VertexLayout)}};
-    }
-#endif
-
-    // getQueue
-    {
-        m_pDefaultQueue = m_pDevice->getQueue(QueueType::Graphics);
-    }
-
     // init imgui
     IMGUI_CHECKVERSION();
     m_pContext     = ImGui::CreateContext();
@@ -108,13 +42,6 @@ UI::UI(const UICreateInfo& ci) :
 UI::~UI()
 {
     ImGui::DestroyContext();
-#if 0
-    m_pDevice->destroy(m_pDefaultSampler, m_pVertexBuffer, m_pIndexBuffer);
-    for(auto& buffer : m_pUniformBuffers)
-    {
-        m_pDevice->destroy(buffer);
-    }
-#endif
 }
 
 void UI::load()
@@ -198,6 +125,7 @@ void UI::draw(CommandBuffer* pCmd)
     ImGui_ImplVulkan_RenderDrawData(main_draw_data, pCmd->getHandle());
     pCmd->endDebugLabel();
 }
+
 void UI::update()
 {
     ImGui_ImplVulkan_NewFrame();
@@ -206,6 +134,11 @@ void UI::update()
     {
         ImGui::ShowDemoWindow(&m_showDemoWindow);
     }
+    if (m_upateCB)
+    {
+        m_upateCB();
+    }
     ImGui::Render();
 }
+
 }  // namespace aph::vk
