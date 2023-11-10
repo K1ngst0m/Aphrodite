@@ -432,9 +432,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         APH_CHECK_RESULT(
             m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
-        APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
         writeBuffer(stagingBuffer, data.data());
-        m_pDevice->unMapMemory(stagingBuffer);
     }
 
     vk::Image* image{};
@@ -632,9 +630,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer,
                                                        std::string{info.debugName} + std::string{"_staging"}));
 
-                    APH_CHECK_RESULT(m_pDevice->mapMemory(stagingBuffer));
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
-                    m_pDevice->unMapMemory(stagingBuffer);
                 }
 
                 m_pDevice->executeSingleCommands(
@@ -655,7 +651,6 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 {
     auto domain = pBuffer->getCreateInfo().domain;
     APH_ASSERT(domain != BufferDomain::Device);
-    APH_ASSERT(pBuffer->getMapped());
     if(range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;
@@ -666,8 +661,10 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
         range.size = pBuffer->getSize();
     }
 
-    uint8_t* pMapped = (uint8_t*)pBuffer->getMapped();
-    memcpy(pMapped + range.offset, data, range.size);
+    void* pMapped = {};
+    APH_CHECK_RESULT(m_pDevice->mapMemory(pBuffer, &pMapped));
+    memcpy((uint8_t*)pMapped + range.offset, data, range.size);
+    m_pDevice->unMapMemory(pBuffer);
 }
 
 vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadInfo& info)

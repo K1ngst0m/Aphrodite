@@ -84,7 +84,7 @@ public:
 public:
     Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
     Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
-    Result mapMemory(Buffer* pBuffer, void** ppMapped = nullptr) const;
+    Result mapMemory(Buffer* pBuffer, void** ppMapped) const;
     void   unMapMemory(Buffer* pBuffer) const;
 
 public:

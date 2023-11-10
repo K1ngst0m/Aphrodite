@@ -23,11 +23,9 @@ class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 public:
     uint32_t getSize() const { return m_createInfo.size; }
     uint32_t getOffset() const { return m_createInfo.alignment; }
-    void*&   getMapped() { return m_mapped; };
 
 private:
     Buffer(const CreateInfoType& createInfo, HandleType handle);
-    void* m_mapped = {};
 };
 }  // namespace aph::vk
 

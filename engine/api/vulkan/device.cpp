@@ -504,11 +504,8 @@ Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 
 Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
 {
-    if(ppMapped != nullptr)
-    {
-        return m_resourcePool.gpu->map(pBuffer, ppMapped);
-    }
-    return m_resourcePool.gpu->map(pBuffer, &pBuffer->getMapped());
+    APH_ASSERT(ppMapped);
+    return m_resourcePool.gpu->map(pBuffer, ppMapped);
 }
 
 void Device::unMapMemory(Buffer* pBuffer) const
