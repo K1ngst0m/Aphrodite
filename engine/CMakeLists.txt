@@ -1,4 +1,5 @@
 add_subdirectory(common)
+add_subdirectory(math)
 add_subdirectory(allocator)
 add_subdirectory(app)
 add_subdirectory(cli)
@@ -15,12 +16,12 @@ add_library(aph_engine INTERFACE)
 
 target_include_directories(aph_engine INTERFACE
                                   ${APH_EXTERNAL_DIR}/volk
-                                  ${APH_EXTERNAL_DIR}/glm
                                   ${APH_ENGINE_DIR}
                                   ${APH_EXTERNAL_DIR}/unordered_dense/include
                                   )
 target_link_libraries(aph_engine INTERFACE
   common
+  aph_math
   aph_allocator
   threads
   aph_filesystem
@@ -32,6 +33,12 @@ target_link_libraries(aph_engine INTERFACE
   api
   renderer
   rendergraph
+)
+
+add_compile_definitions(
+GLM_FORCE_RADIANS
+GLM_FORCE_DEPTH_ZERO_TO_ONE
+GLM_ENABLE_EXPERIMENTAL
 )
 
 target_link_libraries(aph_engine INTERFACE

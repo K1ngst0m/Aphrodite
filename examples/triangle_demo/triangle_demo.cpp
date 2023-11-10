@@ -32,8 +32,8 @@ void triangle_demo::init()
     {
         struct VertexData
         {
-            glm::vec3 pos;
-            glm::vec3 color;
+            aph::vec3 pos;
+            aph::vec3 color;
         };
 
         // vertex buffer
@@ -123,10 +123,10 @@ void triangle_demo::run()
         auto drawPass = graph->createPass("drawing triangle", aph::QueueType::Graphics);
 
         drawPass->addColorOutput("render target",
-                                    {
-                                        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-                                        .format = m_pSwapChain->getFormat(),
-                                    });
+                                 {
+                                     .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                     .format = m_pSwapChain->getFormat(),
+                                 });
 
         drawPass->recordExecute([this](auto* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);

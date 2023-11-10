@@ -32,8 +32,8 @@ void basic_texture::init()
     {
         struct VertexData
         {
-            glm::vec3 pos;
-            glm::vec2 uv;
+            aph::vec3 pos;
+            aph::vec2 uv;
         };
         // vertex: position, color
         const std::vector<VertexData> vertices = {{.pos = {-0.5f, -0.5f, 0.0f}, .uv = {0.0f, 0.0f}},

@@ -48,7 +48,7 @@ UI::UI(const UICreateInfo& ci) :
     // frame uniform buffer
     {
         BufferLoadInfo loadInfo = {.createInfo = {
-                                       .size   = sizeof(glm::mat4),
+                                       .size   = sizeof(mat4),
                                        .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                        .domain = BufferDomain::LinkedDeviceHostPreferDevice,
                                    }};
@@ -64,9 +64,9 @@ UI::UI(const UICreateInfo& ci) :
     {
         struct VertexLayout
         {
-            glm::vec2   pos;
-            glm::vec2   uv;
-            glm::i8vec4 color;
+            vec2   pos;
+            vec2   uv;
+            i8vec4 color;
         };
 
         m_vertexInput.attributes = {

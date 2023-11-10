@@ -7,7 +7,6 @@ target_include_directories(api PRIVATE
   ${APH_EXTERNAL_DIR}/unordered_dense/include
   ${APH_EXTERNAL_DIR}/spirv-cross
   ${APH_EXTERNAL_DIR}/vulkan
-  ${APH_EXTERNAL_DIR}/glm
   ${APH_EXTERNAL_DIR}/vma/include
 )
 target_link_libraries(api PRIVATE

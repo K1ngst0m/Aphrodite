@@ -23,4 +23,6 @@
 #include "resource/resourceLoader.h"
 #include "resource/geometry.h"
 
+#include "math/math.h"
+
 #endif  // APH_H_
