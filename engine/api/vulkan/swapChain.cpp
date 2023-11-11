@@ -212,7 +212,7 @@ void SwapChain::reCreate()
 
     uint32_t imageCount;
     deviceTable->vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, nullptr);
-    std::vector<VkImage> images(imageCount);
+    SmallVector<VkImage> images(imageCount);
     deviceTable->vkGetSwapchainImagesKHR(m_pDevice->getHandle(), getHandle(), &imageCount, images.data());
 
     // Create an Image class instances to wrap swapchain image handles.

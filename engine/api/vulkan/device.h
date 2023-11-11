@@ -105,8 +105,8 @@ private:
     PhysicalDevice*          m_physicalDevice{};
     VolkDeviceTable          m_table{};
 
-    using QueueFamily = std::vector<Queue*>;
-    std::vector<QueueFamily> m_queues;
+    using QueueFamily = SmallVector<Queue*>;
+    SmallVector<QueueFamily> m_queues;
 
 private:
     struct ResourceObjectPool

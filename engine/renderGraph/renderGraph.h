@@ -113,8 +113,8 @@ private:
 private:
     struct
     {
-        std::vector<PassImageResource*> textureIn;
-        std::vector<PassImageResource*> colorOutMap;
+        SmallVector<PassImageResource*> textureIn;
+        SmallVector<PassImageResource*> colorOutMap;
         PassImageResource*              depthOut  = {};
         vk::CommandPool*                pCmdPools = {};
     } m_res;
@@ -148,10 +148,10 @@ private:
     vk::Device* m_pDevice     = {};
     TaskManager m_taskManager = {5, "Render Graph"};
 
-    std::vector<RenderPass*>          m_passes;
+    SmallVector<RenderPass*>          m_passes;
     HashMap<std::string, std::size_t> m_renderPassMap;
 
-    std::vector<PassResource*>        m_passResources;
+    SmallVector<PassResource*>        m_passResources;
     HashMap<std::string, std::size_t> m_passResourceMap;
 
     struct

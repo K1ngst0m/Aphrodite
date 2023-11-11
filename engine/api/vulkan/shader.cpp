@@ -66,10 +66,10 @@ static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType&
 static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
                                                       const Sampler* const*              pImmutableSamplers,
                                                       const uint32_t*                    stageForBinds,
-                                                      std::vector<VkDescriptorPoolSize>& poolSize)
+                                                      SmallVector<VkDescriptorPoolSize>& poolSize)
 {
     VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
-    std::vector<VkDescriptorSetLayoutBinding> vkBindings;
+    SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
 
     // VkDescriptorBindingFlagsEXT               binding_flags = 0;
     // VkDescriptorSetLayoutBindingFlagsCreateInfoEXT flags = {
@@ -221,7 +221,7 @@ ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerB
 ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
 {
     using namespace spirv_cross;
-    Compiler compiler{spvCode};
+    Compiler compiler{spvCode.data(), spvCode.size()};
     auto     resources = compiler.get_shader_resources();
 
     ResourceLayout layout;
@@ -530,7 +530,7 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
     }
 
     VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-    std::vector<VkDescriptorSetLayout> vkSetLayouts;
+    SmallVector<VkDescriptorSetLayout> vkSetLayouts;
     if(numSets)
     {
         vkSetLayouts.reserve(m_pSetLayouts.size());

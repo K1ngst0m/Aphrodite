@@ -34,8 +34,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     const auto  queueFamilyCount      = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
-    std::vector<std::vector<float>>      priorities(queueFamilyCount);
+    SmallVector<VkDeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
+    SmallVector<SmallVector<float>>      priorities(queueFamilyCount);
     for(auto i = 0U; i < queueFamilyCount; ++i)
     {
         const float defaultPriority = 1.0f;
@@ -318,7 +318,7 @@ void Device::waitIdle()
 
 Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
 {
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    SmallVector<VkPipelineShaderStageCreateInfo> shaderStages;
 
     auto& pProgram = createInfo.pProgram;
     APH_ASSERT(pProgram);
@@ -332,7 +332,7 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
     RenderPipelineState rps    = {.createInfo = createInfo};
     const VertexInput&  vstate = rps.createInfo.vertexInput;
     rps.vkAttributes.resize(vstate.attributes.size());
-    std::vector<bool> bufferAlreadyBound(vstate.bindings.size());
+    SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
 
     for(uint32_t i = 0; i != rps.vkAttributes.size(); i++)
     {
@@ -464,7 +464,7 @@ Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** pp
 
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
 {
-    std::vector<VkFence> vkFences(fences.size());
+    SmallVector<VkFence> vkFences(fences.size());
     for(auto idx = 0; idx < fences.size(); ++idx)
     {
         vkFences[idx] = fences[idx]->getHandle();

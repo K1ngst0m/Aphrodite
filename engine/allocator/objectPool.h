@@ -2,6 +2,7 @@
 #define OBJECTPOOL_H_
 
 #include "alignedAlloc.h"
+#include "common/smallVector.h"
 
 namespace aph
 {
@@ -44,14 +45,14 @@ public:
     }
 
 protected:
-    std::vector<T*> m_vacants;
+    SmallVector<T*> m_vacants;
 
     struct MallocDeleter
     {
         void operator()(T* ptr) { memAlignFree(ptr); }
     };
 
-    std::vector<std::unique_ptr<T, MallocDeleter>> m_memory;
+    SmallVector<std::unique_ptr<T, MallocDeleter>> m_memory;
 };
 
 template <typename T>

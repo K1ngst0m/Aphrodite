@@ -116,10 +116,10 @@ private:
 private:
     Device*                           m_pDevice       = {};
     ShaderMapList                     m_shaders       = {};
-    std::vector<DescriptorSetLayout*> m_pSetLayouts   = {};
+    SmallVector<DescriptorSetLayout*> m_pSetLayouts   = {};
     VkPipelineLayout                  m_pipeLayout    = {};
     CombinedResourceLayout            m_combineLayout = {};
-    std::vector<VkDescriptorPoolSize> m_poolSize      = {};
+    SmallVector<VkDescriptorPoolSize> m_poolSize      = {};
 };
 
 }  // namespace aph::vk

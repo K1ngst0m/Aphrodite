@@ -15,8 +15,8 @@ class Fence;
 struct SwapChainSupportDetails
 {
     VkSurfaceCapabilitiesKHR        capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR>   presentModes;
+    SmallVector<VkSurfaceFormatKHR> formats;
+    SmallVector<VkPresentModeKHR>   presentModes;
 
     VkSurfaceFormatKHR preferedSurfaceFormat;
     VkPresentModeKHR   preferedPresentMode;
@@ -57,7 +57,7 @@ private:
     Device*                     m_pDevice{};
     WSI*                        m_pWSI{};
     ThreadSafeObjectPool<Image> m_imagePools;
-    std::vector<Image*>         m_images{};
+    SmallVector<Image*>         m_images{};
     SwapChainSupportDetails     swapChainSupport{};
 
     VkSurfaceKHR       m_surface{};

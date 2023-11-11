@@ -107,7 +107,7 @@ public:
     VulkanPipelineBuilder& primitiveTopology(VkPrimitiveTopology topology);
     VulkanPipelineBuilder& rasterizationSamples(VkSampleCountFlagBits samples);
     VulkanPipelineBuilder& shaderStage(VkPipelineShaderStageCreateInfo stage);
-    VulkanPipelineBuilder& shaderStage(const std::vector<VkPipelineShaderStageCreateInfo>& stages);
+    VulkanPipelineBuilder& shaderStage(const SmallVector<VkPipelineShaderStageCreateInfo>& stages);
     VulkanPipelineBuilder& stencilStateOps(VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp,
                                            VkStencilOp depthFailOp, VkCompareOp compareOp);
     VulkanPipelineBuilder& stencilMasks(VkStencilFaceFlags faceMask, uint32_t compareMask, uint32_t writeMask,
@@ -134,7 +134,7 @@ private:
     uint32_t       numDynamicStates_                      = 0;
     VkDynamicState dynamicStates_[APH_MAX_DYNAMIC_STATES] = {};
 
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages_ = {};
+    SmallVector<VkPipelineShaderStageCreateInfo> shaderStages_ = {};
 
     VkPipelineVertexInputStateCreateInfo   vertexInputState_;
     VkPipelineInputAssemblyStateCreateInfo inputAssembly_;
@@ -142,8 +142,8 @@ private:
     VkPipelineMultisampleStateCreateInfo   multisampleState_;
     VkPipelineDepthStencilStateCreateInfo  depthStencilState_;
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates_ = {};
-    std::vector<VkFormat>                            colorAttachmentFormats_     = {};
+    SmallVector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates_ = {};
+    SmallVector<VkFormat>                            colorAttachmentFormats_     = {};
 
     VkFormat depthAttachmentFormat_   = VK_FORMAT_UNDEFINED;
     VkFormat stencilAttachmentFormat_ = VK_FORMAT_UNDEFINED;

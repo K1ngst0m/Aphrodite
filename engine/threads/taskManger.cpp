@@ -214,7 +214,7 @@ void TaskDeps::dependencySatisfied()
         }
     }
 }
-void TaskManager::scheduleTasks(const std::vector<Task*>& taskList)
+void TaskManager::scheduleTasks(const SmallVector<Task*>& taskList)
 {
     unsigned taskCount = taskList.size();
 

@@ -5,6 +5,7 @@
 
 #include "common/singleton.h"
 #include "allocator/objectPool.h"
+#include "common/smallVector.h"
 #include "threadPool.h"
 
 namespace aph
@@ -28,10 +29,10 @@ public:
 private:
     explicit TaskDeps(TaskManager* manager);
 
-    std::vector<TaskDeps*> m_pendingDeps;
+    SmallVector<TaskDeps*> m_pendingDeps;
     std::atomic_uint       m_pendingTaskCount;
 
-    std::vector<Task*> m_pendingTasks;
+    SmallVector<Task*> m_pendingTasks;
     std::atomic_uint   m_dependencyCount;
 
     std::condition_variable m_cond;
@@ -89,7 +90,7 @@ public:
     void       removeTaskGroup(TaskGroup* pGroup);
     void       setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
 
-    void scheduleTasks(const std::vector<Task*>& taskList);
+    void scheduleTasks(const SmallVector<Task*>& taskList);
 
     void addTask(TaskGroup* pGroup, TaskFunc&& func, const std::string& desc = "untitled");
 
@@ -109,7 +110,7 @@ private:
 
     struct
     {
-        std::vector<std::future<void>> threadResults;
+        SmallVector<std::future<void>> threadResults;
         std::unique_ptr<ThreadPool<>>  threadPool;
         std::queue<Task*>              readyTaskQueue;
         std::mutex                     condLock;

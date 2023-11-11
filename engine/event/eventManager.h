@@ -16,7 +16,7 @@ class EventManager : public Singleton<EventManager>
     struct EventData
     {
         std::queue<TEvent>                              m_events;
-        std::vector<std::function<bool(const TEvent&)>> m_handlers;
+        SmallVector<std::function<bool(const TEvent&)>> m_handlers;
 
         void process()
         {

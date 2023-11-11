@@ -10,7 +10,7 @@ bool checkValidationLayerSupport(const std::vector<const char*>& validationLayer
 {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-    std::vector<VkLayerProperties> availableLayers(layerCount);
+    aph::SmallVector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
     for(const char* layerName : validationLayers)
@@ -128,7 +128,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     if(physicalDeviceCount > 0)
     {
         // Enumerate physical device handles.
-        std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+        SmallVector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
         VK_CHECK_RESULT(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
 
         // Wrap native Vulkan handles in PhysicalDevice class.
@@ -151,7 +151,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
     vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
     if(extCount > 0)
     {
-        std::vector<VkExtensionProperties> extensions(extCount);
+        SmallVector<VkExtensionProperties> extensions(extCount);
         if(vkEnumerateInstanceExtensionProperties(nullptr, &extCount, &extensions.front()) == VK_SUCCESS)
         {
             for(VkExtensionProperties extension : extensions)

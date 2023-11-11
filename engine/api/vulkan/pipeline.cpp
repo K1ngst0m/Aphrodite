@@ -178,7 +178,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(VkPipelineShaderStageC
     return *this;
 }
 
-VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(const std::vector<VkPipelineShaderStageCreateInfo>& stages)
+VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(const SmallVector<VkPipelineShaderStageCreateInfo>& stages)
 {
     for (auto stage : stages)
     {
