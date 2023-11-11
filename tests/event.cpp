@@ -1,6 +1,6 @@
 #include <catch2/catch_all.hpp>
-#include "app/input/event.h"
-#include "app/input/eventManager.h"
+#include "event/event.h"
+#include "event/eventManager.h"
 
 using namespace aph;
 using namespace Catch;
