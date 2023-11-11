@@ -3,7 +3,7 @@
 
 using namespace aph;
 
-const char* test_module = "/lib64/libc.so.6";
+const char* test_module = "libc.so.6";
 
 TEST_CASE("Module Constructors and Destructor", "[Module]")
 {
@@ -39,7 +39,7 @@ TEST_CASE("Module Constructors and Destructor", "[Module]")
 
 TEST_CASE("Module::getSymbol", "[Module]")
 {
-    Module mod("/lib64/libc.so.6");
+    Module mod(test_module);
 
     SECTION("Known Symbol")
     {
