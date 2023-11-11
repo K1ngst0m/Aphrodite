@@ -20,23 +20,23 @@ Filesystem::~Filesystem()
     clearMappedFiles();
 }
 
-void Filesystem::registerProtocol(std::string_view protocol, const std::string& path)
+void Filesystem::registerProtocol(const std::string& protocol, const std::string& path)
 {
     if(protocolExists(protocol))
     {
-        CM_LOG_WARN("overrided the existing protocol %s. path: %s -> %s", protocol, m_protocols[protocol.data()], path);
+        CM_LOG_WARN("overrided the existing protocol %s. path: %s -> %s", protocol, m_protocols[protocol], path);
     }
-    m_protocols[protocol.data()] = path;
+    m_protocols[protocol] = path;
 }
 
-bool Filesystem::protocolExists(std::string_view protocol)
+bool Filesystem::protocolExists(const std::string& protocol)
 {
-    return m_protocols.contains(protocol.data());
+    return m_protocols.contains(protocol);
 }
 
-void Filesystem::removeProtocol(std::string_view protocol)
+void Filesystem::removeProtocol(const std::string& protocol)
 {
-    m_protocols.erase(protocol.data());
+    m_protocols.erase(protocol);
 }
 
 void Filesystem::clearMappedFiles()
@@ -119,7 +119,7 @@ std::string Filesystem::readFileToString(std::string_view path)
         CM_LOG_ERR("Unable to open file: %s", path);
         return {};
     }
-    return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return {(std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()};
 }
 std::vector<uint8_t> Filesystem::readFileToBytes(std::string_view path)
 {

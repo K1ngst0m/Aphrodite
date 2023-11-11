@@ -37,9 +37,9 @@ public:
     void writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes);
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
 
-    void registerProtocol(std::string_view protocol, const std::string& path);
-    bool protocolExists(std::string_view protocol);
-    void removeProtocol(std::string_view protocol);
+    void registerProtocol(const std::string& protocol, const std::string& path);
+    bool protocolExists(const std::string& protocol);
+    void removeProtocol(const std::string& protocol);
 
     std::filesystem::path resolvePath(std::string_view inputPath);
 
