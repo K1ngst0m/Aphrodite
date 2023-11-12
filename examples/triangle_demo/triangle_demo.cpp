@@ -43,8 +43,7 @@ void triangle_demo::init()
             {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
         };
 
-        auto& timer = aph::Timer::GetInstance();
-        timer.set("load begin");
+        m_timer.set("load begin");
         {
             // vertex: position, color
 
@@ -95,8 +94,8 @@ void triangle_demo::init()
 
             APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
-        timer.set("load end");
-        CM_LOG_DEBUG("load time : %lf", timer.interval("load begin", "load end"));
+        m_timer.set("load end");
+        CM_LOG_DEBUG("load time : %lf", m_timer.interval("load begin", "load end"));
 
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
@@ -129,8 +128,7 @@ void triangle_demo::run()
             TIMELINE_LOOP_BEGIN,
             TIMELINE_LOOP_END,
         };
-        auto& timer = aph::Timer::GetInstance();
-        timer.set(TIMELINE_LOOP_BEGIN);
+        m_timer.set(TIMELINE_LOOP_BEGIN);
 
         m_renderer->update(deltaTime);
 
@@ -139,8 +137,8 @@ void triangle_demo::run()
 
         m_renderer->getGraph()->execute("render target", m_pSwapChain);
 
-        timer.set(TIMELINE_LOOP_END);
-        deltaTime = timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
+        m_timer.set(TIMELINE_LOOP_END);
+        deltaTime = m_timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
     }
 }
 

@@ -114,7 +114,7 @@ void RenderGraph::build(const std::string& output)
 
 void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
 {
-    auto& timer = Timer::GetInstance();
+    auto& timer = m_frameData.timer;
     timer.set("renderer: begin frame");
 
     auto fence = executeAsync(output, pSwapChain);

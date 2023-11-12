@@ -5,7 +5,7 @@ using namespace aph;
 
 TEST_CASE("Timer - Setting and getting intervals", "[Timer]")
 {
-    Timer& timer = Timer::GetInstance();
+    Timer timer;
 
     SECTION("Set and calculate interval")
     {
@@ -27,7 +27,8 @@ TEST_CASE("Timer - Setting and getting intervals", "[Timer]")
 
 TEST_CASE("Timer - Timestamps are stored correctly", "[Timer]")
 {
-    Timer& timer = Timer::GetInstance();
+    Timer timer;
+    timer.set("start");
 
     SECTION("Setting the same tag multiple times should overwrite the previous value")
     {

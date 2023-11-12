@@ -162,6 +162,7 @@ private:
 
     struct
     {
+        Timer  timer;
         double frameTime;
         double fps;
     } m_frameData;

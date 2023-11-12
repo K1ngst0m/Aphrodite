@@ -8,11 +8,12 @@
 namespace aph
 {
 
-class Timer : public Singleton<Timer>
+class Timer
 {
 public:
     // Set a timestamp with a specific tag
-    void set(const std::string& tag) {
+    void set(const std::string& tag)
+    {
         std::lock_guard<std::mutex> m_holder{m_lock};
         m_strMap[tag] = Clock::now();
     }
