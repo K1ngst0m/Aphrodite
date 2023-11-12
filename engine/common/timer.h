@@ -1,6 +1,7 @@
 #ifndef TIMER_H_
 #define TIMER_H_
 
+#include "common/common.h"
 #include "common/hash.h"
 #include "common/logger.h"
 #include "common/singleton.h"
@@ -12,7 +13,7 @@ class Timer
 {
 public:
     // Set a timestamp with a specific tag
-    void set(const std::string& tag)
+    APH_ALWAYS_INLINE void set(const std::string& tag)
     {
         std::lock_guard<std::mutex> m_holder{m_lock};
         m_strMap[tag] = Clock::now();
@@ -24,7 +25,7 @@ public:
     }
 
     // Calculate the interval between two timestamps using their tags
-    double interval(std::string_view start, std::string_view end) const
+    APH_ALWAYS_INLINE double interval(std::string_view start, std::string_view end) const
     {
         auto it1 = m_strMap.find(start.data());
         auto it2 = m_strMap.find(end.data());
@@ -40,7 +41,7 @@ public:
     }
 
     // Calculate the interval between two timestamps using their tags
-    double interval(uint32_t start, uint32_t end)
+    APH_ALWAYS_INLINE double interval(uint32_t start, uint32_t end)
     {
         auto it1 = m_numMap.find(start);
         auto it2 = m_numMap.find(end);

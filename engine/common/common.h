@@ -21,13 +21,22 @@ namespace aph
             { \
                 CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
                 LOG_FLUSH(); \
-                throw aph::TracedException(); \
+                throw ::aph::TracedException(); \
             } \
         } while(0)
 #else
     #define APH_ASSERT(x) ((void)0)
 #endif
 
+#if defined(_MSC_VER)
+    #define APH_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+    #define APH_ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+    #define APH_ALWAYS_INLINE __forceinline
+#else
+    #define APH_ALWAYS_INLINE inline
+#endif
 }  // namespace aph
 
 namespace backward
@@ -59,11 +68,11 @@ struct [[nodiscard("Result should be handled.")]] Result
         RuntimeError,
     };
 
-    bool success() const { return m_code == Code::Success; };
+    APH_ALWAYS_INLINE bool success() const { return m_code == Code::Success; };
 
-    Result(Code code, std::string msg = "") : m_code(code), m_msg(std::move(msg)) {}
+    APH_ALWAYS_INLINE Result(Code code, std::string msg = "") : m_code(code), m_msg(std::move(msg)) {}
 
-    std::string toString()
+    APH_ALWAYS_INLINE std::string toString()
     {
         if(!m_msg.empty())
         {
