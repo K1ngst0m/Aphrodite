@@ -136,7 +136,7 @@ public:
     RenderPass* getPass(const std::string& name);
 
     PassResource* getResource(const std::string& name, PassResource::Type type);
-    bool          hasResource(const std::string& name) const { return m_passResourceMap.contains(name); }
+    bool          hasResource(const std::string& name) const { return m_declareData.resourceMap.contains(name); }
     vk::Image*    getBuildResource(PassImageResource* pResource) const;
     vk::Buffer*   getBuildResource(PassBufferResource* pResource) const;
 
@@ -145,20 +145,26 @@ public:
     vk::Fence* executeAsync(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
 
 private:
+    void addDependencies() {}
+
+private:
     vk::Device* m_pDevice     = {};
     TaskManager m_taskManager = {5, "Render Graph"};
 
-    SmallVector<RenderPass*>          m_passes;
-    HashMap<std::string, std::size_t> m_renderPassMap;
+    struct
+    {
+        SmallVector<RenderPass*>          passes;
+        HashMap<std::string, std::size_t> passMap;
 
-    SmallVector<PassResource*>        m_passResources;
-    HashMap<std::string, std::size_t> m_passResourceMap;
+        SmallVector<PassResource*>        resources;
+        HashMap<std::string, std::size_t> resourceMap;
+    } m_declareData;
 
     struct
     {
         HashMap<PassResource*, vk::Image*>  image;
         HashMap<PassResource*, vk::Buffer*> buffer;
-    } m_buildRes;
+    } m_buildData;
 
     struct
     {
