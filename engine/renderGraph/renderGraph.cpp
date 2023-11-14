@@ -224,7 +224,7 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
                 if(pSwapChain && finalOut)
                 {
                     vk::Semaphore* renderSem = m_pDevice->acquireSemaphore();
-                    APH_CHECK_RESULT(pSwapChain->acquireNextImage(renderSem->getHandle()));
+                    APH_CHECK_RESULT(pSwapChain->acquireNextImage(renderSem));
                     submitInfo.waitSemaphores.push_back(renderSem);
                 }
 

@@ -77,11 +77,12 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
     reCreate();
 }
 
-Result SwapChain::acquireNextImage(VkSemaphore semaphore, Fence* pFence)
+Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
 {
+    APH_ASSERT(pSemaphore);
     VkResult res = VK_SUCCESS;
     res =
-        m_pDevice->getDeviceTable()->vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, semaphore,
+        m_pDevice->getDeviceTable()->vkAcquireNextImageKHR(m_pDevice->getHandle(), getHandle(), UINT64_MAX, pSemaphore->getHandle(),
                                                            pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
     if(res == VK_ERROR_OUT_OF_DATE_KHR)
