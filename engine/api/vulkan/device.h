@@ -79,7 +79,9 @@ public:
     Result       releaseCommandPool(CommandPool* pPool);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func);
+    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
+                               const std::vector<Semaphore*>& waitSems   = {},
+                               const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
 
 public:
     Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});

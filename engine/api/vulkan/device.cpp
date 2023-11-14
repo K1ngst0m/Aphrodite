@@ -230,10 +230,10 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
         .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 
-    VkBuffer                buffer;
+    VkBuffer buffer;
     m_table.vkCreateBuffer(getHandle(), &bufferInfo, vkAllocator(), &buffer);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName))
-    *ppBuffer                    = m_resourcePool.buffer.allocate(createInfo, buffer);
+    *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     m_resourcePool.gpu->allocate(*ppBuffer);
 
     return Result::Success;
@@ -351,7 +351,6 @@ Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** p
                                       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
         }
     }
-
 
     // Not all attachments are valid. We need to create color blend attachments only for active attachments
     VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[APH_MAX_COLOR_ATTACHMENTS] = {};
@@ -678,7 +677,8 @@ Result Device::releaseCommandPool(CommandPool* pPool)
     m_resourcePool.commandPool.release(1, &pPool);
     return Result::Success;
 }
-void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
+void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
+                                   const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems, Fence* pFence)
 {
     CommandPool*   commandPool = acquireCommandPool({queue, true});
     CommandBuffer* cmd         = nullptr;
@@ -688,10 +688,18 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func)
     func(cmd);
     _VR(cmd->end());
 
-    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}};
-    auto            fence = acquireFence();
-    APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
-    fence->wait();
+    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
+    if (!pFence)
+    {
+        auto            fence = acquireFence();
+        APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
+        fence->wait();
+    }
+    else
+    {
+        pFence = acquireFence();
+        APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
+    }
 
     commandPool->free(1, &cmd);
     APH_CHECK_RESULT(releaseCommandPool(commandPool));
