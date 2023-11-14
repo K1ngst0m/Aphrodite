@@ -177,7 +177,7 @@ void basic_texture::run()
         // draw and submit
         m_renderer->nextFrame();
 
-        m_renderer->getGraph()->execute("render target", m_pSwapChain);
+        m_renderer->render("render target");
 
         m_timer.set(TIMELINE_LOOP_END);
         deltaTime = m_timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);

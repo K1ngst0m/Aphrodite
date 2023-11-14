@@ -60,9 +60,9 @@ public:
     Device*         getDevice() const { return m_pDevice.get(); }
     UI*             getUI() const { return m_pUI.get(); }
     WSI*            getWSI() const { return m_wsi.get(); }
-    RenderGraph*    getGraph() { return m_frameGraph[m_frameIdx].get(); }
 
     void recordGraph(std::function<void(RenderGraph*)>&& func);
+    void render(const std::string& output);
 
     const RenderConfig& getConfig() const { return m_config; }
 
@@ -74,6 +74,7 @@ protected:
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
+    std::vector<Fence*>                       m_frameFence;
     uint32_t                                  m_frameIdx = {};
 
 protected:

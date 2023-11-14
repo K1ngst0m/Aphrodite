@@ -165,9 +165,14 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     // init graph
     {
         m_frameGraph.resize(m_config.maxFrames);
+        m_frameFence.resize(m_config.maxFrames);
         for(auto& graph : m_frameGraph)
         {
             graph = std::make_unique<RenderGraph>(m_pDevice.get());
+        }
+        for (auto& fence : m_frameFence)
+        {
+            fence = m_pDevice->acquireFence(true);
         }
     }
 
@@ -204,6 +209,7 @@ Renderer::~Renderer()
 void Renderer::nextFrame()
 {
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
+    m_frameFence[m_frameIdx]->wait();
 }
 
 void Renderer::update(float deltaTime)
@@ -237,5 +243,9 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
         m_taskManager.submit(taskGroup);
     }
     m_taskManager.wait();
+}
+void Renderer::render(const std::string& output)
+{
+    m_frameGraph[m_frameIdx]->execute(output, m_frameFence[m_frameIdx], m_pSwapChain);
 }
 }  // namespace aph::vk
