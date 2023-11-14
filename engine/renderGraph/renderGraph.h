@@ -25,6 +25,13 @@ struct PassBufferInfo
     VkBufferUsageFlags usage = 0;
 };
 
+enum PassResourceFlags
+{
+    PASS_RESOURCE_NONE     = 0,
+    PASS_RESOURCE_EXTERNAL = (1 << 0),
+};
+MAKE_ENUM_FLAG(uint32_t, PassResourceFlags);
+
 class PassResource
 {
 public:
@@ -41,8 +48,10 @@ public:
     void setResourceState(ResourceState state) { m_resourceState = state; }
     void addPipelineStage(VkPipelineStageFlagBits2 stage) { m_pipelineStages |= stage; }
     void addAccessFlags(VkAccessFlagBits2 flag) { m_accessFlags |= flag; }
+    void addFlags(PassResourceFlags flag) { m_flags |= flag; }
 
     Type                  getType() const { return m_type; }
+    PassResourceFlags     getFlags() const { return m_flags; }
     ResourceState         getResourceState() const { return m_resourceState; }
     VkPipelineStageFlags2 getPipelineStage() const { return m_pipelineStages; }
     VkAccessFlags2        getAccessFlags() const { return m_accessFlags; }
@@ -54,6 +63,7 @@ protected:
     ResourceState         m_resourceState  = ResourceState::Undefined;
     VkPipelineStageFlags2 m_pipelineStages = 0;
     VkAccessFlags2        m_accessFlags    = 0;
+    PassResourceFlags     m_flags          = PASS_RESOURCE_NONE;
 };
 
 class PassImageResource : public PassResource

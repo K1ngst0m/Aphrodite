@@ -133,9 +133,13 @@ void RenderGraph::build(const std::string& output)
 
 RenderGraph::~RenderGraph()
 {
-    for(auto [_, image] : m_buildData.image)
+    for(auto *res : m_declareData.resources)
     {
-        m_pDevice->destroy(image);
+        if (!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
+        {
+            auto pImage = m_buildData.image[res];
+            m_pDevice->destroy(pImage);
+        }
     }
 }
 
@@ -143,6 +147,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* p
 {
     auto res = getResource(name, PassResource::Type::Buffer);
     APH_ASSERT(!m_buildData.buffer.contains(res));
+    res->addFlags(PASS_RESOURCE_EXTERNAL);
     m_buildData.buffer[res] = pBuffer;
     return res;
 }
@@ -151,6 +156,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pI
 {
     auto res = getResource(name, PassResource::Type::Image);
     APH_ASSERT(!m_buildData.image.contains(res));
+    res->addFlags(PASS_RESOURCE_EXTERNAL);
     m_buildData.image[res] = pImage;
     return res;
 }
