@@ -125,8 +125,7 @@
     // render loop
     {
         ...
-        m_renderer->nextFrame();
-        m_renderer->getGraph()->execute("render target", m_pSwapChain);
+        m_renderer->render("render target");
         ...
     }
     #+END_SRC
