@@ -654,7 +654,7 @@ Result Device::releaseSemaphore(Semaphore* semaphore)
 Fence* Device::acquireFence(bool isSignaled)
 {
     Fence* pFence = {};
-    m_resourcePool.syncPrimitive.acquireFence(&pFence);
+    m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled);
     return pFence;
 }
 Result Device::releaseFence(Fence* pFence)
@@ -678,7 +678,8 @@ Result Device::releaseCommandPool(CommandPool* pPool)
     return Result::Success;
 }
 void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
-                                   const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems, Fence* pFence)
+                                   const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems,
+                                   Fence* pFence)
 {
     CommandPool*   commandPool = acquireCommandPool({queue, true});
     CommandBuffer* cmd         = nullptr;
@@ -689,15 +690,15 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
     _VR(cmd->end());
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
-    if (!pFence)
+    if(!pFence)
     {
-        auto            fence = acquireFence();
+        auto fence = acquireFence(false);
         APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
         fence->wait();
     }
     else
     {
-        pFence = acquireFence();
+        pFence = acquireFence(false);
         APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
     }
 

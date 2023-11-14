@@ -73,7 +73,7 @@ public:
 public:
     CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();
-    Fence*       acquireFence(bool isSignaled = true);
+    Fence*       acquireFence(bool isSignaled);
     Result       releaseSemaphore(Semaphore* semaphore);
     Result       releaseFence(Fence* pFence);
     Result       releaseCommandPool(CommandPool* pPool);

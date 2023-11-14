@@ -5,7 +5,6 @@ namespace aph::vk
 {
 Fence::Fence(Device* pDevice, HandleType handle) : ResourceHandle(handle), m_pDevice(pDevice)
 {
-    reset();
 }
 void Fence::reset()
 {
