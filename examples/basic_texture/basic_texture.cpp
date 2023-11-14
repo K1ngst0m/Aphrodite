@@ -164,9 +164,7 @@ void basic_texture::run()
     while(m_pWSI->update())
     {
         PROFILE_SCOPE("application loop");
-        static double deltaTime = {};
-        // draw and submit
-        m_renderer->update(deltaTime);
+        m_renderer->update();
         m_renderer->render("render target");
     }
 }

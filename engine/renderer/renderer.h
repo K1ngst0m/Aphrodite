@@ -49,7 +49,7 @@ public:
 public:
     void load();
     void unload();
-    void update(float deltaTime);
+    void update();
 
 public:
     Instance*       getInstance() const { return m_pInstance; }

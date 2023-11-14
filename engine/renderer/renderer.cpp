@@ -206,7 +206,7 @@ Renderer::~Renderer()
     Instance::Destroy(m_pInstance);
 };
 
-void Renderer::update(float deltaTime)
+void Renderer::update()
 {
     if(m_config.flags & RENDER_CFG_UI)
     {
