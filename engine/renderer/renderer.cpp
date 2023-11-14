@@ -206,12 +206,6 @@ Renderer::~Renderer()
     Instance::Destroy(m_pInstance);
 };
 
-void Renderer::nextFrame()
-{
-    m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
-    m_frameFence[m_frameIdx]->wait();
-}
-
 void Renderer::update(float deltaTime)
 {
     if(m_config.flags & RENDER_CFG_UI)
@@ -246,6 +240,8 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 }
 void Renderer::render(const std::string& output)
 {
+    m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
+    m_frameFence[m_frameIdx]->wait();
     m_frameGraph[m_frameIdx]->execute(output, m_frameFence[m_frameIdx], m_pSwapChain);
 }
 }  // namespace aph::vk

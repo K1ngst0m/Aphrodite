@@ -46,8 +46,6 @@ public:
     }
     ~Renderer();
 
-    void nextFrame();
-
 public:
     void load();
     void unload();

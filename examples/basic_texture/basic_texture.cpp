@@ -165,22 +165,9 @@ void basic_texture::run()
     {
         PROFILE_SCOPE("application loop");
         static double deltaTime = {};
-        enum : uint32_t
-        {
-            TIMELINE_LOOP_BEGIN,
-            TIMELINE_LOOP_END,
-        };
-        m_timer.set(TIMELINE_LOOP_BEGIN);
-
-        m_renderer->update(deltaTime);
-
         // draw and submit
-        m_renderer->nextFrame();
-
+        m_renderer->update(deltaTime);
         m_renderer->render("render target");
-
-        m_timer.set(TIMELINE_LOOP_END);
-        deltaTime = m_timer.interval(TIMELINE_LOOP_BEGIN, TIMELINE_LOOP_END);
     }
 }
 
