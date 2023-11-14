@@ -140,9 +140,8 @@ public:
     vk::Image*    getBuildResource(PassImageResource* pResource) const;
     vk::Buffer*   getBuildResource(PassBufferResource* pResource) const;
 
-    void       build(const std::string& output);
-    void       execute(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
-    vk::Fence* executeAsync(const std::string& output, vk::SwapChain* pSwapChain = nullptr);
+    void build(const std::string& output);
+    void execute(const std::string& output, vk::Fence* pFence = nullptr, vk::SwapChain* pSwapChain = nullptr);
 
 private:
     void addDependencies() {}
@@ -165,13 +164,6 @@ private:
         HashMap<PassResource*, vk::Image*>  image;
         HashMap<PassResource*, vk::Buffer*> buffer;
     } m_buildData;
-
-    struct
-    {
-        Timer  timer;
-        double frameTime;
-        double fps;
-    } m_frameData;
 
     struct
     {

@@ -112,20 +112,6 @@ void RenderGraph::build(const std::string& output)
     }
 }
 
-void RenderGraph::execute(const std::string& output, vk::SwapChain* pSwapChain)
-{
-    auto& timer = m_frameData.timer;
-    timer.set("renderer: begin frame");
-
-    auto fence = executeAsync(output, pSwapChain);
-    fence->wait();
-
-    timer.set("renderer: end frame");
-    m_frameData.frameTime = timer.interval("renderer: begin frame", "renderer: end frame");
-    m_frameData.fps       = 1 / m_frameData.frameTime;
-    CM_LOG_DEBUG("Fps: %.0f", m_frameData.fps);
-}
-
 RenderGraph::~RenderGraph()
 {
     for(auto [_, image] : m_buildData.image)
@@ -161,7 +147,7 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     return res;
 }
 
-vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* pSwapChain)
+void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::SwapChain* pSwapChain)
 {
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
@@ -237,7 +223,16 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
 
     // submit && present
     {
-        vk::Fence* frameFence = m_pDevice->acquireFence();
+        vk::Fence* frameFence = {};
+
+        if(!pFence)
+        {
+            frameFence = m_pDevice->acquireFence(false);
+        }
+        else
+        {
+            frameFence = pFence;
+        }
         frameFence->reset();
 
         vk::Semaphore* presentSem = m_pDevice->acquireSemaphore();
@@ -275,9 +270,14 @@ vk::Fence* RenderGraph::executeAsync(const std::string& output, vk::SwapChain* p
             APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
         }
 
-        return frameFence;
+        if(!pFence)
+        {
+            frameFence->wait();
+            APH_CHECK_RESULT(m_pDevice->releaseFence(frameFence));
+        }
     }
 }
+
 vk::Image* RenderGraph::getBuildResource(PassImageResource* pResource) const
 {
     APH_ASSERT(m_buildData.image.contains(pResource));
