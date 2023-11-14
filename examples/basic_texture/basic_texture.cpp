@@ -142,7 +142,7 @@ void basic_texture::init()
                                          .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
                                          .format = m_pSwapChain->getFormat(),
                                      });
-            drawPass->addTextureInput("container texture");
+            drawPass->addTextureInput("container texture", m_pImage);
 
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);

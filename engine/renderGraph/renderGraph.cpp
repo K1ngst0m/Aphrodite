@@ -9,9 +9,10 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
     m_queueType(queueType),
     m_name(name)
 {
+    APH_ASSERT(pRDG);
 }
 
-PassImageResource* RenderPass::addTextureInput(const std::string& name)
+PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Image* pImage)
 {
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addReadPass(this);
@@ -19,6 +20,10 @@ PassImageResource* RenderPass::addTextureInput(const std::string& name)
     res->setResourceState(ResourceState::ShaderResource);
     res->addAccessFlags(VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
     m_res.textureIn.push_back(res);
+    if(pImage)
+    {
+        m_pRenderGraph->importResource(name, pImage);
+    }
     return res;
 }
 
@@ -70,6 +75,20 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 
 void RenderGraph::build(const std::string& output)
 {
+    for(auto* res : m_declareData.resources)
+    {
+        for(auto& readPass : res->getReadPasses())
+        {
+            for(auto& writePass : res->getWritePasses())
+            {
+                if(writePass != readPass)
+                {
+                    // Add a dependency from writePass to readPass
+                }
+            }
+        }
+    }
+
     for(auto* pass : m_declareData.passes)
     {
         for(auto colorAttachment : pass->m_res.colorOutMap)
@@ -119,6 +138,23 @@ RenderGraph::~RenderGraph()
         m_pDevice->destroy(image);
     }
 }
+
+PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* pBuffer)
+{
+    auto res = getResource(name, PassResource::Type::Buffer);
+    APH_ASSERT(!m_buildData.buffer.contains(res));
+    m_buildData.buffer[res] = pBuffer;
+    return res;
+}
+
+PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pImage)
+{
+    auto res = getResource(name, PassResource::Type::Image);
+    APH_ASSERT(!m_buildData.image.contains(res));
+    m_buildData.image[res] = pImage;
+    return res;
+}
+
 PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
 {
     if(m_declareData.resourceMap.contains(name))

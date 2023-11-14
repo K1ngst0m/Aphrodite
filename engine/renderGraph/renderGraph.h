@@ -93,7 +93,7 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
-    PassImageResource* addTextureInput(const std::string& name);
+    PassImageResource* addTextureInput(const std::string& name, vk::Image* pImage = nullptr);
     PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex = 0);
     PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
 
@@ -135,6 +135,8 @@ public:
     RenderPass* createPass(const std::string& name, QueueType queueType);
     RenderPass* getPass(const std::string& name);
 
+    PassResource* importResource(const std::string& name, vk::Image* pImage);
+    PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
     PassResource* getResource(const std::string& name, PassResource::Type type);
     bool          hasResource(const std::string& name) const { return m_declareData.resourceMap.contains(name); }
     vk::Image*    getBuildResource(PassImageResource* pResource) const;
