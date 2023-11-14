@@ -11,11 +11,10 @@ namespace aph
 
 enum RenderConfigFlagBits
 {
-    RENDER_CFG_DEBUG       = (1 << 0),
-    RENDER_CFG_UI          = (1 << 1),
-    RENDER_CFG_DEFAULT_RES = (1 << 2),
-    RENDER_CFG_WITHOUT_UI  = RENDER_CFG_DEBUG | RENDER_CFG_DEFAULT_RES,
-    RENDER_CFG_ALL         = RENDER_CFG_DEFAULT_RES | RENDER_CFG_UI
+    RENDER_CFG_DEBUG      = (1 << 0),
+    RENDER_CFG_UI         = (1 << 1),
+    RENDER_CFG_WITHOUT_UI = RENDER_CFG_DEBUG,
+    RENDER_CFG_ALL        = RENDER_CFG_UI
 #if defined(APH_DEBUG)
                      | RENDER_CFG_DEBUG
 #endif
@@ -65,10 +64,8 @@ public:
     const RenderConfig& getConfig() const { return m_config; }
 
 protected:
-    VkSampleCountFlagBits m_sampleCount   = {VK_SAMPLE_COUNT_1_BIT};
-    VkSurfaceKHR          m_surface       = {};
-    VkPipelineCache       m_pipelineCache = {};
-    RenderConfig          m_config        = {};
+    VkSurfaceKHR m_surface = {};
+    RenderConfig m_config  = {};
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;

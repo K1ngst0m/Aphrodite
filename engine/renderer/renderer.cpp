@@ -129,16 +129,6 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
         m_pDevice = Device::Create(createInfo);
         VK_LOG_INFO("Select Device [%d].", gpuIdx);
         APH_ASSERT(m_pDevice != nullptr);
-
-        // check sample count support
-        {
-            auto limit  = createInfo.pPhysicalDevice->getProperties().limits;
-            auto counts = limit.framebufferColorSampleCounts & limit.framebufferDepthSampleCounts;
-            if(!(counts & m_sampleCount))
-            {
-                m_sampleCount = VK_SAMPLE_COUNT_1_BIT;
-            }
-        }
     }
 
     // setup swapchain
@@ -149,17 +139,6 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
         };
         auto result = m_pDevice->create(createInfo, &m_pSwapChain);
         APH_ASSERT(result.success());
-    }
-
-    // init default resources
-    if(m_config.flags & RENDER_CFG_DEFAULT_RES)
-    {
-        // pipeline cache
-        {
-            VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO};
-            _VR(m_pDevice->getDeviceTable()->vkCreatePipelineCache(m_pDevice->getHandle(), &pipelineCacheCreateInfo,
-                                                                   vkAllocator(), &m_pipelineCache));
-        }
     }
 
     // init graph
@@ -197,7 +176,6 @@ Renderer::~Renderer()
     {
         graph.reset();
     }
-    m_pDevice->getDeviceTable()->vkDestroyPipelineCache(m_pDevice->getHandle(), m_pipelineCache, vkAllocator());
 
     m_pResourceLoader->cleanup();
     m_pDevice->destroy(m_pSwapChain);
