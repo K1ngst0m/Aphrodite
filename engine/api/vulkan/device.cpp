@@ -156,6 +156,7 @@ void Device::Destroy(Device* pDevice)
     // TODO
     delete pDevice->m_resourcePool.gpu;
 
+    pDevice->m_resourcePool.pipeline.clear();
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.commandPool.clear();
@@ -316,149 +317,20 @@ void Device::waitIdle()
     m_table.vkDeviceWaitIdle(getHandle());
 }
 
-Result Device::create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
+Pipeline* Device::acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName)
 {
-    SmallVector<VkPipelineShaderStageCreateInfo> shaderStages;
-
-    auto& pProgram = createInfo.pProgram;
-    APH_ASSERT(pProgram);
-
-    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT,
-                                                               pProgram->getShader(ShaderStage::VS)->getHandle()));
-    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                               pProgram->getShader(ShaderStage::FS)->getHandle()));
-
-    // create rps
-    RenderPipelineState rps    = {.createInfo = createInfo};
-    const VertexInput&  vstate = rps.createInfo.vertexInput;
-    rps.vkAttributes.resize(vstate.attributes.size());
-    SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
-
-    for(uint32_t i = 0; i != rps.vkAttributes.size(); i++)
-    {
-        const auto& attr = vstate.attributes[i];
-
-        rps.vkAttributes[i] = {.location = attr.location,
-                               .binding  = attr.binding,
-                               .format   = utils::VkCast(attr.format),
-                               .offset   = (uint32_t)attr.offset};
-
-        if(!bufferAlreadyBound[attr.binding])
-        {
-            bufferAlreadyBound[attr.binding] = true;
-            rps.vkBindings.push_back({.binding   = attr.binding,
-                                      .stride    = vstate.bindings[attr.binding].stride,
-                                      .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
-        }
-    }
-
-    // Not all attachments are valid. We need to create color blend attachments only for active attachments
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[APH_MAX_COLOR_ATTACHMENTS] = {};
-    VkFormat                            colorAttachmentFormats[APH_MAX_COLOR_ATTACHMENTS]     = {};
-
-    const uint32_t numColorAttachments = createInfo.color.size();
-    for(uint32_t i = 0; i != numColorAttachments; i++)
-    {
-        const auto& attachment = createInfo.color[i];
-        APH_ASSERT(attachment.format != Format::Undefined);
-        colorAttachmentFormats[i] = utils::VkCast(attachment.format);
-        if(!attachment.blendEnabled)
-        {
-            colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{
-                .blendEnable         = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            };
-        }
-        else
-        {
-            colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{
-                .blendEnable         = VK_TRUE,
-                .srcColorBlendFactor = attachment.srcRGBBlendFactor,
-                .dstColorBlendFactor = attachment.dstRGBBlendFactor,
-                .colorBlendOp        = attachment.rgbBlendOp,
-                .srcAlphaBlendFactor = attachment.srcAlphaBlendFactor,
-                .dstAlphaBlendFactor = attachment.dstAlphaBlendFactor,
-                .alphaBlendOp        = attachment.alphaBlendOp,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            };
-        }
-    }
-
-    const VkPipelineVertexInputStateCreateInfo ciVertexInputState = {
-        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount   = static_cast<uint32_t>(rps.vkBindings.size()),
-        .pVertexBindingDescriptions      = !rps.vkBindings.empty() ? rps.vkBindings.data() : nullptr,
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(rps.vkAttributes.size()),
-        .pVertexAttributeDescriptions    = !rps.vkAttributes.empty() ? rps.vkAttributes.data() : nullptr,
-    };
-
-    VkPipeline handle;
-
-    VulkanPipelineBuilder()
-        // from Vulkan 1.0
-        .dynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-        .dynamicState(VK_DYNAMIC_STATE_SCISSOR)
-        // .dynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS)
-        // .dynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS)
-        // from Vulkan 1.3
-        // .dynamicState(VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE)
-        // .dynamicState(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE)
-        // .dynamicState(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP)
-        .primitiveTopology(createInfo.topology)
-        .depthBiasEnable(createInfo.dynamicState.depthBiasEnable)
-        .rasterizationSamples(aph::vk::utils::getSampleCountFlags(createInfo.samplesCount))
-        .polygonMode(createInfo.polygonMode)
-        .stencilStateOps(VK_STENCIL_FACE_FRONT_BIT, createInfo.frontFaceStencil.stencilFailureOp,
-                         createInfo.frontFaceStencil.depthStencilPassOp, createInfo.frontFaceStencil.depthFailureOp,
-                         createInfo.frontFaceStencil.stencilCompareOp)
-        .stencilStateOps(VK_STENCIL_FACE_BACK_BIT, createInfo.backFaceStencil.stencilFailureOp,
-                         createInfo.backFaceStencil.depthStencilPassOp, createInfo.backFaceStencil.depthFailureOp,
-                         createInfo.backFaceStencil.stencilCompareOp)
-        .stencilMasks(VK_STENCIL_FACE_FRONT_BIT, 0xFF, createInfo.frontFaceStencil.writeMask,
-                      createInfo.frontFaceStencil.readMask)
-        .stencilMasks(VK_STENCIL_FACE_BACK_BIT, 0xFF, createInfo.backFaceStencil.writeMask,
-                      createInfo.backFaceStencil.readMask)
-        .shaderStage(shaderStages)
-        .cullMode(createInfo.cullMode)
-        .frontFace(createInfo.frontFaceWinding)
-        .vertexInputState(ciVertexInputState)
-        .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
-        .depthAttachmentFormat(createInfo.depthFormat)
-        .stencilAttachmentFormat(createInfo.stencilFormat)
-        .build(this, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle, createInfo.debugName);
-
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
-    *ppPipeline = m_resourcePool.pipeline.allocate(this, rps, handle, pProgram);
-
-    return Result::Success;
+    Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
+                                  reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
+    return pPipeline;
 }
 
-void Device::destroy(Pipeline* pipeline)
+Pipeline* Device::acquirePipeline(const ComputePipelineCreateInfo& createInfo, std::string_view debugName)
 {
-    m_table.vkDestroyPipeline(getHandle(), pipeline->getHandle(), gVkAllocator);
-    m_resourcePool.pipeline.free(pipeline);
-}
-
-Result Device::create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName)
-{
-    APH_ASSERT(createInfo.pCompute);
-    ShaderProgram* program = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.pSamplerBank);
-    VkComputePipelineCreateInfo ci = init::computePipelineCreateInfo(program->getPipelineLayout());
-    ci.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                         program->getShader(ShaderStage::CS)->getHandle());
-    VkPipeline handle              = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateComputePipelines(this->getHandle(), VK_NULL_HANDLE, 1, &ci, gVkAllocator, &handle));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(handle), debugName))
-    *ppPipeline = m_resourcePool.pipeline.allocate(this, createInfo, handle, program);
-    return Result::Success;
+    Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
+                                  reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
+    return pPipeline;
 }
 
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)

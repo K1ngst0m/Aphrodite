@@ -307,6 +307,11 @@ struct VertexInput
         uint32_t binding  = 0;
         Format   format   = Format::Undefined;
         uint32_t offset   = 0;
+
+        bool operator==(const VertexAttribute& rhs) const
+        {
+            return location == rhs.location && binding == rhs.binding && format == rhs.format && offset == rhs.offset;
+        }
     };
 
     struct VertexInputBinding
@@ -316,6 +321,32 @@ struct VertexInput
 
     std::vector<VertexAttribute>    attributes;
     std::vector<VertexInputBinding> bindings;
+
+    bool operator==(const VertexInput& rhs) const
+    {
+        if(attributes.size() != rhs.attributes.size() || bindings.size() != rhs.bindings.size())
+        {
+            return false;
+        }
+
+        for(auto idx = 0; idx < attributes.size(); ++idx)
+        {
+            if(rhs.attributes[idx] != attributes[idx])
+            {
+                return false;
+            }
+        }
+
+        for(auto idx = 0; idx < attributes.size(); ++idx)
+        {
+            if(rhs.bindings[idx].stride != bindings[idx].stride)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 };
 
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>

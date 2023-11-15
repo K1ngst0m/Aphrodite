@@ -262,7 +262,7 @@ void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* dep
 {
     RenderingInfo                renderingInfo;
     std::vector<AttachmentInfo>& colorAttachments = renderingInfo.colors;
-    AttachmentInfo&              depthAttachment  = renderingInfo.depth;
+    auto&                        depthAttachment  = renderingInfo.depth;
     colorAttachments.reserve(colors.size());
     for(auto color : colors)
     {
@@ -279,7 +279,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     m_commandState.depthAttachment  = renderingInfo.depth;
     auto& colors                    = renderingInfo.colors;
 
-    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.has_value());
+    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.image);
 
     std::vector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
@@ -334,9 +334,9 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
         .pDepthAttachment     = nullptr,
     };
 
-    if(m_commandState.depthAttachment.has_value() && m_commandState.depthAttachment->image != nullptr)
+    if(m_commandState.depthAttachment.image != nullptr)
     {
-        auto& image = m_commandState.depthAttachment->image;
+        auto& image = m_commandState.depthAttachment.image;
         vkDepth     = {
                 .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 .imageView   = image->getView()->getHandle(),
@@ -345,21 +345,21 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
                 .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                 .clearValue  = {.depthStencil{1.0f, 0}},
         };
-        if(m_commandState.depthAttachment->layout.has_value())
+        if(m_commandState.depthAttachment.layout.has_value())
         {
-            vkDepth.imageLayout = m_commandState.depthAttachment->layout.value();
+            vkDepth.imageLayout = m_commandState.depthAttachment.layout.value();
         }
-        if(m_commandState.depthAttachment->storeOp.has_value())
+        if(m_commandState.depthAttachment.storeOp.has_value())
         {
-            vkDepth.storeOp = m_commandState.depthAttachment->storeOp.value();
+            vkDepth.storeOp = m_commandState.depthAttachment.storeOp.value();
         }
-        if(m_commandState.depthAttachment->loadOp.has_value())
+        if(m_commandState.depthAttachment.loadOp.has_value())
         {
-            vkDepth.loadOp = m_commandState.depthAttachment->loadOp.value();
+            vkDepth.loadOp = m_commandState.depthAttachment.loadOp.value();
         }
-        if(m_commandState.depthAttachment->clear.has_value())
+        if(m_commandState.depthAttachment.clear.has_value())
         {
-            vkDepth.clearValue = m_commandState.depthAttachment->clear.value();
+            vkDepth.clearValue = m_commandState.depthAttachment.clear.value();
         }
         // debug layout
         // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
@@ -396,6 +396,30 @@ void CommandBuffer::flushGraphicsCommand()
                                            m_commandState.vertexBinding.offsets);
     m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
                                          m_commandState.index.indexType);
+
+    if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
+    {
+        APH_ASSERT(m_commandState.pProgram);
+        aph::vk::GraphicsPipelineCreateInfo createInfo{
+            .vertexInput = m_commandState.vertexBinding.inputInfo,
+            .pProgram    = m_commandState.pProgram,
+        };
+
+        for(auto colorAttachment : m_commandState.colorAttachments)
+        {
+            createInfo.color.push_back({
+                .format = colorAttachment.image->getFormat(),
+                // TODO
+            });
+        }
+
+        if(m_commandState.depthAttachment.image)
+        {
+            createInfo.depthFormat = m_commandState.depthAttachment.image->getFormat();
+        }
+
+        pipeline = m_pDevice->acquirePipeline(createInfo);
+    }
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }

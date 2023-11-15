@@ -171,11 +171,11 @@ static inline uint32_t ctz64(uint64_t x)
 
 namespace aph::utils
 {
-template <typename T>
-inline void hashCombine(std::size_t& seed, const T& v)
+template <class T>
+void hashCombine(size_t& seed, const T& v)
 {
     std::hash<T> hasher;
-    seed ^= std::hash<typename std::decay<decltype(v)>::type>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1)
 {

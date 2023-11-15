@@ -59,18 +59,17 @@ public:
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
     Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName = "");
-    Result create(const GraphicsPipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
-    Result create(const ComputePipelineCreateInfo& createInfo, Pipeline** ppPipeline, std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
     void destroy(ImageView* pImageView);
     void destroy(SwapChain* pSwapchain);
-    void destroy(Pipeline* pipeline);
     void destroy(Sampler* pSampler);
     void destroy(ShaderProgram* pProgram);
 
 public:
+    Pipeline*    acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName = "");
+    Pipeline*    acquirePipeline(const ComputePipelineCreateInfo& createInfo, std::string_view debugName = "");
     CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();
     Fence*       acquireFence(bool isSignaled);
@@ -118,13 +117,13 @@ private:
         ThreadSafeObjectPool<Image>         image;
         ThreadSafeObjectPool<Sampler>       sampler;
         ThreadSafeObjectPool<ImageView>     imageView;
-        ThreadSafeObjectPool<Pipeline>      pipeline;
+        PipelineAllocator                   pipeline;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue>         queue;
         CommandPoolAllocator                commandPool;
         SyncPrimitiveAllocator              syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice) : pipeline(pDevice), commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 

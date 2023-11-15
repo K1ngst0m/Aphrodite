@@ -180,7 +180,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(VkPipelineShaderStageC
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(const SmallVector<VkPipelineShaderStageCreateInfo>& stages)
 {
-    for (auto stage : stages)
+    for(auto stage : stages)
     {
         shaderStage(stage);
     }
@@ -233,7 +233,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilMasks(VkStencilFaceFlags fa
 }
 
 VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
-                                      VkPipeline* outPipeline, const char* debugName) noexcept
+                                      VkPipeline* outPipeline) noexcept
 {
     const VkPipelineDynamicStateCreateInfo dynamicState = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
@@ -287,7 +287,8 @@ VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineC
         .basePipelineIndex   = -1,
     };
 
-    const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1, &ci, vkAllocator(), outPipeline);
+    const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1,
+                                                                             &ci, vkAllocator(), outPipeline);
 
     if(result != VK_SUCCESS)
     {
@@ -299,7 +300,8 @@ VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineC
     return VK_SUCCESS;
 }
 
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram) :
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle,
+                   ShaderProgram* pProgram) :
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
@@ -323,4 +325,171 @@ DescriptorSet* Pipeline::acquireSet(uint32_t idx) const
     return m_pProgram->getSetLayout(idx)->allocateSet();
 }
 
+Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& createInfo)
+{
+    auto& table = *m_pDevice->getDeviceTable();
+    if(!m_computePipelineMap.contains(createInfo))
+    {
+        APH_ASSERT(false);
+        Pipeline* pPipeline = {};
+        {
+            APH_ASSERT(createInfo.pCompute);
+            ShaderProgram*              program = createInfo.pCompute;
+            VkComputePipelineCreateInfo ci      = init::computePipelineCreateInfo(program->getPipelineLayout());
+            ci.stage                            = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
+                                                                                      program->getShader(ShaderStage::CS)->getHandle());
+            VkPipeline handle                   = VK_NULL_HANDLE;
+            _VR(table.vkCreateComputePipelines(m_pDevice->getHandle(), VK_NULL_HANDLE, 1, &ci, vkAllocator(), &handle));
+            pPipeline = m_pool.allocate(m_pDevice, createInfo, handle, program);
+        }
+        m_computePipelineMap[createInfo] = pPipeline;
+    }
+
+    return m_computePipelineMap[createInfo];
+}
+Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& createInfo)
+{
+    if(!m_graphicsPipelineMap.contains(createInfo))
+    {
+        Pipeline*                                    pPipeline = {};
+        SmallVector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+        auto& pProgram = createInfo.pProgram;
+        APH_ASSERT(pProgram);
+
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT,
+                                                                   pProgram->getShader(ShaderStage::VS)->getHandle()));
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                                   pProgram->getShader(ShaderStage::FS)->getHandle()));
+
+        // create rps
+        RenderPipelineState rps    = {.createInfo = createInfo};
+        const VertexInput&  vstate = rps.createInfo.vertexInput;
+        rps.vkAttributes.resize(vstate.attributes.size());
+        SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
+
+        for(uint32_t i = 0; i != rps.vkAttributes.size(); i++)
+        {
+            const auto& attr = vstate.attributes[i];
+
+            rps.vkAttributes[i] = {.location = attr.location,
+                                   .binding  = attr.binding,
+                                   .format   = utils::VkCast(attr.format),
+                                   .offset   = (uint32_t)attr.offset};
+
+            if(!bufferAlreadyBound[attr.binding])
+            {
+                bufferAlreadyBound[attr.binding] = true;
+                rps.vkBindings.push_back({.binding   = attr.binding,
+                                          .stride    = vstate.bindings[attr.binding].stride,
+                                          .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
+            }
+        }
+
+        // Not all attachments are valid. We need to create color blend attachments only for active attachments
+        VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[APH_MAX_COLOR_ATTACHMENTS] = {};
+        VkFormat                            colorAttachmentFormats[APH_MAX_COLOR_ATTACHMENTS]     = {};
+
+        const uint32_t numColorAttachments = createInfo.color.size();
+        for(uint32_t i = 0; i != numColorAttachments; i++)
+        {
+            const auto& attachment = createInfo.color[i];
+            APH_ASSERT(attachment.format != Format::Undefined);
+            colorAttachmentFormats[i] = utils::VkCast(attachment.format);
+            if(!attachment.blendEnabled)
+            {
+                colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{
+                    .blendEnable         = VK_FALSE,
+                    .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
+                    .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                    .colorBlendOp        = VK_BLEND_OP_ADD,
+                    .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                    .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                    .alphaBlendOp        = VK_BLEND_OP_ADD,
+                    .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                      VK_COLOR_COMPONENT_A_BIT,
+                };
+            }
+            else
+            {
+                colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{
+                    .blendEnable         = VK_TRUE,
+                    .srcColorBlendFactor = attachment.srcRGBBlendFactor,
+                    .dstColorBlendFactor = attachment.dstRGBBlendFactor,
+                    .colorBlendOp        = attachment.rgbBlendOp,
+                    .srcAlphaBlendFactor = attachment.srcAlphaBlendFactor,
+                    .dstAlphaBlendFactor = attachment.dstAlphaBlendFactor,
+                    .alphaBlendOp        = attachment.alphaBlendOp,
+                    .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                      VK_COLOR_COMPONENT_A_BIT,
+                };
+            }
+        }
+
+        const VkPipelineVertexInputStateCreateInfo ciVertexInputState = {
+            .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .vertexBindingDescriptionCount   = static_cast<uint32_t>(rps.vkBindings.size()),
+            .pVertexBindingDescriptions      = !rps.vkBindings.empty() ? rps.vkBindings.data() : nullptr,
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(rps.vkAttributes.size()),
+            .pVertexAttributeDescriptions    = !rps.vkAttributes.empty() ? rps.vkAttributes.data() : nullptr,
+        };
+
+        VkPipeline handle;
+
+        VulkanPipelineBuilder()
+            // from Vulkan 1.0
+            .dynamicState(VK_DYNAMIC_STATE_VIEWPORT)
+            .dynamicState(VK_DYNAMIC_STATE_SCISSOR)
+            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS)
+            // .dynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS)
+            // from Vulkan 1.3
+            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE)
+            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE)
+            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP)
+            .primitiveTopology(createInfo.topology)
+            .depthBiasEnable(createInfo.dynamicState.depthBiasEnable)
+            .rasterizationSamples(aph::vk::utils::getSampleCountFlags(createInfo.samplesCount))
+            .polygonMode(createInfo.polygonMode)
+            .stencilStateOps(VK_STENCIL_FACE_FRONT_BIT, createInfo.frontFaceStencil.stencilFailureOp,
+                             createInfo.frontFaceStencil.depthStencilPassOp, createInfo.frontFaceStencil.depthFailureOp,
+                             createInfo.frontFaceStencil.stencilCompareOp)
+            .stencilStateOps(VK_STENCIL_FACE_BACK_BIT, createInfo.backFaceStencil.stencilFailureOp,
+                             createInfo.backFaceStencil.depthStencilPassOp, createInfo.backFaceStencil.depthFailureOp,
+                             createInfo.backFaceStencil.stencilCompareOp)
+            .stencilMasks(VK_STENCIL_FACE_FRONT_BIT, 0xFF, createInfo.frontFaceStencil.writeMask,
+                          createInfo.frontFaceStencil.readMask)
+            .stencilMasks(VK_STENCIL_FACE_BACK_BIT, 0xFF, createInfo.backFaceStencil.writeMask,
+                          createInfo.backFaceStencil.readMask)
+            .shaderStage(shaderStages)
+            .cullMode(createInfo.cullMode)
+            .frontFace(createInfo.frontFaceWinding)
+            .vertexInputState(ciVertexInputState)
+            .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
+            .depthAttachmentFormat(utils::VkCast(createInfo.depthFormat))
+            .stencilAttachmentFormat(utils::VkCast(createInfo.stencilFormat))
+            .build(m_pDevice, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle);
+
+        pPipeline                         = m_pool.allocate(m_pDevice, rps, handle, pProgram);
+        m_graphicsPipelineMap[createInfo] = pPipeline;
+    }
+
+    return m_graphicsPipelineMap[createInfo];
+}
+
+PipelineAllocator::~PipelineAllocator() = default;
+
+void PipelineAllocator::clear()
+{
+    auto& table = *m_pDevice->getDeviceTable();
+    for(auto& [_, pPipeline] : m_graphicsPipelineMap)
+    {
+        table.vkDestroyPipeline(m_pDevice->getHandle(), pPipeline->getHandle(), vkAllocator());
+        m_pool.free(pPipeline);
+    }
+    for(auto& [_, pPipeline] : m_computePipelineMap)
+    {
+        table.vkDestroyPipeline(m_pDevice->getHandle(), pPipeline->getHandle(), vkAllocator());
+        m_pool.free(pPipeline);
+    }
+}
 }  // namespace aph::vk

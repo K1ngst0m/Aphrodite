@@ -9,27 +9,28 @@ namespace aph
 class RenderGraph;
 class RenderPass;
 
-struct PassImageInfo
-{
-    Extent3D extent;
-    Format   format  = Format::Undefined;
-    uint32_t samples = 1;
-    uint32_t levels  = 1;
-    uint32_t layers  = 1;
-};
-
-struct PassBufferInfo
-{
-    VkDeviceSize       size  = 0;
-    VkBufferUsageFlags usage = 0;
-};
-
 enum PassResourceFlags
 {
     PASS_RESOURCE_NONE     = 0,
     PASS_RESOURCE_EXTERNAL = (1 << 0),
 };
 MAKE_ENUM_FLAG(uint32_t, PassResourceFlags);
+
+struct PassImageInfo
+{
+    Extent3D          extent  = {};
+    Format            format  = Format::Undefined;
+    uint32_t          samples = 1;
+    uint32_t          levels  = 1;
+    uint32_t          layers  = 1;
+};
+
+struct PassBufferInfo
+{
+    VkDeviceSize       size  = 0;
+    VkBufferUsageFlags usage = 0;
+    PassResourceFlags  flags = {};
+};
 
 class PassResource
 {
@@ -108,7 +109,7 @@ public:
 
     PassImageResource* addTextureInput(const std::string& name, vk::Image* pImage = nullptr);
     PassImageResource* addTextureOutput(const std::string& name);
-    PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex = 0);
+    PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info);
     PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
 
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;

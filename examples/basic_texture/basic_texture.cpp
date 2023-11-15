@@ -105,7 +105,7 @@ void basic_texture::init()
                 .color       = {{.format = m_pSwapChain->getFormat()}},
             };
 
-            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline));
+            m_pPipeline = m_pDevice->acquirePipeline(createInfo);
         }
 
         // descriptor set
@@ -177,7 +177,6 @@ void basic_texture::finish()
     m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
-    m_pDevice->destroy(m_pPipeline);
     m_pDevice->destroy(m_pProgram);
     m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);

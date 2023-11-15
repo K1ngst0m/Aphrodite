@@ -1,6 +1,7 @@
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
+#include "api/vulkan/shader.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -117,17 +118,19 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
         struct VertexBindingState
         {
-            VkBuffer    buffers[VULKAN_NUM_VERTEX_BUFFERS];
-            std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS];
-            uint32_t    dirty = 0;
+            VertexInput inputInfo                          = {};
+            VkBuffer    buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+            std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
+            uint32_t    dirty                              = 0;
         };
 
-        Pipeline*                     pPipeline        = {};
-        std::vector<AttachmentInfo>   colorAttachments = {};
-        std::optional<AttachmentInfo> depthAttachment  = {};
-        ResourceBindings              resourceBindings = {};
-        IndexState                    index            = {};
-        VertexBindingState            vertexBinding    = {};
+        Pipeline*                   pPipeline        = {};
+        ShaderProgram*              pProgram         = {};
+        std::vector<AttachmentInfo> colorAttachments = {};
+        AttachmentInfo              depthAttachment  = {};
+        ResourceBindings            resourceBindings = {};
+        IndexState                  index            = {};
+        VertexBindingState          vertexBinding    = {};
     };
 
 public:
@@ -144,6 +147,8 @@ public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
+    void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
+    void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
     void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);

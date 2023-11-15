@@ -66,32 +66,15 @@ void triangle_demo::init()
             m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
-        // pipeline
+        // shader program
         {
-            const aph::VertexInput vdesc = {
-                .attributes =
-                    {
-                        {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, color)},
-                    },
-                .bindings = {{.stride = sizeof(VertexData)}},
-            };
-
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
                                                    {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
                                                    {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
                                                }};
 
             m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
-
             m_pResourceLoader->wait();
-            aph::vk::GraphicsPipelineCreateInfo createInfo{
-                .vertexInput = vdesc,
-                .pProgram    = m_pProgram,
-                .color       = {{.format = m_pSwapChain->getFormat()}},
-            };
-
-            APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_pPipeline, "pipeline::render"));
         }
         m_timer.set("load end");
         CM_LOG_DEBUG("load time : %lf", m_timer.interval("load begin", "load end"));
@@ -109,7 +92,15 @@ void triangle_demo::init()
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
-                pCmd->bindPipeline(m_pPipeline);
+                pCmd->setVertexInput({
+                    .attributes =
+                        {
+                            {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
+                            {.location = 1, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, color)},
+                        },
+                    .bindings = {{.stride = sizeof(VertexData)}},
+                });
+                pCmd->setProgram(m_pProgram);
                 pCmd->drawIndexed({3, 1, 0, 0, 0});
             });
         });
@@ -132,7 +123,6 @@ void triangle_demo::finish()
     m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
-    m_pDevice->destroy(m_pPipeline);
     m_pDevice->destroy(m_pProgram);
 }
 

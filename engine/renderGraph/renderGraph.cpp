@@ -91,7 +91,7 @@ PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Imag
     return res;
 }
 
-PassImageResource* RenderPass::setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex)
+PassImageResource* RenderPass::setColorOutput(const std::string& name, const PassImageInfo& info)
 {
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);

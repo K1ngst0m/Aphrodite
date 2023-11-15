@@ -31,6 +31,14 @@ struct ColorAttachment
     VkBlendFactor srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
     VkBlendFactor dstRGBBlendFactor   = VK_BLEND_FACTOR_ZERO;
     VkBlendFactor dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+
+    bool operator==(const ColorAttachment& rhs) const
+    {
+        return format == rhs.format && blendEnabled == rhs.blendEnabled && rgbBlendOp == rhs.rgbBlendOp &&
+               alphaBlendOp == rhs.alphaBlendOp && srcRGBBlendFactor == rhs.srcRGBBlendFactor &&
+               srcAlphaBlendFactor == rhs.srcAlphaBlendFactor && dstRGBBlendFactor == rhs.dstAlphaBlendFactor &&
+               dstAlphaBlendFactor == rhs.dstAlphaBlendFactor;
+    }
 };
 
 struct StencilState
@@ -41,11 +49,20 @@ struct StencilState
     VkCompareOp stencilCompareOp   = VK_COMPARE_OP_ALWAYS;
     uint32_t    readMask           = (uint32_t)~0;
     uint32_t    writeMask          = (uint32_t)~0;
+
+    bool operator==(const StencilState& rhs) const
+    {
+        return stencilFailureOp == rhs.stencilFailureOp && stencilCompareOp == rhs.stencilCompareOp &&
+               depthStencilPassOp == rhs.depthStencilPassOp && depthFailureOp == rhs.depthFailureOp &&
+               readMask == rhs.readMask && writeMask == rhs.writeMask;
+    }
 };
 
 struct RenderPipelineDynamicState final
 {
     VkBool32 depthBiasEnable = VK_FALSE;
+
+    bool operator==(const RenderPipelineDynamicState& rhs) const { return depthBiasEnable == rhs.depthBiasEnable; }
 };
 
 struct GraphicsPipelineCreateInfo
@@ -60,8 +77,8 @@ struct GraphicsPipelineCreateInfo
     ImmutableSamplerBank* pSamplerBank = {};
 
     std::vector<ColorAttachment> color         = {};
-    VkFormat                     depthFormat   = VK_FORMAT_UNDEFINED;
-    VkFormat                     stencilFormat = VK_FORMAT_UNDEFINED;
+    Format                       depthFormat   = Format::Undefined;
+    Format                       stencilFormat = Format::Undefined;
 
     VkCullModeFlags cullMode         = VK_CULL_MODE_NONE;
     VkFrontFace     frontFaceWinding = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -72,7 +89,14 @@ struct GraphicsPipelineCreateInfo
 
     uint32_t samplesCount = 1u;
 
-    const char* debugName = "";
+    bool operator==(const GraphicsPipelineCreateInfo& rhs) const
+    {
+        return dynamicState == rhs.dynamicState && topology == rhs.topology && vertexInput == rhs.vertexInput &&
+               pProgram == rhs.pProgram && pSamplerBank == rhs.pSamplerBank && depthFormat == rhs.depthFormat &&
+               stencilFormat == rhs.stencilFormat && polygonMode == rhs.polygonMode &&
+               backFaceStencil == rhs.backFaceStencil && frontFaceStencil == rhs.frontFaceStencil &&
+               frontFaceWinding == rhs.frontFaceWinding && samplesCount == rhs.samplesCount;
+    }
 };
 
 struct RenderPipelineState
@@ -93,7 +117,12 @@ struct RenderPipelineState
 struct ComputePipelineCreateInfo
 {
     ImmutableSamplerBank* pSamplerBank = {};
-    Shader*               pCompute     = {};
+    ShaderProgram*        pCompute     = {};
+
+    bool operator==(const ComputePipelineCreateInfo& rhs) const
+    {
+        return pSamplerBank == rhs.pSamplerBank && pCompute == rhs.pCompute;
+    }
 };
 
 class VulkanPipelineBuilder final
@@ -122,7 +151,7 @@ public:
     VulkanPipelineBuilder& stencilAttachmentFormat(VkFormat format);
 
     VkResult build(Device* pDevice, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
-                   VkPipeline* outPipeline, const char* debugName = nullptr) noexcept;
+                   VkPipeline* outPipeline) noexcept;
 
     static uint32_t getNumPipelinesCreated() { return numPipelinesCreated_; }
 
@@ -170,6 +199,101 @@ protected:
     VkPipelineBindPoint m_bindPoint = {};
     VkPipelineCache     m_cache     = {};
     RenderPipelineState m_rps       = {};
+};
+
+class PipelineAllocator
+{
+    struct HashGraphicsPipeline
+    {
+        std::size_t operator()(const ComputePipelineCreateInfo& info) const noexcept
+        {
+            std::size_t seed = 0;
+            aph::utils::hashCombine(seed, info.pCompute);
+            aph::utils::hashCombine(seed, info.pSamplerBank);
+            return seed;
+        }
+
+        std::size_t operator()(const GraphicsPipelineCreateInfo& info) const noexcept
+        {
+            std::size_t seed = 0;
+            aph::utils::hashCombine(seed, info.dynamicState.depthBiasEnable);
+            aph::utils::hashCombine(seed, info.topology);
+
+            {
+                for(const auto& attr : info.vertexInput.attributes)
+                {
+                    aph::utils::hashCombine(seed, attr.binding);
+                    aph::utils::hashCombine(seed, attr.format);
+                    aph::utils::hashCombine(seed, attr.location);
+                    aph::utils::hashCombine(seed, attr.offset);
+                }
+                for(const auto& binding : info.vertexInput.bindings)
+                {
+                    aph::utils::hashCombine(seed, binding.stride);
+                }
+            }
+
+            aph::utils::hashCombine(seed, info.pProgram);
+
+            for(auto color : info.color)
+            {
+                aph::utils::hashCombine(seed, color.format);
+                aph::utils::hashCombine(seed, color.blendEnabled);
+                aph::utils::hashCombine(seed, color.rgbBlendOp);
+                aph::utils::hashCombine(seed, color.alphaBlendOp);
+                aph::utils::hashCombine(seed, color.srcRGBBlendFactor);
+                aph::utils::hashCombine(seed, color.srcAlphaBlendFactor);
+                aph::utils::hashCombine(seed, color.dstRGBBlendFactor);
+                aph::utils::hashCombine(seed, color.dstAlphaBlendFactor);
+            }
+
+            aph::utils::hashCombine(seed, info.depthFormat);
+            aph::utils::hashCombine(seed, info.stencilFormat);
+
+            aph::utils::hashCombine(seed, info.cullMode);
+            aph::utils::hashCombine(seed, info.frontFaceWinding);
+            aph::utils::hashCombine(seed, info.polygonMode);
+
+            {
+                auto& stencilState = info.backFaceStencil;
+                aph::utils::hashCombine(seed, stencilState.stencilFailureOp);
+                aph::utils::hashCombine(seed, stencilState.depthFailureOp);
+                aph::utils::hashCombine(seed, stencilState.depthStencilPassOp);
+                aph::utils::hashCombine(seed, stencilState.stencilCompareOp);
+                aph::utils::hashCombine(seed, stencilState.readMask);
+                aph::utils::hashCombine(seed, stencilState.writeMask);
+            }
+
+            {
+                auto& stencilState = info.frontFaceStencil;
+                aph::utils::hashCombine(seed, stencilState.stencilFailureOp);
+                aph::utils::hashCombine(seed, stencilState.depthFailureOp);
+                aph::utils::hashCombine(seed, stencilState.depthStencilPassOp);
+                aph::utils::hashCombine(seed, stencilState.stencilCompareOp);
+                aph::utils::hashCombine(seed, stencilState.readMask);
+                aph::utils::hashCombine(seed, stencilState.writeMask);
+            }
+
+            aph::utils::hashCombine(seed, info.samplesCount);
+
+            return seed;
+        }
+    };
+
+public:
+    PipelineAllocator(Device* pDevice) : m_pDevice(pDevice) {}
+    ~PipelineAllocator();
+
+    void clear();
+
+    Pipeline* getPipeline(const GraphicsPipelineCreateInfo& createInfo);
+    Pipeline* getPipeline(const ComputePipelineCreateInfo& createInfo);
+
+private:
+    Device*                                                              m_pDevice = {};
+    HashMap<GraphicsPipelineCreateInfo, Pipeline*, HashGraphicsPipeline> m_graphicsPipelineMap;
+    HashMap<ComputePipelineCreateInfo, Pipeline*, HashGraphicsPipeline>  m_computePipelineMap;
+    ThreadSafeObjectPool<Pipeline>                                       m_pool;
 };
 
 }  // namespace aph::vk
