@@ -125,15 +125,6 @@ void basic_texture::init()
             });
         }
 
-        m_pDevice->executeSingleCommands(m_pDevice->getQueue(aph::QueueType::Graphics), [this](auto* cmd) {
-            aph::vk::ImageBarrier barrier{
-                .pImage       = m_pImage,
-                .currentState = aph::ResourceState::Undefined,
-                .newState     = aph::ResourceState::ShaderResource,
-            };
-            cmd->insertBarrier({barrier});
-        });
-
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
             auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
