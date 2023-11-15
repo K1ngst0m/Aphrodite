@@ -79,7 +79,7 @@
   - Resource Binding
 
     #+BEGIN_SRC c
-    m_pTextureSet = m_pPipeline->acquireSet(0);
+    m_pTextureSet = m_pProgram->getSetLayout(0)->allocateSet();
     m_pTextureSet->update({
         .binding     = 0,
         .arrayOffset = 0,
@@ -111,8 +111,8 @@
         drawPass->recordExecute([this](auto* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
-            pCmd->bindPipeline(m_pPipeline);
-            pCmd->bindDescriptorSet({m_pTextureSet});
+            pCmd->setProgram(m_pProgram);
+            pCmd->bindDescriptorSet(m_pTextureSet, 0);
             pCmd->insertDebugLabel({
                 .name  = "draw a quad with texture",
                 .color = {0.5f, 0.3f, 0.2f, 1.0f},
