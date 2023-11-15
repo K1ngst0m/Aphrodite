@@ -17,13 +17,16 @@ PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Imag
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addReadPass(this);
     res->addUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
-    res->setResourceState(ResourceState::ShaderResource);
     res->addAccessFlags(VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
+
+    m_res.resourceStateMap[res] = ResourceState::ShaderResource;
     m_res.textureIn.push_back(res);
+
     if(pImage)
     {
         m_pRenderGraph->importResource(name, pImage);
     }
+
     return res;
 }
 
@@ -33,6 +36,7 @@ PassImageResource* RenderPass::setColorOutput(const std::string& name, const Pas
     res->setInfo(info);
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    m_res.resourceStateMap[res] = ResourceState::RenderTarget;
     m_res.colorOutMap.push_back(res);
     return res;
 }
@@ -43,7 +47,8 @@ PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, co
     res->setInfo(info);
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    m_res.depthOut = res;
+    m_res.resourceStateMap[res] = ResourceState::DepthStencil;
+    m_res.depthOut              = res;
     return res;
 }
 
@@ -75,20 +80,6 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 
 void RenderGraph::build(const std::string& output)
 {
-    for(auto* res : m_declareData.resources)
-    {
-        for(auto& readPass : res->getReadPasses())
-        {
-            for(auto& writePass : res->getWritePasses())
-            {
-                if(writePass != readPass)
-                {
-                    m_buildData.dependencyPasses[writePass].insert(readPass);
-                }
-            }
-        }
-    }
-
     for(auto* pass : m_declareData.passes)
     {
         for(auto colorAttachment : pass->m_res.colorOutMap)
@@ -133,9 +124,9 @@ void RenderGraph::build(const std::string& output)
 
 RenderGraph::~RenderGraph()
 {
-    for(auto *res : m_declareData.resources)
+    for(auto* res : m_declareData.resources)
     {
-        if (!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
+        if(!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
         {
             auto pImage = m_buildData.image[res];
             m_pDevice->destroy(pImage);
@@ -205,15 +196,18 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
 
     for(auto* pass : m_declareData.passes)
     {
-        bool                    finalOut = false;
-        std::vector<vk::Image*> colorImages;
-        vk::Image*              pDepthImage = {};
+        bool                           finalOut = false;
+        std::vector<vk::Image*>        colorImages;
+        std::vector<vk::ImageBarrier>  imageBarriers{};
+        std::vector<vk::BufferBarrier> bufferBarriers{};
+        vk::Image*                     pDepthImage = {};
 
         colorImages.reserve(pass->m_res.colorOutMap.size());
-        for(auto colorAttachment : pass->m_res.colorOutMap)
+        for(PassImageResource* colorAttachment : pass->m_res.colorOutMap)
         {
             colorImages.push_back(m_buildData.image[colorAttachment]);
-            if(pOutImage == colorImages.back())
+            auto& image = colorImages.back();
+            if(pOutImage == image)
             {
                 finalOut = true;
             }
@@ -223,10 +217,24 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
             pDepthImage = m_buildData.image[pass->m_res.depthOut];
         }
 
+        for(PassImageResource* textureIn : pass->m_res.textureIn)
+        {
+            auto& image = m_buildData.image[textureIn];
+            if(image->getResourceState() != pass->m_res.resourceStateMap[textureIn])
+            {
+                imageBarriers.push_back({
+                    .pImage       = image,
+                    .currentState = image->getResourceState(),
+                    .newState     = pass->m_res.resourceStateMap[textureIn],
+                });
+            }
+        }
+
         APH_ASSERT(!colorImages.empty());
 
         taskgrp->addTask(
-            [this, pass, queue, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, pSwapChain, finalOut]() {
+            [this, pass, queue, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, pSwapChain, finalOut,
+             &bufferBarriers, &imageBarriers]() {
                 auto& cmdPool = pass->m_res.pCmdPools;
                 if(cmdPool == nullptr)
                 {
@@ -237,7 +245,9 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
                 pCmd->begin();
                 pCmd->setDebugName(pass->m_name);
                 pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
+                pCmd->insertBarrier(bufferBarriers, imageBarriers);
                 pCmd->beginRendering(colorImages, pDepthImage);
+                APH_ASSERT(pass->m_executeCB);
                 pass->m_executeCB(pCmd);
                 pCmd->endRendering();
                 pCmd->end();

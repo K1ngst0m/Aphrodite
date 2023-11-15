@@ -2,7 +2,6 @@
 #define APH_RDG_H_
 
 #include "api/vulkan/device.h"
-#include "common/timer.h"
 #include "threads/taskManager.h"
 
 namespace aph
@@ -45,7 +44,6 @@ public:
 
     void addWritePass(RenderPass* pPass) { m_writePasses.insert(pPass); }
     void addReadPass(RenderPass* pPass) { m_readPasses.insert(pPass); }
-    void setResourceState(ResourceState state) { m_resourceState = state; }
     void addPipelineStage(VkPipelineStageFlagBits2 stage) { m_pipelineStages |= stage; }
     void addAccessFlags(VkAccessFlagBits2 flag) { m_accessFlags |= flag; }
     void addFlags(PassResourceFlags flag) { m_flags |= flag; }
@@ -55,7 +53,6 @@ public:
 
     Type                  getType() const { return m_type; }
     PassResourceFlags     getFlags() const { return m_flags; }
-    ResourceState         getResourceState() const { return m_resourceState; }
     VkPipelineStageFlags2 getPipelineStage() const { return m_pipelineStages; }
     VkAccessFlags2        getAccessFlags() const { return m_accessFlags; }
 
@@ -63,7 +60,6 @@ protected:
     Type                  m_type;
     HashSet<RenderPass*>  m_writePasses;
     HashSet<RenderPass*>  m_readPasses;
-    ResourceState         m_resourceState  = ResourceState::Undefined;
     VkPipelineStageFlags2 m_pipelineStages = 0;
     VkAccessFlags2        m_accessFlags    = 0;
     PassResourceFlags     m_flags          = PASS_RESOURCE_NONE;
@@ -126,10 +122,11 @@ private:
 private:
     struct
     {
-        SmallVector<PassImageResource*> textureIn;
-        SmallVector<PassImageResource*> colorOutMap;
-        PassImageResource*              depthOut  = {};
-        vk::CommandPool*                pCmdPools = {};
+        HashMap<PassResource*, ResourceState> resourceStateMap;
+        SmallVector<PassImageResource*>       textureIn;
+        SmallVector<PassImageResource*>       colorOutMap;
+        PassImageResource*                    depthOut  = {};
+        vk::CommandPool*                      pCmdPools = {};
     } m_res;
 
 private:
@@ -157,9 +154,6 @@ public:
 
     void build(const std::string& output);
     void execute(const std::string& output, vk::Fence* pFence = nullptr, vk::SwapChain* pSwapChain = nullptr);
-
-private:
-    void addDependencies() {}
 
 private:
     vk::Device* m_pDevice     = {};
