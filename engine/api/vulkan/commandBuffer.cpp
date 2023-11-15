@@ -401,9 +401,17 @@ void CommandBuffer::flushGraphicsCommand()
     {
         APH_ASSERT(m_commandState.pProgram);
         aph::vk::GraphicsPipelineCreateInfo createInfo{
-            .vertexInput = m_commandState.vertexBinding.inputInfo,
-            .pProgram    = m_commandState.pProgram,
+            .pProgram = m_commandState.pProgram,
         };
+
+        if(m_commandState.vertexBinding.inputInfo.has_value())
+        {
+            createInfo.vertexInput = m_commandState.vertexBinding.inputInfo.value();
+        }
+        else
+        {
+            createInfo.vertexInput = m_commandState.pProgram->getVertexInput();
+        }
 
         for(auto colorAttachment : m_commandState.colorAttachments)
         {

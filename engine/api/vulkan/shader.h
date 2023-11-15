@@ -32,9 +32,18 @@ struct ShaderLayout
     };
 };
 
+struct VertexAttribState
+{
+    uint32_t binding;
+    VkFormat format;
+    uint32_t offset;
+    uint32_t size;
+};
+
 struct ResourceLayout
 {
-    ShaderLayout setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+    ShaderLayout      setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+    VertexAttribState vertexAttr[VULKAN_NUM_VERTEX_ATTRIBS]        = {};
 
     uint32_t inputMask        = {};
     uint32_t outputMask       = {};
@@ -53,7 +62,8 @@ struct CombinedResourceLayout
     };
     SetInfo setInfos[VULKAN_NUM_DESCRIPTOR_SETS] = {};
 
-    VkPushConstantRange pushConstantRange = {};
+    VertexAttribState   vertexAttr[VULKAN_NUM_VERTEX_ATTRIBS] = {};
+    VkPushConstantRange pushConstantRange                     = {};
 
     uint32_t attributeMask             = {};
     uint32_t renderTargetMask          = {};
@@ -96,6 +106,7 @@ struct ProgramCreateInfo
 class ShaderProgram
 {
     friend class ObjectPool<ShaderProgram>;
+
 public:
     ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
@@ -104,6 +115,7 @@ public:
 
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
+    const VertexInput&   getVertexInput() const { return m_vertexInput; }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
     const ShaderMapList& getShaders() const { return m_shaders; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
@@ -111,6 +123,7 @@ public:
 
 private:
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
+    void createVertexInput();
     void combineLayout(const ImmutableSamplerBank* samplerBank);
 
 private:
@@ -120,6 +133,7 @@ private:
     VkPipelineLayout                  m_pipeLayout    = {};
     CombinedResourceLayout            m_combineLayout = {};
     SmallVector<VkDescriptorPoolSize> m_poolSize      = {};
+    VertexInput                       m_vertexInput   = {};
 };
 
 }  // namespace aph::vk

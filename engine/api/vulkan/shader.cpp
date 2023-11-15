@@ -4,6 +4,107 @@
 
 namespace aph::vk
 {
+std::unordered_map<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
+    {spirv_cross::SPIRType::Float, 4},
+    {spirv_cross::SPIRType::Int, 4},
+    {spirv_cross::SPIRType::UInt, 4},
+    {spirv_cross::SPIRType::Double, 8},
+    // TODO Add other base types as needed
+};
+
+std::size_t getTypeSize(const spirv_cross::SPIRType& type)
+{
+    // Lookup base size from the map
+    APH_ASSERT(baseTypeSizeMap.contains(type.basetype));
+    size_t baseSize = baseTypeSizeMap[type.basetype];
+
+    // Calculate size for vectors and matrices
+    size_t elementCount = type.vecsize * type.columns;
+    size_t size         = baseSize * elementCount;
+
+    // Handle arrays
+    if(!type.array.empty())
+    {
+        size_t arraySize = 1;
+        for(size_t length : type.array)
+            arraySize *= length;
+        size *= arraySize;
+    }
+
+    return size;
+}
+
+VkFormat spirTypeToVkFormat(const spirv_cross::SPIRType& type)
+{
+    // Handle vector types
+    if(type.vecsize == 1)
+    {  // Scalars
+        switch(type.basetype)
+        {
+        case spirv_cross::SPIRType::Float:
+            return VK_FORMAT_R32_SFLOAT;
+        case spirv_cross::SPIRType::Int:
+            return VK_FORMAT_R32_SINT;
+        case spirv_cross::SPIRType::UInt:
+            return VK_FORMAT_R32_UINT;
+            // TODO Add other scalar types as needed
+        default:
+            APH_ASSERT(false);
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    else if(type.vecsize == 2)
+    {  // 2-component vectors
+        switch(type.basetype)
+        {
+        case spirv_cross::SPIRType::Float:
+            return VK_FORMAT_R32G32_SFLOAT;
+        case spirv_cross::SPIRType::Int:
+            return VK_FORMAT_R32G32_SINT;
+        case spirv_cross::SPIRType::UInt:
+            return VK_FORMAT_R32G32_UINT;
+            // TODO Add other 2-component types as needed
+        default:
+            APH_ASSERT(false);
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    else if(type.vecsize == 3)
+    {  // 3-component vectors
+        switch(type.basetype)
+        {
+        case spirv_cross::SPIRType::Float:
+            return VK_FORMAT_R32G32B32_SFLOAT;
+        case spirv_cross::SPIRType::Int:
+            return VK_FORMAT_R32G32B32_SINT;
+        case spirv_cross::SPIRType::UInt:
+            return VK_FORMAT_R32G32B32_UINT;
+            // TODO Add other 3-component types as needed
+        default:
+            APH_ASSERT(false);
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+    else if(type.vecsize == 4)
+    {  // 4-component vectors
+        switch(type.basetype)
+        {
+        case spirv_cross::SPIRType::Float:
+            return VK_FORMAT_R32G32B32A32_SFLOAT;
+        case spirv_cross::SPIRType::Int:
+            return VK_FORMAT_R32G32B32A32_SINT;
+        case spirv_cross::SPIRType::UInt:
+            return VK_FORMAT_R32G32B32A32_UINT;
+            // TODO Add other 4-component types as needed
+        default:
+            APH_ASSERT(false);
+            return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    // Fallback or unsupported type
+    return VK_FORMAT_UNDEFINED;
+}
 
 static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
 {
@@ -181,19 +282,18 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     {
         VkDescriptorSetLayout vkSetLayout;
         _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vkAllocator(),
-                                                                                 &vkSetLayout));
+                                                                     &vkSetLayout));
         setLayout = new DescriptorSetLayout(m_pDevice, info, vkSetLayout);
     }
     return setLayout;
 };
 
-Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint,
-               const ResourceLayout* pLayout) :
+Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint, const ResourceLayout* pLayout) :
     ResourceHandle(handle),
     m_entrypoint(std::move(entrypoint)),
     m_code(std::move(code))
 {
-    m_layout    = pLayout ? *pLayout : ReflectLayout(m_code);
+    m_layout = pLayout ? *pLayout : ReflectLayout(m_code);
 }
 
 ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
@@ -209,6 +309,7 @@ ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const Immut
     }
     combineLayout(samplerBank);
     createPipelineLayout(samplerBank);
+    createVertexInput();
 }
 
 ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device)
@@ -229,7 +330,26 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
     {
         auto location = compiler.get_decoration(res.id, spv::DecorationLocation);
         layout.inputMask |= 1u << location;
+        const spirv_cross::SPIRType& type = compiler.get_type(res.type_id);
+
+        VkFormat format = spirTypeToVkFormat(type);
+
+        layout.vertexAttr[location] = {
+            // TODO
+            .binding = 0,
+            .format  = format,
+            .size    = static_cast<uint32_t>(getTypeSize(type)),
+        };
     }
+
+    uint32_t attrOffset = 0;
+    aph::utils::forEachBit(layout.inputMask, [&](uint32_t location)
+    {
+        auto& attr = layout.vertexAttr[location];
+        attr.offset = attrOffset;
+        attrOffset += attr.size;
+    });
+
     for(const auto& res : resources.stage_outputs)
     {
         auto location = compiler.get_decoration(res.id, spv::DecorationLocation);
@@ -361,6 +481,10 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
     if(m_shaders.contains(ShaderStage::VS))
     {
         programLayout.attributeMask = m_shaders[ShaderStage::VS]->m_layout.inputMask;
+        for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
+        {
+            programLayout.vertexAttr[idx] = m_shaders[ShaderStage::VS]->m_layout.vertexAttr[idx];
+        }
     }
     if(m_shaders.contains(ShaderStage::FS) && m_shaders[ShaderStage::FS])
     {
@@ -561,7 +685,8 @@ ShaderProgram::~ShaderProgram()
 {
     for(auto* setLayout : m_pSetLayouts)
     {
-        m_pDevice->getDeviceTable()->vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(), vkAllocator());
+        m_pDevice->getDeviceTable()->vkDestroyDescriptorSetLayout(m_pDevice->getHandle(), setLayout->getHandle(),
+                                                                  vkAllocator());
         delete setLayout;
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, vkAllocator());
@@ -574,5 +699,20 @@ VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32
     stage |= constant.stageFlags;
     offset += constant.size;
     return stage;
+}
+void ShaderProgram::createVertexInput()
+{
+    uint32_t size = 0;
+    aph::utils::forEachBit(m_combineLayout.attributeMask, [&](uint32_t location) {
+        auto& attr = m_combineLayout.vertexAttr[location];
+        m_vertexInput.attributes.push_back({
+            .location = location,
+            .binding = 0,
+            .format = utils::getFormatFromVk(attr.format),
+            .offset = attr.offset
+        });
+        size += attr.size;
+    });
+    m_vertexInput.bindings.push_back({size});
 }
 }  // namespace aph::vk

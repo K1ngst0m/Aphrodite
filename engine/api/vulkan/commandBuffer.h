@@ -118,10 +118,10 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
         struct VertexBindingState
         {
-            VertexInput inputInfo                          = {};
-            VkBuffer    buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
-            std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-            uint32_t    dirty                              = 0;
+            std::optional<VertexInput> inputInfo;
+            VkBuffer                   buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+            std::size_t                offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
+            uint32_t                   dirty                              = 0;
         };
 
         Pipeline*                   pPipeline        = {};

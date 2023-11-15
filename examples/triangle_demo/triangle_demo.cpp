@@ -90,17 +90,9 @@ void triangle_demo::init()
                                      });
 
             drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->setProgram(m_pProgram);
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
-                pCmd->setVertexInput({
-                    .attributes =
-                        {
-                            {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
-                            {.location = 1, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, color)},
-                        },
-                    .bindings = {{.stride = sizeof(VertexData)}},
-                });
-                pCmd->setProgram(m_pProgram);
                 pCmd->drawIndexed({3, 1, 0, 0, 0});
             });
         });
