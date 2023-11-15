@@ -444,8 +444,13 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         Buffer*                pBuffer        = pTrans->pBuffer;
         VkBufferMemoryBarrier* pBufferBarrier = nullptr;
 
-        if(ResourceState::UnorderedAccess == pTrans->currentState &&
-           ResourceState::UnorderedAccess == pTrans->newState)
+        if(pTrans->currentState == pTrans->newState)
+        {
+            CM_LOG_DEBUG("The buffer barriers' current and new resource states are identical.");
+            continue;
+        }
+
+        if(ResourceState::UnorderedAccess == pTrans->currentState && ResourceState::UnorderedAccess == pTrans->newState)
         {
             pBufferBarrier        = &bufferBarriers[bufferBarrierCount++];
             pBufferBarrier->sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
@@ -497,8 +502,13 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         Image*                pImage        = pTrans->pImage;
         VkImageMemoryBarrier* pImageBarrier = nullptr;
 
-        if(ResourceState::UnorderedAccess == pTrans->currentState &&
-           ResourceState::UnorderedAccess == pTrans->newState)
+        if(pTrans->currentState == pTrans->newState)
+        {
+            CM_LOG_DEBUG("The image barriers' current and new resource states are identical.");
+            continue;
+        }
+
+        if(ResourceState::UnorderedAccess == pTrans->currentState && ResourceState::UnorderedAccess == pTrans->newState)
         {
             pImageBarrier        = &imageBarriers[imageBarrierCount++];
             pImageBarrier->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
