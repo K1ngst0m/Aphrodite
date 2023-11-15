@@ -30,6 +30,7 @@ void triangle_demo::init()
 
     // setup triangle
     {
+        // vertex: position, color
         struct VertexData
         {
             aph::vec3 pos;
@@ -45,8 +46,6 @@ void triangle_demo::init()
 
         m_timer.set("load begin");
         {
-            // vertex: position, color
-
             aph::BufferLoadInfo loadInfo{
                 .debugName  = "triangle::vertexBuffer",
                 .data       = vertexArray.data(),
