@@ -12,6 +12,67 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
     APH_ASSERT(pRDG);
 }
 
+PassBufferResource* RenderPass::addStorageBufferInput(const std::string& name, vk::Buffer* pBuffer)
+{
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
+    res->addReadPass(this);
+    res->addUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    res->addAccessFlags(VK_ACCESS_2_SHADER_STORAGE_READ_BIT);
+
+    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
+    m_res.storageBufferIn.push_back(res);
+
+    if(pBuffer)
+    {
+        m_pRenderGraph->importResource(name, pBuffer);
+    }
+
+    return res;
+}
+
+PassBufferResource* RenderPass::addUniformBufferInput(const std::string& name, vk::Buffer* pBuffer)
+{
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
+    res->addReadPass(this);
+    res->addUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    res->addAccessFlags(VK_ACCESS_2_SHADER_READ_BIT);
+
+    m_res.resourceStateMap[res] = ResourceState::UniformBuffer;
+    m_res.uniformBufferIn.push_back(res);
+
+    if(pBuffer)
+    {
+        m_pRenderGraph->importResource(name, pBuffer);
+    }
+
+    return res;
+}
+
+PassBufferResource* RenderPass::addBufferOutput(const std::string& name)
+{
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
+    res->addWritePass(this);
+    res->addUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    res->addAccessFlags(VK_ACCESS_2_SHADER_WRITE_BIT);
+
+    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
+    m_res.storageBufferOut.push_back(res);
+
+    return res;
+}
+PassImageResource* RenderPass::addTextureOutput(const std::string& name)
+{
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
+    res->addWritePass(this);
+    res->addUsage(VK_IMAGE_USAGE_STORAGE_BIT);
+    res->addAccessFlags(VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
+
+    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
+    m_res.textureOut.push_back(res);
+
+    return res;
+}
+
 PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Image* pImage)
 {
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
@@ -37,7 +98,7 @@ PassImageResource* RenderPass::setColorOutput(const std::string& name, const Pas
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     m_res.resourceStateMap[res] = ResourceState::RenderTarget;
-    m_res.colorOutMap.push_back(res);
+    m_res.colorOut.push_back(res);
     return res;
 }
 
@@ -82,7 +143,7 @@ void RenderGraph::build(const std::string& output)
 {
     for(auto* pass : m_declareData.passes)
     {
-        for(auto colorAttachment : pass->m_res.colorOutMap)
+        for(auto colorAttachment : pass->m_res.colorOut)
         {
             if(!m_buildData.image.contains(colorAttachment))
             {
@@ -202,8 +263,8 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
         std::vector<vk::BufferBarrier> bufferBarriers{};
         vk::Image*                     pDepthImage = {};
 
-        colorImages.reserve(pass->m_res.colorOutMap.size());
-        for(PassImageResource* colorAttachment : pass->m_res.colorOutMap)
+        colorImages.reserve(pass->m_res.colorOut.size());
+        for(PassImageResource* colorAttachment : pass->m_res.colorOut)
         {
             colorImages.push_back(m_buildData.image[colorAttachment]);
             auto& image = colorImages.back();
@@ -226,6 +287,32 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
                     .pImage       = image,
                     .currentState = image->getResourceState(),
                     .newState     = pass->m_res.resourceStateMap[textureIn],
+                });
+            }
+        }
+
+        for(PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+        {
+            auto& buffer = m_buildData.buffer[bufferIn];
+            if(buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
+            {
+                bufferBarriers.push_back(vk::BufferBarrier{
+                    .pBuffer      = buffer,
+                    .currentState = buffer->getResourceState(),
+                    .newState     = pass->m_res.resourceStateMap[bufferIn],
+                });
+            }
+        }
+
+        for(PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
+        {
+            auto& buffer = m_buildData.buffer[bufferIn];
+            if(buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
+            {
+                bufferBarriers.push_back(vk::BufferBarrier{
+                    .pBuffer      = buffer,
+                    .currentState = buffer->getResourceState(),
+                    .newState     = pass->m_res.resourceStateMap[bufferIn],
                 });
             }
         }

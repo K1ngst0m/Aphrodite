@@ -102,7 +102,12 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
+    PassBufferResource* addUniformBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr);
+    PassBufferResource* addStorageBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr);
+    PassBufferResource* addBufferOutput(const std::string& name);
+
     PassImageResource* addTextureInput(const std::string& name, vk::Image* pImage = nullptr);
+    PassImageResource* addTextureOutput(const std::string& name);
     PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info, uint32_t outIndex = 0);
     PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
 
@@ -123,8 +128,12 @@ private:
     struct
     {
         HashMap<PassResource*, ResourceState> resourceStateMap;
+        SmallVector<PassBufferResource*>      storageBufferIn;
+        SmallVector<PassBufferResource*>      storageBufferOut;
+        SmallVector<PassBufferResource*>      uniformBufferIn;
         SmallVector<PassImageResource*>       textureIn;
-        SmallVector<PassImageResource*>       colorOutMap;
+        SmallVector<PassImageResource*>       textureOut;
+        SmallVector<PassImageResource*>       colorOut;
         PassImageResource*                    depthOut  = {};
         vk::CommandPool*                      pCmdPools = {};
     } m_res;
