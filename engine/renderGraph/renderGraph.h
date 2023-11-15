@@ -50,6 +50,9 @@ public:
     void addAccessFlags(VkAccessFlagBits2 flag) { m_accessFlags |= flag; }
     void addFlags(PassResourceFlags flag) { m_flags |= flag; }
 
+    const HashSet<RenderPass*>& getReadPasses() const { return m_readPasses; }
+    const HashSet<RenderPass*>& getWritePasses() const { return m_writePasses; }
+
     Type                  getType() const { return m_type; }
     PassResourceFlags     getFlags() const { return m_flags; }
     ResourceState         getResourceState() const { return m_resourceState; }
@@ -173,8 +176,9 @@ private:
 
     struct
     {
-        HashMap<PassResource*, vk::Image*>  image;
-        HashMap<PassResource*, vk::Buffer*> buffer;
+        HashMap<RenderPass*, HashSet<RenderPass*>> dependencyPasses;
+        HashMap<PassResource*, vk::Image*>         image;
+        HashMap<PassResource*, vk::Buffer*>        buffer;
     } m_buildData;
 
     struct

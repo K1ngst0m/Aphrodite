@@ -83,7 +83,7 @@ void RenderGraph::build(const std::string& output)
             {
                 if(writePass != readPass)
                 {
-                    // Add a dependency from writePass to readPass
+                    m_buildData.dependencyPasses[writePass].insert(readPass);
                 }
             }
         }
