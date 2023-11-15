@@ -493,6 +493,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
             srcAccessFlags |= pBufferBarrier->srcAccessMask;
             dstAccessFlags |= pBufferBarrier->dstAccessMask;
+
+            pBuffer->m_resourceState = pTrans->newState;
         }
     }
 
@@ -558,10 +560,10 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
 
             srcAccessFlags |= pImageBarrier->srcAccessMask;
             dstAccessFlags |= pImageBarrier->dstAccessMask;
-        }
 
-        pImage->m_resourceState = pTrans->newState;
-        pImage->m_layout        = pImageBarrier->newLayout;
+            pImage->m_resourceState = pTrans->newState;
+            pImage->m_layout        = pImageBarrier->newLayout;
+        }
     }
 
     VkPipelineStageFlags srcStageMask = aph::vk::utils::determinePipelineStageFlags(

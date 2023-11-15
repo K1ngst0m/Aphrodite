@@ -19,13 +19,16 @@ struct BufferCreateInfo
 class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 {
     friend class ObjectPool<Buffer>;
+    friend class CommandBuffer;
 
 public:
-    uint32_t getSize() const { return m_createInfo.size; }
-    uint32_t getOffset() const { return m_createInfo.alignment; }
+    uint32_t      getSize() const { return m_createInfo.size; }
+    uint32_t      getOffset() const { return m_createInfo.alignment; }
+    ResourceState getResourceState() const { return m_resourceState; }
 
 private:
     Buffer(const CreateInfoType& createInfo, HandleType handle);
+    ResourceState m_resourceState = ResourceState::Undefined;
 };
 }  // namespace aph::vk
 
