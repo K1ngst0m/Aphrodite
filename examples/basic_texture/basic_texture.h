@@ -22,7 +22,6 @@ public:
     } m_options;
 
 private:
-    aph::vk::Pipeline*      m_pPipeline   = {};
     aph::vk::Buffer*        m_pVB         = {};
     aph::vk::Buffer*        m_pIB         = {};
     aph::vk::Sampler*       m_pSampler    = {};

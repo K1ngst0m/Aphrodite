@@ -131,6 +131,9 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
         ResourceBindings            resourceBindings = {};
         IndexState                  index            = {};
         VertexBindingState          vertexBinding    = {};
+
+        uint8_t        setBindingBit                    = 0;
+        DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
     };
 
 public:
@@ -149,7 +152,7 @@ public:
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
     void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
-    void bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet = 0);
+    void bindDescriptorSet(DescriptorSet* set, uint32_t index = 0);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);

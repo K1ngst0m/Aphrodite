@@ -244,18 +244,11 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
     m_pDeviceTable->vkCmdDrawIndexed(m_handle, args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
                                      args.firstInstance);
 }
-void CommandBuffer::bindDescriptorSet(const std::vector<DescriptorSet*>& descriptorSets, uint32_t firstSet)
+void CommandBuffer::bindDescriptorSet(DescriptorSet* set, uint32_t index)
 {
-    APH_ASSERT(m_commandState.pPipeline != nullptr);
-    std::vector<VkDescriptorSet> vkSets;
-    vkSets.reserve(descriptorSets.size());
-    for(auto set : descriptorSets)
-    {
-        vkSets.push_back(set->getHandle());
-    }
-    m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
-                                            m_commandState.pPipeline->getProgram()->getPipelineLayout(), firstSet,
-                                            vkSets.size(), vkSets.data(), 0, nullptr);
+    APH_ASSERT(index < VULKAN_NUM_DESCRIPTOR_SETS);
+    m_commandState.sets[index] = set;
+    m_commandState.setBindingBit |= 1u << index;
 }
 
 void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
@@ -272,7 +265,6 @@ void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* dep
     depthAttachment = {.image = depth};
     beginRendering(renderingInfo);
 }
-
 void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
     m_commandState.colorAttachments = renderingInfo.colors;
@@ -377,6 +369,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 
 void CommandBuffer::flushComputeCommand()
 {
+    // TODO bind descriptor set && create pipeline when no pipeline
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 }
@@ -430,6 +423,13 @@ void CommandBuffer::flushGraphicsCommand()
     }
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
+
+    aph::utils::forEachBit(m_commandState.setBindingBit, [&](auto setIndex) {
+        auto& set = m_commandState.sets[setIndex];
+        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
+                                                m_commandState.pPipeline->getProgram()->getPipelineLayout(), setIndex,
+                                                1, &set->getHandle(), 0, nullptr);
+    });
 }
 
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)

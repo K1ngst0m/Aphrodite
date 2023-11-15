@@ -83,34 +83,17 @@ void basic_texture::init()
 
         // pipeline
         {
-            const aph::VertexInput vdesc = {
-                .attributes =
-                    {
-                        {.location = 0, .format = aph::Format::RGB32_FLOAT, .offset = offsetof(VertexData, pos)},
-                        {.location = 1, .format = aph::Format::RG32_FLOAT, .offset = offsetof(VertexData, uv)},
-                    },
-                .bindings = {{.stride = sizeof(VertexData)}},
-            };
-
             aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
                                                    {aph::ShaderStage::VS, {"shader_slang://texture.slang"}},
                                                    {aph::ShaderStage::FS, {"shader_slang://texture.slang"}},
                                                }};
             m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
             m_pResourceLoader->wait();
-
-            aph::vk::GraphicsPipelineCreateInfo createInfo{
-                .vertexInput = vdesc,
-                .pProgram    = m_pProgram,
-                .color       = {{.format = m_pSwapChain->getFormat()}},
-            };
-
-            m_pPipeline = m_pDevice->acquirePipeline(createInfo);
         }
 
         // descriptor set
         {
-            m_pTextureSet = m_pPipeline->acquireSet(0);
+            m_pTextureSet = m_pProgram->getSetLayout(0)->allocateSet();
             m_pTextureSet->update({
                 .binding     = 0,
                 .arrayOffset = 0,
@@ -138,8 +121,8 @@ void basic_texture::init()
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
-                pCmd->bindPipeline(m_pPipeline);
-                pCmd->bindDescriptorSet({m_pTextureSet});
+                pCmd->setProgram(m_pProgram);
+                pCmd->bindDescriptorSet(m_pTextureSet, 0);
                 pCmd->insertDebugLabel({
                     .name  = "draw a quad with texture",
                     .color = {0.5f, 0.3f, 0.2f, 1.0f},
