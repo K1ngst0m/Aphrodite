@@ -143,6 +143,12 @@ void RenderGraph::build(const std::string& output)
 {
     for(auto* pass : m_declareData.passes)
     {
+        auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
+        if(!m_buildData.cmdPools.contains(pass))
+        {
+            m_buildData.cmdPools[pass] = m_pDevice->acquireCommandPool({queue, false});
+            m_buildData.cmds[pass]     = m_buildData.cmdPools[pass]->allocate();
+        }
         for(auto colorAttachment : pass->m_res.colorOut)
         {
             if(!m_buildData.image.contains(colorAttachment))
@@ -320,15 +326,11 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
         APH_ASSERT(!colorImages.empty());
 
         taskgrp->addTask(
-            [this, pass, queue, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, pSwapChain, finalOut,
+            [this, pass, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, pSwapChain, finalOut,
              &bufferBarriers, &imageBarriers]() {
-                auto& cmdPool = pass->m_res.pCmdPools;
-                if(cmdPool == nullptr)
-                {
-                    cmdPool = m_pDevice->acquireCommandPool({queue, false});
-                }
+                auto& cmdPool = m_buildData.cmdPools[pass];
                 cmdPool->reset();
-                vk::CommandBuffer* pCmd = cmdPool->allocate();
+                auto* pCmd = m_buildData.cmds[pass];
                 pCmd->begin();
                 pCmd->setDebugName(pass->m_name);
                 pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});

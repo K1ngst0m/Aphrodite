@@ -18,11 +18,11 @@ MAKE_ENUM_FLAG(uint32_t, PassResourceFlags);
 
 struct PassImageInfo
 {
-    Extent3D          extent  = {};
-    Format            format  = Format::Undefined;
-    uint32_t          samples = 1;
-    uint32_t          levels  = 1;
-    uint32_t          layers  = 1;
+    Extent3D extent  = {};
+    Format   format  = Format::Undefined;
+    uint32_t samples = 1;
+    uint32_t levels  = 1;
+    uint32_t layers  = 1;
 };
 
 struct PassBufferInfo
@@ -135,8 +135,7 @@ private:
         SmallVector<PassImageResource*>       textureIn;
         SmallVector<PassImageResource*>       textureOut;
         SmallVector<PassImageResource*>       colorOut;
-        PassImageResource*                    depthOut  = {};
-        vk::CommandPool*                      pCmdPools = {};
+        PassImageResource*                    depthOut = {};
     } m_res;
 
 private:
@@ -180,6 +179,9 @@ private:
 
     struct
     {
+        HashMap<RenderPass*, vk::CommandPool*> cmdPools;
+        // TODO multi commands
+        HashMap<RenderPass*, vk::CommandBuffer*>   cmds;
         HashMap<RenderPass*, HashSet<RenderPass*>> dependencyPasses;
         HashMap<PassResource*, vk::Image*>         image;
         HashMap<PassResource*, vk::Buffer*>        buffer;
