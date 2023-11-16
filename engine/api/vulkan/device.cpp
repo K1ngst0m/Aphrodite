@@ -542,6 +542,7 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 {
     CommandPool* pool = {};
     APH_CHECK_RESULT(m_resourcePool.commandPool.acquire(info, 1, &pool));
+    pool->reset();
     return pool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
@@ -553,8 +554,8 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
                                    const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems,
                                    Fence* pFence)
 {
-    CommandPool*   commandPool = acquireCommandPool({queue, true});
-    CommandBuffer* cmd         = nullptr;
+    CommandPool* commandPool = acquireCommandPool({queue, true});
+    CommandBuffer* cmd = nullptr;
     APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
 
     _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));

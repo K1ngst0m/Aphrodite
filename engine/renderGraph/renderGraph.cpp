@@ -141,6 +141,16 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 
 void RenderGraph::build(const std::string& output)
 {
+    if(m_buildData.frameFence == nullptr)
+    {
+        m_buildData.frameFence = m_pDevice->acquireFence(false);
+    }
+
+    if(m_buildData.presentSem == nullptr)
+    {
+        m_buildData.presentSem = m_pDevice->acquireSemaphore();
+    }
+
     for(auto* pass : m_declareData.passes)
     {
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
@@ -149,6 +159,11 @@ void RenderGraph::build(const std::string& output)
             m_buildData.cmdPools[pass] = m_pDevice->acquireCommandPool({queue, false});
             m_buildData.cmds[pass]     = m_buildData.cmdPools[pass]->allocate();
         }
+        if( m_buildData.renderWaitSem[pass] == nullptr)
+        {
+            m_buildData.renderWaitSem[pass] = m_pDevice->acquireSemaphore();
+        }
+
         for(auto colorAttachment : pass->m_res.colorOut)
         {
             if(!m_buildData.image.contains(colorAttachment))
@@ -350,7 +365,7 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
 
                 if(pSwapChain && finalOut)
                 {
-                    vk::Semaphore* renderSem = m_pDevice->acquireSemaphore();
+                    auto& renderSem = m_buildData.renderWaitSem[pass];
                     APH_CHECK_RESULT(pSwapChain->acquireNextImage(renderSem));
                     submitInfo.waitSemaphores.push_back(renderSem);
                 }
@@ -368,7 +383,7 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
 
         if(!pFence)
         {
-            frameFence = m_pDevice->acquireFence(false);
+            frameFence = m_buildData.frameFence;
         }
         else
         {
@@ -376,7 +391,7 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
         }
         frameFence->reset();
 
-        vk::Semaphore* presentSem = m_pDevice->acquireSemaphore();
+        vk::Semaphore* presentSem = m_buildData.presentSem;
 
         taskMgr.wait();
         APH_CHECK_RESULT(queue->submit(frameSubmitInfos, frameFence));

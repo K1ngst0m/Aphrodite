@@ -179,12 +179,15 @@ private:
 
     struct
     {
+        HashMap<RenderPass*, vk::Semaphore*>   renderWaitSem;
         HashMap<RenderPass*, vk::CommandPool*> cmdPools;
         // TODO multi commands
         HashMap<RenderPass*, vk::CommandBuffer*>   cmds;
         HashMap<RenderPass*, HashSet<RenderPass*>> dependencyPasses;
         HashMap<PassResource*, vk::Image*>         image;
         HashMap<PassResource*, vk::Buffer*>        buffer;
+        vk::Fence*                                 frameFence = {};
+        vk::Semaphore*                             presentSem = {};
     } m_buildData;
 
     struct
