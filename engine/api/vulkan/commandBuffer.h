@@ -93,8 +93,8 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
     {
         struct ResourceBindings
         {
-            uint32_t             dirty                                                     = 0;
             uint8_t              setBit                                                    = 0;
+            uint32_t             dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                  = {};
             uint32_t             setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
             uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};

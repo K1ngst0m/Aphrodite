@@ -421,6 +421,11 @@ void CommandBuffer::flushGraphicsCommand()
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
         APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
         aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
+            if(!(m_commandState.resourceBindings.dirtyBinding[setIdx] & (1u << bindingIdx)))
+            {
+                CM_LOG_INFO("skip update");
+                return;
+            }
             auto& set = m_commandState.resourceBindings.sets[setIdx];
             if(set == nullptr)
             {
@@ -429,6 +434,7 @@ void CommandBuffer::flushGraphicsCommand()
             set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]);
             m_commandState.resourceBindings.sets[setIdx] = set;
         });
+        m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
     });
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
@@ -643,35 +649,53 @@ void CommandBuffer::updateBuffer(Buffer* pBuffer, MemoryRange range, const void*
 }
 void CommandBuffer::setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
 {
-    auto& resBindings                  = m_commandState.resourceBindings;
-    resBindings.bindings[set][binding] = {
+    auto& resBindings = m_commandState.resourceBindings;
+
+    DescriptorUpdateInfo newUpdate = {
         .binding  = binding,
         .samplers = samplers,
     };
 
-    resBindings.setBit |= 1u << set;
-    resBindings.setBindingBit[set] |= 1u << binding;
+    if(resBindings.bindings[set][binding] != newUpdate)
+    {
+        resBindings.bindings[set][binding] = std::move(newUpdate);
+        resBindings.setBit |= 1u << set;
+        resBindings.setBindingBit[set] |= 1u << binding;
+        resBindings.dirtyBinding[set] |= 1u << binding;
+    }
 }
 void CommandBuffer::setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding)
 {
-    auto& resBindings                  = m_commandState.resourceBindings;
-    resBindings.bindings[set][binding] = {
+    auto& resBindings = m_commandState.resourceBindings;
+
+    DescriptorUpdateInfo newUpdate = {
         .binding = binding,
         .images  = images,
     };
 
-    resBindings.setBit |= 1u << set;
-    resBindings.setBindingBit[set] |= 1u << binding;
+    if(resBindings.bindings[set][binding] != newUpdate)
+    {
+        resBindings.bindings[set][binding] = std::move(newUpdate);
+        resBindings.setBit |= 1u << set;
+        resBindings.setBindingBit[set] |= 1u << binding;
+        resBindings.dirtyBinding[set] |= 1u << binding;
+    }
 }
 void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding)
 {
-    auto& resBindings                  = m_commandState.resourceBindings;
-    resBindings.bindings[set][binding] = {
+    auto& resBindings = m_commandState.resourceBindings;
+
+    DescriptorUpdateInfo newUpdate = {
         .binding = binding,
         .buffers = buffers,
     };
 
-    resBindings.setBit |= 1u << set;
-    resBindings.setBindingBit[set] |= 1u << binding;
+    if(resBindings.bindings[set][binding] != newUpdate)
+    {
+        resBindings.bindings[set][binding] = std::move(newUpdate);
+        resBindings.setBit |= 1u << set;
+        resBindings.setBindingBit[set] |= 1u << binding;
+        resBindings.dirtyBinding[set] |= 1u << binding;
+    }
 }
 }  // namespace aph::vk
