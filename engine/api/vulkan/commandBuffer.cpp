@@ -244,12 +244,6 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
     m_pDeviceTable->vkCmdDrawIndexed(m_handle, args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
                                      args.firstInstance);
 }
-void CommandBuffer::bindDescriptorSet(DescriptorSet* set, uint32_t index)
-{
-    APH_ASSERT(index < VULKAN_NUM_DESCRIPTOR_SETS);
-    m_commandState.sets[index] = set;
-    m_commandState.setBindingBit |= 1u << index;
-}
 
 void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
 {
@@ -425,19 +419,20 @@ void CommandBuffer::flushGraphicsCommand()
                                       m_commandState.pPipeline->getHandle());
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
+        APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
         aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
-            auto& set = m_commandState.sets[setIdx];
+            auto& set = m_commandState.resourceBindings.sets[setIdx];
             if(set == nullptr)
             {
                 set = m_commandState.pProgram->getSetLayout(setIdx)->allocateSet();
             }
             set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]);
-            bindDescriptorSet(set, setIdx);
+            m_commandState.resourceBindings.sets[setIdx] = set;
         });
     });
 
-    aph::utils::forEachBit(m_commandState.setBindingBit, [this](uint32_t setIndex) {
-        auto& set = m_commandState.sets[setIndex];
+    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
+        auto& set = m_commandState.resourceBindings.sets[setIndex];
         m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
                                                 m_commandState.pPipeline->getProgram()->getPipelineLayout(), setIndex,
                                                 1, &set->getHandle(), 0, nullptr);

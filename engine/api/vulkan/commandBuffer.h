@@ -91,23 +91,14 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
     struct CommandState
     {
-        struct ResourceBinding
-        {
-            union
-            {
-                VkDescriptorBufferInfo buffer;
-                VkDescriptorImageInfo  image;
-            };
-            VkDescriptorType resType;
-        };
-
         struct ResourceBindings
         {
+            uint32_t             dirty                                                     = 0;
             uint8_t              setBit                                                    = 0;
             uint32_t             setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
             uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
-            uint32_t             dirty                                                     = 0;
+            DescriptorSet*       sets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
         };
 
         struct IndexState
@@ -132,9 +123,6 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
         ResourceBindings            resourceBindings = {};
         IndexState                  index            = {};
         VertexBindingState          vertexBinding    = {};
-
-        uint8_t        setBindingBit                    = 0;
-        DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
     };
 
 public:
@@ -157,7 +145,6 @@ public:
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
     void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
-    void bindDescriptorSet(DescriptorSet* set, uint32_t index = 0);
     void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
