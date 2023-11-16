@@ -646,4 +646,37 @@ void CommandBuffer::updateBuffer(Buffer* pBuffer, MemoryRange range, const void*
 {
     m_pDeviceTable->vkCmdUpdateBuffer(getHandle(), pBuffer->getHandle(), range.offset, range.size, data);
 }
+void CommandBuffer::setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
+{
+    auto& resBindings                  = m_commandState.resourceBindings;
+    resBindings.bindings[set][binding] = {
+        .binding  = binding,
+        .samplers = samplers,
+    };
+
+    resBindings.setBit |= 1u << set;
+    resBindings.setBindingBit[set] |= 1u << binding;
+}
+void CommandBuffer::setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding)
+{
+    auto& resBindings                  = m_commandState.resourceBindings;
+    resBindings.bindings[set][binding] = {
+        .binding = binding,
+        .images  = images,
+    };
+
+    resBindings.setBit |= 1u << set;
+    resBindings.setBindingBit[set] |= 1u << binding;
+}
+void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding)
+{
+    auto& resBindings                  = m_commandState.resourceBindings;
+    resBindings.bindings[set][binding] = {
+        .binding = binding,
+        .buffers = buffers,
+    };
+
+    resBindings.setBit |= 1u << set;
+    resBindings.setBindingBit[set] |= 1u << binding;
+}
 }  // namespace aph::vk

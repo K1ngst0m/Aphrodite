@@ -151,29 +151,9 @@ public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
-    void setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
-    {
-        auto& resBindings                  = m_commandState.resourceBindings;
-        resBindings.bindings[set][binding] = {
-            .binding = binding,
-            .samplers  = samplers,
-        };
-
-        resBindings.setBit |= 1u << set;
-        resBindings.setBindingBit[set] |= 1u << binding;
-    }
-
-    void setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding)
-    {
-        auto& resBindings                  = m_commandState.resourceBindings;
-        resBindings.bindings[set][binding] = {
-            .binding = binding,
-            .images  = images,
-        };
-
-        resBindings.setBit |= 1u << set;
-        resBindings.setBindingBit[set] |= 1u << binding;
-    }
+    void setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding);
+    void setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding);
+    void setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding);
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
     void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
