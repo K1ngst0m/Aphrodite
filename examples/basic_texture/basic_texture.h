@@ -26,7 +26,6 @@ private:
     aph::vk::Buffer*        m_pIB         = {};
     aph::vk::Sampler*       m_pSampler    = {};
     aph::vk::Image*         m_pImage      = {};
-    aph::vk::DescriptorSet* m_pTextureSet = {};
     aph::vk::ShaderProgram* m_pProgram    = {};
 
 private:

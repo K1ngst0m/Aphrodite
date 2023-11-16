@@ -424,7 +424,19 @@ void CommandBuffer::flushGraphicsCommand()
     m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
                                       m_commandState.pPipeline->getHandle());
 
-    aph::utils::forEachBit(m_commandState.setBindingBit, [&](auto setIndex) {
+    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
+        aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
+            auto& set = m_commandState.sets[setIdx];
+            if(set == nullptr)
+            {
+                set = m_commandState.pProgram->getSetLayout(setIdx)->allocateSet();
+            }
+            set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]);
+            bindDescriptorSet(set, setIdx);
+        });
+    });
+
+    aph::utils::forEachBit(m_commandState.setBindingBit, [this](uint32_t setIndex) {
         auto& set = m_commandState.sets[setIndex];
         m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
                                                 m_commandState.pPipeline->getProgram()->getPipelineLayout(), setIndex,

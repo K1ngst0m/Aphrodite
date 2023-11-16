@@ -76,24 +76,6 @@
     m_pResourceLoader->wait();
     #+END_SRC
 
-  - Resource Binding
-
-    #+BEGIN_SRC c
-    m_pTextureSet = m_pProgram->getSetLayout(0)->allocateSet();
-    m_pTextureSet->update({
-        .binding     = 0,
-        .arrayOffset = 0,
-        .images      = {m_pImage},
-        .samplers    = {},
-    });
-    m_pTextureSet->update({
-        .binding     = 1,
-        .arrayOffset = 0,
-        .images      = {},
-        .samplers    = {m_pSampler},
-    });
-    #+END_SRC
-
   - Frame Graph Operations
 
     #+BEGIN_SRC c
@@ -111,8 +93,9 @@
         drawPass->recordExecute([this](auto* pCmd) {
             pCmd->bindVertexBuffers(m_pVB);
             pCmd->bindIndexBuffers(m_pIB);
+            pCmd->setResource({m_pImage}, 0, 0);
+            pCmd->setResource({m_pSampler}, 0, 1);
             pCmd->setProgram(m_pProgram);
-            pCmd->bindDescriptorSet(m_pTextureSet, 0);
             pCmd->insertDebugLabel({
                 .name  = "draw a quad with texture",
                 .color = {0.5f, 0.3f, 0.2f, 1.0f},

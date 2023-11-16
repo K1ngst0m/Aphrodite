@@ -1,6 +1,7 @@
 #ifndef COMMANDBUFFER_H_
 #define COMMANDBUFFER_H_
 
+#include "api/vulkan/descriptorSet.h"
 #include "api/vulkan/shader.h"
 #include "vkUtils.h"
 
@@ -96,17 +97,17 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
             {
                 VkDescriptorBufferInfo buffer;
                 VkDescriptorImageInfo  image;
-                VkBufferView           bufferView;
             };
-            std::size_t      dynamicOffset;
             VkDescriptorType resType;
         };
 
         struct ResourceBindings
         {
-            std::optional<ResourceBinding> bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
-            uint8_t                        pushConstantData[VULKAN_PUSH_CONSTANT_SIZE];
-            uint32_t                       dirty = 0;
+            uint8_t              setBit                                                    = 0;
+            uint32_t             setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
+            DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
+            uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
+            uint32_t             dirty                                                     = 0;
         };
 
         struct IndexState
@@ -149,6 +150,30 @@ public:
     void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
+
+    void setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
+    {
+        auto& resBindings                  = m_commandState.resourceBindings;
+        resBindings.bindings[set][binding] = {
+            .binding = binding,
+            .samplers  = samplers,
+        };
+
+        resBindings.setBit |= 1u << set;
+        resBindings.setBindingBit[set] |= 1u << binding;
+    }
+
+    void setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding)
+    {
+        auto& resBindings                  = m_commandState.resourceBindings;
+        resBindings.bindings[set][binding] = {
+            .binding = binding,
+            .images  = images,
+        };
+
+        resBindings.setBit |= 1u << set;
+        resBindings.setBindingBit[set] |= 1u << binding;
+    }
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
     void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }

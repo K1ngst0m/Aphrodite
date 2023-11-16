@@ -91,23 +91,6 @@ void basic_texture::init()
             m_pResourceLoader->wait();
         }
 
-        // descriptor set
-        {
-            m_pTextureSet = m_pProgram->getSetLayout(0)->allocateSet();
-            m_pTextureSet->update({
-                .binding     = 0,
-                .arrayOffset = 0,
-                .images      = {m_pImage},
-                .samplers    = {},
-            });
-            m_pTextureSet->update({
-                .binding     = 1,
-                .arrayOffset = 0,
-                .images      = {},
-                .samplers    = {m_pSampler},
-            });
-        }
-
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
             auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
@@ -121,8 +104,9 @@ void basic_texture::init()
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
+                pCmd->setResource({m_pImage}, 0, 0);
+                pCmd->setResource({m_pSampler}, 0, 1);
                 pCmd->setProgram(m_pProgram);
-                pCmd->bindDescriptorSet(m_pTextureSet, 0);
                 pCmd->insertDebugLabel({
                     .name  = "draw a quad with texture",
                     .color = {0.5f, 0.3f, 0.2f, 1.0f},
