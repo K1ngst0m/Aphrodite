@@ -23,6 +23,8 @@
   #+BEGIN_SRC bash
   git clone https://github.com/K1ngst0m/Aphrodite -b next
   cd Aphrodite
+  # fetch the external dependencies
+  python scripts/fetch_external_sources.py
   #+END_SRC
 
 ** Building and Running
