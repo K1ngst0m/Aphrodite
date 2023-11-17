@@ -276,7 +276,7 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     }
 
 #ifdef APH_DEBUG
-    VK_LOG_INFO("Creating descriptor set layout.");
+    VK_LOG_DEBUG("Creating descriptor set layout.");
 #endif
     DescriptorSetLayout* setLayout{};
     {
@@ -673,7 +673,7 @@ void ShaderProgram::createPipelineLayout(const ImmutableSamplerBank* samplerBank
     }
 
 #ifdef APH_DEBUG
-    VK_LOG_ERR("Creating pipeline layout.");
+    VK_LOG_DEBUG("Creating pipeline layout.");
 #endif
 
     auto table = m_pDevice->getDeviceTable();

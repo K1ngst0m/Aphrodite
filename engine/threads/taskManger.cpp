@@ -33,7 +33,6 @@ namespace aph
 TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_description(std::move(description))
 {
     CM_LOG_INFO("Task Manager [%s] init.", m_description);
-    aph::thread::setName("main");
     m_totalTaskCount.store(0);
     m_completedTaskCount.store(0);
 

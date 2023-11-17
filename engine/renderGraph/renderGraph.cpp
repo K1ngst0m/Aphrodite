@@ -159,7 +159,7 @@ void RenderGraph::build(const std::string& output)
             m_buildData.cmdPools[pass] = m_pDevice->acquireCommandPool({queue, false});
             m_buildData.cmds[pass]     = m_buildData.cmdPools[pass]->allocate();
         }
-        if( m_buildData.renderWaitSem[pass] == nullptr)
+        if(m_buildData.renderWaitSem[pass] == nullptr)
         {
             m_buildData.renderWaitSem[pass] = m_pDevice->acquireSemaphore();
         }

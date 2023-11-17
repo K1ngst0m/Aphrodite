@@ -510,7 +510,6 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
     {
-        bufferCI.domain = bufferCI.domain;
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
     }
@@ -519,7 +518,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     if(info.data)
     {
         this->update(
-            BufferUpdateInfo{
+            {
                 .data  = info.data,
                 .range = {0, info.createInfo.size},
             },
@@ -605,7 +604,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         {
             PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
             m_pDevice->executeSingleCommands(m_pQueue, [=](auto* cmd) {
-                cmd->updateBuffer(*ppBuffer, {0, uploadSize}, info.data);
+                cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data);
             });
         }
         else
@@ -634,7 +633,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 }
 
                 m_pDevice->executeSingleCommands(
-                    m_pQueue, [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, *ppBuffer, copyRange); });
+                    m_pQueue, [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, pBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }
@@ -663,7 +662,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 
     void* pMapped = {};
     APH_CHECK_RESULT(m_pDevice->mapMemory(pBuffer, &pMapped));
-    memcpy((uint8_t*)pMapped + range.offset, data, range.size);
+    std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
 }
 
