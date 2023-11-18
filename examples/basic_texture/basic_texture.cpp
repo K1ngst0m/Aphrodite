@@ -110,6 +110,7 @@ void basic_texture::init()
                                          .format = m_pSwapChain->getFormat(),
                                      });
             drawPass->addTextureInput("container texture", m_pImage);
+            drawPass->addUniformBufferInput("matrix ubo", m_pMatBuffer);
 
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
