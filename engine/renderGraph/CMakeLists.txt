@@ -5,7 +5,5 @@ add_library(rendergraph STATIC ${APH_RDG_SRC})
 aph_compiler_options(rendergraph)
 target_include_directories(rendergraph PRIVATE
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/volk
-  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
-target_link_libraries(rendergraph PRIVATE api)
+target_link_libraries(rendergraph PRIVATE common api)

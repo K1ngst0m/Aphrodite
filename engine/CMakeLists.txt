@@ -45,5 +45,4 @@ target_link_libraries(aph_engine INTERFACE
   ${cmake_thread_libs_init}
   dl
   dw
-  unordered_dense::unordered_dense
 )

@@ -3,5 +3,5 @@ add_library(aph_ui STATIC ${APH_UI_SRC})
 aph_compiler_options(aph_ui)
 target_include_directories(aph_ui PRIVATE
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/unordered_dense/include
 )
+target_link_libraries(aph_ui PRIVATE aph_math)
