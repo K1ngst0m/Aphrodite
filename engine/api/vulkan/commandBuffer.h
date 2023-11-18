@@ -126,7 +126,7 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
     };
 
 public:
-    CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue);
+    CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
 
 public:
@@ -192,9 +192,7 @@ private:
     Device*                m_pDevice          = {};
     Queue*                 m_pQueue           = {};
     const VolkDeviceTable* m_pDeviceTable     = {};
-    CommandPool*           m_pool             = {};
     RecordState            m_state            = {};
-    bool                   m_submittedToQueue = {false};
 };
 }  // namespace aph::vk
 

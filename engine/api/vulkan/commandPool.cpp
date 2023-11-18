@@ -21,7 +21,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
 
     for(auto i = 0; i < count; i++)
     {
-        ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, this, handles[i], m_pQueue);
+        ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue);
         m_allocatedCommandBuffers.push_back(ppCommandBuffers[i]);
     }
     CM_LOG_DEBUG("command buffer allocate, avail count %ld, all count %ld", m_allocatedCommandBuffers.size());

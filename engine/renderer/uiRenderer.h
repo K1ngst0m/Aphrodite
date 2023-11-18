@@ -49,8 +49,6 @@ private:
     WSI*          m_pWSI     = {};
     ImGuiContext* m_pContext = {};
 
-    bool m_updated = {false};
-
     UIUpdateCallback m_upateCB = {};
 
 private:
@@ -61,7 +59,6 @@ private:
 
     Queue* m_pDefaultQueue = {};
 
-    uint32_t m_frameIdx       = 0;
     bool     m_showDemoWindow = false;
 
     std::vector<ImFont*> m_fonts;

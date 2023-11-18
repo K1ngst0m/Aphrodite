@@ -4,12 +4,11 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, CommandPool* pool, HandleType handle, Queue* pQueue) :
+CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue) :
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pQueue(pQueue),
     m_pDeviceTable(pDevice->getDeviceTable()),
-    m_pool(pool),
     m_state(RecordState::Initial)
 {
 }
