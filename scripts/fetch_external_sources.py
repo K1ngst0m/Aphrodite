@@ -62,6 +62,7 @@ PACKAGES = [
     GitRepo("https://github.com/glfw/glfw",   "glfw",   "glfw"),
     GitRepo("https://github.com/martinus/unordered_dense",   "unordered_dense",   "unordered_dense"),
     GitRepo("https://github.com/syoyo/tinygltf",   "tinygltf",   "tinygltf"),
+    GitRepo("https://github.com/g-truc/glm",   "glm",   "glm"),
 ]
 
 def GetOpt():
