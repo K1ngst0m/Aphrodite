@@ -17,6 +17,11 @@ struct Fragment
     float4 color : SV_TARGET;
 };
 
+[[vk::binding(0, 0)]] cbuffer ubo
+{
+    float4x4 model;
+};
+
 // Vertex  Shader
 struct VertexStageOutput
 {
@@ -32,13 +37,13 @@ VertexStageOutput vertexMain(AssembledVertex assembledVertex) {
     float2 uv       = assembledVertex.uv;
 
     output.coarseVertex.uv = uv;
-    output.sv_position     = float4(position, 1.0);
+    output.sv_position     = mul(model, float4(position, 1.0));
 
     return output;
 }
 
-[[vk::binding(0, 0)]] Texture2D tex;
-[[vk::binding(1, 0)]] SamplerState samp;
+[[vk::binding(0, 1)]] Texture2D tex;
+[[vk::binding(1, 1)]] SamplerState samp;
 
 // Fragment Shader
 [shader("fragment")]

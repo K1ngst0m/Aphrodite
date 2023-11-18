@@ -7,8 +7,8 @@ namespace aph
 {
 struct UIComponentDesc
 {
-    vec2 offset = {0.0f, 150.0f};
-    vec2 size   = {600.0f, 550.0f};
+    glm::vec2 offset = {0.0f, 150.0f};
+    glm::vec2 size   = {600.0f, 550.0f};
 
     uint32_t fontID   = 0;
     float    fontSize = 16.0f;

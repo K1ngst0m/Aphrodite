@@ -17,16 +17,17 @@ public:
 
     struct
     {
-        uint32_t windowWidth  = {1440};
-        uint32_t windowHeight = {900};
+        uint32_t windowWidth  = {800};
+        uint32_t windowHeight = {800};
     } m_options;
 
 private:
-    aph::vk::Buffer*        m_pVB         = {};
-    aph::vk::Buffer*        m_pIB         = {};
-    aph::vk::Sampler*       m_pSampler    = {};
-    aph::vk::Image*         m_pImage      = {};
-    aph::vk::ShaderProgram* m_pProgram    = {};
+    aph::vk::Buffer*        m_pVB        = {};
+    aph::vk::Buffer*        m_pIB        = {};
+    aph::vk::Buffer*        m_pMatBuffer = {};
+    aph::vk::Sampler*       m_pSampler   = {};
+    aph::vk::Image*         m_pImage     = {};
+    aph::vk::ShaderProgram* m_pProgram   = {};
 
 private:
     std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
@@ -35,6 +36,7 @@ private:
     aph::ResourceLoader*               m_pResourceLoader = {};
     aph::vk::SwapChain*                m_pSwapChain      = {};
 
+    glm::mat4 m_modelMatrix{1.0f};
 private:
     aph::Timer m_timer;
 };

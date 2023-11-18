@@ -32,8 +32,8 @@ void basic_texture::init()
     {
         struct VertexData
         {
-            aph::vec3 pos;
-            aph::vec2 uv;
+            glm::vec3 pos;
+            glm::vec2 uv;
         };
         // vertex: position, color
         const std::vector<VertexData> vertices = {{.pos = {-0.5f, -0.5f, 0.0f}, .uv = {0.0f, 0.0f}},
@@ -65,6 +65,18 @@ void basic_texture::init()
             m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
         }
 
+        // matrix uniform buffer
+        {
+            aph::BufferLoadInfo loadInfo{.debugName  = "matrix data",
+                                         .data       = &m_modelMatrix,
+                                         .createInfo = {
+                                             .size   = sizeof(glm::mat4),
+                                             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                             .domain = aph::BufferDomain::LinkedDeviceHost,
+                                         }};
+            m_pResourceLoader->load(loadInfo, &m_pMatBuffer);
+        }
+
         // image and sampler
         {
             APH_CHECK_RESULT(
@@ -72,8 +84,6 @@ void basic_texture::init()
 
             aph::ImageLoadInfo loadInfo{.data       = "texture://container2.png",
                                         .createInfo = {
-                                            .alignment = 0,
-                                            .arraySize = 1,
                                             .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
                                             .domain    = aph::ImageDomain::Device,
                                             .imageType = VK_IMAGE_TYPE_2D,
@@ -104,8 +114,9 @@ void basic_texture::init()
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
-                pCmd->setResource({m_pImage}, 0, 0);
-                pCmd->setResource({m_pSampler}, 0, 1);
+                pCmd->setResource({m_pMatBuffer}, 0, 0);
+                pCmd->setResource({m_pImage}, 1, 0);
+                pCmd->setResource({m_pSampler}, 1, 1);
                 pCmd->setProgram(m_pProgram);
                 pCmd->insertDebugLabel({
                     .name  = "draw a quad with texture",
@@ -122,6 +133,9 @@ void basic_texture::run()
     while(m_pWSI->update())
     {
         PROFILE_SCOPE("application loop");
+        m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(0.1f), {.0, .0, 1.0f});
+        m_pResourceLoader->update({.data = &m_modelMatrix, .range = {0, sizeof(glm::mat4)}}, &m_pMatBuffer);
+
         m_renderer->update();
         m_renderer->render("render target");
     }
@@ -144,6 +158,7 @@ void basic_texture::finish()
     m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
+    m_pDevice->destroy(m_pMatBuffer);
     m_pDevice->destroy(m_pProgram);
     m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);

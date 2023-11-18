@@ -33,8 +33,8 @@ void triangle_demo::init()
         // vertex: position, color
         struct VertexData
         {
-            aph::vec3 pos;
-            aph::vec3 color;
+            glm::vec3 pos;
+            glm::vec3 color;
         };
 
         // vertex buffer
