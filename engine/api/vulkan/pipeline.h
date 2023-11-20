@@ -294,6 +294,8 @@ private:
     HashMap<GraphicsPipelineCreateInfo, Pipeline*, HashGraphicsPipeline> m_graphicsPipelineMap;
     HashMap<ComputePipelineCreateInfo, Pipeline*, HashGraphicsPipeline>  m_computePipelineMap;
     ThreadSafeObjectPool<Pipeline>                                       m_pool;
+    std::mutex                                                           m_graphicsAcquireLock;
+    std::mutex                                                           m_computeAcquireLock;
 };
 
 }  // namespace aph::vk

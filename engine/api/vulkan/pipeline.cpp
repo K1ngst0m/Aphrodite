@@ -327,7 +327,7 @@ DescriptorSet* Pipeline::acquireSet(uint32_t idx) const
 
 Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& createInfo)
 {
-    auto& table = *m_pDevice->getDeviceTable();
+    std::lock_guard<std::mutex> holder{m_computeAcquireLock};
     if(!m_computePipelineMap.contains(createInfo))
     {
         APH_ASSERT(false);
@@ -339,7 +339,8 @@ Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& create
             ci.stage                            = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
                                                                                       program->getShader(ShaderStage::CS)->getHandle());
             VkPipeline handle                   = VK_NULL_HANDLE;
-            _VR(table.vkCreateComputePipelines(m_pDevice->getHandle(), VK_NULL_HANDLE, 1, &ci, vkAllocator(), &handle));
+            _VR(m_pDevice->getDeviceTable()->vkCreateComputePipelines(m_pDevice->getHandle(), VK_NULL_HANDLE, 1, &ci,
+                                                                      vkAllocator(), &handle));
             pPipeline = m_pool.allocate(m_pDevice, createInfo, handle, program);
         }
         m_computePipelineMap[createInfo] = pPipeline;
@@ -349,6 +350,7 @@ Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& create
 }
 Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& createInfo)
 {
+    std::lock_guard<std::mutex> holder{m_graphicsAcquireLock};
     if(!m_graphicsPipelineMap.contains(createInfo))
     {
         Pipeline*                                    pPipeline = {};
