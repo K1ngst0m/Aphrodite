@@ -35,71 +35,65 @@ void basic_texture::init()
             glm::vec3 pos;
             glm::vec2 uv;
         };
+
         // vertex: position, color
         const std::vector<VertexData> vertices = {{.pos = {-0.5f, -0.5f, 0.0f}, .uv = {0.0f, 0.0f}},
                                                   {.pos = {0.5f, -0.5f, 0.0f}, .uv = {1.0f, 0.0f}},
                                                   {.pos = {0.5f, 0.5f, 0.0f}, .uv = {1.0f, 1.0f}},
                                                   {.pos = {-0.5f, 0.5f, 0.0f}, .uv = {0.0f, 1.0f}}};
-        const std::vector<uint32_t>   indices  = {
+
+        const std::vector<uint32_t> indices = {
             0, 1, 2,  // First triangle
             2, 3, 0   // Second triangle
         };
 
         // vertex buffer
-        {
-            aph::BufferLoadInfo loadInfo{
-                .debugName  = "quad::vertexBuffer",
-                .data       = vertices.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
-
-            m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
-        }
+        m_pResourceLoader->loadAsync(
+            aph::BufferLoadInfo{.debugName  = "quad::vertexBuffer",
+                                .data       = vertices.data(),
+                                .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
+                                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
+            &m_pVB);
 
         // index buffer
-        {
-            aph::BufferLoadInfo loadInfo{
-                .data       = indices.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
-                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-            m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
-        }
+        m_pResourceLoader->loadAsync(
+            aph::BufferLoadInfo{.data       = indices.data(),
+                                .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
+                                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
+            &m_pIB);
 
         // matrix uniform buffer
-        {
-            aph::BufferLoadInfo loadInfo{.debugName  = "matrix data",
-                                         .data       = &m_modelMatrix,
-                                         .createInfo = {
-                                             .size   = sizeof(glm::mat4),
-                                             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                             .domain = aph::BufferDomain::LinkedDeviceHost,
-                                         }};
-            m_pResourceLoader->load(loadInfo, &m_pMatBuffer);
-        }
+        m_pResourceLoader->load(aph::BufferLoadInfo{.debugName = "matrix data",
+                                                    .data      = &m_modelMatrix,
+                                                    .createInfo =
+                                                        {
+                                                            .size   = sizeof(glm::mat4),
+                                                            .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                            .domain = aph::BufferDomain::LinkedDeviceHost,
+                                                        }},
+                                &m_pMatBuffer);
 
         // image and sampler
-        {
-            APH_CHECK_RESULT(
-                m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
-
-            aph::ImageLoadInfo loadInfo{.data       = "texture://container2.png",
-                                        .createInfo = {
-                                            .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
-                                            .domain    = aph::ImageDomain::Device,
-                                            .imageType = VK_IMAGE_TYPE_2D,
-                                        }};
-            m_pResourceLoader->loadAsync(loadInfo, &m_pImage);
-        }
+        APH_CHECK_RESULT(
+            m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
+        m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
+                                                        .createInfo =
+                                                            {
+                                                                .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                                .domain    = aph::ImageDomain::Device,
+                                                                .imageType = VK_IMAGE_TYPE_2D,
+                                                            }},
+                                     &m_pImage);
 
         // pipeline
-        {
-            aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
-                                                   {aph::ShaderStage::VS, {"shader_slang://texture.slang"}},
-                                                   {aph::ShaderStage::FS, {"shader_slang://texture.slang"}},
-                                               }};
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
-            m_pResourceLoader->wait();
-        }
+        m_pResourceLoader->loadAsync(
+            aph::ShaderLoadInfo{.stageInfo =
+                                    {
+                                        {aph::ShaderStage::VS, {"shader_slang://texture.slang"}},
+                                        {aph::ShaderStage::FS, {"shader_slang://texture.slang"}},
+                                    }},
+            &m_pProgram);
+        m_pResourceLoader->wait();
 
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {

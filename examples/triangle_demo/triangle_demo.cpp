@@ -43,41 +43,33 @@ void triangle_demo::init()
             {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
             {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
         };
+        constexpr std::array indexArray{0U, 1U, 2U};
 
-        m_timer.set("load begin");
-        {
-            aph::BufferLoadInfo loadInfo{
+        m_pResourceLoader->loadAsync(
+            aph::BufferLoadInfo{
                 .debugName  = "triangle::vertexBuffer",
                 .data       = vertexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
+                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
+            &m_pVB);
 
-            m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
-        }
-
-        constexpr std::array indexArray{0U, 1U, 2U};
         // index buffer
-        {
-            aph::BufferLoadInfo loadInfo{
-                .debugName  = "triangle::indexbuffer",
-                .data       = indexArray.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
-                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-            m_pResourceLoader->loadAsync(loadInfo, &m_pIB);
-        }
+        m_pResourceLoader->loadAsync(
+            aph::BufferLoadInfo{.debugName  = "triangle::indexbuffer",
+                                .data       = indexArray.data(),
+                                .createInfo = {.size = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
+                                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
+            &m_pIB);
 
         // shader program
-        {
-            aph::ShaderLoadInfo shaderLoadInfo{.stageInfo = {
-                                                   {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
-                                                   {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
-                                               }};
-
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
-            m_pResourceLoader->wait();
-        }
-        m_timer.set("load end");
-        CM_LOG_DEBUG("load time : %lf", m_timer.interval("load begin", "load end"));
+        m_pResourceLoader->loadAsync(
+            aph::ShaderLoadInfo{.stageInfo =
+                                    {
+                                        {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
+                                        {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
+                                    }},
+            &m_pProgram);
+        m_pResourceLoader->wait();
 
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
