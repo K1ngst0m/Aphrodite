@@ -26,6 +26,7 @@ ImageView* Image::getView(Format imageFormat)
         imageFormat = m_createInfo.format;
     }
 
+    std::lock_guard<std::mutex> holder{m_acquireViewLock};
     if(!m_imageViewFormatMap.contains(imageFormat))
     {
         static const HashMap<VkImageType, VkImageViewType> imageTypeMap{

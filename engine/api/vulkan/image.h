@@ -49,6 +49,7 @@ private:
     HashMap<Format, ImageView*> m_imageViewFormatMap = {};
     VkImageLayout               m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
     ResourceState               m_resourceState      = {};
+    std::mutex                  m_acquireViewLock;
 };
 
 struct ImageViewCreateInfo
