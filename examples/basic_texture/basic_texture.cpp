@@ -106,6 +106,8 @@ void basic_texture::init()
             drawPass->addTextureInput("container texture", m_pImage);
             drawPass->addUniformBufferInput("matrix ubo", m_pMatBuffer);
 
+            graph->setBackBuffer("render target");
+
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->bindVertexBuffers(m_pVB);
                 pCmd->bindIndexBuffers(m_pIB);
@@ -132,7 +134,7 @@ void basic_texture::run()
         m_pResourceLoader->update({.data = &m_modelMatrix, .range = {0, sizeof(glm::mat4)}}, &m_pMatBuffer);
 
         m_renderer->update();
-        m_renderer->render("render target");
+        m_renderer->render();
     }
 }
 

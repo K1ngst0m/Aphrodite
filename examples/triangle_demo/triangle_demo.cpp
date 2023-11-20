@@ -81,6 +81,8 @@ void triangle_demo::init()
                                          .format = m_pSwapChain->getFormat(),
                                      });
 
+            graph->setBackBuffer("render target");
+
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->setProgram(m_pProgram);
                 pCmd->bindVertexBuffers(m_pVB);
@@ -97,7 +99,7 @@ void triangle_demo::run()
     {
         PROFILE_SCOPE("application loop");
         m_renderer->update();
-        m_renderer->render("render target");
+        m_renderer->render();
     }
 }
 

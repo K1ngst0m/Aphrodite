@@ -161,8 +161,10 @@ public:
     vk::Image*    getBuildResource(PassImageResource* pResource) const;
     vk::Buffer*   getBuildResource(PassBufferResource* pResource) const;
 
-    void build(const std::string& output);
-    void execute(const std::string& output, vk::Fence* pFence = nullptr, vk::SwapChain* pSwapChain = nullptr);
+    void setBackBuffer(const std::string& backBuffer);
+
+    void build();
+    void execute(vk::Fence* pFence = nullptr, vk::SwapChain* pSwapChain = nullptr);
 
 private:
     vk::Device* m_pDevice     = {};
@@ -170,6 +172,8 @@ private:
 
     struct
     {
+        std::string backBuffer = {};
+
         SmallVector<RenderPass*>          passes;
         HashMap<std::string, std::size_t> passMap;
 

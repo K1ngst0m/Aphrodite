@@ -216,10 +216,10 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
     }
     m_taskManager.wait();
 }
-void Renderer::render(const std::string& output)
+void Renderer::render()
 {
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
     m_frameFence[m_frameIdx]->wait();
-    m_frameGraph[m_frameIdx]->execute(output, m_frameFence[m_frameIdx], m_pSwapChain);
+    m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx], m_pSwapChain);
 }
 }  // namespace aph::vk

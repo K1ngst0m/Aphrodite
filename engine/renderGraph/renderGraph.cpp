@@ -139,7 +139,7 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
 
-void RenderGraph::build(const std::string& output)
+void RenderGraph::build()
 {
     if(m_buildData.frameFence == nullptr)
     {
@@ -176,7 +176,7 @@ void RenderGraph::build(const std::string& output)
                     .imageType = VK_IMAGE_TYPE_2D,
                     .format    = colorAttachment->getInfo().format,
                 };
-                if(!output.empty() && m_declareData.resourceMap.contains(output))
+                if(!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
                 {
                     createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
                 }
@@ -262,7 +262,7 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     return res;
 }
 
-void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::SwapChain* pSwapChain)
+void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
 {
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
@@ -272,9 +272,9 @@ void RenderGraph::execute(const std::string& output, vk::Fence* pFence, vk::Swap
     auto       taskgrp = taskMgr.createTaskGroup();
     std::mutex submitLock;
 
-    build(output);
+    build();
 
-    auto pOutImage = m_buildData.image[m_declareData.resources[m_declareData.resourceMap[output]]];
+    auto pOutImage = m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
 
     for(auto* pass : m_declareData.passes)
     {
@@ -443,5 +443,9 @@ vk::Buffer* RenderGraph::getBuildResource(PassBufferResource* pResource) const
 {
     APH_ASSERT(m_buildData.buffer.contains(pResource));
     return m_buildData.buffer.at(pResource);
+}
+void RenderGraph::setBackBuffer(const std::string& backBuffer)
+{
+    m_declareData.backBuffer = backBuffer;
 }
 }  // namespace aph

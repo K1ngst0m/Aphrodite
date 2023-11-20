@@ -59,7 +59,7 @@ public:
     WSI*            getWSI() const { return m_wsi.get(); }
 
     void recordGraph(std::function<void(RenderGraph*)>&& func);
-    void render(const std::string& output);
+    void render();
 
     const RenderConfig& getConfig() const { return m_config; }
 
