@@ -210,17 +210,8 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
     for(auto& pGraph : m_frameGraph)
     {
         auto taskGroup = m_taskManager.createTaskGroup("frame graph recording");
-        taskGroup->addTask([&pGraph, func]() {
+        taskGroup->addTask([this, &pGraph, func]() {
             func(pGraph.get());
-        });
-        m_taskManager.submit(taskGroup);
-    }
-    m_taskManager.wait();
-
-    for(auto& pGraph : m_frameGraph)
-    {
-        auto taskGroup = m_taskManager.createTaskGroup("frame graph building");
-        taskGroup->addTask([&pGraph, this]() {
             pGraph->build(m_pSwapChain);
         });
         m_taskManager.submit(taskGroup);
@@ -231,7 +222,6 @@ void Renderer::render()
 {
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
     m_frameFence[m_frameIdx]->wait();
-    // m_frameGraph[m_frameIdx]->build(m_pSwapChain);
     m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx]);
 }
 }  // namespace aph::vk

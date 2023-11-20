@@ -146,7 +146,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
-        for(auto *pass: m_declareData.passes)
+        for(auto* pass : m_declareData.passes)
         {
             m_buildData.passDependencyGraph[pass].clear();
         }
@@ -466,19 +466,8 @@ void RenderGraph::execute(vk::Fence* pFence)
 
     // submit && present
     {
-        vk::Fence* frameFence = {};
-
-        if(!pFence)
-        {
-            frameFence = m_buildData.frameFence;
-        }
-        else
-        {
-            frameFence = pFence;
-        }
+        vk::Fence* frameFence = pFence ? pFence : m_buildData.frameFence;
         frameFence->reset();
-
-        vk::Semaphore* presentSem = m_buildData.presentSem;
 
         APH_CHECK_RESULT(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
@@ -522,7 +511,7 @@ void RenderGraph::execute(vk::Fence* pFence)
                     pCopyCmd->insertBarrier({
                         {
                             .pImage       = pOutImage,
-                            .currentState = ResourceState::CopySource,
+                            .currentState = ResourceState::Undefined,
                             .newState     = ResourceState::RenderTarget,
                         },
                         {
@@ -532,9 +521,9 @@ void RenderGraph::execute(vk::Fence* pFence)
                         },
                     });
                 },
-                {m_buildData.renderSem}, {presentSem});
+                {m_buildData.renderSem}, {m_buildData.presentSem});
 
-            APH_CHECK_RESULT(m_buildData.pSwapchain->presentImage(queue, {presentSem}));
+            APH_CHECK_RESULT(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
         }
 
         if(!pFence)
