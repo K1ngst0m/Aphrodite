@@ -183,10 +183,11 @@ private:
 
     struct
     {
-        HashMap<RenderPass*, vk::CommandPool*> cmdPools;
-        // TODO multi commands
+        SmallVector<RenderPass*> sortedPasses;
+
+        HashMap<RenderPass*, vk::CommandPool*>               cmdPools;
         HashMap<RenderPass*, vk::CommandBuffer*>             cmds;
-        HashMap<RenderPass*, HashSet<RenderPass*>>           dependencyPasses;
+        HashMap<RenderPass*, HashSet<RenderPass*>>           passDependencyGraph;
         HashMap<RenderPass*, std::vector<vk::ImageBarrier>>  imageBarriers;
         HashMap<RenderPass*, std::vector<vk::BufferBarrier>> bufferBarriers;
 
@@ -200,6 +201,7 @@ private:
 
         std::vector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex                       submitLock;
+
     } m_buildData;
 
     struct

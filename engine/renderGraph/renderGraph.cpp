@@ -141,11 +141,15 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 
 void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
-    // clear
+    // TODO clear on demand
     {
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
+        for(auto *pass: m_declareData.passes)
+        {
+            m_buildData.passDependencyGraph[pass].clear();
+        }
     }
 
     if(m_buildData.frameFence == nullptr)
@@ -163,8 +167,75 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         m_buildData.renderSem = m_pDevice->acquireSemaphore();
     }
 
+    for(auto res : m_declareData.resources)
+    {
+        for(const auto& readPass : res->getReadPasses())
+        {
+            for(const auto& writePass : res->getWritePasses())
+            {
+                if(readPass != writePass)
+                {
+                    m_buildData.passDependencyGraph[readPass].insert(writePass);
+                }
+            }
+        }
+    }
+
+    // topological sort
+    {
+        APH_ASSERT(!m_buildData.passDependencyGraph.empty());
+        std::unordered_map<RenderPass*, int> inDegree;
+        std::queue<RenderPass*>              zeroInDegreeQueue;
+        auto&                                result = m_buildData.sortedPasses;
+        auto&                                graph  = m_buildData.passDependencyGraph;
+
+        // Initialize in-degree of each node
+        for(auto& [pass, nodes] : graph)
+        {
+            if(!inDegree.contains(pass))
+            {
+                inDegree[pass] = 0;
+            }
+
+            for(RenderPass* node : nodes)
+            {
+                inDegree[node]++;
+            }
+        }
+
+        // Find all nodes with in-degree of 0
+        for(auto& [pass, degree] : inDegree)
+        {
+            if(degree == 0)
+            {
+                zeroInDegreeQueue.push(pass);
+            }
+        }
+
+        // Topological Sort
+        while(!zeroInDegreeQueue.empty())
+        {
+            RenderPass* node = zeroInDegreeQueue.front();
+            zeroInDegreeQueue.pop();
+            result.push_back(node);
+
+            // Decrease the in-degree of adjacent nodes
+            for(RenderPass* adjacent : graph[node])
+            {
+                --inDegree[adjacent];
+                if(inDegree[adjacent] == 0)
+                {
+                    zeroInDegreeQueue.push(adjacent);
+                }
+            }
+        }
+
+        // Check if there was a cycle in the graph
+        APH_ASSERT(result.size() == graph.size());
+    }
+
     // per pass resource build
-    for(auto* pass : m_declareData.passes)
+    for(auto* pass : m_buildData.sortedPasses)
     {
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
         if(!m_buildData.cmdPools.contains(pass))
