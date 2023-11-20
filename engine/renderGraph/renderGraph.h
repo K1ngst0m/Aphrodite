@@ -163,8 +163,8 @@ public:
 
     void setBackBuffer(const std::string& backBuffer);
 
-    void build();
-    void execute(vk::Fence* pFence = nullptr, vk::SwapChain* pSwapChain = nullptr);
+    void build(vk::SwapChain* pSwapChain = nullptr);
+    void execute(vk::Fence* pFence = nullptr);
 
 private:
     vk::Device* m_pDevice     = {};
@@ -190,6 +190,7 @@ private:
         HashMap<RenderPass*, HashSet<RenderPass*>> dependencyPasses;
         HashMap<PassResource*, vk::Image*>         image;
         HashMap<PassResource*, vk::Buffer*>        buffer;
+        vk::SwapChain*                             pSwapchain = {};
         vk::Fence*                                 frameFence = {};
         vk::Semaphore*                             presentSem = {};
     } m_buildData;

@@ -139,7 +139,7 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 {
 }
 
-void RenderGraph::build()
+void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
     if(m_buildData.frameFence == nullptr)
     {
@@ -151,6 +151,7 @@ void RenderGraph::build()
         m_buildData.presentSem = m_pDevice->acquireSemaphore();
     }
 
+    // per pass resource build
     for(auto* pass : m_declareData.passes)
     {
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
@@ -164,6 +165,7 @@ void RenderGraph::build()
             m_buildData.renderWaitSem[pass] = m_pDevice->acquireSemaphore();
         }
 
+        // color attachments
         for(auto colorAttachment : pass->m_res.colorOut)
         {
             if(!m_buildData.image.contains(colorAttachment))
@@ -185,6 +187,7 @@ void RenderGraph::build()
             }
         }
 
+        // depth attachments
         {
             auto depthAttachment = pass->m_res.depthOut;
             if(depthAttachment && !m_buildData.image.contains(depthAttachment))
@@ -201,6 +204,11 @@ void RenderGraph::build()
                 m_buildData.image[depthAttachment] = pImage;
             }
         }
+    }
+
+    // swapchain
+    {
+        m_buildData.pSwapchain = pSwapChain;
     }
 }
 
@@ -262,7 +270,7 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     return res;
 }
 
-void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
+void RenderGraph::execute(vk::Fence* pFence)
 {
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
@@ -271,8 +279,6 @@ void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
     auto&      taskMgr = m_taskManager;
     auto       taskgrp = taskMgr.createTaskGroup();
     std::mutex submitLock;
-
-    build();
 
     auto pOutImage = m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
 
@@ -341,8 +347,8 @@ void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
         APH_ASSERT(!colorImages.empty());
 
         taskgrp->addTask(
-            [this, pass, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, pSwapChain, finalOut,
-             &bufferBarriers, &imageBarriers]() {
+            [this, pass, &frameSubmitInfos, &submitLock, colorImages, pDepthImage, finalOut, &bufferBarriers,
+             &imageBarriers]() {
                 auto& cmdPool = m_buildData.cmdPools[pass];
                 cmdPool->reset();
                 auto* pCmd = m_buildData.cmds[pass];
@@ -363,10 +369,10 @@ void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
                     .signalSemaphores = {},
                 };
 
-                if(pSwapChain && finalOut)
+                if(m_buildData.pSwapchain && finalOut)
                 {
                     auto& renderSem = m_buildData.renderWaitSem[pass];
-                    APH_CHECK_RESULT(pSwapChain->acquireNextImage(renderSem));
+                    APH_CHECK_RESULT(m_buildData.pSwapchain->acquireNextImage(renderSem));
                     submitInfo.waitSemaphores.push_back(renderSem);
                 }
 
@@ -396,9 +402,9 @@ void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
         taskMgr.wait();
         APH_CHECK_RESULT(queue->submit(frameSubmitInfos, frameFence));
 
-        if(pSwapChain)
+        if(m_buildData.pSwapchain)
         {
-            auto pSwapchainImage = pSwapChain->getImage();
+            auto pSwapchainImage = m_buildData.pSwapchain->getImage();
 
             // transisiton && copy
             m_pDevice->executeSingleCommands(
@@ -423,7 +429,7 @@ void RenderGraph::execute(vk::Fence* pFence, vk::SwapChain* pSwapChain)
                     pCopyCmd->transitionImageLayout(pSwapchainImage, ResourceState::Present);
                 },
                 {}, {presentSem});
-            APH_CHECK_RESULT(pSwapChain->presentImage(queue, {presentSem}));
+            APH_CHECK_RESULT(m_buildData.pSwapchain->presentImage(queue, {presentSem}));
         }
 
         if(!pFence)
