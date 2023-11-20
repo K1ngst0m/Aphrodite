@@ -295,13 +295,6 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
             vkColor.storeOp = color.storeOp.value();
         }
         vkColors.push_back(vkColor);
-
-        aph::vk::ImageBarrier barrier{
-            .pImage       = image,
-            .currentState = image->getResourceState(),
-            .newState     = ResourceState::RenderTarget,
-        };
-        insertBarrier({barrier});
     }
 
     VkRect2D   renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
@@ -346,14 +339,6 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
         {
             vkDepth.clearValue = m_commandState.depthAttachment.clear.value();
         }
-        // debug layout
-        // transitionImageLayout(image, VK_IMAGE_LAYOUT_GENERAL);
-        aph::vk::ImageBarrier barrier{
-            .pImage       = image,
-            .currentState = image->getResourceState(),
-            .newState     = ResourceState::DepthStencil,
-        };
-        insertBarrier({barrier});
 
         vkRenderingInfo.pDepthAttachment = &vkDepth;
     }
@@ -488,12 +473,6 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         Buffer*                pBuffer        = pTrans->pBuffer;
         VkBufferMemoryBarrier* pBufferBarrier = nullptr;
 
-        if(pTrans->currentState == pTrans->newState)
-        {
-            CM_LOG_DEBUG("The buffer barriers' current and new resource states are identical.");
-            continue;
-        }
-
         if(ResourceState::UnorderedAccess == pTrans->currentState && ResourceState::UnorderedAccess == pTrans->newState)
         {
             pBufferBarrier        = &bufferBarriers[bufferBarrierCount++];
@@ -547,12 +526,6 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         const ImageBarrier*   pTrans        = &pImageBarriers[i];
         Image*                pImage        = pTrans->pImage;
         VkImageMemoryBarrier* pImageBarrier = nullptr;
-
-        if(pTrans->currentState == pTrans->newState)
-        {
-            CM_LOG_DEBUG("The image barriers' current and new resource states are identical.");
-            continue;
-        }
 
         if(ResourceState::UnorderedAccess == pTrans->currentState && ResourceState::UnorderedAccess == pTrans->newState)
         {

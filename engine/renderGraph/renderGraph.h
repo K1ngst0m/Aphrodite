@@ -183,16 +183,23 @@ private:
 
     struct
     {
-        HashMap<RenderPass*, vk::Semaphore*>   renderWaitSem;
         HashMap<RenderPass*, vk::CommandPool*> cmdPools;
         // TODO multi commands
-        HashMap<RenderPass*, vk::CommandBuffer*>   cmds;
-        HashMap<RenderPass*, HashSet<RenderPass*>> dependencyPasses;
-        HashMap<PassResource*, vk::Image*>         image;
-        HashMap<PassResource*, vk::Buffer*>        buffer;
-        vk::SwapChain*                             pSwapchain = {};
-        vk::Fence*                                 frameFence = {};
-        vk::Semaphore*                             presentSem = {};
+        HashMap<RenderPass*, vk::CommandBuffer*>             cmds;
+        HashMap<RenderPass*, HashSet<RenderPass*>>           dependencyPasses;
+        HashMap<RenderPass*, std::vector<vk::ImageBarrier>>  imageBarriers;
+        HashMap<RenderPass*, std::vector<vk::BufferBarrier>> bufferBarriers;
+
+        HashMap<PassResource*, vk::Image*>  image;
+        HashMap<PassResource*, vk::Buffer*> buffer;
+
+        vk::SwapChain* pSwapchain = {};
+        vk::Fence*     frameFence = {};
+        vk::Semaphore* presentSem = {};
+        vk::Semaphore* renderSem  = {};
+
+        std::vector<vk::QueueSubmitInfo> frameSubmitInfos{};
+        std::mutex                       submitLock;
     } m_buildData;
 
     struct
