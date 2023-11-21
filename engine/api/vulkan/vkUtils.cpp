@@ -599,6 +599,10 @@ VkPipelineBindPoint VkCast(PipelineType type)
     case PipelineType::RayTracing:
         return VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
         break;
+    default:
+        APH_ASSERT(false);
+        return VK_PIPELINE_BIND_POINT_GRAPHICS;
+        break;
     }
     APH_ASSERT(false);
     return VK_PIPELINE_BIND_POINT_GRAPHICS;
