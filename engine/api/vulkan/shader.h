@@ -1,6 +1,9 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
+#include "common/hash.h"
+#include "common/smallVector.h"
+#include "allocator/objectPool.h"
 #include "vkUtils.h"
 
 namespace aph::vk

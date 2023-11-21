@@ -1,9 +1,9 @@
 #ifndef RES_LOADER_H_
 #define RES_LOADER_H_
 
-#include "common/common.h"
 #include "api/vulkan/device.h"
 #include "common/hash.h"
+#include "common/uuid.h"
 #include "geometry.h"
 #include "threads/taskManager.h"
 

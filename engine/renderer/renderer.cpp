@@ -2,6 +2,7 @@
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
 #include "common/common.h"
+#include "common/logger.h"
 
 #include "volk.h"
 

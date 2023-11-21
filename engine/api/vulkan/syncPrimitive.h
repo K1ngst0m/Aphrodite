@@ -1,6 +1,7 @@
 #ifndef SYNCPRIMITIVESPOOL_H_
 #define SYNCPRIMITIVESPOOL_H_
 
+#include "allocator/objectPool.h"
 #include "vkUtils.h"
 
 namespace aph::vk

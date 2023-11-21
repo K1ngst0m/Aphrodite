@@ -6,11 +6,8 @@
 #endif
 #define VK_NO_PROTOTYPES
 #include <volk.h>
-#include "vkInit.h"
 #include "common/common.h"
 #include "common/logger.h"
-
-#include "allocator/objectPool.h"
 
 #include "../gpuResource.h"
 

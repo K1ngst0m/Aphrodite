@@ -1,6 +1,7 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
+#include "common/hash.h"
 #include "vkUtils.h"
 
 namespace aph::vk

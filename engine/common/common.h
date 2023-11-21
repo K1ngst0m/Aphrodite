@@ -1,18 +1,33 @@
 #ifndef VKLCOMMON_H_
 #define VKLCOMMON_H_
 
-#include "pch.h"
-
+#include <cmath>
 #include "common/logger.h"
-#include "common/uuid.h"
-#include "common/hash.h"
-#include "common/smallVector.h"
 
 #define APH_CONCAT_IMPL(x, y) x##y
 #define APH_MACRO_CONCAT(x, y) APH_CONCAT_IMPL(x, y)
 
 namespace aph
 {
+
+#if defined(_MSC_VER)
+    #define APH_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+    #define APH_ALWAYS_INLINE __attribute__((always_inline)) inline
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+    #define APH_ALWAYS_INLINE __forceinline
+#else
+    #define APH_ALWAYS_INLINE inline
+#endif
+
+APH_ALWAYS_INLINE bool Assert(bool cond, const char* file, int line, const char* format, ...)
+{
+    if(!cond)
+    {
+    }
+    return cond;
+}
+
 #ifdef APH_DEBUG
     #define APH_ASSERT(x) \
         do \
@@ -26,16 +41,6 @@ namespace aph
         } while(0)
 #else
     #define APH_ASSERT(x) ((void)0)
-#endif
-
-#if defined(_MSC_VER)
-    #define APH_ALWAYS_INLINE __forceinline
-#elif defined(__GNUC__) || defined(__clang__)
-    #define APH_ALWAYS_INLINE __attribute__((always_inline)) inline
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-    #define APH_ALWAYS_INLINE __forceinline
-#else
-    #define APH_ALWAYS_INLINE inline
 #endif
 }  // namespace aph
 

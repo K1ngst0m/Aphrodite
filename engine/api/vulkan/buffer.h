@@ -1,7 +1,9 @@
 #ifndef VULKAN_BUFFER_H_
 #define VULKAN_BUFFER_H_
 
-#include "vkUtils.h"
+#include <volk.h>
+#include "api/gpuResource.h"
+#include "allocator/objectPool.h"
 
 namespace aph::vk
 {

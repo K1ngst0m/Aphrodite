@@ -14,7 +14,6 @@
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
-#include "vkInit.h"
 #include "vkUtils.h"
 
 namespace aph::vk

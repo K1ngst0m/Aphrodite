@@ -1,7 +1,9 @@
 #ifndef APH_SAMPLER_H
 #define APH_SAMPLER_H
 
-#include "vkUtils.h"
+#include <volk.h>
+#include "api/gpuResource.h"
+#include "allocator/objectPool.h"
 
 namespace aph::vk
 {

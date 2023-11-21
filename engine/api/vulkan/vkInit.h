@@ -5,8 +5,6 @@
 
 #include <vector>
 
-#include "../gpuResource.h"
-
 namespace aph::vk::init
 {
 

@@ -1,4 +1,6 @@
 #include "instance.h"
+#include "api/vulkan/vkUtils.h"
+#include "common/smallVector.h"
 #include "physicalDevice.h"
 #include "common/logger.h"
 

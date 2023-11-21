@@ -1,6 +1,7 @@
 #ifndef PHYSICALDEVICE_H_
 #define PHYSICALDEVICE_H_
 
+#include "common/hash.h"
 #include "instance.h"
 
 namespace aph::vk

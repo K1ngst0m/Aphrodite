@@ -1,6 +1,7 @@
 #ifndef VULKAN_SWAPCHAIN_H_
 #define VULKAN_SWAPCHAIN_H_
 
+#include "allocator/objectPool.h"
 #include "wsi/wsi.h"
 #include "vkUtils.h"
 

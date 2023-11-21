@@ -1,8 +1,8 @@
 #ifndef INSTANCE_H_
 #define INSTANCE_H_
 
-#include "threads/threadPool.h"
-#include "vkUtils.h"
+#include <volk.h>
+#include "api/gpuResource.h"
 
 namespace aph::vk
 {

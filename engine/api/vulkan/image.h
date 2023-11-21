@@ -1,8 +1,10 @@
 #ifndef VULKAN_IMAGE_H_
 #define VULKAN_IMAGE_H_
 
-#include "vkUtils.h"
-
+#include <volk.h>
+#include "api/gpuResource.h"
+#include "common/hash.h"
+#include "allocator/objectPool.h"
 namespace aph::vk
 {
 class Device;

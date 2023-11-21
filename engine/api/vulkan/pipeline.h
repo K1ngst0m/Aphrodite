@@ -1,7 +1,10 @@
 #ifndef PIPELINE_H_
 #define PIPELINE_H_
 
-#include "vkUtils.h"
+#include "api/gpuResource.h"
+#include "allocator/objectPool.h"
+#include "common/hash.h"
+#include "volk.h"
 
 namespace aph::vk
 {
