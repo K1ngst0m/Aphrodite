@@ -32,3 +32,6 @@ Branch: v2.8.18
 
 [glm]
 Branch: 0.9.9.8
+
+[tracy]
+Branch: v0.10
