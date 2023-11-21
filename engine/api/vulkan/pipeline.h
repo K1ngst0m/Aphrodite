@@ -213,6 +213,9 @@ public:
     Pipeline* getPipeline(const ComputePipelineCreateInfo& createInfo);
 
 private:
+    Pipeline* create(const GraphicsPipelineCreateInfo& createInfo);
+    Pipeline* create(const ComputePipelineCreateInfo& createInfo);
+
     Device*                                                              m_pDevice = {};
     HashMap<GraphicsPipelineCreateInfo, Pipeline*, HashGraphicsPipeline> m_graphicsPipelineMap;
     HashMap<ComputePipelineCreateInfo, Pipeline*, HashGraphicsPipeline>  m_computePipelineMap;
