@@ -26,14 +26,14 @@ enum
 
 struct ColorAttachment
 {
-    Format        format              = Format::Undefined;
-    bool          blendEnabled        = false;
-    VkBlendOp     rgbBlendOp          = VK_BLEND_OP_ADD;
-    VkBlendOp     alphaBlendOp        = VK_BLEND_OP_ADD;
-    VkBlendFactor srcRGBBlendFactor   = VK_BLEND_FACTOR_ONE;
-    VkBlendFactor srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    VkBlendFactor dstRGBBlendFactor   = VK_BLEND_FACTOR_ZERO;
-    VkBlendFactor dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+    Format      format              = Format::Undefined;
+    bool        blendEnabled        = false;
+    BlendOp     rgbBlendOp          = BlendOp::Add;
+    BlendOp     alphaBlendOp        = BlendOp::Add;
+    BlendFactor srcRGBBlendFactor   = BlendFactor::One;
+    BlendFactor srcAlphaBlendFactor = BlendFactor::One;
+    BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
+    BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
 
     bool operator==(const ColorAttachment& rhs) const
     {
@@ -46,12 +46,12 @@ struct ColorAttachment
 
 struct StencilState
 {
-    VkStencilOp stencilFailureOp   = VK_STENCIL_OP_KEEP;
-    VkStencilOp depthFailureOp     = VK_STENCIL_OP_KEEP;
-    VkStencilOp depthStencilPassOp = VK_STENCIL_OP_KEEP;
-    VkCompareOp stencilCompareOp   = VK_COMPARE_OP_ALWAYS;
-    uint32_t    readMask           = (uint32_t)~0;
-    uint32_t    writeMask          = (uint32_t)~0;
+    StencilOp stencilFailureOp   = StencilOp::Keep;
+    StencilOp depthFailureOp     = StencilOp::Keep;
+    StencilOp depthStencilPassOp = StencilOp::Keep;
+    CompareOp stencilCompareOp   = CompareOp::Always;
+    uint32_t  readMask           = (uint32_t)~0;
+    uint32_t  writeMask          = (uint32_t)~0;
 
     bool operator==(const StencilState& rhs) const
     {
@@ -63,15 +63,20 @@ struct StencilState
 
 struct RenderPipelineDynamicState final
 {
-    VkBool32 depthBiasEnable = VK_FALSE;
-
+    bool depthBiasEnable = false;
     bool operator==(const RenderPipelineDynamicState& rhs) const { return depthBiasEnable == rhs.depthBiasEnable; }
 };
 
 struct GraphicsPipelineCreateInfo
 {
+    enum class Type
+    {
+        Traditional,
+        Mesh,
+    } type = Type::Traditional;
+
     RenderPipelineDynamicState dynamicState = {};
-    VkPrimitiveTopology        topology     = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    PrimitiveTopology          topology     = PrimitiveTopology::TriangleList;
 
     VertexInput vertexInput;
 
@@ -83,9 +88,9 @@ struct GraphicsPipelineCreateInfo
     Format                       depthFormat   = Format::Undefined;
     Format                       stencilFormat = Format::Undefined;
 
-    VkCullModeFlags cullMode         = VK_CULL_MODE_NONE;
-    VkFrontFace     frontFaceWinding = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    VkPolygonMode   polygonMode      = VK_POLYGON_MODE_FILL;
+    CullMode    cullMode         = CullMode::None;
+    WindingMode frontFaceWinding = WindingMode::CCW;
+    PolygonMode polygonMode      = PolygonMode::Fill;
 
     StencilState backFaceStencil  = {};
     StencilState frontFaceStencil = {};

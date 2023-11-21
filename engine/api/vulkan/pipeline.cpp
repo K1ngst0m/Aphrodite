@@ -417,12 +417,12 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             {
                 colorBlendAttachmentStates[i] = VkPipelineColorBlendAttachmentState{
                     .blendEnable         = VK_TRUE,
-                    .srcColorBlendFactor = attachment.srcRGBBlendFactor,
-                    .dstColorBlendFactor = attachment.dstRGBBlendFactor,
-                    .colorBlendOp        = attachment.rgbBlendOp,
-                    .srcAlphaBlendFactor = attachment.srcAlphaBlendFactor,
-                    .dstAlphaBlendFactor = attachment.dstAlphaBlendFactor,
-                    .alphaBlendOp        = attachment.alphaBlendOp,
+                    .srcColorBlendFactor = utils::VkCast(attachment.srcRGBBlendFactor),
+                    .dstColorBlendFactor = utils::VkCast(attachment.dstRGBBlendFactor),
+                    .colorBlendOp        = utils::VkCast(attachment.rgbBlendOp),
+                    .srcAlphaBlendFactor = utils::VkCast(attachment.srcAlphaBlendFactor),
+                    .dstAlphaBlendFactor = utils::VkCast(attachment.dstAlphaBlendFactor),
+                    .alphaBlendOp        = utils::VkCast(attachment.alphaBlendOp),
                     .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
                                       VK_COLOR_COMPONENT_A_BIT,
                 };
@@ -449,23 +449,25 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             .dynamicState(VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE)
             .dynamicState(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE)
             .dynamicState(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP)
-            .primitiveTopology(createInfo.topology)
+            .primitiveTopology(utils::VkCast(createInfo.topology))
             .depthBiasEnable(createInfo.dynamicState.depthBiasEnable)
             .rasterizationSamples(aph::vk::utils::getSampleCountFlags(createInfo.samplesCount))
-            .polygonMode(createInfo.polygonMode)
-            .stencilStateOps(VK_STENCIL_FACE_FRONT_BIT, createInfo.frontFaceStencil.stencilFailureOp,
-                             createInfo.frontFaceStencil.depthStencilPassOp, createInfo.frontFaceStencil.depthFailureOp,
-                             createInfo.frontFaceStencil.stencilCompareOp)
-            .stencilStateOps(VK_STENCIL_FACE_BACK_BIT, createInfo.backFaceStencil.stencilFailureOp,
-                             createInfo.backFaceStencil.depthStencilPassOp, createInfo.backFaceStencil.depthFailureOp,
-                             createInfo.backFaceStencil.stencilCompareOp)
+            .polygonMode(utils::VkCast(createInfo.polygonMode))
+            .stencilStateOps(VK_STENCIL_FACE_FRONT_BIT, utils::VkCast(createInfo.frontFaceStencil.stencilFailureOp),
+                             utils::VkCast(createInfo.frontFaceStencil.depthStencilPassOp),
+                             utils::VkCast(createInfo.frontFaceStencil.depthFailureOp),
+                             utils::VkCast(createInfo.frontFaceStencil.stencilCompareOp))
+            .stencilStateOps(VK_STENCIL_FACE_BACK_BIT, utils::VkCast(createInfo.backFaceStencil.stencilFailureOp),
+                             utils::VkCast(createInfo.backFaceStencil.depthStencilPassOp),
+                             utils::VkCast(createInfo.backFaceStencil.depthFailureOp),
+                             utils::VkCast(createInfo.backFaceStencil.stencilCompareOp))
             .stencilMasks(VK_STENCIL_FACE_FRONT_BIT, 0xFF, createInfo.frontFaceStencil.writeMask,
                           createInfo.frontFaceStencil.readMask)
             .stencilMasks(VK_STENCIL_FACE_BACK_BIT, 0xFF, createInfo.backFaceStencil.writeMask,
                           createInfo.backFaceStencil.readMask)
             .shaderStage(shaderStages)
-            .cullMode(createInfo.cullMode)
-            .frontFace(createInfo.frontFaceWinding)
+            .cullMode(utils::VkCast(createInfo.cullMode))
+            .frontFace(utils::VkCast(createInfo.frontFaceWinding))
             .vertexInputState(ciVertexInputState)
             .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
             .depthAttachmentFormat(utils::VkCast(createInfo.depthFormat))

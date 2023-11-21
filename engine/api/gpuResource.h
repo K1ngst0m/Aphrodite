@@ -304,17 +304,80 @@ struct DispatchArguments
     uint32_t z;
 };
 
-enum class IndexType
+enum class IndexType : uint8_t
 {
     NONE,
     UINT16,
     UINT32,
 };
 
-enum class PrimitiveTopology
+enum class PrimitiveTopology : uint8_t
 {
-    TRI_LIST,
-    TRI_STRIP,
+    TriangleList,
+    TriangleStrip,
+};
+
+enum class CullMode : uint8_t
+{
+    None,
+    Front,
+    Back
+};
+
+enum class WindingMode : uint8_t
+{
+    CCW,
+    CW
+};
+
+enum class PolygonMode : uint8_t
+{
+    Fill = 0,
+    Line = 1,
+};
+
+enum class StencilOp : uint8_t
+{
+    Keep = 0,
+    Zero,
+    Replace,
+    IncrementClamp,
+    DecrementClamp,
+    Invert,
+    IncrementWrap,
+    DecrementWrap
+};
+
+enum class BlendOp : uint8_t
+{
+    Add = 0,
+    Subtract,
+    ReverseSubtract,
+    Min,
+    Max
+};
+
+enum class BlendFactor : uint8_t
+{
+    Zero = 0,
+    One,
+    SrcColor,
+    OneMinusSrcColor,
+    SrcAlpha,
+    OneMinusSrcAlpha,
+    DstColor,
+    OneMinusDstColor,
+    DstAlpha,
+    OneMinusDstAlpha,
+    SrcAlphaSaturated,
+    BlendColor,
+    OneMinusBlendColor,
+    BlendAlpha,
+    OneMinusBlendAlpha,
+    Src1Color,
+    OneMinusSrc1Color,
+    Src1Alpha,
+    OneMinusSrc1Alpha
 };
 
 struct VertexInput

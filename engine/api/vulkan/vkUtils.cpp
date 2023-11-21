@@ -445,6 +445,148 @@ VkCompareOp VkCast(CompareOp compareOp)
     APH_ASSERT(false);
     return VK_COMPARE_OP_ALWAYS;
 }
+VkPrimitiveTopology VkCast(PrimitiveTopology topology)
+{
+    switch(topology)
+    {
+    case PrimitiveTopology::TriangleList:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    case PrimitiveTopology::TriangleStrip:
+        return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    }
+    APH_ASSERT(false);
+    return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+}
+
+VkCullModeFlags VkCast(CullMode mode)
+{
+    switch(mode)
+    {
+    case CullMode::None:
+        return VK_CULL_MODE_NONE;
+    case CullMode::Front:
+        return VK_CULL_MODE_FRONT_BIT;
+    case CullMode::Back:
+        return VK_CULL_MODE_BACK_BIT;
+    }
+    APH_ASSERT(false);
+    return VK_CULL_MODE_NONE;
+}
+
+VkFrontFace VkCast(WindingMode mode)
+{
+    switch(mode)
+    {
+    case WindingMode::CCW:
+        return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    case WindingMode::CW:
+        return VK_FRONT_FACE_CLOCKWISE;
+    }
+    APH_ASSERT(false);
+    return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+}
+
+VkPolygonMode VkCast(PolygonMode mode)
+{
+    switch(mode)
+    {
+    case PolygonMode::Fill:
+        return VK_POLYGON_MODE_FILL;
+    case PolygonMode::Line:
+        return VK_POLYGON_MODE_LINE;
+    }
+    APH_ASSERT(false);
+    return VK_POLYGON_MODE_FILL;
+}
+VkBlendFactor VkCast(BlendFactor factor)
+{
+    switch(factor)
+    {
+    case BlendFactor::Zero:
+        return VK_BLEND_FACTOR_ZERO;
+    case BlendFactor::One:
+        return VK_BLEND_FACTOR_ONE;
+    case BlendFactor::SrcColor:
+        return VK_BLEND_FACTOR_SRC_COLOR;
+    case BlendFactor::OneMinusSrcColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    case BlendFactor::SrcAlpha:
+        return VK_BLEND_FACTOR_SRC_ALPHA;
+    case BlendFactor::OneMinusSrcAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    case BlendFactor::DstColor:
+        return VK_BLEND_FACTOR_DST_COLOR;
+    case BlendFactor::OneMinusDstColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+    case BlendFactor::DstAlpha:
+        return VK_BLEND_FACTOR_DST_ALPHA;
+    case BlendFactor::OneMinusDstAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+    case BlendFactor::SrcAlphaSaturated:
+        return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+    case BlendFactor::BlendColor:
+        return VK_BLEND_FACTOR_CONSTANT_COLOR;
+    case BlendFactor::OneMinusBlendColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+    case BlendFactor::BlendAlpha:
+        return VK_BLEND_FACTOR_CONSTANT_ALPHA;
+    case BlendFactor::OneMinusBlendAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+    case BlendFactor::Src1Color:
+        return VK_BLEND_FACTOR_SRC1_COLOR;
+    case BlendFactor::OneMinusSrc1Color:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+    case BlendFactor::Src1Alpha:
+        return VK_BLEND_FACTOR_SRC1_ALPHA;
+    case BlendFactor::OneMinusSrc1Alpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+    }
+    APH_ASSERT(false);
+    return VK_BLEND_FACTOR_ZERO;
+}
+VkBlendOp VkCast(BlendOp op)
+{
+    switch(op)
+    {
+    case BlendOp::Add:
+        return VK_BLEND_OP_ADD;
+    case BlendOp::Subtract:
+        return VK_BLEND_OP_SUBTRACT;
+    case BlendOp::ReverseSubtract:
+        return VK_BLEND_OP_REVERSE_SUBTRACT;
+    case BlendOp::Min:
+        return VK_BLEND_OP_MIN;
+    case BlendOp::Max:
+        return VK_BLEND_OP_MAX;
+    }
+
+    APH_ASSERT(false);
+    return VK_BLEND_OP_ADD;
+}
+VkStencilOp VkCast(StencilOp op)
+{
+    switch(op)
+    {
+    case StencilOp::Keep:
+        return VK_STENCIL_OP_KEEP;
+    case StencilOp::Zero:
+        return VK_STENCIL_OP_ZERO;
+    case StencilOp::Replace:
+        return VK_STENCIL_OP_REPLACE;
+    case StencilOp::IncrementClamp:
+        return VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+    case StencilOp::DecrementClamp:
+        return VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+    case StencilOp::Invert:
+        return VK_STENCIL_OP_INVERT;
+    case StencilOp::IncrementWrap:
+        return VK_STENCIL_OP_INCREMENT_AND_WRAP;
+    case StencilOp::DecrementWrap:
+        return VK_STENCIL_OP_DECREMENT_AND_WRAP;
+    }
+    APH_ASSERT(false);
+    return VK_STENCIL_OP_KEEP;
+}
 }  // namespace aph::vk::utils
 
 namespace aph::vk

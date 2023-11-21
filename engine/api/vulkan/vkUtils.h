@@ -50,6 +50,13 @@ VkResult              setDebugObjectName(VkDevice device, VkObjectType type, uin
 // convert
 namespace aph::vk::utils
 {
+VkStencilOp           VkCast(StencilOp op);
+VkBlendOp             VkCast(BlendOp op);
+VkBlendFactor         VkCast(BlendFactor factor);
+VkCullModeFlags       VkCast(CullMode mode);
+VkFrontFace           VkCast(WindingMode mode);
+VkPolygonMode         VkCast(PolygonMode mode);
+VkPrimitiveTopology   VkCast(PrimitiveTopology topology);
 VkShaderStageFlagBits VkCast(ShaderStage stage);
 VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
