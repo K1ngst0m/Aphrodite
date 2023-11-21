@@ -158,6 +158,7 @@ public:
     void dispatch(Buffer* pBuffer, std::size_t offset = 0);
     void dispatch(DispatchArguments args);
     void draw(DrawArguments args);
+    void draw(DispatchArguments args);
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(VkDrawIndirectCommand));
 

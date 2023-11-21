@@ -682,4 +682,8 @@ void CommandBuffer::setDepthState(const DepthState& state)
 {
     m_commandState.depthState = state;
 }
+void CommandBuffer::draw(DispatchArguments args)
+{
+    m_pDeviceTable->vkCmdDrawMeshTasksEXT(m_handle, args.x, args.y, args.z);
+}
 }  // namespace aph::vk
