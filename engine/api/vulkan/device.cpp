@@ -1,5 +1,5 @@
 #include "device.h"
-#include "allocator.h"
+#include "deviceAllocator.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 

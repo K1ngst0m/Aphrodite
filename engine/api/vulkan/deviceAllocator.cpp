@@ -1,4 +1,4 @@
-#include "allocator.h"
+#include "deviceAllocator.h"
 #include "image.h"
 #include "buffer.h"
 
