@@ -107,21 +107,6 @@ struct GraphicsPipelineCreateInfo
     }
 };
 
-struct RenderPipelineState
-{
-    GraphicsPipelineCreateInfo createInfo;
-
-    std::vector<VkVertexInputBindingDescription>   vkBindings   = {};
-    std::vector<VkVertexInputAttributeDescription> vkAttributes = {};
-
-    // non-owning, cached the last pipeline layout from the context (if the context has a new layout, invalidate all
-    // VkPipeline objects)
-    VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-
-    // [depthBiasEnable]
-    VkPipeline pipelines[2] = {};
-};
-
 struct ComputePipelineCreateInfo
 {
     ImmutableSamplerBank* pSamplerBank = {};
@@ -144,14 +129,13 @@ public:
     VkPipelineBindPoint getBindPoint() const { return m_bindPoint; }
 
 protected:
-    Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, HandleType handle, ShaderProgram* pProgram);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
 
     Device*             m_pDevice   = {};
     ShaderProgram*      m_pProgram  = {};
     VkPipelineBindPoint m_bindPoint = {};
     VkPipelineCache     m_cache     = {};
-    RenderPipelineState m_rps       = {};
 };
 
 class PipelineAllocator

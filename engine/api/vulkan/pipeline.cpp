@@ -367,12 +367,11 @@ Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo,
     APH_ASSERT(pProgram);
 }
 
-Pipeline::Pipeline(Device* pDevice, const RenderPipelineState& rps, HandleType handle, ShaderProgram* pProgram) :
+Pipeline::Pipeline(Device* pDevice, HandleType handle, ShaderProgram* pProgram) :
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
-    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS),
-    m_rps(rps)
+    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
 {
     APH_ASSERT(pProgram);
 }
@@ -422,26 +421,28 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
                                                                    pProgram->getShader(ShaderStage::FS)->getHandle()));
 
         // create rps
-        RenderPipelineState rps    = {.createInfo = createInfo};
-        const VertexInput&  vstate = rps.createInfo.vertexInput;
-        rps.vkAttributes.resize(vstate.attributes.size());
+        std::vector<VkVertexInputBindingDescription>   vkBindings;
+        std::vector<VkVertexInputAttributeDescription> vkAttributes;
+
+        const VertexInput& vstate = createInfo.vertexInput;
+        vkAttributes.resize(vstate.attributes.size());
         SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
 
-        for(uint32_t i = 0; i != rps.vkAttributes.size(); i++)
+        for(uint32_t i = 0; i != vkAttributes.size(); i++)
         {
             const auto& attr = vstate.attributes[i];
 
-            rps.vkAttributes[i] = {.location = attr.location,
-                                   .binding  = attr.binding,
-                                   .format   = utils::VkCast(attr.format),
-                                   .offset   = (uint32_t)attr.offset};
+            vkAttributes[i] = {.location = attr.location,
+                               .binding  = attr.binding,
+                               .format   = utils::VkCast(attr.format),
+                               .offset   = (uint32_t)attr.offset};
 
             if(!bufferAlreadyBound[attr.binding])
             {
                 bufferAlreadyBound[attr.binding] = true;
-                rps.vkBindings.push_back({.binding   = attr.binding,
-                                          .stride    = vstate.bindings[attr.binding].stride,
-                                          .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
+                vkBindings.push_back({.binding   = attr.binding,
+                                      .stride    = vstate.bindings[attr.binding].stride,
+                                      .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
             }
         }
 
@@ -487,10 +488,10 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
 
         const VkPipelineVertexInputStateCreateInfo ciVertexInputState = {
             .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            .vertexBindingDescriptionCount   = static_cast<uint32_t>(rps.vkBindings.size()),
-            .pVertexBindingDescriptions      = !rps.vkBindings.empty() ? rps.vkBindings.data() : nullptr,
-            .vertexAttributeDescriptionCount = static_cast<uint32_t>(rps.vkAttributes.size()),
-            .pVertexAttributeDescriptions    = !rps.vkAttributes.empty() ? rps.vkAttributes.data() : nullptr,
+            .vertexBindingDescriptionCount   = static_cast<uint32_t>(vkBindings.size()),
+            .pVertexBindingDescriptions      = !vkBindings.empty() ? vkBindings.data() : nullptr,
+            .vertexAttributeDescriptionCount = static_cast<uint32_t>(vkAttributes.size()),
+            .pVertexAttributeDescriptions    = !vkAttributes.empty() ? vkAttributes.data() : nullptr,
         };
 
         VkPipeline handle;
@@ -530,7 +531,7 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             .stencilAttachmentFormat(utils::VkCast(createInfo.stencilFormat))
             .build(m_pDevice, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle);
 
-        pPipeline                         = m_pool.allocate(m_pDevice, rps, handle, pProgram);
+        pPipeline                         = m_pool.allocate(m_pDevice, handle, pProgram);
         m_graphicsPipelineMap[createInfo] = pPipeline;
     }
 
