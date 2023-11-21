@@ -202,8 +202,13 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     break;
     case PipelineType::Mesh:
     {
-        APH_ASSERT(false);
-        return Result::RuntimeError;
+        auto ms = createInfo.mesh.pMesh;
+        auto ts = createInfo.mesh.pTask;
+        auto fs = createInfo.mesh.pFragment;
+        APH_ASSERT(ms);
+        APH_ASSERT(fs);
+
+        *ppProgram = m_resourcePool.program.allocate(this, ms, ts, fs, createInfo.samplerBank);
     }
     break;
     case PipelineType::Compute:

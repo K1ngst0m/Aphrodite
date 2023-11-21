@@ -297,22 +297,39 @@ Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entryp
 }
 
 ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device), m_pipelineType(PipelineType::Geometry)
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Geometry)
 {
-    if(vs)
-    {
-        m_shaders[ShaderStage::VS] = vs;
-    }
-    if(fs)
-    {
-        m_shaders[ShaderStage::FS] = fs;
-    }
+    APH_ASSERT(vs);
+    APH_ASSERT(fs);
+    m_shaders[ShaderStage::VS] = vs;
+    m_shaders[ShaderStage::FS] = fs;
     combineLayout(samplerBank);
     createPipelineLayout(samplerBank);
     createVertexInput();
 }
 
-ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device), m_pipelineType(PipelineType::Compute)
+ShaderProgram::ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs,
+                             const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Mesh)
+{
+    APH_ASSERT(ms);
+    APH_ASSERT(fs);
+    m_shaders[ShaderStage::MS] = ms;
+    if(ts)
+    {
+        m_shaders[ShaderStage::TS] = ts;
+    }
+    m_shaders[ShaderStage::FS] = fs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+    createVertexInput();
+}
+
+ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Compute)
 {
     m_shaders[ShaderStage::CS] = cs;
     combineLayout(samplerBank);
@@ -343,9 +360,8 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
     }
 
     uint32_t attrOffset = 0;
-    aph::utils::forEachBit(layout.inputMask, [&](uint32_t location)
-    {
-        auto& attr = layout.vertexAttr[location];
+    aph::utils::forEachBit(layout.inputMask, [&](uint32_t location) {
+        auto& attr  = layout.vertexAttr[location];
         attr.offset = attrOffset;
         attrOffset += attr.size;
     });
@@ -705,12 +721,8 @@ void ShaderProgram::createVertexInput()
     uint32_t size = 0;
     aph::utils::forEachBit(m_combineLayout.attributeMask, [&](uint32_t location) {
         auto& attr = m_combineLayout.vertexAttr[location];
-        m_vertexInput.attributes.push_back({
-            .location = location,
-            .binding = 0,
-            .format = utils::getFormatFromVk(attr.format),
-            .offset = attr.offset
-        });
+        m_vertexInput.attributes.push_back(
+            {.location = location, .binding = 0, .format = utils::getFormatFromVk(attr.format), .offset = attr.offset});
         size += attr.size;
     });
     m_vertexInput.bindings.push_back({size});

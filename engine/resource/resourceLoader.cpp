@@ -234,6 +234,12 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
         case aph::ShaderStage::CS:
             module->findEntryPointByName("computeMain", entryPoint.writeRef());
             break;
+        case aph::ShaderStage::TS:
+            module->findEntryPointByName("taskMain", entryPoint.writeRef());
+            break;
+        case aph::ShaderStage::MS:
+            module->findEntryPointByName("meshMain", entryPoint.writeRef());
+            break;
         default:
             APH_ASSERT(false);
             break;
@@ -547,8 +553,9 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     }
 
     // vs + fs
-    if(shaderList.contains(ShaderStage::VS) && shaderList.contains(ShaderStage::FS))
+    if(shaderList.contains(ShaderStage::VS))
     {
+        APH_ASSERT(shaderList.contains(ShaderStage::FS));
         APH_CHECK_RESULT(m_pDevice->create(
             vk::ProgramCreateInfo{
                 .geometry{.pVertex = shaderList[ShaderStage::VS], .pFragment = shaderList[ShaderStage::FS]},
@@ -558,10 +565,15 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     }
     else if(shaderList.contains(ShaderStage::MS))
     {
+        APH_ASSERT(shaderList.contains(ShaderStage::FS));
         vk::ProgramCreateInfo ci{
-            .mesh{.pMesh = shaderList[ShaderStage::MS]},
+            .mesh{.pMesh = shaderList[ShaderStage::MS], .pFragment = shaderList[ShaderStage::FS]},
             .type = PipelineType::Geometry,
         };
+        if(shaderList.contains(ShaderStage::TS))
+        {
+            ci.mesh.pTask = shaderList[ShaderStage::TS];
+        }
         APH_CHECK_RESULT(m_pDevice->create(ci, ppProgram));
     }
     // cs

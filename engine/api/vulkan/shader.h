@@ -104,8 +104,9 @@ struct ProgramCreateInfo
     {
         struct
         {
-            Shader* pMesh = {};
-            Shader* pTask = {};
+            Shader* pMesh     = {};
+            Shader* pTask     = {};
+            Shader* pFragment = {};
         } mesh;
 
         struct
@@ -129,6 +130,7 @@ class ShaderProgram
     friend class ObjectPool<ShaderProgram>;
 
 public:
+    ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
 
