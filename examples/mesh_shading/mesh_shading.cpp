@@ -30,43 +30,13 @@ void mesh_shading::init()
 
     // setup triangle
     {
-        // vertex: position, color
-        struct VertexData
-        {
-            glm::vec3 pos;
-            glm::vec3 color;
-        };
-
-        // vertex buffer
-        const std::vector<VertexData> vertexArray{
-            {.pos = {0.0f, -0.5f, 1.0f}, .color = {1.0f, 0.0f, 0.0f}},
-            {.pos = {0.5f, 0.5f, 1.0f}, .color = {0.0f, 1.0f, 0.0f}},
-            {.pos = {-0.5f, 0.5f, 1.0f}, .color = {0.0f, 0.0f, 1.0f}},
-        };
-        constexpr std::array indexArray{0U, 1U, 2U};
-
-        m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{
-                .debugName  = "triangle::vertexBuffer",
-                .data       = vertexArray.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
-                               .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
-            &m_pVB);
-
-        // index buffer
-        m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{.debugName  = "triangle::indexbuffer",
-                                .data       = indexArray.data(),
-                                .createInfo = {.size = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
-                                               .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
-            &m_pIB);
-
         // shader program
         m_pResourceLoader->loadAsync(
             aph::ShaderLoadInfo{.stageInfo =
                                     {
-                                        {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
-                                        {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
+                                        {aph::ShaderStage::MS, {"shader_slang://mesh_shading.slang"}},
+                                        {aph::ShaderStage::TS, {"shader_slang://mesh_shading.slang"}},
+                                        {aph::ShaderStage::FS, {"shader_slang://mesh_shading.slang"}},
                                     }},
             &m_pProgram);
         m_pResourceLoader->wait();
@@ -85,8 +55,6 @@ void mesh_shading::init()
 
             drawPass->recordExecute([this](auto* pCmd) {
                 pCmd->setProgram(m_pProgram);
-                pCmd->bindVertexBuffers(m_pVB);
-                pCmd->bindIndexBuffers(m_pIB);
                 pCmd->drawIndexed({3, 1, 0, 0, 0});
             });
         });
@@ -107,8 +75,6 @@ void mesh_shading::finish()
 {
     APH_PROFILER_SCOPE();
     m_pDevice->waitIdle();
-    m_pDevice->destroy(m_pVB);
-    m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pProgram);
 }
 

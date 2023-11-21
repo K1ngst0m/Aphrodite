@@ -22,8 +22,6 @@ public:
     } m_options;
 
 private:
-    aph::vk::Buffer*        m_pVB       = {};
-    aph::vk::Buffer*        m_pIB       = {};
     aph::vk::ShaderProgram* m_pProgram  = {};
 
 private:
