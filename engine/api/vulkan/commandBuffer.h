@@ -123,6 +123,7 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
         ResourceBindings            resourceBindings = {};
         IndexState                  index            = {};
         VertexBindingState          vertexBinding    = {};
+        DepthState                  depthState       = {};
     };
 
 public:
@@ -149,6 +150,8 @@ public:
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
+
+    void setDepthState(const DepthState& state);
 
 public:
     void drawIndexed(DrawIndexArguments args);
@@ -189,10 +192,10 @@ private:
     CommandState m_commandState = {};
 
 private:
-    Device*                m_pDevice          = {};
-    Queue*                 m_pQueue           = {};
-    const VolkDeviceTable* m_pDeviceTable     = {};
-    RecordState            m_state            = {};
+    Device*                m_pDevice      = {};
+    Queue*                 m_pQueue       = {};
+    const VolkDeviceTable* m_pDeviceTable = {};
+    RecordState            m_state        = {};
 };
 }  // namespace aph::vk
 

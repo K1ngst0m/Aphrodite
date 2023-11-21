@@ -58,6 +58,7 @@ VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
 VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
 VkFormat              VkCast(Format format);
 VkIndexType           VkCast(IndexType indexType);
+VkCompareOp           VkCast(CompareOp compareOp);
 }  // namespace aph::vk::utils
 
 namespace aph

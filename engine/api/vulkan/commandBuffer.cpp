@@ -362,11 +362,18 @@ void CommandBuffer::flushGraphicsCommand()
                                                m_commandState.vertexBinding.buffers + binding,
                                                m_commandState.vertexBinding.offsets + binding);
     });
-
     m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
                                            m_commandState.vertexBinding.offsets);
     m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
                                          m_commandState.index.indexType);
+
+    {
+        auto&             state = m_commandState.depthState;
+        const VkCompareOp op    = utils::VkCast(state.compareOp);
+        m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
+        m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
+        m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
+    }
 
     if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
     {
@@ -669,5 +676,9 @@ void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t se
         resBindings.setBindingBit[set] |= 1u << binding;
         resBindings.dirtyBinding[set] |= 1u << binding;
     }
+}
+void CommandBuffer::setDepthState(const DepthState& state)
+{
+    m_commandState.depthState = state;
 }
 }  // namespace aph::vk

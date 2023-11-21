@@ -65,6 +65,18 @@ enum class ResourceState : uint32_t
 };
 MAKE_ENUM_CLASS_FLAG(ResourceState);
 
+enum class CompareOp : uint8_t
+{
+    Never = 0,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
+    Always
+};
+
 enum class SamplerPreset : uint8_t
 {
     NearestClamp,
@@ -116,6 +128,12 @@ struct ShaderConstant
     const void* pValue;
     uint32_t    mIndex;
     uint32_t    mSize;
+};
+
+struct DepthState
+{
+    CompareOp compareOp;
+    bool      enableWrite;
 };
 
 struct DummyCreateInfo

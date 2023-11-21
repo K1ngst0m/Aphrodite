@@ -442,12 +442,12 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             // from Vulkan 1.0
             .dynamicState(VK_DYNAMIC_STATE_VIEWPORT)
             .dynamicState(VK_DYNAMIC_STATE_SCISSOR)
-            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS)
-            // .dynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS)
+            .dynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS)
+            .dynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS)
             // from Vulkan 1.3
-            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE)
-            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE)
-            // .dynamicState(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP)
+            .dynamicState(VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE)
+            .dynamicState(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE)
+            .dynamicState(VK_DYNAMIC_STATE_DEPTH_COMPARE_OP)
             .primitiveTopology(createInfo.topology)
             .depthBiasEnable(createInfo.dynamicState.depthBiasEnable)
             .rasterizationSamples(aph::vk::utils::getSampleCountFlags(createInfo.samplesCount))
