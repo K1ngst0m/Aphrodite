@@ -362,16 +362,17 @@ Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo,
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
-    m_bindPoint(VK_PIPELINE_BIND_POINT_COMPUTE)
+    m_type(PipelineType::Compute)
 {
     APH_ASSERT(pProgram);
 }
 
-Pipeline::Pipeline(Device* pDevice, HandleType handle, ShaderProgram* pProgram) :
+Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle,
+                   ShaderProgram* pProgram) :
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pProgram(pProgram),
-    m_bindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+    m_type(createInfo.type)
 {
     APH_ASSERT(pProgram);
 }
@@ -532,7 +533,7 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             .stencilAttachmentFormat(utils::VkCast(createInfo.stencilFormat))
             .build(m_pDevice, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle);
 
-        pPipeline                         = m_pool.allocate(m_pDevice, handle, pProgram);
+        pPipeline                         = m_pool.allocate(m_pDevice, createInfo, handle, pProgram);
         m_graphicsPipelineMap[createInfo] = pPipeline;
     }
 

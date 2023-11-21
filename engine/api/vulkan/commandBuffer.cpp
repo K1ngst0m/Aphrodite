@@ -349,7 +349,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 void CommandBuffer::flushComputeCommand()
 {
     // TODO bind descriptor set && create pipeline when no pipeline
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
                                       m_commandState.pPipeline->getHandle());
 }
 void CommandBuffer::flushGraphicsCommand()
@@ -407,7 +407,7 @@ void CommandBuffer::flushGraphicsCommand()
 
         pipeline = m_pDevice->acquirePipeline(createInfo);
     }
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, m_commandState.pPipeline->getBindPoint(),
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
                                       m_commandState.pPipeline->getHandle());
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
@@ -431,7 +431,7 @@ void CommandBuffer::flushGraphicsCommand()
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
         auto& set = m_commandState.resourceBindings.sets[setIndex];
-        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, m_commandState.pPipeline->getBindPoint(),
+        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
                                                 m_commandState.pPipeline->getProgram()->getPipelineLayout(), setIndex,
                                                 1, &set->getHandle(), 0, nullptr);
     });

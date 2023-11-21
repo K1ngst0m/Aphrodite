@@ -587,6 +587,22 @@ VkStencilOp VkCast(StencilOp op)
     APH_ASSERT(false);
     return VK_STENCIL_OP_KEEP;
 }
+VkPipelineBindPoint VkCast(PipelineType type)
+{
+    switch(type)
+    {
+    case PipelineType::Geometry:
+    case PipelineType::Mesh:
+        return VK_PIPELINE_BIND_POINT_GRAPHICS;
+    case PipelineType::Compute:
+        return VK_PIPELINE_BIND_POINT_COMPUTE;
+    case PipelineType::RayTracing:
+        return VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+        break;
+    }
+    APH_ASSERT(false);
+    return VK_PIPELINE_BIND_POINT_GRAPHICS;
+}
 }  // namespace aph::vk::utils
 
 namespace aph::vk

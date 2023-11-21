@@ -60,11 +60,7 @@ struct RenderPipelineDynamicState final
 
 struct GraphicsPipelineCreateInfo
 {
-    enum class Type
-    {
-        Traditional,
-        Mesh,
-    } type = Type::Traditional;
+    PipelineType type = PipelineType::Geometry;
 
     RenderPipelineDynamicState dynamicState = {};
     PrimitiveTopology          topology     = PrimitiveTopology::TriangleList;
@@ -116,17 +112,17 @@ class Pipeline : public ResourceHandle<VkPipeline>
 public:
     DescriptorSet* acquireSet(uint32_t idx) const;
 
-    ShaderProgram*      getProgram() const { return m_pProgram; }
-    VkPipelineBindPoint getBindPoint() const { return m_bindPoint; }
+    ShaderProgram* getProgram() const { return m_pProgram; }
+    PipelineType   getType() const { return m_type; }
 
 protected:
-    Pipeline(Device* pDevice, HandleType handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
 
-    Device*             m_pDevice   = {};
-    ShaderProgram*      m_pProgram  = {};
-    VkPipelineBindPoint m_bindPoint = {};
-    VkPipelineCache     m_cache     = {};
+    Device*         m_pDevice  = {};
+    ShaderProgram*  m_pProgram = {};
+    PipelineType    m_type     = {};
+    VkPipelineCache m_cache    = {};
 };
 
 class PipelineAllocator

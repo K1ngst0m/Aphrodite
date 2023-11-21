@@ -380,6 +380,14 @@ enum class BlendFactor : uint8_t
     OneMinusSrc1Alpha
 };
 
+enum class PipelineType : uint8_t
+{
+    Geometry,
+    Mesh,
+    Compute,
+    RayTracing,
+};
+
 struct VertexInput
 {
     struct VertexAttribute

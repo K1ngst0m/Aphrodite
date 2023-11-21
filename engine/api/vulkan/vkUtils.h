@@ -63,6 +63,7 @@ VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
 VkFormat              VkCast(Format format);
 VkIndexType           VkCast(IndexType indexType);
 VkCompareOp           VkCast(CompareOp compareOp);
+VkPipelineBindPoint   VkCast(PipelineType type);
 }  // namespace aph::vk::utils
 
 namespace aph
