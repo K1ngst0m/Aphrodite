@@ -4,11 +4,18 @@ aph_compiler_options(common)
 target_include_directories(common PUBLIC
   ${APH_ENGINE_DIR}
   ${APH_EXTERNAL_DIR}/unordered_dense/include
-  ${APH_EXTERNAL_DIR}/tracy/public
 
   PRIVATE
   ${APH_EXTERNAL_DIR}/backward-cpp/include
 )
+
+if (APH_ENABLE_TRACING)
+  target_include_directories(common PUBLIC
+    ${APH_EXTERNAL_DIR}/tracy/public
+  )
+  target_compile_definitions(common PRIVATE APH_ENABLE_TRACER)
+endif()
+
 target_link_libraries(common PUBLIC
   unordered_dense::unordered_dense
   Tracy::TracyClient

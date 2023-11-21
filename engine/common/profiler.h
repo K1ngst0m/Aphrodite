@@ -1,7 +1,7 @@
 #pragma once
 
-#define APH_WITH_TRACY
-#if defined(APH_WITH_TRACY)
+#define APH_ENABLE_TRACY
+#if defined(APH_ENABLE_TRACY)
     #include "tracy/Tracy.hpp"
     // predefined RGB colors for "heavy" point-of-interest operations
     #define APH_PROFILER_COLOR_WAIT 0xff0000
