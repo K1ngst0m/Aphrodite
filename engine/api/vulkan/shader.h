@@ -100,9 +100,27 @@ using ShaderMapList = HashMap<ShaderStage, Shader*>;
 
 struct ProgramCreateInfo
 {
-    Shader*               pVertex     = {};
-    Shader*               pFragment   = {};
-    Shader*               pCompute    = {};
+    union
+    {
+        struct
+        {
+            Shader* pMesh = {};
+            Shader* pTask = {};
+        } mesh;
+
+        struct
+        {
+            Shader* pCompute = {};
+        } compute;
+
+        struct
+        {
+            Shader* pVertex   = {};
+            Shader* pFragment = {};
+        } geometry;
+    };
+
+    PipelineType          type        = {};
     ImmutableSamplerBank* samplerBank = {};
 };
 
@@ -137,6 +155,7 @@ private:
     CombinedResourceLayout            m_combineLayout = {};
     SmallVector<VkDescriptorPoolSize> m_poolSize      = {};
     VertexInput                       m_vertexInput   = {};
+    PipelineType                      m_pipelineType  = {};
 };
 
 }  // namespace aph::vk

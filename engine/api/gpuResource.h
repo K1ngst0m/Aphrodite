@@ -382,6 +382,7 @@ enum class BlendFactor : uint8_t
 
 enum class PipelineType : uint8_t
 {
+    Undefined,
     Geometry,
     Mesh,
     Compute,

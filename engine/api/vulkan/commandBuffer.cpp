@@ -379,6 +379,10 @@ void CommandBuffer::flushGraphicsCommand()
     if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
     {
         APH_ASSERT(m_commandState.pProgram);
+        if (m_commandState.pProgram->getShader(ShaderStage::MS))
+        {
+
+        }
         aph::vk::GraphicsPipelineCreateInfo createInfo{
             .pProgram = m_commandState.pProgram,
         };
@@ -392,7 +396,7 @@ void CommandBuffer::flushGraphicsCommand()
             createInfo.vertexInput = m_commandState.pProgram->getVertexInput();
         }
 
-        for(auto colorAttachment : m_commandState.colorAttachments)
+        for(const auto& colorAttachment : m_commandState.colorAttachments)
         {
             createInfo.color.push_back({
                 .format = colorAttachment.image->getFormat(),

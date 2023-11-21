@@ -297,7 +297,7 @@ Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entryp
 }
 
 ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device)
+    m_pDevice(device), m_pipelineType(PipelineType::Geometry)
 {
     if(vs)
     {
@@ -312,7 +312,7 @@ ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const Immut
     createVertexInput();
 }
 
-ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device)
+ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) : m_pDevice(device), m_pipelineType(PipelineType::Compute)
 {
     m_shaders[ShaderStage::CS] = cs;
     combineLayout(samplerBank);

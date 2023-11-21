@@ -14,7 +14,6 @@
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
-#include "vkUtils.h"
 
 namespace aph::vk
 {
@@ -57,7 +56,7 @@ public:
     Result create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName = "");
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
-    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName = "");
+    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);

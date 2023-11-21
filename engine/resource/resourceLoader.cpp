@@ -551,17 +551,26 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     {
         APH_CHECK_RESULT(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .pVertex   = shaderList[ShaderStage::VS],
-                .pFragment = shaderList[ShaderStage::FS],
+                .geometry{.pVertex = shaderList[ShaderStage::VS], .pFragment = shaderList[ShaderStage::FS]},
+                .type = PipelineType::Geometry,
             },
             ppProgram));
+    }
+    else if(shaderList.contains(ShaderStage::MS))
+    {
+        vk::ProgramCreateInfo ci{
+            .mesh{.pMesh = shaderList[ShaderStage::MS]},
+            .type = PipelineType::Geometry,
+        };
+        APH_CHECK_RESULT(m_pDevice->create(ci, ppProgram));
     }
     // cs
     else if(shaderList.contains(ShaderStage::CS))
     {
         APH_CHECK_RESULT(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .pCompute = shaderList[ShaderStage::CS],
+                .compute{.pCompute = shaderList[ShaderStage::CS]},
+                .type = PipelineType::Compute,
             },
             ppProgram));
     }

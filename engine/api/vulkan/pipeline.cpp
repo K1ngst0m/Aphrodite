@@ -554,6 +554,7 @@ Pipeline* PipelineAllocator::create(const GraphicsPipelineCreateInfo& createInfo
     break;
     case PipelineType::Compute:
     case PipelineType::RayTracing:
+    default:
         APH_ASSERT(false);
         return nullptr;
     }

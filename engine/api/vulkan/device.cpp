@@ -178,22 +178,45 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName)
+Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    // TODO
-    if(createInfo.pVertex && createInfo.pFragment)
+    switch(createInfo.type)
     {
-        *ppPipeline =
-            m_resourcePool.program.allocate(this, createInfo.pVertex, createInfo.pFragment, createInfo.samplerBank);
-    }
-    else if(createInfo.pCompute)
+    case PipelineType::Geometry:
     {
-        *ppPipeline = m_resourcePool.program.allocate(this, createInfo.pCompute, createInfo.samplerBank);
+        auto vs = createInfo.geometry.pVertex;
+        auto fs = createInfo.geometry.pFragment;
+        APH_ASSERT(vs);
+        APH_ASSERT(fs);
+
+        *ppProgram = m_resourcePool.program.allocate(this, vs, fs, createInfo.samplerBank);
     }
-    else
+    break;
+    case PipelineType::Mesh:
     {
         APH_ASSERT(false);
+        return Result::RuntimeError;
+    }
+    break;
+    case PipelineType::Compute:
+    {
+        auto cs = createInfo.compute.pCompute;
+        APH_ASSERT(cs);
+        *ppProgram = m_resourcePool.program.allocate(this, cs, createInfo.samplerBank);
+    }
+    break;
+    case PipelineType::RayTracing:
+    {
+        APH_ASSERT(false);
+        return Result::RuntimeError;
+    }
+    break;
+    default:
+    {
+        APH_ASSERT(false);
+        return Result::RuntimeError;
+    }
     }
     return Result::Success;
 }
@@ -587,8 +610,8 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
                                    Fence* pFence)
 {
     APH_PROFILER_SCOPE();
-    CommandPool* commandPool = acquireCommandPool({queue, true});
-    CommandBuffer* cmd = nullptr;
+    CommandPool*   commandPool = acquireCommandPool({queue, true});
+    CommandBuffer* cmd         = nullptr;
     APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
 
     _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
