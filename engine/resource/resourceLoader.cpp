@@ -22,6 +22,7 @@ namespace loader::image
 
 inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY = false)
 {
+    APH_PROFILER_SCOPE();
     auto image = std::make_shared<aph::ImageInfo>();
     stbi_set_flip_vertically_on_load(isFlipY);
     int      width, height, channels;
@@ -56,6 +57,7 @@ inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, 
 
 inline std::array<std::shared_ptr<aph::ImageInfo>, 6> loadSkyboxFromFile(std::array<std::string_view, 6> paths)
 {
+    APH_PROFILER_SCOPE();
     std::array<std::shared_ptr<aph::ImageInfo>, 6> skyboxImages;
     for(std::size_t idx = 0; idx < 6; idx++)
     {
@@ -66,6 +68,7 @@ inline std::array<std::shared_ptr<aph::ImageInfo>, 6> loadSkyboxFromFile(std::ar
 
 inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
+    APH_PROFILER_SCOPE();
     if(!std::filesystem::exists(path))
     {
         CM_LOG_ERR("File does not exist: %s", path.c_str());
@@ -142,6 +145,7 @@ inline bool loadKTX(const std::filesystem::path& path, aph::vk::ImageCreateInfo&
 
 inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateInfo& outCI, std::vector<uint8_t>& data)
 {
+    APH_PROFILER_SCOPE();
     auto img = loadImageFromFile(path.c_str());
 
     if(img == nullptr)
@@ -170,6 +174,7 @@ namespace loader::shader
 
 std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
 {
+    APH_PROFILER_SCOPE();
     std::string source = aph::Filesystem::GetInstance().readFileToString(filename);
     APH_ASSERT(!source.empty());
     uint32_t              size = source.size();
@@ -180,6 +185,7 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
 
 std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderStage stage)
 {
+    APH_PROFILER_SCOPE();
     auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
@@ -267,6 +273,7 @@ namespace loader::geometry
 {
 inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry)
 {
+    APH_PROFILER_SCOPE();
     auto path = std::filesystem::path{info.path};
     auto ext  = path.extension();
 
@@ -353,6 +360,7 @@ namespace aph
 
 ImageContainerType GetImageContainerType(const std::filesystem::path& path)
 {
+    APH_PROFILER_SCOPE();
     if(path.extension() == ".ktx")
     {
         return ImageContainerType::Ktx;
@@ -384,6 +392,7 @@ ResourceLoader::~ResourceLoader() = default;
 
 void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
+    APH_PROFILER_SCOPE();
     std::filesystem::path path;
     std::vector<uint8_t>  data;
     vk::ImageCreateInfo   ci;
@@ -507,6 +516,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
 void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 {
+    APH_PROFILER_SCOPE();
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
     {
@@ -528,6 +538,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 
 void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
+    APH_PROFILER_SCOPE();
     HashMap<ShaderStage, vk::Shader*> shaderList;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
@@ -563,6 +574,7 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
 void ResourceLoader::cleanup()
 {
+    APH_PROFILER_SCOPE();
     for(const auto& [_, shaderModule] : m_shaderModuleCaches)
     {
         m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(),
@@ -572,6 +584,7 @@ void ResourceLoader::cleanup()
 
 void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 {
+    APH_PROFILER_SCOPE();
     auto path = std::filesystem::path{info.path};
     auto ext  = path.extension();
 
@@ -588,6 +601,7 @@ void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
+    APH_PROFILER_SCOPE();
     auto pBuffer    = *ppBuffer;
     auto domain     = pBuffer->getCreateInfo().domain;
     auto uploadSize = info.range.size;
@@ -602,14 +616,14 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
-            PROFILE_SCOPE("loading data by: vkCmdBufferUpdate.");
+            APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
             m_pDevice->executeSingleCommands(m_pQueue, [=](auto* cmd) {
                 cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data);
             });
         }
         else
         {
-            PROFILE_SCOPE("loading data by: staging copy.");
+            APH_PROFILER_SCOPE_NAME("loading data by: staging copy.");
             for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
             {
                 MemoryRange copyRange = {
@@ -641,13 +655,14 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
     }
     else
     {
-        PROFILE_SCOPE("loading data by: vkMapMemory.");
+        APH_PROFILER_SCOPE_NAME("loading data by: vkMapMemory.");
         writeBuffer(pBuffer, info.data, info.range);
     }
 }
 
 void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range)
 {
+    APH_PROFILER_SCOPE();
     auto domain = pBuffer->getCreateInfo().domain;
     APH_ASSERT(domain != BufferDomain::Device);
     if(range.size == 0)
@@ -668,6 +683,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 
 vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadInfo& info)
 {
+    APH_PROFILER_SCOPE();
     auto                     uuid = m_uuidGenerator.getUUID().str();
     VkShaderModuleCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,

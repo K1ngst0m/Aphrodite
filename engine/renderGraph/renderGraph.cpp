@@ -1,4 +1,5 @@
 #include "renderGraph.h"
+#include "common/profiler.h"
 #include "threads/taskManager.h"
 
 namespace aph
@@ -9,11 +10,13 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
     m_queueType(queueType),
     m_name(name)
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(pRDG);
 }
 
 PassBufferResource* RenderPass::addStorageBufferInput(const std::string& name, vk::Buffer* pBuffer)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
     res->addReadPass(this);
     res->addUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -32,6 +35,7 @@ PassBufferResource* RenderPass::addStorageBufferInput(const std::string& name, v
 
 PassBufferResource* RenderPass::addUniformBufferInput(const std::string& name, vk::Buffer* pBuffer)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
     res->addReadPass(this);
     res->addUsage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
@@ -50,6 +54,7 @@ PassBufferResource* RenderPass::addUniformBufferInput(const std::string& name, v
 
 PassBufferResource* RenderPass::addBufferOutput(const std::string& name)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
     res->addWritePass(this);
     res->addUsage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
@@ -62,6 +67,7 @@ PassBufferResource* RenderPass::addBufferOutput(const std::string& name)
 }
 PassImageResource* RenderPass::addTextureOutput(const std::string& name)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addWritePass(this);
     res->addUsage(VK_IMAGE_USAGE_STORAGE_BIT);
@@ -75,6 +81,7 @@ PassImageResource* RenderPass::addTextureOutput(const std::string& name)
 
 PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Image* pImage)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addReadPass(this);
     res->addUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
@@ -93,6 +100,7 @@ PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Imag
 
 PassImageResource* RenderPass::setColorOutput(const std::string& name, const PassImageInfo& info)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
@@ -104,6 +112,7 @@ PassImageResource* RenderPass::setColorOutput(const std::string& name, const Pas
 
 PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, const PassImageInfo& info)
 {
+    APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
@@ -115,6 +124,7 @@ PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, co
 
 RenderPass* RenderGraph::getPass(const std::string& name)
 {
+    APH_PROFILER_SCOPE();
     if(m_declareData.passMap.contains(name))
     {
         return m_declareData.passes[m_declareData.passMap[name]];
@@ -123,6 +133,7 @@ RenderPass* RenderGraph::getPass(const std::string& name)
 }
 RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
 {
+    APH_PROFILER_SCOPE();
     if(m_declareData.passMap.contains(name))
     {
         return m_declareData.passes[m_declareData.passMap[name]];
@@ -141,6 +152,7 @@ RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
 
 void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
+    APH_PROFILER_SCOPE();
     // TODO clear on demand
     {
         m_buildData.bufferBarriers.clear();
@@ -404,6 +416,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
 RenderGraph::~RenderGraph()
 {
+    APH_PROFILER_SCOPE();
     for(auto* res : m_declareData.resources)
     {
         if(!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
@@ -416,6 +429,7 @@ RenderGraph::~RenderGraph()
 
 PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* pBuffer)
 {
+    APH_PROFILER_SCOPE();
     auto res = getResource(name, PassResource::Type::Buffer);
     APH_ASSERT(!m_buildData.buffer.contains(res));
     res->addFlags(PASS_RESOURCE_EXTERNAL);
@@ -425,6 +439,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* p
 
 PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pImage)
 {
+    APH_PROFILER_SCOPE();
     auto res = getResource(name, PassResource::Type::Image);
     APH_ASSERT(!m_buildData.image.contains(res));
     res->addFlags(PASS_RESOURCE_EXTERNAL);
@@ -434,6 +449,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pI
 
 PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
 {
+    APH_PROFILER_SCOPE();
     if(m_declareData.resourceMap.contains(name))
     {
         auto res = m_declareData.resources.at(m_declareData.resourceMap[name]);
@@ -462,6 +478,7 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
 
 void RenderGraph::execute(vk::Fence* pFence)
 {
+    APH_PROFILER_SCOPE();
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
     // submit && present
@@ -536,16 +553,19 @@ void RenderGraph::execute(vk::Fence* pFence)
 
 vk::Image* RenderGraph::getBuildResource(PassImageResource* pResource) const
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(m_buildData.image.contains(pResource));
     return m_buildData.image.at(pResource);
 }
 vk::Buffer* RenderGraph::getBuildResource(PassBufferResource* pResource) const
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(m_buildData.buffer.contains(pResource));
     return m_buildData.buffer.at(pResource);
 }
 void RenderGraph::setBackBuffer(const std::string& backBuffer)
 {
+    APH_PROFILER_SCOPE();
     m_declareData.backBuffer = backBuffer;
 }
 }  // namespace aph

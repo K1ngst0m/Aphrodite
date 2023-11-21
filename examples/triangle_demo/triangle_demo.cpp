@@ -6,7 +6,7 @@ triangle_demo::triangle_demo() : aph::BaseApp("triangle_demo")
 
 void triangle_demo::init()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
 
     // setup window
     aph::RenderConfig config{
@@ -97,7 +97,7 @@ void triangle_demo::run()
 {
     while(m_pWSI->update())
     {
-        PROFILE_SCOPE("application loop");
+        APH_PROFILER_SCOPE_NAME("application loop");
         m_renderer->update();
         m_renderer->render();
     }
@@ -105,7 +105,7 @@ void triangle_demo::run()
 
 void triangle_demo::finish()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
@@ -114,13 +114,13 @@ void triangle_demo::finish()
 
 void triangle_demo::load()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_renderer->load();
 }
 
 void triangle_demo::unload()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_renderer->unload();
 }
 

@@ -6,7 +6,7 @@ basic_texture::basic_texture() : aph::BaseApp("base_texture")
 
 void basic_texture::init()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
 
     // setup window
     aph::RenderConfig config{
@@ -129,7 +129,7 @@ void basic_texture::run()
 {
     while(m_pWSI->update())
     {
-        PROFILE_SCOPE("application loop");
+        APH_PROFILER_SCOPE_NAME("application loop");
         m_modelMatrix = glm::rotate(m_modelMatrix, glm::radians(0.1f), {.0, .0, 1.0f});
         m_pResourceLoader->update({.data = &m_modelMatrix, .range = {0, sizeof(glm::mat4)}}, &m_pMatBuffer);
 
@@ -140,18 +140,18 @@ void basic_texture::run()
 
 void basic_texture::load()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_renderer->load();
 }
 void basic_texture::unload()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_renderer->unload();
 }
 
 void basic_texture::finish()
 {
-    PROFILE_FUNCTION();
+    APH_PROFILER_SCOPE();
     m_pDevice->waitIdle();
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);

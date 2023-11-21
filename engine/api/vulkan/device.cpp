@@ -1,4 +1,5 @@
 #include "device.h"
+#include "common/profiler.h"
 #include "deviceAllocator.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
@@ -28,6 +29,7 @@ Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice
 
 std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 {
+    APH_PROFILER_SCOPE();
     PhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
 
     const auto& queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
@@ -153,6 +155,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
 void Device::Destroy(Device* pDevice)
 {
+    APH_PROFILER_SCOPE();
     // TODO
     delete pDevice->m_resourcePool.gpu;
 
@@ -169,6 +172,7 @@ void Device::Destroy(Device* pDevice)
 
 VkFormat Device::getDepthFormat() const
 {
+    APH_PROFILER_SCOPE();
     return m_physicalDevice->findSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -176,6 +180,7 @@ VkFormat Device::getDepthFormat() const
 
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPipeline, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     // TODO
     if(createInfo.pVertex && createInfo.pFragment)
     {
@@ -195,6 +200,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPip
 
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     VkImageViewCreateInfo info{
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext    = nullptr,
@@ -223,6 +229,7 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
 
 Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     // create buffer
     VkBufferCreateInfo bufferInfo{
         .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -242,6 +249,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
 
 Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     VkImageCreateInfo imageCreateInfo{
         .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         .flags         = createInfo.flags,
@@ -270,11 +278,13 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
 
 void Device::destroy(ShaderProgram* pProgram)
 {
+    APH_PROFILER_SCOPE();
     m_resourcePool.program.free(pProgram);
 }
 
 void Device::destroy(Buffer* pBuffer)
 {
+    APH_PROFILER_SCOPE();
     m_resourcePool.gpu->free(pBuffer);
     m_table.vkDestroyBuffer(getHandle(), pBuffer->getHandle(), vkAllocator());
     m_resourcePool.buffer.free(pBuffer);
@@ -282,6 +292,7 @@ void Device::destroy(Buffer* pBuffer)
 
 void Device::destroy(Image* pImage)
 {
+    APH_PROFILER_SCOPE();
     m_resourcePool.gpu->free(pImage);
     m_table.vkDestroyImage(getHandle(), pImage->getHandle(), vkAllocator());
     m_resourcePool.image.free(pImage);
@@ -289,18 +300,21 @@ void Device::destroy(Image* pImage)
 
 void Device::destroy(ImageView* pImageView)
 {
+    APH_PROFILER_SCOPE();
     m_table.vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
     m_resourcePool.imageView.free(pImageView);
 }
 
 Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     *ppSwapchain = new SwapChain(createInfo, this);
     return Result::Success;
 }
 
 void Device::destroy(SwapChain* pSwapchain)
 {
+    APH_PROFILER_SCOPE();
     m_table.vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), gVkAllocator);
     delete pSwapchain;
     pSwapchain = nullptr;
@@ -308,17 +322,20 @@ void Device::destroy(SwapChain* pSwapchain)
 
 Queue* Device::getQueue(QueueType flags, uint32_t queueIndex)
 {
+    APH_PROFILER_SCOPE();
     const auto& supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
     return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
 }
 
 void Device::waitIdle()
 {
+    APH_PROFILER_SCOPE();
     m_table.vkDeviceWaitIdle(getHandle());
 }
 
 Pipeline* Device::acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
                                   reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
@@ -327,6 +344,7 @@ Pipeline* Device::acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, 
 
 Pipeline* Device::acquirePipeline(const ComputePipelineCreateInfo& createInfo, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
                                   reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
@@ -335,6 +353,7 @@ Pipeline* Device::acquirePipeline(const ComputePipelineCreateInfo& createInfo, s
 
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
 {
+    APH_PROFILER_SCOPE();
     SmallVector<VkFence> vkFences(fences.size());
     for(auto idx = 0; idx < fences.size(); ++idx)
     {
@@ -346,6 +365,7 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
 
 Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
 {
+    APH_PROFILER_SCOPE();
     if(range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;
@@ -360,6 +380,7 @@ Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
 }
 Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 {
+    APH_PROFILER_SCOPE();
     if(range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;
@@ -375,17 +396,20 @@ Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
 
 Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(ppMapped);
     return m_resourcePool.gpu->map(pBuffer, ppMapped);
 }
 
 void Device::unMapMemory(Buffer* pBuffer) const
 {
+    APH_PROFILER_SCOPE();
     m_resourcePool.gpu->unMap(pBuffer);
 }
 
 Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     VkSampler sampler = {};
     YcbcrData ycbcr;
 
@@ -474,12 +498,14 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
 
 void Device::destroy(Sampler* pSampler)
 {
+    APH_PROFILER_SCOPE();
     m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), gVkAllocator);
     m_resourcePool.sampler.free(pSampler);
 }
 
 double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
 {
+    APH_PROFILER_SCOPE();
     uint64_t firstTimeStamp, secondTimeStamp;
 
     m_table.vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
@@ -507,12 +533,14 @@ double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32
 }
 Semaphore* Device::acquireSemaphore()
 {
+    APH_PROFILER_SCOPE();
     Semaphore* semaphore;
     m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore);
     return semaphore;
 }
 Result Device::releaseSemaphore(Semaphore* semaphore)
 {
+    APH_PROFILER_SCOPE();
     if(semaphore != VK_NULL_HANDLE)
     {
         auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
@@ -525,12 +553,14 @@ Result Device::releaseSemaphore(Semaphore* semaphore)
 }
 Fence* Device::acquireFence(bool isSignaled)
 {
+    APH_PROFILER_SCOPE();
     Fence* pFence = {};
     m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled);
     return pFence;
 }
 Result Device::releaseFence(Fence* pFence)
 {
+    APH_PROFILER_SCOPE();
     auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
     if(res != VK_SUCCESS)
     {
@@ -540,6 +570,7 @@ Result Device::releaseFence(Fence* pFence)
 }
 CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 {
+    APH_PROFILER_SCOPE();
     CommandPool* pool = {};
     APH_CHECK_RESULT(m_resourcePool.commandPool.acquire(info, 1, &pool));
     pool->reset();
@@ -547,6 +578,7 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
 {
+    APH_PROFILER_SCOPE();
     m_resourcePool.commandPool.release(1, &pPool);
     return Result::Success;
 }
@@ -554,6 +586,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
                                    const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems,
                                    Fence* pFence)
 {
+    APH_PROFILER_SCOPE();
     CommandPool* commandPool = acquireCommandPool({queue, true});
     CommandBuffer* cmd = nullptr;
     APH_CHECK_RESULT(commandPool->allocate(1, &cmd));

@@ -1,10 +1,9 @@
 #include "renderer.h"
 #include "api/vulkan/device.h"
+#include "common/profiler.h"
 #include "renderer/renderer.h"
 #include "common/common.h"
 #include "common/logger.h"
-
-#include "volk.h"
 
 namespace aph::vk
 {
@@ -67,6 +66,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 
 Renderer::Renderer(const RenderConfig& config) : m_config(config)
 {
+    APH_PROFILER_SCOPE();
     m_wsi     = WSI::Create({config.width, config.height, (config.flags & RENDER_CFG_UI) != 0});
     auto& wsi = m_wsi;
     // create instance
@@ -172,6 +172,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
 Renderer::~Renderer()
 {
+    APH_PROFILER_SCOPE();
     for(auto& graph : m_frameGraph)
     {
         graph.reset();
@@ -186,6 +187,7 @@ Renderer::~Renderer()
 
 void Renderer::update()
 {
+    APH_PROFILER_SCOPE();
     if(m_config.flags & RENDER_CFG_UI)
     {
         m_pUI->update();
@@ -194,6 +196,7 @@ void Renderer::update()
 
 void Renderer::unload()
 {
+    APH_PROFILER_SCOPE();
     if(m_config.flags & RENDER_CFG_UI)
     {
         m_pUI->unload();
@@ -201,6 +204,7 @@ void Renderer::unload()
 };
 void Renderer::load()
 {
+    APH_PROFILER_SCOPE();
     if(m_config.flags & RENDER_CFG_UI)
     {
         m_pUI->load();
@@ -208,6 +212,7 @@ void Renderer::load()
 };
 void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 {
+    APH_PROFILER_SCOPE();
     for(auto& pGraph : m_frameGraph)
     {
         auto taskGroup = m_taskManager.createTaskGroup("frame graph recording");
@@ -221,6 +226,7 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 }
 void Renderer::render()
 {
+    APH_PROFILER_SCOPE();
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
     m_frameFence[m_frameIdx]->wait();
     m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx]);
