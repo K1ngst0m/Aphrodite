@@ -9,7 +9,7 @@
 ** Features
 
   - Vulkan
-  - Mesh Shading Pipeline
+  - Mesh Shading Support
   - Render Graph
   - Async Resource Management
   - Multi-threading, Job System
