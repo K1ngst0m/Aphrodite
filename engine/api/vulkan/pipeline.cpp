@@ -447,10 +447,11 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
         }
 
         // Not all attachments are valid. We need to create color blend attachments only for active attachments
-        VkPipelineColorBlendAttachmentState colorBlendAttachmentStates[APH_MAX_COLOR_ATTACHMENTS] = {};
-        VkFormat                            colorAttachmentFormats[APH_MAX_COLOR_ATTACHMENTS]     = {};
-
         const uint32_t numColorAttachments = createInfo.color.size();
+
+        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates{numColorAttachments};
+        std::vector<VkFormat>                            colorAttachmentFormats{numColorAttachments};
+
         for(uint32_t i = 0; i != numColorAttachments; i++)
         {
             const auto& attachment = createInfo.color[i];
@@ -526,7 +527,7 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
             .cullMode(utils::VkCast(createInfo.cullMode))
             .frontFace(utils::VkCast(createInfo.frontFaceWinding))
             .vertexInputState(ciVertexInputState)
-            .colorAttachments(colorBlendAttachmentStates, colorAttachmentFormats, numColorAttachments)
+            .colorAttachments(colorBlendAttachmentStates.data(), colorAttachmentFormats.data(), numColorAttachments)
             .depthAttachmentFormat(utils::VkCast(createInfo.depthFormat))
             .stencilAttachmentFormat(utils::VkCast(createInfo.stencilFormat))
             .build(m_pDevice, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle);

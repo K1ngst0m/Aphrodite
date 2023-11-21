@@ -15,15 +15,6 @@ class ShaderProgram;
 class Shader;
 struct ImmutableSamplerBank;
 
-enum
-{
-    APH_MAX_COLOR_ATTACHMENTS = 5
-};
-enum
-{
-    APH_MAX_MIP_LEVELS = 16
-};
-
 struct ColorAttachment
 {
     Format      format              = Format::Undefined;
