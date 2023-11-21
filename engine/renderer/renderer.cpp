@@ -115,7 +115,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
         const std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME,        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
             VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,  VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-            VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+            VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, VK_EXT_MESH_SHADER_EXTENSION_NAME,
         };
 
         uint32_t         gpuIdx = 0;

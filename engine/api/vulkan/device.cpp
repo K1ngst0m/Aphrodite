@@ -111,7 +111,14 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .hostQueryReset = VK_TRUE,
     };
 
-    supportedFeatures2.pNext    = &hostQueryResetFeature;
+    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeature{
+        .sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
+        .pNext      = &hostQueryResetFeature,
+        .taskShader = VK_TRUE,
+        .meshShader = VK_TRUE,
+    };
+
+    supportedFeatures2.pNext    = &meshShaderFeature;
     supportedFeatures2.features = supportedFeatures;
 
     // Create the Vulkan device.
