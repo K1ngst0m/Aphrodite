@@ -141,6 +141,7 @@ public:
     const ShaderMapList& getShaders() const { return m_shaders; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
     VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
+    PipelineType         getPipelineType() const { return m_pipelineType; }
 
 private:
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);

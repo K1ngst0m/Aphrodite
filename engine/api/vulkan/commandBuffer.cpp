@@ -378,22 +378,28 @@ void CommandBuffer::flushGraphicsCommand()
 
     if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
     {
-        APH_ASSERT(m_commandState.pProgram);
-        if (m_commandState.pProgram->getShader(ShaderStage::MS))
-        {
-
-        }
+        auto pProgram = m_commandState.pProgram;
+        APH_ASSERT(pProgram);
         aph::vk::GraphicsPipelineCreateInfo createInfo{
-            .pProgram = m_commandState.pProgram,
+            .type     = pProgram->getPipelineType(),
+            .pProgram = pProgram,
         };
 
-        if(m_commandState.vertexBinding.inputInfo.has_value())
+        if(pProgram->getPipelineType() == PipelineType::Geometry)
         {
-            createInfo.vertexInput = m_commandState.vertexBinding.inputInfo.value();
+            if(m_commandState.vertexBinding.inputInfo.has_value())
+            {
+                createInfo.vertexInput = m_commandState.vertexBinding.inputInfo.value();
+            }
+            else
+            {
+                createInfo.vertexInput = pProgram->getVertexInput();
+            }
         }
-        else
+        else if(pProgram->getPipelineType() != PipelineType::Mesh)
         {
-            createInfo.vertexInput = m_commandState.pProgram->getVertexInput();
+            APH_ASSERT(false);
+            CM_LOG_ERR("Invalid pipeline type.");
         }
 
         for(const auto& colorAttachment : m_commandState.colorAttachments)
