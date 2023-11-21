@@ -439,7 +439,7 @@ struct VertexInput
 };
 
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
-class ResourceHandle : public std::true_type
+class ResourceHandle
 {
 public:
     using HandleType     = T_Handle;

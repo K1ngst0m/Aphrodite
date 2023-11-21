@@ -122,7 +122,6 @@ protected:
     Device*         m_pDevice  = {};
     ShaderProgram*  m_pProgram = {};
     PipelineType    m_type     = {};
-    VkPipelineCache m_cache    = {};
 };
 
 class PipelineAllocator
