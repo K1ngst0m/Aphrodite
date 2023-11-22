@@ -354,20 +354,6 @@ void CommandBuffer::flushComputeCommand()
 }
 void CommandBuffer::flushGraphicsCommand()
 {
-    aph::utils::forEachBitRange(m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
-#ifdef APH_DEBUG
-        for(unsigned i = binding; i < binding + bindingCount; i++)
-            APH_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
-#endif
-        m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
-                                               m_commandState.vertexBinding.buffers + binding,
-                                               m_commandState.vertexBinding.offsets + binding);
-    });
-    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
-                                           m_commandState.vertexBinding.offsets);
-    m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
-                                         m_commandState.index.indexType);
-
     {
         auto&             state = m_commandState.depthState;
         const VkCompareOp op    = utils::VkCast(state.compareOp);
@@ -387,6 +373,21 @@ void CommandBuffer::flushGraphicsCommand()
 
         if(pProgram->getPipelineType() == PipelineType::Geometry)
         {
+            aph::utils::forEachBitRange(
+                m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
+#ifdef APH_DEBUG
+                    for(unsigned i = binding; i < binding + bindingCount; i++)
+                        APH_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
+#endif
+                    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
+                                                           m_commandState.vertexBinding.buffers + binding,
+                                                           m_commandState.vertexBinding.offsets + binding);
+                });
+            m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
+                                                   m_commandState.vertexBinding.offsets);
+            m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
+                                                 m_commandState.index.indexType);
+
             if(m_commandState.vertexBinding.inputInfo.has_value())
             {
                 createInfo.vertexInput = m_commandState.vertexBinding.inputInfo.value();
@@ -694,6 +695,7 @@ void CommandBuffer::setDepthState(const DepthState& state)
 }
 void CommandBuffer::draw(DispatchArguments args)
 {
+    flushGraphicsCommand();
     m_pDeviceTable->vkCmdDrawMeshTasksEXT(m_handle, args.x, args.y, args.z);
 }
 }  // namespace aph::vk

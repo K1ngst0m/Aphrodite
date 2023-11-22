@@ -568,7 +568,7 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
         APH_ASSERT(shaderList.contains(ShaderStage::FS));
         vk::ProgramCreateInfo ci{
             .mesh{.pMesh = shaderList[ShaderStage::MS], .pFragment = shaderList[ShaderStage::FS]},
-            .type = PipelineType::Geometry,
+            .type = PipelineType::Mesh,
         };
         if(shaderList.contains(ShaderStage::TS))
         {

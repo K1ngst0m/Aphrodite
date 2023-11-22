@@ -9,7 +9,7 @@ struct DummyPayLoad
 groupshared DummyPayLoad dummyPayLoad;
 
 [numthreads(1,1,1)]
-[shader("task")]
+[shader("amplification")]
 void taskMain()
 {
     DispatchMesh(3, 1, 1, dummyPayLoad);
@@ -22,7 +22,8 @@ struct UBO
     float4x4 view;
 };
 
-cbuffer ubo : register(b0) { UBO ubo; }
+[[vk::binding(0, 0)]]
+cbuffer ubo { UBO ubo; }
 
 struct VertexOutput
 {
@@ -45,11 +46,11 @@ static const float4 colors[3] = {
 [shader("mesh")]
 [outputtopology("triangle")]
 [numthreads(1, 1, 1)]
-void main(out indices uint3 triangles[1], out vertices VertexOutput vertices[3], uint3 DispatchThreadID : SV_DispatchThreadID)
+void meshMain(out indices uint3 triangles[1], out vertices VertexOutput vertices[3], uint3 DispatchThreadID : SV_DispatchThreadID)
 {
     float4x4 mvp = mul(ubo.projection, mul(ubo.view, ubo.model));
 
-    float4 offset = float4(0.0, 0.0, (float)DispatchThreadID, 0.0);
+    float4 offset = float4(0.0, 0.0, (float)DispatchThreadID[0], 0.0);
 
     SetMeshOutputCounts(3, 1);
     for (uint i = 0; i < 3; i++) {
@@ -67,7 +68,7 @@ struct VSOutput
 };
 
 [shader("fragment")]
-float4 main(VSOutput input) : SV_TARGET
+float4 fragmentMain(VSOutput input) : SV_TARGET
 {
     return float4(input.color);
 }

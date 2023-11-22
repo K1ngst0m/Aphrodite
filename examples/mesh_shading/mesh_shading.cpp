@@ -28,8 +28,18 @@ void mesh_shading::init()
             return true;
         });
 
-    // setup triangle
     {
+        // mvp uniform buffer
+        m_pResourceLoader->load(aph::BufferLoadInfo{.debugName = "mvp uniform data",
+                                                    .data      = &m_mvpData,
+                                                    .createInfo =
+                                                        {
+                                                            .size   = sizeof(UniformData),
+                                                            .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                                                            .domain = aph::BufferDomain::LinkedDeviceHost,
+                                                        }},
+                                &m_pMVPBuffer);
+
         // shader program
         m_pResourceLoader->loadAsync(
             aph::ShaderLoadInfo{.stageInfo =
@@ -54,8 +64,9 @@ void mesh_shading::init()
             graph->setBackBuffer("render target");
 
             drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->setResource({m_pMVPBuffer}, 0, 0);
                 pCmd->setProgram(m_pProgram);
-                pCmd->drawIndexed({3, 1, 0, 0, 0});
+                pCmd->draw(aph::DispatchArguments{1, 1, 1});
             });
         });
     }

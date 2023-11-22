@@ -21,8 +21,16 @@ public:
         uint32_t windowHeight = {900};
     } m_options;
 
+    struct UniformData
+    {
+        glm::mat4 projection;
+        glm::mat4 model;
+        glm::mat4 view;
+    };
+
 private:
-    aph::vk::ShaderProgram* m_pProgram  = {};
+    aph::vk::Buffer*        m_pMVPBuffer = {};
+    aph::vk::ShaderProgram* m_pProgram   = {};
 
 private:
     std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
@@ -32,7 +40,8 @@ private:
     aph::vk::SwapChain*                m_pSwapChain      = {};
 
 private:
-    aph::Timer m_timer;
+    aph::Timer  m_timer;
+    UniformData m_mvpData;
 };
 
 #endif  // SCENE_MANAGER_H_
