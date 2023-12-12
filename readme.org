@@ -114,7 +114,8 @@
     // render loop
     {
         ...
-        m_renderer->render("render target");
+        m_renderer->update();
+        m_renderer->render();
         ...
     }
     #+END_SRC
