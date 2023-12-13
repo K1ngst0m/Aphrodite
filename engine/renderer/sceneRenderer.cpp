@@ -255,11 +255,14 @@ void SceneRenderer::_initSet()
     {
         m_geometrySet = m_pipelines[PIPELINE_GRAPHICS_GEOMETRY]->getProgram()->getSetLayout(0)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
-            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
-            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, textureInfos.data(),
-                                     textureInfos.size()),
-            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5, &materialBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                     &transformBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2,
+                                     &cameraBufferInfo),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4,
+                                     textureInfos.data(), textureInfos.size()),
+            init::writeDescriptorSet(m_geometrySet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 5,
+                                     &materialBufferInfo),
         };
         vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
     }
@@ -288,8 +291,10 @@ void SceneRenderer::_initSet()
 
             m_postFxSets[idx] = m_pipelines[PIPELINE_COMPUTE_POSTFX]->getProgram()->getSetLayout(0)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &inputImageInfo),
-                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, &outputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0,
+                                         &inputImageInfo),
+                init::writeDescriptorSet(m_postFxSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1,
+                                         &outputImageInfo),
             };
             vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
         }
@@ -321,12 +326,18 @@ void SceneRenderer::_initSet()
                                                 .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
             m_gbufferSets[idx] = m_pipelines[PIPELINE_GRAPHICS_LIGHTING]->getProgram()->getSetLayout(2)->allocateSet();
             std::vector<VkWriteDescriptorSet> writes{
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0, &posImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1, &normalImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2, &albedoImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3, &mraoImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4, &emissiveImageInfo),
-                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5, &shadowMapInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0,
+                                         &posImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1,
+                                         &normalImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 2,
+                                         &albedoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 3,
+                                         &mraoImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 4,
+                                         &emissiveImageInfo),
+                init::writeDescriptorSet(m_gbufferSets[idx]->getHandle(), VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 5,
+                                         &shadowMapInfo),
             };
 
             vkUpdateDescriptorSets(m_pDevice->getHandle(), writes.size(), writes.data(), 0, nullptr);
@@ -337,7 +348,8 @@ void SceneRenderer::_initSet()
     {
         m_shadowSet = m_pipelines[PIPELINE_GRAPHICS_SHADOW]->getProgram()->getSetLayout(0)->allocateSet();
         std::vector<VkWriteDescriptorSet> writes{
-            init::writeDescriptorSet(m_shadowSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, &transformBufferInfo),
+            init::writeDescriptorSet(m_shadowSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+                                     &transformBufferInfo),
             init::writeDescriptorSet(m_shadowSet->getHandle(), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2, &cameraBufferInfo),
         };
 
@@ -634,11 +646,9 @@ void SceneRenderer::_initGpuResources()
             .format    = VK_FORMAT_R8G8B8A8_UNORM,
         };
 
-        aph::ImageLoadInfo loadInfo{
-            .data          = aph::asset::GetTextureDir() / "container2.png",
-            .containerType = aph::ImageContainerType::Png,
-            .pCreateInfo   = &createInfo
-        };
+        aph::ImageLoadInfo loadInfo{.data          = aph::asset::GetTextureDir() / "container2.png",
+                                    .containerType = aph::ImageContainerType::Png,
+                                    .pCreateInfo   = &createInfo};
         m_pResourceLoader->load(loadInfo, &texture);
         m_images[IMAGE_SCENE_TEXTURES].push_back(texture);
     }

@@ -322,27 +322,27 @@ VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineC
         .stencilAttachmentFormat = stencilAttachmentFormat_,
     };
 
-    bool isGeometryPipeline = type == PipelineType::Geometry;
-    const VkGraphicsPipelineCreateInfo ci = {
-        .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext               = &renderingInfo,
-        .flags               = 0,
-        .stageCount          = static_cast<uint32_t>(shaderStages_.size()),
-        .pStages             = shaderStages_.data(),
-        .pVertexInputState   = isGeometryPipeline ? &vertexInputState_ : nullptr,
-        .pInputAssemblyState = isGeometryPipeline ? &inputAssembly_ : nullptr,
-        .pTessellationState  = nullptr,
-        .pViewportState      = &viewportState,
-        .pRasterizationState = &rasterizationState_,
-        .pMultisampleState   = &multisampleState_,
-        .pDepthStencilState  = &depthStencilState_,
-        .pColorBlendState    = &colorBlendState,
-        .pDynamicState       = &dynamicState,
-        .layout              = pipelineLayout,
-        .renderPass          = VK_NULL_HANDLE,
-        .subpass             = 0,
-        .basePipelineHandle  = VK_NULL_HANDLE,
-        .basePipelineIndex   = -1,
+    bool                               isGeometryPipeline = type == PipelineType::Geometry;
+    const VkGraphicsPipelineCreateInfo ci                 = {
+                        .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                        .pNext               = &renderingInfo,
+                        .flags               = 0,
+                        .stageCount          = static_cast<uint32_t>(shaderStages_.size()),
+                        .pStages             = shaderStages_.data(),
+                        .pVertexInputState   = isGeometryPipeline ? &vertexInputState_ : nullptr,
+                        .pInputAssemblyState = isGeometryPipeline ? &inputAssembly_ : nullptr,
+                        .pTessellationState  = nullptr,
+                        .pViewportState      = &viewportState,
+                        .pRasterizationState = &rasterizationState_,
+                        .pMultisampleState   = &multisampleState_,
+                        .pDepthStencilState  = &depthStencilState_,
+                        .pColorBlendState    = &colorBlendState,
+                        .pDynamicState       = &dynamicState,
+                        .layout              = pipelineLayout,
+                        .renderPass          = VK_NULL_HANDLE,
+                        .subpass             = 0,
+                        .basePipelineHandle  = VK_NULL_HANDLE,
+                        .basePipelineIndex   = -1,
     };
 
     const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1,

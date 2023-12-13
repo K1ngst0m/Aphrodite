@@ -121,10 +121,10 @@ private:
     DescriptorSet*              m_skyboxSet{};
 
 private:
-    Scene*                      m_scene = {};
-    std::vector<SceneNode*>     m_meshNodeList;
-    std::vector<Camera*>        m_cameraList;
-    std::vector<Light*>         m_lightList;
+    Scene*                  m_scene = {};
+    std::vector<SceneNode*> m_meshNodeList;
+    std::vector<Camera*>    m_cameraList;
+    std::vector<Light*>     m_lightList;
 };
 }  // namespace aph::vk
 

@@ -22,8 +22,8 @@ private:
     Fence(Device* pDevice, HandleType handle);
     ~Fence();
 
-    Device*    m_pDevice      = {};
-    std::mutex m_lock         = {};
+    Device*    m_pDevice = {};
+    std::mutex m_lock    = {};
 };
 
 class Semaphore : public ResourceHandle<VkSemaphore>

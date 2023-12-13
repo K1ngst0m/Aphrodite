@@ -16,7 +16,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
     };
 
     std::vector<VkCommandBuffer> handles(count);
-    std::lock_guard<std::mutex> holder{m_lock};
+    std::lock_guard<std::mutex>  holder{m_lock};
     _VR(m_pDevice->getDeviceTable()->vkAllocateCommandBuffers(m_pDevice->getHandle(), &allocInfo, handles.data()));
 
     for(auto i = 0; i < count; i++)
@@ -45,7 +45,8 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
 void CommandPool::reset(bool freeMemory)
 {
     std::lock_guard<std::mutex> holder{m_lock};
-    m_pDevice->getDeviceTable()->vkResetCommandPool(m_pDevice->getHandle(), getHandle(), freeMemory ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
+    m_pDevice->getDeviceTable()->vkResetCommandPool(m_pDevice->getHandle(), getHandle(),
+                                                    freeMemory ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
 }
 
 CommandPool::~CommandPool() = default;

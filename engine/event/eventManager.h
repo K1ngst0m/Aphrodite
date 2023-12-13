@@ -57,7 +57,7 @@ public:
 
     void processAllAsync()
     {
-        auto  group       = m_taskManager.createTaskGroup("event processing");
+        auto group = m_taskManager.createTaskGroup("event processing");
         // TODO check that different event type don't cause data race
         for(auto& [_, value] : m_eventDataMap)
         {
@@ -70,7 +70,7 @@ public:
 
 private:
     TaskManager m_taskManager = {5, "Event Manager"};
-    std::mutex m_dataMapMutex;
+    std::mutex  m_dataMapMutex;
 
     HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
 

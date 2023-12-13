@@ -5,7 +5,8 @@
 namespace aph::vk
 {
 
-Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index, const VkQueueFamilyProperties& propertiesd) :
+Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index,
+             const VkQueueFamilyProperties& propertiesd) :
     ResourceHandle(handle),
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
@@ -81,7 +82,8 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
     }
 
     std::lock_guard<std::mutex> lock{m_lock};
-    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(), pFence ? pFence->getHandle() : VK_NULL_HANDLE);
+    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(),
+                                                                 pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
 
@@ -94,7 +96,7 @@ Result Queue::waitIdle()
 Result Queue::present(const VkPresentInfoKHR& presentInfo)
 {
     std::lock_guard<std::mutex> lock{m_lock};
-    VkResult result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(getHandle(), &presentInfo);
+    VkResult                    result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(getHandle(), &presentInfo);
     return utils::getResult(result);
 }
 }  // namespace aph::vk

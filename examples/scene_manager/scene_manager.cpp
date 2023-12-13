@@ -204,7 +204,7 @@ int main(int argc, char** argv)
         app.run();
         app.finish();
     }
-    catch(const aph::TracedException &ex)
+    catch(const aph::TracedException& ex)
     {
         CM_LOG_ERR("%s\n", ex.what());
     }

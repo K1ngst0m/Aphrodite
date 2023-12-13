@@ -119,9 +119,9 @@ protected:
     Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
 
-    Device*         m_pDevice  = {};
-    ShaderProgram*  m_pProgram = {};
-    PipelineType    m_type     = {};
+    Device*        m_pDevice  = {};
+    ShaderProgram* m_pProgram = {};
+    PipelineType   m_type     = {};
 };
 
 class PipelineAllocator

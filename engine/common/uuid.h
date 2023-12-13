@@ -280,6 +280,6 @@ private:
     std::shared_ptr<RNG>                    generator;
     std::uniform_int_distribution<uint64_t> distribution;
 };
-}  // namespace aph
+}  // namespace aph::uuid
 
 #endif

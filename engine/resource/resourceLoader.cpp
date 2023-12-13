@@ -444,8 +444,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        APH_VR(
-            m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
+        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
         writeBuffer(stagingBuffer, data.data());
     }
@@ -662,7 +661,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     };
 
                     APH_VR(m_pDevice->create(stagingCI, &stagingBuffer,
-                                                       std::string{info.debugName} + std::string{"_staging"}));
+                                             std::string{info.debugName} + std::string{"_staging"}));
 
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
                 }

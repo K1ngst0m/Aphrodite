@@ -31,13 +31,13 @@ TEST_CASE("Basic Usage of Singleton", "[Singleton]")
     {
         MySingleton& instance1 = MySingleton::GetInstance();
         MySingleton& instance2 = MySingleton::GetInstance();
-        REQUIRE(&instance1 == &instance2); // Compare addresses
+        REQUIRE(&instance1 == &instance2);  // Compare addresses
     }
 }
 
 TEST_CASE("Thread Safety of Singleton", "[Singleton]")
 {
-    std::vector<std::thread> threads;
+    std::vector<std::thread>  threads;
     std::vector<MySingleton*> addresses;
 
     // Mutex to ensure synchronized access to the addresses vector
@@ -45,24 +45,23 @@ TEST_CASE("Thread Safety of Singleton", "[Singleton]")
 
     const int numThreads = 100;
 
-    for (int i = 0; i < numThreads; ++i)
+    for(int i = 0; i < numThreads; ++i)
     {
-        threads.push_back(std::thread([&]()
-        {
-            MySingleton& instance = MySingleton::GetInstance();
+        threads.push_back(std::thread([&]() {
+            MySingleton&                instance = MySingleton::GetInstance();
             std::lock_guard<std::mutex> lock(mtx);
             addresses.push_back(&instance);
         }));
     }
 
-    for (auto& thread : threads)
+    for(auto& thread : threads)
     {
         thread.join();
     }
 
     SECTION("All threads get the same instance")
     {
-        for (std::size_t i = 1; i < addresses.size(); ++i)
+        for(std::size_t i = 1; i < addresses.size(); ++i)
         {
             REQUIRE(addresses[i] == addresses[0]);
         }

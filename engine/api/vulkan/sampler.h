@@ -48,6 +48,7 @@ struct YcbcrData
 class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
 {
     friend class ObjectPool<Sampler>;
+
 public:
     VkSamplerYcbcrConversion getConversion() const { return m_ycbcr.conversion; }
     bool                     isImmutable() const { return m_isImmutable; }

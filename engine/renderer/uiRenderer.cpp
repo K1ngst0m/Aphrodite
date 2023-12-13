@@ -146,7 +146,7 @@ void UI::update()
 uint32_t UI::addFont(std::string_view fontPath, float pixelSize)
 {
     ImGuiIO& io = ImGui::GetIO();
-    auto font = io.Fonts->AddFontFromFileTTF(aph::Filesystem::GetInstance().resolvePath(fontPath).c_str(), pixelSize);
+    auto font   = io.Fonts->AddFontFromFileTTF(aph::Filesystem::GetInstance().resolvePath(fontPath).c_str(), pixelSize);
     m_fonts.push_back(font);
     return m_fonts.size() - 1;
 }

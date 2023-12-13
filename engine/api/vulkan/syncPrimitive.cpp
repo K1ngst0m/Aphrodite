@@ -10,7 +10,9 @@ void Fence::reset()
 {
     m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &getHandle());
 }
-SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device) : m_pDevice(device), m_pDeviceTable(device->getDeviceTable())
+SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device) :
+    m_pDevice(device),
+    m_pDeviceTable(device->getDeviceTable())
 {
 }
 

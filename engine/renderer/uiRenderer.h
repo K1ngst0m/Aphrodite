@@ -59,7 +59,7 @@ private:
 
     Queue* m_pDefaultQueue = {};
 
-    bool     m_showDemoWindow = false;
+    bool m_showDemoWindow = false;
 
     std::vector<ImFont*> m_fonts;
 };

@@ -67,7 +67,7 @@ namespace aph::vk
 {
 
 #ifdef VK_CHECK_RESULT
-#    undef VK_CHECK_RESULT
+    #undef VK_CHECK_RESULT
 #endif
 
 #define VK_CHECK_RESULT(f) \
@@ -79,10 +79,7 @@ namespace aph::vk
         } \
     }
 
-Instance::Instance(const CreateInfoType& createInfo, HandleType handle):
-    ResourceHandle(handle, createInfo)
-{
-};
+Instance::Instance(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo){};
 
 VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
@@ -137,12 +134,12 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
         for(uint32_t idx = 0; auto& pd : physicalDevices)
         {
             auto pdImpl = std::make_unique<PhysicalDevice>(pd);
-        #if APH_DEBUG
+#if APH_DEBUG
             auto gpuSettings = pdImpl->getSettings();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuSettings.GpuVendorPreset.gpuName);
             VK_LOG_INFO("Driver Version: %s", gpuSettings.GpuVendorPreset.gpuDriverVersion);
-        #endif
+#endif
             idx++;
             instance->m_physicalDevices.push_back(std::move(pdImpl));
         }
@@ -168,8 +165,8 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
 #if defined(APH_DEBUG)
     {
-        VK_CHECK_RESULT(
-            createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(), &instance->m_debugMessenger));
+        VK_CHECK_RESULT(createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(),
+                                                     &instance->m_debugMessenger));
     }
 #endif
     // Return success.

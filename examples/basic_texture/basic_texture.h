@@ -37,6 +37,7 @@ private:
     aph::vk::SwapChain*                m_pSwapChain      = {};
 
     glm::mat4 m_modelMatrix{1.0f};
+
 private:
     aph::Timer m_timer;
 };
