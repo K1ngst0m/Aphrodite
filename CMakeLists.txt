@@ -3,8 +3,11 @@ cmake_minimum_required(VERSION 3.24)
 project(Aphrodite)
 
 # Provide an option to enable testing
-option(APH_ENABLE_TESTING "Enable testing for the APH project" ON)
-option(APH_ENABLE_TRACING "Enable tracer for the APH project" ON)
+option(APH_ENABLE_TESTING "Enable testing" ON)
+option(APH_ENABLE_TRACING "Enable tracer" ON)
+option(APH_ENABLE_TSAN "Enable thread sanitizer" OFF)
+option(APH_ENABLE_ASAN "Enable address sanitizer" OFF)
+option(APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
 
 set(APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake")
