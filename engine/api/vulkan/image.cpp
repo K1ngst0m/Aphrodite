@@ -49,7 +49,7 @@ ImageView* Image::getView(Format imageFormat)
         {
             createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         }
-        APH_CHECK_RESULT(m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]));
+        APH_VR(m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]));
     }
 
     return m_imageViewFormatMap[imageFormat];

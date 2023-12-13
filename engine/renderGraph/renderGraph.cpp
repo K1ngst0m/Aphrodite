@@ -273,7 +273,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 {
                     createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
                 }
-                APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
+                APH_VR(m_pDevice->create(createInfo, &pImage));
                 m_buildData.image[colorAttachment] = pImage;
             }
         }
@@ -291,7 +291,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     .imageType = VK_IMAGE_TYPE_2D,
                     .format    = depthAttachment->getInfo().format,
                 };
-                APH_CHECK_RESULT(m_pDevice->create(createInfo, &pImage));
+                APH_VR(m_pDevice->create(createInfo, &pImage));
                 m_buildData.image[depthAttachment] = pImage;
             }
         }
@@ -486,11 +486,11 @@ void RenderGraph::execute(vk::Fence* pFence)
         vk::Fence* frameFence = pFence ? pFence : m_buildData.frameFence;
         frameFence->reset();
 
-        APH_CHECK_RESULT(queue->submit(m_buildData.frameSubmitInfos, frameFence));
+        APH_VR(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
         if(m_buildData.pSwapchain)
         {
-            APH_CHECK_RESULT(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
+            APH_VR(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
 
             m_pDevice->executeSingleCommands(
                 queue,
@@ -540,13 +540,13 @@ void RenderGraph::execute(vk::Fence* pFence)
                 },
                 {m_buildData.renderSem}, {m_buildData.presentSem});
 
-            APH_CHECK_RESULT(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
+            APH_VR(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
         }
 
         if(!pFence)
         {
             frameFence->wait();
-            APH_CHECK_RESULT(m_pDevice->releaseFence(frameFence));
+            APH_VR(m_pDevice->releaseFence(frameFence));
         }
     }
 }

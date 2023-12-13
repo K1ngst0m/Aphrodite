@@ -444,7 +444,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             .domain = BufferDomain::Host,
         };
-        APH_CHECK_RESULT(
+        APH_VR(
             m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
 
         writeBuffer(stagingBuffer, data.data());
@@ -463,7 +463,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         }
 
-        APH_CHECK_RESULT(m_pDevice->create(imageCI, &image, info.debugName));
+        APH_VR(m_pDevice->create(imageCI, &image, info.debugName));
 
         auto queue = m_pQueue;
 
@@ -527,7 +527,7 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 
     {
         bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        APH_CHECK_RESULT(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
+        APH_VR(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
     }
 
     // update buffer
@@ -556,7 +556,7 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     if(shaderList.contains(ShaderStage::VS))
     {
         APH_ASSERT(shaderList.contains(ShaderStage::FS));
-        APH_CHECK_RESULT(m_pDevice->create(
+        APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
                 .geometry{.pVertex = shaderList[ShaderStage::VS], .pFragment = shaderList[ShaderStage::FS]},
                 .type = PipelineType::Geometry,
@@ -574,12 +574,12 @@ void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
         {
             ci.mesh.pTask = shaderList[ShaderStage::TS];
         }
-        APH_CHECK_RESULT(m_pDevice->create(ci, ppProgram));
+        APH_VR(m_pDevice->create(ci, ppProgram));
     }
     // cs
     else if(shaderList.contains(ShaderStage::CS))
     {
-        APH_CHECK_RESULT(m_pDevice->create(
+        APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
                 .compute{.pCompute = shaderList[ShaderStage::CS]},
                 .type = PipelineType::Compute,
@@ -661,7 +661,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                         .domain = BufferDomain::Host,
                     };
 
-                    APH_CHECK_RESULT(m_pDevice->create(stagingCI, &stagingBuffer,
+                    APH_VR(m_pDevice->create(stagingCI, &stagingBuffer,
                                                        std::string{info.debugName} + std::string{"_staging"}));
 
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
@@ -697,7 +697,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     }
 
     void* pMapped = {};
-    APH_CHECK_RESULT(m_pDevice->mapMemory(pBuffer, &pMapped));
+    APH_VR(m_pDevice->mapMemory(pBuffer, &pMapped));
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
 }

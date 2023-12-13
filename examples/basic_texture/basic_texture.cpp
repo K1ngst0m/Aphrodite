@@ -74,7 +74,7 @@ void basic_texture::init()
                                 &m_pMatBuffer);
 
         // image and sampler
-        APH_CHECK_RESULT(
+        APH_VR(
             m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
         m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
                                                         .createInfo =

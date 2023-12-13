@@ -130,7 +130,7 @@ void CommandPoolAllocator::clear()
 CommandBuffer* CommandPool::allocate()
 {
     CommandBuffer* pCmd = {};
-    APH_CHECK_RESULT(allocate(1, &pCmd));
+    APH_VR(allocate(1, &pCmd));
     return pCmd;
 }
 }  // namespace aph::vk

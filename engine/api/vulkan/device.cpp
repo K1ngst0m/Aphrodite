@@ -607,7 +607,7 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 {
     APH_PROFILER_SCOPE();
     CommandPool* pool = {};
-    APH_CHECK_RESULT(m_resourcePool.commandPool.acquire(info, 1, &pool));
+    APH_VR(m_resourcePool.commandPool.acquire(info, 1, &pool));
     pool->reset();
     return pool;
 }
@@ -624,7 +624,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
     APH_PROFILER_SCOPE();
     CommandPool*   commandPool = acquireCommandPool({queue, true});
     CommandBuffer* cmd         = nullptr;
-    APH_CHECK_RESULT(commandPool->allocate(1, &cmd));
+    APH_VR(commandPool->allocate(1, &cmd));
 
     _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
     func(cmd);
@@ -634,16 +634,16 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
     if(!pFence)
     {
         auto fence = acquireFence(false);
-        APH_CHECK_RESULT(queue->submit({submitInfo}, fence));
+        APH_VR(queue->submit({submitInfo}, fence));
         fence->wait();
     }
     else
     {
         pFence = acquireFence(false);
-        APH_CHECK_RESULT(queue->submit({submitInfo}, pFence));
+        APH_VR(queue->submit({submitInfo}, pFence));
     }
 
     commandPool->free(1, &cmd);
-    APH_CHECK_RESULT(releaseCommandPool(commandPool));
+    APH_VR(releaseCommandPool(commandPool));
 }
 }  // namespace aph::vk

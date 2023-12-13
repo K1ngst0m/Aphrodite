@@ -102,7 +102,7 @@ private:
     std::string m_msg;
 };
 
-#define APH_CHECK_RESULT(f) \
+#define APH_VR(f) \
     { \
         ::aph::Result res = (f); \
         if(!res.success()) \
