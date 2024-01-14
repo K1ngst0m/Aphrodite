@@ -105,8 +105,6 @@ WSI::~WSI()
 
 bool WSI::update()
 {
-    auto* window = static_cast<SDL_Window*>(m_window);
-
     SDL_Event windowEvent;
     while(SDL_PollEvent(&windowEvent))
     {
@@ -147,6 +145,7 @@ bool WSI::update()
             case SDL_KEYUP:
             {
                 state = KeyState::Released;
+                EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
             }
             break;
             }
