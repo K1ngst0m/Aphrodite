@@ -256,6 +256,14 @@ struct GPUVendorPreset
     uint32_t    rtCoresCount;
 };
 
+struct GPUFeature
+{
+    bool meshShading : 1                = false;
+    bool multiDrawIndirect : 1          = false;
+    bool tessellationSupported : 1      = false;
+    bool samplerAnisotropySupported : 1 = false;
+};
+
 struct GPUSettings
 {
     uint64_t            vram;
@@ -268,16 +276,7 @@ struct GPUSettings
     WaveOpsSupportFlags waveOpsSupportFlags;
     GPUVendorPreset     GpuVendorPreset;
 
-    uint8_t multiDrawIndirect : 1;
-    uint8_t indirectRootConstant : 1;
-    uint8_t builtinDrawID : 1;
-    uint8_t indirectCommandBuffer : 1;
-    uint8_t rovsSupported : 1;
-    uint8_t tessellationSupported : 1;
-    uint8_t geometryShaderSupported : 1;
-    uint8_t gpuBreadcrumbs : 1;
-    uint8_t hdrSupported : 1;
-    uint8_t samplerAnisotropySupported : 1;
+    GPUFeature feature;
 };
 
 struct DrawArguments

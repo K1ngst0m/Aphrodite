@@ -51,6 +51,33 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         };
     }
 
+    // verify feature support
+    {
+        const auto& requiredFeature = createInfo.enabledFeatures;
+        const auto& supportFeature  = physicalDevice->getSettings().feature;
+
+        if(requiredFeature.meshShading && !supportFeature.meshShading)
+        {
+            CM_LOG_ERR("Mesh Shading feature not supported!");
+            APH_ASSERT(false);
+        }
+        if(requiredFeature.multiDrawIndirect && !supportFeature.multiDrawIndirect)
+        {
+            CM_LOG_ERR("Multi Draw Indrect not supported!");
+            APH_ASSERT(false);
+        }
+        if(requiredFeature.tessellationSupported && !supportFeature.tessellationSupported)
+        {
+            CM_LOG_ERR("some gpu feature not supported!");
+            APH_ASSERT(false);
+        }
+        if(requiredFeature.samplerAnisotropySupported && !supportFeature.samplerAnisotropySupported)
+        {
+            CM_LOG_ERR("some gpu feature not supported!");
+            APH_ASSERT(false);
+        }
+    }
+
     // Enable all physical device available features.
     VkPhysicalDeviceFeatures supportedFeatures = {};
     vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
@@ -114,12 +141,40 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeature{
         .sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
         .pNext      = &hostQueryResetFeature,
-        .taskShader = VK_TRUE,
-        .meshShader = VK_TRUE,
+        .taskShader = VK_FALSE,
+        .meshShader = VK_FALSE,
     };
 
-    supportedFeatures2.pNext    = &meshShaderFeature;
+    VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeature{
+        .sType     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT,
+        .pNext     = &meshShaderFeature,
+        .multiDraw = VK_FALSE,
+    };
+
+    supportedFeatures2.pNext    = &multiDrawFeature;
     supportedFeatures2.features = supportedFeatures;
+
+    std::vector<const char*> exts;
+    {
+        const auto& feature = createInfo.enabledFeatures;
+        if(feature.meshShading)
+        {
+            meshShaderFeature.taskShader = VK_TRUE;
+            meshShaderFeature.meshShader = VK_TRUE;
+            exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+        }
+        if(feature.multiDrawIndirect)
+        {
+            multiDrawFeature.multiDraw = VK_TRUE;
+            exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        }
+
+        exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        exts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        exts.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+        exts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+        exts.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+    }
 
     // Create the Vulkan device.
     VkDeviceCreateInfo deviceCreateInfo{
@@ -127,8 +182,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .pNext                   = &supportedFeatures2,
         .queueCreateInfoCount    = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos       = queueCreateInfos.data(),
-        .enabledExtensionCount   = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
-        .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
+        .enabledExtensionCount   = static_cast<uint32_t>(exts.size()),
+        .ppEnabledExtensionNames = exts.data(),
     };
 
     VkDevice handle = VK_NULL_HANDLE;

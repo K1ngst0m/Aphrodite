@@ -36,7 +36,7 @@ using DeviceCreateFlags = uint32_t;
 struct DeviceCreateInfo
 {
     DeviceCreateFlags        flags;
-    std::vector<const char*> enabledExtensions;
+    GPUFeature               enabledFeatures;
     PhysicalDevice*          pPhysicalDevice = nullptr;
     Instance*                pInstance       = nullptr;
 };

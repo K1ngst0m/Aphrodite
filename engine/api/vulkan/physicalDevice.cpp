@@ -80,44 +80,53 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         auto* gpuProperties2 = &m_properties2;
         auto* gpuSettings    = &m_settings;
         auto* gpuFeatures    = &m_features2;
-        gpuSettings->uniformBufferAlignment =
-            (uint32_t)gpuProperties2->properties.limits.minUniformBufferOffsetAlignment;
-        gpuSettings->uploadBufferTextureAlignment =
-            (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyOffsetAlignment;
-        gpuSettings->uploadBufferTextureRowAlignment =
-            (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyRowPitchAlignment;
-        gpuSettings->maxVertexInputBindings = gpuProperties2->properties.limits.maxVertexInputBindings;
-        gpuSettings->multiDrawIndirect      = gpuFeatures->features.multiDrawIndirect;
-        gpuSettings->indirectRootConstant   = false;
-        gpuSettings->builtinDrawID          = true;
 
-        gpuSettings->waveLaneCount       = subgroupProperties.subgroupSize;
-        gpuSettings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
-        if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
-            gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
+        {
+            gpuSettings->uniformBufferAlignment =
+                (uint32_t)gpuProperties2->properties.limits.minUniformBufferOffsetAlignment;
+            gpuSettings->uploadBufferTextureAlignment =
+                (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyOffsetAlignment;
+            gpuSettings->uploadBufferTextureRowAlignment =
+                (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyRowPitchAlignment;
+            gpuSettings->maxVertexInputBindings = gpuProperties2->properties.limits.maxVertexInputBindings;
 
-#if VK_EXT_fragment_shader_interlock
-        gpuSettings->rovsSupported = (bool)fragmentShaderInterlockFeatures.fragmentShaderPixelInterlock;
-#endif
-        gpuSettings->tessellationSupported      = gpuFeatures->features.tessellationShader;
-        gpuSettings->geometryShaderSupported    = gpuFeatures->features.geometryShader;
-        gpuSettings->samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+            gpuSettings->waveLaneCount       = subgroupProperties.subgroupSize;
+            gpuSettings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
+            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
+                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
+        }
+
+        // feature support
+        {
+            gpuSettings->feature.multiDrawIndirect          = gpuFeatures->features.multiDrawIndirect;
+            gpuSettings->feature.tessellationSupported      = gpuFeatures->features.tessellationShader;
+            gpuSettings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+
+            gpuSettings->feature.meshShading = false;
+            for(const auto& ext : m_supportedExtensions)
+            {
+                if(ext == VK_EXT_MESH_SHADER_EXTENSION_NAME)
+                {
+                    gpuSettings->feature.meshShading = true;
+                }
+            }
+        }
 
         {
             char buffer[1024];
@@ -306,11 +315,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
         {
             flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
             flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            if(gpuSupport->geometryShaderSupported)
-            {
-                flags |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
-            }
-            if(gpuSupport->tessellationSupported)
+            if(gpuSupport->feature.tessellationSupported)
             {
                 flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
                 flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;

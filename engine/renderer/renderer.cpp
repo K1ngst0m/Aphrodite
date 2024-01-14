@@ -112,16 +112,16 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
     // create device
     {
-        std::vector<const char*> deviceExtensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME,        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-            VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME,  VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
-            VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME, VK_EXT_MESH_SHADER_EXTENSION_NAME,
-        };
-
         uint32_t         gpuIdx = 0;
         DeviceCreateInfo createInfo{
-            .enabledExtensions = std::move(deviceExtensions),
             // TODO select physical device
+            .enabledFeatures =
+                {
+                    .meshShading                = false,
+                    .multiDrawIndirect          = true,
+                    .tessellationSupported      = true,
+                    .samplerAnisotropySupported = true,
+                },
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
             .pInstance       = m_pInstance,
         };
