@@ -123,7 +123,6 @@
 ** Third Party Libraries
 
 - [[https://github.com/bombela/backward-cpp][backward-cpp]]
-- [[https://github.com/glfw/glfw][glfw]]
 - [[https://github.com/g-truc/glm][glm]]
 - [[https://github.com/ocornut/imgui][imgui]]
 - [[https://github.com/microsoft/mimalloc][mimalloc]]
@@ -132,4 +131,6 @@
 - [[https://github.com/syoyo/tinygltf][tinygltf]]
 - [[https://github.com/zeux/volk][volk]]
 - [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][vma]]
+- [[https://github.com/libsdl-org/SDL][SDL2]]
+- [[https://github.com/glfw/glfw][glfw]]
 
