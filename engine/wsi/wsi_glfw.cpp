@@ -73,15 +73,15 @@ static void cursorCB(GLFWwindow* window, double x, double y)
 {
     auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
-    static double lastX = wsi->getWidth() / 2;
-    static double lastY = wsi->getHeight() / 2;
+    static int lastX = wsi->getWidth() / 2;
+    static int lastY = wsi->getHeight() / 2;
 
-    double deltaX = lastX - x;
-    double deltaY = lastY - y;
-    lastX         = x;
-    lastY         = y;
+    int deltaX = lastX - (int)x;
+    int deltaY = lastY - (int)y;
+    lastX         = (int)x;
+    lastY         = (int)y;
 
-    EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+    EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, (int)x, (int)y});
 }
 
 static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)

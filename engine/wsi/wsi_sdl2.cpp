@@ -160,17 +160,17 @@ bool WSI::update()
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
+            CM_LOG_INFO("cursor pos: %d, %d", x, y);
 
-            static double lastX = getWidth() / 2;
-            static double lastY = getHeight() / 2;
+            static int lastX = getWidth() / 2;
+            static int lastY = getHeight() / 2;
 
-            double deltaX = lastX - x;
-            double deltaY = lastY - y;
-            lastX         = x;
-            lastY         = y;
+            int deltaX = lastX - x;
+            int deltaY = lastY - y;
+            lastX      = x;
+            lastY      = y;
 
-            EventManager::GetInstance().pushEvent(
-                MouseMoveEvent{deltaX, deltaY, static_cast<double>(x), static_cast<double>(y)});
+            EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
         }
         break;
         case SDL_MOUSEBUTTONDOWN:
@@ -194,8 +194,7 @@ bool WSI::update()
             int x, y;
             SDL_GetMouseState(&x, &y);
 
-            EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, static_cast<double>(x), static_cast<double>(y),
-                                                                   windowEvent.type == SDL_MOUSEBUTTONDOWN});
+            EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN});
         }
         break;
         case SDL_WINDOWEVENT_RESIZED:
