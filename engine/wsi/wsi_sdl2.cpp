@@ -12,8 +12,8 @@ using namespace aph;
 static Key SDL2KeyCast(int key)
 {
 #define k(sdlk, aph) \
-case SDLK_##sdlk: \
-    return Key::aph
+    case SDLK_##sdlk: \
+        return Key::aph
     switch(key)
     {
         k(a, A);
@@ -125,27 +125,30 @@ bool WSI::update()
             case SDL_KEYDOWN:
             {
                 state = KeyState::Pressed;
-            }
-            break;
-            case SDL_KEYUP:
-            {
+                CM_LOG_DEBUG("key down: %s", KeyToStr(gkey));
                 if(gkey == Key::Escape)
                 {
                     close();
+                    return false;
                 }
-                else if(gkey == Key::_1)
+
+                if(gkey == Key::_1)
                 {
                     // TODO cursor visible
                     static bool visible = false;
-                    visible = !visible;
+                    visible             = !visible;
                 }
                 else
                 {
                     EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
                 }
             }
+            break;
+            case SDL_KEYUP:
+            {
                 state = KeyState::Released;
-                break;
+            }
+            break;
             }
 
             if(windowEvent.key.repeat)
@@ -223,7 +226,6 @@ bool WSI::update()
 };
 
 void WSI::close(){
-
     // glfwSetWindowShouldClose((GLFWwindow*)m_window, true);
 };
 
