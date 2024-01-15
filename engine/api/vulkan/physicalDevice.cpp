@@ -33,10 +33,10 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
                 VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
                 m_queueFamilyMap[QueueType::Transfer].push_back(queueFamilyIndex);
             }
-            else
-            {
-                APH_ASSERT(false);
-            }
+            // else
+            // {
+            //     APH_ASSERT(false);
+            // }
         }
     }
     vkGetPhysicalDeviceProperties(getHandle(), &m_properties);
