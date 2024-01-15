@@ -18,9 +18,6 @@ Branch: vulkan-sdk-1.3.268
 [mimalloc]
 Branch: v2.1.2
 
-[glfw]
-Branch: 3.3.8
-
 [vma]
 Branch: master
 

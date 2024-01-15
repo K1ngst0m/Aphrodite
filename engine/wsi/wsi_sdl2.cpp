@@ -123,7 +123,6 @@ bool WSI::update()
             case SDL_KEYDOWN:
             {
                 state = KeyState::Pressed;
-                CM_LOG_DEBUG("key down: %s", KeyToStr(gkey));
                 if(gkey == Key::Escape)
                 {
                     close();
@@ -160,7 +159,6 @@ bool WSI::update()
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
-            CM_LOG_INFO("cursor pos: %d, %d", x, y);
 
             static int lastX = getWidth() / 2;
             static int lastY = getHeight() / 2;
