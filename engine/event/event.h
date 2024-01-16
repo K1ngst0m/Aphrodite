@@ -30,7 +30,7 @@ private:
 
 struct MouseButtonEvent : public Event
 {
-    MouseButtonEvent(MouseButton button, double absX, double absY, bool pressed) :
+    MouseButtonEvent(MouseButton button, int absX, int absY, bool pressed) :
         Event(EventType::MOUSE_BTN),
         m_button(button),
         m_absX(absX),
@@ -40,8 +40,8 @@ struct MouseButtonEvent : public Event
     }
 
     MouseButton m_button;
-    double      m_absX;
-    double      m_absY;
+    int         m_absX;
+    int         m_absY;
     bool        m_pressed;
 };
 

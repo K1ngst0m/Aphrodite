@@ -17,9 +17,8 @@ elseif(APH_WSI_BACKEND STREQUAL "SDL2")
       ${APH_ENGINE_WSI_DIR}/wsi_sdl2.cpp
       ${APH_ENGINE_WSI_DIR}/imgui_impl_sdl2.cpp
     )
-  # TODO SDL specific
   target_include_directories(wsi PRIVATE ${SDL2_INCLUDE_DIR})
-  target_link_libraries(wsi PRIVATE ${SDL2_LIBRARY})
+  target_link_libraries(wsi PRIVATE SDL2::SDL2)
 endif()
 
 aph_compiler_options(wsi)
