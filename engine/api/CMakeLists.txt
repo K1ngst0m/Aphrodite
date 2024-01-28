@@ -3,9 +3,9 @@ add_library(api STATIC ${API_VULKAN_SRC})
 aph_compiler_options(api)
 target_include_directories(api PRIVATE
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/spirv-cross
   ${APH_EXTERNAL_DIR}/vulkan
-  ${APH_EXTERNAL_DIR}/vma/include
+  ${spirv-cross_SOURCE_DIR}
+  ${vma_SOURCE_DIR}/include
 
   PUBLIC
   ${APH_EXTERNAL_DIR}/volk

@@ -3,5 +3,5 @@ add_library(aph_event STATIC ${APH_EVENT_SRC})
 aph_compiler_options(aph_event)
 target_include_directories(aph_event PRIVATE
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/unordered_dense/include
+  ${unordered_dense_SOURCE_DIR}/include
 )

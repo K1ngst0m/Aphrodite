@@ -3,6 +3,6 @@ add_library(threads STATIC ${API_THREADS_SRC})
 aph_compiler_options(threads)
 target_include_directories(threads PRIVATE
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/unordered_dense/include
+  ${unordered_dense_SOURCE_DIR}/include
 )
 target_link_libraries(threads PRIVATE common aph_allocator)

@@ -1,46 +1,62 @@
-# spirv-headers
-option(SPIRV_HEADERS_SKIP_INSTALL "" ON)
-option(SPIRV_HEADERS_SKIP_EXAMPLES "" ON)
+include(CPM)
 
-# spirv-tools
-option(SKIP_SPIRV_TOOLS_INSTALL "" ON)
+CPMAddPackage(
+  NAME tinygltf
+  GITHUB_REPOSITORY syoyo/tinygltf
+  VERSION 2.8.18
+  DOWNLOAD_ONLY True
+)
 
-# spirv-cross
-option(SPIRV_CROSS_CLI "" OFF)
-option(SPIRV_CROSS_ENABLE_TESTS "" OFF)
+CPMAddPackage(
+  NAME tracy
+  GITHUB_REPOSITORY wolfpld/tracy
+  VERSION 0.10
+)
 
-# glslang
-option(ENABLE_GLSLANG_INSTALL "" OFF)
-option(ENABLE_GLSLANG_BINARIES "" OFF)
-option(SKIP_GLSLANG_INSTALL "" ON)
+CPMAddPackage(
+  NAME glm
+  GITHUB_REPOSITORY g-truc/glm
+  GIT_TAG 0.9.9.8
+  OPTIONS
+      "GLM_TEST_ENABLE OFF"
+)
 
-# mimalloc
-option(MI_BUILD_SHARED "" OFF)
-option(MI_BUILD_OBJECT "" OFF)
-option(MI_BUILD_STATIC "" ON)
-option(MI_OVERRIDE "" ON)
+CPMAddPackage(
+  NAME unordered_dense
+  GITHUB_REPOSITORY martinus/unordered_dense
+  VERSION 4.1.2
+)
 
-# glfw
-option(GLFW_BUILD_DOCS "" OFF)
-option(GLFW_BUILD_TESTS "" OFF)
-option(GLFW_BUILD_EXAMPLES "" OFF)
-option(BUILD_SHARED_LIBS "" OFF)
+CPMAddPackage(
+  NAME vma
+  GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+  GIT_TAG master
+)
 
+CPMAddPackage(
+  NAME mimalloc
+  GITHUB_REPOSITORY microsoft/mimalloc
+  VERSION 2.1.2
+  OPTIONS
+      "MI_BUILD_SHARED OFF"
+      "MI_BUILD_OBJECT OFF"
+      "MI_BUILD_STATIC ON"
+      "MI_OVERRIDE ON"
+)
+
+CPMAddPackage(
+  NAME spirv-cross
+  GITHUB_REPOSITORY KhronosGroup/SPIRV-Cross
+  GIT_TAG vulkan-sdk-1.3.268
+  OPTIONS
+      "SPIRV_CROSS_CLI OFF"
+      "SPIRV_CROSS_ENABLE_TESTS ON"
+)
 
 add_subdirectory(${APH_EXTERNAL_DIR})
-add_subdirectory(${APH_EXTERNAL_DIR}/mimalloc EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/vma EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/spirv-cross EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/slang EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/tinygltf EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/glm EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/tracy EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/unordered_dense EXCLUDE_FROM_ALL)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(xcb REQUIRED IMPORTED_TARGET xcb)
 
 # wsi backend
 set(VALID_WSI_BACKENDS Auto GLFW SDL2)
@@ -49,8 +65,17 @@ if(NOT (APH_WSI_BACKEND IN_LIST VALID_WSI_BACKENDS))
 endif()
 
 if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
-    find_package(GLFW3)
-    if(NOT GLFW3_FOUND)
+    CPMAddPackage(
+            NAME GLFW
+            GITHUB_REPOSITORY glfw/glfw
+            GIT_TAG 3.3.9
+            OPTIONS
+                "GLFW_BUILD_TESTS OFF"
+                "GLFW_BUILD_EXAMPLES OFF"
+                "GLFW_BULID_DOCS OFF"
+                "GLFW_INSTALL OFF"
+    )
+    if(NOT GLFW_ADDED)
         message(FATAL_ERROR "GLFW3 library not found!")
     endif()
 elseif(APH_WSI_BACKEND STREQUAL "SDL2")

@@ -6,8 +6,8 @@ if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
       ${APH_ENGINE_WSI_DIR}/wsi_glfw.cpp
       ${APH_ENGINE_WSI_DIR}/imgui_impl_glfw.cpp
     )
-  target_include_directories(wsi PRIVATE ${GLFW3_INCLUDE_DIR})
-  target_link_libraries(wsi PRIVATE ${GLFW3_LIBRARY})
+  target_include_directories(wsi PRIVATE ${GLFW_SOURCE_DIR}/include)
+  target_link_libraries(wsi PRIVATE glfw)
 elseif(APH_WSI_BACKEND STREQUAL "SDL2")
     if(NOT SDL2_FOUND)
         message(FATAL_ERROR "SDL2 library not found!")

@@ -6,7 +6,7 @@ target_include_directories(resource PRIVATE
   ${APH_EXTERNAL_DIR}/slang
   ${APH_EXTERNAL_DIR}/tinyktx
   ${APH_EXTERNAL_DIR}/stb/include
-  ${APH_EXTERNAL_DIR}/tinygltf
+  ${tinygltf_SOURCE_DIR}
 )
 
 target_link_libraries(resource PRIVATE slang aph_filesystem common api)

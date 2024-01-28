@@ -20,7 +20,7 @@ target_include_directories(aph_engine INTERFACE
                                   ${APH_ENGINE_DIR}
                                   SYSTEM INTERFACE
                                   ${APH_EXTERNAL_DIR}/volk
-                                  ${APH_EXTERNAL_DIR}/unordered_dense/include
+                                  ${unordered_dense_SOURCE_DIR}/include
                                   )
 target_link_libraries(aph_engine INTERFACE
   common

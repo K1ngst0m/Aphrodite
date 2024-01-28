@@ -3,7 +3,7 @@ add_library(common STATIC ${APH_COMMON_SRC})
 aph_compiler_options(common)
 target_include_directories(common PUBLIC
   ${APH_ENGINE_DIR}
-  ${APH_EXTERNAL_DIR}/unordered_dense/include
+  ${unordered_dense_SOURCE_DIR}/include
 
   PRIVATE
   ${APH_EXTERNAL_DIR}/backward-cpp/include
