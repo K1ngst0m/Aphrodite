@@ -41,8 +41,6 @@ target_link_libraries(aph_engine INTERFACE
 
 target_link_libraries(aph_engine INTERFACE
   mimalloc-static
-  ${xcb_libraries}
-  ${cmake_thread_libs_init}
   dl
   dw
 )

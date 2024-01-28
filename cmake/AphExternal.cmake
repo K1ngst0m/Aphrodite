@@ -41,6 +41,8 @@ CPMAddPackage(
       "MI_BUILD_SHARED OFF"
       "MI_BUILD_OBJECT OFF"
       "MI_BUILD_STATIC ON"
+      "MI_BUILD_TESTS OFF"
+      "MI_USE_CXX ON"
       "MI_OVERRIDE ON"
 )
 
