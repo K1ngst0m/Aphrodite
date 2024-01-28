@@ -10,7 +10,7 @@ target_include_directories(common PUBLIC
 )
 
 if (APH_ENABLE_TRACING)
-  target_include_directories(common PUBLIC
+  target_include_directories(common SYSTEM PUBLIC
     ${APH_EXTERNAL_DIR}/tracy/public
   )
   target_compile_definitions(common PRIVATE APH_ENABLE_TRACER)

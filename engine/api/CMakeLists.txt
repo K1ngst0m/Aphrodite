@@ -1,15 +1,20 @@
 file(GLOB API_VULKAN_SRC ${APH_ENGINE_API_DIR}/vulkan/*.cpp)
 add_library(api STATIC ${API_VULKAN_SRC})
 aph_compiler_options(api)
+
 target_include_directories(api PRIVATE
   ${APH_ENGINE_DIR}
+)
+
+target_include_directories(api SYSTEM
+  PRIVATE
   ${APH_EXTERNAL_DIR}/vulkan
   ${spirv-cross_SOURCE_DIR}
   ${vma_SOURCE_DIR}/include
-
   PUBLIC
   ${APH_EXTERNAL_DIR}/volk
-)
+  )
+
 target_link_libraries(api PRIVATE
   common
   aph_allocator

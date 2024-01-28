@@ -42,7 +42,7 @@ public:
 
 public:
     bool     initUI();
-    void     deInitUI();
+    void     deInitUI() const;
     uint32_t getWidth() const { return m_width; }
     uint32_t getHeight() const { return m_height; }
     void     resize(uint32_t width, uint32_t height);

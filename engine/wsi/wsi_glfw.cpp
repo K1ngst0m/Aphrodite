@@ -139,7 +139,7 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, x, y, action == GLFW_PRESS});
+    EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, static_cast<int>(x), static_cast<int>(y), action == GLFW_PRESS});
 }
 
 static void errorCB(int error, const char* description)
@@ -255,7 +255,7 @@ bool WSI::initUI()
     return false;
 };
 
-void aph::WSI::deInitUI()
+void aph::WSI::deInitUI() const
 {
     if(m_enabledUI)
     {

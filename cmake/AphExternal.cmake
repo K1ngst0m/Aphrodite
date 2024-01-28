@@ -55,7 +55,6 @@ CPMAddPackage(
       "SPIRV_CROSS_ENABLE_TESTS ON"
 )
 
-add_subdirectory(${APH_EXTERNAL_DIR})
 add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/slang EXCLUDE_FROM_ALL)
