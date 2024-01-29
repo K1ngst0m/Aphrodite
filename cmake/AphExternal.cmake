@@ -47,6 +47,13 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  NAME slang
+  URL https://github.com/shader-slang/slang/releases/download/v2024.0.0/slang-2024.0.0-linux-x86_64.tar.gz
+  VERSION 2024.0.0
+  DOWNLOAD_ONLY YES
+)
+
+CPMAddPackage(
   NAME spirv-cross
   GITHUB_REPOSITORY KhronosGroup/SPIRV-Cross
   GIT_TAG vulkan-sdk-1.3.268
@@ -57,7 +64,6 @@ CPMAddPackage(
 
 add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
-add_subdirectory(${APH_EXTERNAL_DIR}/slang EXCLUDE_FROM_ALL)
 
 # wsi backend
 set(VALID_WSI_BACKENDS Auto GLFW SDL2)
