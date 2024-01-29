@@ -292,70 +292,121 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilMasks(VkStencilFaceFlags fa
 VkResult VulkanPipelineBuilder::build(Device* pDevice, VkPipelineCache pipelineCache, VkPipelineLayout pipelineLayout,
                                       VkPipeline* outPipeline, PipelineType type) noexcept
 {
-    const VkPipelineDynamicStateCreateInfo dynamicState = {
-        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = numDynamicStates_,
-        .pDynamicStates    = dynamicStates_,
-    };
-    // viewport and scissor can be NULL if the viewport state is dynamic
-    // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkPipelineViewportStateCreateInfo.html
-    const VkPipelineViewportStateCreateInfo viewportState = {
-        .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .viewportCount = 1,
-        .pViewports    = nullptr,
-        .scissorCount  = 1,
-        .pScissors     = nullptr,
-    };
-    const VkPipelineColorBlendStateCreateInfo colorBlendState = {
-        .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        .logicOpEnable   = VK_FALSE,
-        .logicOp         = VK_LOGIC_OP_COPY,
-        .attachmentCount = static_cast<uint32_t>(colorBlendAttachmentStates_.size()),
-        .pAttachments    = colorBlendAttachmentStates_.data(),
-    };
-    const VkPipelineRenderingCreateInfo renderingInfo = {
-        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
-        .pNext                   = nullptr,
-        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentFormats_.size()),
-        .pColorAttachmentFormats = colorAttachmentFormats_.data(),
-        .depthAttachmentFormat   = depthAttachmentFormat_,
-        .stencilAttachmentFormat = stencilAttachmentFormat_,
-    };
-
-    bool                               isGeometryPipeline = type == PipelineType::Geometry;
-    const VkGraphicsPipelineCreateInfo ci                 = {
-                        .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-                        .pNext               = &renderingInfo,
-                        .flags               = 0,
-                        .stageCount          = static_cast<uint32_t>(shaderStages_.size()),
-                        .pStages             = shaderStages_.data(),
-                        .pVertexInputState   = isGeometryPipeline ? &vertexInputState_ : nullptr,
-                        .pInputAssemblyState = isGeometryPipeline ? &inputAssembly_ : nullptr,
-                        .pTessellationState  = nullptr,
-                        .pViewportState      = &viewportState,
-                        .pRasterizationState = &rasterizationState_,
-                        .pMultisampleState   = &multisampleState_,
-                        .pDepthStencilState  = &depthStencilState_,
-                        .pColorBlendState    = &colorBlendState,
-                        .pDynamicState       = &dynamicState,
-                        .layout              = pipelineLayout,
-                        .renderPass          = VK_NULL_HANDLE,
-                        .subpass             = 0,
-                        .basePipelineHandle  = VK_NULL_HANDLE,
-                        .basePipelineIndex   = -1,
-    };
-
-    const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1,
-                                                                             &ci, vkAllocator(), outPipeline);
-
-    if(result != VK_SUCCESS)
+    if(type == PipelineType::Compute)
     {
+        return VK_SUCCESS;
+    }
+
+    if(type == PipelineType::RayTracing)
+    {
+        std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroups{};
+
+        VkRayTracingShaderGroupCreateInfoKHR shaderGroup{
+            .sType              = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+            .type               = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+            .generalShader      = 0,
+            .closestHitShader   = VK_SHADER_UNUSED_KHR,
+            .anyHitShader       = VK_SHADER_UNUSED_KHR,
+            .intersectionShader = VK_SHADER_UNUSED_KHR,
+        };
+        shaderGroups.push_back(shaderGroup);
+
+        shaderGroup.generalShader      = 1;
+        shaderGroup.closestHitShader   = VK_SHADER_UNUSED_KHR;
+        shaderGroup.anyHitShader       = VK_SHADER_UNUSED_KHR;
+        shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+        shaderGroups.push_back(shaderGroup);
+
+        shaderGroup.type               = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+        shaderGroup.generalShader      = VK_SHADER_UNUSED_KHR;
+        shaderGroup.closestHitShader   = 2;
+        shaderGroup.anyHitShader       = VK_SHADER_UNUSED_KHR;
+        shaderGroup.intersectionShader = VK_SHADER_UNUSED_KHR;
+        shaderGroups.push_back(shaderGroup);
+
+        VkRayTracingPipelineCreateInfoKHR rayTracingPipelineCI{
+            .sType                        = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+            .stageCount                   = static_cast<uint32_t>(shaderStages_.size()),
+            .pStages                      = shaderStages_.data(),
+            .groupCount                   = static_cast<uint32_t>(shaderGroups.size()),
+            .pGroups                      = shaderGroups.data(),
+            .maxPipelineRayRecursionDepth = 1,
+            .layout                       = pipelineLayout,
+        };
+        _VR(vkCreateRayTracingPipelinesKHR(pDevice->getHandle(), VK_NULL_HANDLE, VK_NULL_HANDLE, 1,
+                                           &rayTracingPipelineCI, nullptr, outPipeline));
+
+        const auto result = pDevice->getDeviceTable()->vkCreateRayTracingPipelinesKHR(
+            pDevice->getHandle(), nullptr, pipelineCache, 1, &rayTracingPipelineCI, vkAllocator(), outPipeline);
         return result;
     }
 
-    numPipelinesCreated_++;
+    {
+        const VkPipelineDynamicStateCreateInfo dynamicState = {
+            .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            .dynamicStateCount = numDynamicStates_,
+            .pDynamicStates    = dynamicStates_,
+        };
+        // viewport and scissor can be NULL if the viewport state is dynamic
+        // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkPipelineViewportStateCreateInfo.html
+        const VkPipelineViewportStateCreateInfo viewportState = {
+            .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .viewportCount = 1,
+            .pViewports    = nullptr,
+            .scissorCount  = 1,
+            .pScissors     = nullptr,
+        };
+        const VkPipelineColorBlendStateCreateInfo colorBlendState = {
+            .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .logicOpEnable   = VK_FALSE,
+            .logicOp         = VK_LOGIC_OP_COPY,
+            .attachmentCount = static_cast<uint32_t>(colorBlendAttachmentStates_.size()),
+            .pAttachments    = colorBlendAttachmentStates_.data(),
+        };
+        const VkPipelineRenderingCreateInfo renderingInfo = {
+            .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            .pNext                   = nullptr,
+            .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentFormats_.size()),
+            .pColorAttachmentFormats = colorAttachmentFormats_.data(),
+            .depthAttachmentFormat   = depthAttachmentFormat_,
+            .stencilAttachmentFormat = stencilAttachmentFormat_,
+        };
 
-    return VK_SUCCESS;
+        bool                               isGeometryPipeline = type == PipelineType::Geometry;
+        const VkGraphicsPipelineCreateInfo ci                 = {
+                            .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                            .pNext               = &renderingInfo,
+                            .flags               = 0,
+                            .stageCount          = static_cast<uint32_t>(shaderStages_.size()),
+                            .pStages             = shaderStages_.data(),
+                            .pVertexInputState   = isGeometryPipeline ? &vertexInputState_ : nullptr,
+                            .pInputAssemblyState = isGeometryPipeline ? &inputAssembly_ : nullptr,
+                            .pTessellationState  = nullptr,
+                            .pViewportState      = &viewportState,
+                            .pRasterizationState = &rasterizationState_,
+                            .pMultisampleState   = &multisampleState_,
+                            .pDepthStencilState  = &depthStencilState_,
+                            .pColorBlendState    = &colorBlendState,
+                            .pDynamicState       = &dynamicState,
+                            .layout              = pipelineLayout,
+                            .renderPass          = VK_NULL_HANDLE,
+                            .subpass             = 0,
+                            .basePipelineHandle  = VK_NULL_HANDLE,
+                            .basePipelineIndex   = -1,
+        };
+
+        const auto result = pDevice->getDeviceTable()->vkCreateGraphicsPipelines(pDevice->getHandle(), pipelineCache, 1,
+                                                                                 &ci, vkAllocator(), outPipeline);
+
+        if(result != VK_SUCCESS)
+        {
+            return result;
+        }
+
+        numPipelinesCreated_++;
+
+        return VK_SUCCESS;
+    }
 }
 
 Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle,
@@ -539,6 +590,8 @@ Pipeline* PipelineAllocator::create(const GraphicsPipelineCreateInfo& createInfo
         };
         builder.primitiveTopology(utils::VkCast(createInfo.topology));
         builder.vertexInputState(ciVertexInputState);
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                                   pProgram->getShader(ShaderStage::FS)->getHandle()));
     }
     break;
     case PipelineType::Mesh:
@@ -550,17 +603,50 @@ Pipeline* PipelineAllocator::create(const GraphicsPipelineCreateInfo& createInfo
             shaderStages.push_back(
                 init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_TASK_BIT_EXT, taskShader->getHandle()));
         }
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                                   pProgram->getShader(ShaderStage::FS)->getHandle()));
     }
     break;
     case PipelineType::Compute:
+    {
+        if(auto computeShader = pProgram->getShader(ShaderStage::CS); computeShader != nullptr)
+        {
+            shaderStages.push_back(
+                init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, computeShader->getHandle()));
+        }
+        else
+        {
+            APH_ASSERT(false);
+        }
+    }
+    break;
     case PipelineType::RayTracing:
+    {
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(
+            VK_SHADER_STAGE_RAYGEN_BIT_KHR, pProgram->getShader(ShaderStage::RayGen)->getHandle()));
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(
+            VK_SHADER_STAGE_MISS_BIT_KHR, pProgram->getShader(ShaderStage::Miss)->getHandle()));
+        shaderStages.push_back(init::pipelineShaderStageCreateInfo(
+            VK_SHADER_STAGE_ANY_HIT_BIT_KHR, pProgram->getShader(ShaderStage::AnyHit)->getHandle()));
+
+        if(auto closestHit = pProgram->getShader(ShaderStage::ClosestHit); closestHit != nullptr)
+        {
+            shaderStages.push_back(
+                init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, closestHit->getHandle()));
+        }
+        if(auto intersection = pProgram->getShader(ShaderStage::Intersection); intersection != nullptr)
+        {
+            shaderStages.push_back(
+                init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, intersection->getHandle()));
+        }
+    }
+    break;
     default:
+    {
         APH_ASSERT(false);
         return nullptr;
     }
-
-    shaderStages.push_back(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                               pProgram->getShader(ShaderStage::FS)->getHandle()));
+    }
     builder.shaderStage(shaderStages);
     builder.build(m_pDevice, VK_NULL_HANDLE, pProgram->getPipelineLayout(), &handle, createInfo.type);
 

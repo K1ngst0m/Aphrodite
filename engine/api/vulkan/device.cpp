@@ -76,9 +76,9 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             CM_LOG_ERR("Anisotropy sampling feature not supported!");
             APH_ASSERT(false);
         }
-        if (requiredFeature.raytracing && !supportFeature.raytracing)
+        if(requiredFeature.raytracing && !supportFeature.raytracing)
         {
-            CM_LOG_ERR("ray tracing feature not supported!");
+            CM_LOG_ERR("Ray tracing feature not supported!");
             APH_ASSERT(false);
         }
     }
@@ -156,7 +156,19 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .multiDraw = VK_FALSE,
     };
 
-    supportedFeatures2.pNext    = &multiDrawFeature;
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeature{
+        .sType              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR,
+        .pNext              = &multiDrawFeature,
+        .rayTracingPipeline = VK_FALSE,
+    };
+
+    VkPhysicalDeviceBufferDeviceAddressFeaturesEXT bufferDeviceAddressFeature{
+        .sType               = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES,
+        .pNext               = &rayTracingPipelineFeature,
+        .bufferDeviceAddress = VK_FALSE,
+    };
+
+    supportedFeatures2.pNext    = &bufferDeviceAddressFeature;
     supportedFeatures2.features = supportedFeatures;
 
     std::vector<const char*> exts;
@@ -172,6 +184,15 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         {
             multiDrawFeature.multiDraw = VK_TRUE;
             exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        }
+        if(feature.raytracing)
+        {
+            rayTracingPipelineFeature.rayTracingPipeline = VK_TRUE;
+            bufferDeviceAddressFeature.bufferDeviceAddress = VK_TRUE;
+            exts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            exts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+            exts.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
         }
 
         exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -336,8 +357,20 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
     VkBuffer buffer;
     m_table.vkCreateBuffer(getHandle(), &bufferInfo, vkAllocator(), &buffer);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName))
-    *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
+
+    uint64_t bufferDeviceAddress = 0;
+    *ppBuffer                    = m_resourcePool.buffer.allocate(createInfo, buffer, bufferDeviceAddress);
     m_resourcePool.gpu->allocate(*ppBuffer);
+
+    // get device address (make it optional)
+    if(bufferInfo.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT)
+    {
+        VkBufferDeviceAddressInfo bufferDeviceAI{
+            .sType  = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
+            .buffer = buffer,
+        };
+        bufferDeviceAddress = m_table.vkGetBufferDeviceAddress(getHandle(), &bufferDeviceAI);
+    }
 
     return Result::Success;
 }

@@ -26,11 +26,14 @@ class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
 public:
     uint32_t      getSize() const { return m_createInfo.size; }
     uint32_t      getOffset() const { return m_createInfo.alignment; }
+    uint32_t      getDeviceAddress() const { return m_deviceAddress; }
     ResourceState getResourceState() const { return m_resourceState; }
 
 private:
-    Buffer(const CreateInfoType& createInfo, HandleType handle);
+    Buffer(const CreateInfoType& createInfo, HandleType handle, uint64_t deviceAddress = 0);
     ResourceState m_resourceState = ResourceState::Undefined;
+
+    uint64_t m_deviceAddress;
 };
 }  // namespace aph::vk
 

@@ -112,12 +112,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
     // create device
     {
-        DeviceCreateInfo createInfo = {.enabledFeatures = {
-                                           .meshShading       = false,
-                                           .multiDrawIndirect = true,
-                                           .tessellation      = true,
-                                           .samplerAnisotropy = true,
-                                       }};
+        DeviceCreateInfo createInfo = {};
 
         if(config.pDeviceCreateInfo != nullptr)
         {
@@ -129,6 +124,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
         if(!createInfo.pPhysicalDevice)
         {
+            gpuIdx                     = 0;
             createInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
             createInfo.pInstance       = m_pInstance;
         }

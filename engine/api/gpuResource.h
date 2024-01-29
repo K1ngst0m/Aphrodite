@@ -23,23 +23,30 @@ enum class ImageDomain : uint8_t
 
 enum class QueueType : uint8_t
 {
-    Graphics = 0,
-    Compute  = 1,
-    Transfer = 2,
+    Unknown  = 0,
+    Graphics = 1,
+    Compute  = 2,
+    Transfer = 3,
     Count,
 };
 
 enum class ShaderStage : uint8_t
 {
-    NA  = 0,
-    VS  = 1,
-    TCS = 2,
-    TES = 3,
-    GS  = 4,
-    FS  = 5,
-    CS  = 6,
-    TS  = 7,
-    MS  = 8,
+    NA,
+    VS,
+    TCS,
+    TES,
+    GS,
+    FS,
+    CS,
+    TS,
+    MS,
+    RayGen,
+    AnyHit,
+    ClosestHit,
+    Miss,
+    Intersection,
+    Callable,
 };
 
 enum class ResourceState : uint32_t
@@ -258,10 +265,11 @@ struct GPUVendorPreset
 
 struct GPUFeature
 {
-    bool meshShading : 1                = false;
-    bool multiDrawIndirect : 1          = false;
+    bool meshShading : 1       = false;
+    bool multiDrawIndirect : 1 = false;
     bool tessellation : 1      = false;
     bool samplerAnisotropy : 1 = false;
+    bool raytracing : 1        = false;
 };
 
 struct GPUSettings

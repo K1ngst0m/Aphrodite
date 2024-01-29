@@ -27,7 +27,7 @@ Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint
     }
     else
     {
-        APH_ASSERT(false);
+        m_type = QueueType::Unknown;
     }
 }
 

@@ -336,6 +336,19 @@ ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerB
     createPipelineLayout(samplerBank);
 }
 
+ShaderProgram::ShaderProgram(Device* device, Shader* general, Shader* closestHit, Shader* anyHit, Shader* intersection,
+                             const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::RayTracing)
+{
+    m_shaders[ShaderStage::RayGen]       = general;
+    m_shaders[ShaderStage::ClosestHit]   = closestHit;
+    m_shaders[ShaderStage::AnyHit]       = anyHit;
+    m_shaders[ShaderStage::Intersection] = intersection;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
+
 ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
 {
     using namespace spirv_cross;

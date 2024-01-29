@@ -114,16 +114,21 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 
         // feature support
         {
-            gpuSettings->feature.multiDrawIndirect          = gpuFeatures->features.multiDrawIndirect;
+            gpuSettings->feature.multiDrawIndirect = gpuFeatures->features.multiDrawIndirect;
             gpuSettings->feature.tessellation      = gpuFeatures->features.tessellationShader;
             gpuSettings->feature.samplerAnisotropy = gpuFeatures->features.samplerAnisotropy;
 
             gpuSettings->feature.meshShading = false;
+            gpuSettings->feature.raytracing  = false;
             for(const auto& ext : m_supportedExtensions)
             {
                 if(ext == VK_EXT_MESH_SHADER_EXTENSION_NAME)
                 {
                     gpuSettings->feature.meshShading = true;
+                }
+                if(ext == VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME)
+                {
+                    gpuSettings->feature.raytracing = true;
                 }
             }
         }

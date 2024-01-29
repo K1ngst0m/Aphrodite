@@ -35,10 +35,10 @@ using DeviceCreateFlags = uint32_t;
 
 struct DeviceCreateInfo
 {
-    DeviceCreateFlags        flags;
-    GPUFeature               enabledFeatures;
-    PhysicalDevice*          pPhysicalDevice = nullptr;
-    Instance*                pInstance       = nullptr;
+    DeviceCreateFlags flags;
+    GPUFeature        enabledFeatures;
+    PhysicalDevice*   pPhysicalDevice = nullptr;
+    Instance*         pInstance       = nullptr;
 };
 
 class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>

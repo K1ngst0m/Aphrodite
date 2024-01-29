@@ -133,6 +133,8 @@ public:
     ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
     ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
+    ShaderProgram(Device* device, Shader* general, Shader* closestHit, Shader* anyHit, Shader* intersection,
+                  const ImmutableSamplerBank* samplerBank);
 
     ~ShaderProgram();
 

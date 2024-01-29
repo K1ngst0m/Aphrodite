@@ -53,12 +53,14 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
         .vkGetDeviceImageMemoryRequirements      = table.vkGetDeviceImageMemoryRequirements,
     };
 
-    VmaAllocatorCreateInfo allocatorCreateInfo = {};
-    allocatorCreateInfo.vulkanApiVersion       = VK_API_VERSION_1_3;
-    allocatorCreateInfo.physicalDevice         = pDevice->getPhysicalDevice()->getHandle();
-    allocatorCreateInfo.device                 = pDevice->getHandle();
-    allocatorCreateInfo.instance               = pInstance->getHandle();
-    allocatorCreateInfo.pVulkanFunctions       = &vulkanFunctions;
+    VmaAllocatorCreateInfo allocatorCreateInfo = {
+        .flags            = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
+        .physicalDevice   = pDevice->getPhysicalDevice()->getHandle(),
+        .device           = pDevice->getHandle(),
+        .pVulkanFunctions = &vulkanFunctions,
+        .instance         = pInstance->getHandle(),
+        .vulkanApiVersion = VK_API_VERSION_1_3,
+    };
 
     vmaCreateAllocator(&allocatorCreateInfo, &m_allocator);
 }
@@ -80,9 +82,11 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
         usage = m_bufferDomainUsageMap.at(bufferCI.domain);
     }
 
-    VmaAllocationCreateInfo allocCreateInfo = {.usage = usage};
-    VmaAllocationInfo       allocInfo;
-    VmaAllocation           allocation;
+    VmaAllocationCreateInfo allocCreateInfo = {
+        .usage = usage,
+    };
+    VmaAllocationInfo allocInfo;
+    VmaAllocation     allocation;
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindBufferMemory(m_allocator, allocation, pBuffer->getHandle());
     DeviceAllocation* pAllocation = new VMADeviceAllocation{allocation, allocInfo};
