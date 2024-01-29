@@ -1,5 +1,7 @@
 include(CPM)
 
+set(VK_SDK_VERSION 1.3.275)
+
 CPMAddPackage(
   NAME tinygltf
   GITHUB_REPOSITORY syoyo/tinygltf
@@ -56,13 +58,25 @@ CPMAddPackage(
 CPMAddPackage(
   NAME spirv-cross
   GITHUB_REPOSITORY KhronosGroup/SPIRV-Cross
-  GIT_TAG vulkan-sdk-1.3.268
+  GIT_TAG vulkan-sdk-${VK_SDK_VERSION}
   OPTIONS
       "SPIRV_CROSS_CLI OFF"
       "SPIRV_CROSS_ENABLE_TESTS ON"
 )
 
-add_subdirectory(${APH_EXTERNAL_DIR}/volk EXCLUDE_FROM_ALL)
+CPMAddPackage(
+  NAME vulkan-headers
+  GITHUB_REPOSITORY KhronosGroup/Vulkan-Headers
+  GIT_TAG vulkan-sdk-${VK_SDK_VERSION}
+  DOWNLOAD_ONLY YES
+)
+
+CPMAddPackage(
+  NAME volk
+  GITHUB_REPOSITORY zeux/volk
+  GIT_TAG vulkan-sdk-${VK_SDK_VERSION}
+)
+
 add_subdirectory(${APH_EXTERNAL_DIR}/imgui EXCLUDE_FROM_ALL)
 
 # wsi backend

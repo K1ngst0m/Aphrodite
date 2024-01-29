@@ -8,11 +8,11 @@ target_include_directories(api PRIVATE
 
 target_include_directories(api SYSTEM
   PRIVATE
-  ${APH_EXTERNAL_DIR}/vulkan
   ${spirv-cross_SOURCE_DIR}
   ${vma_SOURCE_DIR}/include
   PUBLIC
-  ${APH_EXTERNAL_DIR}/volk
+  ${vulkan-headers_SOURCE_DIR}/include
+  ${volk_SOURCE_DIR}
   )
 
 target_link_libraries(api PRIVATE
