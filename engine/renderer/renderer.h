@@ -24,10 +24,11 @@ using RenderConfigFlags = uint32_t;
 
 struct RenderConfig
 {
-    RenderConfigFlags flags     = RENDER_CFG_ALL;
-    uint32_t          maxFrames = {2};
-    uint32_t          width;
-    uint32_t          height;
+    RenderConfigFlags     flags             = RENDER_CFG_ALL;
+    vk::DeviceCreateInfo* pDeviceCreateInfo = nullptr;
+    uint32_t              maxFrames         = {2};
+    uint32_t              width;
+    uint32_t              height;
 };
 }  // namespace aph
 

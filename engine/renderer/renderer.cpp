@@ -112,19 +112,26 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
     // create device
     {
-        uint32_t         gpuIdx = 0;
-        DeviceCreateInfo createInfo{
-            // TODO select physical device
-            .enabledFeatures =
-                {
-                    .meshShading                = false,
-                    .multiDrawIndirect          = true,
-                    .tessellationSupported      = true,
-                    .samplerAnisotropySupported = true,
-                },
-            .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
-            .pInstance       = m_pInstance,
-        };
+        DeviceCreateInfo createInfo = {.enabledFeatures = {
+                                           .meshShading       = false,
+                                           .multiDrawIndirect = true,
+                                           .tessellation      = true,
+                                           .samplerAnisotropy = true,
+                                       }};
+
+        if(config.pDeviceCreateInfo != nullptr)
+        {
+            createInfo = *config.pDeviceCreateInfo;
+        }
+
+        // TODO gpu selection
+        uint32_t gpuIdx = 0;
+
+        if(!createInfo.pPhysicalDevice)
+        {
+            createInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
+            createInfo.pInstance       = m_pInstance;
+        }
 
         m_pDevice = Device::Create(createInfo);
         VK_LOG_INFO("Select Device [%d].", gpuIdx);

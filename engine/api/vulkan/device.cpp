@@ -66,14 +66,19 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             CM_LOG_ERR("Multi Draw Indrect not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.tessellationSupported && !supportFeature.tessellationSupported)
+        if(requiredFeature.tessellation && !supportFeature.tessellation)
         {
-            CM_LOG_ERR("some gpu feature not supported!");
+            CM_LOG_ERR("Tessellation feature not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.samplerAnisotropySupported && !supportFeature.samplerAnisotropySupported)
+        if(requiredFeature.samplerAnisotropy && !supportFeature.samplerAnisotropy)
         {
-            CM_LOG_ERR("some gpu feature not supported!");
+            CM_LOG_ERR("Anisotropy sampling feature not supported!");
+            APH_ASSERT(false);
+        }
+        if (requiredFeature.raytracing && !supportFeature.raytracing)
+        {
+            CM_LOG_ERR("ray tracing feature not supported!");
             APH_ASSERT(false);
         }
     }

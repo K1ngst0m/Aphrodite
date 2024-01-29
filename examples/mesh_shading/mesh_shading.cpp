@@ -15,6 +15,8 @@ void mesh_shading::init()
         .width     = m_options.windowWidth,
         .height    = m_options.windowHeight,
     };
+    aph::vk::DeviceCreateInfo deviceCI{.enabledFeatures = {.meshShading = true}};
+    config.pDeviceCreateInfo = &deviceCI;
 
     m_renderer        = aph::vk::Renderer::Create(config);
     m_pDevice         = m_renderer->getDevice();

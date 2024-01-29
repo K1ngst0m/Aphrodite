@@ -115,8 +115,8 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         // feature support
         {
             gpuSettings->feature.multiDrawIndirect          = gpuFeatures->features.multiDrawIndirect;
-            gpuSettings->feature.tessellationSupported      = gpuFeatures->features.tessellationShader;
-            gpuSettings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+            gpuSettings->feature.tessellation      = gpuFeatures->features.tessellationShader;
+            gpuSettings->feature.samplerAnisotropy = gpuFeatures->features.samplerAnisotropy;
 
             gpuSettings->feature.meshShading = false;
             for(const auto& ext : m_supportedExtensions)
@@ -315,7 +315,7 @@ VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, Vk
         {
             flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
             flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            if(gpuSupport->feature.tessellationSupported)
+            if(gpuSupport->feature.tessellation)
             {
                 flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
                 flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;

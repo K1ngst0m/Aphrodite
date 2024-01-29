@@ -260,8 +260,8 @@ struct GPUFeature
 {
     bool meshShading : 1                = false;
     bool multiDrawIndirect : 1          = false;
-    bool tessellationSupported : 1      = false;
-    bool samplerAnisotropySupported : 1 = false;
+    bool tessellation : 1      = false;
+    bool samplerAnisotropy : 1 = false;
 };
 
 struct GPUSettings
