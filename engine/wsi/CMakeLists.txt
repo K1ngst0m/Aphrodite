@@ -1,6 +1,6 @@
 add_library(wsi STATIC ${APH_WSI_SRC})
 
-if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
+if(APH_WSI_BACKEND STREQUAL "GLFW")
     add_compile_definitions(WSI_USE_GLFW)
     target_sources(wsi PRIVATE
       ${APH_ENGINE_WSI_DIR}/wsi_glfw.cpp

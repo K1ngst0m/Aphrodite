@@ -85,7 +85,12 @@ if(NOT (APH_WSI_BACKEND IN_LIST VALID_WSI_BACKENDS))
     message(FATAL_ERROR "Wrong value passed for APH_WSI_BACKEND, use one of: Auto, GLFW, SDL2")
 endif()
 
-if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
+if(APH_WSI_BACKEND STREQUAL "Auto")
+  message("WSI backend is set to 'Auto', choose the GLFW by default")
+  set(APH_WSI_BACKEND "GLFW")
+endif()
+
+if(APH_WSI_BACKEND STREQUAL "GLFW")
     CPMAddPackage(
             NAME GLFW
             GITHUB_REPOSITORY glfw/glfw
@@ -102,8 +107,8 @@ if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
 elseif(APH_WSI_BACKEND STREQUAL "SDL2")
     CPMAddPackage(
       NAME SDL2
-      VERSION 2.29.3
-      URL https://libsdl.org/release/SDL2-2.29.3.zip
+      VERSION 2.28.5
+      URL https://github.com/libsdl-org/SDL/releases/download/release-2.28.5/SDL2-2.28.5.tar.gz
     )
     if(NOT SDL2_ADDED)
         message(FATAL_ERROR "SDL2 library not found!")
