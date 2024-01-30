@@ -261,7 +261,7 @@ bool WSI::initUI()
     return false;
 };
 
-void WSI::deInitUI()
+void WSI::deInitUI() const
 {
     if(m_enabledUI)
     {

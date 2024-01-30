@@ -8,15 +8,12 @@ if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
     )
   target_link_libraries(wsi PRIVATE glfw)
 elseif(APH_WSI_BACKEND STREQUAL "SDL2")
-    if(NOT SDL2_FOUND)
-        message(FATAL_ERROR "SDL2 library not found!")
-    endif()
     add_compile_definitions(WSI_USE_SDL2)
     target_sources(wsi PRIVATE
       ${APH_ENGINE_WSI_DIR}/wsi_sdl2.cpp
       ${APH_ENGINE_WSI_DIR}/imgui_impl_sdl2.cpp
     )
-  target_include_directories(wsi PRIVATE ${SDL2_INCLUDE_DIR})
+  target_include_directories(wsi PRIVATE ${SDL2_SOURCE_DIR}/include)
   target_link_libraries(wsi PRIVATE SDL2::SDL2)
 endif()
 

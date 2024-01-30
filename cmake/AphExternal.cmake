@@ -100,8 +100,12 @@ if(APH_WSI_BACKEND STREQUAL "Auto" OR APH_WSI_BACKEND STREQUAL "GLFW")
         message(FATAL_ERROR "GLFW3 library not found!")
     endif()
 elseif(APH_WSI_BACKEND STREQUAL "SDL2")
-    find_package(SDL2 CONFIG REQUIRED)
-    if(NOT SDL2_FOUND)
+    CPMAddPackage(
+      NAME SDL2
+      VERSION 2.29.3
+      URL https://libsdl.org/release/SDL2-2.29.3.zip
+    )
+    if(NOT SDL2_ADDED)
         message(FATAL_ERROR "SDL2 library not found!")
     endif()
 endif()
