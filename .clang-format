@@ -1,0 +1,47 @@
+﻿---
+BasedOnStyle: Google
+AlignAfterOpenBracket: Align
+#AlignConsecutiveAssignments: 'true'
+AlignEscapedNewlines: DontAlign
+AllowAllConstructorInitializersOnNextLine: false
+AllowShortFunctionsOnASingleLine: InlineOnly
+AllowShortIfStatementsOnASingleLine: 'false'
+AllowShortLoopsOnASingleLine: 'false'
+BinPackParameters: 'true'
+BreakBeforeBraces: Custom
+ColumnLimit: '120'
+ConstructorInitializerAllOnOneLineOrOnePerLine: 'true'
+BreakConstructorInitializers: 'AfterColon'
+ConstructorInitializerIndentWidth: '4'
+ContinuationIndentWidth: '4'
+Cpp11BracedListStyle: 'true'
+DerivePointerAlignment: 'false'
+IncludeBlocks: 'Preserve'
+SortIncludes: false
+IndentCaseLabels: 'false'
+IndentWidth: '4'
+PointerAlignment: Left
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: true
+SpaceBeforeParens: Never
+SpaceInEmptyParentheses: 'false'
+SpacesInParentheses: 'false'
+TabWidth: '4'
+UseTab: Never
+AccessModifierOffset: '-4'
+IndentPPDirectives: 'BeforeHash'
+BraceWrapping:
+  AfterCaseLabel:  true
+  AfterClass:      true
+  AfterControlStatement: true
+  AfterEnum:       true
+  AfterFunction:   true
+  AfterNamespace:  true
+  AfterObjCDeclaration: true
+  AfterStruct:     true
+  AfterUnion:      true
+  BeforeCatch:     true
+  BeforeElse:      true
+  IndentBraces:    false
+
+...
