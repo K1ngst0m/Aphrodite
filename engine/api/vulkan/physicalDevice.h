@@ -25,6 +25,29 @@ public:
     const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
     const GPUSettings&                getSettings() const { return m_settings; }
 
+    template <typename T>
+    T &requestFeatures(VkStructureType type)
+    {
+        if (m_requestedFeatures.count(type))
+        {
+            return *static_cast<T *>(m_requestedFeatures.at(type).get());
+        }
+        VkPhysicalDeviceFeatures2KHR physicalDeviceFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+        T                            extension{type};
+        physicalDeviceFeatures.pNext = &extension;
+        vkGetPhysicalDeviceFeatures2KHR(getHandle(), &physicalDeviceFeatures);
+        m_requestedFeatures.insert({type, std::make_shared<T>(extension)});
+        auto *extensionPtr = static_cast<T *>(m_requestedFeatures.find(type)->second.get());
+        if (m_pLastRequestedFeature)
+        {
+            extensionPtr->pNext = m_pLastRequestedFeature;
+        }
+        m_pLastRequestedFeature = extensionPtr;
+        return *extensionPtr;
+    }
+
+    void* getRequestedFeatures() const {return m_pLastRequestedFeature;}
+
 private:
     GPUSettings                               m_settings              = {};
     VkPhysicalDeviceDriverProperties          m_driverProperties      = {};
@@ -36,6 +59,9 @@ private:
     std::vector<std::string>                  m_supportedExtensions   = {};
     std::vector<VkQueueFamilyProperties>      m_queueFamilyProperties = {};
     HashMap<QueueType, std::vector<uint32_t>> m_queueFamilyMap        = {};
+
+    void *m_pLastRequestedFeature = {};
+    HashMap<VkStructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
 
 }  // namespace aph::vk

@@ -78,96 +78,61 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    // Enable all physical device available features.
-    VkPhysicalDeviceFeatures supportedFeatures = {};
-    vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
-    VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
+    auto& sync2Features = physicalDevice->requestFeatures<VkPhysicalDeviceSynchronization2Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES);
+    sync2Features.synchronization2 = VK_TRUE;
 
-    // TODO manage features
-    supportedFeatures.sampleRateShading = VK_TRUE;
-    supportedFeatures.samplerAnisotropy = VK_TRUE;
+    auto& timelineSemaphoreFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceTimelineSemaphoreFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
 
-    VkPhysicalDeviceSynchronization2Features sync2Features{
-        .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES,
-        .synchronization2 = VK_TRUE,
-    };
+    auto& descriptorBufferFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+    descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
+    descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
 
-    VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures{
-        .sType             = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES,
-        .pNext             = &sync2Features,
-        .timelineSemaphore = VK_TRUE,
-    };
-    VkPhysicalDeviceDescriptorBufferFeaturesEXT descriptorBufferFeatures{
-        .sType                           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT,
-        .pNext                           = &timelineSemaphoreFeatures,
-        .descriptorBuffer                = VK_TRUE,
-        .descriptorBufferPushDescriptors = VK_TRUE,
-    };
+    auto& maintenance4Features = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance4Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES);
+    maintenance4Features.maintenance4 = VK_TRUE;
 
-    VkPhysicalDeviceMaintenance4Features maintenance4Features{
-        .sType        = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES,
-        .pNext        = &descriptorBufferFeatures,
-        .maintenance4 = VK_TRUE,
-    };
+    auto& descriptorIndexingFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorIndexingFeatures>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
+    descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
-    VkPhysicalDeviceDescriptorIndexingFeatures descriptorIndexingFeatures{
-        .sType                                     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
-        .pNext                                     = &maintenance4Features,
-        .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
-        .descriptorBindingPartiallyBound           = VK_TRUE,
-        .descriptorBindingVariableDescriptorCount  = VK_TRUE,
-        .runtimeDescriptorArray                    = VK_TRUE,
-    };
+    // Request Inline Uniform Block Features EXT
+    auto& inlineUniformBlockFeature = physicalDevice->requestFeatures<VkPhysicalDeviceInlineUniformBlockFeaturesEXT>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT);
+    inlineUniformBlockFeature.inlineUniformBlock = VK_TRUE;
 
-    VkPhysicalDeviceInlineUniformBlockFeaturesEXT inlineUniformBlockFeature{
-        .sType              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES,
-        .pNext              = &descriptorIndexingFeatures,
-        .inlineUniformBlock = VK_TRUE,
-    };
+    // Request Dynamic Rendering Features KHR
+    auto& dynamicRenderingFeature = physicalDevice->requestFeatures<VkPhysicalDeviceDynamicRenderingFeaturesKHR>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR);
+    dynamicRenderingFeature.dynamicRendering = VK_TRUE;
 
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{
-        .sType            = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
-        .pNext            = &inlineUniformBlockFeature,
-        .dynamicRendering = VK_TRUE,
-    };
+    // Request Host Query Reset Features
+    auto& hostQueryResetFeature = physicalDevice->requestFeatures<VkPhysicalDeviceHostQueryResetFeatures>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
+    hostQueryResetFeature.hostQueryReset = VK_TRUE;
 
-    VkPhysicalDeviceHostQueryResetFeatures hostQueryResetFeature{
-        .sType          = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES,
-        .pNext          = &dynamicRenderingFeature,
-        .hostQueryReset = VK_TRUE,
-    };
-
-    VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeature{
-        .sType      = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT,
-        .pNext      = &hostQueryResetFeature,
-        .taskShader = VK_FALSE,
-        .meshShader = VK_FALSE,
-        .multiviewMeshShader = VK_FALSE,
-        .primitiveFragmentShadingRateMeshShader = VK_FALSE,
-        .meshShaderQueries = VK_FALSE,
-    };
-
-    VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeature{
-        .sType     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT,
-        .pNext     = &meshShaderFeature,
-        .multiDraw = VK_FALSE,
-    };
-
-    supportedFeatures2.pNext    = &multiDrawFeature;
-    supportedFeatures2.features = supportedFeatures;
 
     std::vector<const char*> exts;
     {
         const auto& feature = createInfo.enabledFeatures;
         if(feature.meshShading)
         {
+            // Request Mesh Shader Features EXT
+            auto& meshShaderFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMeshShaderFeaturesEXT>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
+
             meshShaderFeature.taskShader = VK_TRUE;
             meshShaderFeature.meshShader = VK_TRUE;
             exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
+
         if(feature.multiDrawIndirect)
         {
+            // Request Multi-Draw Features EXT
+            auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
             multiDrawFeature.multiDraw = VK_TRUE;
             exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
             exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
@@ -180,6 +145,18 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         exts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
         exts.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
     }
+
+    // Enable all physical device available features.
+    VkPhysicalDeviceFeatures supportedFeatures = {};
+    vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
+    VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
+
+    supportedFeatures.sampleRateShading = VK_TRUE;
+    supportedFeatures.samplerAnisotropy = VK_TRUE;
+
+    supportedFeatures2.pNext    = physicalDevice->getRequestedFeatures();
+    supportedFeatures2.features = supportedFeatures;
 
     // Create the Vulkan device.
     VkDeviceCreateInfo deviceCreateInfo{
