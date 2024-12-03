@@ -40,7 +40,7 @@ private:
     Device*                             m_pDevice                 = {};
     Queue*                              m_pQueue                  = {};
     bool                                m_onRecord                = {};
-    std::vector<CommandBuffer*>         m_allocatedCommandBuffers = {};
+    HashSet<CommandBuffer*>             m_allocatedCommandBuffers = {};
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
     std::mutex                          m_lock;
 };

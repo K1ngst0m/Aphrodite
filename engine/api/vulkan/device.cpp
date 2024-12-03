@@ -150,7 +150,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeature{
         .sType     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT,
-        .pNext     = &hostQueryResetFeature,
+        .pNext     = &meshShaderFeature,
         .multiDraw = VK_FALSE,
     };
 
@@ -668,7 +668,7 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
     APH_PROFILER_SCOPE();
     CommandPool* pool = {};
     APH_VR(m_resourcePool.commandPool.acquire(info, 1, &pool));
-    pool->reset();
+    pool->reset(true);
     return pool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
@@ -703,7 +703,6 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
         APH_VR(queue->submit({submitInfo}, pFence));
     }
 
-    commandPool->free(1, &cmd);
     APH_VR(releaseCommandPool(commandPool));
 }
 }  // namespace aph::vk

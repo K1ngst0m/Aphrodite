@@ -22,11 +22,20 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
     for(auto i = 0; i < count; i++)
     {
         ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue);
-        m_allocatedCommandBuffers.push_back(ppCommandBuffers[i]);
+        APH_ASSERT(!m_allocatedCommandBuffers.count(ppCommandBuffers[i]));
+        m_allocatedCommandBuffers.insert(ppCommandBuffers[i]);
     }
     CM_LOG_DEBUG("command buffer allocate, avail count %ld, all count %ld", m_allocatedCommandBuffers.size());
     return Result::Success;
 }
+
+CommandBuffer* CommandPool::allocate()
+{
+    CommandBuffer* pCmd = {};
+    APH_VR(allocate(1, &pCmd));
+    return pCmd;
+}
+
 void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
 {
     APH_ASSERT(ppCommandBuffers);
@@ -37,6 +46,8 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
     {
         if(ppCommandBuffers[i])
         {
+            m_pDevice->getDeviceTable()->vkFreeCommandBuffers(m_pDevice->getHandle(), getHandle(), 1, &ppCommandBuffers[i]->getHandle());
+            m_allocatedCommandBuffers.erase(ppCommandBuffers[i]);
             m_commandBufferPool.free(ppCommandBuffers[i]);
         }
     }
@@ -47,6 +58,11 @@ void CommandPool::reset(bool freeMemory)
     std::lock_guard<std::mutex> holder{m_lock};
     m_pDevice->getDeviceTable()->vkResetCommandPool(m_pDevice->getHandle(), getHandle(),
                                                     freeMemory ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
+    if (freeMemory)
+    {
+        m_allocatedCommandBuffers.clear();
+        m_commandBufferPool.clear();
+    }
 }
 
 CommandPool::~CommandPool() = default;
@@ -63,8 +79,7 @@ Result CommandPoolAllocator::acquire(const CommandPoolCreateInfo& createInfo, ui
 
         while(!availPools.empty())
         {
-            auto& cbPool = *ppCommandPool;
-            cbPool       = availPools.front();
+            *ppCommandPool       = availPools.front();
             availPools.pop();
             ++ppCommandPool;
             if(--count == 0)
@@ -108,9 +123,10 @@ void CommandPoolAllocator::release(uint32_t count, CommandPool** ppCommandPool)
         auto& pPool     = ppCommandPool[i];
         auto  queueType = pPool->getCreateInfo().queue->getType();
 
+        pPool->reset(true);
         if(m_allPools.contains(queueType) && m_allPools.at(queueType).contains(pPool))
         {
-            m_availablePools[queueType].push(ppCommandPool[i]);
+            m_availablePools[queueType].push(pPool);
         }
     }
     CM_LOG_DEBUG("command pool release, avail count %ld, all count %ld", m_availablePools.size(), m_allPools.size());
@@ -126,12 +142,5 @@ void CommandPoolAllocator::clear()
     }
     m_allPools.clear();
     m_availablePools.clear();
-}
-
-CommandBuffer* CommandPool::allocate()
-{
-    CommandBuffer* pCmd = {};
-    APH_VR(allocate(1, &pCmd));
-    return pCmd;
 }
 }  // namespace aph::vk
