@@ -42,6 +42,7 @@ public:
     void removeProtocol(const std::string& protocol);
 
     std::filesystem::path resolvePath(std::string_view inputPath);
+    std::filesystem::path getCurrentWorkingDirectory();
 
 private:
     std::map<int, std::function<void()>> m_callbacks;

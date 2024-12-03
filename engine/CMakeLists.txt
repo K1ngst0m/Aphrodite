@@ -16,12 +16,7 @@ add_subdirectory(ui)
 
 add_library(aph_engine INTERFACE)
 
-target_include_directories(aph_engine INTERFACE
-                                  ${APH_ENGINE_DIR}
-                                  SYSTEM INTERFACE
-                                  ${APH_EXTERNAL_DIR}/volk
-                                  ${unordered_dense_SOURCE_DIR}/include
-                                  )
+target_include_directories(aph_engine INTERFACE ${APH_ENGINE_DIR})
 target_link_libraries(aph_engine INTERFACE
   common
   aph_math

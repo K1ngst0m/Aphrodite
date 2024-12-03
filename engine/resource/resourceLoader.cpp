@@ -114,7 +114,6 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
 std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderStage stage)
 {
     APH_PROFILER_SCOPE();
-    auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
@@ -124,7 +123,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
 
         TargetDesc targetDesc;
         targetDesc.format  = SLANG_SPIRV;
-        targetDesc.profile = globalSession->findProfile("glsl_450");
+        targetDesc.profile = globalSession->findProfile("spirv");
         targetDesc.flags   = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
 
         sessionDesc.targets     = &targetDesc;
@@ -142,36 +141,50 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
         // sessionDesc.preprocessorMacroCount = 1;
 
         Slang::ComPtr<IBlob> diagnostics;
+
+        auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
         auto                 module = session->loadModule(fname.c_str(), diagnostics.writeRef());
 
         if(diagnostics)
         {
-            CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
+            auto errlog = (const char*)diagnostics->getBufferPointer();
+            CM_LOG_ERR("[slang diagnostics]: %s", errlog);
             APH_ASSERT(false);
+            return {};
         }
 
         Slang::ComPtr<IEntryPoint> entryPoint;
+        SlangResult findEntryPointResult;
         switch(stage)
         {
         case aph::ShaderStage::VS:
-            module->findEntryPointByName("vertexMain", entryPoint.writeRef());
+            findEntryPointResult = module->findAndCheckEntryPoint("vertexMain", SLANG_STAGE_VERTEX, entryPoint.writeRef(), diagnostics.writeRef());
             break;
         case aph::ShaderStage::FS:
-            module->findEntryPointByName("fragmentMain", entryPoint.writeRef());
+            findEntryPointResult = module->findAndCheckEntryPoint("fragmentMain", SLANG_STAGE_FRAGMENT, entryPoint.writeRef(), diagnostics.writeRef());
             break;
         case aph::ShaderStage::CS:
-            module->findEntryPointByName("computeMain", entryPoint.writeRef());
+            findEntryPointResult = module->findAndCheckEntryPoint("computeMain", SLANG_STAGE_COMPUTE, entryPoint.writeRef(), diagnostics.writeRef());
             break;
         case aph::ShaderStage::TS:
-            module->findEntryPointByName("taskMain", entryPoint.writeRef());
+            findEntryPointResult = module->findAndCheckEntryPoint("taskMain", SLANG_STAGE_AMPLIFICATION, entryPoint.writeRef(), diagnostics.writeRef());
             break;
         case aph::ShaderStage::MS:
-            module->findEntryPointByName("meshMain", entryPoint.writeRef());
+            findEntryPointResult = module->findAndCheckEntryPoint("meshMain", SLANG_STAGE_MESH, entryPoint.writeRef(), diagnostics.writeRef());
             break;
         default:
             APH_ASSERT(false);
-            break;
+            return {};
         }
+
+        if (diagnostics || findEntryPointResult)
+        {
+            auto errlog = (const char*)diagnostics->getBufferPointer();
+            CM_LOG_ERR("[slang diagnostics]: %s", errlog);
+            APH_ASSERT(false);
+            return {};
+        }
+
 
         IComponentType* components[] = {module, entryPoint};
 
@@ -188,6 +201,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
             {
                 CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
                 APH_ASSERT(false);
+                return {};
             }
 
             APH_ASSERT(SLANG_SUCCEEDED(result));

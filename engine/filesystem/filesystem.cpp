@@ -71,7 +71,7 @@ std::filesystem::path Filesystem::resolvePath(std::string_view inputPath)
         return {};
     }
 
-    return std::filesystem::path(m_protocols[protocol]) / relativePath;
+    return getCurrentWorkingDirectory() / std::filesystem::path(m_protocols[protocol]) / relativePath;
 }
 
 void* Filesystem::map(std::string_view path)
@@ -187,5 +187,9 @@ void Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::
     {
         file << line << '\n';
     }
+}
+std::filesystem::path Filesystem::getCurrentWorkingDirectory()
+{
+    return std::filesystem::current_path();
 }
 }  // namespace aph
