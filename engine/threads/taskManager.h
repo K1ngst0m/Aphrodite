@@ -70,7 +70,7 @@ public:
     void flush();
     void wait();
     bool poll();
-    void addTask(TaskFunc&& func, const std::string& desc = "untitled");
+    void addTask(TaskFunc&& func, std::string desc = "");
 
 private:
     explicit TaskGroup(TaskManager* manager, std::string desc);
@@ -86,13 +86,13 @@ public:
     TaskManager(uint32_t threadCount = 0, std::string description = {});
     ~TaskManager();
 
-    TaskGroup* createTaskGroup(const std::string& desc = "untitled");
+    TaskGroup* createTaskGroup(std::string desc = "");
     void       removeTaskGroup(TaskGroup* pGroup);
     void       setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
 
     void scheduleTasks(const SmallVector<Task*>& taskList);
 
-    void addTask(TaskGroup* pGroup, TaskFunc&& func, const std::string& desc = "untitled");
+    void addTask(TaskGroup* pGroup, TaskFunc&& func,  std::string desc = "");
 
     void submit(TaskGroup* pGroup);
 

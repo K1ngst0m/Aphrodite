@@ -4,9 +4,13 @@
 
 namespace aph::thread
 {
-inline void setName(std::string_view name)
+template <typename T>
+requires std::is_constructible_v<std::string, T>
+inline void setName(T&& name)
 {
-    pthread_setname_np(pthread_self(), name.data());
+    std::string s(std::forward<T>(name));
+    int result = pthread_setname_np(pthread_self(), s.c_str());
+    assert(result == 0);
 }
 
 inline std::string getName()

@@ -69,19 +69,29 @@ TaskManager::~TaskManager()
     m_taskPool.clear();
 }
 
-TaskGroup* TaskManager::createTaskGroup(const std::string& desc)
+TaskGroup* TaskManager::createTaskGroup(std::string desc)
 {
+    if (desc.empty())
+    {
+        desc = m_description + ": Untitled Group";
+    }
+
     CM_LOG_DEBUG("create task group [%s]", desc);
-    auto group     = m_taskGroupPool.allocate(this, desc);
+    auto group     = m_taskGroupPool.allocate(this, std::move(desc));
     group->m_pDeps = m_taskDepsPool.allocate(this);
     group->m_pDeps->m_pendingTaskCount.store(0, std::memory_order_relaxed);
     return group;
 }
 
-void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, const std::string& desc)
+void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc)
 {
+    if (desc.empty())
+    {
+        desc = m_description + ": Untitled Task";
+    }
+
     CM_LOG_DEBUG("add task [%s]", desc);
-    Task* task = m_taskPool.allocate(pGroup->m_pDeps, std::move(func), desc);
+    Task* task = m_taskPool.allocate(pGroup->m_pDeps, std::move(func), std::move(desc));
     pGroup->m_pDeps->m_pendingTasks.push_back(task);
     pGroup->m_pDeps->m_pendingTaskCount.fetch_add(1, std::memory_order_relaxed);
 }
@@ -158,9 +168,9 @@ bool TaskGroup::poll()
     return m_pDeps->m_pendingTaskCount.load(std::memory_order_acquire) == 0;
 }
 
-void TaskGroup::addTask(TaskFunc&& func, const std::string& desc)
+void TaskGroup::addTask(TaskFunc&& func, std::string desc)
 {
-    m_pManager->addTask(this, std::move(func), desc);
+    m_pManager->addTask(this, std::move(func), std::move(desc));
 }
 
 TaskDeps::TaskDeps(TaskManager* manager) : m_pManager(manager)
@@ -238,7 +248,7 @@ void TaskManager::scheduleTasks(const SmallVector<Task*>& taskList)
 
 void TaskManager::processTask(uint32_t id)
 {
-    aph::thread::setName("process thread: " + std::to_string(id));
+    aph::thread::setName(m_description.substr(0, 12) + ":" + std::to_string(id));
 
     while(true)
     {
