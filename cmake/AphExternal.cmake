@@ -104,7 +104,7 @@ if(NOT (APH_WSI_BACKEND IN_LIST VALID_WSI_BACKENDS))
 endif()
 
 if(APH_WSI_BACKEND STREQUAL "Auto")
-  message("WSI backend is set to 'Auto', choose the GLFW by default")
+  message("WSI backend is set to 'Auto', choose the SDL2 by default")
   set(APH_WSI_BACKEND "SDL2")
 endif()
 
@@ -129,6 +129,10 @@ elseif(APH_WSI_BACKEND STREQUAL "SDL2")
       NAME SDL2
       VERSION 2.30.9
       URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz
+      OPTIONS
+          "SDL_SHARED OFF"
+          "SDL_STATIC ON"
+          "SDL_TEST OFF"
     )
     if(NOT SDL2_ADDED)
         message(FATAL_ERROR "SDL2 library not found!")
@@ -157,5 +161,5 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/
 target_link_libraries(imgui
   PRIVATE
   $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:glfw>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2>
+  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2-static>
 )

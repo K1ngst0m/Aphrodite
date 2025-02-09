@@ -14,5 +14,5 @@ target_link_libraries(wsi
   PRIVATE
   common api imgui
   $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:glfw>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2>
+  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2-static>
 )
