@@ -7,7 +7,7 @@ target_include_directories(common PUBLIC
 
 target_compile_definitions(common
   PRIVATE
-  $<$<BOOL:${APH_ENABLE_TRACING}>:APH_ENABLE_TRACER>
+  $<$<BOOL:${APH_ENABLE_TRACING}>:APH_ENABLE_TRACY>
 )
 
 target_link_libraries(common

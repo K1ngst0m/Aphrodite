@@ -1,6 +1,5 @@
 #pragma once
 
-#define APH_ENABLE_TRACY
 #if defined(APH_ENABLE_TRACY)
     #include "tracy/Tracy.hpp"
     // predefined RGB colors for "heavy" point-of-interest operations

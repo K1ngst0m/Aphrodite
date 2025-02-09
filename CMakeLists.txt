@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.24)
 project(Aphrodite)
 
 # Provide an option to enable testing
-option(APH_ENABLE_TESTING "Enable testing" ON)
-option(APH_ENABLE_TRACING "Enable tracer" ON)
+option(APH_ENABLE_TESTING "Enable testing" OFF)
+option(APH_ENABLE_TRACING "Enable tracer" OFF)
 option(APH_ENABLE_TSAN "Enable thread sanitizer" OFF)
 option(APH_ENABLE_ASAN "Enable address sanitizer" OFF)
 option(APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
