@@ -22,14 +22,9 @@ if (APH_ENABLE_MSAN)
 endif()
 
 # find linker
-find_program(GOLD_LINKER gold)
 find_program(MOLD_LINKER mold)
 # Set the linker
-if(GOLD_LINKER)
-    message(STATUS "Using gold as the linker")
-    set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=gold")
-    set(CMAKE_SHARED_LINKER_FLAGS "-fuse-ld=gold")
-elseif(MOLD_LINKER)
+if(MOLD_LINKER)
     message(STATUS "Using mold as the linker")
     set(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=mold")
     set(CMAKE_SHARED_LINKER_FLAGS "-fuse-ld=mold")
