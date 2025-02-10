@@ -37,6 +37,7 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
         }
 
         opt.numThreads = table.at_path("thread.num_override").value_or(0U);
+        opt.logLevel = table.at_path("log.level").value_or(1U);
     }
 
     // parse command
@@ -48,7 +49,7 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
         cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
         if(!aph::parseCliFiltered(cbs, argc, argv, m_exitCode))
         {
-            CM_LOG_ERR("Failed to parse command line arguments.");
+            std::cout << "Failed to parse command line arguments.\n";
             APH_ASSERT(false);
         }
     }
@@ -56,6 +57,11 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
     // registering protocol
     {
         aph::Filesystem::GetInstance().registerProtocol(m_options.protocols);
+    }
+
+    // setup logger
+    {
+        aph::Logger::GetInstance().setLogLevel(m_options.logLevel);
     }
 };
 }  // namespace aph

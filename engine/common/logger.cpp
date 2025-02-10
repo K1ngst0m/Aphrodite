@@ -26,4 +26,15 @@ std::string Logger::getCurrentTime()
     oss << std::put_time(&tm, "[%Y-%m-%d %H:%M:%S]");
     return oss.str();
 }
+void Logger::setLogLevel(uint32_t level)
+{
+    if(level > static_cast<uint32_t>(Level::None))
+    {
+        setLogLevel(Level::Info);
+    }
+    else
+    {
+        setLogLevel(static_cast<Level>(level));
+    }
+}
 }  // namespace aph

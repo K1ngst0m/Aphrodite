@@ -11,13 +11,14 @@ public:
     Logger();
     enum class Level : uint8_t
     {
-        Debug,
-        Info,
-        Warn,
-        Error,
-        None
+        Debug = 0,
+        Info = 1,
+        Warn = 2,
+        Error = 3,
+        None = 4,
     };
 
+    void setLogLevel(uint32_t level);
     void setLogLevel(Level level) { m_logLevel = level; }
     void setEnableTime(bool value) { m_enableTime = value; }
 

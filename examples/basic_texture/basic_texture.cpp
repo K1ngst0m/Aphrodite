@@ -162,8 +162,6 @@ void basic_texture::finish()
 
 int main(int argc, char** argv)
 {
-    LOG_SETUP_LEVEL_INFO();
-
     basic_texture app;
     app.loadConfig(argc, argv);
 
