@@ -107,7 +107,7 @@ private:
         ::aph::Result res = (f); \
         if(!res.success()) \
         { \
-            CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %s", res.toString(), __FILE__, __LINE__); \
+            CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %d", res.toString(), __FILE__, __LINE__); \
             std::abort(); \
         } \
     }
