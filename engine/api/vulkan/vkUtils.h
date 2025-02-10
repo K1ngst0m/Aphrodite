@@ -89,4 +89,26 @@ namespace aph::vk
 const VkAllocationCallbacks* vkAllocator();
 }  // namespace aph::vk
 
+namespace aph::vk::utils
+{
+constexpr std::string_view toString(QueueType type) noexcept
+{
+    switch(type)
+    {
+    case QueueType::Unsupport:
+        return "Unsupport";
+    case QueueType::Graphics:
+        return "Graphics";
+    case QueueType::Compute:
+        return "Compute";
+    case QueueType::Transfer:
+        return "Transfer";
+    case QueueType::Count:
+        return "Count";
+    default:
+        return "Unknown";
+    }
+}
+}  // namespace aph::vk
+
 #endif  // VKLUTILS_H_

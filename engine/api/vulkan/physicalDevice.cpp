@@ -11,34 +11,8 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         APH_ASSERT(queueFamilyCount > 0);
         m_queueFamilyProperties.resize(queueFamilyCount);
         vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, m_queueFamilyProperties.data());
-        for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
-        {
-            auto& queueFamily = m_queueFamilyProperties[queueFamilyIndex];
-            auto  queueFlags  = queueFamily.queueFlags;
-            // universal queue
-            if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
-            {
-                VK_LOG_DEBUG("Found graphics queue %lu", queueFamilyIndex);
-                m_queueFamilyMap[QueueType::Graphics].push_back(queueFamilyIndex);
-            }
-            // compute queue
-            else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
-            {
-                VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
-                m_queueFamilyMap[QueueType::Compute].push_back(queueFamilyIndex);
-            }
-            // transfer queue
-            else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
-            {
-                VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
-                m_queueFamilyMap[QueueType::Transfer].push_back(queueFamilyIndex);
-            }
-            // else
-            // {
-            //     APH_ASSERT(false);
-            // }
-        }
     }
+
     vkGetPhysicalDeviceProperties(getHandle(), &m_properties);
     vkGetPhysicalDeviceMemoryProperties(getHandle(), &m_memoryProperties);
 
@@ -268,21 +242,6 @@ VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candid
 
     assert("failed to find supported format!");
     return {};
-}
-
-const std::vector<uint32_t>& PhysicalDevice::getQueueFamilyIndexByFlags(QueueType flags)
-{
-    for(auto i = static_cast<int>(flags); i >= 0; --i)
-    {
-        QueueType queueType = static_cast<QueueType>(i);
-
-        if(m_queueFamilyMap.contains(queueType))
-        {
-            return m_queueFamilyMap.at(queueType);
-        }
-    }
-    CM_LOG_WARN("could not found required queue type, fallback to graphics queue.");
-    return m_queueFamilyMap.at(QueueType::Graphics);
 }
 
 size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const

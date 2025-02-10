@@ -493,7 +493,7 @@ void RenderGraph::execute(vk::Fence* pFence)
             APH_VR(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
 
             m_pDevice->executeSingleCommands(
-                queue,
+                m_pDevice->getQueue(aph::QueueType::Transfer),
                 [this](auto* pCopyCmd) {
                     auto pSwapchainImage = m_buildData.pSwapchain->getImage();
                     auto pOutImage =
@@ -539,9 +539,9 @@ void RenderGraph::execute(vk::Fence* pFence)
                     });
                 },
                 {m_buildData.renderSem}, {m_buildData.presentSem});
-
-            APH_VR(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
         }
+
+        APH_VR(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
 
         if(!pFence)
         {

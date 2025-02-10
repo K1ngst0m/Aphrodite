@@ -14,7 +14,6 @@ class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 public:
     PhysicalDevice(HandleType handle);
 
-    const std::vector<uint32_t>&      getQueueFamilyIndexByFlags(QueueType flags);
     bool                              isExtensionSupported(std::string_view extension) const;
     uint32_t                          findMemoryType(BufferDomain domain, uint32_t mask) const;
     uint32_t                          findMemoryType(ImageDomain domain, uint32_t mask) const;
@@ -58,7 +57,6 @@ private:
     VkPhysicalDeviceMemoryProperties          m_memoryProperties      = {};
     std::vector<std::string>                  m_supportedExtensions   = {};
     std::vector<VkQueueFamilyProperties>      m_queueFamilyProperties = {};
-    HashMap<QueueType, std::vector<uint32_t>> m_queueFamilyMap        = {};
 
     void *m_pLastRequestedFeature = {};
     HashMap<VkStructureType, std::shared_ptr<void>> m_requestedFeatures;

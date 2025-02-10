@@ -179,17 +179,42 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // TODO
     device->m_resourcePool.gpu = new VMADeviceAllocator(createInfo.pInstance, device.get());
 
-    // Get handles to all of the previously enumerated and created queues.
-    device->m_queues.resize(queueFamilyCount);
-    for(auto queueFamilyIndex = 0U; queueFamilyIndex < queueFamilyCount; ++queueFamilyIndex)
     {
-        device->m_queues[queueFamilyIndex].resize(queueCreateInfos[queueFamilyIndex].queueCount);
-        for(auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
+        for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
-            VkQueue queue = VK_NULL_HANDLE;
-            device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-            device->m_queues[queueFamilyIndex][queueIndex] = device->m_resourcePool.queue.allocate(
-                device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]);
+            auto& queueFamily = physicalDevice->m_queueFamilyProperties[queueFamilyIndex];
+            auto  queueFlags  = queueFamily.queueFlags;
+
+            QueueType queueType = QueueType::Unsupport;
+            // universal queue
+            if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            {
+                VK_LOG_DEBUG("create graphics queue %lu", queueFamilyIndex);
+                queueType = QueueType::Graphics;
+            }
+            // compute queue
+            else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
+            {
+                VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
+                queueType = QueueType::Compute;
+            }
+            // transfer queue
+            else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
+            {
+                VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
+                queueType = QueueType::Transfer;
+            }
+
+            for(auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
+            {
+                VkQueue queue = VK_NULL_HANDLE;
+                device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
+                device->m_queues[queueType].push_back(device->m_resourcePool.queue.allocate(device.get(),
+                                                                                                queue,
+                                                                                                queueFamilyIndex,
+                                                                                                queueIndex,
+                                                                                                queueFamilyProperties[queueFamilyIndex]));
+            }
         }
     }
 
@@ -392,11 +417,38 @@ void Device::destroy(SwapChain* pSwapchain)
     pSwapchain = nullptr;
 }
 
-Queue* Device::getQueue(QueueType flags, uint32_t queueIndex)
+Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
 {
     APH_PROFILER_SCOPE();
-    const auto& supportedQueueFamilyIndexList = m_physicalDevice->getQueueFamilyIndexByFlags(flags);
-    return m_queues[supportedQueueFamilyIndexList[0]][queueIndex];
+
+    if(m_queues.count(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
+    {
+        return m_queues[type][queueIndex];
+    }
+
+    const QueueType fallbackOrder[] = {QueueType::Transfer, QueueType::Compute, QueueType::Graphics};
+
+    for(QueueType fallbackType : fallbackOrder)
+    {
+        if(queueIndex < m_queues[fallbackType].size() && m_queues[fallbackType][queueIndex] != nullptr)
+        {
+            CM_LOG_WARN("Requested queue type [%s] (index %u) not available. Falling back to queue type %d.",
+                        aph::vk::utils::toString(type), queueIndex, aph::vk::utils::toString(fallbackType));
+            return m_queues[fallbackType][queueIndex];
+        }
+    }
+
+    if(type != QueueType::Graphics && type != QueueType::Compute && type != QueueType::Transfer)
+    {
+        CM_LOG_WARN("Unsupported queue type %d requested for index %u.", aph::vk::utils::toString(type), queueIndex);
+    }
+    else
+    {
+        CM_LOG_WARN("No available queue for requested type %d (index %u) nor in fallbacks.",
+                    aph::vk::utils::toString(type), queueIndex);
+    }
+
+    return nullptr;
 }
 
 void Device::waitIdle()
