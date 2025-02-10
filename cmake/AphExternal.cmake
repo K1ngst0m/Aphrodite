@@ -23,6 +23,12 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  NAME tomlplusplus
+  GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
+  GIT_TAG        v3.4.0
+)
+
+CPMAddPackage(
   NAME unordered_dense
   GITHUB_REPOSITORY martinus/unordered_dense
   VERSION 4.1.2

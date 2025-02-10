@@ -13,6 +13,7 @@ target_compile_definitions(common
 target_link_libraries(common
   PUBLIC
   unordered_dense::unordered_dense
+  tomlplusplus::tomlplusplus
   $<$<BOOL:${APH_ENABLE_TRACING}>:Tracy::TracyClient>
   PRIVATE
   Backward::Interface

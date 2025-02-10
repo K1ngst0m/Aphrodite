@@ -1,0 +1,19 @@
+[window]
+width = 1920
+height = 1080
+vsync = true
+
+[fs_protocol]
+asset = "assets"
+font = "assets/fonts"
+model = "assets/models"
+shader = "assets/shaders"
+shader_glsl = "assets/shaders/glsl"
+shader_slang = "assets/shaders/slang"
+texture = "assets/textures"
+
+[thread]
+num_override = 0
+
+[log]
+level = 0

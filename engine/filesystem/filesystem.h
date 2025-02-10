@@ -3,17 +3,16 @@
 
 #include <filesystem>
 #include <string>
-#include <map>
-#include <memory>
-#include <iostream>
+#include <type_traits>
+#include <utility>
 #include <memory.h>
 #include <sys/inotify.h>
-#include <thread>
 #include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
+#include "common/hash.h"
 #include "common/singleton.h"
 
 namespace aph
@@ -21,8 +20,6 @@ namespace aph
 class Filesystem final : public Singleton<Filesystem>
 {
 public:
-    Filesystem();
-
     ~Filesystem() final;
 
     void* map(std::string_view path);
@@ -37,6 +34,12 @@ public:
     void writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes);
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
 
+    template <typename T>
+    requires std::is_same_v<std::remove_cvref_t<T>, HashMap<std::string, std::string>>
+    void registerProtocol(T&& protocols)
+    {
+        m_protocols = std::forward<T>(protocols);
+    }
     void registerProtocol(const std::string& protocol, const std::string& path);
     bool protocolExists(const std::string& protocol);
     void removeProtocol(const std::string& protocol);
@@ -45,9 +48,9 @@ public:
     std::filesystem::path getCurrentWorkingDirectory();
 
 private:
-    std::map<int, std::function<void()>> m_callbacks;
-    std::map<std::string, std::string>   m_protocols;
-    std::map<void*, std::size_t>         m_mappedFiles;
+    HashMap<int, std::function<void()>> m_callbacks;
+    HashMap<std::string, std::string>   m_protocols;
+    HashMap<void*, std::size_t>         m_mappedFiles;
     std::mutex                           m_mapLock;
 };
 

@@ -15,12 +15,6 @@ public:
     void unload() override;
     void finish() override;
 
-    struct
-    {
-        uint32_t windowWidth  = {1440};
-        uint32_t windowHeight = {900};
-    } m_options;
-
 private:
     aph::vk::Buffer*        m_pVB      = {};
     aph::vk::Buffer*        m_pIB      = {};

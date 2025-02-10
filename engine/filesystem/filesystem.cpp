@@ -3,18 +3,6 @@
 
 namespace aph
 {
-
-Filesystem::Filesystem()
-{
-    m_protocols["asset"]        = "assets/";
-    m_protocols["model"]        = "assets/models";
-    m_protocols["font"]         = "assets/fonts";
-    m_protocols["shader_glsl"]  = "assets/shaders/glsl";
-    m_protocols["shader_slang"] = "assets/shaders/slang";
-    m_protocols["texture"]      = "assets/textures";
-    m_protocols["file"]         = "";
-}
-
 Filesystem::~Filesystem()
 {
     clearMappedFiles();
