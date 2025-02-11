@@ -44,6 +44,7 @@ CPMAddPackage(
   NAME vma
   GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
   GIT_TAG master
+  PATCHES ${CMAKE_SOURCE_DIR}/patches/vma.patch
 )
 
 CPMAddPackage(

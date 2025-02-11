@@ -1,0 +1,22 @@
+diff --git a/include/vk_mem_alloc.h b/include/vk_mem_alloc.h
+index b9317de..93561fc 100644
+--- a/include/vk_mem_alloc.h
++++ b/include/vk_mem_alloc.h
+@@ -6769,7 +6769,7 @@ void VmaBlockMetadata::DebugLogAllocation(VkDeviceSize offset, VkDeviceSize size
+         VmaAllocation allocation = reinterpret_cast<VmaAllocation>(userData);
+ 
+         userData = allocation->GetUserData();
+-        const char* name = allocation->GetName();
++        [[maybe_unused]] const char* name = allocation->GetName();
+ 
+ #if VMA_STATS_STRING_ENABLED
+         VMA_LEAK_LOG_FORMAT("UNFREED ALLOCATION; Offset: %" PRIu64 "; Size: %" PRIu64 "; UserData: %p; Name: %s; Type: %s; Usage: %" PRIu64,
+@@ -14414,7 +14414,7 @@ VkResult VmaAllocator_T::CheckCorruption(uint32_t memoryTypeBits)
+ VkResult VmaAllocator_T::AllocateVulkanMemory(const VkMemoryAllocateInfo* pAllocateInfo, VkDeviceMemory* pMemory)
+ {
+     AtomicTransactionalIncrement<VMA_ATOMIC_UINT32> deviceMemoryCountIncrement;
+-    const uint64_t prevDeviceMemoryCount = deviceMemoryCountIncrement.Increment(&m_DeviceMemoryCount);
++    [[maybe_unused]] const uint64_t prevDeviceMemoryCount = deviceMemoryCountIncrement.Increment(&m_DeviceMemoryCount);
+ #if VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT
+     if(prevDeviceMemoryCount >= m_PhysicalDeviceProperties.limits.maxMemoryAllocationCount)
+     {
