@@ -432,8 +432,8 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
     {
         if(queueIndex < m_queues[fallbackType].size() && m_queues[fallbackType][queueIndex] != nullptr)
         {
-            CM_LOG_WARN("Requested queue type [%s] (index %u) not available. Falling back to queue type %d.",
-                        aph::vk::utils::toString(type), queueIndex, aph::vk::utils::toString(fallbackType));
+            // CM_LOG_WARN("Requested queue type [%s] (index %u) not available. Falling back to queue type %d.",
+            //             aph::vk::utils::toString(type), queueIndex, aph::vk::utils::toString(fallbackType));
             return m_queues[fallbackType][queueIndex];
         }
     }
@@ -697,7 +697,6 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
     APH_PROFILER_SCOPE();
     CommandPool* pool = {};
     APH_VR(m_resourcePool.commandPool.acquire(info, 1, &pool));
-    pool->reset(true);
     return pool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)

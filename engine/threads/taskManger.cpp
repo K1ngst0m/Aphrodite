@@ -32,7 +32,6 @@ namespace aph
 
 TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_description(std::move(description))
 {
-    CM_LOG_INFO("Task Manager [%s] init.", m_description);
     m_totalTaskCount.store(0);
     m_completedTaskCount.store(0);
 
@@ -40,6 +39,9 @@ TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_desc
     {
         threadCount = std::thread::hardware_concurrency();
     }
+
+    CM_LOG_INFO("Task Manager [%s] init, thread count: %u.", m_description, threadCount);
+
     m_threadData.threadPool = std::make_unique<ThreadPool<>>(threadCount);
 
     for(auto idx = 0; idx < threadCount; idx++)

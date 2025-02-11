@@ -21,18 +21,14 @@ struct CommandPoolCreateInfo
 class CommandPool : public ResourceHandle<VkCommandPool, CommandPoolCreateInfo>
 {
 public:
-    CommandPool(Device* pDevice, const CreateInfoType& createInfo, HandleType pool) :
-        ResourceHandle(pool, createInfo),
-        m_pDevice(pDevice),
-        m_pQueue(createInfo.queue)
-    {
-    }
+    CommandPool(Device* pDevice, const CreateInfoType& createInfo, HandleType pool);
     ~CommandPool();
 
     CommandBuffer* allocate();
     Result         allocate(uint32_t count, CommandBuffer** ppCommandBuffers);
     void           free(uint32_t count, CommandBuffer** ppCommandBuffers);
     void           reset(bool freeMemory = false);
+    void           trim();
 
     bool isOnRecord() const { return m_onRecord; }
 

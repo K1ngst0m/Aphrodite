@@ -383,8 +383,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
             taskgrp->addTask(
                 [this, pass, colorImages, pDepthImage]() {
-                    auto& cmdPool = m_buildData.cmdPools[pass];
-                    cmdPool->reset();
                     auto* pCmd = m_buildData.cmds[pass];
                     pCmd->begin();
                     pCmd->setDebugName(pass->m_name);
