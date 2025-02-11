@@ -5,6 +5,13 @@
 
 namespace aph
 {
+
+template <typename T>
+concept LogSinkConcept = requires(T t, const std::string& msg) {
+    { t.write(msg) } -> std::same_as<void>;
+    { t.flush() } -> std::same_as<void>;
+};
+
 class Logger : public Singleton<Logger>
 {
 public:
@@ -21,6 +28,20 @@ public:
     void setLogLevel(uint32_t level);
     void setLogLevel(Level level) { m_logLevel = level; }
     void setEnableTime(bool value) { m_enableTime = value; }
+
+    template <LogSinkConcept Sink>
+    void addSink(Sink&& sink)
+    {
+        auto sinkPtr = std::make_shared<std::decay_t<Sink>>(std::forward<Sink>(sink));
+        m_sinks.push_back({
+            .writeCallback = [sinkPtr](const std::string & msg) {
+                sinkPtr->write(msg);
+            },
+            .flushCallback = [sinkPtr]() {
+                sinkPtr->flush();
+            }
+        });
+    }
 
     void flush();
 
@@ -80,10 +101,9 @@ private:
         std::snprintf(buffer, sizeof(buffer), fmt.data(), toFormat(args)...);
         ss << buffer << '\n';
 
-        std::cout << ss.str();
-        if(m_fileStream.is_open())
+        for (auto& sink : m_sinks)
         {
-            m_fileStream << ss.str();
+            sink.writeCallback(ss.str());
         }
     }
 
@@ -91,8 +111,15 @@ private:
 
     Level         m_logLevel;
     bool          m_enableTime = false;
-    std::ofstream m_fileStream;
     std::mutex    m_mutex;
+
+    struct SinkEntry
+    {
+        std::function<void(const std::string&)> writeCallback;
+        std::function<void()> flushCallback;
+    };
+
+    std::vector<SinkEntry> m_sinks;
 };
 
 }  // namespace aph

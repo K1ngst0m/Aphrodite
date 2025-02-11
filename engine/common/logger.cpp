@@ -1,21 +1,61 @@
 #include "logger.h"
+namespace{
+struct ConsoleSink
+{
+    void write(const std::string& msg)
+    {
+        std::cout << msg;
+    }
+    void flush()
+    {
+        std::cout.flush();
+    }
+};
+
+struct FileSink
+{
+    std::ofstream file;
+
+    FileSink(const std::string& filename) : file(filename, std::ofstream::app)
+    {
+        if (!file.is_open())
+        {
+            std::cerr << "Failed to open log file: " << filename << "\n";
+        }
+    }
+
+    void write(const std::string& msg)
+    {
+        if (file.is_open())
+        {
+            file << msg;
+        }
+    }
+
+    void flush()
+    {
+        if (file.is_open())
+        {
+            file.flush();
+        }
+    }
+};
+}
 
 namespace aph
 {
+Logger::Logger() : m_logLevel(Level::Debug)
+{
+    addSink(ConsoleSink());
+    addSink(FileSink("log.txt"));
+}
+
 void Logger::flush()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    if(m_fileStream.is_open())
+    for (auto& sink : m_sinks)
     {
-        m_fileStream.flush();
-    }
-    std::cout.flush();
-}
-Logger::Logger() : m_logLevel(Level::Debug), m_fileStream("log.txt", std::ofstream::app)
-{
-    if(!m_fileStream.is_open())
-    {
-        std::cerr << "Failed to open log file." << '\n';
+        sink.flushCallback();
     }
 }
 std::string Logger::getCurrentTime()

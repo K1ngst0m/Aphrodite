@@ -16,4 +16,4 @@ texture = "assets/textures"
 num_override = 0
 
 [log]
-level = 0
+level = 1
