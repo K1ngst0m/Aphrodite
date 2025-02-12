@@ -1,11 +1,13 @@
 include(CPM)
 
 set(VK_SDK_VERSION 1.3.275)
+set(APH_PATCH_DIR ${CMAKE_SOURCE_DIR}/patches)
 
 CPMAddPackage(
   NAME tinygltf
   GITHUB_REPOSITORY syoyo/tinygltf
   VERSION 2.8.18
+  PATCHES ${APH_PATCH_DIR}/tinygltf.patch
 )
 
 CPMAddPackage(
@@ -20,6 +22,7 @@ CPMAddPackage(
   GIT_TAG 1.0.1
   OPTIONS
       "GLM_TEST_ENABLE OFF"
+  PATCHES ${APH_PATCH_DIR}/glm.patch
 )
 
 CPMAddPackage(
@@ -44,7 +47,7 @@ CPMAddPackage(
   NAME vma
   GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
   GIT_TAG master
-  PATCHES ${CMAKE_SOURCE_DIR}/patches/vma.patch
+  PATCHES ${APH_PATCH_DIR}/vma.patch
 )
 
 CPMAddPackage(
@@ -58,6 +61,7 @@ CPMAddPackage(
       "MI_BUILD_TESTS OFF"
       "MI_USE_CXX ON"
       "MI_OVERRIDE ON"
+  PATCHES ${APH_PATCH_DIR}/mimalloc.patch
 )
 
 CPMAddPackage(
@@ -87,6 +91,7 @@ CPMAddPackage(
   OPTIONS
       "SPIRV_CROSS_CLI OFF"
       "SPIRV_CROSS_ENABLE_TESTS OFF"
+  PATCHES ${APH_PATCH_DIR}/spirv-cross.patch
 )
 
 CPMAddPackage(
@@ -102,6 +107,7 @@ CPMAddPackage(
   NAME volk
   GITHUB_REPOSITORY zeux/volk
   GIT_TAG vulkan-sdk-${VK_SDK_VERSION}
+  PATCHES ${APH_PATCH_DIR}/volk.patch
 )
 
 # wsi backend
@@ -136,6 +142,7 @@ elseif(APH_WSI_BACKEND STREQUAL "SDL2")
       NAME SDL2
       VERSION 2.30.9
       URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz
+      PATCHES ${APH_PATCH_DIR}/sdl2.patch
       OPTIONS
           "SDL_SHARED OFF"
           "SDL_STATIC ON"
