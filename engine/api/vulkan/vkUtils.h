@@ -24,13 +24,13 @@ namespace aph::vk
             VkResult res = (f); \
             if(res != VK_SUCCESS) \
             { \
-                VK_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %s", aph::vk::utils::errorString(res).c_str(), __FILE__, \
+                VK_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %d", aph::vk::utils::errorString(res).c_str(), __FILE__, \
                            __LINE__); \
                 std::abort(); \
             } \
         }
 #else
-    #define _VR(f) (f)
+    #define _VR(f) (f);
 #endif
 }  // namespace aph::vk
 

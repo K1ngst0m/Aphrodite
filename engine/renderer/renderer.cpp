@@ -55,6 +55,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
             throw aph::TracedException();
         }
         VK_LOG_ERR("%s", msg.str().c_str());
+        DebugBreak();
     }
     break;
 

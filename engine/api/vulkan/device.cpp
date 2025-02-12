@@ -6,20 +6,6 @@ const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
 namespace aph::vk
 {
-
-#ifdef _VR
-    #undef _VR
-    #define _VR(f) \
-        { \
-            VkResult res = (f); \
-            if(res != VK_SUCCESS) \
-            { \
-                APH_ASSERT(false); \
-                VK_LOG_ERR("Check Result Failed."); \
-            } \
-        }
-#endif
-
 Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle) :
     ResourceHandle(handle, createInfo),
     m_physicalDevice(pPhysicalDevice),
@@ -710,7 +696,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
                                    Fence* pFence)
 {
     APH_PROFILER_SCOPE();
-    CommandPool*   commandPool = acquireCommandPool({queue, true});
+    CommandPool*   commandPool = acquireCommandPool({.queue = queue, .transient = true});
     CommandBuffer* cmd         = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 

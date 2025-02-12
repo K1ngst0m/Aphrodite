@@ -57,8 +57,6 @@ function(aph_compiler_options TARGET)
         target_compile_options(${TARGET} PRIVATE
           -Wall -Wextra -Wshadow
 
-          # TODO
-          -Wno-non-virtual-dtor
           -Wno-sign-compare -Wcast-align -Wno-missing-field-initializers -Wno-unused-parameter
           -Wno-cast-align -Wno-format-security -Wno-nullability-completeness
         )

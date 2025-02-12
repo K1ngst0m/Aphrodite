@@ -1,5 +1,4 @@
 diff --git a/src/alloc-aligned.c b/src/alloc-aligned.c
-index 1cd809f..4544c03 100644
 --- a/src/alloc-aligned.c
 +++ b/src/alloc-aligned.c
 @@ -159,7 +159,7 @@ mi_decl_nodiscard mi_decl_restrict void* mi_heap_malloc_aligned(mi_heap_t* heap,

@@ -49,8 +49,25 @@ namespace backward
 class SignalHandling;
 }
 
+#include <cassert>
+#include <signal.h>
+
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
 namespace aph
 {
+
+inline void DebugBreak() {
+#if defined(_MSC_VER)
+    __debugbreak();
+#elif defined(__linux__) || defined(__APPLE__)
+    raise(SIGTRAP);
+#else
+    assert(false && "Debugger break triggered");
+#endif
+}
+
 class TracedException : public std::runtime_error
 {
 public:

@@ -1,5 +1,4 @@
 diff --git a/include/vk_mem_alloc.h b/include/vk_mem_alloc.h
-index b9317de..93561fc 100644
 --- a/include/vk_mem_alloc.h
 +++ b/include/vk_mem_alloc.h
 @@ -6769,7 +6769,7 @@ void VmaBlockMetadata::DebugLogAllocation(VkDeviceSize offset, VkDeviceSize size
