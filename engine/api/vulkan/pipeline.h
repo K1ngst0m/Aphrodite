@@ -98,11 +98,6 @@ struct ComputePipelineCreateInfo
 {
     ImmutableSamplerBank* pSamplerBank = {};
     ShaderProgram*        pCompute     = {};
-
-    bool operator==(const ComputePipelineCreateInfo& rhs) const
-    {
-        return pSamplerBank == rhs.pSamplerBank && pCompute == rhs.pCompute;
-    }
 };
 
 class Pipeline : public ResourceHandle<VkPipeline>
@@ -126,102 +121,55 @@ protected:
 
 class PipelineAllocator
 {
-    struct HashGraphicsPipeline
-    {
-        std::size_t operator()(const ComputePipelineCreateInfo& info) const noexcept
-        {
-            std::size_t seed = 0;
-            aph::utils::hashCombine(seed, info.pCompute);
-            aph::utils::hashCombine(seed, info.pSamplerBank);
-            return seed;
-        }
-
-        std::size_t operator()(const GraphicsPipelineCreateInfo& info) const noexcept
-        {
-            std::size_t seed = 0;
-            aph::utils::hashCombine(seed, info.dynamicState.depthBiasEnable);
-            aph::utils::hashCombine(seed, info.topology);
-
-            {
-                for(const auto& attr : info.vertexInput.attributes)
-                {
-                    aph::utils::hashCombine(seed, attr.binding);
-                    aph::utils::hashCombine(seed, attr.format);
-                    aph::utils::hashCombine(seed, attr.location);
-                    aph::utils::hashCombine(seed, attr.offset);
-                }
-                for(const auto& binding : info.vertexInput.bindings)
-                {
-                    aph::utils::hashCombine(seed, binding.stride);
-                }
-            }
-
-            aph::utils::hashCombine(seed, info.pProgram);
-
-            for(auto color : info.color)
-            {
-                aph::utils::hashCombine(seed, color.format);
-                aph::utils::hashCombine(seed, color.blendEnabled);
-                aph::utils::hashCombine(seed, color.rgbBlendOp);
-                aph::utils::hashCombine(seed, color.alphaBlendOp);
-                aph::utils::hashCombine(seed, color.srcRGBBlendFactor);
-                aph::utils::hashCombine(seed, color.srcAlphaBlendFactor);
-                aph::utils::hashCombine(seed, color.dstRGBBlendFactor);
-                aph::utils::hashCombine(seed, color.dstAlphaBlendFactor);
-            }
-
-            aph::utils::hashCombine(seed, info.depthFormat);
-            aph::utils::hashCombine(seed, info.stencilFormat);
-
-            aph::utils::hashCombine(seed, info.cullMode);
-            aph::utils::hashCombine(seed, info.frontFaceWinding);
-            aph::utils::hashCombine(seed, info.polygonMode);
-
-            {
-                auto& stencilState = info.backFaceStencil;
-                aph::utils::hashCombine(seed, stencilState.stencilFailureOp);
-                aph::utils::hashCombine(seed, stencilState.depthFailureOp);
-                aph::utils::hashCombine(seed, stencilState.depthStencilPassOp);
-                aph::utils::hashCombine(seed, stencilState.stencilCompareOp);
-                aph::utils::hashCombine(seed, stencilState.readMask);
-                aph::utils::hashCombine(seed, stencilState.writeMask);
-            }
-
-            {
-                auto& stencilState = info.frontFaceStencil;
-                aph::utils::hashCombine(seed, stencilState.stencilFailureOp);
-                aph::utils::hashCombine(seed, stencilState.depthFailureOp);
-                aph::utils::hashCombine(seed, stencilState.depthStencilPassOp);
-                aph::utils::hashCombine(seed, stencilState.stencilCompareOp);
-                aph::utils::hashCombine(seed, stencilState.readMask);
-                aph::utils::hashCombine(seed, stencilState.writeMask);
-            }
-
-            aph::utils::hashCombine(seed, info.samplesCount);
-
-            return seed;
-        }
-    };
-
 public:
     PipelineAllocator(Device* pDevice) : m_pDevice(pDevice) {}
-    ~PipelineAllocator();
-
-    void clear();
+    ~PipelineAllocator() = default;
 
     Pipeline* getPipeline(const GraphicsPipelineCreateInfo& createInfo);
     Pipeline* getPipeline(const ComputePipelineCreateInfo& createInfo);
 
-private:
-    Pipeline* create(const GraphicsPipelineCreateInfo& createInfo);
-    Pipeline* create(const ComputePipelineCreateInfo& createInfo);
+    void clear();
 
-    Device*                                                              m_pDevice = {};
-    HashMap<GraphicsPipelineCreateInfo, Pipeline*, HashGraphicsPipeline> m_graphicsPipelineMap;
-    HashMap<ComputePipelineCreateInfo, Pipeline*, HashGraphicsPipeline>  m_computePipelineMap;
-    ThreadSafeObjectPool<Pipeline>                                       m_pool;
-    std::mutex                                                           m_graphicsAcquireLock;
-    std::mutex                                                           m_computeAcquireLock;
+private:
+    Device*                        m_pDevice = {};
+    ThreadSafeObjectPool<Pipeline> m_pool;
+    std::mutex                     m_graphicsAcquireLock;
+    std::mutex                     m_computeAcquireLock;
+
+private:
+    struct PipelineBinaryKeyHash
+    {
+        std::size_t operator()(const VkPipelineBinaryKeyKHR& keyObj) const noexcept
+        {
+            using namespace aph::utils;
+            std::size_t seed = 0;
+            hashCombine(seed, keyObj.keySize);
+            const char*      keyData = reinterpret_cast<const char*>(keyObj.key);
+            std::string_view keyView{keyData, keyObj.keySize};
+            hashCombine(seed, keyView);
+            return seed;
+        }
+    };
+
+    struct PipelineBinaryKeyEqual
+    {
+        bool operator()(const VkPipelineBinaryKeyKHR& lhs, const VkPipelineBinaryKeyKHR& rhs) const noexcept
+        {
+            if(lhs.keySize != rhs.keySize)
+                return false;
+            return std::memcmp(lhs.key, rhs.key, lhs.keySize) == 0;
+        }
+    };
+
+    void setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineKey, Pipeline* pPipeline);
+
+    HashMap<VkPipelineBinaryKeyKHR, std::vector<uint8_t>, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
+        m_binaryKeyRawDataMap;
+    HashMap<VkPipelineBinaryKeyKHR, VkPipelineBinaryKHR, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
+        m_binaryKeyDataMap;
+    HashMap<VkPipelineBinaryKeyKHR, std::vector<VkPipelineBinaryKeyKHR>, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
+        m_pipelineKeyBinaryKeysMap;
+    HashMap<VkPipelineBinaryKeyKHR, Pipeline*, PipelineBinaryKeyHash, PipelineBinaryKeyEqual> m_pipelineMap;
 };
 
 }  // namespace aph::vk

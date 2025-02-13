@@ -37,6 +37,41 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         };
     }
 
+    std::vector<const char*> exts;
+    {
+        const auto& feature = createInfo.enabledFeatures;
+        if(feature.meshShading)
+        {
+            // Request Mesh Shader Features EXT
+            auto& meshShaderFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMeshShaderFeaturesEXT>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
+
+            meshShaderFeature.taskShader = VK_TRUE;
+            meshShaderFeature.meshShader = VK_TRUE;
+            exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+        }
+
+        if(feature.multiDrawIndirect)
+        {
+            // Request Multi-Draw Features EXT
+            auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+            multiDrawFeature.multiDraw = VK_TRUE;
+            exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+            exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+        }
+
+        exts.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
+        exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        exts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        exts.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+        exts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+        exts.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+        exts.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
+        exts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    }
+
+
     // verify feature support
     {
         const auto& requiredFeature = createInfo.enabledFeatures;
@@ -63,6 +98,12 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             APH_ASSERT(false);
         }
     }
+
+    auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
+    maintence5.maintenance5 = VK_TRUE;
+
+    auto& pipelineBinary = physicalDevice->requestFeatures<VkPhysicalDevicePipelineBinaryFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR);
+    pipelineBinary.pipelineBinaries = VK_TRUE;
 
     auto& sync2Features = physicalDevice->requestFeatures<VkPhysicalDeviceSynchronization2Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES);
     sync2Features.synchronization2 = VK_TRUE;
@@ -99,39 +140,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
     hostQueryResetFeature.hostQueryReset = VK_TRUE;
 
-
-    std::vector<const char*> exts;
-    {
-        const auto& feature = createInfo.enabledFeatures;
-        if(feature.meshShading)
-        {
-            // Request Mesh Shader Features EXT
-            auto& meshShaderFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMeshShaderFeaturesEXT>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
-
-            meshShaderFeature.taskShader = VK_TRUE;
-            meshShaderFeature.meshShader = VK_TRUE;
-            exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-        }
-
-        if(feature.multiDrawIndirect)
-        {
-            // Request Multi-Draw Features EXT
-            auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
-            multiDrawFeature.multiDraw = VK_TRUE;
-            exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-            exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
-        }
-
-        exts.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
-        exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        exts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        exts.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-        exts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-        exts.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
-    }
-
     // Enable all physical device available features.
     VkPhysicalDeviceFeatures supportedFeatures = {};
     vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
@@ -156,7 +164,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     VkDevice handle = VK_NULL_HANDLE;
     _VR(vkCreateDevice(physicalDevice->getHandle(), &deviceCreateInfo, gVkAllocator, &handle));
-    _VR(utils::setDebugObjectName(handle, VK_OBJECT_TYPE_DEVICE, reinterpret_cast<uint64_t>(handle), "Device"))
+    _VR(utils::setDebugObjectName(handle, VK_OBJECT_TYPE_DEVICE, reinterpret_cast<uint64_t>(handle), "Device"));
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, physicalDevice, handle));
@@ -447,6 +455,7 @@ Pipeline* Device::acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, 
 {
     APH_PROFILER_SCOPE();
     Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
+    APH_ASSERT(pPipeline);
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
                                   reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
     return pPipeline;
