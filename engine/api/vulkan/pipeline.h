@@ -15,49 +15,6 @@ class ShaderProgram;
 class Shader;
 struct ImmutableSamplerBank;
 
-struct ColorAttachment
-{
-    Format      format              = Format::Undefined;
-    bool        blendEnabled        = false;
-    BlendOp     rgbBlendOp          = BlendOp::Add;
-    BlendOp     alphaBlendOp        = BlendOp::Add;
-    BlendFactor srcRGBBlendFactor   = BlendFactor::One;
-    BlendFactor srcAlphaBlendFactor = BlendFactor::One;
-    BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
-    BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
-
-    bool operator==(const ColorAttachment& rhs) const
-    {
-        return format == rhs.format && blendEnabled == rhs.blendEnabled && rgbBlendOp == rhs.rgbBlendOp &&
-               alphaBlendOp == rhs.alphaBlendOp && srcRGBBlendFactor == rhs.srcRGBBlendFactor &&
-               srcAlphaBlendFactor == rhs.srcAlphaBlendFactor && dstRGBBlendFactor == rhs.dstAlphaBlendFactor &&
-               dstAlphaBlendFactor == rhs.dstAlphaBlendFactor;
-    }
-};
-
-struct StencilState
-{
-    StencilOp stencilFailureOp   = StencilOp::Keep;
-    StencilOp depthFailureOp     = StencilOp::Keep;
-    StencilOp depthStencilPassOp = StencilOp::Keep;
-    CompareOp stencilCompareOp   = CompareOp::Always;
-    uint32_t  readMask           = (uint32_t)~0;
-    uint32_t  writeMask          = (uint32_t)~0;
-
-    bool operator==(const StencilState& rhs) const
-    {
-        return stencilFailureOp == rhs.stencilFailureOp && stencilCompareOp == rhs.stencilCompareOp &&
-               depthStencilPassOp == rhs.depthStencilPassOp && depthFailureOp == rhs.depthFailureOp &&
-               readMask == rhs.readMask && writeMask == rhs.writeMask;
-    }
-};
-
-struct RenderPipelineDynamicState final
-{
-    bool depthBiasEnable = false;
-    bool operator==(const RenderPipelineDynamicState& rhs) const { return depthBiasEnable == rhs.depthBiasEnable; }
-};
-
 struct GraphicsPipelineCreateInfo
 {
     PipelineType type = PipelineType::Geometry;
@@ -100,13 +57,12 @@ struct ComputePipelineCreateInfo
     ShaderProgram*        pCompute     = {};
 };
 
+
 class Pipeline : public ResourceHandle<VkPipeline>
 {
     friend class ObjectPool<Pipeline>;
 
 public:
-    DescriptorSet* acquireSet(uint32_t idx) const;
-
     ShaderProgram* getProgram() const { return m_pProgram; }
     PipelineType   getType() const { return m_type; }
 
@@ -163,13 +119,18 @@ private:
 
     void setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineKey, Pipeline* pPipeline);
 
-    HashMap<VkPipelineBinaryKeyKHR, std::vector<uint8_t>, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
-        m_binaryKeyRawDataMap;
-    HashMap<VkPipelineBinaryKeyKHR, VkPipelineBinaryKHR, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
-        m_binaryKeyDataMap;
-    HashMap<VkPipelineBinaryKeyKHR, std::vector<VkPipelineBinaryKeyKHR>, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>
-        m_pipelineKeyBinaryKeysMap;
-    HashMap<VkPipelineBinaryKeyKHR, Pipeline*, PipelineBinaryKeyHash, PipelineBinaryKeyEqual> m_pipelineMap;
+    struct PipelineBinaryData
+    {
+        std::vector<uint8_t> rawData;
+        VkPipelineBinaryKHR binary;
+    };
+
+    template<typename Key, typename Val>
+    using PipelineKeyMap = HashMap<Key, Val, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>;
+
+    PipelineKeyMap<VkPipelineBinaryKeyKHR, PipelineBinaryData> m_binaryKeyDataMap;
+    PipelineKeyMap<VkPipelineBinaryKeyKHR, std::vector<VkPipelineBinaryKeyKHR>> m_pipelineKeyBinaryKeysMap;
+    PipelineKeyMap<VkPipelineBinaryKeyKHR, Pipeline*> m_pipelineMap;
 };
 
 }  // namespace aph::vk

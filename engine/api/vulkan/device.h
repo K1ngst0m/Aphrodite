@@ -36,7 +36,7 @@ using DeviceCreateFlags = uint32_t;
 struct DeviceCreateInfo
 {
     DeviceCreateFlags        flags;
-    GPUFeature               enabledFeatures;
+    GPUFeature               enabledFeatures = {};
     PhysicalDevice*          pPhysicalDevice = nullptr;
     Instance*                pInstance       = nullptr;
 };
@@ -94,6 +94,9 @@ public:
 
     double getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                                TimeUnit unitType = TimeUnit::Seconds);
+
+public:
+    VkPipelineStageFlags determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType);
 
 public:
     void   waitIdle();

@@ -14,7 +14,6 @@ class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
 public:
     PhysicalDevice(HandleType handle);
 
-    bool                              isExtensionSupported(std::string_view extension) const;
     uint32_t                          findMemoryType(BufferDomain domain, uint32_t mask) const;
     uint32_t                          findMemoryType(ImageDomain domain, uint32_t mask) const;
     uint32_t                          findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const;
@@ -23,21 +22,33 @@ public:
     size_t                            padUniformBufferSize(size_t originalSize) const;
     const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
     const GPUSettings&                getSettings() const { return m_settings; }
+    VkPipelineStageFlags              determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType);
+
+    template <typename... Extensions>
+    requires (std::convertible_to<Extensions, std::string_view> && ...)
+    bool checkExtensionSupported(Extensions&&... exts) const
+    {
+        auto isSupported = [this](std::string_view ext) -> bool
+        {
+            return m_supportedExtensions.contains(std::string{ext});
+        };
+        return (isSupported(std::forward<Extensions>(exts)) && ...);
+    }
 
     template <typename T>
-    T &requestFeatures(VkStructureType type)
+    T& requestFeatures(VkStructureType type)
     {
-        if (m_requestedFeatures.count(type))
+        if(m_requestedFeatures.count(type))
         {
-            return *static_cast<T *>(m_requestedFeatures.at(type).get());
+            return *static_cast<T*>(m_requestedFeatures.at(type).get());
         }
         VkPhysicalDeviceFeatures2KHR physicalDeviceFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
         T                            extension{type};
         physicalDeviceFeatures.pNext = &extension;
         vkGetPhysicalDeviceFeatures2KHR(getHandle(), &physicalDeviceFeatures);
         m_requestedFeatures.insert({type, std::make_shared<T>(extension)});
-        auto *extensionPtr = static_cast<T *>(m_requestedFeatures.find(type)->second.get());
-        if (m_pLastRequestedFeature)
+        auto* extensionPtr = static_cast<T*>(m_requestedFeatures.find(type)->second.get());
+        if(m_pLastRequestedFeature)
         {
             extensionPtr->pNext = m_pLastRequestedFeature;
         }
@@ -45,20 +56,20 @@ public:
         return *extensionPtr;
     }
 
-    void* getRequestedFeatures() const {return m_pLastRequestedFeature;}
+    void* getRequestedFeatures() const { return m_pLastRequestedFeature; }
 
 private:
-    GPUSettings                               m_settings              = {};
-    VkPhysicalDeviceDriverProperties          m_driverProperties      = {};
-    VkPhysicalDeviceProperties                m_properties            = {};
-    VkPhysicalDeviceProperties2               m_properties2           = {};
-    VkPhysicalDeviceFeatures                  m_features              = {};
-    VkPhysicalDeviceFeatures2                 m_features2             = {};
-    VkPhysicalDeviceMemoryProperties          m_memoryProperties      = {};
-    std::vector<std::string>                  m_supportedExtensions   = {};
-    std::vector<VkQueueFamilyProperties>      m_queueFamilyProperties = {};
+    GPUSettings                          m_settings              = {};
+    VkPhysicalDeviceDriverProperties     m_driverProperties      = {};
+    VkPhysicalDeviceProperties           m_properties            = {};
+    VkPhysicalDeviceProperties2          m_properties2           = {};
+    VkPhysicalDeviceFeatures             m_features              = {};
+    VkPhysicalDeviceFeatures2            m_features2             = {};
+    VkPhysicalDeviceMemoryProperties     m_memoryProperties      = {};
+    HashSet<std::string>                 m_supportedExtensions   = {};
+    std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
 
-    void *m_pLastRequestedFeature = {};
+    void*                                           m_pLastRequestedFeature = {};
     HashMap<VkStructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
 

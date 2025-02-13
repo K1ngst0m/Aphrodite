@@ -525,11 +525,6 @@ Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo
     APH_ASSERT(pProgram);
 }
 
-DescriptorSet* Pipeline::acquireSet(uint32_t idx) const
-{
-    return m_pProgram->getSetLayout(idx)->allocateSet();
-}
-
 void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineKey, Pipeline* pPipeline)
 {
     const auto* table  = m_pDevice->getDeviceTable();
@@ -584,8 +579,8 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
 
         _VR(table->vkGetPipelineBinaryDataKHR(device, &binaryInfo, &binaryKeys[i], &binaryDataSize,
                                                 binaryData.data()));
-        m_binaryKeyRawDataMap[binaryKeys[i]] = std::move(binaryData);
-        m_binaryKeyDataMap[binaryKeys[i]]    = pipelineBinaries[i];
+        m_binaryKeyDataMap[binaryKeys[i]].rawData = std::move(binaryData);
+        m_binaryKeyDataMap[binaryKeys[i]].binary    = pipelineBinaries[i];
     }
 
     m_pipelineKeyBinaryKeysMap[pipelineKey] = binaryKeys;
@@ -669,9 +664,9 @@ void PipelineAllocator::clear()
         table.vkDestroyPipeline(device, pPipeline->getHandle(), vkAllocator());
     }
     m_pool.clear();
-    for(auto& [key, binary] : m_binaryKeyDataMap)
+    for(auto& [key, binaryData] : m_binaryKeyDataMap)
     {
-        table.vkDestroyPipelineBinaryKHR(device, binary, vkAllocator());
+        table.vkDestroyPipelineBinaryKHR(device, binaryData.binary, vkAllocator());
     }
 }
 }  // namespace aph::vk

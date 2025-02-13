@@ -45,7 +45,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         {
             for(auto ext : extensions)
             {
-                m_supportedExtensions.emplace_back(ext.extensionName);
+                m_supportedExtensions.insert(ext.extensionName);
             }
         }
     }
@@ -93,13 +93,12 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
             gpuSettings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
 
             gpuSettings->feature.meshShading = false;
-            for(const auto& ext : m_supportedExtensions)
-            {
-                if(ext == VK_EXT_MESH_SHADER_EXTENSION_NAME)
-                {
-                    gpuSettings->feature.meshShading = true;
-                }
-            }
+            gpuSettings->feature.rayTracing = false;
+
+            gpuSettings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+            gpuSettings->feature.rayTracing = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                                                                      VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                                                                      VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
         }
 
         {
@@ -122,12 +121,6 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
         // TODO: Fix once vulkan adds support for revision ID
         gpuSettings->GpuVendorPreset.revisionId = "0x00";
     }
-}
-
-bool PhysicalDevice::isExtensionSupported(std::string_view extension) const
-{
-    return (std::find(m_supportedExtensions.begin(), m_supportedExtensions.end(), extension) !=
-            m_supportedExtensions.end());
 }
 
 uint32_t PhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
@@ -256,78 +249,4 @@ size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
     return alignedSize;
 }
 
-VkPipelineStageFlags utils::determinePipelineStageFlags(PhysicalDevice* pGPU, VkAccessFlags accessFlags,
-                                                        QueueType queueType)
-{
-    VkPipelineStageFlags flags = 0;
-
-    auto* gpuSupport = &pGPU->getSettings();
-    switch(queueType)
-    {
-    case aph::QueueType::Graphics:
-    {
-        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-
-        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
-        {
-            flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            if(gpuSupport->feature.tessellationSupported)
-            {
-                flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-                flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
-            }
-            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-            flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
-        }
-
-        if((accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
-            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-        if((accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-
-        if((accessFlags &
-            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-
-        break;
-    }
-    case aph::QueueType::Compute:
-    {
-        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
-           (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
-           (accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 ||
-           (accessFlags &
-            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
-            return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-
-        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-
-        break;
-    }
-    case aph::QueueType::Transfer:
-        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-    default:
-        break;
-    }
-
-    // Compatible with both compute and graphics queues
-    if((accessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) != 0)
-        flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-
-    if((accessFlags & (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT)) != 0)
-        flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-    if((accessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
-        flags |= VK_PIPELINE_STAGE_HOST_BIT;
-
-    if(flags == 0)
-        flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-
-    return flags;
-}
 }  // namespace aph::vk

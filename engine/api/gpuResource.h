@@ -263,6 +263,7 @@ struct GPUFeature
     bool multiDrawIndirect : 1          = false;
     bool tessellationSupported : 1      = false;
     bool samplerAnisotropySupported : 1 = false;
+    bool rayTracing : 1                 = false;
 };
 
 struct GPUSettings
@@ -437,6 +438,49 @@ struct VertexInput
 
         return true;
     }
+};
+
+struct ColorAttachment
+{
+    Format      format              = Format::Undefined;
+    bool        blendEnabled        = false;
+    BlendOp     rgbBlendOp          = BlendOp::Add;
+    BlendOp     alphaBlendOp        = BlendOp::Add;
+    BlendFactor srcRGBBlendFactor   = BlendFactor::One;
+    BlendFactor srcAlphaBlendFactor = BlendFactor::One;
+    BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
+    BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
+
+    bool operator==(const ColorAttachment& rhs) const
+    {
+        return format == rhs.format && blendEnabled == rhs.blendEnabled && rgbBlendOp == rhs.rgbBlendOp &&
+               alphaBlendOp == rhs.alphaBlendOp && srcRGBBlendFactor == rhs.srcRGBBlendFactor &&
+               srcAlphaBlendFactor == rhs.srcAlphaBlendFactor && dstRGBBlendFactor == rhs.dstAlphaBlendFactor &&
+               dstAlphaBlendFactor == rhs.dstAlphaBlendFactor;
+    }
+};
+
+struct StencilState
+{
+    StencilOp stencilFailureOp   = StencilOp::Keep;
+    StencilOp depthFailureOp     = StencilOp::Keep;
+    StencilOp depthStencilPassOp = StencilOp::Keep;
+    CompareOp stencilCompareOp   = CompareOp::Always;
+    uint32_t  readMask           = (uint32_t)~0;
+    uint32_t  writeMask          = (uint32_t)~0;
+
+    bool operator==(const StencilState& rhs) const
+    {
+        return stencilFailureOp == rhs.stencilFailureOp && stencilCompareOp == rhs.stencilCompareOp &&
+               depthStencilPassOp == rhs.depthStencilPassOp && depthFailureOp == rhs.depthFailureOp &&
+               readMask == rhs.readMask && writeMask == rhs.writeMask;
+    }
+};
+
+struct RenderPipelineDynamicState final
+{
+    bool depthBiasEnable = false;
+    bool operator==(const RenderPipelineDynamicState& rhs) const { return depthBiasEnable == rhs.depthBiasEnable; }
 };
 
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>

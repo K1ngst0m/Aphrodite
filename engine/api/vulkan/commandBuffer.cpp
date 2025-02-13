@@ -602,10 +602,8 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarri
         }
     }
 
-    VkPipelineStageFlags srcStageMask = aph::vk::utils::determinePipelineStageFlags(
-        m_pDevice->getPhysicalDevice(), srcAccessFlags, m_pQueue->getType());
-    VkPipelineStageFlags dstStageMask = aph::vk::utils::determinePipelineStageFlags(
-        m_pDevice->getPhysicalDevice(), dstAccessFlags, m_pQueue->getType());
+    VkPipelineStageFlags srcStageMask = m_pDevice->determinePipelineStageFlags(srcAccessFlags, m_pQueue->getType());
+    VkPipelineStageFlags dstStageMask = m_pDevice->determinePipelineStageFlags(dstAccessFlags, m_pQueue->getType());
 
     if(bufferBarrierCount || imageBarrierCount)
     {

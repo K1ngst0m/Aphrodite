@@ -51,7 +51,26 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
 
-        if(feature.multiDrawIndirect)
+        if(feature.rayTracing)
+        {
+            // Request Ray Tracing related features
+            auto& asFeature = physicalDevice->requestFeatures<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+            asFeature.accelerationStructure = VK_TRUE;
+            exts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+
+            auto& rtPipelineFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+            rtPipelineFeature.rayTracingPipeline = VK_TRUE;
+            exts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+            auto& rayQueryFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayQueryFeaturesKHR>(
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+            rayQueryFeature.rayQuery = VK_TRUE;
+            exts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+        }
+
+        if (feature.rayTracing)
         {
             // Request Multi-Draw Features EXT
             auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
@@ -77,6 +96,11 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         const auto& requiredFeature = createInfo.enabledFeatures;
         const auto& supportFeature  = physicalDevice->getSettings().feature;
 
+        if(requiredFeature.rayTracing && !supportFeature.rayTracing)
+        {
+            CM_LOG_ERR("Ray Tracing feature not supported!");
+            APH_ASSERT(false);
+        }
         if(requiredFeature.meshShading && !supportFeature.meshShading)
         {
             CM_LOG_ERR("Mesh Shading feature not supported!");
@@ -727,5 +751,82 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
     }
 
     APH_VR(releaseCommandPool(commandPool));
+}
+VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType)
+{
+    VkPipelineStageFlags flags = 0;
+
+    const auto& features = getCreateInfo().enabledFeatures;
+
+    switch(queueType)
+    {
+    case aph::QueueType::Graphics:
+    {
+        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+
+        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+        {
+            flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            if(features.tessellationSupported)
+            {
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+                flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+            }
+            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            if(features.rayTracing)
+            {
+                flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+            }
+        }
+
+        if((accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
+            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        if((accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+        if((accessFlags &
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+        break;
+    }
+    case aph::QueueType::Compute:
+    {
+        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
+           (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
+           (accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 ||
+           (accessFlags &
+            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
+            return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+        break;
+    }
+    case aph::QueueType::Transfer:
+        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    default:
+        break;
+    }
+
+    // Compatible with both compute and graphics queues
+    if((accessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) != 0)
+        flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+
+    if((accessFlags & (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT)) != 0)
+        flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    if((accessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
+        flags |= VK_PIPELINE_STAGE_HOST_BIT;
+
+    if(flags == 0)
+        flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+    return flags;
 }
 }  // namespace aph::vk
