@@ -31,6 +31,10 @@ else()
     message(STATUS "Using system's default ld as the linker")
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+    add_compile_options(-fPIC)
+endif()
+
 function(aph_compiler_options TARGET)
     set_target_properties(${TARGET} PROPERTIES
         CXX_STANDARD 20

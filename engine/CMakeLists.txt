@@ -14,10 +14,22 @@ add_subdirectory(module)
 add_subdirectory(renderGraph)
 add_subdirectory(ui)
 
-add_library(aph-engine INTERFACE)
-target_include_directories(aph-engine INTERFACE ${APH_ENGINE_DIR})
+set(EMPTY_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/aph.cpp)
+add_custom_command(
+    OUTPUT  ${EMPTY_SOURCE_FILES}
+    COMMAND ${CMAKE_COMMAND} -E touch ${EMPTY_SOURCE_FILES}
+    COMMENT "Touching ${EMPTY_SOURCE_FILES}"
+)
 
-target_link_libraries(aph-engine INTERFACE
+if (APH_SHARED)
+  add_library(aph-engine SHARED ${EMPTY_SOURCE_FILES})
+else()
+  add_library(aph-engine STATIC ${EMPTY_SOURCE_FILES})
+endif()
+
+target_include_directories(aph-engine PUBLIC ${APH_ENGINE_DIR})
+
+target_link_libraries(aph-engine PUBLIC
   aphrodite::common
   aphrodite::math
   aphrodite::allocator
