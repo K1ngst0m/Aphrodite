@@ -1,5 +1,4 @@
-#ifndef BASE_TEXTURE_H_
-#define BASE_TEXTURE_H_
+#pragma once
 
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
@@ -35,5 +34,3 @@ private:
 private:
     aph::Timer m_timer;
 };
-
-#endif  // SCENE_MANAGER_H_

@@ -746,8 +746,9 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
     }
     else
     {
-        pFence = acquireFence(false);
         APH_VR(queue->submit({submitInfo}, pFence));
+        // TODO async with caller
+        pFence->wait();
     }
 
     APH_VR(releaseCommandPool(commandPool));

@@ -1,5 +1,4 @@
-#ifndef SCENE_MANAGER_H_
-#define SCENE_MANAGER_H_
+#pragma once
 
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
@@ -43,5 +42,3 @@ private:
 
     std::unique_ptr<aph::WSI> m_wsi = {};
 };
-
-#endif  // SCENE_MANAGER_H_
