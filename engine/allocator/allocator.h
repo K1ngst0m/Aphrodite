@@ -10,6 +10,7 @@
 #endif
 
 #include <stddef.h>
+#include <source_location>
 
 namespace aph::memory
 {
@@ -48,32 +49,101 @@ static void delete_internal(T* ptr, const char* f, int l, const char* sf)
     }
 }
 
-#ifndef aph_malloc
-    #define aph_malloc(size) malloc_internal(size, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
-#ifndef aph_memalign
-    #define aph_memalign(align, size) memalign_internal(align, size, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
-#ifndef aph_calloc
-    #define aph_calloc(count, size) calloc_internal(count, size, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
-#ifndef aph_calloc_memalign
-    #define aph_calloc_memalign(count, align, size) \
-        calloc_memalign_internal(count, align, size, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
-#ifndef aph_realloc
-    #define aph_realloc(ptr, size) realloc_internal(ptr, size, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
-#ifndef aph_free
-    #define aph_free(ptr) free_internal(ptr, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
+inline void* aph_malloc(
+    std::size_t size,
+    const std::source_location& location = std::source_location::current())
+{
+    return malloc_internal(size,
+                           location.file_name(),
+                           static_cast<int>(location.line()),
+                           location.function_name());
+}
 
-#ifndef aph_new
-    #define aph_new(ObjectType, ...) new_internal<ObjectType>(__FILE__, __LINE__, __PRETTY_FUNCTION__, ##__VA_ARGS__)
-#endif
-#ifndef aph_delete
-    #define aph_delete(ptr) delete_internal(ptr, __FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
+inline void* aph_memalign(
+    std::size_t alignment,
+    std::size_t size,
+    const std::source_location& location = std::source_location::current())
+{
+    return memalign_internal(alignment,
+                             size,
+                             location.file_name(),
+                             static_cast<int>(location.line()),
+                             location.function_name());
+}
+
+inline void* aph_calloc(
+    std::size_t count,
+    std::size_t size,
+    const std::source_location& location = std::source_location::current())
+{
+    return calloc_internal(count,
+                           size,
+                           location.file_name(),
+                           static_cast<int>(location.line()),
+                           location.function_name());
+}
+
+inline void* aph_calloc_memalign(
+    std::size_t count,
+    std::size_t alignment,
+    std::size_t size,
+    const std::source_location& location = std::source_location::current())
+{
+    return calloc_memalign_internal(count,
+                                    alignment,
+                                    size,
+                                    location.file_name(),
+                                    static_cast<int>(location.line()),
+                                    location.function_name());
+}
+
+inline void* aph_realloc(
+    void* ptr,
+    std::size_t size,
+    const std::source_location& location = std::source_location::current())
+{
+    return realloc_internal(ptr,
+                            size,
+                            location.file_name(),
+                            static_cast<int>(location.line()),
+                            location.function_name());
+}
+
+inline void aph_free(
+    void* ptr,
+    const std::source_location& location = std::source_location::current())
+{
+    free_internal(ptr,
+                  location.file_name(),
+                  static_cast<int>(location.line()),
+                  location.function_name());
+}
+
+template <typename ObjectType, typename... Args>
+ObjectType* aph_new(
+    const std::source_location& location = std::source_location::current(),
+    Args&&... args)
+{
+    return new_internal<ObjectType>(
+        location.file_name(),
+        static_cast<int>(location.line()),
+        location.function_name(),
+        std::forward<Args>(args)...
+    );
+}
+
+template <typename ObjectType>
+void aph_delete(
+    ObjectType* ptr,
+    const std::source_location& location = std::source_location::current())
+{
+    delete_internal(
+        ptr,
+        location.file_name(),
+        static_cast<int>(location.line()),
+        location.function_name()
+    );
+}
 
 }  // namespace aph::memory
 

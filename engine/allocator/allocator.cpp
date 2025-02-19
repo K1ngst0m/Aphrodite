@@ -1,39 +1,17 @@
 #include "allocator.h"
-#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <malloc.h>
 
-#if INTPTR_MAX == 0x7FFFFFFFFFFFFFFFLL
-    #define PTR_SIZE 8
-#elif INTPTR_MAX == 0x7FFFFFFF
-    #define PTR_SIZE 4
-#else
-    #error unsupported platform
-#endif
+namespace
+{
+template <std::integral T>
+constexpr T alignTo(T size, T alignment) noexcept
+{
+    return ((size + alignment - 1) & ~(alignment - 1));
+}
+}
 
-#define MEM_MAX(a, b) ((a) > (b) ? (a) : (b))
-
-#define ALIGN_TO(size, alignment) (((size) + (alignment)-1) & ~((alignment)-1))
-
-// Taken from EASTL EA_PLATFORM_MIN_MALLOC_ALIGNMENT
-#ifndef PLATFORM_MIN_MALLOC_ALIGNMENT
-    #if defined(__APPLE__)
-        #define PLATFORM_MIN_MALLOC_ALIGNMENT 16
-    #elif defined(__ANDROID__) && defined(ARCH_ARM_FAMILY)
-        #define PLATFORM_MIN_MALLOC_ALIGNMENT 8
-    #elif defined(NX64) && defined(ARCH_ARM_FAMILY)
-        #define PLATFORM_MIN_MALLOC_ALIGNMENT 8
-    #elif defined(__ANDROID__) && defined(ARCH_X86_FAMILY)
-        #define PLATFORM_MIN_MALLOC_ALIGNMENT 8
-    #else
-        #define PLATFORM_MIN_MALLOC_ALIGNMENT (PTR_SIZE * 2)
-    #endif
-#endif
-
-#define MIN_ALLOC_ALIGNMENT PLATFORM_MIN_MALLOC_ALIGNMENT
-
-// #define ENABLE_MEMORY_TRACKING
 namespace aph::memory
 {
 void* malloc_internal(size_t size, const char* f, int l, const char* sf)
@@ -43,8 +21,8 @@ void* malloc_internal(size_t size, const char* f, int l, const char* sf)
 
 void* memalign_internal(size_t align, size_t size, const char* f, int l, const char* sf)
 {
-    size_t adjustedSize = ALIGN_TO(size, align);
-    return std::aligned_alloc(align, adjustedSize);
+    size_t alignedSize = alignTo(size, align);
+    return std::aligned_alloc(align, alignedSize);
 }
 
 void* calloc_internal(size_t count, size_t size, const char* f, int l, const char* sf)
@@ -54,10 +32,10 @@ void* calloc_internal(size_t count, size_t size, const char* f, int l, const cha
 
 void* calloc_memalign(size_t count, size_t alignment, size_t size)
 {
-    size_t alignedArrayElementSize = ALIGN_TO(size, alignment);
+    size_t alignedArrayElementSize = alignTo(size, alignment);
     size_t totalBytes              = count * alignedArrayElementSize;
 
-    void* ptr = aph_memalign(alignment, totalBytes);
+    void* ptr = memalign(alignment, totalBytes);
 
     std::memset(ptr, 0, totalBytes);
     return ptr;

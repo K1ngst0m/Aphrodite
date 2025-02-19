@@ -1,7 +1,7 @@
 #ifndef OBJECTPOOL_H_
 #define OBJECTPOOL_H_
 
-#include "alignedAlloc.h"
+#include "allocator/allocator.h"
 #include "common/smallVector.h"
 
 namespace aph
@@ -16,7 +16,7 @@ public:
         if(m_vacants.empty())
         {
             unsigned num_objects = 64u << m_memory.size();
-            T*       ptr = static_cast<T*>(memAlignAlloc(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
+            T*       ptr = static_cast<T*>(memory::aph_memalign(std::max<size_t>(64, alignof(T)), num_objects * sizeof(T)));
             if(!ptr)
                 return nullptr;
 
@@ -49,7 +49,7 @@ protected:
 
     struct MallocDeleter
     {
-        void operator()(T* ptr) { memAlignFree(ptr); }
+        void operator()(T* ptr) { memory::aph_free(ptr); }
     };
 
     SmallVector<std::unique_ptr<T, MallocDeleter>> m_memory;
