@@ -165,6 +165,7 @@ public:
 
     void build(vk::SwapChain* pSwapChain = nullptr);
     void execute(vk::Fence* pFence = nullptr);
+    void cleanup();
 
 private:
     vk::Device* m_pDevice     = {};
@@ -177,6 +178,8 @@ private:
         SmallVector<RenderPass*>          passes;
         HashMap<std::string, std::size_t> passMap;
 
+        SmallVector<PassBufferResource*>  bufferResources;
+        SmallVector<PassImageResource*>   imageResources;
         SmallVector<PassResource*>        resources;
         HashMap<std::string, std::size_t> resourceMap;
     } m_declareData;

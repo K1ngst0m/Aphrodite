@@ -714,14 +714,24 @@ Result Device::releaseFence(Fence* pFence)
 CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 {
     APH_PROFILER_SCOPE();
-    CommandPool* pool = {};
-    APH_VR(m_resourcePool.commandPool.acquire(info, 1, &pool));
-    return pool;
+    VkCommandPoolCreateInfo cmdPoolInfo{
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        .queueFamilyIndex = info.queue->getFamilyIndex(),
+    };
+
+    cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+
+    VkCommandPool pool;
+    _VR(getDeviceTable()->vkCreateCommandPool(getHandle(), &cmdPoolInfo, vkAllocator(), &pool));
+    auto*   pPool = new CommandPool{this, info, pool};
+    return pPool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
 {
     APH_PROFILER_SCOPE();
-    m_resourcePool.commandPool.release(1, &pPool);
+    pPool->reset(true);
+    getDeviceTable()->vkDestroyCommandPool(getHandle(), pPool->getHandle(), vkAllocator());
+    delete pPool;
     return Result::Success;
 }
 void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
@@ -729,7 +739,8 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
                                    Fence* pFence)
 {
     APH_PROFILER_SCOPE();
-    CommandPool*   commandPool = acquireCommandPool({.queue = queue, .transient = true});
+
+    auto commandPool = acquireCommandPool({.queue = queue, .transient = true});
     CommandBuffer* cmd         = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 

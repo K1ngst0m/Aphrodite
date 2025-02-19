@@ -28,7 +28,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
     for(auto i = 0; i < count; i++)
     {
         ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue);
-        APH_ASSERT(!m_allocatedCommandBuffers.count(ppCommandBuffers[i]));
+        APH_ASSERT(!m_allocatedCommandBuffers.contains(ppCommandBuffers[i]));
         m_allocatedCommandBuffers.insert(ppCommandBuffers[i]);
     }
     CM_LOG_DEBUG("command buffer allocate, count %ld.", m_allocatedCommandBuffers.size());
@@ -72,9 +72,10 @@ void CommandPool::reset(bool freeMemory)
                                                     freeMemory ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
     if (freeMemory)
     {
-        for (auto cmd: m_allocatedCommandBuffers)
+        for (CommandBuffer* cmd: m_allocatedCommandBuffers)
         {
             m_pDevice->getDeviceTable()->vkFreeCommandBuffers(m_pDevice->getHandle(), getHandle(), 1, &cmd->getHandle());
+            m_commandBufferPool.free(cmd);
         }
         m_allocatedCommandBuffers.clear();
         m_commandBufferPool.clear();

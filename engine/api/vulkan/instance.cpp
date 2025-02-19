@@ -179,5 +179,6 @@ void Instance::Destroy(Instance* pInstance)
     destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, vkAllocator());
 #endif
     vkDestroyInstance(pInstance->getHandle(), vkAllocator());
+    delete pInstance;
 }
 }  // namespace aph::vk

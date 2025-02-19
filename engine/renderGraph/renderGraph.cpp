@@ -142,7 +142,7 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
     auto  index = m_declareData.passes.size();
     auto* pass  = m_resourcePool.renderPass.allocate(this, index, queueType, name);
     m_declareData.passes.emplace_back(pass);
-    m_declareData.passMap[name.data()] = index;
+    m_declareData.passMap[name] = index;
     return pass;
 }
 
@@ -195,7 +195,10 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     // topological sort
     {
-        APH_ASSERT(!m_buildData.passDependencyGraph.empty());
+        if(m_buildData.passDependencyGraph.empty())
+        {
+            VK_LOG_WARN("render graph is empty.");
+        }
         std::unordered_map<RenderPass*, int> inDegree;
         std::queue<RenderPass*>              zeroInDegreeQueue;
         auto&                                result = m_buildData.sortedPasses;
@@ -303,6 +306,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     }
 
     // record commands
+    // TODO some vk object leaks
     {
         auto& taskMgr = m_taskManager;
         auto  taskgrp = taskMgr.createTaskGroup();
@@ -415,14 +419,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 RenderGraph::~RenderGraph()
 {
     APH_PROFILER_SCOPE();
-    for(auto* res : m_declareData.resources)
-    {
-        if(!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
-        {
-            auto pImage = m_buildData.image[res];
-            m_pDevice->destroy(pImage);
-        }
-    }
+    cleanup();
 }
 
 PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* pBuffer)
@@ -461,9 +458,11 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     {
     case PassResource::Type::Image:
         res = m_resourcePool.passImageResource.allocate(type);
+        m_declareData.imageResources.emplace_back(static_cast<PassImageResource*>(res));
         break;
     case PassResource::Type::Buffer:
         res = m_resourcePool.passBufferResource.allocate(type);
+        m_declareData.bufferResources.emplace_back(static_cast<PassBufferResource*>(res));
         break;
     }
 
@@ -566,4 +565,51 @@ void RenderGraph::setBackBuffer(const std::string& backBuffer)
     APH_PROFILER_SCOPE();
     m_declareData.backBuffer = backBuffer;
 }
+
+void RenderGraph::cleanup()
+{
+    {
+        m_buildData.bufferBarriers.clear();
+        m_buildData.imageBarriers.clear();
+        m_buildData.frameSubmitInfos.clear();
+        for(auto* pass : m_declareData.passes)
+        {
+            m_buildData.passDependencyGraph[pass].clear();
+        }
+
+        for(auto pass: m_declareData.passes)
+        {
+            m_resourcePool.renderPass.free(pass);
+        }
+        m_declareData.passes.clear();
+
+        for(auto resource: m_declareData.imageResources)
+        {
+            m_resourcePool.passImageResource.free(resource);
+        }
+        m_declareData.imageResources.clear();
+
+        for(auto resource: m_declareData.bufferResources)
+        {
+            m_resourcePool.passBufferResource.free(resource);
+        }
+        m_declareData.bufferResources.clear();
+    }
+
+    for (auto [_, cmdPool]: m_buildData.cmdPools)
+    {
+        APH_VR(m_pDevice->releaseCommandPool(cmdPool));
+    }
+    m_buildData.cmdPools.clear();
+
+    for(auto* res : m_declareData.resources)
+    {
+        if(!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
+        {
+            auto pImage = m_buildData.image[res];
+            m_pDevice->destroy(pImage);
+        }
+    }
+
+};
 }  // namespace aph

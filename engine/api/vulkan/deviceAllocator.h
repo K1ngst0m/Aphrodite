@@ -37,10 +37,6 @@ public:
     virtual void              free(Image* pImage)                 = 0;
     virtual void              free(Buffer* pBuffer)               = 0;
     virtual void              clear()                             = 0;
-
-protected:
-    HashMap<Buffer*, DeviceAllocation*> m_bufferMemoryMap;
-    HashMap<Image*, DeviceAllocation*>  m_imageMemoryMap;
 };
 
 class VMADeviceAllocation final : public DeviceAllocation
@@ -87,6 +83,9 @@ public:
 
 private:
     VmaAllocator m_allocator;
+
+    HashMap<Buffer*, std::unique_ptr<VMADeviceAllocation>> m_bufferMemoryMap;
+    HashMap<Image*, DeviceAllocation*>  m_imageMemoryMap;
 };
 
 }  // namespace aph::vk
