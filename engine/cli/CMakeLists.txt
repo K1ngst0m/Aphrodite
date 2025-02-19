@@ -1,7 +1,3 @@
 file(GLOB API_CLI_SRC ${APH_ENGINE_CLI_DIR}/*.cpp)
-add_library(cli STATIC ${API_CLI_SRC})
-aph_compiler_options(cli)
-target_include_directories(cli PRIVATE
-  ${APH_ENGINE_DIR}
-  ${unordered_dense_SOURCE_DIR}/include
-)
+aph_setup_target(cli ${API_CLI_SRC})
+target_link_libraries(aph-cli PRIVATE aph-common)

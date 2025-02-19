@@ -1,20 +1,16 @@
 file(GLOB API_VULKAN_SRC ${APH_ENGINE_API_DIR}/vulkan/*.cpp)
-add_library(api STATIC ${API_VULKAN_SRC})
-aph_compiler_options(api)
+aph_setup_target(api ${API_VULKAN_SRC})
 
-target_include_directories(api PRIVATE
-  ${APH_ENGINE_DIR}
-)
-
-target_link_libraries(api
+target_link_libraries(aph-api
   PUBLIC
   volk
-  vulkan-registry
 
   PRIVATE
-  common
-  aph_allocator
-  threads
+  aph-common
+  aph-allocator
+  aph-threads
+
   spirv-cross-core
+  vulkan-registry
   GPUOpen::VulkanMemoryAllocator
 )

@@ -2,19 +2,20 @@ cmake_minimum_required(VERSION 3.24)
 
 project(Aphrodite)
 
-# Provide an option to enable testing
-option(APH_ENABLE_TESTING "Enable testing" OFF)
-option(APH_ENABLE_TRACING "Enable tracer" OFF)
-option(APH_ENABLE_TSAN "Enable thread sanitizer" OFF)
-option(APH_ENABLE_ASAN "Enable address sanitizer" OFF)
-option(APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
-
-SET(APH_WSI_BACKEND "Auto" CACHE STRING "WSI backend (possible values: Auto, GLFW, SDL2)")
-SET_PROPERTY(CACHE APH_WSI_BACKEND PROPERTY STRINGS Auto GLFW SDL2)
-
 set(APH_ROOT_DIR ${CMAKE_SOURCE_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${APH_ROOT_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${APH_ROOT_DIR}/cmake/modules")
+
+include(AphHelper)
+
+aph_option(APH_SHARED "Enable building shared library" OFF)
+aph_option(APH_ENABLE_TESTING "Enable testing" OFF)
+aph_option(APH_ENABLE_TRACING "Enable tracer" OFF)
+aph_option(APH_ENABLE_TSAN "Enable thread sanitizer" OFF)
+aph_option(APH_ENABLE_ASAN "Enable address sanitizer" ON)
+aph_option(APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
+
+aph_option(APH_WSI_BACKEND "WSI backend (possible values: Auto, GLFW, SDL2)" "Auto" Auto GLFW SDL2)
 
 include(AphDefinitions)
 include(AphCompilerOptions)

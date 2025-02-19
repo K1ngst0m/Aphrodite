@@ -36,7 +36,7 @@ APH_ALWAYS_INLINE bool Assert(bool cond, const char* file, int line, const char*
             { \
                 CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
                 LOG_FLUSH(); \
-                assert(false); \
+                aph::DebugBreak(); \
             } \
         } while(0)
 #else

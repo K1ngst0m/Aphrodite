@@ -1,7 +1,3 @@
 file(GLOB APH_EVENT_SRC ${APH_ENGINE_EVENT_DIR}/*.cpp)
-add_library(aph_event STATIC ${APH_EVENT_SRC})
-aph_compiler_options(aph_event)
-target_include_directories(aph_event PRIVATE
-  ${APH_ENGINE_DIR}
-)
-target_link_libraries(aph_event PRIVATE common)
+aph_setup_target(event ${APH_EVENT_SRC})
+target_link_libraries(aph-event PRIVATE aph-common)

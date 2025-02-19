@@ -11,12 +11,11 @@ if (APH_ENABLE_TSAN)
   add_link_options(-fsanitize=thread)
 endif()
 if (APH_ENABLE_ASAN)
-  add_compile_options(-fsanitize=thread)
   add_compile_options(-fsanitize=address)
   add_link_options(-fsanitize=address)
+  add_compile_definitions(MI_TRACK_ASAN=ON)
 endif()
 if (APH_ENABLE_MSAN)
-  add_compile_options(-fsanitize=thread)
   add_compile_options(-fsanitize=memory)
   add_link_options(-fsanitize=memory)
 endif()
@@ -65,8 +64,7 @@ function(aph_compiler_options TARGET)
 
         # common options
         target_compile_options(${TARGET} PRIVATE
-            -fdiagnostics-color=auto
-
+            -fdiagnostics-color=always
             -mavx2
         )
 

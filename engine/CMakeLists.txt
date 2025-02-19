@@ -14,28 +14,24 @@ add_subdirectory(module)
 add_subdirectory(renderGraph)
 add_subdirectory(ui)
 
-add_library(aph_engine INTERFACE)
+add_library(aph-engine INTERFACE)
+target_include_directories(aph-engine INTERFACE ${APH_ENGINE_DIR})
 
-target_include_directories(aph_engine INTERFACE ${APH_ENGINE_DIR})
-target_link_libraries(aph_engine INTERFACE
-  common
-  aph_math
-  aph_allocator
-  threads
-  aph_filesystem
-  aph_module
-  aph_ui
-  cli
-  app
-  wsi
-  resource
-  api
-  renderer
-  rendergraph
+target_link_libraries(aph-engine INTERFACE
+  aphrodite::common
+  aphrodite::math
+  aphrodite::allocator
+  aphrodite::threads
+  aphrodite::filesystem
+  aphrodite::module
+  aphrodite::ui
+  aphrodite::cli
+  aphrodite::app
+  aphrodite::wsi
+  aphrodite::resource
+  aphrodite::api
+  aphrodite::renderer
+  aphrodite::rendergraph
 )
 
-target_link_libraries(aph_engine INTERFACE
-  mimalloc-static
-  dl
-  dw
-)
+add_library(aphrodite::engine ALIAS aph-engine)
