@@ -124,79 +124,39 @@ private:
 
 }  // namespace aph
 
-#define LOG_SETUP_LEVEL_DEBUG() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Debug); \
-    } while(0)
-#define LOG_SETUP_LEVEL_INFO() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Info); \
-    } while(0)
-#define LOG_SETUP_LEVEL_WARN() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Warn); \
-    } while(0)
-#define LOG_SETUP_LEVEL_ERR() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::Error); \
-    } while(0)
-#define LOG_SETUP_LEVEL_NONE() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().setLogLevel(::aph::Logger::Level::None); \
-    } while(0)
+    inline void LOG_FLUSH()
+    {
+        ::aph::Logger::GetInstance().flush();
+    }
 
-#define LOG_FLUSH() \
-    do \
-    { \
-        ::aph::Logger::GetInstance().flush(); \
-    } while(0)
+#define GENERATE_LOG_FUNCS(TAG)       \
+    template <typename... Args>                                                          \
+    void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)                           \
+    {                                                                                    \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);        \
+        ::aph::Logger::GetInstance().debug(combined, std::forward<Args>(args)...);       \
+    }                                                                                    \
+    template <typename... Args>                                                          \
+    void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)                            \
+    {                                                                                    \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);        \
+        ::aph::Logger::GetInstance().warn(combined, std::forward<Args>(args)...);        \
+    }                                                                                    \
+    template <typename... Args>                                                          \
+    void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)                            \
+    {                                                                                    \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);        \
+        ::aph::Logger::GetInstance().info(combined, std::forward<Args>(args)...);        \
+    }                                                                                    \
+    template <typename... Args>                                                          \
+    void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)                             \
+    {                                                                                    \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);        \
+        ::aph::Logger::GetInstance().error(combined, std::forward<Args>(args)...);       \
+        ::aph::Logger::GetInstance().flush();                                            \
+    }
 
-#define CM_LOG_DEBUG(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().debug("[APH] " __VA_ARGS__); \
-    } while(0)
-#define CM_LOG_WARN(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().warn("[APH] " __VA_ARGS__); \
-    } while(0)
-#define CM_LOG_INFO(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().info("[APH] " __VA_ARGS__); \
-    } while(0)
-#define CM_LOG_ERR(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().error("[APH] " __VA_ARGS__); \
-    } while(0)
-
-#define VK_LOG_DEBUG(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().debug("[VK] " __VA_ARGS__); \
-    } while(0)
-#define VK_LOG_WARN(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().warn("[VK] " __VA_ARGS__); \
-    } while(0)
-#define VK_LOG_INFO(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().info("[VK] " __VA_ARGS__); \
-    } while(0)
-#define VK_LOG_ERR(...) \
-    do \
-    { \
-        ::aph::Logger::GetInstance().error("[VK] " __VA_ARGS__); \
-        ::aph::Logger::GetInstance().flush(); \
-    } while(0)
+GENERATE_LOG_FUNCS(CM)
+GENERATE_LOG_FUNCS(VK)
 
 #endif  // LOGGER_H_
