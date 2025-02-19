@@ -63,7 +63,7 @@ void basic_texture::init()
             &m_pIB);
 
         // matrix uniform buffer
-        m_pResourceLoader->load(aph::BufferLoadInfo{.debugName = "matrix data",
+        m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
                                                     .data      = &m_modelMatrix,
                                                     .createInfo =
                                                         {
@@ -74,7 +74,7 @@ void basic_texture::init()
                                 &m_pMatBuffer);
 
         // image and sampler
-        APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo2(aph::SamplerPreset::LinearClamp), &m_pSampler));
+        APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
         m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
                                                         .createInfo =
                                                             {

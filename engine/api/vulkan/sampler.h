@@ -67,7 +67,7 @@ private:
 
 namespace aph::vk::init
 {
-inline SamplerCreateInfo samplerCreateInfo2(SamplerPreset preset)
+inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
 {
     SamplerCreateInfo ci;
     ci.maxLod        = VK_LOD_CLAMP_NONE;

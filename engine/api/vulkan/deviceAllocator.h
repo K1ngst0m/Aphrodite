@@ -85,7 +85,7 @@ private:
     VmaAllocator m_allocator;
 
     HashMap<Buffer*, std::unique_ptr<VMADeviceAllocation>> m_bufferMemoryMap;
-    HashMap<Image*, DeviceAllocation*>  m_imageMemoryMap;
+    HashMap<Image*, std::unique_ptr<VMADeviceAllocation>>  m_imageMemoryMap;
 
     std::mutex m_allocationLock;
 };

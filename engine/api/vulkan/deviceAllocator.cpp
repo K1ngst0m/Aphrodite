@@ -108,17 +108,14 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     std::lock_guard<std::mutex> lock{m_allocationLock};
     vmaAllocateMemoryForImage(m_allocator, pImage->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindImageMemory(m_allocator, allocation, pImage->getHandle());
-    DeviceAllocation* pAllocation = new VMADeviceAllocation{allocation, allocInfo};
-    m_imageMemoryMap[pImage]      = pAllocation;
-    return pAllocation;
+    m_imageMemoryMap[pImage]      = std::make_unique<VMADeviceAllocation>(allocation, allocInfo);
+    return m_imageMemoryMap[pImage].get();
 }
 void VMADeviceAllocator::free(Image* pImage)
 {
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     std::lock_guard<std::mutex> lock{m_allocationLock};
-    vmaFreeMemory(m_allocator, alloc->getHandle());
-    delete alloc;
+    vmaFreeMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
     m_imageMemoryMap.erase(pImage);
 }
 void VMADeviceAllocator::free(Buffer* pBuffer)
@@ -137,9 +134,8 @@ Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
 Result VMADeviceAllocator::map(Image* pImage, void** ppData)
 {
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     std::lock_guard<std::mutex> lock{m_allocationLock};
-    return utils::getResult(vmaMapMemory(m_allocator, alloc->getHandle(), ppData));
+    return utils::getResult(vmaMapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle(), ppData));
 }
 void VMADeviceAllocator::unMap(Buffer* pBuffer)
 {
@@ -150,9 +146,8 @@ void VMADeviceAllocator::unMap(Buffer* pBuffer)
 void VMADeviceAllocator::unMap(Image* pImage)
 {
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
-    auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     std::lock_guard<std::mutex> lock{m_allocationLock};
-    vmaUnmapMemory(m_allocator, alloc->getHandle());
+    vmaUnmapMemory(m_allocator, m_imageMemoryMap[pImage]->getHandle());
 }
 void VMADeviceAllocator::clear()
 {

@@ -306,7 +306,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     }
 
     // record commands
-    // TODO some vk object leaks
     {
         auto& taskMgr = m_taskManager;
         auto  taskgrp = taskMgr.createTaskGroup();
@@ -390,6 +389,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     auto* pCmd = m_buildData.cmds[pass];
                     pCmd->begin();
                     pCmd->setDebugName(pass->m_name);
+                    // TODO findout why memory leaks
                     pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
                     pCmd->beginRendering(colorImages, pDepthImage);
