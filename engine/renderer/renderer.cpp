@@ -84,7 +84,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         // extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         // extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-        InstanceCreateInfo instanceCreateInfo{.enabledExtensions = extensions};
+        InstanceCreateInfo instanceCreateInfo{.enabledExtensions = std::move(extensions)};
 
         if(m_config.flags & RENDER_CFG_DEBUG)
         {

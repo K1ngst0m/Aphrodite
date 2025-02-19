@@ -75,6 +75,7 @@ function(aph_compiler_options TARGET)
         target_compile_options(${TARGET} PRIVATE
             $<$<CONFIG:Debug>:
                 -O0 -ggdb -g
+                -fno-omit-frame-pointer
             >
 
             $<$<CONFIG:Release>:

@@ -86,6 +86,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindBufferMemory(m_allocator, allocation, pBuffer->getHandle());
     DeviceAllocation* pAllocation = new VMADeviceAllocation{allocation, allocInfo};
+    APH_ASSERT(pAllocation);
     m_bufferMemoryMap[pBuffer]    = pAllocation;
     return pAllocation;
 }
@@ -126,21 +127,25 @@ void VMADeviceAllocator::free(Buffer* pBuffer)
 }
 Result VMADeviceAllocator::map(Buffer* pBuffer, void** ppData)
 {
+    APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     auto alloc = static_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
     return utils::getResult(vmaMapMemory(m_allocator, alloc->getHandle(), ppData));
 }
 Result VMADeviceAllocator::map(Image* pImage, void** ppData)
 {
+    APH_ASSERT(m_imageMemoryMap.contains(pImage));
     auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     return utils::getResult(vmaMapMemory(m_allocator, alloc->getHandle(), ppData));
 }
 void VMADeviceAllocator::unMap(Buffer* pBuffer)
 {
+    APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
     auto alloc = static_cast<VMADeviceAllocation*>(m_bufferMemoryMap[pBuffer]);
     vmaUnmapMemory(m_allocator, alloc->getHandle());
 }
 void VMADeviceAllocator::unMap(Image* pImage)
 {
+    APH_ASSERT(m_imageMemoryMap.contains(pImage));
     auto alloc = static_cast<VMADeviceAllocation*>(m_imageMemoryMap[pImage]);
     vmaUnmapMemory(m_allocator, alloc->getHandle());
 }

@@ -27,15 +27,8 @@ enum class TimeUnit
     NanoSeconds
 };
 
-enum DeviceCreateFlagBits
-{
-    // TODO
-};
-using DeviceCreateFlags = uint32_t;
-
 struct DeviceCreateInfo
 {
-    DeviceCreateFlags        flags;
     GPUFeature               enabledFeatures = {};
     PhysicalDevice*          pPhysicalDevice = nullptr;
     Instance*                pInstance       = nullptr;
