@@ -611,26 +611,21 @@ VkPipelineBindPoint VkCast(PipelineType type)
 
 namespace aph::vk
 {
-
-static VKAPI_ATTR void* VKAPI_CALL vkAphAlloc(void* pUserData, size_t size, size_t alignment,
-                                              VkSystemAllocationScope allocationScope)
-{
-    return memory::aph_memalign(alignment, size);
-}
-
-static VKAPI_ATTR void* VKAPI_CALL vkAphRealloc(void* pUserData, void* pOriginal, size_t size, size_t alignment,
-                                                VkSystemAllocationScope allocationScope)
-{
-    return memory::aph_realloc(pOriginal, size);
-}
-
-static VKAPI_ATTR void VKAPI_CALL vkAphFree(void* pUserData, void* pMemory)
-{
-    return memory::aph_free(pMemory);
-}
-
 const VkAllocationCallbacks* vkAllocator()
 {
+    // Lambdas for the Vulkan allocation callbacks:
+    auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) -> void* {
+        return memory::aph_memalign(alignment, size);
+    };
+
+    auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment, VkSystemAllocationScope allocationScope) -> void* {
+        return memory::aph_realloc(pOriginal, size);
+    };
+
+    auto vkAphFree = [](void* pUserData, void* pMemory) -> void {
+        memory::aph_free(pMemory);
+    };
+
     static const VkAllocationCallbacks allocator = {
         .pfnAllocation   = vkAphAlloc,
         .pfnReallocation = vkAphRealloc,

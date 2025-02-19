@@ -43,7 +43,8 @@ void* malloc_internal(size_t size, const char* f, int l, const char* sf)
 
 void* memalign_internal(size_t align, size_t size, const char* f, int l, const char* sf)
 {
-    return std::aligned_alloc(align, size);
+    size_t adjustedSize = ALIGN_TO(size, align);
+    return std::aligned_alloc(align, adjustedSize);
 }
 
 void* calloc_internal(size_t count, size_t size, const char* f, int l, const char* sf)
