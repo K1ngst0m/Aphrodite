@@ -1,7 +1,17 @@
 diff --git a/include/vk_mem_alloc.h b/include/vk_mem_alloc.h
+index 6f71d5b..17f3b61 100644
 --- a/include/vk_mem_alloc.h
 +++ b/include/vk_mem_alloc.h
-@@ -6769,7 +6769,7 @@ void VmaBlockMetadata::DebugLogAllocation(VkDeviceSize offset, VkDeviceSize size
+@@ -6204,7 +6204,7 @@ private:
+ class VmaWin32Handle
+ {
+     // ABI compatibility
+-    void* placeholder = VMA_NULL;
++    [[maybe_unused]] void* placeholder = VMA_NULL;
+     VMA_RW_MUTEX placeholder2;
+ };
+ #endif // VMA_EXTERNAL_MEMORY_WIN32
+@@ -6771,7 +6771,7 @@ void VmaBlockMetadata::DebugLogAllocation(VkDeviceSize offset, VkDeviceSize size
          VmaAllocation allocation = reinterpret_cast<VmaAllocation>(userData);
  
          userData = allocation->GetUserData();

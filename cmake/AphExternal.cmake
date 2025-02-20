@@ -10,11 +10,13 @@ CPMAddPackage(
   PATCHES ${APH_PATCH_DIR}/tinygltf.patch
 )
 
+if (APH_ENABLE_TRACING)
 CPMAddPackage(
   NAME tracy
   GITHUB_REPOSITORY wolfpld/tracy
   VERSION 0.10
 )
+endif()
 
 CPMAddPackage(
   NAME glm

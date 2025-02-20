@@ -120,6 +120,9 @@ public:
     void recordClear(ClearColorCallBack&& cb) { m_clearColorCB = cb; }
     void recordDepthStencil(ClearDepthStencilCallBack&& cb) { m_clearDepthStencilCB = cb; }
 
+    QueueType getQueueType() const { return m_queueType; }
+    uint32_t getIndex() const { return m_index; }
+
 private:
     ExecuteCallBack           m_executeCB;
     ClearDepthStencilCallBack m_clearDepthStencilCB;

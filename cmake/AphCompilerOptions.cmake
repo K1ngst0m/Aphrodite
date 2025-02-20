@@ -17,7 +17,7 @@ if (APH_ENABLE_ASAN)
 endif()
 if (APH_ENABLE_MSAN)
   if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-fsanitize=memory -fPIE -pie)
+    add_compile_options(-fsanitize=memory -fPIE)
     add_link_options(-fsanitize=memory -fPIE -pie)
   else()
     message(WARNING "Memory sanitizer is only supported by clang.")
@@ -66,6 +66,8 @@ function(aph_compiler_options TARGET)
 
           -Wno-sign-compare -Wcast-align -Wno-missing-field-initializers -Wno-unused-parameter
           -Wno-cast-align -Wno-format-security -Wno-nullability-completeness
+
+          -Wno-unused-but-set-parameter
         )
 
         target_precompile_headers(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR}/engine/pch.h)

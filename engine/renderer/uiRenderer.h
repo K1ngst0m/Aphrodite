@@ -4,8 +4,8 @@
 #include "api/vulkan/device.h"
 #include "resource/resourceLoader.h"
 
-class ImGuiContext;
-class ImFont;
+struct ImGuiContext;
+struct ImFont;
 
 namespace aph::vk
 {
