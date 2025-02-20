@@ -111,80 +111,91 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
     return spirv;
 }
 
-std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderStage stage)
+aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::string_view filename)
 {
     APH_PROFILER_SCOPE();
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
 
+    SessionDesc sessionDesc;
+
+    TargetDesc targetDesc;
+    targetDesc.format  = SLANG_SPIRV;
+    targetDesc.profile = globalSession->findProfile("spirv");
+    targetDesc.flags   = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+
+    sessionDesc.targets     = &targetDesc;
+    sessionDesc.targetCount = 1;
+
+    // TODO protocol
+    const char* searchPaths[]   = {"assets/shaders/slang"};
+    sessionDesc.searchPaths     = searchPaths;
+    sessionDesc.searchPathCount = 1;
+
+    Slang::ComPtr<ISession> session;
+    globalSession->createSession(sessionDesc, session.writeRef());
+
+    // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
+    // sessionDesc.preprocessorMacros = &fancyFlag;
+    // sessionDesc.preprocessorMacroCount = 1;
+
+    Slang::ComPtr<IBlob> diagnostics;
+
+    auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
+    auto                 module = session->loadModule(fname.c_str(), diagnostics.writeRef());
+
+    if(diagnostics)
     {
-        SessionDesc sessionDesc;
+        auto errlog = (const char*)diagnostics->getBufferPointer();
+        CM_LOG_ERR("[slang diagnostics]: %s", errlog);
+        APH_ASSERT(false);
+        return {};
+    }
 
-        TargetDesc targetDesc;
-        targetDesc.format  = SLANG_SPIRV;
-        targetDesc.profile = globalSession->findProfile("spirv");
-        targetDesc.flags   = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+    struct EntryPointData
+    {
+        Slang::ComPtr<IEntryPoint> entryPoint{};
+        SlangResult result{};
+    };
 
-        sessionDesc.targets     = &targetDesc;
-        sessionDesc.targetCount = 1;
+    aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> spvCodes;
+    std::vector<EntryPointData> entryPoints;
 
-        const char* searchPaths[]   = {"assets/shaders/slang"};
-        sessionDesc.searchPaths     = searchPaths;
-        sessionDesc.searchPathCount = 1;
+    struct StageEntry{
+        std::string_view entryPoint;
+        aph::ShaderStage aphStage;
+        SlangStage slangStage;
+    };
+    const aph::SmallVector<StageEntry> entryPointCandidates =
+    {
+        {"vertexMain", aph::ShaderStage::VS, SLANG_STAGE_VERTEX},
+        {"fragmentMain", aph::ShaderStage::FS, SLANG_STAGE_FRAGMENT},
+        {"computeMain", aph::ShaderStage::CS, SLANG_STAGE_COMPUTE},
+        {"taskMain", aph::ShaderStage::TS, SLANG_STAGE_AMPLIFICATION},
+        {"meshMain", aph::ShaderStage::MS, SLANG_STAGE_MESH},
+    };
 
-        Slang::ComPtr<ISession> session;
-        globalSession->createSession(sessionDesc, session.writeRef());
+    for (const auto& epCandidate: entryPointCandidates)
+    {
+        EntryPointData entryPointData{};
+        auto& findEntryPointResult = entryPointData.result;
+        auto& entryPoint = entryPointData.entryPoint;
+        findEntryPointResult = module->findAndCheckEntryPoint(epCandidate.entryPoint.data(), epCandidate.slangStage, entryPoint.writeRef(), diagnostics.writeRef());
 
-        // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
-        // sessionDesc.preprocessorMacros = &fancyFlag;
-        // sessionDesc.preprocessorMacroCount = 1;
+        if(!entryPoint)
+        {
+            continue;
+        }
 
-        Slang::ComPtr<IBlob> diagnostics;
-
-        auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
-        auto                 module = session->loadModule(fname.c_str(), diagnostics.writeRef());
-
-        if(diagnostics)
+        // TODO
+        if(diagnostics || !SLANG_SUCCEEDED(findEntryPointResult))
         {
             auto errlog = (const char*)diagnostics->getBufferPointer();
             CM_LOG_ERR("[slang diagnostics]: %s", errlog);
             APH_ASSERT(false);
             return {};
         }
-
-        Slang::ComPtr<IEntryPoint> entryPoint;
-        SlangResult findEntryPointResult;
-        switch(stage)
-        {
-        case aph::ShaderStage::VS:
-            findEntryPointResult = module->findAndCheckEntryPoint("vertexMain", SLANG_STAGE_VERTEX, entryPoint.writeRef(), diagnostics.writeRef());
-            break;
-        case aph::ShaderStage::FS:
-            findEntryPointResult = module->findAndCheckEntryPoint("fragmentMain", SLANG_STAGE_FRAGMENT, entryPoint.writeRef(), diagnostics.writeRef());
-            break;
-        case aph::ShaderStage::CS:
-            findEntryPointResult = module->findAndCheckEntryPoint("computeMain", SLANG_STAGE_COMPUTE, entryPoint.writeRef(), diagnostics.writeRef());
-            break;
-        case aph::ShaderStage::TS:
-            findEntryPointResult = module->findAndCheckEntryPoint("taskMain", SLANG_STAGE_AMPLIFICATION, entryPoint.writeRef(), diagnostics.writeRef());
-            break;
-        case aph::ShaderStage::MS:
-            findEntryPointResult = module->findAndCheckEntryPoint("meshMain", SLANG_STAGE_MESH, entryPoint.writeRef(), diagnostics.writeRef());
-            break;
-        default:
-            APH_ASSERT(false);
-            return {};
-        }
-
-        if (diagnostics || findEntryPointResult)
-        {
-            auto errlog = (const char*)diagnostics->getBufferPointer();
-            CM_LOG_ERR("[slang diagnostics]: %s", errlog);
-            APH_ASSERT(false);
-            return {};
-        }
-
 
         IComponentType* components[] = {module, entryPoint};
 
@@ -192,7 +203,7 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
 
         SlangResult result =
             session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
-        if (!SLANG_SUCCEEDED(result))
+        if(!SLANG_SUCCEEDED(result))
         {
             APH_ASSERT(false);
             return {};
@@ -215,10 +226,82 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
             std::vector<uint32_t> retSpvCode;
             retSpvCode.resize(spirvCode->getBufferSize() / 4);
             std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
-            return retSpvCode;
+            spvCodes[epCandidate.aphStage] = std::move(retSpvCode);
         }
     }
+
+    // for (const auto& stage: stages)
+    // {
+    //     APH_ASSERT(!spvCodes.contains(stage));
+    //     EntryPointData entryPointData{};
+    //     auto& findEntryPointResult = entryPointData.result;
+    //     auto& entryPoint = entryPointData.entryPoint;
+    //     switch(stage)
+    //     {
+    //     case aph::ShaderStage::VS:
+    //         findEntryPointResult = module->findAndCheckEntryPoint("vertexMain", SLANG_STAGE_VERTEX,
+    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
+    //     case aph::ShaderStage::FS:
+    //         findEntryPointResult = module->findAndCheckEntryPoint("fragmentMain", SLANG_STAGE_FRAGMENT,
+    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
+    //     case aph::ShaderStage::CS:
+    //         findEntryPointResult = module->findAndCheckEntryPoint("computeMain", SLANG_STAGE_COMPUTE,
+    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
+    //     case aph::ShaderStage::TS:
+    //         findEntryPointResult = module->findAndCheckEntryPoint("taskMain", SLANG_STAGE_AMPLIFICATION,
+    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
+    //     case aph::ShaderStage::MS:
+    //         findEntryPointResult = module->findAndCheckEntryPoint("meshMain", SLANG_STAGE_MESH,
+    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
+    //     default:
+    //         APH_ASSERT(false);
+    //         return {};
+    //     }
+
+    //     if (diagnostics || findEntryPointResult)
+    //     {
+    //         auto errlog = (const char*)diagnostics->getBufferPointer();
+    //         CM_LOG_ERR("[slang diagnostics]: %s", errlog);
+    //         APH_ASSERT(false);
+    //         return {};
+    //     }
+
+    //     // entryPoints.push_back(std::move(entryPointData));
+    //     IComponentType* components[] = {module, entryPoint};
+
+    //     Slang::ComPtr<slang::IComponentType> linkedProgram;
+
+    //     SlangResult result =
+    //         session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
+    //     if (!SLANG_SUCCEEDED(result))
+    //     {
+    //         APH_ASSERT(false);
+    //         return {};
+    //     }
+
+    //     Slang::ComPtr<slang::IBlob> spirvCode;
+    //     {
+    //         result = linkedProgram->getEntryPointCode(0, 0, spirvCode.writeRef(), diagnostics.writeRef());
+    //         if(diagnostics)
+    //         {
+    //             CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
+    //             APH_ASSERT(false);
+    //             return {};
+    //         }
+
+    //         APH_ASSERT(SLANG_SUCCEEDED(result));
+    //     }
+
+    //     {
+    //         std::vector<uint32_t> retSpvCode;
+    //         retSpvCode.resize(spirvCode->getBufferSize() / 4);
+    //         std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
+    //         spvCodes[stage] = std::move(retSpvCode);
+    //     }
+    // }
+    return spvCodes;
 }
+
 }  // namespace loader::shader
 
 namespace loader::geometry
@@ -270,7 +353,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
                     // TODO index type
                     .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
                                    .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
-                pLoader->load(loadInfo, &pIB);
+                APH_VR(pLoader->load(loadInfo, &pIB));
                 (*ppGeometry)->indexBuffer.push_back(pIB);
             }
 
@@ -289,7 +372,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
                     .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
                                    .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
                 };
-                pLoader->load(loadInfo, &pVB);
+                APH_VR(pLoader->load(loadInfo, &pVB));
                 (*ppGeometry)->vertexBuffers.push_back(pVB);
                 (*ppGeometry)->vertexStrides.push_back(accessor.ByteStride(bufferView));
             }
@@ -297,7 +380,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
             // TODO: Load draw arguments, handle materials, optimize geometry etc.
 
         }  // End of iterating through primitives
-    }      // End of iterating through meshes
+    }  // End of iterating through meshes
 
     const uint32_t indexStride = vertexCount > UINT16_MAX ? sizeof(uint32_t) : sizeof(uint16_t);
     (*ppGeometry)->indexType   = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
@@ -342,7 +425,7 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 
 ResourceLoader::~ResourceLoader() = default;
 
-void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
+Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
     APH_PROFILER_SCOPE();
     std::filesystem::path path;
@@ -372,7 +455,7 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         break;
         case ImageContainerType::Default:
             APH_ASSERT(false);
-            return;
+            return {Result::RuntimeError, "Unsupported image type."};
         }
     }
     else if(std::holds_alternative<ImageInfo>(info.data))
@@ -463,9 +546,11 @@ void ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
     m_pDevice->destroy(stagingBuffer);
     *ppImage = image;
+
+    return Result::Success;
 }
 
-void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
+Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
     vk::BufferCreateInfo bufferCI = info.createInfo;
@@ -485,70 +570,130 @@ void ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
             },
             ppBuffer);
     }
+
+    return Result::Success;
 }
 
-void ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
+Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
-    HashMap<ShaderStage, vk::Shader*> shaderList;
+
+    HashMap<ShaderStage, vk::Shader*> requiredShaderList;
+    HashMap<std::filesystem::path, HashSet<aph::ShaderStage>> requiredStageMaps;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
-        auto shader       = loadShader(stage, stageLoadInfo);
-        shaderList[stage] = shader;
+        if (std::holds_alternative<std::string>(stageLoadInfo.data))
+        {
+            auto path = Filesystem::GetInstance().resolvePath(std::get<std::string>(stageLoadInfo.data));
+            requiredStageMaps[path].insert(stage);
+        }
+        else
+        {
+            requiredShaderList[stage] = loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data));
+        }
+    }
+
+    for(const auto& [path, requiredStages] : requiredStageMaps)
+    {
+        if (m_shaderCaches.contains(path.string()))
+        {
+            const auto& shaderCache = m_shaderCaches[path.string()];
+            for (const auto& stage: requiredStages)
+            {
+                APH_ASSERT(shaderCache.contains(stage));
+                requiredShaderList[stage] = shaderCache.at(stage);
+            }
+            continue;
+        }
+
+        if(path.extension() == ".spv")
+        {
+            auto shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()));
+            // TODO multi shader stage single spv binary support
+            auto stage = *requiredStages.cbegin();
+            requiredShaderList[stage] = shader;
+            m_shaderCaches[path][stage] = shader;
+        }
+        else if(path.extension() == ".slang")
+        {
+            auto spvCodeMap = loader::shader::loadSlangFromFile(path.c_str());
+            for (const auto& [stage, spv]: spvCodeMap)
+            {
+                APH_ASSERT(!requiredShaderList.contains(stage));
+
+                auto shader       = loadShader(spv);
+                m_shaderCaches[path][stage] = shader;
+
+                if (requiredStages.contains(stage))
+                {
+                    requiredShaderList[stage] = shader;
+                }
+            }
+        }
+        else
+        {
+            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
+            APH_ASSERT(false);
+            return {Result::RuntimeError, "Unsupported shader format."};
+        }
     }
 
     // vs + fs
-    if(shaderList.contains(ShaderStage::VS))
+    if(requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
     {
-        APH_ASSERT(shaderList.contains(ShaderStage::FS));
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .geometry{.pVertex = shaderList[ShaderStage::VS], .pFragment = shaderList[ShaderStage::FS]},
+                .geometry{.pVertex = requiredShaderList[ShaderStage::VS], .pFragment = requiredShaderList[ShaderStage::FS]},
                 .type = PipelineType::Geometry,
             },
             ppProgram));
     }
-    else if(shaderList.contains(ShaderStage::MS))
+    else if(requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
     {
-        APH_ASSERT(shaderList.contains(ShaderStage::FS));
         vk::ProgramCreateInfo ci{
-            .mesh{.pMesh = shaderList[ShaderStage::MS], .pFragment = shaderList[ShaderStage::FS]},
+            .mesh{.pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS]},
             .type = PipelineType::Mesh,
         };
-        if(shaderList.contains(ShaderStage::TS))
+        if(requiredShaderList.contains(ShaderStage::TS))
         {
-            ci.mesh.pTask = shaderList[ShaderStage::TS];
+            ci.mesh.pTask = requiredShaderList[ShaderStage::TS];
         }
         APH_VR(m_pDevice->create(ci, ppProgram));
     }
     // cs
-    else if(shaderList.contains(ShaderStage::CS))
+    else if(requiredShaderList.contains(ShaderStage::CS))
     {
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .compute{.pCompute = shaderList[ShaderStage::CS]},
+                .compute{.pCompute = requiredShaderList[ShaderStage::CS]},
                 .type = PipelineType::Compute,
             },
             ppProgram));
     }
     else
     {
-        // TODO
         APH_ASSERT(false);
+        return { Result::RuntimeError , "Unsupported shader stage combinations."};
     }
+
+    return Result::Success;
 }
 
 void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
-    for(const auto& [_, shaderModule] : m_shaderModuleCaches)
+    for(const auto& [_, shaderCache] : m_shaderCaches)
     {
-        m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shaderModule->getHandle(),
-                                                           vk::vkAllocator());
+        for(const auto& [_, shader] : shaderCache)
+        {
+            m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(),
+                                                            shader->getHandle(),
+                                                            vk::vkAllocator());
+        }
     }
 }
 
-void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
+Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 {
     APH_PROFILER_SCOPE();
     auto path = std::filesystem::path{info.path};
@@ -562,7 +707,9 @@ void ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
     {
         CM_LOG_ERR("Unsupported model file type: %s.", ext);
         APH_ASSERT(false);
+        return {Result::RuntimeError, "Unsupported model file type."};
     }
+    return Result::Success;
 }
 
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
@@ -646,66 +793,17 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     m_pDevice->unMapMemory(pBuffer);
 }
 
-vk::Shader* ResourceLoader::loadShader(ShaderStage stage, const ShaderStageLoadInfo& info)
+vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv)
 {
-    APH_PROFILER_SCOPE();
-    auto                     uuid = m_uuidGenerator.getUUID().str();
     VkShaderModuleCreateInfo createInfo{
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = spv.size() * sizeof(spv[0]),
+        .pCode = spv.data(),
     };
-    std::vector<uint32_t> spvCode;
-    if(std::holds_alternative<std::string>(info.data))
-    {
-        std::filesystem::path path = std::get<std::string>(info.data);
-
-        // TODO override with new load info
-        // if(m_shaderUUIDMap.contains(path))
-        // {
-        //     return m_shaderModuleCaches.at(m_shaderUUIDMap.at(path)).get();
-        // }
-
-        if(path.extension() == ".spv")
-        {
-            spvCode = loader::shader::loadSpvFromFile(path.string());
-        }
-        else if(path.extension() == ".slang")
-        {
-            spvCode = loader::shader::loadSlangFromFile(path.string(), stage);
-        }
-        else
-        {
-            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
-            APH_ASSERT(false);
-        }
-        APH_ASSERT(!spvCode.empty());
-
-        createInfo.codeSize = spvCode.size() * sizeof(spvCode[0]);
-        createInfo.pCode    = spvCode.data();
-
-        m_shaderUUIDMap[path] = uuid;
-    }
-    else if(std::holds_alternative<std::vector<uint32_t>>(info.data))
-    {
-        auto& code          = std::get<std::vector<uint32_t>>(info.data);
-        createInfo.codeSize = code.size() * sizeof(code[0]);
-        createInfo.pCode    = code.data();
-
-        {
-            spvCode = code;
-        }
-    }
-
-    // TODO macro
-    {
-    }
-
     VkShaderModule handle;
     _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
                                                           &handle));
-
-    APH_ASSERT(!m_shaderModuleCaches.contains(uuid));
-    m_shaderModuleCaches[uuid] = std::make_unique<vk::Shader>(spvCode, handle, info.entryPoint);
-
-    return m_shaderModuleCaches[uuid].get();
+    // TODO entry point input
+    return m_shaderPool.allocate(spv, handle, "main");
 }
 }  // namespace aph

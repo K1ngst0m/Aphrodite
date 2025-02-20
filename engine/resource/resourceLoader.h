@@ -12,7 +12,7 @@ namespace aph
 
 struct ResourceLoaderCreateInfo
 {
-    // TODO
+    // TODO for debugging
     bool        isMultiThreads = false;
     vk::Device* pDevice        = {};
 };
@@ -104,26 +104,28 @@ public:
     ~ResourceLoader();
 
     template <typename T_CreateInfo, typename T_Resource>
-    void loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
+    Result loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
     {
+        Result result = Result::Success;
         auto taskGroup = m_taskManager.createTaskGroup("resource loader.");
-        taskGroup->addTask([this, info, ppResource]() { load(info, ppResource); });
+        taskGroup->addTask([this, info, ppResource, &result]() { result = load(info, ppResource); });
         taskGroup->submit();
+        return result;
     }
 
     void wait() { m_taskManager.wait(); }
 
-    void load(const ImageLoadInfo& info, vk::Image** ppImage);
-    void load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
-    void load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
-    void load(const GeometryLoadInfo& info, Geometry** ppGeometry);
+    Result load(const ImageLoadInfo& info, vk::Image** ppImage);
+    Result load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
+    Result load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
+    Result load(const GeometryLoadInfo& info, Geometry** ppGeometry);
     void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
     void cleanup();
 
 private:
     void        writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
-    vk::Shader* loadShader(ShaderStage stage, const ShaderStageLoadInfo& info);
+    vk::Shader* loadShader(const std::vector<uint32_t>& spv);
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -132,10 +134,11 @@ private:
     vk::Queue*               m_pQueue      = {};
 
 private:
-    HashMap<std::string, std::unique_ptr<vk::Shader>> m_shaderModuleCaches = {};
-    uuid::UUIDGenerator<std::mt19937_64>              m_uuidGenerator      = {};
-    HashMap<std::string, std::string>                 m_shaderUUIDMap      = {};
-    std::mutex                                        m_updateLock;
+    ThreadSafeObjectPool<vk::Shader> m_shaderPool;
+    HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches       = {};
+    uuid::UUIDGenerator<std::mt19937_64> m_uuidGenerator      = {};
+    HashMap<std::string, std::string>    m_shaderUUIDMap      = {};
+    std::mutex                           m_updateLock;
 };
 }  // namespace aph
 

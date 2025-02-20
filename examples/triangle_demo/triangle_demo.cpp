@@ -45,30 +45,30 @@ void triangle_demo::init()
         };
         constexpr std::array indexArray{0U, 1U, 2U};
 
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::BufferLoadInfo{
                 .debugName  = "triangle::vertexBuffer",
                 .data       = vertexArray.data(),
                 .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
-            &m_pVB);
+            &m_pVB));
 
         // index buffer
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::BufferLoadInfo{.debugName  = "triangle::indexbuffer",
                                 .data       = indexArray.data(),
                                 .createInfo = {.size = static_cast<uint32_t>(indexArray.size() * sizeof(indexArray[0])),
                                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
-            &m_pIB);
+            &m_pIB));
 
         // shader program
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::ShaderLoadInfo{.stageInfo =
                                     {
                                         {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
                                         {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
                                     }},
-            &m_pProgram);
+            &m_pProgram));
         m_pResourceLoader->wait();
 
         // record graph execution

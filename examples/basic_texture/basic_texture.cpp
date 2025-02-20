@@ -48,22 +48,22 @@ void basic_texture::init()
         };
 
         // vertex buffer
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::BufferLoadInfo{.debugName  = "quad::vertexBuffer",
                                 .data       = vertices.data(),
                                 .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
                                                .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
-            &m_pVB);
+            &m_pVB));
 
         // index buffer
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::BufferLoadInfo{.data       = indices.data(),
                                 .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
                                                .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
-            &m_pIB);
+            &m_pIB));
 
         // matrix uniform buffer
-        m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
+        APH_VR(m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
                                                     .data      = &m_modelMatrix,
                                                     .createInfo =
                                                         {
@@ -71,27 +71,27 @@ void basic_texture::init()
                                                             .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                                                             .domain = aph::BufferDomain::LinkedDeviceHost,
                                                         }},
-                                &m_pMatBuffer);
+                                &m_pMatBuffer));
 
         // image and sampler
         APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
-        m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
+        APH_VR(m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
                                                         .createInfo =
                                                             {
                                                                 .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
                                                                 .domain    = aph::ImageDomain::Device,
                                                                 .imageType = VK_IMAGE_TYPE_2D,
                                                             }},
-                                     &m_pImage);
+                                     &m_pImage));
 
         // pipeline
-        m_pResourceLoader->loadAsync(
+        APH_VR(m_pResourceLoader->loadAsync(
             aph::ShaderLoadInfo{.stageInfo =
                                     {
                                         {aph::ShaderStage::VS, {"shader_slang://texture.slang"}},
                                         {aph::ShaderStage::FS, {"shader_slang://texture.slang"}},
                                     }},
-            &m_pProgram);
+            &m_pProgram));
         m_pResourceLoader->wait();
 
         // record graph execution
