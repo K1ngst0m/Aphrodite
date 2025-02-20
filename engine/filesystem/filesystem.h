@@ -51,7 +51,7 @@ private:
     HashMap<int, std::function<void()>> m_callbacks;
     HashMap<std::string, std::string>   m_protocols;
     HashMap<void*, std::size_t>         m_mappedFiles;
-    std::mutex                           m_mapLock;
+    std::mutex                          m_mapLock;
 };
 
 }  // namespace aph

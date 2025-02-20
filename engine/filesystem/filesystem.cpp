@@ -46,17 +46,16 @@ std::filesystem::path Filesystem::resolvePath(std::string_view inputPath)
     {
         protocol     = inputPath.substr(0, protocolEnd);
         relativePath = inputPath.substr(protocolEnd + 3);
+        if(!m_protocols.contains(protocol))
+        {
+            CM_LOG_ERR("Unknown protocol: %s", protocol);
+            return {};
+        }
     }
     else
     {
         protocol     = "file";
         relativePath = inputPath;
-    }
-
-    if(!m_protocols.contains(protocol))
-    {
-        CM_LOG_ERR("Unknown protocol: %s", protocol);
-        return {};
     }
 
     return getCurrentWorkingDirectory() / std::filesystem::path(m_protocols[protocol]) / relativePath;
