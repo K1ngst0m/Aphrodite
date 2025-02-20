@@ -3,8 +3,9 @@ file(GLOB APH_COMMON_SRC ${APH_ENGINE_COMMON_DIR}/*.cpp)
 aph_setup_target(common ${APH_COMMON_SRC})
 
 target_compile_definitions(aph-common
-  PRIVATE
+  PUBLIC
   $<$<BOOL:${APH_ENABLE_TRACING}>:APH_ENABLE_TRACY>
+  $<$<BOOL:${APH_ENABLE_TRACING}>:TRACY_ENABLE>
 )
 
 target_link_libraries(aph-common

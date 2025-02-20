@@ -14,7 +14,7 @@ if (APH_ENABLE_TRACING)
 CPMAddPackage(
   NAME tracy
   GITHUB_REPOSITORY wolfpld/tracy
-  VERSION 0.10
+  VERSION 0.11.1
 )
 endif()
 
