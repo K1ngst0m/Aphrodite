@@ -109,6 +109,23 @@ constexpr std::string_view toString(QueueType type) noexcept
         return "Unknown";
     }
 }
+
+constexpr std::string toString(ShaderStage stage)
+{
+    switch (stage)
+    {
+        case ShaderStage::NA:  return "NA";
+        case ShaderStage::VS:  return "VS";
+        case ShaderStage::TCS: return "TCS";
+        case ShaderStage::TES: return "TES";
+        case ShaderStage::GS:  return "GS";
+        case ShaderStage::FS:  return "FS";
+        case ShaderStage::CS:  return "CS";
+        case ShaderStage::TS:  return "TS";
+        case ShaderStage::MS:  return "MS";
+        default:               return "Unknown";
+    }
+}
 }  // namespace aph::vk
 
 #endif  // VKLUTILS_H_

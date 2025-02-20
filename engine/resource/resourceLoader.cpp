@@ -111,9 +111,24 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
     return spirv;
 }
 
+#define SLANG_CR(diagnostics) \
+    do \
+    { \
+        if(diagnostics) \
+        { \
+            auto errlog = (const char*)diagnostics->getBufferPointer(); \
+            CM_LOG_ERR("[slang diagnostics]: %s", errlog); \
+            APH_ASSERT(false); \
+            return {}; \
+        } \
+    } while(0)
+
 aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::string_view filename)
 {
     APH_PROFILER_SCOPE();
+    // TODO multi global session in different threads
+    static std::mutex           mtx;
+    std::lock_guard<std::mutex> lock{mtx};
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
@@ -142,83 +157,60 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
 
     Slang::ComPtr<IBlob> diagnostics;
 
-    auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
-    auto                 module = session->loadModule(fname.c_str(), diagnostics.writeRef());
+    auto fname  = aph::Filesystem::GetInstance().resolvePath(filename);
+    auto module = session->loadModule(fname.c_str(), diagnostics.writeRef());
 
-    if(diagnostics)
+    SLANG_CR(diagnostics);
+
+    aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> spvCodes;
+
+    std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
+    int                                               definedEntryPointCount = module->getDefinedEntryPointCount();
+    for(int i = 0; i < definedEntryPointCount; i++)
     {
-        auto errlog = (const char*)diagnostics->getBufferPointer();
-        CM_LOG_ERR("[slang diagnostics]: %s", errlog);
+        Slang::ComPtr<slang::IEntryPoint> entryPoint;
+        auto                              result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
+        APH_ASSERT(SLANG_SUCCEEDED(result));
+
+        componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(entryPoint.get()));
+    }
+
+    Slang::ComPtr<slang::IComponentType> composed;
+    auto                                 result =
+        session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(), componentsToLink.size(),
+                                              composed.writeRef(), diagnostics.writeRef());
+    APH_ASSERT(SLANG_SUCCEEDED(result));
+
+    Slang::ComPtr<slang::IComponentType> program;
+    result = composed->link(program.writeRef(), diagnostics.writeRef());
+
+    SLANG_CR(diagnostics);
+
+    slang::ProgramLayout* programLayout = program->getLayout(0, diagnostics.writeRef());
+
+    SLANG_CR(diagnostics);
+
+    if(!programLayout)
+    {
+        CM_LOG_ERR("Failed to get program layout");
         APH_ASSERT(false);
         return {};
     }
 
-    struct EntryPointData
-    {
-        Slang::ComPtr<IEntryPoint> entryPoint{};
-        SlangResult result{};
+    static const aph::HashMap<SlangStage, aph::ShaderStage> slangStageToShaderStageMap = {
+        {SLANG_STAGE_VERTEX, aph::ShaderStage::VS},  {SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
+        {SLANG_STAGE_COMPUTE, aph::ShaderStage::CS}, {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
+        {SLANG_STAGE_MESH, aph::ShaderStage::MS},
     };
 
-    aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> spvCodes;
-    std::vector<EntryPointData> entryPoints;
-
-    struct StageEntry{
-        std::string_view entryPoint;
-        aph::ShaderStage aphStage;
-        SlangStage slangStage;
-    };
-    const aph::SmallVector<StageEntry> entryPointCandidates =
+    for(int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
     {
-        {"vertexMain", aph::ShaderStage::VS, SLANG_STAGE_VERTEX},
-        {"fragmentMain", aph::ShaderStage::FS, SLANG_STAGE_FRAGMENT},
-        {"computeMain", aph::ShaderStage::CS, SLANG_STAGE_COMPUTE},
-        {"taskMain", aph::ShaderStage::TS, SLANG_STAGE_AMPLIFICATION},
-        {"meshMain", aph::ShaderStage::MS, SLANG_STAGE_MESH},
-    };
-
-    for (const auto& epCandidate: entryPointCandidates)
-    {
-        EntryPointData entryPointData{};
-        auto& findEntryPointResult = entryPointData.result;
-        auto& entryPoint = entryPointData.entryPoint;
-        findEntryPointResult = module->findAndCheckEntryPoint(epCandidate.entryPoint.data(), epCandidate.slangStage, entryPoint.writeRef(), diagnostics.writeRef());
-
-        if(!entryPoint)
-        {
-            continue;
-        }
-
-        // TODO
-        if(diagnostics || !SLANG_SUCCEEDED(findEntryPointResult))
-        {
-            auto errlog = (const char*)diagnostics->getBufferPointer();
-            CM_LOG_ERR("[slang diagnostics]: %s", errlog);
-            APH_ASSERT(false);
-            return {};
-        }
-
-        IComponentType* components[] = {module, entryPoint};
-
-        Slang::ComPtr<slang::IComponentType> linkedProgram;
-
-        SlangResult result =
-            session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
-        if(!SLANG_SUCCEEDED(result))
-        {
-            APH_ASSERT(false);
-            return {};
-        }
+        EntryPointReflection* entryPointReflection = programLayout->getEntryPointByIndex(entryPointIndex);
 
         Slang::ComPtr<slang::IBlob> spirvCode;
         {
-            result = linkedProgram->getEntryPointCode(0, 0, spirvCode.writeRef(), diagnostics.writeRef());
-            if(diagnostics)
-            {
-                CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
-                APH_ASSERT(false);
-                return {};
-            }
-
+            result = program->getEntryPointCode(entryPointIndex, 0, spirvCode.writeRef(), diagnostics.writeRef());
+            SLANG_CR(diagnostics);
             APH_ASSERT(SLANG_SUCCEEDED(result));
         }
 
@@ -226,81 +218,28 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
             std::vector<uint32_t> retSpvCode;
             retSpvCode.resize(spirvCode->getBufferSize() / 4);
             std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
-            spvCodes[epCandidate.aphStage] = std::move(retSpvCode);
+
+            aph::ShaderStage stage = slangStageToShaderStageMap.at(entryPointReflection->getStage());
+
+            // TODO use the entrypoint name in loading info
+            if(spvCodes.contains(stage))
+            {
+                CM_LOG_WARN(
+                    "The shader file %s has mutliple entry point of [%s] stage. \
+                            \nThe shader module would use the first one.",
+                    filename, aph::vk::utils::toString(stage));
+            }
+            else
+            {
+                spvCodes[stage] = std::move(retSpvCode);
+            }
         }
     }
 
-    // for (const auto& stage: stages)
-    // {
-    //     APH_ASSERT(!spvCodes.contains(stage));
-    //     EntryPointData entryPointData{};
-    //     auto& findEntryPointResult = entryPointData.result;
-    //     auto& entryPoint = entryPointData.entryPoint;
-    //     switch(stage)
-    //     {
-    //     case aph::ShaderStage::VS:
-    //         findEntryPointResult = module->findAndCheckEntryPoint("vertexMain", SLANG_STAGE_VERTEX,
-    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
-    //     case aph::ShaderStage::FS:
-    //         findEntryPointResult = module->findAndCheckEntryPoint("fragmentMain", SLANG_STAGE_FRAGMENT,
-    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
-    //     case aph::ShaderStage::CS:
-    //         findEntryPointResult = module->findAndCheckEntryPoint("computeMain", SLANG_STAGE_COMPUTE,
-    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
-    //     case aph::ShaderStage::TS:
-    //         findEntryPointResult = module->findAndCheckEntryPoint("taskMain", SLANG_STAGE_AMPLIFICATION,
-    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
-    //     case aph::ShaderStage::MS:
-    //         findEntryPointResult = module->findAndCheckEntryPoint("meshMain", SLANG_STAGE_MESH,
-    //         entryPoint.writeRef(), diagnostics.writeRef()); break;
-    //     default:
-    //         APH_ASSERT(false);
-    //         return {};
-    //     }
-
-    //     if (diagnostics || findEntryPointResult)
-    //     {
-    //         auto errlog = (const char*)diagnostics->getBufferPointer();
-    //         CM_LOG_ERR("[slang diagnostics]: %s", errlog);
-    //         APH_ASSERT(false);
-    //         return {};
-    //     }
-
-    //     // entryPoints.push_back(std::move(entryPointData));
-    //     IComponentType* components[] = {module, entryPoint};
-
-    //     Slang::ComPtr<slang::IComponentType> linkedProgram;
-
-    //     SlangResult result =
-    //         session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
-    //     if (!SLANG_SUCCEEDED(result))
-    //     {
-    //         APH_ASSERT(false);
-    //         return {};
-    //     }
-
-    //     Slang::ComPtr<slang::IBlob> spirvCode;
-    //     {
-    //         result = linkedProgram->getEntryPointCode(0, 0, spirvCode.writeRef(), diagnostics.writeRef());
-    //         if(diagnostics)
-    //         {
-    //             CM_LOG_ERR("%s\n", (const char*)diagnostics->getBufferPointer());
-    //             APH_ASSERT(false);
-    //             return {};
-    //         }
-
-    //         APH_ASSERT(SLANG_SUCCEEDED(result));
-    //     }
-
-    //     {
-    //         std::vector<uint32_t> retSpvCode;
-    //         retSpvCode.resize(spirvCode->getBufferSize() / 4);
-    //         std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
-    //         spvCodes[stage] = std::move(retSpvCode);
-    //     }
-    // }
     return spvCodes;
 }
+
+#undef SLANG_CR
 
 }  // namespace loader::shader
 
@@ -578,11 +517,11 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 {
     APH_PROFILER_SCOPE();
 
-    HashMap<ShaderStage, vk::Shader*> requiredShaderList;
+    HashMap<ShaderStage, vk::Shader*>                         requiredShaderList;
     HashMap<std::filesystem::path, HashSet<aph::ShaderStage>> requiredStageMaps;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
-        if (std::holds_alternative<std::string>(stageLoadInfo.data))
+        if(std::holds_alternative<std::string>(stageLoadInfo.data))
         {
             auto path = Filesystem::GetInstance().resolvePath(std::get<std::string>(stageLoadInfo.data));
             requiredStageMaps[path].insert(stage);
@@ -595,12 +534,12 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 
     for(const auto& [path, requiredStages] : requiredStageMaps)
     {
-        if (m_shaderCaches.contains(path.string()))
+        if(m_shaderCaches.contains(path.string()))
         {
             const auto& shaderCache = m_shaderCaches[path.string()];
-            for (const auto& stage: requiredStages)
+            for(const auto& stage : requiredStages)
             {
-                APH_ASSERT(shaderCache.contains(stage));
+                APH_ASSERT(!shaderCache.contains(stage));
                 requiredShaderList[stage] = shaderCache.at(stage);
             }
             continue;
@@ -610,21 +549,25 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         {
             auto shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()));
             // TODO multi shader stage single spv binary support
-            auto stage = *requiredStages.cbegin();
-            requiredShaderList[stage] = shader;
+            auto stage                  = *requiredStages.cbegin();
+            requiredShaderList[stage]   = shader;
             m_shaderCaches[path][stage] = shader;
         }
         else if(path.extension() == ".slang")
         {
             auto spvCodeMap = loader::shader::loadSlangFromFile(path.c_str());
-            for (const auto& [stage, spv]: spvCodeMap)
+            if(spvCodeMap.empty())
+            {
+                return {Result::RuntimeError, "Failed to load slang shader from file."};
+            }
+            for(const auto& [stage, spv] : spvCodeMap)
             {
                 APH_ASSERT(!requiredShaderList.contains(stage));
 
-                auto shader       = loadShader(spv);
+                auto shader                 = loadShader(spv);
                 m_shaderCaches[path][stage] = shader;
 
-                if (requiredStages.contains(stage))
+                if(requiredStages.contains(stage))
                 {
                     requiredShaderList[stage] = shader;
                 }
@@ -643,7 +586,8 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     {
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .geometry{.pVertex = requiredShaderList[ShaderStage::VS], .pFragment = requiredShaderList[ShaderStage::FS]},
+                .geometry{.pVertex   = requiredShaderList[ShaderStage::VS],
+                          .pFragment = requiredShaderList[ShaderStage::FS]},
                 .type = PipelineType::Geometry,
             },
             ppProgram));
@@ -673,7 +617,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     else
     {
         APH_ASSERT(false);
-        return { Result::RuntimeError , "Unsupported shader stage combinations."};
+        return {Result::RuntimeError, "Unsupported shader stage combinations."};
     }
 
     return Result::Success;
@@ -686,9 +630,8 @@ void ResourceLoader::cleanup()
     {
         for(const auto& [_, shader] : shaderCache)
         {
-            m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(),
-                                                            shader->getHandle(),
-                                                            vk::vkAllocator());
+            m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shader->getHandle(),
+                                                               vk::vkAllocator());
         }
     }
 }
@@ -730,9 +673,8 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeSingleCommands(m_pQueue, [=](auto* cmd) {
-                cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data);
-            });
+            m_pDevice->executeSingleCommands(
+                m_pQueue, [=](auto* cmd) { cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data); });
         }
         else
         {
@@ -796,9 +738,9 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv)
 {
     VkShaderModuleCreateInfo createInfo{
-        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .codeSize = spv.size() * sizeof(spv[0]),
-        .pCode = spv.data(),
+        .pCode    = spv.data(),
     };
     VkShaderModule handle;
     _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
