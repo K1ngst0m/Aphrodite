@@ -2,6 +2,7 @@
 #define SYNCPRIMITIVESPOOL_H_
 
 #include "allocator/objectPool.h"
+#include "common/hash.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -58,18 +59,18 @@ public:
     VkResult ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores);
 
     bool Exists(Fence* fence);
-    bool Exists(VkSemaphore semaphore);
+    bool Exists(Semaphore* semaphore);
 
 private:
     Device*          m_pDevice      = {};
     VolkDeviceTable* m_pDeviceTable = {};
 
-    std::set<VkFence>               m_allFences       = {};
-    std::queue<VkFence>             m_availableFences = {};
+    HashSet<Fence*>                 m_allFences       = {};
+    std::queue<Fence*>              m_availableFences = {};
     ThreadSafeObjectPool<Semaphore> m_semaphorePool   = {};
 
-    std::set<VkSemaphore>       m_allSemaphores       = {};
-    std::queue<VkSemaphore>     m_availableSemaphores = {};
+    HashSet<Semaphore*>         m_allSemaphores       = {};
+    std::queue<Semaphore*>      m_availableSemaphores = {};
     ThreadSafeObjectPool<Fence> m_fencePool           = {};
 
     std::mutex m_fenceLock     = {};

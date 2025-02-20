@@ -243,6 +243,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 void Device::Destroy(Device* pDevice)
 {
     APH_PROFILER_SCOPE();
+    pDevice->waitIdle();
     // TODO
     delete pDevice->m_resourcePool.gpu;
 
