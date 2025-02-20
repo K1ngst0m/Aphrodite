@@ -21,7 +21,7 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
         auto result = toml::parse_file(configPath);
         if(!result)
         {
-            CM_LOG_ERR("Parsing failed:\n%s\n", result.error());
+            CM_LOG_ERR("Parsing failed:\n%s\n", result.error().description());
             m_exitCode = -1;
         }
 
