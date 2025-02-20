@@ -135,10 +135,22 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
 
     SessionDesc sessionDesc;
 
+    std::vector<CompilerOptionEntry> compilerOptions{
+        CompilerOptionEntry
+        {
+            CompilerOptionName::EmitSpirvMethod,
+            CompilerOptionValue{
+                .kind = CompilerOptionValueKind::Int,
+                .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
+            }
+        }
+    };
+
     TargetDesc targetDesc;
     targetDesc.format  = SLANG_SPIRV;
     targetDesc.profile = globalSession->findProfile("spirv");
-    targetDesc.flags   = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY;
+    targetDesc.compilerOptionEntryCount = compilerOptions.size();
+    targetDesc.compilerOptionEntries = compilerOptions.data();
 
     sessionDesc.targets     = &targetDesc;
     sessionDesc.targetCount = 1;
@@ -165,8 +177,8 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
     aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> spvCodes;
 
     std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
-    int                                               definedEntryPointCount = module->getDefinedEntryPointCount();
-    for(int i = 0; i < definedEntryPointCount; i++)
+
+    for(int i = 0; i < module->getDefinedEntryPointCount(); i++)
     {
         Slang::ComPtr<slang::IEntryPoint> entryPoint;
         auto                              result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
