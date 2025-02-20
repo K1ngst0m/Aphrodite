@@ -192,7 +192,11 @@ std::vector<uint32_t> loadSlangFromFile(std::string_view filename, aph::ShaderSt
 
         SlangResult result =
             session->createCompositeComponentType(components, 2, linkedProgram.writeRef(), diagnostics.writeRef());
-        APH_ASSERT(SLANG_SUCCEEDED(result));
+        if (!SLANG_SUCCEEDED(result))
+        {
+            APH_ASSERT(false);
+            return {};
+        }
 
         Slang::ComPtr<slang::IBlob> spirvCode;
         {
@@ -625,8 +629,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
-    auto domain = pBuffer->getCreateInfo().domain;
-    APH_ASSERT(domain != BufferDomain::Device);
+    APH_ASSERT(pBuffer->getCreateInfo().domain != BufferDomain::Device);
     if(range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;
