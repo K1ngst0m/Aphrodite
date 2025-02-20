@@ -2,6 +2,7 @@
 #define VKLCOMMON_H_
 
 #include <cmath>
+#include "logger.h"
 
 #define APH_CONCAT_IMPL(x, y) x##y
 #define APH_MACRO_CONCAT(x, y) APH_CONCAT_IMPL(x, y)
@@ -57,7 +58,7 @@ class SignalHandling;
 namespace aph
 {
 
-inline void DebugBreak() {
+APH_ALWAYS_INLINE void DebugBreak() {
 #if defined(_MSC_VER)
     __debugbreak();
 #elif defined(__linux__) || defined(__APPLE__)
