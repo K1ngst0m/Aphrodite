@@ -398,11 +398,6 @@ struct VertexInput
         uint32_t binding  = 0;
         Format   format   = Format::Undefined;
         uint32_t offset   = 0;
-
-        bool operator==(const VertexAttribute& rhs) const
-        {
-            return location == rhs.location && binding == rhs.binding && format == rhs.format && offset == rhs.offset;
-        }
     };
 
     struct VertexInputBinding
@@ -412,32 +407,6 @@ struct VertexInput
 
     std::vector<VertexAttribute>    attributes;
     std::vector<VertexInputBinding> bindings;
-
-    bool operator==(const VertexInput& rhs) const
-    {
-        if(attributes.size() != rhs.attributes.size() || bindings.size() != rhs.bindings.size())
-        {
-            return false;
-        }
-
-        for(auto idx = 0; idx < attributes.size(); ++idx)
-        {
-            if(rhs.attributes[idx] != attributes[idx])
-            {
-                return false;
-            }
-        }
-
-        for(auto idx = 0; idx < attributes.size(); ++idx)
-        {
-            if(rhs.bindings[idx].stride != bindings[idx].stride)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
 };
 
 struct ColorAttachment
@@ -450,14 +419,6 @@ struct ColorAttachment
     BlendFactor srcAlphaBlendFactor = BlendFactor::One;
     BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
     BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
-
-    bool operator==(const ColorAttachment& rhs) const
-    {
-        return format == rhs.format && blendEnabled == rhs.blendEnabled && rgbBlendOp == rhs.rgbBlendOp &&
-               alphaBlendOp == rhs.alphaBlendOp && srcRGBBlendFactor == rhs.srcRGBBlendFactor &&
-               srcAlphaBlendFactor == rhs.srcAlphaBlendFactor && dstRGBBlendFactor == rhs.dstAlphaBlendFactor &&
-               dstAlphaBlendFactor == rhs.dstAlphaBlendFactor;
-    }
 };
 
 struct StencilState
@@ -468,19 +429,11 @@ struct StencilState
     CompareOp stencilCompareOp   = CompareOp::Always;
     uint32_t  readMask           = (uint32_t)~0;
     uint32_t  writeMask          = (uint32_t)~0;
-
-    bool operator==(const StencilState& rhs) const
-    {
-        return stencilFailureOp == rhs.stencilFailureOp && stencilCompareOp == rhs.stencilCompareOp &&
-               depthStencilPassOp == rhs.depthStencilPassOp && depthFailureOp == rhs.depthFailureOp &&
-               readMask == rhs.readMask && writeMask == rhs.writeMask;
-    }
 };
 
 struct RenderPipelineDynamicState final
 {
     bool depthBiasEnable = false;
-    bool operator==(const RenderPipelineDynamicState& rhs) const { return depthBiasEnable == rhs.depthBiasEnable; }
 };
 
 template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
@@ -511,27 +464,5 @@ protected:
 };
 
 }  // namespace aph
-
-namespace aph::utils
-{
-inline ShaderStage getStageFromPath(std::string_view path)
-{
-    auto ext = std::filesystem::path(path).extension();
-    if(ext == ".vert")
-        return ShaderStage::VS;
-    if(ext == ".tesc")
-        return ShaderStage::TCS;
-    if(ext == ".tese")
-        return ShaderStage::TES;
-    if(ext == ".geom")
-        return ShaderStage::GS;
-    if(ext == ".frag")
-        return ShaderStage::FS;
-    if(ext == ".comp")
-        return ShaderStage::CS;
-    return ShaderStage::NA;
-}
-
-}  // namespace aph::utils
 
 #endif  // RESOURCE_H_

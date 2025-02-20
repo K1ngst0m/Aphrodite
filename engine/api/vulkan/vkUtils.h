@@ -126,6 +126,24 @@ constexpr std::string toString(ShaderStage stage)
         default:               return "Unknown";
     }
 }
+
+inline ShaderStage getStageFromPath(std::string_view path)
+{
+    auto ext = std::filesystem::path(path).extension();
+    if(ext == ".vert")
+        return ShaderStage::VS;
+    if(ext == ".tesc")
+        return ShaderStage::TCS;
+    if(ext == ".tese")
+        return ShaderStage::TES;
+    if(ext == ".geom")
+        return ShaderStage::GS;
+    if(ext == ".frag")
+        return ShaderStage::FS;
+    if(ext == ".comp")
+        return ShaderStage::CS;
+    return ShaderStage::NA;
+}
 }  // namespace aph::vk
 
 #endif  // VKLUTILS_H_

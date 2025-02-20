@@ -40,15 +40,6 @@ struct GraphicsPipelineCreateInfo
     StencilState frontFaceStencil = {};
 
     uint32_t samplesCount = 1u;
-
-    bool operator==(const GraphicsPipelineCreateInfo& rhs) const
-    {
-        return dynamicState == rhs.dynamicState && topology == rhs.topology && vertexInput == rhs.vertexInput &&
-               pProgram == rhs.pProgram && pSamplerBank == rhs.pSamplerBank && depthFormat == rhs.depthFormat &&
-               stencilFormat == rhs.stencilFormat && polygonMode == rhs.polygonMode &&
-               backFaceStencil == rhs.backFaceStencil && frontFaceStencil == rhs.frontFaceStencil &&
-               frontFaceWinding == rhs.frontFaceWinding && samplesCount == rhs.samplesCount;
-    }
 };
 
 struct ComputePipelineCreateInfo
