@@ -24,17 +24,20 @@
   To clone the Aphrodite repository, execute the following commands:
 
   #+BEGIN_SRC bash
-  git clone https://github.com/K1ngst0m/Aphrodite -b next
+  git clone https://github.com/K1ngst0m/Aphrodite
   cd Aphrodite
   #+END_SRC
 
 ** Building and Running
 
-  To build and run the project, use the following commands:
+  To build and run the project, chose one preset to configure and build:
 
   #+BEGIN_SRC bash
-  cmake -B build && cmake --build build -- -j$(nproc)
-  ./build/bin/xxx
+  cmake --list-presets
+  cmake --preset default && cmake --build build -- -j$(nproc)
+  # run debug or release executable
+  ./build/debug/bin/xxx
+  ./build/release/bin/xxx
   #+END_SRC
 
 ** Usage
@@ -131,4 +134,9 @@
 - [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][vma]]
 - [[https://github.com/libsdl-org/SDL][SDL2]]
 - [[https://github.com/glfw/glfw][glfw]]
+- [[https://github.com/wolfpld/tracy][tracy]]
+- [[https://github.com/marzer/tomlplusplus][tomlplusplus]]
+- [[https://github.com/martinus/unordered_dense][unordered_dense]]
+- [[https://github.com/bombela/backward-cpp][backward-cpp]]
+- [[https://github.com/KhronosGroup/SPIRV-Cross][SPIRV-cross]]
 
