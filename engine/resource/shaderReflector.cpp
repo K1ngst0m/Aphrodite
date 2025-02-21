@@ -318,4 +318,181 @@ vk::ResourceLayout ReflectLayout(const std::vector<uint32_t>& spvCode)
 
     return layout;
 }
+
+vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders, const vk::ImmutableSamplerBank* samplerBank)
+{
+    vk::CombinedResourceLayout programLayout{};
+
+    for(const auto& shader : shaders)
+    {
+        if(shader->getStage() == ShaderStage::VS)
+        {
+            programLayout.attributeMask = shader->getResourceLayout().inputMask;
+            for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
+            {
+                programLayout.vertexAttr[idx] = shader->getResourceLayout().vertexAttr[idx];
+            }
+        }
+        if(shader->getStage() == ShaderStage::FS)
+        {
+            programLayout.renderTargetMask = shader->getResourceLayout().outputMask;
+        }
+    }
+
+    vk::ImmutableSamplerBank extImmutableSamplers = {};
+
+    for(const auto& shader : shaders)
+    {
+        APH_ASSERT(shader);
+
+        const auto& stage = shader->getStage();
+        auto&    shaderLayout = shader->getResourceLayout();
+        uint32_t stageMask    = vk::utils::VkCast(stage);
+
+        for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        {
+            programLayout.setInfos[i].shaderLayout.sampledImageMask |=
+                shaderLayout.setShaderLayouts[i].sampledImageMask;
+            programLayout.setInfos[i].shaderLayout.storageImageMask |=
+                shaderLayout.setShaderLayouts[i].storageImageMask;
+            programLayout.setInfos[i].shaderLayout.uniformBufferMask |=
+                shaderLayout.setShaderLayouts[i].uniformBufferMask;
+            programLayout.setInfos[i].shaderLayout.storageBufferMask |=
+                shaderLayout.setShaderLayouts[i].storageBufferMask;
+            programLayout.setInfos[i].shaderLayout.sampledTexelBufferMask |=
+                shaderLayout.setShaderLayouts[i].sampledTexelBufferMask;
+            programLayout.setInfos[i].shaderLayout.storageTexelBufferMask |=
+                shaderLayout.setShaderLayouts[i].storageTexelBufferMask;
+            programLayout.setInfos[i].shaderLayout.inputAttachmentMask |=
+                shaderLayout.setShaderLayouts[i].inputAttachmentMask;
+            programLayout.setInfos[i].shaderLayout.samplerMask |= shaderLayout.setShaderLayouts[i].samplerMask;
+            programLayout.setInfos[i].shaderLayout.separateImageMask |=
+                shaderLayout.setShaderLayouts[i].separateImageMask;
+            programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
+
+            uint32_t activeBinds =
+                shaderLayout.setShaderLayouts[i].sampledImageMask | shaderLayout.setShaderLayouts[i].storageImageMask |
+                shaderLayout.setShaderLayouts[i].uniformBufferMask |
+                shaderLayout.setShaderLayouts[i].storageBufferMask |
+                shaderLayout.setShaderLayouts[i].sampledTexelBufferMask |
+                shaderLayout.setShaderLayouts[i].storageTexelBufferMask |
+                shaderLayout.setShaderLayouts[i].inputAttachmentMask | shaderLayout.setShaderLayouts[i].samplerMask |
+                shaderLayout.setShaderLayouts[i].separateImageMask;
+
+            if(activeBinds)
+            {
+                programLayout.setInfos[i].stagesForSets |= stageMask;
+            }
+
+            aph::utils::forEachBit(activeBinds, [&](uint32_t bit) {
+                programLayout.setInfos[i].stagesForBindings[bit] |= stageMask;
+
+                auto& combinedSize = programLayout.setInfos[i].shaderLayout.arraySize[bit];
+                auto& shaderSize   = shaderLayout.setShaderLayouts[i].arraySize[bit];
+                if(combinedSize && combinedSize != shaderSize)
+                {
+                    VK_LOG_ERR("Mismatch between array sizes in different shaders.");
+                    APH_ASSERT(false);
+                }
+                else
+                {
+                    combinedSize = shaderSize;
+                }
+            });
+        }
+
+        // Merge push constant ranges into one range.
+        // Do not try to split into multiple ranges as it just complicates things for no obvious gain.
+        if(shaderLayout.pushConstantSize != 0)
+        {
+            programLayout.pushConstantRange.stageFlags |= stageMask;
+            programLayout.pushConstantRange.size =
+                std::max(programLayout.pushConstantRange.size, shaderLayout.pushConstantSize);
+        }
+
+        programLayout.specConstantMask[stage] = shaderLayout.specConstantMask;
+        programLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
+        // TODO
+        // programLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
+    }
+
+    if(samplerBank)
+    {
+        for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        {
+            aph::utils::forEachBit(programLayout.setInfos[i].shaderLayout.samplerMask |
+                                       programLayout.setInfos[i].shaderLayout.sampledImageMask,
+                                   [&](uint32_t binding) {
+                                       if(samplerBank->samplers[i][binding])
+                                       {
+                                           extImmutableSamplers.samplers[i][binding] =
+                                               samplerBank->samplers[i][binding];
+                                           programLayout.setInfos[i].shaderLayout.immutableSamplerMask |= 1u << binding;
+                                       }
+                                   });
+        }
+    }
+
+    for(unsigned setIdx = 0; setIdx < VULKAN_NUM_DESCRIPTOR_SETS; setIdx++)
+    {
+        if(programLayout.setInfos[setIdx].stagesForSets != 0)
+        {
+            programLayout.descriptorSetMask |= 1u << setIdx;
+
+            for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
+            {
+                auto& arraySize = programLayout.setInfos[setIdx].shaderLayout.arraySize[binding];
+                if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
+                {
+                    for(unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
+                    {
+                        if(programLayout.setInfos[i].stagesForBindings[i] != 0)
+                        {
+                            VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.",
+                                       i, i);
+                        }
+                    }
+
+                    // Allows us to have one unified descriptor set layout for bindless.
+                    programLayout.setInfos[setIdx].stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
+                }
+                else if(arraySize == 0)
+                {
+                    arraySize = 1;
+                }
+                else
+                {
+                    for(unsigned i = 1; i < arraySize; i++)
+                    {
+                        if(programLayout.setInfos[i].stagesForBindings[binding + i] != 0)
+                        {
+                            VK_LOG_ERR(
+                                "Detected binding aliasing for (%u, %u). Binding array with %u elements starting "
+                                "at (%u, "
+                                "%u) overlaps.\n",
+                                i, binding + i, arraySize, i, binding);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return programLayout;
+}
+VertexInput getVertexInputInfo(vk::CombinedResourceLayout combineLayout)
+{
+    VertexInput vertexInput;
+    uint32_t    size = 0;
+    aph::utils::forEachBit(combineLayout.attributeMask, [&](uint32_t location) {
+        auto& attr = combineLayout.vertexAttr[location];
+        vertexInput.attributes.push_back({.location = location,
+                                          .binding  = 0,
+                                          .format   = vk::utils::getFormatFromVk(attr.format),
+                                          .offset   = attr.offset});
+        size += attr.size;
+    });
+    vertexInput.bindings.push_back({size});
+    return vertexInput;
+}
 }  // namespace aph

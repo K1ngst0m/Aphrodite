@@ -79,7 +79,7 @@ struct CombinedResourceLayout
 
 struct ImmutableSamplerBank
 {
-    const Sampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
+    Sampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
 };
 
 struct ShaderCreateInfo
@@ -125,10 +125,12 @@ struct ProgramCreateInfo
         } geometry;
     };
 
-    PipelineType          type = {};
-    ImmutableSamplerBank* samplerBank  = {};
+    PipelineType           type = {};
+
+    CombinedResourceLayout layout = {};
 
     Device* pDevice = {};
+    ImmutableSamplerBank* samplerBank  = {};
 };
 
 class ShaderProgram: public ResourceHandle<DummyHandle, ProgramCreateInfo>
@@ -140,7 +142,6 @@ public:
 
     const VertexInput&   getVertexInput() const { return m_vertexInput; }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
-    const ShaderMapList& getShaders() const { return m_shaders; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
     VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
     PipelineType         getPipelineType() const { return getCreateInfo().type; }
@@ -159,7 +160,6 @@ private:
     SmallVector<DescriptorSetLayout*> m_pSetLayouts   = {};
     VkPipelineLayout                  m_pipeLayout    = {};
     CombinedResourceLayout            m_combineLayout = {};
-    SmallVector<VkDescriptorPoolSize> m_poolSize      = {};
     VertexInput                       m_vertexInput   = {};
 };
 

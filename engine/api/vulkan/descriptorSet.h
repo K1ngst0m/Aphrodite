@@ -1,6 +1,7 @@
 #ifndef DESCRIPTORSET_H_
 #define DESCRIPTORSET_H_
 
+#include "api/vulkan/shader.h"
 #include "common/hash.h"
 #include "vkUtils.h"
 
@@ -70,30 +71,36 @@ struct DescriptorUpdateInfo
     }
 };
 
-class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, VkDescriptorSetLayoutCreateInfo>
+struct DescriptorSetLayoutCreateInfo
 {
+    CombinedResourceLayout::SetInfo setInfo;
+    Sampler* const*                 pImmutableSamplers;
+};
+
+class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, DescriptorSetLayoutCreateInfo>
+{
+    friend class ObjectPool<DescriptorSetLayout>;
     enum
     {
         DESCRIPTOR_POOL_MAX_NUM_SET = 50,
     };
-
 public:
-    DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle);
-    ~DescriptorSetLayout();
-
-    Device*                      getDevice() const { return m_pDevice; }
-    VkDescriptorSetLayoutBinding getBindings(uint32_t idx) const { return m_bindings[idx]; }
-    DescriptorSet*               allocateSet();
-    VkResult                     freeSet(const DescriptorSet* pSet);
-    VkResult                     updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
+    Device*        getDevice() const { return m_pDevice; }
+    DescriptorSet* allocateSet();
+    VkResult       freeSet(const DescriptorSet* pSet);
+    VkResult       updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
 
 private:
+    DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
+                                         const SmallVector<VkDescriptorSetLayoutBinding>& bindings);
+    ~DescriptorSetLayout();
+
     Device*                                   m_pDevice  = {};
     std::vector<VkDescriptorSetLayoutBinding> m_bindings = {};
 
 private:
     VolkDeviceTable*                    m_pDeviceTable               = {};
-    std::vector<VkDescriptorPoolSize>   m_poolSizes                  = {};
+    SmallVector<VkDescriptorPoolSize>   m_poolSizes                  = {};
     std::vector<VkDescriptorPool>       m_pools                      = {};
     std::vector<uint32_t>               m_allocatedSets              = {};
     uint32_t                            m_currentAllocationPoolIndex = {};

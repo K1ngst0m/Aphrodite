@@ -29,9 +29,9 @@ enum class TimeUnit
 
 struct DeviceCreateInfo
 {
-    GPUFeature               enabledFeatures = {};
-    PhysicalDevice*          pPhysicalDevice = nullptr;
-    Instance*                pInstance       = nullptr;
+    GPUFeature      enabledFeatures = {};
+    PhysicalDevice* pPhysicalDevice = nullptr;
+    Instance*       pInstance       = nullptr;
 };
 
 class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>
@@ -50,6 +50,8 @@ public:
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
     Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName = "");
+    Result create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
+                  std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
@@ -57,6 +59,7 @@ public:
     void destroy(SwapChain* pSwapchain);
     void destroy(Sampler* pSampler);
     void destroy(ShaderProgram* pProgram);
+    void destroy(DescriptorSetLayout* pSetLayout);
 
 public:
     Pipeline*    acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName = "");
@@ -105,16 +108,17 @@ private:
 private:
     struct ResourceObjectPool
     {
-        DeviceAllocator*                    gpu;
-        ThreadSafeObjectPool<Buffer>        buffer;
-        ThreadSafeObjectPool<Image>         image;
-        ThreadSafeObjectPool<Sampler>       sampler;
-        ThreadSafeObjectPool<ImageView>     imageView;
-        PipelineAllocator                   pipeline;
-        ThreadSafeObjectPool<ShaderProgram> program;
-        ThreadSafeObjectPool<Queue>         queue;
-        CommandPoolAllocator                commandPool;
-        SyncPrimitiveAllocator              syncPrimitive;
+        DeviceAllocator*                          gpu;
+        ThreadSafeObjectPool<Buffer>              buffer;
+        ThreadSafeObjectPool<Image>               image;
+        ThreadSafeObjectPool<Sampler>             sampler;
+        ThreadSafeObjectPool<ImageView>           imageView;
+        PipelineAllocator                         pipeline;
+        ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
+        ThreadSafeObjectPool<ShaderProgram>       program;
+        ThreadSafeObjectPool<Queue>               queue;
+        CommandPoolAllocator                      commandPool;
+        SyncPrimitiveAllocator                    syncPrimitive;
 
         ResourceObjectPool(Device* pDevice) : pipeline(pDevice), commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;

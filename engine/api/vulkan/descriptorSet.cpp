@@ -4,30 +4,18 @@
 namespace aph::vk
 {
 
-DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle) :
+DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
+                                         const SmallVector<VkDescriptorSetLayoutBinding>& bindings) :
     ResourceHandle(handle, createInfo),
     m_pDevice(device),
     m_pDeviceTable(device->getDeviceTable())
 {
-    getHandle() = handle;
-
     // fill bindings and count of types
-    for(std::size_t idx = 0; idx < createInfo.bindingCount; idx++)
+    for(std::size_t idx = 0; idx < bindings.size(); idx++)
     {
-        auto& binding = createInfo.pBindings[idx];
+        auto& binding = bindings[idx];
         m_bindings.push_back(binding);
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
-    }
-
-    // calculate pool sizes
-    {
-        m_poolSizes.resize(m_descriptorTypeCounts.size());
-        for(uint32_t index = 0; auto [descriptorType, count] : m_descriptorTypeCounts)
-        {
-            m_poolSizes[index].type            = descriptorType;
-            m_poolSizes[index].descriptorCount = count * DESCRIPTOR_POOL_MAX_NUM_SET;
-            ++index;
-        }
     }
 }
 

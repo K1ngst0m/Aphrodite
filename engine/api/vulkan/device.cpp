@@ -266,6 +266,126 @@ VkFormat Device::getDepthFormat() const
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
+Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
+                      std::string_view debugName)
+{
+    VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
+    SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
+
+    const auto& pImmutableSamplers = createInfo.pImmutableSamplers;
+    const auto& layout = createInfo.setInfo.shaderLayout;
+    const auto& stageForBinds = createInfo.setInfo.stagesForBindings;
+    SmallVector<VkDescriptorPoolSize> poolSize;
+
+    for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
+    {
+        uint32_t stages = stageForBinds[i];
+        if(stages == 0)
+        {
+            continue;
+        }
+
+        unsigned arraySize = layout.arraySize[i];
+        unsigned poolArraySize;
+        if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
+        {
+            arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+            poolArraySize = arraySize;
+        }
+        else
+        {
+            poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
+        }
+
+        unsigned types = 0;
+        if(layout.sampledImageMask & (1u << i))
+        {
+            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
+            {
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
+            }
+
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
+            types++;
+        }
+
+        if(layout.sampledTexelBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.storageTexelBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.storageImageMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
+            types++;
+        }
+
+        if(layout.uniformBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.storageBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.inputAttachmentMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
+            types++;
+        }
+
+        if(layout.separateImageMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
+            types++;
+        }
+
+        if(layout.samplerMask & (1u << i))
+        {
+            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
+
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
+            types++;
+        }
+
+        (void)types;
+        APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
+    }
+
+    VkDescriptorSetLayoutCreateInfo vkCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    vkCreateInfo.bindingCount = vkBindings.size();
+    vkCreateInfo.pBindings    = vkBindings.data();
+
+    VkDescriptorSetLayout vkSetLayout;
+    _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
+
+    *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, vkBindings);
+    return Result::Success;
+}
+
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
@@ -387,6 +507,13 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     m_resourcePool.gpu->allocate(*ppImage);
 
     return Result::Success;
+}
+
+void Device::destroy(DescriptorSetLayout* pSetLayout)
+{
+    APH_PROFILER_SCOPE();
+    getDeviceTable()->vkDestroyDescriptorSetLayout(getHandle(), pSetLayout->getHandle(), vkAllocator());
+    m_resourcePool.setLayout.free(pSetLayout);
 }
 
 void Device::destroy(ShaderProgram* pProgram)
