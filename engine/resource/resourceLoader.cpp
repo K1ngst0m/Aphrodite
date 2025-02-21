@@ -166,11 +166,11 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
     sessionDesc.targetCount = 1;
 
     sessionDesc.compilerOptionEntryCount = compilerOptions.size();
-    sessionDesc.compilerOptionEntries = compilerOptions.data();
+    sessionDesc.compilerOptionEntries    = compilerOptions.data();
 
     // TODO protocol
-    const char* searchPaths[]   = {"assets/shaders/slang"};
-    sessionDesc.searchPaths     = searchPaths;
+    const char* searchPath      = aph::Filesystem::GetInstance().resolvePath("shader_slang://").c_str();
+    sessionDesc.searchPaths     = &searchPath;
     sessionDesc.searchPathCount = 1;
 
     Slang::ComPtr<ISession> session;
