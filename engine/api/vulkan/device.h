@@ -50,6 +50,7 @@ public:
     Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
     Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
     Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName = "");
+    Result create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName = "");
     Result create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
                   std::string_view debugName = "");
 
@@ -59,6 +60,7 @@ public:
     void destroy(SwapChain* pSwapchain);
     void destroy(Sampler* pSampler);
     void destroy(ShaderProgram* pProgram);
+    void destroy(Shader* pShader);
     void destroy(DescriptorSetLayout* pSetLayout);
 
 public:
@@ -117,6 +119,7 @@ private:
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
         ThreadSafeObjectPool<ShaderProgram>       program;
         ThreadSafeObjectPool<Queue>               queue;
+        ThreadSafeObjectPool<vk::Shader>          shader;
         CommandPoolAllocator                      commandPool;
         SyncPrimitiveAllocator                    syncPrimitive;
 

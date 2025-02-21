@@ -1,6 +1,7 @@
 #include "device.h"
 #include "common/profiler.h"
 #include "deviceAllocator.h"
+#include "resource/shaderReflector.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
@@ -70,7 +71,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             exts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
         }
 
-        if (feature.rayTracing)
+        if(feature.rayTracing)
         {
             // Request Multi-Draw Features EXT
             auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
@@ -89,7 +90,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         exts.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
         exts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
     }
-
 
     // verify feature support
     {
@@ -123,31 +123,37 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
+    auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
     maintence5.maintenance5 = VK_TRUE;
 
-    auto& pipelineBinary = physicalDevice->requestFeatures<VkPhysicalDevicePipelineBinaryFeaturesKHR>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR);
+    auto& pipelineBinary = physicalDevice->requestFeatures<VkPhysicalDevicePipelineBinaryFeaturesKHR>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR);
     pipelineBinary.pipelineBinaries = VK_TRUE;
 
-    auto& sync2Features = physicalDevice->requestFeatures<VkPhysicalDeviceSynchronization2Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES);
+    auto& sync2Features = physicalDevice->requestFeatures<VkPhysicalDeviceSynchronization2Features>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES);
     sync2Features.synchronization2 = VK_TRUE;
 
-    auto& timelineSemaphoreFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceTimelineSemaphoreFeatures>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    auto& timelineSemaphoreFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceTimelineSemaphoreFeatures>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
     timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
 
-    auto& descriptorBufferFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
-    descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
+    auto& descriptorBufferFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+    descriptorBufferFeatures.descriptorBuffer                = VK_TRUE;
     descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
 
-    auto& maintenance4Features = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance4Features>(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES);
+    auto& maintenance4Features = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance4Features>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES);
     maintenance4Features.maintenance4 = VK_TRUE;
 
     auto& descriptorIndexingFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorIndexingFeatures>(
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
     descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-    descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingPartiallyBound           = VK_TRUE;
+    descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount  = VK_TRUE;
+    descriptorIndexingFeatures.runtimeDescriptorArray                    = VK_TRUE;
 
     // Request Inline Uniform Block Features EXT
     auto& inlineUniformBlockFeature = physicalDevice->requestFeatures<VkPhysicalDeviceInlineUniformBlockFeaturesEXT>(
@@ -227,11 +233,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             {
                 VkQueue queue = VK_NULL_HANDLE;
                 device->m_table.vkGetDeviceQueue(handle, queueFamilyIndex, queueIndex, &queue);
-                device->m_queues[queueType].push_back(device->m_resourcePool.queue.allocate(device.get(),
-                                                                                                queue,
-                                                                                                queueFamilyIndex,
-                                                                                                queueIndex,
-                                                                                                queueFamilyProperties[queueFamilyIndex]));
+                device->m_queues[queueType].push_back(device->m_resourcePool.queue.allocate(
+                    device.get(), queue, queueFamilyIndex, queueIndex, queueFamilyProperties[queueFamilyIndex]));
             }
         }
     }
@@ -251,11 +254,11 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.commandPool.clear();
+    pDevice->m_resourcePool.setLayout.clear();
+    pDevice->m_resourcePool.shader.clear();
 
-    if(pDevice->m_handle)
-    {
-        pDevice->m_table.vkDestroyDevice(pDevice->m_handle, gVkAllocator);
-    }
+    APH_ASSERT(pDevice->m_handle);
+    pDevice->m_table.vkDestroyDevice(pDevice->m_handle, gVkAllocator);
 }
 
 VkFormat Device::getDepthFormat() const
@@ -269,12 +272,13 @@ VkFormat Device::getDepthFormat() const
 Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
                       std::string_view debugName)
 {
+    APH_PROFILER_SCOPE();
     VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
     SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
 
-    const auto& pImmutableSamplers = createInfo.pImmutableSamplers;
-    const auto& layout = createInfo.setInfo.shaderLayout;
-    const auto& stageForBinds = createInfo.setInfo.stagesForBindings;
+    const auto&                       pImmutableSamplers = createInfo.pImmutableSamplers;
+    const auto&                       layout             = createInfo.setInfo.shaderLayout;
+    const auto&                       stageForBinds      = createInfo.setInfo.stagesForBindings;
     SmallVector<VkDescriptorPoolSize> poolSize;
 
     for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
@@ -376,8 +380,8 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     }
 
     VkDescriptorSetLayoutCreateInfo vkCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    vkCreateInfo.bindingCount = vkBindings.size();
-    vkCreateInfo.pBindings    = vkBindings.data();
+    vkCreateInfo.bindingCount                    = vkBindings.size();
+    vkCreateInfo.pBindings                       = vkBindings.data();
 
     VkDescriptorSetLayout vkSetLayout;
     _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
@@ -386,9 +390,25 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     return Result::Success;
 }
 
+Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName)
+{
+    APH_PROFILER_SCOPE();
+    const auto&              spv = createInfo.code;
+    VkShaderModuleCreateInfo vkCreateInfo{
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = spv.size() * sizeof(spv[0]),
+        .pCode    = spv.data(),
+    };
+    VkShaderModule handle;
+    _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
+    *ppShader = m_resourcePool.shader.allocate(createInfo, handle, ReflectLayout(spv));
+    return Result::Success;
+}
+
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
+    CombinedResourceLayout combineLayout;
     switch(createInfo.type)
     {
     case PipelineType::Geometry:
@@ -398,22 +418,28 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         APH_ASSERT(vs);
         APH_ASSERT(fs);
 
-        *ppProgram = m_resourcePool.program.allocate(createInfo);
+        combineLayout = aph::combineLayout({vs, fs}, &createInfo.samplerBank);
     }
     break;
     case PipelineType::Mesh:
     {
         APH_ASSERT(createInfo.mesh.pMesh);
         APH_ASSERT(createInfo.mesh.pFragment);
-
-        *ppProgram = m_resourcePool.program.allocate(createInfo);
+        std::vector<Shader*> shaders{};
+        shaders.push_back(createInfo.mesh.pMesh);
+        if (createInfo.mesh.pTask)
+        {
+            shaders.push_back(createInfo.mesh.pTask);
+        }
+        shaders.push_back(createInfo.mesh.pFragment);
+        combineLayout = aph::combineLayout(shaders, &createInfo.samplerBank);
     }
     break;
     case PipelineType::Compute:
     {
         auto cs = createInfo.compute.pCompute;
         APH_ASSERT(cs);
-        *ppProgram = m_resourcePool.program.allocate(createInfo);
+        combineLayout = aph::combineLayout({cs}, &createInfo.samplerBank);
     }
     break;
     case PipelineType::RayTracing:
@@ -428,6 +454,55 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         return Result::RuntimeError;
     }
     }
+
+    SmallVector<DescriptorSetLayout*> setLayouts = {};
+    VkPipelineLayout pipelineLayout;
+    auto samplerBank = &createInfo.samplerBank;
+    {
+        setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
+
+        unsigned numSets = 0;
+        for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        {
+            DescriptorSetLayoutCreateInfo setLayoutCreateInfo{.setInfo            = combineLayout.setInfos[i],
+                                                            .pImmutableSamplers = samplerBank->samplers[i]};
+            APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
+            if(combineLayout.descriptorSetMask & (1u << i))
+            {
+                numSets = i + 1;
+            }
+        }
+
+        if(numSets > getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
+        {
+            VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets,
+                    getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
+        }
+
+        VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+        SmallVector<VkDescriptorSetLayout> vkSetLayouts;
+        if(numSets)
+        {
+            vkSetLayouts.reserve(setLayouts.size());
+            for(const auto& setLayout : setLayouts)
+            {
+                vkSetLayouts.push_back(setLayout->getHandle());
+            }
+            info.setLayoutCount = numSets;
+            info.pSetLayouts    = vkSetLayouts.data();
+        }
+
+        if(combineLayout.pushConstantRange.stageFlags != 0)
+        {
+            info.pushConstantRangeCount = 1;
+            info.pPushConstantRanges    = &combineLayout.pushConstantRange;
+        }
+
+        if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
+            VK_LOG_ERR("Failed to create pipeline layout.");
+    }
+
+    *ppProgram = m_resourcePool.program.allocate(createInfo, combineLayout, pipelineLayout, setLayouts);
     return Result::Success;
 }
 
@@ -514,6 +589,13 @@ void Device::destroy(DescriptorSetLayout* pSetLayout)
     APH_PROFILER_SCOPE();
     getDeviceTable()->vkDestroyDescriptorSetLayout(getHandle(), pSetLayout->getHandle(), vkAllocator());
     m_resourcePool.setLayout.free(pSetLayout);
+}
+
+void Device::destroy(Shader* pShader)
+{
+    APH_PROFILER_SCOPE();
+    getDeviceTable()->vkDestroyShaderModule(getHandle(), pShader->getHandle(), vk::vkAllocator());
+    m_resourcePool.shader.free(pShader);
 }
 
 void Device::destroy(ShaderProgram* pProgram)
@@ -848,7 +930,7 @@ CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
 
     VkCommandPool pool;
     _VR(getDeviceTable()->vkCreateCommandPool(getHandle(), &cmdPoolInfo, vkAllocator(), &pool));
-    auto*   pPool = new CommandPool{this, info, pool};
+    auto* pPool = new CommandPool{this, info, pool};
     return pPool;
 }
 Result Device::releaseCommandPool(CommandPool* pPool)
@@ -865,7 +947,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
 {
     APH_PROFILER_SCOPE();
 
-    auto commandPool = acquireCommandPool({.queue = queue, .transient = true});
+    auto           commandPool = acquireCommandPool({.queue = queue, .transient = true});
     CommandBuffer* cmd         = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 
@@ -891,6 +973,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
 }
 VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType)
 {
+    APH_PROFILER_SCOPE();
     VkPipelineStageFlags flags = 0;
 
     const auto& features = getCreateInfo().enabledFeatures;

@@ -26,8 +26,6 @@ struct GraphicsPipelineCreateInfo
 
     ShaderProgram* pProgram = {};
 
-    ImmutableSamplerBank* pSamplerBank = {};
-
     std::vector<ColorAttachment> color         = {};
     Format                       depthFormat   = Format::Undefined;
     Format                       stencilFormat = Format::Undefined;

@@ -105,8 +105,8 @@ public:
     template <typename T_CreateInfo, typename T_Resource>
     Result loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
     {
-        Result result = Result::Success;
-        auto taskGroup = m_taskManager.createTaskGroup("resource loader.");
+        Result result    = Result::Success;
+        auto   taskGroup = m_taskManager.createTaskGroup("resource loader.");
         taskGroup->addTask([this, info, ppResource, &result]() { result = load(info, ppResource); });
         taskGroup->submit();
         return result;
@@ -118,13 +118,14 @@ public:
     Result load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     Result load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
     Result load(const GeometryLoadInfo& info, Geometry** ppGeometry);
-    void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
+    void   update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
     void cleanup();
 
 private:
     void        writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
-    vk::Shader* loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage, const std::string& entryPoint = "main");
+    vk::Shader* loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
+                           const std::string& entryPoint = "main");
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -133,9 +134,8 @@ private:
     vk::Queue*               m_pQueue      = {};
 
 private:
-    ThreadSafeObjectPool<vk::Shader> m_shaderPool;
-    HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches       = {};
-    std::mutex                           m_updateLock;
+    HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches = {};
+    std::mutex                                              m_updateLock;
 };
 }  // namespace aph
 

@@ -141,12 +141,6 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
                                                               .kind      = CompilerOptionValueKind::Int,
                                                               .intValue0 = 1,
                                                           }},
-                                                     {.name = CompilerOptionName::VulkanEmitReflection,
-                                                      .value =
-                                                          {
-                                                              .kind      = CompilerOptionValueKind::Int,
-                                                              .intValue0 = 1,
-                                                          }},
                                                      {.name = CompilerOptionName::EmitSpirvMethod,
                                                       .value{
                                                           .kind      = CompilerOptionValueKind::Int,
@@ -554,6 +548,12 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         }
         else
         {
+            // vk::ShaderCreateInfo createInfo{
+            //     .code       = std::get<std::vector<uint32_t>>(stageLoadInfo.data),
+            //     .entrypoint = stageLoadInfo.entryPoint,
+            //     .stage      = stage,
+            // };
+            // APH_VR(m_pDevice->create(createInfo, &requiredShaderList[stage]));
             requiredShaderList[stage] =
                 loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stage, stageLoadInfo.entryPoint);
         }
@@ -661,8 +661,7 @@ void ResourceLoader::cleanup()
     {
         for(const auto& [_, shader] : shaderCache)
         {
-            m_pDevice->getDeviceTable()->vkDestroyShaderModule(m_pDevice->getHandle(), shader->getHandle(),
-                                                               vk::vkAllocator());
+            m_pDevice->destroy(shader);
         }
     }
 }
@@ -769,15 +768,13 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
                                        const std::string& entryPoint)
 {
-    VkShaderModuleCreateInfo createInfo{
-        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = spv.size() * sizeof(spv[0]),
-        .pCode    = spv.data(),
+    vk::Shader*          shader;
+    vk::ShaderCreateInfo createInfo{
+        .code       = spv,
+        .entrypoint = entryPoint,
+        .stage      = stage,
     };
-    VkShaderModule handle;
-    _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
-                                                          &handle));
-    return m_shaderPool.allocate(
-        vk::ShaderCreateInfo{.layout = ReflectLayout(spv), .entrypoint = entryPoint, .stage = stage}, handle);
+    APH_VR(m_pDevice->create(createInfo, &shader));
+    return shader;
 }
 }  // namespace aph
