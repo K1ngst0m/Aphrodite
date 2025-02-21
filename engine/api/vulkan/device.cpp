@@ -278,25 +278,22 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         APH_ASSERT(vs);
         APH_ASSERT(fs);
 
-        *ppProgram = m_resourcePool.program.allocate(this, vs, fs, createInfo.samplerBank);
+        *ppProgram = m_resourcePool.program.allocate(createInfo);
     }
     break;
     case PipelineType::Mesh:
     {
-        auto ms = createInfo.mesh.pMesh;
-        auto ts = createInfo.mesh.pTask;
-        auto fs = createInfo.mesh.pFragment;
-        APH_ASSERT(ms);
-        APH_ASSERT(fs);
+        APH_ASSERT(createInfo.mesh.pMesh);
+        APH_ASSERT(createInfo.mesh.pFragment);
 
-        *ppProgram = m_resourcePool.program.allocate(this, ms, ts, fs, createInfo.samplerBank);
+        *ppProgram = m_resourcePool.program.allocate(createInfo);
     }
     break;
     case PipelineType::Compute:
     {
         auto cs = createInfo.compute.pCompute;
         APH_ASSERT(cs);
-        *ppProgram = m_resourcePool.program.allocate(this, cs, createInfo.samplerBank);
+        *ppProgram = m_resourcePool.program.allocate(createInfo);
     }
     break;
     case PipelineType::RayTracing:

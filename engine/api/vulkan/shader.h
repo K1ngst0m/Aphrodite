@@ -82,18 +82,23 @@ struct ImmutableSamplerBank
     const Sampler* samplers[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS];
 };
 
-class Shader : public ResourceHandle<VkShaderModule>
+struct ShaderCreateInfo
 {
-    friend class ShaderProgram;
-    friend class ObjectPool<Shader>;
+    ResourceLayout layout;
+    std::string entrypoint = "main";
+    aph::ShaderStage stage;
+};
 
+class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
+{
+    friend class ObjectPool<Shader>;
 public:
-    std::string_view getEntryPointName() const { return m_entrypoint; }
+    std::string_view getEntryPointName() const { return getCreateInfo().entrypoint; }
+    const ResourceLayout& getResourceLayout()  const {return getCreateInfo().layout;}
+    ShaderStage getStage()  const {return getCreateInfo().stage;}
 
 private:
-    Shader(ResourceLayout layout, HandleType handle, std::string entrypoint = "main");
-    std::string    m_entrypoint = {};
-    ResourceLayout m_layout     = {};
+    Shader(const CreateInfoType& createInfo, HandleType handle);
 };
 using ShaderMapList = HashMap<ShaderStage, Shader*>;
 
@@ -120,11 +125,13 @@ struct ProgramCreateInfo
         } geometry;
     };
 
-    PipelineType          type        = {};
-    ImmutableSamplerBank* samplerBank = {};
+    PipelineType          type = {};
+    ImmutableSamplerBank* samplerBank  = {};
+
+    Device* pDevice = {};
 };
 
-class ShaderProgram
+class ShaderProgram: public ResourceHandle<DummyHandle, ProgramCreateInfo>
 {
     friend class ObjectPool<ShaderProgram>;
 
@@ -136,12 +143,10 @@ public:
     const ShaderMapList& getShaders() const { return m_shaders; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
     VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
-    PipelineType         getPipelineType() const { return m_pipelineType; }
+    PipelineType         getPipelineType() const { return getCreateInfo().type; }
 
 private:
-    ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs, const ImmutableSamplerBank* samplerBank);
-    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
-    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
+    ShaderProgram(const CreateInfoType& createInfo);
     ~ShaderProgram();
 
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
@@ -156,7 +161,6 @@ private:
     CombinedResourceLayout            m_combineLayout = {};
     SmallVector<VkDescriptorPoolSize> m_poolSize      = {};
     VertexInput                       m_vertexInput   = {};
-    PipelineType                      m_pipelineType  = {};
 };
 
 }  // namespace aph::vk

@@ -168,7 +168,6 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
     sessionDesc.compilerOptionEntryCount = compilerOptions.size();
     sessionDesc.compilerOptionEntries    = compilerOptions.data();
 
-    // TODO protocol
     const char* searchPath      = aph::Filesystem::GetInstance().resolvePath("shader_slang://").c_str();
     sessionDesc.searchPaths     = &searchPath;
     sessionDesc.searchPathCount = 1;
@@ -556,7 +555,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         else
         {
             requiredShaderList[stage] =
-                loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stageLoadInfo.entryPoint);
+                loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stage, stageLoadInfo.entryPoint);
         }
     }
 
@@ -575,9 +574,9 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 
         if(path.extension() == ".spv")
         {
-            auto shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()));
             // TODO multi shader stage single spv binary support
             auto stage                  = requiredStages.cbegin()->first;
+            auto shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
             requiredShaderList[stage]   = shader;
             m_shaderCaches[path][stage] = shader;
         }
@@ -593,7 +592,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
                 const auto& [entryPointName, spv] = spvInfo;
                 APH_ASSERT(!requiredShaderList.contains(stage));
 
-                auto shader                 = loadShader(spv, entryPointName);
+                auto shader                 = loadShader(spv, stage, entryPointName);
                 m_shaderCaches[path][stage] = shader;
 
                 if(requiredStages.contains(stage))
@@ -618,6 +617,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
                 .geometry{.pVertex   = requiredShaderList[ShaderStage::VS],
                           .pFragment = requiredShaderList[ShaderStage::FS]},
                 .type = PipelineType::Geometry,
+                .pDevice = m_pDevice,
             },
             ppProgram));
     }
@@ -626,6 +626,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         vk::ProgramCreateInfo ci{
             .mesh{.pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS]},
             .type = PipelineType::Mesh,
+            .pDevice = m_pDevice,
         };
         if(requiredShaderList.contains(ShaderStage::TS))
         {
@@ -640,6 +641,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
             vk::ProgramCreateInfo{
                 .compute{.pCompute = requiredShaderList[ShaderStage::CS]},
                 .type = PipelineType::Compute,
+                .pDevice = m_pDevice,
             },
             ppProgram));
     }
@@ -764,7 +766,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     m_pDevice->unMapMemory(pBuffer);
 }
 
-vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const std::string& entryPoint)
+vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage, const std::string& entryPoint)
 {
     VkShaderModuleCreateInfo createInfo{
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -774,6 +776,6 @@ vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const s
     VkShaderModule handle;
     _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
                                                           &handle));
-    return m_shaderPool.allocate(ReflectLayout(spv), handle, entryPoint);
+    return m_shaderPool.allocate(vk::ShaderCreateInfo{ReflectLayout(spv), entryPoint, stage}, handle);
 }
 }  // namespace aph

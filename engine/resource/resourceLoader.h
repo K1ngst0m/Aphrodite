@@ -3,7 +3,6 @@
 
 #include "api/vulkan/device.h"
 #include "common/hash.h"
-#include "common/uuid.h"
 #include "geometry.h"
 #include "threads/taskManager.h"
 
@@ -125,7 +124,7 @@ public:
 
 private:
     void        writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
-    vk::Shader* loadShader(const std::vector<uint32_t>& spv, const std::string& entryPoint = "main");
+    vk::Shader* loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage, const std::string& entryPoint = "main");
 
 private:
     ResourceLoaderCreateInfo m_createInfo;

@@ -3,197 +3,191 @@
 
 namespace aph::vk
 {
-    // create descriptor set layout
-    vk::DescriptorSetLayout* createDescriptorSetLayout(vk::Device* m_pDevice, const vk::ShaderLayout& layout,
-                                                        const vk::Sampler* const*              pImmutableSamplers,
-                                                        const uint32_t*                    stageForBinds,
-                                                        SmallVector<VkDescriptorPoolSize>& poolSize)
+// create descriptor set layout
+vk::DescriptorSetLayout* createDescriptorSetLayout(vk::Device* m_pDevice, const vk::ShaderLayout& layout,
+                                                   const vk::Sampler* const*          pImmutableSamplers,
+                                                   const uint32_t*                    stageForBinds,
+                                                   SmallVector<VkDescriptorPoolSize>& poolSize)
+{
+    VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
+    SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
+
+    // VkDescriptorBindingFlagsEXT               binding_flags = 0;
+    // VkDescriptorSetLayoutBindingFlagsCreateInfoEXT flags = {
+    //     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
+
+    for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
     {
-        VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
-        SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
+        uint32_t stages = stageForBinds[i];
+        if(stages == 0)
+            continue;
 
-        // VkDescriptorBindingFlagsEXT               binding_flags = 0;
-        // VkDescriptorSetLayoutBindingFlagsCreateInfoEXT flags = {
-        //     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-
-        for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
+        unsigned arraySize = layout.arraySize[i];
+        unsigned poolArraySize;
+        if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
         {
-            uint32_t stages = stageForBinds[i];
-            if(stages == 0)
-                continue;
+            arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+            poolArraySize = arraySize;
+        }
+        else
+            poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
 
-            unsigned arraySize = layout.arraySize[i];
-            unsigned poolArraySize;
-            if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
-            {
-                arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
-                poolArraySize = arraySize;
-            }
-            else
-                poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
+        unsigned types = 0;
+        if(layout.sampledImageMask & (1u << i))
+        {
+            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
 
-            unsigned types = 0;
-            if(layout.sampledImageMask & (1u << i))
-            {
-                if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-                    vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
-
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
-                                    vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
-                types++;
-            }
-
-            if(layout.sampledTexelBufferMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
-                types++;
-            }
-
-            if(layout.storageTexelBufferMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
-                types++;
-            }
-
-            if(layout.storageImageMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
-                types++;
-            }
-
-            if(layout.uniformBufferMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
-                types++;
-            }
-
-            if(layout.storageBufferMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
-                types++;
-            }
-
-            if(layout.inputAttachmentMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
-                types++;
-            }
-
-            if(layout.separateImageMask & (1u << i))
-            {
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
-                types++;
-            }
-
-            if(layout.samplerMask & (1u << i))
-            {
-                if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-                    vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
-
-                vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
-                                    vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-                poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
-                types++;
-            }
-
-            (void)types;
-            APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
+            types++;
         }
 
-        VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-        if(!vkBindings.empty())
+        if(layout.sampledTexelBufferMask & (1u << i))
         {
-            info.bindingCount = vkBindings.size();
-            info.pBindings    = vkBindings.data();
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
+            types++;
         }
 
-    #ifdef APH_DEBUG
-        VK_LOG_DEBUG("Creating descriptor set layout.");
-    #endif
-        vk::DescriptorSetLayout* setLayout{};
+        if(layout.storageTexelBufferMask & (1u << i))
         {
-            VkDescriptorSetLayout vkSetLayout;
-            _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vk::vkAllocator(),
-                                                                        &vkSetLayout));
-            setLayout = new vk::DescriptorSetLayout(m_pDevice, info, vkSetLayout);
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
+            types++;
         }
-        return setLayout;
-    };
-}
+
+        if(layout.storageImageMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
+            types++;
+        }
+
+        if(layout.uniformBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.storageBufferMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
+            types++;
+        }
+
+        if(layout.inputAttachmentMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
+            types++;
+        }
+
+        if(layout.separateImageMask & (1u << i))
+        {
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
+            types++;
+        }
+
+        if(layout.samplerMask & (1u << i))
+        {
+            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
+                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
+
+            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
+                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
+            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
+            types++;
+        }
+
+        (void)types;
+        APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
+    }
+
+    VkDescriptorSetLayoutCreateInfo info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+    if(!vkBindings.empty())
+    {
+        info.bindingCount = vkBindings.size();
+        info.pBindings    = vkBindings.data();
+    }
+
+#ifdef APH_DEBUG
+    VK_LOG_DEBUG("Creating descriptor set layout.");
+#endif
+    vk::DescriptorSetLayout* setLayout{};
+    {
+        VkDescriptorSetLayout vkSetLayout;
+        _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorSetLayout(m_pDevice->getHandle(), &info, vk::vkAllocator(),
+                                                                     &vkSetLayout));
+        setLayout = new vk::DescriptorSetLayout(m_pDevice, info, vkSetLayout);
+    }
+    return setLayout;
+};
+}  // namespace aph::vk
 
 namespace aph::vk
 {
 
-Shader::Shader(ResourceLayout layout, HandleType handle, std::string entrypoint) :
-    ResourceHandle(handle),
-    m_entrypoint(std::move(entrypoint)),
-    m_layout(layout)
+Shader::Shader(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo)
 {
 }
 
-ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Geometry)
+ShaderProgram::ShaderProgram(const CreateInfoType& createInfo) : ResourceHandle({}, createInfo), m_pDevice(createInfo.pDevice)
 {
-    APH_ASSERT(vs);
-    APH_ASSERT(fs);
-    m_shaders[ShaderStage::VS] = vs;
-    m_shaders[ShaderStage::FS] = fs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-    createVertexInput();
-}
-
-ShaderProgram::ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs,
-                             const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Mesh)
-{
-    APH_ASSERT(ms);
-    APH_ASSERT(fs);
-    m_shaders[ShaderStage::MS] = ms;
-    if(ts)
+    switch(getPipelineType())
     {
-        m_shaders[ShaderStage::TS] = ts;
+    case PipelineType::Geometry:
+    {
+        APH_ASSERT(createInfo.geometry.pVertex);
+        APH_ASSERT(createInfo.geometry.pFragment);
+        m_shaders[ShaderStage::VS] = createInfo.geometry.pVertex;
+        m_shaders[ShaderStage::FS] = createInfo.geometry.pFragment;
     }
-    m_shaders[ShaderStage::FS] = fs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
+    break;
+    case PipelineType::Mesh:
+    {
+        APH_ASSERT(createInfo.mesh.pMesh);
+        APH_ASSERT(createInfo.mesh.pFragment);
+        m_shaders[ShaderStage::MS] = createInfo.mesh.pMesh;
+        if(createInfo.mesh.pTask)
+        {
+            m_shaders[ShaderStage::TS] = createInfo.mesh.pTask;
+        }
+        m_shaders[ShaderStage::FS] = createInfo.mesh.pFragment;
+    }
+    break;
+    case PipelineType::Compute:
+    {
+        m_shaders[ShaderStage::CS] = createInfo.compute.pCompute;
+    }
+    break;
+    case PipelineType::Undefined:
+    case PipelineType::RayTracing:
+        break;
+    }
+    combineLayout(createInfo.samplerBank);
+    createPipelineLayout(createInfo.samplerBank);
     createVertexInput();
 }
-
-ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Compute)
-{
-    m_shaders[ShaderStage::CS] = cs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-}
-
 
 void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 {
     CombinedResourceLayout programLayout{};
     if(m_shaders.contains(ShaderStage::VS))
     {
-        programLayout.attributeMask = m_shaders[ShaderStage::VS]->m_layout.inputMask;
+        programLayout.attributeMask = m_shaders[ShaderStage::VS]->getResourceLayout().inputMask;
         for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
         {
-            programLayout.vertexAttr[idx] = m_shaders[ShaderStage::VS]->m_layout.vertexAttr[idx];
+            programLayout.vertexAttr[idx] = m_shaders[ShaderStage::VS]->getResourceLayout().vertexAttr[idx];
         }
     }
     if(m_shaders.contains(ShaderStage::FS) && m_shaders[ShaderStage::FS])
     {
-        programLayout.renderTargetMask = m_shaders[ShaderStage::FS]->m_layout.outputMask;
+        programLayout.renderTargetMask = m_shaders[ShaderStage::FS]->getResourceLayout().outputMask;
     }
 
     ImmutableSamplerBank extImmutableSamplers = {};
@@ -201,7 +195,7 @@ void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
     for(const auto& [stage, shader] : m_shaders)
     {
         APH_ASSERT(shader);
-        auto&    shaderLayout = shader->m_layout;
+        auto&    shaderLayout = shader->getResourceLayout();
         uint32_t stageMask    = utils::VkCast(stage);
 
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
@@ -409,6 +403,10 @@ VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32
 
 void ShaderProgram::createVertexInput()
 {
+    if (getPipelineType() != PipelineType::Geometry && getPipelineType() != PipelineType::Mesh)
+    {
+        return;
+    }
     uint32_t size = 0;
     aph::utils::forEachBit(m_combineLayout.attributeMask, [&](uint32_t location) {
         auto& attr = m_combineLayout.vertexAttr[location];

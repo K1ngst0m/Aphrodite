@@ -142,6 +142,11 @@ struct DummyCreateInfo
     uint32_t typeId;
 };
 
+struct DummyHandle
+{
+    uint32_t typeId;
+};
+
 enum class Format : uint8_t
 {
     Undefined,
@@ -436,7 +441,7 @@ struct RenderPipelineDynamicState final
     bool depthBiasEnable = false;
 };
 
-template <typename T_Handle, typename T_CreateInfo = DummyCreateInfo>
+template <typename T_Handle = DummyHandle, typename T_CreateInfo = DummyCreateInfo>
 class ResourceHandle
 {
 public:
@@ -449,6 +454,10 @@ public:
         {
             m_createInfo.typeId = typeid(T_Handle).hash_code();
         }
+        if constexpr(std::is_same_v<T_Handle, DummyHandle>)
+        {
+            m_handle.typeId = typeid(T_Handle).hash_code();
+        }
     }
     operator T_Handle() { return m_handle; }
     operator T_Handle&() { return m_handle; }
@@ -457,6 +466,7 @@ public:
     T_Handle&       getHandle() { return m_handle; }
     const T_Handle& getHandle() const { return m_handle; }
     T_CreateInfo&   getCreateInfo() { return m_createInfo; }
+    const T_CreateInfo&   getCreateInfo() const { return m_createInfo; }
 
 protected:
     T_Handle     m_handle     = {};
