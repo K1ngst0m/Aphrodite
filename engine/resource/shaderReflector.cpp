@@ -1,7 +1,4 @@
 #include "shaderReflector.h"
-
-#include "api/vulkan/device.h"
-#include "api/vulkan/sampler.h"
 #include "spirv_cross.hpp"
 
 namespace aph
@@ -165,7 +162,7 @@ void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRTyp
     }
 };
 
-vk::ResourceLayout ReflectLayout(const std::vector<uint32_t>& spvCode)
+vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
 {
     spirv_cross::Compiler compiler{spvCode.data(), spvCode.size()};
     auto                  resources = compiler.get_shader_resources();
@@ -480,6 +477,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
 
     return programLayout;
 }
+
 VertexInput getVertexInputInfo(vk::CombinedResourceLayout combineLayout)
 {
     VertexInput vertexInput;

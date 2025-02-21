@@ -4,7 +4,7 @@
 
 namespace aph
 {
-vk::ResourceLayout         ReflectLayout(const std::vector<uint32_t>& spvCode);
+vk::ResourceLayout         reflectLayout(const std::vector<uint32_t>& spvCode);
 vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders,
                                          const vk::ImmutableSamplerBank* samplerBank = nullptr);
 VertexInput                getVertexInputInfo(vk::CombinedResourceLayout combineLayout);

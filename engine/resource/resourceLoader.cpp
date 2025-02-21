@@ -537,6 +537,18 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 {
     APH_PROFILER_SCOPE();
 
+    auto loadShader = [this](const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
+                             const std::string& entryPoint = "main") -> vk::Shader* {
+        vk::Shader*          shader;
+        vk::ShaderCreateInfo createInfo{
+            .code       = spv,
+            .entrypoint = entryPoint,
+            .stage      = stage,
+        };
+        APH_VR(m_pDevice->create(createInfo, &shader));
+        return shader;
+    };
+
     HashMap<ShaderStage, vk::Shader*>                                      requiredShaderList;
     HashMap<std::filesystem::path, HashMap<aph::ShaderStage, std::string>> requiredStageMaps;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
@@ -616,8 +628,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
             vk::ProgramCreateInfo{
                 .geometry{.pVertex   = requiredShaderList[ShaderStage::VS],
                           .pFragment = requiredShaderList[ShaderStage::FS]},
-                .type    = PipelineType::Geometry,
-                .pDevice = m_pDevice,
+                .type = PipelineType::Geometry,
             },
             ppProgram));
     }
@@ -625,8 +636,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     {
         vk::ProgramCreateInfo ci{
             .mesh{.pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS]},
-            .type    = PipelineType::Mesh,
-            .pDevice = m_pDevice,
+            .type = PipelineType::Mesh,
         };
         if(requiredShaderList.contains(ShaderStage::TS))
         {
@@ -640,8 +650,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
                 .compute{.pCompute = requiredShaderList[ShaderStage::CS]},
-                .type    = PipelineType::Compute,
-                .pDevice = m_pDevice,
+                .type = PipelineType::Compute,
             },
             ppProgram));
     }
@@ -763,18 +772,5 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     APH_VR(m_pDevice->mapMemory(pBuffer, &pMapped));
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
-}
-
-vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
-                                       const std::string& entryPoint)
-{
-    vk::Shader*          shader;
-    vk::ShaderCreateInfo createInfo{
-        .code       = spv,
-        .entrypoint = entryPoint,
-        .stage      = stage,
-    };
-    APH_VR(m_pDevice->create(createInfo, &shader));
-    return shader;
 }
 }  // namespace aph

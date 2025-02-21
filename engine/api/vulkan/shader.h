@@ -129,14 +129,13 @@ struct ProgramCreateInfo
 
     PipelineType type = {};
 
-    Device*               pDevice     = {};
     ImmutableSamplerBank  samplerBank = {};
 };
 
 class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 {
     friend class ObjectPool<ShaderProgram>;
-
+    friend class Device;
 public:
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
@@ -149,12 +148,11 @@ public:
 private:
     ShaderProgram(const CreateInfoType& createInfo, const CombinedResourceLayout& layout,
                   VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts);
-    ~ShaderProgram();
+    ~ShaderProgram() = default;
 
     void createVertexInput();
 
 private:
-    Device*                           m_pDevice       = {};
     ShaderMapList                     m_shaders       = {};
     SmallVector<DescriptorSetLayout*> m_pSetLayouts   = {};
     VkPipelineLayout                  m_pipeLayout    = {};

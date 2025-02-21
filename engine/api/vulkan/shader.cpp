@@ -13,7 +13,6 @@ Shader::Shader(const CreateInfoType& createInfo, HandleType handle, ResourceLayo
 ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const CombinedResourceLayout& layout,
                   VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts) :
     ResourceHandle({}, createInfo),
-    m_pDevice(createInfo.pDevice),
     m_pSetLayouts(setLayouts),
     m_pipeLayout(pipelineLayout),
     m_combineLayout(layout)
@@ -50,23 +49,7 @@ ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const CombinedRes
         break;
     }
 
-    std::vector<Shader*> inputShaders;
-    for (const auto& [stage, shader]: m_shaders)
-    {
-        inputShaders.push_back(shader);
-    }
-
     createVertexInput();
-}
-
-ShaderProgram::~ShaderProgram()
-{
-    for(auto* setLayout : m_pSetLayouts)
-    {
-        m_pDevice->destroy(setLayout);
-    }
-
-    m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, vkAllocator());
 }
 
 VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32_t size) const

@@ -385,6 +385,8 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 
     VkDescriptorSetLayout vkSetLayout;
     _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
+                                  reinterpret_cast<uint64_t>(vkSetLayout), debugName))
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     return Result::Success;
@@ -401,7 +403,9 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
     };
     VkShaderModule handle;
     _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
-    *ppShader = m_resourcePool.shader.allocate(createInfo, handle, ReflectLayout(spv));
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
+                                  debugName))
+    *ppShader = m_resourcePool.shader.allocate(createInfo, handle, reflectLayout(spv));
     return Result::Success;
 }
 
@@ -427,7 +431,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         APH_ASSERT(createInfo.mesh.pFragment);
         std::vector<Shader*> shaders{};
         shaders.push_back(createInfo.mesh.pMesh);
-        if (createInfo.mesh.pTask)
+        if(createInfo.mesh.pTask)
         {
             shaders.push_back(createInfo.mesh.pTask);
         }
@@ -456,8 +460,8 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     }
 
     SmallVector<DescriptorSetLayout*> setLayouts = {};
-    VkPipelineLayout pipelineLayout;
-    auto samplerBank = &createInfo.samplerBank;
+    VkPipelineLayout                  pipelineLayout;
+    auto                              samplerBank = &createInfo.samplerBank;
     {
         setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
 
@@ -465,7 +469,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             DescriptorSetLayoutCreateInfo setLayoutCreateInfo{.setInfo            = combineLayout.setInfos[i],
-                                                            .pImmutableSamplers = samplerBank->samplers[i]};
+                                                              .pImmutableSamplers = samplerBank->samplers[i]};
             APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
             if(combineLayout.descriptorSetMask & (1u << i))
             {
@@ -476,7 +480,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         if(numSets > getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
         {
             VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets,
-                    getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
+                       getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
         }
 
         VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
@@ -500,6 +504,8 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
         if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
             VK_LOG_ERR("Failed to create pipeline layout.");
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(pipelineLayout),
+                                      debugName))
     }
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, combineLayout, pipelineLayout, setLayouts);
@@ -578,6 +584,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
 
     VkImage image;
     m_table.vkCreateImage(getHandle(), &imageCreateInfo, vkAllocator(), &image);
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(image), debugName))
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
     m_resourcePool.gpu->allocate(*ppImage);
 
@@ -601,6 +608,13 @@ void Device::destroy(Shader* pShader)
 void Device::destroy(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
+
+    for(auto* setLayout : pProgram->m_pSetLayouts)
+    {
+        destroy(setLayout);
+    }
+
+    getDeviceTable()->vkDestroyPipelineLayout(getHandle(), pProgram->m_pipeLayout, vkAllocator());
     m_resourcePool.program.free(pProgram);
 }
 
