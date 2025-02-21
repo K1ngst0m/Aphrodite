@@ -106,7 +106,7 @@ VkFormat spirTypeToVkFormat(const spirv_cross::SPIRType& type)
     return VK_FORMAT_UNDEFINED;
 }
 
-static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
+void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
 {
     auto& size = layout.setShaderLayouts[set].arraySize[binding];
     if(!type.array.empty())
@@ -164,7 +164,7 @@ static void updateArrayInfo(ResourceLayout& layout, const spirv_cross::SPIRType&
 };
 
 // create descriptor set layout
-static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
+DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const ShaderLayout& layout,
                                                       const Sampler* const*              pImmutableSamplers,
                                                       const uint32_t*                    stageForBinds,
                                                       SmallVector<VkDescriptorPoolSize>& poolSize)
@@ -288,61 +288,12 @@ static DescriptorSetLayout* createDescriptorSetLayout(Device* m_pDevice, const S
     return setLayout;
 };
 
-Shader::Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint, const ResourceLayout* pLayout) :
-    ResourceHandle(handle),
-    m_entrypoint(std::move(entrypoint)),
-    m_code(std::move(code))
+ResourceLayout ReflectLayout(const std::vector<uint32_t>& spvCode)
 {
-    m_layout = pLayout ? *pLayout : ReflectLayout(m_code);
-}
-
-ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Geometry)
-{
-    APH_ASSERT(vs);
-    APH_ASSERT(fs);
-    m_shaders[ShaderStage::VS] = vs;
-    m_shaders[ShaderStage::FS] = fs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-    createVertexInput();
-}
-
-ShaderProgram::ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs,
-                             const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Mesh)
-{
-    APH_ASSERT(ms);
-    APH_ASSERT(fs);
-    m_shaders[ShaderStage::MS] = ms;
-    if(ts)
-    {
-        m_shaders[ShaderStage::TS] = ts;
-    }
-    m_shaders[ShaderStage::FS] = fs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-    createVertexInput();
-}
-
-ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) :
-    m_pDevice(device),
-    m_pipelineType(PipelineType::Compute)
-{
-    m_shaders[ShaderStage::CS] = cs;
-    combineLayout(samplerBank);
-    createPipelineLayout(samplerBank);
-}
-
-ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
-{
-    using namespace spirv_cross;
-    Compiler compiler{spvCode.data(), spvCode.size()};
+    spirv_cross::Compiler compiler{spvCode.data(), spvCode.size()};
     auto     resources = compiler.get_shader_resources();
 
-    ResourceLayout layout;
+    ResourceLayout layout{};
     for(const auto& res : resources.stage_inputs)
     {
         auto location = compiler.get_decoration(res.id, spv::DecorationLocation);
@@ -408,7 +359,7 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
             layout.setShaderLayouts[set].storageImageMask |= 1u << binding;
         }
 
-        if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
         }
@@ -423,7 +374,7 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
         auto& type = compiler.get_type(res.type_id);
-        if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
         }
@@ -445,7 +396,7 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
         auto& type = compiler.get_type(res.type_id);
-        if(compiler.get_type(type.image.type).basetype == SPIRType::BaseType::Float)
+        if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
             layout.setShaderLayouts[set].fpMask |= 1u << binding;
         }
@@ -490,6 +441,57 @@ ResourceLayout Shader::ReflectLayout(const std::vector<uint32_t>& spvCode)
 
     return layout;
 }
+}
+
+namespace aph::vk
+{
+Shader::Shader(const std::vector<uint32_t>& code, HandleType handle, std::string entrypoint) :
+    ResourceHandle(handle),
+    m_entrypoint(std::move(entrypoint)),
+    m_layout(ReflectLayout(code))
+{
+}
+
+ShaderProgram::ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Geometry)
+{
+    APH_ASSERT(vs);
+    APH_ASSERT(fs);
+    m_shaders[ShaderStage::VS] = vs;
+    m_shaders[ShaderStage::FS] = fs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+    createVertexInput();
+}
+
+ShaderProgram::ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs,
+                             const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Mesh)
+{
+    APH_ASSERT(ms);
+    APH_ASSERT(fs);
+    m_shaders[ShaderStage::MS] = ms;
+    if(ts)
+    {
+        m_shaders[ShaderStage::TS] = ts;
+    }
+    m_shaders[ShaderStage::FS] = fs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+    createVertexInput();
+}
+
+ShaderProgram::ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank) :
+    m_pDevice(device),
+    m_pipelineType(PipelineType::Compute)
+{
+    m_shaders[ShaderStage::CS] = cs;
+    combineLayout(samplerBank);
+    createPipelineLayout(samplerBank);
+}
+
 
 void ShaderProgram::combineLayout(const ImmutableSamplerBank* samplerBank)
 {
@@ -707,6 +709,7 @@ ShaderProgram::~ShaderProgram()
     }
     m_pDevice->getDeviceTable()->vkDestroyPipelineLayout(m_pDevice->getHandle(), m_pipeLayout, vkAllocator());
 }
+
 VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32_t size) const
 {
     VkShaderStageFlags stage = 0;
@@ -716,6 +719,7 @@ VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32
     offset += constant.size;
     return stage;
 }
+
 void ShaderProgram::createVertexInput()
 {
     uint32_t size = 0;

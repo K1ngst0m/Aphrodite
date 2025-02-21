@@ -87,13 +87,10 @@ class Shader : public ResourceHandle<VkShaderModule>
     friend class ShaderProgram;
 
 public:
-    Shader(std::vector<uint32_t> code, HandleType handle, std::string entrypoint = "main",
-           const ResourceLayout* pLayout = nullptr);
+    Shader(const std::vector<uint32_t>& code, HandleType handle, std::string entrypoint = "main");
 
 private:
-    static ResourceLayout ReflectLayout(const std::vector<uint32_t>& code);
     std::string           m_entrypoint = {};
-    std::vector<uint32_t> m_code       = {};
     ResourceLayout        m_layout     = {};
 };
 using ShaderMapList = HashMap<ShaderStage, Shader*>;
