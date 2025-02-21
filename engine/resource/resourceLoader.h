@@ -136,8 +136,6 @@ private:
 private:
     ThreadSafeObjectPool<vk::Shader> m_shaderPool;
     HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches       = {};
-    uuid::UUIDGenerator<std::mt19937_64> m_uuidGenerator      = {};
-    HashMap<std::string, std::string>    m_shaderUUIDMap      = {};
     std::mutex                           m_updateLock;
 };
 }  // namespace aph

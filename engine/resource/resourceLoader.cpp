@@ -15,9 +15,10 @@
 
 #include "filesystem/filesystem.h"
 
+#include "shaderReflector.h"
+
 namespace loader::image
 {
-
 inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY = false)
 {
     APH_PROFILER_SCOPE();
@@ -758,6 +759,6 @@ vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv)
     _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
                                                           &handle));
     // TODO entry point input
-    return m_shaderPool.allocate(spv, handle, "main");
+    return m_shaderPool.allocate(ReflectLayout(spv), handle, "main");
 }
 }  // namespace aph

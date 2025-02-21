@@ -85,11 +85,9 @@ struct ImmutableSamplerBank
 class Shader : public ResourceHandle<VkShaderModule>
 {
     friend class ShaderProgram;
-
-public:
-    Shader(const std::vector<uint32_t>& code, HandleType handle, std::string entrypoint = "main");
-
+    friend class ObjectPool<Shader>;
 private:
+    Shader(ResourceLayout layout, HandleType handle, std::string entrypoint = "main");
     std::string           m_entrypoint = {};
     ResourceLayout        m_layout     = {};
 };
@@ -125,14 +123,7 @@ struct ProgramCreateInfo
 class ShaderProgram
 {
     friend class ObjectPool<ShaderProgram>;
-
 public:
-    ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs, const ImmutableSamplerBank* samplerBank);
-    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
-    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
-
-    ~ShaderProgram();
-
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
     const VertexInput&   getVertexInput() const { return m_vertexInput; }
@@ -143,6 +134,11 @@ public:
     PipelineType         getPipelineType() const { return m_pipelineType; }
 
 private:
+    ShaderProgram(Device* device, Shader* ms, Shader* ts, Shader* fs, const ImmutableSamplerBank* samplerBank);
+    ShaderProgram(Device* device, Shader* vs, Shader* fs, const ImmutableSamplerBank* samplerBank);
+    ShaderProgram(Device* device, Shader* cs, const ImmutableSamplerBank* samplerBank);
+    ~ShaderProgram();
+
     void createPipelineLayout(const ImmutableSamplerBank* samplerBank);
     void createVertexInput();
     void combineLayout(const ImmutableSamplerBank* samplerBank);

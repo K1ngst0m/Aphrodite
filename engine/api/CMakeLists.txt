@@ -10,7 +10,6 @@ target_link_libraries(aph-api
   aph-allocator
   aph-threads
 
-  spirv-cross-core
   vulkan-registry
   GPUOpen::VulkanMemoryAllocator
 )
