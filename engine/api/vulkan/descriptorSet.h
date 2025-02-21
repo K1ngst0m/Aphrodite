@@ -92,7 +92,8 @@ public:
 
 private:
     DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
-                                         const SmallVector<VkDescriptorSetLayoutBinding>& bindings);
+                        const SmallVector<VkDescriptorPoolSize>&         poolSizes,
+                        const SmallVector<VkDescriptorSetLayoutBinding>& bindings);
     ~DescriptorSetLayout();
 
     Device*                                   m_pDevice  = {};

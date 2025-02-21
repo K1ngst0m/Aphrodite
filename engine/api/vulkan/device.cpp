@@ -279,7 +279,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     const auto&                       pImmutableSamplers = createInfo.pImmutableSamplers;
     const auto&                       layout             = createInfo.setInfo.shaderLayout;
     const auto&                       stageForBinds      = createInfo.setInfo.stagesForBindings;
-    SmallVector<VkDescriptorPoolSize> poolSize;
+    SmallVector<VkDescriptorPoolSize> poolSizes;
 
     for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
     {
@@ -311,56 +311,56 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
             types++;
         }
 
         if(layout.sampledTexelBufferMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageTexelBufferMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageImageMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
             types++;
         }
 
         if(layout.uniformBufferMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.storageBufferMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
             types++;
         }
 
         if(layout.inputAttachmentMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
             types++;
         }
 
         if(layout.separateImageMask & (1u << i))
         {
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
             types++;
         }
 
@@ -371,7 +371,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 
             vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
                                   vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSize.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
+            poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
             types++;
         }
 
@@ -386,7 +386,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     VkDescriptorSetLayout vkSetLayout;
     _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
 
-    *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, vkBindings);
+    *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     return Result::Success;
 }
 

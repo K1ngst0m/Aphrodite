@@ -5,10 +5,12 @@ namespace aph::vk
 {
 
 DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
+                                         const SmallVector<VkDescriptorPoolSize>&         poolSizes,
                                          const SmallVector<VkDescriptorSetLayoutBinding>& bindings) :
     ResourceHandle(handle, createInfo),
     m_pDevice(device),
-    m_pDeviceTable(device->getDeviceTable())
+    m_pDeviceTable(device->getDeviceTable()),
+    m_poolSizes(poolSizes)
 {
     // fill bindings and count of types
     for(std::size_t idx = 0; idx < bindings.size(); idx++)
