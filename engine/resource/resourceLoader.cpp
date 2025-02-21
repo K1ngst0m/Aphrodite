@@ -124,7 +124,8 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
         } \
     } while(0)
 
-aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::string_view filename)
+aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> loadSlangFromFile(
+    std::string_view filename)
 {
     APH_PROFILER_SCOPE();
     // TODO multi global session in different threads
@@ -134,27 +135,38 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
 
-    SessionDesc sessionDesc;
-
-    std::vector<CompilerOptionEntry> compilerOptions{
-        CompilerOptionEntry
-        {
-            CompilerOptionName::EmitSpirvMethod,
-            CompilerOptionValue{
-                .kind = CompilerOptionValueKind::Int,
-                .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
-            }
-        }
-    };
+    std::vector<CompilerOptionEntry> compilerOptions{{.name = CompilerOptionName::VulkanUseEntryPointName,
+                                                      .value =
+                                                          {
+                                                              .kind      = CompilerOptionValueKind::Int,
+                                                              .intValue0 = 1,
+                                                          }},
+                                                     {.name = CompilerOptionName::VulkanEmitReflection,
+                                                      .value =
+                                                          {
+                                                              .kind      = CompilerOptionValueKind::Int,
+                                                              .intValue0 = 1,
+                                                          }},
+                                                     {.name = CompilerOptionName::EmitSpirvMethod,
+                                                      .value{
+                                                          .kind      = CompilerOptionValueKind::Int,
+                                                          .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
+                                                      }}};
 
     TargetDesc targetDesc;
     targetDesc.format  = SLANG_SPIRV;
     targetDesc.profile = globalSession->findProfile("spirv");
-    targetDesc.compilerOptionEntryCount = compilerOptions.size();
-    targetDesc.compilerOptionEntries = compilerOptions.data();
 
+    // TODO above options are only work with session desc
+    // targetDesc.compilerOptionEntryCount = compilerOptions.size();
+    // targetDesc.compilerOptionEntries    = compilerOptions.data();
+
+    SessionDesc sessionDesc;
     sessionDesc.targets     = &targetDesc;
     sessionDesc.targetCount = 1;
+
+    sessionDesc.compilerOptionEntryCount = compilerOptions.size();
+    sessionDesc.compilerOptionEntries = compilerOptions.data();
 
     // TODO protocol
     const char* searchPaths[]   = {"assets/shaders/slang"};
@@ -162,7 +174,8 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
     sessionDesc.searchPathCount = 1;
 
     Slang::ComPtr<ISession> session;
-    globalSession->createSession(sessionDesc, session.writeRef());
+    auto                    result = globalSession->createSession(sessionDesc, session.writeRef());
+    APH_ASSERT(SLANG_SUCCEEDED(result));
 
     // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
     // sessionDesc.preprocessorMacros = &fancyFlag;
@@ -175,21 +188,21 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
 
     SLANG_CR(diagnostics);
 
-    aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> spvCodes;
+    aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> spvCodes;
 
     std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
 
     for(int i = 0; i < module->getDefinedEntryPointCount(); i++)
     {
         Slang::ComPtr<slang::IEntryPoint> entryPoint;
-        auto                              result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
+        result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
         APH_ASSERT(SLANG_SUCCEEDED(result));
 
         componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(entryPoint.get()));
     }
 
     Slang::ComPtr<slang::IComponentType> composed;
-    auto                                 result =
+    result =
         session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(), componentsToLink.size(),
                                               composed.writeRef(), diagnostics.writeRef());
     APH_ASSERT(SLANG_SUCCEEDED(result));
@@ -229,10 +242,11 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
 
         {
             std::vector<uint32_t> retSpvCode;
-            retSpvCode.resize(spirvCode->getBufferSize() / 4);
+            retSpvCode.resize(spirvCode->getBufferSize() / sizeof(retSpvCode[0]));
             std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
 
-            aph::ShaderStage stage = slangStageToShaderStageMap.at(entryPointReflection->getStage());
+            std::string      entryPointName = entryPointReflection->getName();
+            aph::ShaderStage stage          = slangStageToShaderStageMap.at(entryPointReflection->getStage());
 
             // TODO use the entrypoint name in loading info
             if(spvCodes.contains(stage))
@@ -244,7 +258,7 @@ aph::HashMap<aph::ShaderStage, std::vector<uint32_t>> loadSlangFromFile(std::str
             }
             else
             {
-                spvCodes[stage] = std::move(retSpvCode);
+                spvCodes[stage] = {entryPointName, std::move(retSpvCode)};
             }
         }
     }
@@ -530,18 +544,19 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 {
     APH_PROFILER_SCOPE();
 
-    HashMap<ShaderStage, vk::Shader*>                         requiredShaderList;
-    HashMap<std::filesystem::path, HashSet<aph::ShaderStage>> requiredStageMaps;
+    HashMap<ShaderStage, vk::Shader*>                                      requiredShaderList;
+    HashMap<std::filesystem::path, HashMap<aph::ShaderStage, std::string>> requiredStageMaps;
     for(auto& [stage, stageLoadInfo] : info.stageInfo)
     {
         if(std::holds_alternative<std::string>(stageLoadInfo.data))
         {
             auto path = Filesystem::GetInstance().resolvePath(std::get<std::string>(stageLoadInfo.data));
-            requiredStageMaps[path].insert(stage);
+            requiredStageMaps[path][stage] = stageLoadInfo.entryPoint;
         }
         else
         {
-            requiredShaderList[stage] = loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data));
+            requiredShaderList[stage] =
+                loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stageLoadInfo.entryPoint);
         }
     }
 
@@ -550,7 +565,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         if(m_shaderCaches.contains(path.string()))
         {
             const auto& shaderCache = m_shaderCaches[path.string()];
-            for(const auto& stage : requiredStages)
+            for(const auto& [stage, entryPoint] : requiredStages)
             {
                 APH_ASSERT(!shaderCache.contains(stage));
                 requiredShaderList[stage] = shaderCache.at(stage);
@@ -562,7 +577,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         {
             auto shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()));
             // TODO multi shader stage single spv binary support
-            auto stage                  = *requiredStages.cbegin();
+            auto stage                  = requiredStages.cbegin()->first;
             requiredShaderList[stage]   = shader;
             m_shaderCaches[path][stage] = shader;
         }
@@ -573,11 +588,12 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
             {
                 return {Result::RuntimeError, "Failed to load slang shader from file."};
             }
-            for(const auto& [stage, spv] : spvCodeMap)
+            for(const auto& [stage, spvInfo] : spvCodeMap)
             {
+                const auto& [entryPointName, spv] = spvInfo;
                 APH_ASSERT(!requiredShaderList.contains(stage));
 
-                auto shader                 = loadShader(spv);
+                auto shader                 = loadShader(spv, entryPointName);
                 m_shaderCaches[path][stage] = shader;
 
                 if(requiredStages.contains(stage))
@@ -748,7 +764,7 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     m_pDevice->unMapMemory(pBuffer);
 }
 
-vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv)
+vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv, const std::string& entryPoint)
 {
     VkShaderModuleCreateInfo createInfo{
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -758,7 +774,6 @@ vk::Shader* ResourceLoader::loadShader(const std::vector<uint32_t>& spv)
     VkShaderModule handle;
     _VR(m_pDevice->getDeviceTable()->vkCreateShaderModule(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(),
                                                           &handle));
-    // TODO entry point input
-    return m_shaderPool.allocate(ReflectLayout(spv), handle, "main");
+    return m_shaderPool.allocate(ReflectLayout(spv), handle, entryPoint);
 }
 }  // namespace aph

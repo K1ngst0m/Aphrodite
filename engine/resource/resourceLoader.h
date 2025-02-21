@@ -125,7 +125,7 @@ public:
 
 private:
     void        writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
-    vk::Shader* loadShader(const std::vector<uint32_t>& spv);
+    vk::Shader* loadShader(const std::vector<uint32_t>& spv, const std::string& entryPoint = "main");
 
 private:
     ResourceLoaderCreateInfo m_createInfo;

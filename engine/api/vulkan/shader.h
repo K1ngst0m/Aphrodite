@@ -86,10 +86,14 @@ class Shader : public ResourceHandle<VkShaderModule>
 {
     friend class ShaderProgram;
     friend class ObjectPool<Shader>;
+
+public:
+    std::string_view getEntryPointName() const { return m_entrypoint; }
+
 private:
     Shader(ResourceLayout layout, HandleType handle, std::string entrypoint = "main");
-    std::string           m_entrypoint = {};
-    ResourceLayout        m_layout     = {};
+    std::string    m_entrypoint = {};
+    ResourceLayout m_layout     = {};
 };
 using ShaderMapList = HashMap<ShaderStage, Shader*>;
 
@@ -123,6 +127,7 @@ struct ProgramCreateInfo
 class ShaderProgram
 {
     friend class ObjectPool<ShaderProgram>;
+
 public:
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 

@@ -63,11 +63,12 @@ void triangle_demo::init()
 
         // shader program
         APH_VR(m_pResourceLoader->loadAsync(
-            aph::ShaderLoadInfo{.stageInfo =
-                                    {
-                                        {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
-                                        {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
-                                    }},
+            aph::ShaderLoadInfo{
+                .stageInfo =
+                    {
+                        {aph::ShaderStage::VS, {.data = "shader_slang://triangle.slang", .entryPoint = "vertexMain"}},
+                        {aph::ShaderStage::FS, {.data = "shader_slang://triangle.slang", .entryPoint = "fragmentMain"}},
+                    }},
             &m_pProgram));
         m_pResourceLoader->wait();
 

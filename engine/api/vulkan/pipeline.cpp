@@ -148,8 +148,9 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
     {
     case PipelineType::Geometry:
     {
-        shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT,
-                                                        pProgram->getShader(ShaderStage::VS)->getHandle()));
+        const Shader* vs = pProgram->getShader(ShaderStage::VS);
+        shaderStage(
+            init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, vs->getHandle(), vs->getEntryPointName()));
         const VertexInput& vstate = createInfo.vertexInput;
         vkAttributes.resize(vstate.attributes.size());
         SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
@@ -184,11 +185,13 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
     break;
     case PipelineType::Mesh:
     {
-        shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_MESH_BIT_EXT,
-                                                        pProgram->getShader(ShaderStage::MS)->getHandle()));
-        if(auto taskShader = pProgram->getShader(ShaderStage::TS); taskShader != nullptr)
+        const Shader* ms = pProgram->getShader(ShaderStage::MS);
+        shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_MESH_BIT_EXT, ms->getHandle(),
+                                                        ms->getEntryPointName()));
+        if(auto ts = pProgram->getShader(ShaderStage::TS); ts != nullptr)
         {
-            shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_TASK_BIT_EXT, taskShader->getHandle()));
+            shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_TASK_BIT_EXT, ts->getHandle(),
+                                                            ts->getEntryPointName()));
         }
     }
     break;
@@ -199,8 +202,9 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
         return {};
     }
 
-    shaderStage(init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                    pProgram->getShader(ShaderStage::FS)->getHandle()));
+    const Shader* fs = pProgram->getShader(ShaderStage::FS);
+    shaderStage(
+        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fs->getHandle(), fs->getEntryPointName()));
 
     dynamicState_ = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
@@ -527,9 +531,9 @@ Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo
 
 void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineKey, Pipeline* pPipeline)
 {
-    const auto* table  = m_pDevice->getDeviceTable();
-    VkDevice    device = m_pDevice->getHandle();
-    auto vkPipeline = pPipeline->getHandle();
+    const auto* table      = m_pDevice->getDeviceTable();
+    VkDevice    device     = m_pDevice->getHandle();
+    auto        vkPipeline = pPipeline->getHandle();
 
     m_pipelineMap[pipelineKey] = pPipeline;
     VkPipelineBinaryCreateInfoKHR pipelineBinaryCreateInfo{
@@ -559,9 +563,9 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
 
     std::vector<VkPipelineBinaryKeyKHR> binaryKeys;
     binaryKeys.resize(handlesInfo.pipelineBinaryCount, {
-                                                            .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR,
-                                                            .pNext = nullptr,
-                                                        });
+                                                           .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR,
+                                                           .pNext = nullptr,
+                                                       });
 
     // Store to application cache
     for(int i = 0; i < handlesInfo.pipelineBinaryCount; ++i)
@@ -577,10 +581,9 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
         std::vector<uint8_t> binaryData{};
         binaryData.resize(binaryDataSize);
 
-        _VR(table->vkGetPipelineBinaryDataKHR(device, &binaryInfo, &binaryKeys[i], &binaryDataSize,
-                                                binaryData.data()));
+        _VR(table->vkGetPipelineBinaryDataKHR(device, &binaryInfo, &binaryKeys[i], &binaryDataSize, binaryData.data()));
         m_binaryKeyDataMap[binaryKeys[i]].rawData = std::move(binaryData);
-        m_binaryKeyDataMap[binaryKeys[i]].binary    = pipelineBinaries[i];
+        m_binaryKeyDataMap[binaryKeys[i]].binary  = pipelineBinaries[i];
     }
 
     m_pipelineKeyBinaryKeysMap[pipelineKey] = binaryKeys;
@@ -594,14 +597,15 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
 
 Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& createInfo)
 {
-    const auto* table  = m_pDevice->getDeviceTable();
-    VkDevice    device = m_pDevice->getHandle();
+    const auto*    table   = m_pDevice->getDeviceTable();
+    VkDevice       device  = m_pDevice->getHandle();
     ShaderProgram* program = createInfo.pCompute;
     APH_ASSERT(program);
 
     VkComputePipelineCreateInfo vkCreateInfo = init::computePipelineCreateInfo(program->getPipelineLayout());
-    vkCreateInfo.stage                       = init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT,
-                                                                                   program->getShader(ShaderStage::CS)->getHandle());
+    const Shader*               cs           = program->getShader(ShaderStage::CS);
+    vkCreateInfo.stage =
+        init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, cs->getHandle(), cs->getEntryPointName());
 
     // Get the pipeline key
     VkPipelineCreateInfoKHR pipelineCreateInfo{
@@ -618,7 +622,7 @@ Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& create
         VkPipeline computePipeline = VK_NULL_HANDLE;
         _VR(m_pDevice->getDeviceTable()->vkCreateComputePipelines(m_pDevice->getHandle(), VK_NULL_HANDLE, 1,
                                                                   &vkCreateInfo, vkAllocator(), &computePipeline));
-        Pipeline* pPipeline        = m_pool.allocate(m_pDevice, createInfo, computePipeline, program);
+        Pipeline* pPipeline = m_pool.allocate(m_pDevice, createInfo, computePipeline, program);
         setupPipelineKey(pipelineKey, pPipeline);
     }
 

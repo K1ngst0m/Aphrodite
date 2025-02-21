@@ -623,7 +623,9 @@ inline VkWriteDescriptorSetAccelerationStructureKHR writeDescriptorSetAccelerati
 }
 
 inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderStageFlagBits stage,
-                                                                     VkShaderModule        shaderModule)
+                                                                     VkShaderModule        shaderModule,
+                                                                     std::string_view name
+)
 {
     VkPipelineShaderStageCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -634,7 +636,7 @@ inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderSta
     // module containing the code for this shader stage
     info.module = shaderModule;
     // the entry point of the shader
-    info.pName = "main";
+    info.pName = name.data();
     return info;
 }
 
