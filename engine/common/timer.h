@@ -9,6 +9,14 @@
 namespace aph
 {
 
+enum class TimeUnit
+{
+    Seconds,
+    MillSeconds,
+    MicroSeconds,
+    NanoSeconds
+};
+
 class Timer
 {
 public:

@@ -1,6 +1,7 @@
 #ifndef VULKAN_DEVICE_H_
 #define VULKAN_DEVICE_H_
 
+#include "common/timer.h"
 #include "instance.h"
 #include "buffer.h"
 #include "commandBuffer.h"
@@ -18,14 +19,6 @@
 namespace aph::vk
 {
 class DeviceAllocator;
-
-enum class TimeUnit
-{
-    Seconds,
-    MillSeconds,
-    MicroSeconds,
-    NanoSeconds
-};
 
 struct DeviceCreateInfo
 {
