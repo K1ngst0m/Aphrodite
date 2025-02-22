@@ -51,8 +51,9 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
     }
 
     // from Vulkan 1.0
-    dynamicState(VK_DYNAMIC_STATE_VIEWPORT)
-        .dynamicState(VK_DYNAMIC_STATE_SCISSOR)
+    dynamicState(VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT)
+        .dynamicState(VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT)
+        .dynamicState(VK_DYNAMIC_STATE_RASTERIZER_DISCARD_ENABLE)
         .dynamicState(VK_DYNAMIC_STATE_DEPTH_BIAS)
         .dynamicState(VK_DYNAMIC_STATE_BLEND_CONSTANTS)
         // from Vulkan 1.3
@@ -146,16 +147,16 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
 
     dynamicState_ = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = numDynamicStates_,
-        .pDynamicStates    = dynamicStates_,
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates_.size()),
+        .pDynamicStates    = dynamicStates_.data(),
     };
     // viewport and scissor can be NULL if the viewport state is dynamic
     // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkPipelineViewportStateCreateInfo.html
     viewportState_ = {
         .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .viewportCount = 1,
+        .viewportCount = 0,
         .pViewports    = nullptr,
-        .scissorCount  = 1,
+        .scissorCount  = 0,
         .pScissors     = nullptr,
     };
 
@@ -286,8 +287,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::depthBiasEnable(bool enable)
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::dynamicState(VkDynamicState state)
 {
-    APH_ASSERT(numDynamicStates_ < APH_MAX_DYNAMIC_STATES);
-    dynamicStates_[numDynamicStates_++] = state;
+    dynamicStates_.push_back(state);
     return *this;
 }
 

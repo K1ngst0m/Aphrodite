@@ -33,12 +33,7 @@ private:
     VulkanPipelineBuilder& depthAttachmentFormat(VkFormat format);
     VulkanPipelineBuilder& stencilAttachmentFormat(VkFormat format);
 
-    enum
-    {
-        APH_MAX_DYNAMIC_STATES = 128
-    };
-    uint32_t       numDynamicStates_                      = 0;
-    VkDynamicState dynamicStates_[APH_MAX_DYNAMIC_STATES] = {};
+    std::vector<VkDynamicState> dynamicStates_ = {};
 
     SmallVector<VkPipelineShaderStageCreateInfo> shaderStages_ = {};
 

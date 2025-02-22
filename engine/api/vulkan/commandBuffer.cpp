@@ -61,11 +61,6 @@ VkResult CommandBuffer::reset()
     return VK_SUCCESS;
 }
 
-void CommandBuffer::bindPipeline(Pipeline* pPipeline)
-{
-    m_commandState.pPipeline = pPipeline;
-}
-
 void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::size_t offset)
 {
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
@@ -301,8 +296,8 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     VkRect2D   renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
     VkViewport viewPort   = aph::vk::init::viewport(renderArea.extent);
 
-    m_pDeviceTable->vkCmdSetViewport(m_handle, 0, 1, &viewPort);
-    m_pDeviceTable->vkCmdSetScissor(m_handle, 0, 1, &renderArea);
+    m_pDeviceTable->vkCmdSetViewportWithCount(m_handle, 1, &viewPort);
+    m_pDeviceTable->vkCmdSetScissorWithCount(m_handle, 1, &renderArea);
 
     VkRenderingInfo vkRenderingInfo{
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -349,18 +344,11 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 void CommandBuffer::flushComputeCommand()
 {
     // TODO bind descriptor set && create pipeline when no pipeline
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
-                                      m_commandState.pPipeline->getHandle());
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, VK_PIPELINE_BIND_POINT_COMPUTE, m_commandState.pPipeline->getHandle());
 }
 void CommandBuffer::flushGraphicsCommand()
 {
-    {
-        auto&             state = m_commandState.depthState;
-        const VkCompareOp op    = utils::VkCast(state.compareOp);
-        m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
-        m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
-        m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
-    }
+    initDyanimcGraphicsState();
 
     if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
     {
@@ -418,8 +406,7 @@ void CommandBuffer::flushGraphicsCommand()
 
         pipeline = m_pDevice->acquirePipeline(createInfo);
     }
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
-                                      m_commandState.pPipeline->getHandle());
+    m_pDeviceTable->vkCmdBindPipeline(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, m_commandState.pPipeline->getHandle());
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
         APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
@@ -442,9 +429,9 @@ void CommandBuffer::flushGraphicsCommand()
 
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
         auto& set = m_commandState.resourceBindings.sets[setIndex];
-        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, utils::VkCast(m_commandState.pPipeline->getType()),
-                                                m_commandState.pPipeline->getProgram()->getPipelineLayout(), setIndex,
-                                                1, &set->getHandle(), 0, nullptr);
+        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                m_commandState.pProgram->getPipelineLayout(), setIndex, 1,
+                                                &set->getHandle(), 0, nullptr);
     });
 }
 
@@ -695,5 +682,70 @@ void CommandBuffer::draw(DispatchArguments args)
 {
     flushGraphicsCommand();
     m_pDeviceTable->vkCmdDrawMeshTasksEXT(m_handle, args.x, args.y, args.z);
+}
+
+void CommandBuffer::initDyanimcGraphicsState()
+{
+    {
+        auto&             state = m_commandState.depthState;
+        const VkCompareOp op    = utils::VkCast(state.compareOp);
+        m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
+        m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
+        m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
+    }
+
+    {
+        VkColorBlendEquationEXT colorBlendEquationEXT{};
+        m_pDeviceTable->vkCmdSetColorBlendEquationEXT(getHandle(), 0, 1, &colorBlendEquationEXT);
+    }
+
+    m_pDeviceTable->vkCmdSetRasterizerDiscardEnable(getHandle(), VK_FALSE);
+
+    m_pDeviceTable->vkCmdSetRasterizationSamplesEXT(getHandle(), VK_SAMPLE_COUNT_1_BIT);
+
+    {
+        // Use 1 sample per pixel
+        const VkSampleMask sample_mask = 0x1;
+        m_pDeviceTable->vkCmdSetSampleMaskEXT(getHandle(), VK_SAMPLE_COUNT_1_BIT, &sample_mask);
+    }
+
+    // Do not use alpha to coverage or alpha to one because not using MSAA
+    m_pDeviceTable->vkCmdSetAlphaToCoverageEnableEXT(getHandle(), VK_FALSE);
+
+    // TODO Enable wireframe only if supported and enabled
+    bool wireframeEnabled = false;
+    bool wireframeMode    = false;
+    m_pDeviceTable->vkCmdSetPolygonModeEXT(
+        getHandle(), wireframeMode && wireframeEnabled ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
+    if(wireframeMode && wireframeEnabled)
+    {
+        m_pDeviceTable->vkCmdSetLineWidth(getHandle(), 1.0f);
+    }
+
+    // Set front face, cull mode is set in build_command_buffers.
+    m_pDeviceTable->vkCmdSetFrontFaceEXT(getHandle(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
+
+    // Set depth state, the depth write. Don't enable depth bounds, bias, or stencil test.
+    m_pDeviceTable->vkCmdSetDepthTestEnableEXT(getHandle(), VK_TRUE);
+    m_pDeviceTable->vkCmdSetDepthCompareOpEXT(getHandle(), VK_COMPARE_OP_GREATER);
+    m_pDeviceTable->vkCmdSetDepthBoundsTestEnableEXT(getHandle(), VK_FALSE);
+    m_pDeviceTable->vkCmdSetDepthBiasEnableEXT(getHandle(), VK_FALSE);
+    m_pDeviceTable->vkCmdSetStencilTestEnableEXT(getHandle(), VK_FALSE);
+
+    // Do not enable logic op
+    m_pDeviceTable->vkCmdSetLogicOpEnableEXT(getHandle(), VK_FALSE);
+
+    {
+        // Disable color blending
+        VkBool32 color_blend_enables[] = {VK_FALSE};
+        m_pDeviceTable->vkCmdSetColorBlendEnableEXT(getHandle(), 0, 1, color_blend_enables);
+    }
+
+    {
+        // Use RGBA color write mask
+        VkColorComponentFlags color_component_flags[] = {VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                                         VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_A_BIT};
+        m_pDeviceTable->vkCmdSetColorWriteMaskEXT(getHandle(), 0, 1, color_component_flags);
+    }
 }
 }  // namespace aph::vk

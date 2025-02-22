@@ -146,7 +146,6 @@ public:
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
     void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
-    void bindPipeline(Pipeline* pPipeline);
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
     void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
@@ -190,6 +189,7 @@ public:
 private:
     void         flushComputeCommand();
     void         flushGraphicsCommand();
+    void         initDyanimcGraphicsState();
     CommandState m_commandState = {};
 
 private:

@@ -81,6 +81,9 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
         }
 
+
+        // must support features
+        exts.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
         exts.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
         exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         exts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
@@ -122,6 +125,14 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             APH_ASSERT(false);
         }
     }
+
+    auto& extDynamicState3 = physicalDevice->requestFeatures<VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT);
+    extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
+
+    auto& shaderObjectFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceShaderObjectFeaturesEXT>(
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
+    shaderObjectFeatures.shaderObject = VK_TRUE;
 
     auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
