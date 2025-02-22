@@ -151,16 +151,12 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
     targetDesc.format  = SLANG_SPIRV;
     targetDesc.profile = globalSession->findProfile("spirv");
 
-    // TODO above options are only work with session desc
-    // targetDesc.compilerOptionEntryCount = compilerOptions.size();
-    // targetDesc.compilerOptionEntries    = compilerOptions.data();
+    targetDesc.compilerOptionEntryCount = compilerOptions.size();
+    targetDesc.compilerOptionEntries    = compilerOptions.data();
 
     SessionDesc sessionDesc;
     sessionDesc.targets     = &targetDesc;
     sessionDesc.targetCount = 1;
-
-    sessionDesc.compilerOptionEntryCount = compilerOptions.size();
-    sessionDesc.compilerOptionEntries    = compilerOptions.data();
 
     const char* searchPath      = aph::Filesystem::GetInstance().resolvePath("shader_slang://").c_str();
     sessionDesc.searchPaths     = &searchPath;

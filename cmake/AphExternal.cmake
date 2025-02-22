@@ -76,8 +76,8 @@ target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
 CPMAddPackage(
   NAME slang
-  URL https://github.com/shader-slang/slang/releases/download/v2024.14.5/slang-2024.14.5-linux-x86_64.tar.gz
-  VERSION v2024.14.5
+  URL https://github.com/shader-slang/slang/releases/download/v2025.5.2/slang-2025.5.2-linux-x86_64.tar.gz
+  VERSION v2025.5.2
   DOWNLOAD_ONLY YES
 )
 add_library(slang SHARED IMPORTED)
