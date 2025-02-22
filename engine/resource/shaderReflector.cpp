@@ -3,7 +3,7 @@
 
 namespace aph
 {
-std::unordered_map<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
+const std::unordered_map<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
     {spirv_cross::SPIRType::Float, 4},
     {spirv_cross::SPIRType::Int, 4},
     {spirv_cross::SPIRType::UInt, 4},
@@ -15,7 +15,7 @@ std::size_t getTypeSize(const spirv_cross::SPIRType& type)
 {
     // Lookup base size from the map
     APH_ASSERT(baseTypeSizeMap.contains(type.basetype));
-    size_t baseSize = baseTypeSizeMap[type.basetype];
+    size_t baseSize = baseTypeSizeMap.at(type.basetype);
 
     // Calculate size for vectors and matrices
     size_t elementCount = type.vecsize * type.columns;
@@ -107,7 +107,7 @@ VkFormat spirTypeToVkFormat(const spirv_cross::SPIRType& type)
 
 void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
 {
-    auto& size = layout.setShaderLayouts[set].arraySize[binding];
+    auto& size = layout.shaderLayouts[set].arraySize[binding];
     if(!type.array.empty())
     {
         if(type.array.size() != 1)
@@ -165,19 +165,20 @@ void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRTyp
 vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
 {
     spirv_cross::Compiler compiler{spvCode.data(), spvCode.size()};
-    auto                  resources = compiler.get_shader_resources();
+    spirv_cross::ShaderResources       resources = compiler.get_shader_resources();
 
     vk::ResourceLayout layout{};
     for(const auto& res : resources.stage_inputs)
     {
-        auto location = compiler.get_decoration(res.id, spv::DecorationLocation);
+        uint32_t location = compiler.get_decoration(res.id, spv::DecorationLocation);
         layout.inputMask |= 1u << location;
+        APH_ASSERT(layout.inputMask.size() > location);
         const spirv_cross::SPIRType& type = compiler.get_type(res.type_id);
 
         VkFormat format = spirTypeToVkFormat(type);
 
-        layout.vertexAttr[location] = {
-            // TODO
+        layout.vertexAttributes[location] = {
+            // TODO multiple bindings
             .binding = 0,
             .format  = format,
             .size    = static_cast<uint32_t>(getTypeSize(type)),
@@ -186,7 +187,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
 
     uint32_t attrOffset = 0;
     aph::utils::forEachBit(layout.inputMask, [&](uint32_t location) {
-        auto& attr  = layout.vertexAttr[location];
+        auto& attr  = layout.vertexAttributes[location];
         attr.offset = attrOffset;
         attrOffset += attr.size;
     });
@@ -203,7 +204,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.setShaderLayouts[set].uniformBufferMask |= 1u << binding;
+        layout.shaderLayouts[set].uniformBufferMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for(const auto& res : resources.storage_buffers)
@@ -213,7 +214,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.setShaderLayouts[set].storageBufferMask |= 1u << binding;
+        layout.shaderLayouts[set].storageBufferMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for(const auto& res : resources.storage_images)
@@ -226,16 +227,16 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.setShaderLayouts[set].storageTexelBufferMask |= 1u << binding;
+            layout.shaderLayouts[set].storageTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.setShaderLayouts[set].storageImageMask |= 1u << binding;
+            layout.shaderLayouts[set].storageImageMask |= 1u << binding;
         }
 
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.setShaderLayouts[set].fpMask |= 1u << binding;
+            layout.shaderLayouts[set].fpMask |= 1u << binding;
         }
 
         updateArrayInfo(layout, type, set, binding);
@@ -250,15 +251,15 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.setShaderLayouts[set].fpMask |= 1u << binding;
+            layout.shaderLayouts[set].fpMask |= 1u << binding;
         }
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.setShaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.shaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.setShaderLayouts[set].sampledImageMask |= 1u << binding;
+            layout.shaderLayouts[set].sampledImageMask |= 1u << binding;
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -272,15 +273,15 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.setShaderLayouts[set].fpMask |= 1u << binding;
+            layout.shaderLayouts[set].fpMask |= 1u << binding;
         }
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.setShaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.shaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.setShaderLayouts[set].separateImageMask |= 1u << binding;
+            layout.shaderLayouts[set].separateImageMask |= 1u << binding;
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -291,7 +292,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.setShaderLayouts[set].samplerMask |= 1u << binding;
+        layout.shaderLayouts[set].samplerMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
 
@@ -327,7 +328,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
             programLayout.attributeMask = shader->getResourceLayout().inputMask;
             for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
             {
-                programLayout.vertexAttr[idx] = shader->getResourceLayout().vertexAttr[idx];
+                programLayout.vertexAttr[idx] = shader->getResourceLayout().vertexAttributes[idx];
             }
         }
         if(shader->getStage() == ShaderStage::FS)
@@ -349,32 +350,32 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             programLayout.setInfos[i].shaderLayout.sampledImageMask |=
-                shaderLayout.setShaderLayouts[i].sampledImageMask;
+                shaderLayout.shaderLayouts[i].sampledImageMask;
             programLayout.setInfos[i].shaderLayout.storageImageMask |=
-                shaderLayout.setShaderLayouts[i].storageImageMask;
+                shaderLayout.shaderLayouts[i].storageImageMask;
             programLayout.setInfos[i].shaderLayout.uniformBufferMask |=
-                shaderLayout.setShaderLayouts[i].uniformBufferMask;
+                shaderLayout.shaderLayouts[i].uniformBufferMask;
             programLayout.setInfos[i].shaderLayout.storageBufferMask |=
-                shaderLayout.setShaderLayouts[i].storageBufferMask;
+                shaderLayout.shaderLayouts[i].storageBufferMask;
             programLayout.setInfos[i].shaderLayout.sampledTexelBufferMask |=
-                shaderLayout.setShaderLayouts[i].sampledTexelBufferMask;
+                shaderLayout.shaderLayouts[i].sampledTexelBufferMask;
             programLayout.setInfos[i].shaderLayout.storageTexelBufferMask |=
-                shaderLayout.setShaderLayouts[i].storageTexelBufferMask;
+                shaderLayout.shaderLayouts[i].storageTexelBufferMask;
             programLayout.setInfos[i].shaderLayout.inputAttachmentMask |=
-                shaderLayout.setShaderLayouts[i].inputAttachmentMask;
-            programLayout.setInfos[i].shaderLayout.samplerMask |= shaderLayout.setShaderLayouts[i].samplerMask;
+                shaderLayout.shaderLayouts[i].inputAttachmentMask;
+            programLayout.setInfos[i].shaderLayout.samplerMask |= shaderLayout.shaderLayouts[i].samplerMask;
             programLayout.setInfos[i].shaderLayout.separateImageMask |=
-                shaderLayout.setShaderLayouts[i].separateImageMask;
-            programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.setShaderLayouts[i].fpMask;
+                shaderLayout.shaderLayouts[i].separateImageMask;
+            programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.shaderLayouts[i].fpMask;
 
             uint32_t activeBinds =
-                shaderLayout.setShaderLayouts[i].sampledImageMask | shaderLayout.setShaderLayouts[i].storageImageMask |
-                shaderLayout.setShaderLayouts[i].uniformBufferMask |
-                shaderLayout.setShaderLayouts[i].storageBufferMask |
-                shaderLayout.setShaderLayouts[i].sampledTexelBufferMask |
-                shaderLayout.setShaderLayouts[i].storageTexelBufferMask |
-                shaderLayout.setShaderLayouts[i].inputAttachmentMask | shaderLayout.setShaderLayouts[i].samplerMask |
-                shaderLayout.setShaderLayouts[i].separateImageMask;
+                shaderLayout.shaderLayouts[i].sampledImageMask | shaderLayout.shaderLayouts[i].storageImageMask |
+                shaderLayout.shaderLayouts[i].uniformBufferMask |
+                shaderLayout.shaderLayouts[i].storageBufferMask |
+                shaderLayout.shaderLayouts[i].sampledTexelBufferMask |
+                shaderLayout.shaderLayouts[i].storageTexelBufferMask |
+                shaderLayout.shaderLayouts[i].inputAttachmentMask | shaderLayout.shaderLayouts[i].samplerMask |
+                shaderLayout.shaderLayouts[i].separateImageMask;
 
             if(activeBinds)
             {
@@ -385,7 +386,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
                 programLayout.setInfos[i].stagesForBindings[bit] |= stageMask;
 
                 auto& combinedSize = programLayout.setInfos[i].shaderLayout.arraySize[bit];
-                auto& shaderSize   = shaderLayout.setShaderLayouts[i].arraySize[bit];
+                auto& shaderSize   = shaderLayout.shaderLayouts[i].arraySize[bit];
                 if(combinedSize && combinedSize != shaderSize)
                 {
                     VK_LOG_ERR("Mismatch between array sizes in different shaders.");

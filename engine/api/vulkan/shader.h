@@ -1,6 +1,7 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
+#include <bitset>
 #include "common/hash.h"
 #include "common/smallVector.h"
 #include "allocator/objectPool.h"
@@ -45,14 +46,14 @@ struct VertexAttribState
 
 struct ResourceLayout
 {
-    ShaderLayout      setShaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS] = {};
-    VertexAttribState vertexAttr[VULKAN_NUM_VERTEX_ATTRIBS]        = {};
+    ShaderLayout      shaderLayouts[VULKAN_NUM_DESCRIPTOR_SETS]   = {};
+    VertexAttribState vertexAttributes[VULKAN_NUM_VERTEX_ATTRIBS] = {};
 
-    uint32_t inputMask        = {};
-    uint32_t outputMask       = {};
+    std::bitset<32> inputMask        = {};
+    std::bitset<32> outputMask       = {};
+    std::bitset<32> specConstantMask = {};
+    std::bitset<32> bindlessSetMask  = {};
     uint32_t pushConstantSize = {};
-    uint32_t specConstantMask = {};
-    uint32_t bindlessSetMask  = {};
 };
 
 struct CombinedResourceLayout
@@ -68,13 +69,13 @@ struct CombinedResourceLayout
     VertexAttribState   vertexAttr[VULKAN_NUM_VERTEX_ATTRIBS] = {};
     VkPushConstantRange pushConstantRange                     = {};
 
-    uint32_t attributeMask             = {};
-    uint32_t renderTargetMask          = {};
-    uint32_t descriptorSetMask         = {};
-    uint32_t bindlessDescriptorSetMask = {};
-    uint32_t combinedSpecConstantMask  = {};
+    std::bitset<32> attributeMask             = {};
+    std::bitset<32> renderTargetMask          = {};
+    std::bitset<32> descriptorSetMask         = {};
+    std::bitset<32> bindlessDescriptorSetMask = {};
+    std::bitset<32> combinedSpecConstantMask  = {};
 
-    HashMap<ShaderStage, uint32_t> specConstantMask = {};
+    HashMap<ShaderStage, std::bitset<32>> specConstantMask = {};
 };
 
 struct ImmutableSamplerBank
@@ -85,8 +86,8 @@ struct ImmutableSamplerBank
 struct ShaderCreateInfo
 {
     std::vector<uint32_t> code;
-    std::string      entrypoint = "main";
-    aph::ShaderStage stage;
+    std::string           entrypoint = "main";
+    aph::ShaderStage      stage;
 };
 
 class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
@@ -129,13 +130,14 @@ struct ProgramCreateInfo
 
     PipelineType type = {};
 
-    ImmutableSamplerBank  samplerBank = {};
+    ImmutableSamplerBank samplerBank = {};
 };
 
 class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 {
     friend class ObjectPool<ShaderProgram>;
     friend class Device;
+
 public:
     VkShaderStageFlags getConstantShaderStage(uint32_t offset, uint32_t size) const;
 
