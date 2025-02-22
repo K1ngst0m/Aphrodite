@@ -347,7 +347,6 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
 
 namespace aph
 {
-
 ImageContainerType GetImageContainerType(const std::filesystem::path& path)
 {
     APH_PROFILER_SCOPE();
@@ -379,6 +378,18 @@ ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
 }
 
 ResourceLoader::~ResourceLoader() = default;
+
+void ResourceLoader::cleanup()
+{
+    APH_PROFILER_SCOPE();
+    for(const auto& [_, shaderCache] : m_shaderCaches)
+    {
+        for(const auto& [_, shader] : shaderCache)
+        {
+            m_pDevice->destroy(shader);
+        }
+    }
+}
 
 Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
@@ -657,18 +668,6 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     }
 
     return Result::Success;
-}
-
-void ResourceLoader::cleanup()
-{
-    APH_PROFILER_SCOPE();
-    for(const auto& [_, shaderCache] : m_shaderCaches)
-    {
-        for(const auto& [_, shader] : shaderCache)
-        {
-            m_pDevice->destroy(shader);
-        }
-    }
 }
 
 Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)

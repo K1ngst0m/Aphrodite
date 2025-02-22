@@ -471,7 +471,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
             DescriptorSetLayoutCreateInfo setLayoutCreateInfo{.setInfo            = combineLayout.setInfos[i],
                                                               .pImmutableSamplers = samplerBank->samplers[i]};
             APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
-            if(combineLayout.descriptorSetMask & (1u << i))
+            if(combineLayout.descriptorSetMask.to_ulong() & (1u << i))
             {
                 numSets = i + 1;
             }

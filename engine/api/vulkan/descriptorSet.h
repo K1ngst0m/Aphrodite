@@ -102,8 +102,8 @@ private:
 private:
     VolkDeviceTable*                    m_pDeviceTable               = {};
     SmallVector<VkDescriptorPoolSize>   m_poolSizes                  = {};
-    std::vector<VkDescriptorPool>       m_pools                      = {};
-    std::vector<uint32_t>               m_allocatedSets              = {};
+    SmallVector<VkDescriptorPool>       m_pools                      = {};
+    SmallVector<uint32_t>               m_allocatedSets              = {};
     uint32_t                            m_currentAllocationPoolIndex = {};
     HashMap<VkDescriptorSet, uint32_t>  m_allocatedDescriptorSets    = {};
     HashMap<VkDescriptorType, uint32_t> m_descriptorTypeCounts       = {};
