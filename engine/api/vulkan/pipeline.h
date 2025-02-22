@@ -43,7 +43,7 @@ struct GraphicsPipelineCreateInfo
 struct ComputePipelineCreateInfo
 {
     ImmutableSamplerBank* pSamplerBank = {};
-    ShaderProgram*        pCompute     = {};
+    ShaderProgram*        pProgram     = {};
 };
 
 
@@ -56,8 +56,8 @@ public:
     PipelineType   getType() const { return m_type; }
 
 protected:
-    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
-    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle, ShaderProgram* pProgram);
+    Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle);
+    Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle);
 
     Device*        m_pDevice  = {};
     ShaderProgram* m_pProgram = {};
