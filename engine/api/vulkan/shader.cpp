@@ -11,11 +11,13 @@ Shader::Shader(const CreateInfoType& createInfo, HandleType handle, ResourceLayo
 }
 
 ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const CombinedResourceLayout& layout,
-                  VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts) :
+                  VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts,
+                  HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps) :
     ResourceHandle({}, createInfo),
-    m_pSetLayouts(setLayouts),
+    m_shaderObjects(std::move(shaderObjectMaps)),
+    m_pSetLayouts(std::move(setLayouts)),
     m_pipeLayout(pipelineLayout),
-    m_combineLayout(layout)
+    m_combineLayout(std::move(layout))
 {
     switch(getPipelineType())
     {

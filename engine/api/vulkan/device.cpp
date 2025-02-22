@@ -424,6 +424,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 {
     APH_PROFILER_SCOPE();
     CombinedResourceLayout combineLayout;
+    std::vector<Shader*> shaders{};
     switch(createInfo.type)
     {
     case PipelineType::Geometry:
@@ -433,28 +434,30 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         APH_ASSERT(vs);
         APH_ASSERT(fs);
 
-        combineLayout = aph::combineLayout({vs, fs}, &createInfo.samplerBank);
+        shaders = {vs, fs};
     }
     break;
     case PipelineType::Mesh:
     {
-        APH_ASSERT(createInfo.mesh.pMesh);
-        APH_ASSERT(createInfo.mesh.pFragment);
-        std::vector<Shader*> shaders{};
-        shaders.push_back(createInfo.mesh.pMesh);
-        if(createInfo.mesh.pTask)
+        auto ms = createInfo.mesh.pMesh;
+        auto ts = createInfo.mesh.pTask;
+        auto fs = createInfo.mesh.pFragment;
+        APH_ASSERT(ms);
+        APH_ASSERT(ts);
+        APH_ASSERT(fs);
+        shaders.push_back(ms);
+        if(ts)
         {
-            shaders.push_back(createInfo.mesh.pTask);
+            shaders.push_back(ts);
         }
-        shaders.push_back(createInfo.mesh.pFragment);
-        combineLayout = aph::combineLayout(shaders, &createInfo.samplerBank);
+        shaders.push_back(fs);
     }
     break;
     case PipelineType::Compute:
     {
         auto cs = createInfo.compute.pCompute;
         APH_ASSERT(cs);
-        combineLayout = aph::combineLayout({cs}, &createInfo.samplerBank);
+        shaders = {cs};
     }
     break;
     case PipelineType::RayTracing:
@@ -469,8 +472,11 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         return Result::RuntimeError;
     }
     }
+    combineLayout = aph::combineLayout(shaders, &createInfo.samplerBank);
 
+    // setup descriptor set layouts and pipeline layouts
     SmallVector<DescriptorSetLayout*> setLayouts = {};
+    SmallVector<VkDescriptorSetLayout> vkSetLayouts;
     VkPipelineLayout                  pipelineLayout;
     auto                              samplerBank = &createInfo.samplerBank;
     {
@@ -495,7 +501,6 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         }
 
         VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-        SmallVector<VkDescriptorSetLayout> vkSetLayouts;
         if(numSets)
         {
             vkSetLayouts.reserve(setLayouts.size());
@@ -515,11 +520,59 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
         if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
             VK_LOG_ERR("Failed to create pipeline layout.");
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE, reinterpret_cast<uint64_t>(pipelineLayout),
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE_LAYOUT, reinterpret_cast<uint64_t>(pipelineLayout),
                                       debugName))
     }
 
-    *ppProgram = m_resourcePool.program.allocate(createInfo, combineLayout, pipelineLayout, setLayouts);
+    HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps;
+    // setup shader object
+    {
+        SmallVector<VkShaderCreateInfoEXT> shaderCreateInfos;
+        for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
+        {
+            auto shader = *iter;
+            VkShaderStageFlags nextStage = 0;
+            if (auto nextIter = std::next(iter); nextIter != shaders.cend())
+            {
+                nextStage = utils::VkCast((*nextIter)->getStage());
+            }
+            VkShaderCreateInfoEXT soCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+                .pNext = nullptr,
+                .flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,
+                .stage = utils::VkCast(shader->getStage()),
+                .nextStage = nextStage,
+                // TODO binary support
+                .codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT,
+                .codeSize = shader->getCode().size() * sizeof(shader->getCode()[0]),
+                .pCode = shader->getCode().data(),
+                .pName = shader->getEntryPointName().data(),
+                .setLayoutCount = static_cast<uint32_t>(vkSetLayouts.size()),
+                .pSetLayouts = vkSetLayouts.data(),
+            };
+
+            if(combineLayout.pushConstantRange.stageFlags != 0)
+            {
+                soCreateInfo.pushConstantRangeCount = 1;
+                soCreateInfo.pPushConstantRanges    = &combineLayout.pushConstantRange;
+            }
+
+            shaderCreateInfos.push_back(soCreateInfo);
+        }
+
+        SmallVector<VkShaderEXT> shaderObjects(shaderCreateInfos.size());
+        _VR(m_table.vkCreateShadersEXT(getHandle(), shaderCreateInfos.size(), shaderCreateInfos.data(), vkAllocator(), shaderObjects.data()));
+
+        for (size_t idx = 0; idx < shaders.size(); ++idx)
+        {
+            _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_EXT, reinterpret_cast<uint64_t>(shaderObjects[idx]),
+                                        debugName))
+            shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
+        }
+    }
+
+    *ppProgram = m_resourcePool.program.allocate(createInfo, combineLayout, pipelineLayout, setLayouts, shaderObjectMaps);
+
     return Result::Success;
 }
 
@@ -623,6 +676,11 @@ void Device::destroy(ShaderProgram* pProgram)
     for(auto* setLayout : pProgram->m_pSetLayouts)
     {
         destroy(setLayout);
+    }
+
+    for (auto [_, shaderObject] : pProgram->m_shaderObjects)
+    {
+        getDeviceTable()->vkDestroyShaderEXT(getHandle(), shaderObject, vk::vkAllocator());
     }
 
     getDeviceTable()->vkDestroyPipelineLayout(getHandle(), pProgram->m_pipeLayout, vkAllocator());

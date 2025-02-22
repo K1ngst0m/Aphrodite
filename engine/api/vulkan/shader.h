@@ -53,7 +53,7 @@ struct ResourceLayout
     std::bitset<32> outputMask       = {};
     std::bitset<32> specConstantMask = {};
     std::bitset<32> bindlessSetMask  = {};
-    uint32_t pushConstantSize = {};
+    uint32_t        pushConstantSize = {};
 };
 
 struct CombinedResourceLayout
@@ -95,15 +95,15 @@ class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
     friend class ObjectPool<Shader>;
 
 public:
-    std::string_view      getEntryPointName() const { return getCreateInfo().entrypoint; }
-    const ResourceLayout& getResourceLayout() const { return m_layout; }
-    ShaderStage           getStage() const { return getCreateInfo().stage; }
+    std::string_view             getEntryPointName() const { return getCreateInfo().entrypoint; }
+    const ResourceLayout&        getResourceLayout() const { return m_layout; }
+    ShaderStage                  getStage() const { return getCreateInfo().stage; }
+    const std::vector<uint32_t>& getCode() const { return getCreateInfo().code; }
 
 private:
     Shader(const CreateInfoType& createInfo, HandleType handle, ResourceLayout layout);
     ResourceLayout m_layout;
 };
-using ShaderMapList = HashMap<ShaderStage, Shader*>;
 
 struct ProgramCreateInfo
 {
@@ -144,18 +144,21 @@ public:
     const VertexInput&   getVertexInput() const { return m_vertexInput; }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pSetLayouts[setIdx]; }
     Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
+    VkShaderEXT          getShaderObject(ShaderStage stage) { return m_shaderObjects[stage]; }
     VkPipelineLayout     getPipelineLayout() const { return m_pipeLayout; }
     PipelineType         getPipelineType() const { return getCreateInfo().type; }
 
 private:
     ShaderProgram(const CreateInfoType& createInfo, const CombinedResourceLayout& layout,
-                  VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts);
+                  VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts,
+                  HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps);
     ~ShaderProgram() = default;
 
     void createVertexInput();
 
 private:
-    ShaderMapList                     m_shaders       = {};
+    HashMap<ShaderStage, Shader*>     m_shaders       = {};
+    HashMap<ShaderStage, VkShaderEXT> m_shaderObjects = {};
     SmallVector<DescriptorSetLayout*> m_pSetLayouts   = {};
     VkPipelineLayout                  m_pipeLayout    = {};
     CombinedResourceLayout            m_combineLayout = {};

@@ -124,6 +124,9 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
         IndexState                  index            = {};
         VertexBindingState          vertexBinding    = {};
         DepthState                  depthState       = {};
+        CullMode    cullMode         = CullMode::None;
+        WindingMode frontFaceWinding = WindingMode::CCW;
+        PolygonMode polygonMode      = PolygonMode::Fill;
     };
 
 public:
@@ -189,7 +192,8 @@ public:
 private:
     void         flushComputeCommand();
     void         flushGraphicsCommand();
-    void         initDyanimcGraphicsState();
+    void         flushDescriptorSet();
+    void         initDynamicGraphicsState();
     CommandState m_commandState = {};
 
 private:

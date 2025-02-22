@@ -343,47 +343,80 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 
 void CommandBuffer::flushComputeCommand()
 {
-    // TODO bind descriptor set && create pipeline when no pipeline
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, VK_PIPELINE_BIND_POINT_COMPUTE, m_commandState.pPipeline->getHandle());
+    auto pProgram = m_commandState.pProgram;
+    APH_ASSERT(pProgram);
+    APH_ASSERT(pProgram->getPipelineType() == PipelineType::Compute);
+
+    SmallVector<VkShaderStageFlagBits> stages = {VK_SHADER_STAGE_COMPUTE_BIT};
+    SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::CS)};
+    m_pDeviceTable->vkCmdBindShadersEXT(getHandle(), stages.size(), stages.data(), shaderObjs.data());
+
+    flushDescriptorSet();
 }
 void CommandBuffer::flushGraphicsCommand()
 {
-    initDyanimcGraphicsState();
+    initDynamicGraphicsState();
 
-    if(auto& pipeline = m_commandState.pPipeline; pipeline == nullptr)
+    // shader object binding
     {
-        auto pProgram = m_commandState.pProgram;
+        auto& pProgram = m_commandState.pProgram;
         APH_ASSERT(pProgram);
-        aph::vk::GraphicsPipelineCreateInfo createInfo{
-            .type     = pProgram->getPipelineType(),
-            .pProgram = pProgram,
-        };
 
         if(pProgram->getPipelineType() == PipelineType::Geometry)
         {
+            SmallVector<VkVertexInputBindingDescription2EXT>   vkBindings;
+            SmallVector<VkVertexInputAttributeDescription2EXT> vkAttributes;
+            {
+                VertexInput vstate;
+                if(m_commandState.vertexBinding.inputInfo.has_value())
+                {
+                    vstate = m_commandState.vertexBinding.inputInfo.value();
+                }
+                else
+                {
+                    vstate = pProgram->getVertexInput();
+                }
+
+                vkAttributes.resize(vstate.attributes.size());
+                SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
+
+                for(uint32_t i = 0; i != vkAttributes.size(); i++)
+                {
+                    const auto& attr = vstate.attributes[i];
+
+                    vkAttributes[i] = {.sType    = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                                        .location = attr.location,
+                                        .binding  = attr.binding,
+                                        .format   = utils::VkCast(attr.format),
+                                        .offset   = (uint32_t)attr.offset};
+
+                    if(!bufferAlreadyBound[attr.binding])
+                    {
+                        bufferAlreadyBound[attr.binding] = true;
+                        vkBindings.push_back({.sType     = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                                                .binding   = attr.binding,
+                                                .stride    = vstate.bindings[attr.binding].stride,
+                                                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+                                                .divisor   = 1});
+                    }
+                }
+            }
+            m_pDeviceTable->vkCmdSetVertexInputEXT(getHandle(), vkBindings.size(), vkBindings.data(),
+                                                    vkAttributes.size(), vkAttributes.data());
+            m_pDeviceTable->vkCmdSetPrimitiveTopology(getHandle(), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            m_pDeviceTable->vkCmdSetPrimitiveRestartEnable(getHandle(), VK_FALSE);
+
             aph::utils::forEachBitRange(
                 m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
-#ifdef APH_DEBUG
-                    for(unsigned i = binding; i < binding + bindingCount; i++)
-                        APH_ASSERT(m_commandState.vertexBinding.buffers[i] != VK_NULL_HANDLE);
-#endif
                     m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
-                                                           m_commandState.vertexBinding.buffers + binding,
-                                                           m_commandState.vertexBinding.offsets + binding);
+                                                            m_commandState.vertexBinding.buffers + binding,
+                                                            m_commandState.vertexBinding.offsets + binding);
                 });
-            m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
-                                                   m_commandState.vertexBinding.offsets);
-            m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
-                                                 m_commandState.index.indexType);
 
-            if(m_commandState.vertexBinding.inputInfo.has_value())
-            {
-                createInfo.vertexInput = m_commandState.vertexBinding.inputInfo.value();
-            }
-            else
-            {
-                createInfo.vertexInput = pProgram->getVertexInput();
-            }
+            m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
+                                                    m_commandState.vertexBinding.offsets);
+            m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
+                                                    m_commandState.index.indexType);
         }
         else if(pProgram->getPipelineType() != PipelineType::Mesh)
         {
@@ -391,48 +424,12 @@ void CommandBuffer::flushGraphicsCommand()
             CM_LOG_ERR("Invalid pipeline type.");
         }
 
-        for(const auto& colorAttachment : m_commandState.colorAttachments)
-        {
-            createInfo.color.push_back({
-                .format = colorAttachment.image->getFormat(),
-                // TODO
-            });
-        }
-
-        if(m_commandState.depthAttachment.image)
-        {
-            createInfo.depthFormat = m_commandState.depthAttachment.image->getFormat();
-        }
-
-        pipeline = m_pDevice->acquirePipeline(createInfo);
+        SmallVector<VkShaderStageFlagBits> stages = {VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT,
+        VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_TASK_BIT_EXT, VK_SHADER_STAGE_MESH_BIT_EXT};
+        SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::VS), pProgram->getShaderObject(ShaderStage::FS), nullptr, nullptr, nullptr};
+        m_pDeviceTable->vkCmdBindShadersEXT(getHandle(), stages.size(), stages.data(), shaderObjs.data());
     }
-    m_pDeviceTable->vkCmdBindPipeline(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS, m_commandState.pPipeline->getHandle());
-
-    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
-        APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
-        aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
-            if(!(m_commandState.resourceBindings.dirtyBinding[setIdx] & (1u << bindingIdx)))
-            {
-                CM_LOG_INFO("skip update");
-                return;
-            }
-            auto& set = m_commandState.resourceBindings.sets[setIdx];
-            if(set == nullptr)
-            {
-                set = m_commandState.pProgram->getSetLayout(setIdx)->allocateSet();
-            }
-            set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]);
-            m_commandState.resourceBindings.sets[setIdx] = set;
-        });
-        m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
-    });
-
-    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
-        auto& set = m_commandState.resourceBindings.sets[setIndex];
-        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                                m_commandState.pProgram->getPipelineLayout(), setIndex, 1,
-                                                &set->getHandle(), 0, nullptr);
-    });
+    flushDescriptorSet();
 }
 
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)
@@ -684,7 +681,7 @@ void CommandBuffer::draw(DispatchArguments args)
     m_pDeviceTable->vkCmdDrawMeshTasksEXT(m_handle, args.x, args.y, args.z);
 }
 
-void CommandBuffer::initDyanimcGraphicsState()
+void CommandBuffer::initDynamicGraphicsState()
 {
     {
         auto&             state = m_commandState.depthState;
@@ -692,6 +689,9 @@ void CommandBuffer::initDyanimcGraphicsState()
         m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
         m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
         m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
+        m_pDeviceTable->vkCmdSetDepthClampEnableEXT(getHandle(), VK_FALSE);
+        m_pDeviceTable->vkCmdSetCullModeEXT(getHandle(), utils::VkCast(m_commandState.cullMode));
+        m_pDeviceTable->vkCmdSetAlphaToOneEnableEXT(getHandle(), VK_FALSE);
     }
 
     {
@@ -712,12 +712,9 @@ void CommandBuffer::initDyanimcGraphicsState()
     // Do not use alpha to coverage or alpha to one because not using MSAA
     m_pDeviceTable->vkCmdSetAlphaToCoverageEnableEXT(getHandle(), VK_FALSE);
 
-    // TODO Enable wireframe only if supported and enabled
-    bool wireframeEnabled = false;
-    bool wireframeMode    = false;
-    m_pDeviceTable->vkCmdSetPolygonModeEXT(
-        getHandle(), wireframeMode && wireframeEnabled ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
-    if(wireframeMode && wireframeEnabled)
+    bool wireframeEnabled = m_commandState.polygonMode == PolygonMode::Line;
+    m_pDeviceTable->vkCmdSetPolygonModeEXT(getHandle(), wireframeEnabled ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
+    if(wireframeEnabled)
     {
         m_pDeviceTable->vkCmdSetLineWidth(getHandle(), 1.0f);
     }
@@ -747,5 +744,33 @@ void CommandBuffer::initDyanimcGraphicsState()
                                                          VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_A_BIT};
         m_pDeviceTable->vkCmdSetColorWriteMaskEXT(getHandle(), 0, 1, color_component_flags);
     }
+}
+void CommandBuffer::flushDescriptorSet()
+{
+    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
+        APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
+        aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
+            if(!(m_commandState.resourceBindings.dirtyBinding[setIdx] & (1u << bindingIdx)))
+            {
+                CM_LOG_INFO("skip update");
+                return;
+            }
+            auto& set = m_commandState.resourceBindings.sets[setIdx];
+            if(set == nullptr)
+            {
+                set = m_commandState.pProgram->getSetLayout(setIdx)->allocateSet();
+            }
+            set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]);
+            m_commandState.resourceBindings.sets[setIdx] = set;
+        });
+        m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
+    });
+
+    aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIndex) {
+        auto& set = m_commandState.resourceBindings.sets[setIndex];
+        m_pDeviceTable->vkCmdBindDescriptorSets(m_handle, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                m_commandState.pProgram->getPipelineLayout(), setIndex, 1,
+                                                &set->getHandle(), 0, nullptr);
+    });
 }
 }  // namespace aph::vk
