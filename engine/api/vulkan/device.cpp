@@ -81,7 +81,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
         }
 
-
         // must support features
         exts.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
         exts.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
@@ -284,111 +283,8 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
                       std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    VkSampler                                 vkImmutableSamplers[VULKAN_NUM_BINDINGS] = {};
-    SmallVector<VkDescriptorSetLayoutBinding> vkBindings;
-
-    const auto&                       pImmutableSamplers = createInfo.pImmutableSamplers;
-    const auto&                       layout             = createInfo.setInfo.shaderLayout;
-    const auto&                       stageForBinds      = createInfo.setInfo.stagesForBindings;
-    SmallVector<VkDescriptorPoolSize> poolSizes;
-
-    for(unsigned i = 0; i < VULKAN_NUM_BINDINGS; i++)
-    {
-        uint32_t stages = stageForBinds[i];
-        if(stages == 0)
-        {
-            continue;
-        }
-
-        unsigned arraySize = layout.arraySize[i];
-        unsigned poolArraySize;
-        if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
-        {
-            arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
-            poolArraySize = arraySize;
-        }
-        else
-        {
-            poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
-        }
-
-        unsigned types = 0;
-        if(layout.sampledImageMask & (1u << i))
-        {
-            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-            {
-                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
-            }
-
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
-                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
-            types++;
-        }
-
-        if(layout.sampledTexelBufferMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
-            types++;
-        }
-
-        if(layout.storageTexelBufferMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
-            types++;
-        }
-
-        if(layout.storageImageMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
-            types++;
-        }
-
-        if(layout.uniformBufferMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
-            types++;
-        }
-
-        if(layout.storageBufferMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
-            types++;
-        }
-
-        if(layout.inputAttachmentMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
-            types++;
-        }
-
-        if(layout.separateImageMask & (1u << i))
-        {
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
-            types++;
-        }
-
-        if(layout.samplerMask & (1u << i))
-        {
-            if((layout.immutableSamplerMask & (1u << i)) && pImmutableSamplers && pImmutableSamplers[i])
-                vkImmutableSamplers[i] = pImmutableSamplers[i]->getHandle();
-
-            vkBindings.push_back({i, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
-                                  vkImmutableSamplers[i] != VK_NULL_HANDLE ? &vkImmutableSamplers[i] : nullptr});
-            poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
-            types++;
-        }
-
-        (void)types;
-        APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
-    }
+    const SmallVector<VkDescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
+    const SmallVector<VkDescriptorPoolSize>&         poolSizes  = createInfo.poolSizes;
 
     VkDescriptorSetLayoutCreateInfo vkCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     vkCreateInfo.bindingCount                    = vkBindings.size();
@@ -413,20 +309,19 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
         .pCode    = spv.data(),
     };
     VkShaderModule handle = VK_NULL_HANDLE;
-    if (createInfo.compile)
+    if(createInfo.compile)
     {
         _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
         _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
-                                    debugName))
+                                      debugName))
     }
-    *ppShader = m_resourcePool.shader.allocate(createInfo, handle, reflectLayout(spv));
+    *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
     return Result::Success;
 }
 
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    CombinedResourceLayout combineLayout;
     std::vector<Shader*> shaders{};
     switch(createInfo.type)
     {
@@ -475,23 +370,26 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         return Result::RuntimeError;
     }
     }
-    combineLayout = aph::combineLayout(shaders, &createInfo.samplerBank);
+
+    ShaderReflector reflector{ReflectRequest{shaders, &createInfo.samplerBank}};
+    const auto&     combineLayout = reflector.getReflectLayoutMeta();
 
     // setup descriptor set layouts and pipeline layouts
-    SmallVector<DescriptorSetLayout*> setLayouts = {};
+    SmallVector<DescriptorSetLayout*>  setLayouts = {};
     SmallVector<VkDescriptorSetLayout> vkSetLayouts;
-    VkPipelineLayout                  pipelineLayout;
-    auto                              samplerBank = &createInfo.samplerBank;
+    VkPipelineLayout                   pipelineLayout;
     {
         setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
 
         unsigned numSets = 0;
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
-            DescriptorSetLayoutCreateInfo setLayoutCreateInfo{.setInfo            = combineLayout.setInfos[i],
-                                                              .pImmutableSamplers = samplerBank->samplers[i]};
+            DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
+                .bindings  = reflector.getLayoutBindings(i),
+                .poolSizes = reflector.getPoolSizes(i),
+            };
             APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
-            if(combineLayout.descriptorSetMask.to_ulong() & (1u << i))
+            if(combineLayout.descriptorSetMask.test(i))
             {
                 numSets = i + 1;
             }
@@ -503,7 +401,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                        getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
         }
 
-        VkPipelineLayoutCreateInfo         info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+        VkPipelineLayoutCreateInfo info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         if(numSets)
         {
             vkSetLayouts.reserve(setLayouts.size());
@@ -523,35 +421,35 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
         if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
             VK_LOG_ERR("Failed to create pipeline layout.");
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE_LAYOUT, reinterpret_cast<uint64_t>(pipelineLayout),
-                                      debugName))
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+                                      reinterpret_cast<uint64_t>(pipelineLayout), debugName))
     }
 
     HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps;
     // setup shader object
     {
         SmallVector<VkShaderCreateInfoEXT> shaderCreateInfos;
-        for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
+        for(auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
-            auto shader = *iter;
+            auto               shader    = *iter;
             VkShaderStageFlags nextStage = 0;
-            if (auto nextIter = std::next(iter); nextIter != shaders.cend())
+            if(auto nextIter = std::next(iter); nextIter != shaders.cend())
             {
                 nextStage = utils::VkCast((*nextIter)->getStage());
             }
             VkShaderCreateInfoEXT soCreateInfo = {
-                .sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
-                .pNext = nullptr,
-                .flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,
-                .stage = utils::VkCast(shader->getStage()),
+                .sType     = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+                .pNext     = nullptr,
+                .flags     = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,
+                .stage     = utils::VkCast(shader->getStage()),
                 .nextStage = nextStage,
                 // TODO binary support
-                .codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT,
-                .codeSize = shader->getCode().size() * sizeof(shader->getCode()[0]),
-                .pCode = shader->getCode().data(),
-                .pName = shader->getEntryPointName().data(),
+                .codeType       = VK_SHADER_CODE_TYPE_SPIRV_EXT,
+                .codeSize       = shader->getCode().size() * sizeof(shader->getCode()[0]),
+                .pCode          = shader->getCode().data(),
+                .pName          = shader->getEntryPointName().data(),
                 .setLayoutCount = static_cast<uint32_t>(vkSetLayouts.size()),
-                .pSetLayouts = vkSetLayouts.data(),
+                .pSetLayouts    = vkSetLayouts.data(),
             };
 
             if(combineLayout.pushConstantRange.stageFlags != 0)
@@ -564,17 +462,26 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         }
 
         SmallVector<VkShaderEXT> shaderObjects(shaderCreateInfos.size());
-        _VR(m_table.vkCreateShadersEXT(getHandle(), shaderCreateInfos.size(), shaderCreateInfos.data(), vkAllocator(), shaderObjects.data()));
+        _VR(m_table.vkCreateShadersEXT(getHandle(), shaderCreateInfos.size(), shaderCreateInfos.data(), vkAllocator(),
+                                       shaderObjects.data()));
 
-        for (size_t idx = 0; idx < shaders.size(); ++idx)
+        for(size_t idx = 0; idx < shaders.size(); ++idx)
         {
-            _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_EXT, reinterpret_cast<uint64_t>(shaderObjects[idx]),
-                                        debugName))
+            _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_EXT,
+                                          reinterpret_cast<uint64_t>(shaderObjects[idx]), debugName))
             shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
         }
     }
 
-    *ppProgram = m_resourcePool.program.allocate(createInfo, combineLayout, pipelineLayout, setLayouts, shaderObjectMaps);
+    // TODO
+    PipelineLayout layout{
+        .vertexInput       = reflector.getVertexInput(),
+        .pushConstantRange = reflector.getPushConstantRange(),
+        .setLayouts        = std::move(setLayouts),
+        .handle            = pipelineLayout,
+    };
+
+    *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
 
     return Result::Success;
 }
@@ -676,17 +583,17 @@ void Device::destroy(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
 
-    for(auto* setLayout : pProgram->m_pSetLayouts)
+    for(auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
     {
         destroy(setLayout);
     }
 
-    for (auto [_, shaderObject] : pProgram->m_shaderObjects)
+    for(auto [_, shaderObject] : pProgram->m_shaderObjects)
     {
         getDeviceTable()->vkDestroyShaderEXT(getHandle(), shaderObject, vk::vkAllocator());
     }
 
-    getDeviceTable()->vkDestroyPipelineLayout(getHandle(), pProgram->m_pipeLayout, vkAllocator());
+    getDeviceTable()->vkDestroyPipelineLayout(getHandle(), pProgram->m_pipelineLayout.handle, vkAllocator());
     m_resourcePool.program.free(pProgram);
 }
 

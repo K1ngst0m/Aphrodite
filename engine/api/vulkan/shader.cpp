@@ -1,23 +1,16 @@
 #include "shader.h"
-#include "device.h"
 
 namespace aph::vk
 {
+Shader::Shader(const CreateInfoType& createInfo, HandleType handle) :
+    ResourceHandle(handle, createInfo)
+{}
 
-Shader::Shader(const CreateInfoType& createInfo, HandleType handle, ResourceLayout layout) :
-    ResourceHandle(handle, createInfo),
-    m_layout(layout)
-{
-}
-
-ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const CombinedResourceLayout& layout,
-                  VkPipelineLayout pipelineLayout, SmallVector<DescriptorSetLayout*> setLayouts,
+ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
                   HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps) :
     ResourceHandle({}, createInfo),
     m_shaderObjects(std::move(shaderObjectMaps)),
-    m_pSetLayouts(std::move(setLayouts)),
-    m_pipeLayout(pipelineLayout),
-    m_combineLayout(std::move(layout))
+    m_pipelineLayout(std::move(layout))
 {
     switch(getPipelineType())
     {
@@ -50,33 +43,5 @@ ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const CombinedRes
         APH_ASSERT(false);
         break;
     }
-
-    createVertexInput();
-}
-
-VkShaderStageFlags ShaderProgram::getConstantShaderStage(uint32_t offset, uint32_t size) const
-{
-    VkShaderStageFlags stage = 0;
-    size += offset;
-    const auto& constant = m_combineLayout.pushConstantRange;
-    stage |= constant.stageFlags;
-    offset += constant.size;
-    return stage;
-}
-
-void ShaderProgram::createVertexInput()
-{
-    if(getPipelineType() != PipelineType::Geometry && getPipelineType() != PipelineType::Mesh)
-    {
-        return;
-    }
-    uint32_t size = 0;
-    aph::utils::forEachBit(m_combineLayout.attributeMask, [&](uint32_t location) {
-        auto& attr = m_combineLayout.vertexAttr[location];
-        m_vertexInput.attributes.push_back(
-            {.location = location, .binding = 0, .format = utils::getFormatFromVk(attr.format), .offset = attr.offset});
-        size += attr.size;
-    });
-    m_vertexInput.bindings.push_back({size});
 }
 }  // namespace aph::vk

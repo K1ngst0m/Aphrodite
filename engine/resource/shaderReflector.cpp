@@ -1,4 +1,5 @@
 #include "shaderReflector.h"
+#include "api/vulkan/sampler.h"
 #include "spirv_cross.hpp"
 
 namespace aph
@@ -105,9 +106,9 @@ VkFormat spirTypeToVkFormat(const spirv_cross::SPIRType& type)
     return VK_FORMAT_UNDEFINED;
 }
 
-void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
+void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType& type, unsigned set, unsigned binding)
 {
-    auto& size = layout.shaderLayouts[set].arraySize[binding];
+    auto& size = resourceLayout.layouts[set].arraySize[binding];
     if(!type.array.empty())
     {
         if(type.array.size() != 1)
@@ -133,10 +134,10 @@ void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRTyp
                 }
                 else
                 {
-                    layout.bindlessSetMask |= 1u << set;
+                    resourceLayout.bindlessSetMask |= 1u << set;
                 }
 
-                size = vk::ShaderLayout::UNSIZED_ARRAY;
+                size = ShaderLayout::UNSIZED_ARRAY;
             }
             else if(size && size != type.array.front())
             {
@@ -162,12 +163,153 @@ void updateArrayInfo(aph::vk::ResourceLayout& layout, const spirv_cross::SPIRTyp
     }
 };
 
-vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
-{
-    spirv_cross::Compiler compiler{spvCode.data(), spvCode.size()};
-    spirv_cross::ShaderResources       resources = compiler.get_shader_resources();
+}  // namespace aph
 
-    vk::ResourceLayout layout{};
+namespace aph
+{
+ShaderReflector::ShaderReflector(ReflectRequest request) : m_request(std::move(request))
+{
+    reflect();
+
+    const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
+
+    auto& combinedSetInfos = m_combinedLayout.setInfos;
+    if(m_stageLayouts.contains(ShaderStage::VS))
+    {
+        const auto&  shaderLayout = m_stageLayouts[ShaderStage::VS];
+        VertexInput& vertexInput  = m_vertexInput;
+        uint32_t     size         = 0;
+        aph::utils::forEachBit(shaderLayout.inputMask, [&](uint32_t location) {
+            const auto& attr = shaderLayout.vertexAttributes[location];
+            vertexInput.attributes.push_back(
+                {.location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset});
+            size += attr.size;
+        });
+        vertexInput.bindings.push_back({size});
+    }
+
+    for(unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
+    {
+        CombinedResourceLayout::SetInfo&           setInfo = combinedSetInfos[set];
+        std::array<VkSampler, VULKAN_NUM_BINDINGS> vkImmutableSamplers{};
+
+        const auto& pImmutableSamplers = samplerBank->samplers[set];
+        const auto& shaderLayout       = setInfo.shaderLayout;
+        const auto& stageForBinds      = setInfo.stagesForBindings;
+
+        SmallVector<VkDescriptorSetLayoutBinding>& vkBindings = setInfos[set].bindings;
+        SmallVector<VkDescriptorPoolSize>&         poolSizes  = setInfos[set].poolSizes;
+
+        for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
+        {
+            const uint32_t stages = stageForBinds[binding];
+            if(stages == 0)
+            {
+                continue;
+            }
+
+            unsigned arraySize = shaderLayout.arraySize[binding];
+            unsigned poolArraySize;
+            if(arraySize == ShaderLayout::UNSIZED_ARRAY)
+            {
+                arraySize     = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+                poolArraySize = arraySize;
+            }
+            else
+            {
+                poolArraySize = arraySize * VULKAN_NUM_SETS_PER_POOL;
+            }
+
+            unsigned types = 0;
+            if(shaderLayout.sampledImageMask.test(binding))
+            {
+                if((shaderLayout.immutableSamplerMask.test(binding) & (1u << binding)) && pImmutableSamplers &&
+                   pImmutableSamplers[binding])
+                {
+                    vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();
+                }
+
+                vkBindings.push_back(
+                    {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
+                     vkImmutableSamplers[binding] != VK_NULL_HANDLE ? &vkImmutableSamplers[binding] : nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.sampledTexelBufferMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.storageTexelBufferMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.storageImageMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.uniformBufferMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.storageBufferMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.inputAttachmentMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.separateImageMask.test(binding))
+            {
+                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
+                types++;
+            }
+
+            if(shaderLayout.samplerMask.test(binding))
+            {
+                if((shaderLayout.immutableSamplerMask.test(binding)) && pImmutableSamplers &&
+                   pImmutableSamplers[binding])
+                    vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();
+
+                vkBindings.push_back(
+                    {binding, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
+                     vkImmutableSamplers[binding] != VK_NULL_HANDLE ? &vkImmutableSamplers[binding] : nullptr});
+                poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
+                types++;
+            }
+
+            (void)types;
+            APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
+        }
+    }
+}
+
+ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& spvCode)
+{
+    spirv_cross::Compiler        compiler{spvCode.data(), spvCode.size()};
+    spirv_cross::ShaderResources resources = compiler.get_shader_resources();
+
+    ResourceLayout layout{};
     for(const auto& res : resources.stage_inputs)
     {
         uint32_t location = compiler.get_decoration(res.id, spv::DecorationLocation);
@@ -180,7 +322,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         layout.vertexAttributes[location] = {
             // TODO multiple bindings
             .binding = 0,
-            .format  = format,
+            .format  = vk::utils::getFormatFromVk(format),
             .size    = static_cast<uint32_t>(getTypeSize(type)),
         };
     }
@@ -204,7 +346,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.shaderLayouts[set].uniformBufferMask |= 1u << binding;
+        layout.layouts[set].uniformBufferMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for(const auto& res : resources.storage_buffers)
@@ -214,7 +356,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.shaderLayouts[set].storageBufferMask |= 1u << binding;
+        layout.layouts[set].storageBufferMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for(const auto& res : resources.storage_images)
@@ -227,16 +369,16 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.shaderLayouts[set].storageTexelBufferMask |= 1u << binding;
+            layout.layouts[set].storageTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.shaderLayouts[set].storageImageMask |= 1u << binding;
+            layout.layouts[set].storageImageMask |= 1u << binding;
         }
 
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.shaderLayouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask |= 1u << binding;
         }
 
         updateArrayInfo(layout, type, set, binding);
@@ -251,15 +393,15 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.shaderLayouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask |= 1u << binding;
         }
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.shaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.layouts[set].sampledTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.shaderLayouts[set].sampledImageMask |= 1u << binding;
+            layout.layouts[set].sampledImageMask |= 1u << binding;
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -273,15 +415,15 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         auto& type = compiler.get_type(res.type_id);
         if(compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.shaderLayouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask |= 1u << binding;
         }
         if(type.image.dim == spv::DimBuffer)
         {
-            layout.shaderLayouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.layouts[set].sampledTexelBufferMask |= 1u << binding;
         }
         else
         {
-            layout.shaderLayouts[set].separateImageMask |= 1u << binding;
+            layout.layouts[set].separateImageMask |= 1u << binding;
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -292,7 +434,7 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.shaderLayouts[set].samplerMask |= 1u << binding;
+        layout.layouts[set].samplerMask |= 1u << binding;
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
 
@@ -317,76 +459,71 @@ vk::ResourceLayout reflectLayout(const std::vector<uint32_t>& spvCode)
     return layout;
 }
 
-vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders, const vk::ImmutableSamplerBank* samplerBank)
+void ShaderReflector::reflect()
 {
-    vk::CombinedResourceLayout programLayout{};
-
-    for(const auto& shader : shaders)
-    {
-        if(shader->getStage() == ShaderStage::VS)
-        {
-            programLayout.attributeMask = shader->getLayout().inputMask;
-            for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
-            {
-                programLayout.vertexAttr[idx] = shader->getLayout().vertexAttributes[idx];
-            }
-        }
-        if(shader->getStage() == ShaderStage::FS)
-        {
-            programLayout.renderTargetMask = shader->getLayout().outputMask;
-        }
-    }
+    const std::vector<vk::Shader*>& shaders     = m_request.shaders;
+    const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
 
     vk::ImmutableSamplerBank extImmutableSamplers = {};
+
+    auto& combinedSetInfos = m_combinedLayout.setInfos;
 
     for(const auto& shader : shaders)
     {
         APH_ASSERT(shader);
+        const auto& stage        = shader->getStage();
+        const auto& shaderLayout = reflectStageLayout(shader->getCode());
+        m_stageLayouts[stage]    = shaderLayout;
 
-        const auto& stage = shader->getStage();
-        auto&    shaderLayout = shader->getLayout();
-        uint32_t stageMask    = vk::utils::VkCast(stage);
+        {
+            if(stage == ShaderStage::VS)
+            {
+                m_combinedLayout.attributeMask = shaderLayout.inputMask;
+                for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
+                {
+                    m_combinedLayout.vertexAttr[idx] = shaderLayout.vertexAttributes[idx];
+                }
+            }
 
+            if(stage == ShaderStage::FS)
+            {
+                m_combinedLayout.renderTargetMask = shaderLayout.outputMask;
+            }
+        }
+
+        uint32_t stageMask = vk::utils::VkCast(stage);
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
-            programLayout.setInfos[i].shaderLayout.sampledImageMask |=
-                shaderLayout.shaderLayouts[i].sampledImageMask;
-            programLayout.setInfos[i].shaderLayout.storageImageMask |=
-                shaderLayout.shaderLayouts[i].storageImageMask;
-            programLayout.setInfos[i].shaderLayout.uniformBufferMask |=
-                shaderLayout.shaderLayouts[i].uniformBufferMask;
-            programLayout.setInfos[i].shaderLayout.storageBufferMask |=
-                shaderLayout.shaderLayouts[i].storageBufferMask;
-            programLayout.setInfos[i].shaderLayout.sampledTexelBufferMask |=
-                shaderLayout.shaderLayouts[i].sampledTexelBufferMask;
-            programLayout.setInfos[i].shaderLayout.storageTexelBufferMask |=
-                shaderLayout.shaderLayouts[i].storageTexelBufferMask;
-            programLayout.setInfos[i].shaderLayout.inputAttachmentMask |=
-                shaderLayout.shaderLayouts[i].inputAttachmentMask;
-            programLayout.setInfos[i].shaderLayout.samplerMask |= shaderLayout.shaderLayouts[i].samplerMask;
-            programLayout.setInfos[i].shaderLayout.separateImageMask |=
-                shaderLayout.shaderLayouts[i].separateImageMask;
-            programLayout.setInfos[i].shaderLayout.fpMask |= shaderLayout.shaderLayouts[i].fpMask;
+            CombinedResourceLayout::SetInfo& combinedSetInfo = combinedSetInfos[i];
 
-            uint32_t activeBinds =
-                shaderLayout.shaderLayouts[i].sampledImageMask | shaderLayout.shaderLayouts[i].storageImageMask |
-                shaderLayout.shaderLayouts[i].uniformBufferMask |
-                shaderLayout.shaderLayouts[i].storageBufferMask |
-                shaderLayout.shaderLayouts[i].sampledTexelBufferMask |
-                shaderLayout.shaderLayouts[i].storageTexelBufferMask |
-                shaderLayout.shaderLayouts[i].inputAttachmentMask | shaderLayout.shaderLayouts[i].samplerMask |
-                shaderLayout.shaderLayouts[i].separateImageMask;
+            combinedSetInfo.shaderLayout.sampledImageMask |= shaderLayout.layouts[i].sampledImageMask;
+            combinedSetInfo.shaderLayout.storageImageMask |= shaderLayout.layouts[i].storageImageMask;
+            combinedSetInfo.shaderLayout.uniformBufferMask |= shaderLayout.layouts[i].uniformBufferMask;
+            combinedSetInfo.shaderLayout.storageBufferMask |= shaderLayout.layouts[i].storageBufferMask;
+            combinedSetInfo.shaderLayout.sampledTexelBufferMask |= shaderLayout.layouts[i].sampledTexelBufferMask;
+            combinedSetInfo.shaderLayout.storageTexelBufferMask |= shaderLayout.layouts[i].storageTexelBufferMask;
+            combinedSetInfo.shaderLayout.inputAttachmentMask |= shaderLayout.layouts[i].inputAttachmentMask;
+            combinedSetInfo.shaderLayout.samplerMask |= shaderLayout.layouts[i].samplerMask;
+            combinedSetInfo.shaderLayout.separateImageMask |= shaderLayout.layouts[i].separateImageMask;
+            combinedSetInfo.shaderLayout.fpMask |= shaderLayout.layouts[i].fpMask;
 
-            if(activeBinds)
+            auto activeBinds = shaderLayout.layouts[i].sampledImageMask | shaderLayout.layouts[i].storageImageMask |
+                               shaderLayout.layouts[i].uniformBufferMask | shaderLayout.layouts[i].storageBufferMask |
+                               shaderLayout.layouts[i].sampledTexelBufferMask |
+                               shaderLayout.layouts[i].storageTexelBufferMask |
+                               shaderLayout.layouts[i].inputAttachmentMask | shaderLayout.layouts[i].samplerMask |
+                               shaderLayout.layouts[i].separateImageMask;
+
+            if(activeBinds.any())
             {
-                programLayout.setInfos[i].stagesForSets |= stageMask;
+                combinedSetInfo.stagesForSets |= stageMask;
             }
 
             aph::utils::forEachBit(activeBinds, [&](uint32_t bit) {
-                programLayout.setInfos[i].stagesForBindings[bit] |= stageMask;
+                combinedSetInfo.stagesForBindings[bit] |= stageMask;
 
-                auto& combinedSize = programLayout.setInfos[i].shaderLayout.arraySize[bit];
-                auto& shaderSize   = shaderLayout.shaderLayouts[i].arraySize[bit];
+                auto& combinedSize = combinedSetInfo.shaderLayout.arraySize[bit];
+                auto& shaderSize   = shaderLayout.layouts[i].arraySize[bit];
                 if(combinedSize && combinedSize != shaderSize)
                 {
                     VK_LOG_ERR("Mismatch between array sizes in different shaders.");
@@ -403,48 +540,45 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
         // Do not try to split into multiple ranges as it just complicates things for no obvious gain.
         if(shaderLayout.pushConstantSize != 0)
         {
-            programLayout.pushConstantRange.stageFlags |= stageMask;
-            programLayout.pushConstantRange.size =
-                std::max(programLayout.pushConstantRange.size, shaderLayout.pushConstantSize);
+            m_combinedLayout.pushConstantRange.stageFlags |= stageMask;
+            m_combinedLayout.pushConstantRange.size =
+                std::max(m_combinedLayout.pushConstantRange.size, shaderLayout.pushConstantSize);
         }
 
-        programLayout.specConstantMask[stage] = shaderLayout.specConstantMask;
-        programLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
-        // TODO
-        // programLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
+        m_combinedLayout.specConstantMask[stage] = shaderLayout.specConstantMask;
+        m_combinedLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
+
+        m_combinedLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
     }
 
-    if(samplerBank)
+    for(unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
     {
-        for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[set];
+
+        if(samplerBank)
         {
-            aph::utils::forEachBit(programLayout.setInfos[i].shaderLayout.samplerMask |
-                                       programLayout.setInfos[i].shaderLayout.sampledImageMask,
-                                   [&](uint32_t binding) {
-                                       if(samplerBank->samplers[i][binding])
-                                       {
-                                           extImmutableSamplers.samplers[i][binding] =
-                                               samplerBank->samplers[i][binding];
-                                           programLayout.setInfos[i].shaderLayout.immutableSamplerMask |= 1u << binding;
-                                       }
-                                   });
+            aph::utils::forEachBit(
+                setInfo.shaderLayout.samplerMask | setInfo.shaderLayout.sampledImageMask, [&](uint32_t binding) {
+                    if(samplerBank->samplers[set][binding])
+                    {
+                        extImmutableSamplers.samplers[set][binding] = samplerBank->samplers[set][binding];
+                        setInfo.shaderLayout.immutableSamplerMask |= 1u << binding;
+                    }
+                });
         }
-    }
 
-    for(unsigned setIdx = 0; setIdx < VULKAN_NUM_DESCRIPTOR_SETS; setIdx++)
-    {
-        if(programLayout.setInfos[setIdx].stagesForSets != 0)
+        if(setInfo.stagesForSets != 0)
         {
-            programLayout.descriptorSetMask |= 1u << setIdx;
+            m_combinedLayout.descriptorSetMask |= 1u << set;
 
             for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {
-                auto& arraySize = programLayout.setInfos[setIdx].shaderLayout.arraySize[binding];
-                if(arraySize == vk::ShaderLayout::UNSIZED_ARRAY)
+                auto& arraySize = setInfo.shaderLayout.arraySize[binding];
+                if(arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
                     for(unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
                     {
-                        if(programLayout.setInfos[i].stagesForBindings[i] != 0)
+                        if(setInfo.stagesForBindings[i] != 0)
                         {
                             VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.",
                                        i, i);
@@ -452,7 +586,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
                     }
 
                     // Allows us to have one unified descriptor set layout for bindless.
-                    programLayout.setInfos[setIdx].stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
+                    setInfo.stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
                 }
                 else if(arraySize == 0)
                 {
@@ -462,7 +596,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
                 {
                     for(unsigned i = 1; i < arraySize; i++)
                     {
-                        if(programLayout.setInfos[i].stagesForBindings[binding + i] != 0)
+                        if(setInfo.stagesForBindings[binding + i] != 0)
                         {
                             VK_LOG_ERR(
                                 "Detected binding aliasing for (%u, %u). Binding array with %u elements starting "
@@ -475,23 +609,15 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
             }
         }
     }
-
-    return programLayout;
 }
 
-VertexInput getVertexInputInfo(vk::CombinedResourceLayout combineLayout)
+SmallVector<VkDescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(uint32_t set)
 {
-    VertexInput vertexInput;
-    uint32_t    size = 0;
-    aph::utils::forEachBit(combineLayout.attributeMask, [&](uint32_t location) {
-        auto& attr = combineLayout.vertexAttr[location];
-        vertexInput.attributes.push_back({.location = location,
-                                          .binding  = 0,
-                                          .format   = vk::utils::getFormatFromVk(attr.format),
-                                          .offset   = attr.offset});
-        size += attr.size;
-    });
-    vertexInput.bindings.push_back({size});
-    return vertexInput;
+    return setInfos[set].bindings;
+}
+
+SmallVector<VkDescriptorPoolSize> ShaderReflector::getPoolSizes(uint32_t set)
+{
+    return setInfos[set].poolSizes;
 }
 }  // namespace aph

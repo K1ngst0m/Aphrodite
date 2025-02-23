@@ -73,8 +73,8 @@ struct DescriptorUpdateInfo
 
 struct DescriptorSetLayoutCreateInfo
 {
-    CombinedResourceLayout::SetInfo setInfo;
-    Sampler* const*                 pImmutableSamplers;
+    SmallVector<VkDescriptorSetLayoutBinding> bindings;
+    SmallVector<VkDescriptorPoolSize>         poolSizes;
 };
 
 class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, DescriptorSetLayoutCreateInfo>
