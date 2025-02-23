@@ -412,10 +412,13 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
         .codeSize = spv.size() * sizeof(spv[0]),
         .pCode    = spv.data(),
     };
-    VkShaderModule handle;
-    _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
-                                  debugName))
+    VkShaderModule handle = VK_NULL_HANDLE;
+    if (createInfo.compile)
+    {
+        _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
+        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
+                                    debugName))
+    }
     *ppShader = m_resourcePool.shader.allocate(createInfo, handle, reflectLayout(spv));
     return Result::Success;
 }

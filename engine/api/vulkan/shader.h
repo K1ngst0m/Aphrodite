@@ -88,6 +88,7 @@ struct ShaderCreateInfo
     std::vector<uint32_t> code;
     std::string           entrypoint = "main";
     aph::ShaderStage      stage;
+    bool                  compile = false;
 };
 
 class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
@@ -96,9 +97,10 @@ class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
 
 public:
     std::string_view             getEntryPointName() const { return getCreateInfo().entrypoint; }
-    const ResourceLayout&        getResourceLayout() const { return m_layout; }
+    const ResourceLayout&        getLayout() const { return m_layout; }
     ShaderStage                  getStage() const { return getCreateInfo().stage; }
     const std::vector<uint32_t>& getCode() const { return getCreateInfo().code; }
+    bool                         hasModule() const { return getHandle() == VK_NULL_HANDLE; }
 
 private:
     Shader(const CreateInfoType& createInfo, HandleType handle, ResourceLayout layout);
