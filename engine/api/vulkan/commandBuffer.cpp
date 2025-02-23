@@ -26,7 +26,7 @@ VkResult CommandBuffer::begin(VkCommandBufferUsageFlags flags)
     // Begin command recording.
     VkCommandBufferBeginInfo beginInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = static_cast<VkCommandBufferUsageFlags>(flags),
+        .flags = flags,
     };
     auto result = m_pDeviceTable->vkBeginCommandBuffer(m_handle, &beginInfo);
     if(result != VK_SUCCESS)
@@ -65,24 +65,18 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::si
 {
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
 
-    VkBuffer vkBuffer                             = pBuffer->getHandle();
-    m_commandState.vertexBinding.buffers[binding] = vkBuffer;
-    m_commandState.vertexBinding.offsets[binding] = offset;
-    m_commandState.vertexBinding.dirty |= 1u << binding;
+    VkBuffer vkBuffer                               = pBuffer->getHandle();
+    m_commandState.graphics.vertex.buffers[binding] = vkBuffer;
+    m_commandState.graphics.vertex.offsets[binding] = offset;
+    m_commandState.graphics.vertex.dirty |= 1u << binding;
 }
 
 void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexType indexType)
 {
-    m_commandState.index = {.buffer = pBuffer->getHandle(), .offset = offset, .indexType = utils::VkCast(indexType)};
+    m_commandState.graphics.index = {
+        .buffer = pBuffer->getHandle(), .offset = offset, .indexType = utils::VkCast(indexType)};
 }
 
-void CommandBuffer::pushConstants(uint32_t offset, uint32_t size, const void* pValues)
-{
-    APH_ASSERT(m_commandState.pPipeline != nullptr);
-    auto stage = m_commandState.pPipeline->getProgram()->getConstantShaderStage(offset, size);
-    m_pDeviceTable->vkCmdPushConstants(m_handle, m_commandState.pPipeline->getProgram()->getPipelineLayout(), stage,
-                                       offset, size, pValues);
-}
 void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range)
 {
     VkBufferCopy copyRegion{
@@ -256,86 +250,56 @@ void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* dep
 }
 void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
-    m_commandState.colorAttachments = renderingInfo.colors;
-    m_commandState.depthAttachment  = renderingInfo.depth;
-    auto& colors                    = renderingInfo.colors;
+    m_commandState.graphics.color = renderingInfo.colors;
+    m_commandState.graphics.depth = renderingInfo.depth;
 
-    APH_ASSERT(!m_commandState.colorAttachments.empty() || m_commandState.depthAttachment.image);
+    APH_ASSERT(!m_commandState.graphics.color.empty() || m_commandState.graphics.depth.image);
 
-    std::vector<VkRenderingAttachmentInfo> vkColors;
+    SmallVector<VkRenderingAttachmentInfo> vkColors;
     VkRenderingAttachmentInfo              vkDepth;
-    vkColors.reserve(m_commandState.colorAttachments.size());
-    for(const auto& color : m_commandState.colorAttachments)
+    SmallVector<VkViewport>                vkViewports;
+    SmallVector<VkRect2D>                  vkScissors;
+    vkColors.reserve(m_commandState.graphics.color.size());
+    for(const auto& color : m_commandState.graphics.color)
     {
         auto&                     image = color.image;
-        VkRenderingAttachmentInfo vkColor{.sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                                          .imageView   = image->getView()->getHandle(),
-                                          .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                          .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                          .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-                                          .clearValue  = {.color{{0.0f, 0.0f, 0.0f, 1.0f}}}};
-        if(color.layout.has_value())
-        {
-            vkColor.imageLayout = color.layout.value();
-        }
-        if(color.clear.has_value())
-        {
-            vkColor.clearValue = color.clear.value();
-        }
-        if(color.loadOp.has_value())
-        {
-            vkColor.loadOp = color.loadOp.value();
-        }
-        if(color.storeOp.has_value())
-        {
-            vkColor.storeOp = color.storeOp.value();
-        }
-        vkColors.push_back(vkColor);
+        VkRenderingAttachmentInfo vkColorAttrInfo{
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = image->getView()->getHandle(),
+            .imageLayout = color.layout.value_or(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            .loadOp      = color.loadOp.value_or(VK_ATTACHMENT_LOAD_OP_CLEAR),
+            .storeOp     = color.storeOp.value_or(VK_ATTACHMENT_STORE_OP_STORE),
+            .clearValue  = color.clear.value_or(VkClearValue{.color{{0.0f, 0.0f, 0.0f, 1.0f}}})};
+        vkColors.push_back(vkColorAttrInfo);
+
+        VkRect2D   renderArea = {.offset = {0, 0}, .extent = {color.image->getWidth(), color.image->getHeight()}};
+        VkViewport viewPort   = aph::vk::init::viewport(renderArea.extent);
+        vkScissors.push_back(renderArea);
+        vkViewports.push_back(viewPort);
     }
 
-    VkRect2D   renderArea = {.offset = {0, 0}, .extent = {colors[0].image->getWidth(), colors[0].image->getHeight()}};
-    VkViewport viewPort   = aph::vk::init::viewport(renderArea.extent);
-
-    m_pDeviceTable->vkCmdSetViewportWithCount(m_handle, 1, &viewPort);
-    m_pDeviceTable->vkCmdSetScissorWithCount(m_handle, 1, &renderArea);
+    m_pDeviceTable->vkCmdSetViewportWithCount(m_handle, vkViewports.size(), vkViewports.data());
+    m_pDeviceTable->vkCmdSetScissorWithCount(m_handle, vkScissors.size(), vkScissors.data());
 
     VkRenderingInfo vkRenderingInfo{
         .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .renderArea           = renderArea,
+        .renderArea           = vkScissors[0],
         .layerCount           = 1,
         .colorAttachmentCount = static_cast<uint32_t>(vkColors.size()),
         .pColorAttachments    = vkColors.data(),
         .pDepthAttachment     = nullptr,
     };
 
-    if(m_commandState.depthAttachment.image != nullptr)
+    if(const auto& depth = m_commandState.graphics.depth; depth.image != nullptr)
     {
-        auto& image = m_commandState.depthAttachment.image;
-        vkDepth     = {
-                .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView   = image->getView()->getHandle(),
-                .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-                .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                .clearValue  = {.depthStencil{1.0f, 0x00}},
+        vkDepth = {
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = depth.image->getView()->getHandle(),
+            .imageLayout = depth.layout.value_or(VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL),
+            .loadOp      = depth.loadOp.value_or(VK_ATTACHMENT_LOAD_OP_CLEAR),
+            .storeOp     = depth.storeOp.value_or(VK_ATTACHMENT_STORE_OP_DONT_CARE),
+            .clearValue  = depth.clear.value_or(VkClearValue{.depthStencil{1.0f, 0x00}}),
         };
-        if(m_commandState.depthAttachment.layout.has_value())
-        {
-            vkDepth.imageLayout = m_commandState.depthAttachment.layout.value();
-        }
-        if(m_commandState.depthAttachment.storeOp.has_value())
-        {
-            vkDepth.storeOp = m_commandState.depthAttachment.storeOp.value();
-        }
-        if(m_commandState.depthAttachment.loadOp.has_value())
-        {
-            vkDepth.loadOp = m_commandState.depthAttachment.loadOp.value();
-        }
-        if(m_commandState.depthAttachment.clear.has_value())
-        {
-            vkDepth.clearValue = m_commandState.depthAttachment.clear.value();
-        }
-
         vkRenderingInfo.pDepthAttachment = &vkDepth;
     }
     m_pDeviceTable->vkCmdBeginRendering(getHandle(), &vkRenderingInfo);
@@ -347,35 +311,31 @@ void CommandBuffer::flushComputeCommand()
     APH_ASSERT(pProgram);
     APH_ASSERT(pProgram->getPipelineType() == PipelineType::Compute);
 
-    SmallVector<VkShaderStageFlagBits> stages = {VK_SHADER_STAGE_COMPUTE_BIT};
+    SmallVector<VkShaderStageFlagBits> stages     = {VK_SHADER_STAGE_COMPUTE_BIT};
     SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::CS)};
     m_pDeviceTable->vkCmdBindShadersEXT(getHandle(), stages.size(), stages.data(), shaderObjs.data());
 
     flushDescriptorSet();
 }
+
 void CommandBuffer::flushGraphicsCommand()
 {
     initDynamicGraphicsState();
 
     // shader object binding
     {
-        auto& pProgram = m_commandState.pProgram;
+        const auto& vertexState = m_commandState.graphics.vertex;
+        const auto& indexState  = m_commandState.graphics.index;
+        const auto& pProgram    = m_commandState.pProgram;
         APH_ASSERT(pProgram);
 
         if(pProgram->getPipelineType() == PipelineType::Geometry)
         {
             SmallVector<VkVertexInputBindingDescription2EXT>   vkBindings;
             SmallVector<VkVertexInputAttributeDescription2EXT> vkAttributes;
+
             {
-                VertexInput vstate;
-                if(m_commandState.vertexBinding.inputInfo.has_value())
-                {
-                    vstate = m_commandState.vertexBinding.inputInfo.value();
-                }
-                else
-                {
-                    vstate = pProgram->getVertexInput();
-                }
+                const VertexInput& vstate = vertexState.inputInfo.value_or(pProgram->getVertexInput());
 
                 vkAttributes.resize(vstate.attributes.size());
                 SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
@@ -385,38 +345,34 @@ void CommandBuffer::flushGraphicsCommand()
                     const auto& attr = vstate.attributes[i];
 
                     vkAttributes[i] = {.sType    = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
-                                        .location = attr.location,
-                                        .binding  = attr.binding,
-                                        .format   = utils::VkCast(attr.format),
-                                        .offset   = (uint32_t)attr.offset};
+                                       .location = attr.location,
+                                       .binding  = attr.binding,
+                                       .format   = utils::VkCast(attr.format),
+                                       .offset   = (uint32_t)attr.offset};
 
                     if(!bufferAlreadyBound[attr.binding])
                     {
                         bufferAlreadyBound[attr.binding] = true;
                         vkBindings.push_back({.sType     = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
-                                                .binding   = attr.binding,
-                                                .stride    = vstate.bindings[attr.binding].stride,
-                                                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-                                                .divisor   = 1});
+                                              .binding   = attr.binding,
+                                              .stride    = vstate.bindings[attr.binding].stride,
+                                              .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+                                              .divisor   = 1});
                     }
                 }
             }
             m_pDeviceTable->vkCmdSetVertexInputEXT(getHandle(), vkBindings.size(), vkBindings.data(),
-                                                    vkAttributes.size(), vkAttributes.data());
+                                                   vkAttributes.size(), vkAttributes.data());
             m_pDeviceTable->vkCmdSetPrimitiveTopology(getHandle(), VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
             m_pDeviceTable->vkCmdSetPrimitiveRestartEnable(getHandle(), VK_FALSE);
 
-            aph::utils::forEachBitRange(
-                m_commandState.vertexBinding.dirty, [&](uint32_t binding, uint32_t bindingCount) {
-                    m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount,
-                                                            m_commandState.vertexBinding.buffers + binding,
-                                                            m_commandState.vertexBinding.offsets + binding);
-                });
+            aph::utils::forEachBitRange(vertexState.dirty, [&](uint32_t binding, uint32_t bindingCount) {
+                m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, binding, bindingCount, vertexState.buffers + binding,
+                                                       vertexState.offsets + binding);
+            });
 
-            m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &m_commandState.vertexBinding.buffers[0],
-                                                    m_commandState.vertexBinding.offsets);
-            m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, m_commandState.index.buffer, m_commandState.index.offset,
-                                                    m_commandState.index.indexType);
+            m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &vertexState.buffers[0], vertexState.offsets);
+            m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, indexState.buffer, indexState.offset, indexState.indexType);
         }
         else if(pProgram->getPipelineType() != PipelineType::Mesh)
         {
@@ -424,11 +380,19 @@ void CommandBuffer::flushGraphicsCommand()
             CM_LOG_ERR("Invalid pipeline type.");
         }
 
-        SmallVector<VkShaderStageFlagBits> stages = {VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT,
-        VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, VK_SHADER_STAGE_GEOMETRY_BIT, VK_SHADER_STAGE_TASK_BIT_EXT, VK_SHADER_STAGE_MESH_BIT_EXT};
-        SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::VS), pProgram->getShaderObject(ShaderStage::FS), nullptr, nullptr, nullptr};
+        SmallVector<VkShaderStageFlagBits> stages     = {VK_SHADER_STAGE_VERTEX_BIT,
+                                                         VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                         VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                                         VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                                                         VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                         VK_SHADER_STAGE_TASK_BIT_EXT,
+                                                         VK_SHADER_STAGE_MESH_BIT_EXT};
+        SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::VS),
+                                                         pProgram->getShaderObject(ShaderStage::FS), VK_NULL_HANDLE,
+                                                         VK_NULL_HANDLE, VK_NULL_HANDLE};
         m_pDeviceTable->vkCmdBindShadersEXT(getHandle(), stages.size(), stages.data(), shaderObjs.data());
     }
+
     flushDescriptorSet();
 }
 
@@ -673,7 +637,7 @@ void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t se
 }
 void CommandBuffer::setDepthState(const DepthState& state)
 {
-    m_commandState.depthState = state;
+    m_commandState.graphics.depthState = state;
 }
 void CommandBuffer::draw(DispatchArguments args)
 {
@@ -684,13 +648,13 @@ void CommandBuffer::draw(DispatchArguments args)
 void CommandBuffer::initDynamicGraphicsState()
 {
     {
-        auto&             state = m_commandState.depthState;
+        auto&             state = m_commandState.graphics.depthState;
         const VkCompareOp op    = utils::VkCast(state.compareOp);
         m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
         m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
         m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
         m_pDeviceTable->vkCmdSetDepthClampEnableEXT(getHandle(), VK_FALSE);
-        m_pDeviceTable->vkCmdSetCullModeEXT(getHandle(), utils::VkCast(m_commandState.cullMode));
+        m_pDeviceTable->vkCmdSetCullModeEXT(getHandle(), utils::VkCast(m_commandState.graphics.cullMode));
         m_pDeviceTable->vkCmdSetAlphaToOneEnableEXT(getHandle(), VK_FALSE);
     }
 
@@ -712,7 +676,7 @@ void CommandBuffer::initDynamicGraphicsState()
     // Do not use alpha to coverage or alpha to one because not using MSAA
     m_pDeviceTable->vkCmdSetAlphaToCoverageEnableEXT(getHandle(), VK_FALSE);
 
-    bool wireframeEnabled = m_commandState.polygonMode == PolygonMode::Line;
+    bool wireframeEnabled = m_commandState.graphics.polygonMode == PolygonMode::Line;
     m_pDeviceTable->vkCmdSetPolygonModeEXT(getHandle(), wireframeEnabled ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL);
     if(wireframeEnabled)
     {

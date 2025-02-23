@@ -567,12 +567,6 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         }
         else
         {
-            // vk::ShaderCreateInfo createInfo{
-            //     .code       = std::get<std::vector<uint32_t>>(stageLoadInfo.data),
-            //     .entrypoint = stageLoadInfo.entryPoint,
-            //     .stage      = stage,
-            // };
-            // APH_VR(m_pDevice->create(createInfo, &requiredShaderList[stage]));
             requiredShaderList[stage] =
                 loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stage, stageLoadInfo.entryPoint);
         }
@@ -594,8 +588,8 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         if(path.extension() == ".spv")
         {
             // TODO multi shader stage single spv binary support
-            auto stage                  = requiredStages.cbegin()->first;
-            auto shader                 = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
+            ShaderStage stage                  = requiredStages.cbegin()->first;
+            vk::Shader* shader                 = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
             requiredShaderList[stage]   = shader;
             m_shaderCaches[path][stage] = shader;
         }
@@ -611,7 +605,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
                 const auto& [entryPointName, spv] = spvInfo;
                 APH_ASSERT(!requiredShaderList.contains(stage));
 
-                auto shader                 = loadShader(spv, stage, entryPointName);
+                vk::Shader* shader          = loadShader(spv, stage, entryPointName);
                 m_shaderCaches[path][stage] = shader;
 
                 if(requiredStages.contains(stage))
@@ -692,9 +686,9 @@ Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
-    auto pBuffer    = *ppBuffer;
-    auto domain     = pBuffer->getCreateInfo().domain;
-    auto uploadSize = info.range.size;
+    vk::Buffer* pBuffer    = *ppBuffer;
+    BufferDomain domain     = pBuffer->getCreateInfo().domain;
+    std::size_t  uploadSize = info.range.size;
 
     // device only
     if(domain == BufferDomain::Device)

@@ -91,6 +91,34 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
     struct CommandState
     {
+        struct Graphics
+        {
+            struct IndexState
+            {
+                VkBuffer    buffer;
+                std::size_t offset;
+                VkIndexType indexType;
+            } index;
+
+            struct VertexState
+            {
+                std::optional<VertexInput> inputInfo;
+                VkBuffer                   buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                std::size_t                offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                uint32_t                   dirty                              = 0;
+            } vertex;
+
+            PrimitiveTopology topology         = PrimitiveTopology::TriangleList;
+            CullMode          cullMode         = CullMode::None;
+            WindingMode       frontFaceWinding = WindingMode::CCW;
+            PolygonMode       polygonMode      = PolygonMode::Fill;
+
+            std::vector<AttachmentInfo> color = {};
+
+            AttachmentInfo depth       = {};
+            DepthState     depthState  = {};
+        } graphics;
+
         struct ResourceBindings
         {
             uint8_t              setBit                                                    = 0;
@@ -99,34 +127,9 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
             uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
             DescriptorSet*       sets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
-        };
+        } resourceBindings = {};
 
-        struct IndexState
-        {
-            VkBuffer    buffer;
-            std::size_t offset;
-            VkIndexType indexType;
-        };
-
-        struct VertexBindingState
-        {
-            std::optional<VertexInput> inputInfo;
-            VkBuffer                   buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
-            std::size_t                offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-            uint32_t                   dirty                              = 0;
-        };
-
-        Pipeline*                   pPipeline        = {};
-        ShaderProgram*              pProgram         = {};
-        std::vector<AttachmentInfo> colorAttachments = {};
-        AttachmentInfo              depthAttachment  = {};
-        ResourceBindings            resourceBindings = {};
-        IndexState                  index            = {};
-        VertexBindingState          vertexBinding    = {};
-        DepthState                  depthState       = {};
-        CullMode    cullMode         = CullMode::None;
-        WindingMode frontFaceWinding = WindingMode::CCW;
-        PolygonMode polygonMode      = PolygonMode::Fill;
+        ShaderProgram* pProgram = {};
     };
 
 public:
@@ -148,10 +151,9 @@ public:
     void setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding);
 
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
-    void setVertexInput(const VertexInput& inputInfo) { m_commandState.vertexBinding.inputInfo = inputInfo; }
+    void setVertexInput(const VertexInput& inputInfo) { m_commandState.graphics.vertex.inputInfo = inputInfo; }
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
-    void pushConstants(uint32_t offset, uint32_t size, const void* pValues);
 
     void setDepthState(const DepthState& state);
 

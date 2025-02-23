@@ -325,15 +325,15 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
     {
         if(shader->getStage() == ShaderStage::VS)
         {
-            programLayout.attributeMask = shader->getResourceLayout().inputMask;
+            programLayout.attributeMask = shader->getLayout().inputMask;
             for(auto idx = 0; idx < VULKAN_NUM_VERTEX_ATTRIBS; ++idx)
             {
-                programLayout.vertexAttr[idx] = shader->getResourceLayout().vertexAttributes[idx];
+                programLayout.vertexAttr[idx] = shader->getLayout().vertexAttributes[idx];
             }
         }
         if(shader->getStage() == ShaderStage::FS)
         {
-            programLayout.renderTargetMask = shader->getResourceLayout().outputMask;
+            programLayout.renderTargetMask = shader->getLayout().outputMask;
         }
     }
 
@@ -344,7 +344,7 @@ vk::CombinedResourceLayout combineLayout(const std::vector<vk::Shader*>& shaders
         APH_ASSERT(shader);
 
         const auto& stage = shader->getStage();
-        auto&    shaderLayout = shader->getResourceLayout();
+        auto&    shaderLayout = shader->getLayout();
         uint32_t stageMask    = vk::utils::VkCast(stage);
 
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)

@@ -13,7 +13,6 @@ public:
     VkResult build(vk::Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, VkPipeline* outPipeline) noexcept;
     VkGraphicsPipelineCreateInfo getCreateInfo(const GraphicsPipelineCreateInfo& createInfo);
 
-private:
     VulkanPipelineBuilder& depthBiasEnable(bool enable);
     VulkanPipelineBuilder& dynamicState(VkDynamicState state);
     VulkanPipelineBuilder& primitiveTopology(VkPrimitiveTopology topology);
@@ -33,32 +32,31 @@ private:
     VulkanPipelineBuilder& depthAttachmentFormat(VkFormat format);
     VulkanPipelineBuilder& stencilAttachmentFormat(VkFormat format);
 
-    std::vector<VkDynamicState> dynamicStates_ = {};
+private:
+    std::vector<VkDynamicState> m_dynamicStates = {};
 
-    SmallVector<VkPipelineShaderStageCreateInfo> shaderStages_ = {};
+    SmallVector<VkPipelineShaderStageCreateInfo> m_shaderStages = {};
 
-    VkPipelineVertexInputStateCreateInfo   vertexInputState_;
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly_;
-    VkPipelineRasterizationStateCreateInfo rasterizationState_;
-    VkPipelineMultisampleStateCreateInfo   multisampleState_;
-    VkPipelineDepthStencilStateCreateInfo  depthStencilState_;
+    VkPipelineVertexInputStateCreateInfo   m_vertexInputState;
+    VkPipelineInputAssemblyStateCreateInfo m_inputAssembly;
+    VkPipelineRasterizationStateCreateInfo m_rasterizationState;
+    VkPipelineMultisampleStateCreateInfo   m_multisampleState;
+    VkPipelineDepthStencilStateCreateInfo  m_depthStencilState;
 
-    VkPipelineDynamicStateCreateInfo    dynamicState_;
-    VkPipelineViewportStateCreateInfo   viewportState_;
-    VkPipelineColorBlendStateCreateInfo colorBlendState_;
-    VkPipelineRenderingCreateInfo       renderingInfo_;
-    VkPipelineCreateFlags2CreateInfoKHR createFlags_;
+    VkPipelineDynamicStateCreateInfo    m_dynamicState;
+    VkPipelineViewportStateCreateInfo   m_viewportState;
+    VkPipelineColorBlendStateCreateInfo m_colorBlendState;
+    VkPipelineRenderingCreateInfo       m_renderingInfo;
+    VkPipelineCreateFlags2CreateInfoKHR m_createFlags;
 
-    SmallVector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates_ = {};
-    SmallVector<VkFormat>                            colorAttachmentFormats_     = {};
+    SmallVector<VkPipelineColorBlendAttachmentState> m_colorBlendAttachmentStates = {};
+    SmallVector<VkFormat>                            m_colorAttachmentFormats     = {};
 
-    SmallVector<VkVertexInputBindingDescription>   vkBindings_;
-    SmallVector<VkVertexInputAttributeDescription> vkAttributes_;
+    SmallVector<VkVertexInputBindingDescription>   m_vkBindings;
+    SmallVector<VkVertexInputAttributeDescription> m_vkAttributes;
 
-    VkFormat depthAttachmentFormat_   = VK_FORMAT_UNDEFINED;
-    VkFormat stencilAttachmentFormat_ = VK_FORMAT_UNDEFINED;
-
-    static uint32_t numPipelinesCreated_;
+    VkFormat m_depthAttachmentFormat   = VK_FORMAT_UNDEFINED;
+    VkFormat m_stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 };
 
 }  // namespace aph::vk

@@ -81,8 +81,8 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
         .depthAttachmentFormat(utils::VkCast(createInfo.depthFormat))
         .stencilAttachmentFormat(utils::VkCast(createInfo.stencilFormat));
 
-    SmallVector<VkVertexInputBindingDescription>&   vkBindings   = vkBindings_;
-    SmallVector<VkVertexInputAttributeDescription>& vkAttributes = vkAttributes_;
+    SmallVector<VkVertexInputBindingDescription>&   vkBindings   = m_vkBindings;
+    SmallVector<VkVertexInputAttributeDescription>& vkAttributes = m_vkAttributes;
     switch(createInfo.type)
     {
     case PipelineType::Geometry:
@@ -145,14 +145,14 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
     shaderStage(
         init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, fs->getHandle(), fs->getEntryPointName()));
 
-    dynamicState_ = {
+    m_dynamicState = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .dynamicStateCount = static_cast<uint32_t>(dynamicStates_.size()),
-        .pDynamicStates    = dynamicStates_.data(),
+        .dynamicStateCount = static_cast<uint32_t>(m_dynamicStates.size()),
+        .pDynamicStates    = m_dynamicStates.data(),
     };
     // viewport and scissor can be NULL if the viewport state is dynamic
     // https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkPipelineViewportStateCreateInfo.html
-    viewportState_ = {
+    m_viewportState = {
         .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .viewportCount = 0,
         .pViewports    = nullptr,
@@ -160,44 +160,44 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
         .pScissors     = nullptr,
     };
 
-    colorBlendState_ = {
+    m_colorBlendState = {
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .logicOpEnable   = VK_FALSE,
         .logicOp         = VK_LOGIC_OP_COPY,
-        .attachmentCount = static_cast<uint32_t>(colorBlendAttachmentStates_.size()),
-        .pAttachments    = colorBlendAttachmentStates_.data(),
+        .attachmentCount = static_cast<uint32_t>(m_colorBlendAttachmentStates.size()),
+        .pAttachments    = m_colorBlendAttachmentStates.data(),
     };
 
-    renderingInfo_ = {
+    m_renderingInfo = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
         .pNext                   = nullptr,
-        .colorAttachmentCount    = static_cast<uint32_t>(colorAttachmentFormats_.size()),
-        .pColorAttachmentFormats = colorAttachmentFormats_.data(),
-        .depthAttachmentFormat   = depthAttachmentFormat_,
-        .stencilAttachmentFormat = stencilAttachmentFormat_,
+        .colorAttachmentCount    = static_cast<uint32_t>(m_colorAttachmentFormats.size()),
+        .pColorAttachmentFormats = m_colorAttachmentFormats.data(),
+        .depthAttachmentFormat   = m_depthAttachmentFormat,
+        .stencilAttachmentFormat = m_stencilAttachmentFormat,
     };
 
-    createFlags_ = {
+    m_createFlags = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_CREATE_FLAGS_2_CREATE_INFO_KHR,
-        .pNext = &renderingInfo_,
+        .pNext = &m_renderingInfo,
         .flags = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR,
     };
     bool                         isGeometryPipeline = createInfo.type == PipelineType::Geometry;
     VkGraphicsPipelineCreateInfo graphicsCreateInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext               = &createFlags_,
+        .pNext               = &m_createFlags,
         .flags               = 0,
-        .stageCount          = static_cast<uint32_t>(shaderStages_.size()),
-        .pStages             = shaderStages_.data(),
-        .pVertexInputState   = isGeometryPipeline ? &vertexInputState_ : nullptr,
-        .pInputAssemblyState = isGeometryPipeline ? &inputAssembly_ : nullptr,
+        .stageCount          = static_cast<uint32_t>(m_shaderStages.size()),
+        .pStages             = m_shaderStages.data(),
+        .pVertexInputState   = isGeometryPipeline ? &m_vertexInputState : nullptr,
+        .pInputAssemblyState = isGeometryPipeline ? &m_inputAssembly : nullptr,
         .pTessellationState  = nullptr,
-        .pViewportState      = &viewportState_,
-        .pRasterizationState = &rasterizationState_,
-        .pMultisampleState   = &multisampleState_,
-        .pDepthStencilState  = &depthStencilState_,
-        .pColorBlendState    = &colorBlendState_,
-        .pDynamicState       = &dynamicState_,
+        .pViewportState      = &m_viewportState,
+        .pRasterizationState = &m_rasterizationState,
+        .pMultisampleState   = &m_multisampleState,
+        .pDepthStencilState  = &m_depthStencilState,
+        .pColorBlendState    = &m_colorBlendState,
+        .pDynamicState       = &m_dynamicState,
         .layout              = pProgram->getPipelineLayout(),
         .renderPass          = VK_NULL_HANDLE,
         .subpass             = 0,
@@ -208,20 +208,20 @@ VkGraphicsPipelineCreateInfo VulkanPipelineBuilder::getCreateInfo(const Graphics
 }
 
 VulkanPipelineBuilder::VulkanPipelineBuilder() :
-    vertexInputState_(VkPipelineVertexInputStateCreateInfo{
+    m_vertexInputState(VkPipelineVertexInputStateCreateInfo{
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .vertexBindingDescriptionCount   = 0,
         .pVertexBindingDescriptions      = nullptr,
         .vertexAttributeDescriptionCount = 0,
         .pVertexAttributeDescriptions    = nullptr,
     }),
-    inputAssembly_({
+    m_inputAssembly({
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .flags                  = 0,
         .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .primitiveRestartEnable = VK_FALSE,
     }),
-    rasterizationState_({
+    m_rasterizationState({
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .flags                   = 0,
         .depthClampEnable        = VK_FALSE,
@@ -235,7 +235,7 @@ VulkanPipelineBuilder::VulkanPipelineBuilder() :
         .depthBiasSlopeFactor    = 0.0f,
         .lineWidth               = 1.0f,
     }),
-    multisampleState_({
+    m_multisampleState({
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT,
         .sampleShadingEnable   = VK_FALSE,
@@ -244,7 +244,7 @@ VulkanPipelineBuilder::VulkanPipelineBuilder() :
         .alphaToCoverageEnable = VK_FALSE,
         .alphaToOneEnable      = VK_FALSE,
     }),
-    depthStencilState_({
+    m_depthStencilState({
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = 0,
@@ -281,49 +281,49 @@ VulkanPipelineBuilder::VulkanPipelineBuilder() :
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::depthBiasEnable(bool enable)
 {
-    rasterizationState_.depthBiasEnable = enable ? VK_TRUE : VK_FALSE;
+    m_rasterizationState.depthBiasEnable = enable ? VK_TRUE : VK_FALSE;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::dynamicState(VkDynamicState state)
 {
-    dynamicStates_.push_back(state);
+    m_dynamicStates.push_back(state);
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::primitiveTopology(VkPrimitiveTopology topology)
 {
-    inputAssembly_.topology = topology;
+    m_inputAssembly.topology = topology;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::rasterizationSamples(VkSampleCountFlagBits samples)
 {
-    multisampleState_.rasterizationSamples = samples;
+    m_multisampleState.rasterizationSamples = samples;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::cullMode(VkCullModeFlags mode)
 {
-    rasterizationState_.cullMode = mode;
+    m_rasterizationState.cullMode = mode;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::frontFace(VkFrontFace mode)
 {
-    rasterizationState_.frontFace = mode;
+    m_rasterizationState.frontFace = mode;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::polygonMode(VkPolygonMode mode)
 {
-    rasterizationState_.polygonMode = mode;
+    m_rasterizationState.polygonMode = mode;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::vertexInputState(const VkPipelineVertexInputStateCreateInfo& state)
 {
-    vertexInputState_ = state;
+    m_vertexInputState = state;
     return *this;
 }
 
@@ -332,25 +332,25 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::colorAttachments(const VkPipelineC
 {
     APH_ASSERT(states);
     APH_ASSERT(formats);
-    colorBlendAttachmentStates_.resize(numColorAttachments);
-    colorAttachmentFormats_.resize(numColorAttachments);
+    m_colorBlendAttachmentStates.resize(numColorAttachments);
+    m_colorAttachmentFormats.resize(numColorAttachments);
     for(uint32_t i = 0; i != numColorAttachments; i++)
     {
-        colorBlendAttachmentStates_[i] = states[i];
-        colorAttachmentFormats_[i]     = formats[i];
+        m_colorBlendAttachmentStates[i] = states[i];
+        m_colorAttachmentFormats[i]     = formats[i];
     }
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::depthAttachmentFormat(VkFormat format)
 {
-    depthAttachmentFormat_ = format;
+    m_depthAttachmentFormat = format;
     return *this;
 }
 
 VulkanPipelineBuilder& VulkanPipelineBuilder::stencilAttachmentFormat(VkFormat format)
 {
-    stencilAttachmentFormat_ = format;
+    m_stencilAttachmentFormat = format;
     return *this;
 }
 
@@ -358,7 +358,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::shaderStage(VkPipelineShaderStageC
 {
     if(stage.module != VK_NULL_HANDLE)
     {
-        shaderStages_.push_back(stage);
+        m_shaderStages.push_back(stage);
     }
     return *this;
 }
@@ -378,7 +378,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilStateOps(VkStencilFaceFlags
 {
     if(faceMask & VK_STENCIL_FACE_FRONT_BIT)
     {
-        VkStencilOpState& s = depthStencilState_.front;
+        VkStencilOpState& s = m_depthStencilState.front;
         s.failOp            = failOp;
         s.passOp            = passOp;
         s.depthFailOp       = depthFailOp;
@@ -387,7 +387,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilStateOps(VkStencilFaceFlags
 
     if(faceMask & VK_STENCIL_FACE_BACK_BIT)
     {
-        VkStencilOpState& s = depthStencilState_.back;
+        VkStencilOpState& s = m_depthStencilState.back;
         s.failOp            = failOp;
         s.passOp            = passOp;
         s.depthFailOp       = depthFailOp;
@@ -401,7 +401,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilMasks(VkStencilFaceFlags fa
 {
     if(faceMask & VK_STENCIL_FACE_FRONT_BIT)
     {
-        VkStencilOpState& s = depthStencilState_.front;
+        VkStencilOpState& s = m_depthStencilState.front;
         s.compareMask       = compareMask;
         s.writeMask         = writeMask;
         s.reference         = reference;
@@ -409,7 +409,7 @@ VulkanPipelineBuilder& VulkanPipelineBuilder::stencilMasks(VkStencilFaceFlags fa
 
     if(faceMask & VK_STENCIL_FACE_BACK_BIT)
     {
-        VkStencilOpState& s = depthStencilState_.back;
+        VkStencilOpState& s = m_depthStencilState.back;
         s.compareMask       = compareMask;
         s.writeMask         = writeMask;
         s.reference         = reference;
