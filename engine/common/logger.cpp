@@ -16,7 +16,7 @@ struct FileSink
 {
     std::ofstream file;
 
-    FileSink(const std::string& filename) : file(filename, std::ofstream::app)
+    FileSink(const std::string& filename) : file(filename, std::ofstream::out | std::ofstream::trunc)
     {
         if (!file.is_open())
         {
