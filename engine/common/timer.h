@@ -26,10 +26,42 @@ public:
         std::lock_guard<std::mutex> m_holder{m_lock};
         m_strMap[tag] = Clock::now();
     }
-    void set(uint32_t tag)
+    APH_ALWAYS_INLINE void set(uint32_t tag)
     {
         std::lock_guard<std::mutex> m_holder{m_lock};
         m_numMap[tag] = Clock::now();
+    }
+
+    // Calculate the elapsed time since setting one tag
+    APH_ALWAYS_INLINE double interval(std::string_view tag) const
+    {
+        auto it1 = m_strMap.find(tag.data());
+
+        if(it1 == m_strMap.end())
+        {
+            CM_LOG_ERR("Tag %s not found!", tag.data());
+            return 0.0;
+        }
+
+        auto current = Clock::now();
+        Duration duration = current - it1->second;
+        return duration.count();
+    }
+
+    // Calculate the elapsed time since setting one tag
+    APH_ALWAYS_INLINE double interval(uint32_t tag) const
+    {
+        auto it1 = m_numMap.find(tag);
+
+        if(it1 == m_numMap.end())
+        {
+            CM_LOG_ERR("Tag %u not found!", tag);
+            return 0.0;
+        }
+
+        auto current = Clock::now();
+        Duration duration = current - it1->second;
+        return duration.count();
     }
 
     // Calculate the interval between two timestamps using their tags
