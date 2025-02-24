@@ -155,6 +155,16 @@ elseif(APH_WSI_BACKEND STREQUAL "SDL2")
     endif()
 endif()
 
+
+CPMAddPackage(
+  NAME renderdoc
+  VERSION 1.36
+  URL https://renderdoc.org/stable/1.36/renderdoc_1.36.tar.gz
+  DOWNLOAD_ONLY YES
+)
+add_library(renderdoc INTERFACE)
+target_include_directories(renderdoc INTERFACE ${renderdoc_SOURCE_DIR}/include/)
+
 CPMAddPackage(
   NAME imgui
   GITHUB_REPOSITORY ocornut/imgui

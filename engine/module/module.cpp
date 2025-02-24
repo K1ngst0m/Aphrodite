@@ -12,15 +12,7 @@ namespace aph
 {
 Module::Module(const char* path)
 {
-#ifdef _WIN32
-    m_module = LoadLibrary(path);
-    if(!m_module)
-        CM_LOG_ERR("Failed to load dynamic library.\n");
-#else
-    m_dylib = dlopen(path, RTLD_NOW);
-    if(!m_dylib)
-        CM_LOG_ERR("Failed to load dynamic library.\n");
-#endif
+    open(path);
 }
 
 Module::Module(Module&& other) noexcept
@@ -70,6 +62,18 @@ void* Module::getSymbolInternal(const char* symbol)
     if(m_dylib)
         return dlsym(m_dylib, symbol);
     return nullptr;
+#endif
+}
+void Module::open(const char* path)
+{
+#ifdef _WIN32
+    m_module = LoadLibrary(path);
+    if(!m_module)
+        CM_LOG_ERR("Failed to load dynamic library.\n");
+#else
+    m_dylib = dlopen(path, RTLD_NOW);
+    if(!m_dylib)
+        CM_LOG_ERR("Failed to load dynamic library.\n");
 #endif
 }
 }  // namespace aph

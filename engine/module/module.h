@@ -19,6 +19,9 @@ public:
         return reinterpret_cast<Func>(getSymbolInternal(symbol));
     }
 
+    void  open(const char* path);
+    void  close();
+
     explicit operator bool() const
     {
 #if _WIN32
@@ -36,7 +39,6 @@ private:
 #endif
 
     void* getSymbolInternal(const char* symbol);
-    void  close();
 };
 }  // namespace aph
 

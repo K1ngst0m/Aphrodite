@@ -230,7 +230,9 @@ void Renderer::render()
 {
     APH_PROFILER_SCOPE();
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
+    m_pDevice->begineCapture();
     m_frameFence[m_frameIdx]->wait();
     m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx]);
+    m_pDevice->endCapture();
 }
 }  // namespace aph::vk

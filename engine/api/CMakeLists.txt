@@ -12,4 +12,5 @@ target_link_libraries(aph-api
 
   vulkan-registry
   GPUOpen::VulkanMemoryAllocator
+  renderdoc
 )

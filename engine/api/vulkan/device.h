@@ -8,6 +8,7 @@
 #include "commandPool.h"
 #include "descriptorSet.h"
 #include "image.h"
+#include "module/module.h"
 #include "sampler.h"
 #include "physicalDevice.h"
 #include "pipeline.h"
@@ -25,6 +26,7 @@ struct DeviceCreateInfo
     GPUFeature      enabledFeatures = {};
     PhysicalDevice* pPhysicalDevice = nullptr;
     Instance*       pInstance       = nullptr;
+    bool            enableCapture   = true;
 };
 
 class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>
@@ -92,6 +94,15 @@ public:
 public:
     void   waitIdle();
     Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+
+public:
+    void begineCapture();
+    void endCapture();
+    void triggerCapture();
+
+private:
+    Result initCapture();
+    Module m_renderdocModule{};
 
 private:
     VkPhysicalDeviceFeatures m_supportedFeatures{};

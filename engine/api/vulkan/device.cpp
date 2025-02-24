@@ -1,7 +1,9 @@
 #include "device.h"
 #include "common/profiler.h"
 #include "deviceAllocator.h"
+#include "module/module.h"
 #include "resource/shaderReflector.h"
+#include "renderdoc_app.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
@@ -47,10 +49,10 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             auto& meshShaderFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMeshShaderFeaturesEXT>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
 
-            meshShaderFeature.taskShader = VK_TRUE;
-            meshShaderFeature.meshShader = VK_TRUE;
-            meshShaderFeature.meshShaderQueries = VK_FALSE;
-            meshShaderFeature.multiviewMeshShader = VK_FALSE;
+            meshShaderFeature.taskShader                             = VK_TRUE;
+            meshShaderFeature.meshShader                             = VK_TRUE;
+            meshShaderFeature.meshShaderQueries                      = VK_FALSE;
+            meshShaderFeature.multiviewMeshShader                    = VK_FALSE;
             meshShaderFeature.primitiveFragmentShadingRateMeshShader = VK_FALSE;
             exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
@@ -252,6 +254,18 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
+    if (createInfo.enableCapture)
+    {
+        if (auto result = device->initCapture(); result.success())
+        {
+            VK_LOG_INFO("Renderdoc plugin loaded.");
+        }
+        else
+        {
+            VK_LOG_WARN("Failed to load renderdoc plugin: %s", result.toString());
+        }
+    }
+
     // Return success.
     return device;
 }
@@ -325,7 +339,7 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    bool hasTaskShader = false;
+    bool                 hasTaskShader = false;
     std::vector<Shader*> shaders{};
     switch(createInfo.type)
     {
@@ -456,7 +470,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                 .pSetLayouts    = vkSetLayouts.data(),
             };
 
-            if (!hasTaskShader && soCreateInfo.stage == VK_SHADER_STAGE_MESH_BIT_EXT)
+            if(!hasTaskShader && soCreateInfo.stage == VK_SHADER_STAGE_MESH_BIT_EXT)
             {
                 soCreateInfo.flags |= VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
             }
@@ -1050,5 +1064,52 @@ VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFla
         flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
     return flags;
+}
+
+static RENDERDOC_API_1_6_0* rdcDispatchTable = {};
+
+void Device::begineCapture()
+{
+    if (rdcDispatchTable)
+    {
+        rdcDispatchTable->StartFrameCapture({}, {});
+    }
+}
+
+void Device::endCapture()
+{
+    if (rdcDispatchTable)
+    {
+        rdcDispatchTable->EndFrameCapture({}, {});
+    }
+}
+
+Result Device::initCapture()
+{
+    m_renderdocModule.open("librenderdoc.so");
+    if(!m_renderdocModule)
+    {
+        return {Result::RuntimeError, "Failed to loading renderdoc module."};
+    }
+
+    pRENDERDOC_GetAPI getAPI = m_renderdocModule.getSymbol<pRENDERDOC_GetAPI>("RENDERDOC_GetAPI");
+    if(!getAPI)
+    {
+        return {Result::RuntimeError, "Failed to get module symbol."};
+    }
+
+    if(!getAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdcDispatchTable))
+    {
+        return {Result::RuntimeError, "Failed to get dispatch table."};
+    }
+
+    return Result::Success;
+}
+void Device::triggerCapture()
+{
+    if (rdcDispatchTable)
+    {
+        rdcDispatchTable->TriggerCapture();
+    }
 }
 }  // namespace aph::vk
