@@ -105,7 +105,7 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
                 std::optional<VertexInput> inputInfo;
                 VkBuffer                   buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
                 std::size_t                offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                uint32_t                   dirty                              = 0;
+                std::bitset<32>            dirty                              = 0;
             } vertex;
 
             PrimitiveTopology topology         = PrimitiveTopology::TriangleList;
@@ -115,17 +115,17 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
             std::vector<AttachmentInfo> color = {};
 
-            AttachmentInfo depth       = {};
-            DepthState     depthState  = {};
+            AttachmentInfo depth      = {};
+            DepthState     depthState = {};
         } graphics;
 
         struct ResourceBindings
         {
-            uint8_t              setBit                                                    = 0;
-            uint32_t             dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                  = {};
-            uint32_t             setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
+            std::bitset<8>       setBit                                                    = 0;
+            std::bitset<32>      dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                  = {};
+            std::bitset<32>      setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
-            uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
+            std::bitset<8>       pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
             DescriptorSet*       sets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
         } resourceBindings = {};
 

@@ -334,12 +334,12 @@ void CommandBuffer::flushGraphicsCommand()
         enum
         {
             VS  = 0,
-            FS  = 1,
-            TCS = 2,
-            TES = 3,
-            GS  = 4,
-            TS  = 5,
-            MS  = 6,
+            FS,
+            TCS,
+            TES,
+            GS,
+            TS,
+            MS,
             NUM_STAGE
         };
         const std::array<VkShaderStageFlagBits, NUM_STAGE> stages = {VK_SHADER_STAGE_VERTEX_BIT,
@@ -735,7 +735,7 @@ void CommandBuffer::flushDescriptorSet()
     aph::utils::forEachBit(m_commandState.resourceBindings.setBit, [this](uint32_t setIdx) {
         APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
         aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx], [this, setIdx](auto bindingIdx) {
-            if(!(m_commandState.resourceBindings.dirtyBinding[setIdx] & (1u << bindingIdx)))
+            if(!(m_commandState.resourceBindings.dirtyBinding[setIdx].test(bindingIdx)))
             {
                 CM_LOG_INFO("skip update");
                 return;

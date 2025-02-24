@@ -94,7 +94,7 @@ struct [[nodiscard("Result should be handled.")]] Result
 
     APH_ALWAYS_INLINE Result(Code code, std::string msg = "") : m_code(code), m_msg(std::move(msg)) {}
 
-    APH_ALWAYS_INLINE std::string toString()
+    APH_ALWAYS_INLINE std::string_view toString()
     {
         if(!m_msg.empty())
         {
