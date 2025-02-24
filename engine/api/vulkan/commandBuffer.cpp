@@ -56,7 +56,9 @@ VkResult CommandBuffer::end()
 VkResult CommandBuffer::reset()
 {
     if(m_handle != VK_NULL_HANDLE)
+    {
         return m_pDeviceTable->vkResetCommandBuffer(m_handle, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    }
     m_state = RecordState::Initial;
     return VK_SUCCESS;
 }
@@ -329,8 +331,31 @@ void CommandBuffer::flushGraphicsCommand()
         const auto& pProgram    = m_commandState.pProgram;
         APH_ASSERT(pProgram);
 
+        enum
+        {
+            VS  = 0,
+            FS  = 1,
+            TCS = 2,
+            TES = 3,
+            GS  = 4,
+            TS  = 5,
+            MS  = 6,
+            NUM_STAGE
+        };
+        const std::array<VkShaderStageFlagBits, NUM_STAGE> stages = {VK_SHADER_STAGE_VERTEX_BIT,
+                                                                     VK_SHADER_STAGE_FRAGMENT_BIT,
+                                                                     VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                                                                     VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                                                                     VK_SHADER_STAGE_GEOMETRY_BIT,
+                                                                     VK_SHADER_STAGE_TASK_BIT_EXT,
+                                                                     VK_SHADER_STAGE_MESH_BIT_EXT};
+        std::array<VkShaderEXT, NUM_STAGE>                 shaderObjs{};
+
         if(pProgram->getPipelineType() == PipelineType::Geometry)
         {
+            shaderObjs[VS] = pProgram->getShaderObject(ShaderStage::VS);
+            shaderObjs[FS] = pProgram->getShaderObject(ShaderStage::FS);
+
             SmallVector<VkVertexInputBindingDescription2EXT>   vkBindings;
             SmallVector<VkVertexInputAttributeDescription2EXT> vkAttributes;
 
@@ -374,22 +399,18 @@ void CommandBuffer::flushGraphicsCommand()
             m_pDeviceTable->vkCmdBindVertexBuffers(m_handle, 0, 1, &vertexState.buffers[0], vertexState.offsets);
             m_pDeviceTable->vkCmdBindIndexBuffer(m_handle, indexState.buffer, indexState.offset, indexState.indexType);
         }
-        else if(pProgram->getPipelineType() != PipelineType::Mesh)
+        else if(pProgram->getPipelineType() == PipelineType::Mesh)
+        {
+            shaderObjs[TS] = pProgram->getShaderObject(ShaderStage::TS);
+            shaderObjs[MS] = pProgram->getShaderObject(ShaderStage::MS);
+            shaderObjs[FS] = pProgram->getShaderObject(ShaderStage::FS);
+        }
+        else
         {
             APH_ASSERT(false);
             CM_LOG_ERR("Invalid pipeline type.");
         }
 
-        SmallVector<VkShaderStageFlagBits> stages     = {VK_SHADER_STAGE_VERTEX_BIT,
-                                                         VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                         VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                                                         VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
-                                                         VK_SHADER_STAGE_GEOMETRY_BIT,
-                                                         VK_SHADER_STAGE_TASK_BIT_EXT,
-                                                         VK_SHADER_STAGE_MESH_BIT_EXT};
-        SmallVector<VkShaderEXT>           shaderObjs = {pProgram->getShaderObject(ShaderStage::VS),
-                                                         pProgram->getShaderObject(ShaderStage::FS), VK_NULL_HANDLE,
-                                                         VK_NULL_HANDLE, VK_NULL_HANDLE};
         m_pDeviceTable->vkCmdBindShadersEXT(getHandle(), stages.size(), stages.data(), shaderObjs.data());
     }
 

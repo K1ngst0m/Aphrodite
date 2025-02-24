@@ -49,6 +49,9 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
             meshShaderFeature.taskShader = VK_TRUE;
             meshShaderFeature.meshShader = VK_TRUE;
+            meshShaderFeature.meshShaderQueries = VK_FALSE;
+            meshShaderFeature.multiviewMeshShader = VK_FALSE;
+            meshShaderFeature.primitiveFragmentShadingRateMeshShader = VK_FALSE;
             exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
 
@@ -322,6 +325,7 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
+    bool hasTaskShader = false;
     std::vector<Shader*> shaders{};
     switch(createInfo.type)
     {
@@ -341,13 +345,13 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         auto ts = createInfo.mesh.pTask;
         auto fs = createInfo.mesh.pFragment;
         APH_ASSERT(ms);
-        APH_ASSERT(ts);
         APH_ASSERT(fs);
-        shaders.push_back(ms);
         if(ts)
         {
+            hasTaskShader = true;
             shaders.push_back(ts);
         }
+        shaders.push_back(ms);
         shaders.push_back(fs);
     }
     break;
@@ -451,6 +455,11 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                 .setLayoutCount = static_cast<uint32_t>(vkSetLayouts.size()),
                 .pSetLayouts    = vkSetLayouts.data(),
             };
+
+            if (!hasTaskShader && soCreateInfo.stage == VK_SHADER_STAGE_MESH_BIT_EXT)
+            {
+                soCreateInfo.flags |= VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
+            }
 
             if(combineLayout.pushConstantRange.stageFlags != 0)
             {

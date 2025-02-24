@@ -14,21 +14,7 @@ public:
     void unload() override;
     void finish() override;
 
-    struct
-    {
-        uint32_t windowWidth  = {1440};
-        uint32_t windowHeight = {900};
-    } m_options;
-
-    struct UniformData
-    {
-        glm::mat4 projection;
-        glm::mat4 model;
-        glm::mat4 view;
-    };
-
 private:
-    aph::vk::Buffer*        m_pMVPBuffer = {};
     aph::vk::ShaderProgram* m_pProgram   = {};
 
 private:
@@ -40,5 +26,4 @@ private:
 
 private:
     aph::Timer  m_timer;
-    UniformData m_mvpData;
 };

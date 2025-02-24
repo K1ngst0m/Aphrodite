@@ -86,11 +86,32 @@ class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 
 public:
     const VertexInput&   getVertexInput() const { return m_pipelineLayout.vertexInput; }
-    DescriptorSetLayout* getSetLayout(uint32_t setIdx) { return m_pipelineLayout.setLayouts[setIdx]; }
-    Shader*              getShader(ShaderStage stage) { return m_shaders[stage]; }
-    VkShaderEXT          getShaderObject(ShaderStage stage) { return m_shaderObjects[stage]; }
-    VkPipelineLayout     getPipelineLayout() const { return m_pipelineLayout.handle; }
-    PipelineType         getPipelineType() const { return getCreateInfo().type; }
+    DescriptorSetLayout* getSetLayout(uint32_t setIdx) const
+    {
+        if(m_pipelineLayout.setLayouts.size() > setIdx)
+        {
+            return m_pipelineLayout.setLayouts[setIdx];
+        }
+        return nullptr;
+    }
+    Shader* getShader(ShaderStage stage) const
+    {
+        if(m_shaders.contains(stage))
+        {
+            return m_shaders.at(stage);
+        }
+        return nullptr;
+    }
+    VkShaderEXT getShaderObject(ShaderStage stage) const
+    {
+        if(m_shaderObjects.contains(stage))
+        {
+            return m_shaderObjects.at(stage);
+        }
+        return VK_NULL_HANDLE;
+    }
+    VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout.handle; }
+    PipelineType     getPipelineType() const { return getCreateInfo().type; }
 
 private:
     ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,

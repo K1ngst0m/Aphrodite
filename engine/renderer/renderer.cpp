@@ -118,7 +118,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             // TODO select physical device
             .enabledFeatures =
                 {
-                    .meshShading                = false,
+                    .meshShading                = true,
                     .multiDrawIndirect          = true,
                     .tessellationSupported      = true,
                     .samplerAnisotropySupported = true,
