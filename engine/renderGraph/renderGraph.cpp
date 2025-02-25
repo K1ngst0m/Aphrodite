@@ -14,7 +14,7 @@ RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, s
     APH_ASSERT(pRDG);
 }
 
-PassBufferResource* RenderPass::addStorageBufferInput(const std::string& name, vk::Buffer* pBuffer)
+PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
@@ -33,7 +33,7 @@ PassBufferResource* RenderPass::addStorageBufferInput(const std::string& name, v
     return res;
 }
 
-PassBufferResource* RenderPass::addUniformBufferInput(const std::string& name, vk::Buffer* pBuffer)
+PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
@@ -52,7 +52,7 @@ PassBufferResource* RenderPass::addUniformBufferInput(const std::string& name, v
     return res;
 }
 
-PassBufferResource* RenderPass::addBufferOutput(const std::string& name)
+PassBufferResource* RenderPass::addBufferOut(const std::string& name)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Buffer));
@@ -65,7 +65,7 @@ PassBufferResource* RenderPass::addBufferOutput(const std::string& name)
 
     return res;
 }
-PassImageResource* RenderPass::addTextureOutput(const std::string& name)
+PassImageResource* RenderPass::addTextureOut(const std::string& name)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
@@ -79,7 +79,7 @@ PassImageResource* RenderPass::addTextureOutput(const std::string& name)
     return res;
 }
 
-PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Image* pImage)
+PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* pImage)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
@@ -98,7 +98,7 @@ PassImageResource* RenderPass::addTextureInput(const std::string& name, vk::Imag
     return res;
 }
 
-PassImageResource* RenderPass::setColorOutput(const std::string& name, const PassImageInfo& info)
+PassImageResource* RenderPass::setColorOut(const std::string& name, const PassImageInfo& info)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
@@ -110,7 +110,7 @@ PassImageResource* RenderPass::setColorOutput(const std::string& name, const Pas
     return res;
 }
 
-PassImageResource* RenderPass::setDepthStencilOutput(const std::string& name, const PassImageInfo& info)
+PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const PassImageInfo& info)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));

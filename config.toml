@@ -15,5 +15,6 @@ texture = "assets/textures"
 [thread]
 num_override = 0
 
-[log]
-level = 1
+[debug]
+log_level = 1
+backtrace = 1

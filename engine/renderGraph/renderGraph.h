@@ -103,14 +103,14 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
 
-    PassBufferResource* addUniformBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr);
-    PassBufferResource* addStorageBufferInput(const std::string& name, vk::Buffer* pBuffer = nullptr);
-    PassBufferResource* addBufferOutput(const std::string& name);
+    PassBufferResource* addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
+    PassBufferResource* addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
+    PassBufferResource* addBufferOut(const std::string& name);
 
-    PassImageResource* addTextureInput(const std::string& name, vk::Image* pImage = nullptr);
-    PassImageResource* addTextureOutput(const std::string& name);
-    PassImageResource* setColorOutput(const std::string& name, const PassImageInfo& info);
-    PassImageResource* setDepthStencilOutput(const std::string& name, const PassImageInfo& info);
+    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr);
+    PassImageResource* addTextureOut(const std::string& name);
+    PassImageResource* setColorOut(const std::string& name, const PassImageInfo& info);
+    PassImageResource* setDepthStencilOut(const std::string& name, const PassImageInfo& info);
 
     using ExecuteCallBack           = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;

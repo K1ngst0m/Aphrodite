@@ -170,6 +170,8 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             .flags     = UI_Docking,
         });
     }
+
+    m_timer.set(TIMER_TAG_GLOBAL);
 }
 
 Renderer::~Renderer()
@@ -229,10 +231,12 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 void Renderer::render()
 {
     APH_PROFILER_SCOPE();
+    m_timer.set(TIMER_TAG_FRAME);
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
-    m_pDevice->begineCapture();
+    // m_pDevice->begineCapture();
     m_frameFence[m_frameIdx]->wait();
     m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx]);
-    m_pDevice->endCapture();
+    // m_pDevice->endCapture();
+    m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }
 }  // namespace aph::vk

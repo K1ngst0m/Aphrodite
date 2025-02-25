@@ -2,6 +2,9 @@
 
 #include <string>
 #include "common/hash.h"
+#include "cli/cli.h"
+
+GENERATE_LOG_FUNCS(APP)
 
 namespace aph
 {
@@ -17,6 +20,7 @@ public:
     virtual void unload() = 0;
     virtual void finish() = 0;
 
+    void registerOption(const char* cli, const std::function<void(CLIParser&)>& func);
     void loadConfig(int argc, char** argv, std::string configPath = "config.toml");
 
     struct
@@ -32,12 +36,14 @@ public:
         // thread
         uint32_t numThreads = 0;
 
-        // log
+        // debug
         uint32_t logLevel = 0;
+        uint32_t backtrace = 0;
     } m_options;
 
 protected:
     const std::string m_sessionName;
     int m_exitCode = 0;
+    aph::CLICallbacks m_callbacks;
 };
 }  // namespace aph

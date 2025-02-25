@@ -102,6 +102,7 @@ public:
 
     ~ResourceLoader();
 
+    // FIXME dead lock when failed
     template <typename T_CreateInfo, typename T_Resource>
     Result loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
     {

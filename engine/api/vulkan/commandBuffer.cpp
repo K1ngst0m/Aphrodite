@@ -70,7 +70,7 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::si
     VkBuffer vkBuffer                               = pBuffer->getHandle();
     m_commandState.graphics.vertex.buffers[binding] = vkBuffer;
     m_commandState.graphics.vertex.offsets[binding] = offset;
-    m_commandState.graphics.vertex.dirty |= 1u << binding;
+    m_commandState.graphics.vertex.dirty.set(binding);
 }
 
 void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexType indexType)
@@ -326,6 +326,7 @@ void CommandBuffer::flushGraphicsCommand()
 
     // shader object binding
     {
+        const auto& vertexInput = m_commandState.graphics.vertexInput;
         const auto& vertexState = m_commandState.graphics.vertex;
         const auto& indexState  = m_commandState.graphics.index;
         const auto& pProgram    = m_commandState.pProgram;
@@ -360,7 +361,7 @@ void CommandBuffer::flushGraphicsCommand()
             SmallVector<VkVertexInputAttributeDescription2EXT> vkAttributes;
 
             {
-                const VertexInput& vstate = vertexState.inputInfo.value_or(pProgram->getVertexInput());
+                const VertexInput& vstate = vertexInput.value_or(pProgram->getVertexInput());
 
                 vkAttributes.resize(vstate.attributes.size());
                 SmallVector<bool> bufferAlreadyBound(vstate.bindings.size());
@@ -635,8 +636,8 @@ void CommandBuffer::setResource(const std::vector<Image*>& images, uint32_t set,
     {
         resBindings.bindings[set][binding] = std::move(newUpdate);
         resBindings.setBit |= 1u << set;
-        resBindings.setBindingBit[set] |= 1u << binding;
-        resBindings.dirtyBinding[set] |= 1u << binding;
+        resBindings.setBindingBit[set].set(binding);
+        resBindings.dirtyBinding[set].set(binding);
     }
 }
 void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding)
@@ -656,7 +657,7 @@ void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t se
         resBindings.dirtyBinding[set] |= 1u << binding;
     }
 }
-void CommandBuffer::setDepthState(const DepthState& state)
+void CommandBuffer::setDepthState(const CommandState::Graphics::DepthState& state)
 {
     m_commandState.graphics.depthState = state;
 }
@@ -669,12 +670,6 @@ void CommandBuffer::draw(DispatchArguments args)
 void CommandBuffer::initDynamicGraphicsState()
 {
     {
-        auto&             state = m_commandState.graphics.depthState;
-        const VkCompareOp op    = utils::VkCast(state.compareOp);
-        m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.enableWrite ? VK_TRUE : VK_FALSE);
-        m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), op != VK_COMPARE_OP_ALWAYS);
-        m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
-        m_pDeviceTable->vkCmdSetDepthClampEnableEXT(getHandle(), VK_FALSE);
         m_pDeviceTable->vkCmdSetCullModeEXT(getHandle(), utils::VkCast(m_commandState.graphics.cullMode));
         m_pDeviceTable->vkCmdSetAlphaToOneEnableEXT(getHandle(), VK_FALSE);
     }
@@ -686,7 +681,7 @@ void CommandBuffer::initDynamicGraphicsState()
 
     m_pDeviceTable->vkCmdSetRasterizerDiscardEnable(getHandle(), VK_FALSE);
 
-    m_pDeviceTable->vkCmdSetRasterizationSamplesEXT(getHandle(), VK_SAMPLE_COUNT_1_BIT);
+    m_pDeviceTable->vkCmdSetRasterizationSamplesEXT(getHandle(), utils::getSampleCountFlags(m_commandState.graphics.sampleCount));
 
     {
         // Use 1 sample per pixel
@@ -708,11 +703,17 @@ void CommandBuffer::initDynamicGraphicsState()
     m_pDeviceTable->vkCmdSetFrontFaceEXT(getHandle(), VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
     // Set depth state, the depth write. Don't enable depth bounds, bias, or stencil test.
-    m_pDeviceTable->vkCmdSetDepthTestEnableEXT(getHandle(), VK_TRUE);
-    m_pDeviceTable->vkCmdSetDepthCompareOpEXT(getHandle(), VK_COMPARE_OP_GREATER);
-    m_pDeviceTable->vkCmdSetDepthBoundsTestEnableEXT(getHandle(), VK_FALSE);
-    m_pDeviceTable->vkCmdSetDepthBiasEnableEXT(getHandle(), VK_FALSE);
-    m_pDeviceTable->vkCmdSetStencilTestEnableEXT(getHandle(), VK_FALSE);
+    {
+        auto&             state = m_commandState.graphics.depthState;
+        const VkCompareOp op    = utils::VkCast(state.compareOp);
+        m_pDeviceTable->vkCmdSetDepthWriteEnable(getHandle(), state.write ? VK_TRUE : VK_FALSE);
+        m_pDeviceTable->vkCmdSetDepthTestEnable(getHandle(), state.enable);
+        m_pDeviceTable->vkCmdSetDepthCompareOp(getHandle(), op);
+        m_pDeviceTable->vkCmdSetDepthClampEnableEXT(getHandle(), VK_FALSE);
+        m_pDeviceTable->vkCmdSetDepthBoundsTestEnableEXT(getHandle(), VK_FALSE);
+        m_pDeviceTable->vkCmdSetDepthBiasEnableEXT(getHandle(), VK_FALSE);
+        m_pDeviceTable->vkCmdSetStencilTestEnableEXT(getHandle(), VK_FALSE);
+    }
 
     // Do not enable logic op
     m_pDeviceTable->vkCmdSetLogicOpEnableEXT(getHandle(), VK_FALSE);
@@ -757,5 +758,22 @@ void CommandBuffer::flushDescriptorSet()
                                                 m_commandState.pProgram->getPipelineLayout(), setIndex, 1,
                                                 &set->getHandle(), 0, nullptr);
     });
+
+    if (m_commandState.resourceBindings.dirtyPushConstant)
+    {
+        auto& range = m_commandState.pProgram->getPushConstantRange();
+        m_pDeviceTable->vkCmdPushConstants(getHandle(), m_commandState.pProgram->getPipelineLayout(), range.stageFlags, 0,
+                                           sizeof(m_commandState.resourceBindings.pushConstantData),
+                                                  m_commandState.resourceBindings.pushConstantData);
+        m_commandState.resourceBindings.dirtyPushConstant = false;
+    }
+}
+
+void CommandBuffer::pushConstant(const void* pData, uint32_t offset, uint32_t size)
+{
+    auto& resBinding = m_commandState.resourceBindings;
+    APH_ASSERT(offset + size <= VULKAN_PUSH_CONSTANT_SIZE);
+    std::memcpy(resBinding.pushConstantData + offset, pData, size);
+    resBinding.dirtyPushConstant = true;
 }
 }  // namespace aph::vk

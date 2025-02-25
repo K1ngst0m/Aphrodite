@@ -1,6 +1,5 @@
 #include "app.h"
 #include "common/logger.h"
-#include "cli/cli.h"
 #include "filesystem/filesystem.h"
 
 #define TOML_EXCEPTIONS 0
@@ -37,17 +36,17 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
         }
 
         opt.numThreads = table.at_path("thread.num_override").value_or(0U);
-        opt.logLevel = table.at_path("log.level").value_or(1U);
+        opt.logLevel = table.at_path("debug.log_level").value_or(1U);
+        opt.backtrace = table.at_path("debug.backtrace").value_or(1U);
     }
 
     // parse command
     {
-        aph::CLICallbacks cbs;
-        cbs.add("--width", [&](aph::CLIParser& parser) { opt.windowWidth = parser.nextUint(); });
-        cbs.add("--height", [&](aph::CLIParser& parser) { opt.windowHeight = parser.nextUint(); });
-        cbs.add("--vsync", [&](aph::CLIParser& parser) { opt.vsync = parser.nextUint(); });
-        cbs.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
-        if(!aph::parseCliFiltered(cbs, argc, argv, m_exitCode))
+        m_callbacks.add("--width", [&](aph::CLIParser& parser) { opt.windowWidth = parser.nextUint(); });
+        m_callbacks.add("--height", [&](aph::CLIParser& parser) { opt.windowHeight = parser.nextUint(); });
+        m_callbacks.add("--vsync", [&](aph::CLIParser& parser) { opt.vsync = parser.nextUint(); });
+        m_callbacks.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
+        if(!aph::parseCliFiltered(m_callbacks, argc, argv, m_exitCode))
         {
             std::cout << "Failed to parse command line arguments.\n";
             APH_ASSERT(false);
@@ -63,5 +62,15 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
     {
         aph::Logger::GetInstance().setLogLevel(m_options.logLevel);
     }
+
+    //
+    {
+
+    }
 };
+
+void BaseApp::registerOption(const char* cli, const std::function<void(CLIParser&)>& func)
+{
+    m_callbacks.add(cli, func);
+}
 }  // namespace aph

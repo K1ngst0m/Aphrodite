@@ -113,6 +113,8 @@ public:
     VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout.handle; }
     PipelineType     getPipelineType() const { return getCreateInfo().type; }
 
+    const VkPushConstantRange& getPushConstantRange() const { return m_pipelineLayout.pushConstantRange; }
+
 private:
     ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
                   HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps);

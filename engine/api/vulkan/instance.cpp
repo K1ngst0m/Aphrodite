@@ -47,6 +47,7 @@ VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     }
 
+    VK_LOG_ERR("Failed to create debug messenger.");
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
@@ -65,24 +66,51 @@ void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 namespace aph::vk
 {
-
-#ifdef VK_CHECK_RESULT
-    #undef VK_CHECK_RESULT
-#endif
-
-#define VK_CHECK_RESULT(f) \
-    { \
-        VkResult res = (f); \
-        if(res != VK_SUCCESS) \
-        { \
-            return res; \
-        } \
-    }
-
 Instance::Instance(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo){};
 
 VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
+    // Get extensions supported by the instance and store for later use
+    HashSet<std::string>                         supportedExtensions{};
+
+    auto getSupportExtension = [&supportedExtensions](const char* layerName) {
+        uint32_t extCount = 0;
+        vkEnumerateInstanceExtensionProperties(layerName, &extCount, nullptr);
+        if(extCount > 0)
+        {
+            SmallVector<VkExtensionProperties> extensions(extCount);
+            if(vkEnumerateInstanceExtensionProperties(layerName, &extCount, &extensions.front()) == VK_SUCCESS)
+            {
+                for(VkExtensionProperties extension : extensions)
+                {
+                    supportedExtensions.insert(extension.extensionName);
+                }
+            }
+        }
+    };
+
+    // vulkan implementation and implicit layers
+    getSupportExtension(nullptr);
+    // explicit layers
+    for (const auto& layer: createInfo.enabledLayers)
+    {
+        getSupportExtension(layer);
+    }
+
+    bool allExtensionSupported = true;
+    for (const auto& requiredExtension: createInfo.enabledExtensions)
+    {
+        if (!supportedExtensions.contains(requiredExtension))
+        {
+            VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
+            allExtensionSupported = false;
+        }
+    }
+    if (!allExtensionSupported)
+    {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
     // Fill out VkApplicationInfo struct.
     // TODO check version with supports
     VkApplicationInfo appInfo = {
@@ -112,7 +140,7 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 #endif
 
     VkInstance handle = VK_NULL_HANDLE;
-    VK_CHECK_RESULT(vkCreateInstance(&instanceCreateInfo, vkAllocator(), &handle));
+    _VR(vkCreateInstance(&instanceCreateInfo, vkAllocator(), &handle));
 
     volkLoadInstanceOnly(handle);
 
@@ -121,14 +149,14 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
 
     // Get the number of attached physical devices.
     uint32_t physicalDeviceCount = 0;
-    VK_CHECK_RESULT(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, nullptr));
+    _VR(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, nullptr));
 
     // Make sure there is at least one physical device present.
     if(physicalDeviceCount > 0)
     {
         // Enumerate physical device handles.
         SmallVector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-        VK_CHECK_RESULT(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
+        _VR(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
 
         // Wrap native Vulkan handles in PhysicalDevice class.
         for(uint32_t idx = 0; auto& pd : physicalDevices)
@@ -143,27 +171,14 @@ VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppIns
         }
     }
 
-    // Get extensions supported by the instance and store for later use
-    uint32_t extCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
-    if(extCount > 0)
-    {
-        SmallVector<VkExtensionProperties> extensions(extCount);
-        if(vkEnumerateInstanceExtensionProperties(nullptr, &extCount, &extensions.front()) == VK_SUCCESS)
-        {
-            for(VkExtensionProperties extension : extensions)
-            {
-                instance->m_supportedInstanceExtensions.push_back(extension.extensionName);
-            }
-        }
-    }
+    instance->m_supportedExtensions = std::move(supportedExtensions);
 
     // Copy address of object instance.
     *ppInstance = instance;
 
 #if defined(APH_DEBUG)
     {
-        VK_CHECK_RESULT(createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(),
+        _VR(createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(),
                                                      &instance->m_debugMessenger));
     }
 #endif

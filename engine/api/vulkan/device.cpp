@@ -40,7 +40,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         };
     }
 
-    std::vector<const char*> exts;
+    std::vector<const char*> requiredExtensions;
     {
         const auto& feature = createInfo.enabledFeatures;
         if(feature.meshShading)
@@ -54,7 +54,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             meshShaderFeature.meshShaderQueries                      = VK_FALSE;
             meshShaderFeature.multiviewMeshShader                    = VK_FALSE;
             meshShaderFeature.primitiveFragmentShadingRateMeshShader = VK_FALSE;
-            exts.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
 
         if(feature.rayTracing)
@@ -63,56 +63,73 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             auto& asFeature = physicalDevice->requestFeatures<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
             asFeature.accelerationStructure = VK_TRUE;
-            exts.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 
             auto& rtPipelineFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR);
             rtPipelineFeature.rayTracingPipeline = VK_TRUE;
-            exts.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
 
             auto& rayQueryFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayQueryFeaturesKHR>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR);
             rayQueryFeature.rayQuery = VK_TRUE;
-            exts.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-        }
-
-        if(feature.multiDrawIndirect)
-        {
-            // Request Multi-Draw Features EXT
-            auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
-            multiDrawFeature.multiDraw = VK_TRUE;
-            exts.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-            exts.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
         }
 
         // must support features
-        exts.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-        exts.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        exts.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        exts.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-        exts.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-        exts.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
 
         // TODO renderdoc unsupported features
         if(!createInfo.enableCapture)
         {
-            exts.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
+            if(feature.multiDrawIndirect)
+            {
+                // Request Multi-Draw Features EXT
+                auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
+                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+                multiDrawFeature.multiDraw = VK_TRUE;
+                requiredExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+                requiredExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+            }
+
+            requiredExtensions.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
             auto& pipelineBinary = physicalDevice->requestFeatures<VkPhysicalDevicePipelineBinaryFeaturesKHR>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR);
             pipelineBinary.pipelineBinaries = VK_TRUE;
 
-            exts.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
             auto& descriptorBufferFeatures =
                 physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(
                     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
             descriptorBufferFeatures.descriptorBuffer                = VK_TRUE;
             descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
 
-            exts.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
             auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
             maintence5.maintenance5 = VK_TRUE;
+        }
+    }
+
+    // verify extension support
+    {
+        bool allExtensionSupported = true;
+        for (const auto& requiredExtension: requiredExtensions)
+        {
+            if (!physicalDevice->checkExtensionSupported(requiredExtension))
+            {
+                VK_LOG_ERR("The device extension %s is not supported.", requiredExtension);
+                allExtensionSupported = false;
+            }
+        }
+        if (!allExtensionSupported)
+        {
+            return nullptr;
         }
     }
 
@@ -208,8 +225,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .pNext                   = &supportedFeatures2,
         .queueCreateInfoCount    = static_cast<uint32_t>(queueCreateInfos.size()),
         .pQueueCreateInfos       = queueCreateInfos.data(),
-        .enabledExtensionCount   = static_cast<uint32_t>(exts.size()),
-        .ppEnabledExtensionNames = exts.data(),
+        .enabledExtensionCount   = static_cast<uint32_t>(requiredExtensions.size()),
+        .ppEnabledExtensionNames = requiredExtensions.data(),
     };
 
     VkDevice handle = VK_NULL_HANDLE;

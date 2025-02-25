@@ -28,11 +28,6 @@ function(buildExamples)
     endforeach(EXAMPLE)
 endfunction(buildExamples)
 
-set(EXAMPLES
-    triangle_demo
-    basic_texture
-    mesh_shading
-    # scene_manager
-)
+set(EXAMPLES hello_aphrodite)
 
 buildExamples()

@@ -223,7 +223,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request) : m_request(std::move(r
             unsigned types = 0;
             if(shaderLayout.sampledImageMask.test(binding))
             {
-                if((shaderLayout.immutableSamplerMask.test(binding) & (1u << binding)) && pImmutableSamplers &&
+                if((shaderLayout.immutableSamplerMask.test(binding)) && pImmutableSamplers &&
                    pImmutableSamplers[binding])
                 {
                     vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();

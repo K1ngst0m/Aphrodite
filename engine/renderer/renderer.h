@@ -63,6 +63,9 @@ public:
 
     const RenderConfig& getConfig() const { return m_config; }
 
+    double getElapsedTime() const { return m_timer.interval(TIMER_TAG_GLOBAL); }
+    double getCPUFrameTime() const { return m_frameCPUTime; }
+
 protected:
     VkSurfaceKHR m_surface = {};
     RenderConfig m_config  = {};
@@ -80,6 +83,15 @@ protected:
     std::unique_ptr<Device>         m_pDevice = {};
     std::unique_ptr<UI>             m_pUI     = {};
     std::unique_ptr<WSI>            m_wsi     = {};
+
+private:
+    enum TimerTag
+    {
+        TIMER_TAG_GLOBAL,
+        TIMER_TAG_FRAME,
+    };
+    aph::Timer m_timer;
+    double     m_frameCPUTime;
 };
 }  // namespace aph::vk
 

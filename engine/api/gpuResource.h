@@ -131,12 +131,6 @@ struct ShaderConstant
     uint32_t    mSize;
 };
 
-struct DepthState
-{
-    CompareOp compareOp;
-    bool      enableWrite;
-};
-
 struct DummyCreateInfo
 {
     uint32_t typeId;

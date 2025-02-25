@@ -3,6 +3,7 @@
 
 #include <volk.h>
 #include "api/gpuResource.h"
+#include "common/hash.h"
 
 namespace aph::vk
 {
@@ -26,12 +27,22 @@ public:
 
     PhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
 
+    template <typename... Extensions>
+        requires(std::convertible_to<Extensions, std::string_view> && ...)
+    bool checkExtensionSupported(Extensions&&... exts) const
+    {
+        auto isSupported = [this](std::string_view ext) -> bool {
+            return m_supportedExtensions.contains(std::string{ext});
+        };
+        return (isSupported(std::forward<Extensions>(exts)) && ...);
+    }
+
 private:
 #ifdef APH_DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{};
 #endif
     Instance(const CreateInfoType& createInfo, HandleType handle);
-    std::vector<const char*>                     m_supportedInstanceExtensions{};
+    HashSet<std::string>                         m_supportedExtensions{};
     std::vector<std::unique_ptr<PhysicalDevice>> m_physicalDevices{};
 };
 }  // namespace aph::vk

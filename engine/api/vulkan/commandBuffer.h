@@ -93,6 +93,9 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
     {
         struct Graphics
         {
+            std::optional<VertexInput> vertexInput;
+            PrimitiveTopology          topology = PrimitiveTopology::TriangleList;
+
             struct IndexState
             {
                 VkBuffer    buffer;
@@ -102,21 +105,27 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
 
             struct VertexState
             {
-                std::optional<VertexInput> inputInfo;
-                VkBuffer                   buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::size_t                offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::bitset<32>            dirty                              = 0;
+                VkBuffer        buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                std::size_t     offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                std::bitset<32> dirty                              = 0;
             } vertex;
 
-            PrimitiveTopology topology         = PrimitiveTopology::TriangleList;
-            CullMode          cullMode         = CullMode::None;
-            WindingMode       frontFaceWinding = WindingMode::CCW;
-            PolygonMode       polygonMode      = PolygonMode::Fill;
+            CullMode    cullMode    = CullMode::None;
+            WindingMode frontFace   = WindingMode::CCW;
+            PolygonMode polygonMode = PolygonMode::Fill;
 
             std::vector<AttachmentInfo> color = {};
+            AttachmentInfo depth       = {};
 
-            AttachmentInfo depth      = {};
-            DepthState     depthState = {};
+            struct DepthState
+            {
+                bool      enable = false;
+                bool      write = false;
+                bool      stencil = false;
+                CompareOp compareOp = CompareOp::Always;
+            };
+            DepthState     depthState  = {};
+            uint32_t       sampleCount = 1;
         } graphics;
 
         struct ResourceBindings
@@ -125,8 +134,10 @@ class CommandBuffer : public ResourceHandle<VkCommandBuffer>
             std::bitset<32>      dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                  = {};
             std::bitset<32>      setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
-            std::bitset<8>       pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
+            uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
             DescriptorSet*       sets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
+            // TODO
+            bool dirtyPushConstant = false;
         } resourceBindings = {};
 
         ShaderProgram* pProgram = {};
@@ -150,12 +161,13 @@ public:
     void setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding);
     void setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding);
 
+    void pushConstant(const void* pData, uint32_t offset, uint32_t size);
     void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
-    void setVertexInput(const VertexInput& inputInfo) { m_commandState.graphics.vertex.inputInfo = inputInfo; }
+    void setVertexInput(const VertexInput& inputInfo) { m_commandState.graphics.vertexInput = inputInfo; }
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
 
-    void setDepthState(const DepthState& state);
+    void setDepthState(const CommandState::Graphics::DepthState& state);
 
 public:
     void drawIndexed(DrawIndexArguments args);
