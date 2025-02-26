@@ -592,19 +592,15 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
 }
 void CommandBuffer::resetQueryPool(VkQueryPool pool, uint32_t first, uint32_t count)
 {
-    m_pDeviceTable->vkCmdResetQueryPool(getHandle(), pool, first, count);
+    getHandle().resetQueryPool(pool, first, count);
 }
 void CommandBuffer::writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool pool, uint32_t queryIndex)
 {
-    m_pDeviceTable->vkCmdWriteTimestamp(getHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, pool, queryIndex);
-}
-void CommandBuffer::setDebugName(std::string_view debugName)
-{
-    utils::setDebugObjectName(m_pDevice->getHandle(), VK_OBJECT_TYPE_COMMAND_BUFFER, uint64_t(getHandle()), debugName);
+    getHandle().writeTimestamp(::vk::PipelineStageFlagBits::eBottomOfPipe, pool, queryIndex);
 }
 void CommandBuffer::updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data)
 {
-    m_pDeviceTable->vkCmdUpdateBuffer(getHandle(), pBuffer->getHandle(), range.offset, range.size, data);
+    getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
 }
 void CommandBuffer::setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
 {

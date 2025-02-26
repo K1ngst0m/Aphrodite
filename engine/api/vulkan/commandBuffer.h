@@ -78,7 +78,7 @@ struct ImageBarrier
     uint16_t      arrayLayer;
 };
 
-class CommandBuffer : public ResourceHandle<VkCommandBuffer>
+class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 {
     enum class RecordState
     {
@@ -179,7 +179,6 @@ public:
               uint32_t stride = sizeof(VkDrawIndirectCommand));
 
 public:
-    void setDebugName(std::string_view debugName);
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();

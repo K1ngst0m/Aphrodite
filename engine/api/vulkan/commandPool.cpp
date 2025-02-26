@@ -10,20 +10,16 @@ CommandPool::CommandPool(Device* pDevice, const CreateInfoType& createInfo, Hand
     m_pQueue(createInfo.queue)
 {
 }
+CommandPool::~CommandPool() = default;
+
 Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
 {
-    // Allocate a new command buffer.
-    VkCommandBufferAllocateInfo allocInfo = {
-        .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext              = nullptr,
-        .commandPool        = getHandle(),
-        .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = count,
-    };
+    std::lock_guard<std::mutex> holder{m_lock};
 
-    std::vector<VkCommandBuffer> handles(count);
-    std::lock_guard<std::mutex>  holder{m_lock};
-    _VR(m_pDevice->getDeviceTable()->vkAllocateCommandBuffers(m_pDevice->getHandle(), &allocInfo, handles.data()));
+    // Allocate a new command buffer.
+    ::vk::CommandBufferAllocateInfo allocInfo{};
+    allocInfo.setCommandPool(getHandle()).setLevel(::vk::CommandBufferLevel::ePrimary).setCommandBufferCount(count);
+    auto [result, handles] = m_pDevice->getHandle().allocateCommandBuffers(allocInfo);
 
     for(auto i = 0; i < count; i++)
     {
@@ -52,7 +48,7 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
     {
         if(ppCommandBuffers[i])
         {
-            m_pDevice->getDeviceTable()->vkFreeCommandBuffers(m_pDevice->getHandle(), getHandle(), 1, &ppCommandBuffers[i]->getHandle());
+            m_pDevice->getHandle().freeCommandBuffers(getHandle(), 1, &ppCommandBuffers[i]->getHandle());
             m_allocatedCommandBuffers.erase(ppCommandBuffers[i]);
             m_commandBufferPool.free(ppCommandBuffers[i]);
         }
@@ -67,99 +63,21 @@ void CommandPool::trim()
 
 void CommandPool::reset(bool freeMemory)
 {
-    std::lock_guard<std::mutex> holder{m_lock};
-    m_pDevice->getDeviceTable()->vkResetCommandPool(m_pDevice->getHandle(), getHandle(),
-                                                    freeMemory ? VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT : 0);
-    if (freeMemory)
+    std::lock_guard<std::mutex>    holder{m_lock};
+    auto                           deviceHandle = m_pDevice->getHandle();
+    ::vk::CommandPoolResetFlagBits flags        = {};
+    if(freeMemory)
     {
-        for (CommandBuffer* cmd: m_allocatedCommandBuffers)
+        flags = ::vk::CommandPoolResetFlagBits::eReleaseResources;
+        for(CommandBuffer* cmd : m_allocatedCommandBuffers)
         {
-            m_pDevice->getDeviceTable()->vkFreeCommandBuffers(m_pDevice->getHandle(), getHandle(), 1, &cmd->getHandle());
+            deviceHandle.freeCommandBuffers(getHandle(), 1, &cmd->getHandle());
             m_commandBufferPool.free(cmd);
         }
         m_allocatedCommandBuffers.clear();
         m_commandBufferPool.clear();
     }
-}
-
-CommandPool::~CommandPool() = default;
-
-Result CommandPoolAllocator::acquire(const CommandPoolCreateInfo& createInfo, uint32_t count,
-                                     CommandPool** ppCommandPool)
-{
-    std::scoped_lock lock{m_lock};
-    QueueType        queueType = createInfo.queue->getType();
-
-    if(m_availablePools.contains(queueType))
-    {
-        auto& availPools = m_availablePools[queueType];
-
-        while(!availPools.empty())
-        {
-            *ppCommandPool       = availPools.front();
-            availPools.pop();
-            ++ppCommandPool;
-            if(--count == 0)
-            {
-                break;
-            }
-        }
-    }
-
-    auto& allPools = m_allPools[queueType];
-    for(auto i = 0; i < count; ++i)
-    {
-        VkCommandPoolCreateInfo cmdPoolInfo{
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .queueFamilyIndex = createInfo.queue->getFamilyIndex(),
-        };
-
-        if(createInfo.transient)
-        {
-            cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        }
-
-        VkCommandPool pool;
-        _VR(m_pDevice->getDeviceTable()->vkCreateCommandPool(m_pDevice->getHandle(), &cmdPoolInfo, vkAllocator(),
-                                                             &pool));
-        ppCommandPool[i] = m_resourcePool.allocate(m_pDevice, createInfo, pool);
-        CM_LOG_DEBUG("command pool [%s] created", aph::vk::utils::toString(queueType));
-        // utils::setDebugObjectName(m_pDevice->getHandle(), VK_OBJECT_TYPE_COMMAND_POOL, (uint64_t)pool, debugName);
-        allPools.emplace(ppCommandPool[i]);
-    }
-
-    CM_LOG_DEBUG("command pool [%s] acquire, avail count %ld, all count %ld", aph::vk::utils::toString(queueType), m_availablePools[queueType].size(), allPools.size());
-    return Result::Success;
-}
-
-void CommandPoolAllocator::release(uint32_t count, CommandPool** ppCommandPool)
-{
-    std::scoped_lock lock{m_lock};
-
-    for(auto i = 0; i < count; ++i)
-    {
-        auto& pPool     = ppCommandPool[i];
-        auto  queueType = pPool->getCreateInfo().queue->getType();
-
-        pPool->reset(true);
-        APH_ASSERT(m_allPools.contains(queueType) && m_allPools.at(queueType).contains(pPool));
-        m_availablePools[queueType].push(pPool);
-        CM_LOG_DEBUG("command pool [%s] released, avail count %ld, all count %ld",
-                     vk::utils::toString(queueType),
-                     m_availablePools[queueType].size(),
-                     m_allPools[queueType].size());
-    }
-}
-void CommandPoolAllocator::clear()
-{
-    for(auto& [_, poolSet] : m_allPools)
-    {
-        for(auto& pool : poolSet)
-        {
-            m_pDevice->getDeviceTable()->vkDestroyCommandPool(m_pDevice->getHandle(), pool->getHandle(), vkAllocator());
-        }
-    }
-    m_allPools.clear();
-    m_availablePools.clear();
+    // TODO free after reset?
+    deviceHandle.resetCommandPool(getHandle(), flags);
 }
 }  // namespace aph::vk

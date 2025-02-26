@@ -255,7 +255,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
         if(!m_buildData.cmdPools.contains(pass))
         {
-            m_buildData.cmdPools[pass] = m_pDevice->acquireCommandPool({queue, false});
+            APH_VR(m_pDevice->create({queue, false}, &m_buildData.cmdPools[pass]));
             m_buildData.cmds[pass]     = m_buildData.cmdPools[pass]->allocate();
         }
 
@@ -340,7 +340,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             }
 
             auto queue = m_pDevice->getQueue(QueueType::Graphics);
-            m_pDevice->executeSingleCommands(
+            m_pDevice->executeCommand(
                 queue, [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
 
             for(PassImageResource* textureIn : pass->m_res.textureIn)
@@ -388,7 +388,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 [this, pass, colorImages, pDepthImage]() {
                     auto* pCmd = m_buildData.cmds[pass];
                     pCmd->begin();
-                    pCmd->setDebugName(pass->m_name);
                     // TODO findout why memory leaks
                     pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
@@ -489,7 +488,7 @@ void RenderGraph::execute(vk::Fence* pFence)
         {
             APH_VR(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
 
-            m_pDevice->executeSingleCommands(
+            m_pDevice->executeCommand(
                 m_pDevice->getQueue(aph::QueueType::Transfer),
                 [this](auto* pCopyCmd) {
                     auto pSwapchainImage = m_buildData.pSwapchain->getImage();
@@ -598,7 +597,7 @@ void RenderGraph::cleanup()
 
     for (auto [_, cmdPool]: m_buildData.cmdPools)
     {
-        APH_VR(m_pDevice->releaseCommandPool(cmdPool));
+        m_pDevice->destroy(cmdPool);
     }
     m_buildData.cmdPools.clear();
 

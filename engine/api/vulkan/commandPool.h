@@ -5,6 +5,7 @@
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "common/hash.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
@@ -18,7 +19,7 @@ struct CommandPoolCreateInfo
     bool   transient = {false};
 };
 
-class CommandPool : public ResourceHandle<VkCommandPool, CommandPoolCreateInfo>
+class CommandPool : public ResourceHandle<::vk::CommandPool, CommandPoolCreateInfo>
 {
 public:
     CommandPool(Device* pDevice, const CreateInfoType& createInfo, HandleType pool);
@@ -39,23 +40,6 @@ private:
     HashSet<CommandBuffer*>             m_allocatedCommandBuffers = {};
     ThreadSafeObjectPool<CommandBuffer> m_commandBufferPool;
     std::mutex                          m_lock;
-};
-
-class CommandPoolAllocator
-{
-public:
-    CommandPoolAllocator(Device* pDevice) : m_pDevice(pDevice) {}
-    void clear();
-
-    Result acquire(const CommandPoolCreateInfo& createInfo, uint32_t count, CommandPool** ppCommandPool);
-    void   release(uint32_t count, CommandPool** ppCommandPool);
-
-private:
-    Device*                                      m_pDevice        = {};
-    HashMap<QueueType, std::set<CommandPool*>>   m_allPools       = {};
-    HashMap<QueueType, std::queue<CommandPool*>> m_availablePools = {};
-    ThreadSafeObjectPool<CommandPool>            m_resourcePool   = {};
-    std::mutex                                   m_lock           = {};
 };
 
 }  // namespace aph::vk

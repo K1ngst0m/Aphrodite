@@ -278,7 +278,6 @@ void Device::Destroy(Device* pDevice)
 
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
-    pDevice->m_resourcePool.commandPool.clear();
     pDevice->m_resourcePool.setLayout.clear();
     pDevice->m_resourcePool.shader.clear();
 
@@ -752,6 +751,18 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
+Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, std::string_view debugName)
+{
+    APH_PROFILER_SCOPE();
+    ::vk::CommandPoolCreateInfo vkCreateInfo{};
+    vkCreateInfo.setQueueFamilyIndex(createInfo.queue->getFamilyIndex())
+        .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
+    auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
+    _VR(res);
+    *ppCommandPool = new CommandPool{this, createInfo, pool};
+    return Result::Success;
+}
+
 Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
@@ -842,6 +853,14 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
     return Result::Success;
 }
 
+void Device::destroy(CommandPool* pPool)
+{
+    APH_PROFILER_SCOPE();
+    pPool->reset(true);
+    getHandle().destroyCommandPool(pPool->getHandle(), vk_allocator());
+    delete pPool;
+}
+
 void Device::destroy(Sampler* pSampler)
 {
     APH_PROFILER_SCOPE();
@@ -914,37 +933,17 @@ Result Device::releaseFence(Fence* pFence)
     }
     return Result::Success;
 }
-CommandPool* Device::acquireCommandPool(const CommandPoolCreateInfo& info)
-{
-    APH_PROFILER_SCOPE();
-    VkCommandPoolCreateInfo cmdPoolInfo{
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .queueFamilyIndex = info.queue->getFamilyIndex(),
-    };
 
-    cmdPoolInfo.flags |= VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-
-    VkCommandPool pool;
-    _VR(getDeviceTable()->vkCreateCommandPool(getHandle(), &cmdPoolInfo, vkAllocator(), &pool));
-    auto* pPool = new CommandPool{this, info, pool};
-    return pPool;
-}
-Result Device::releaseCommandPool(CommandPool* pPool)
-{
-    APH_PROFILER_SCOPE();
-    pPool->reset(true);
-    getDeviceTable()->vkDestroyCommandPool(getHandle(), pPool->getHandle(), vkAllocator());
-    delete pPool;
-    return Result::Success;
-}
-void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
+void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func,
                                    const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems,
                                    Fence* pFence)
 {
     APH_PROFILER_SCOPE();
 
-    auto           commandPool = acquireCommandPool({.queue = queue, .transient = true});
-    CommandBuffer* cmd         = nullptr;
+    CommandPool* commandPool = {};
+    APH_VR(create({.queue = queue, .transient = true}, &commandPool));
+
+    CommandBuffer* cmd = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 
     _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
@@ -965,7 +964,7 @@ void Device::executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
         pFence->wait();
     }
 
-    APH_VR(releaseCommandPool(commandPool));
+    destroy(commandPool);
 }
 VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType)
 {

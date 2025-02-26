@@ -46,6 +46,8 @@ public:
     Result create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName = "");
     Result create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
                   std::string_view debugName = "");
+    Result create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
+                  std::string_view debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
@@ -55,17 +57,16 @@ public:
     void destroy(ShaderProgram* pProgram);
     void destroy(Shader* pShader);
     void destroy(DescriptorSetLayout* pSetLayout);
+    void destroy(CommandPool* pPool);
 
 public:
-    CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();
     Fence*       acquireFence(bool isSignaled);
     Result       releaseSemaphore(Semaphore* semaphore);
     Result       releaseFence(Fence* pFence);
-    Result       releaseCommandPool(CommandPool* pPool);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeSingleCommands(Queue* queue, const CmdRecordCallBack&& func,
+    void executeCommand(Queue* queue, const CmdRecordCallBack&& func,
                                const std::vector<Semaphore*>& waitSems   = {},
                                const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
 
@@ -118,10 +119,9 @@ private:
         ThreadSafeObjectPool<ShaderProgram>       program;
         ThreadSafeObjectPool<Queue>               queue;
         ThreadSafeObjectPool<vk::Shader>          shader;
-        CommandPoolAllocator                      commandPool;
         SyncPrimitiveAllocator                    syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice) :syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 

@@ -462,7 +462,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         auto queue = m_pQueue;
 
         // mip map opeartions
-        m_pDevice->executeSingleCommands(queue, [&](auto* cmd) {
+        m_pDevice->executeCommand(queue, [&](auto* cmd) {
             cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
             cmd->copyBufferToImage(stagingBuffer, image);
 
@@ -701,7 +701,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeSingleCommands(
+            m_pDevice->executeCommand(
                 m_pQueue, [=](auto* cmd) { cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data); });
         }
         else
@@ -729,7 +729,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
                 }
 
-                m_pDevice->executeSingleCommands(
+                m_pDevice->executeCommand(
                     m_pQueue, [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, pBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
