@@ -124,7 +124,7 @@ void hello_aphrodite::init()
         APP_LOG_INFO("key pressed.");
         if(e.m_key == aph::Key::Space && e.m_state == aph::KeyState::Pressed)
         {
-            m_pDevice->waitIdle();
+            APH_VR(m_pDevice->waitIdle());
             toggleMeshShading(false, true);
         }
         return true;
@@ -284,7 +284,7 @@ void hello_aphrodite::unload()
 void hello_aphrodite::finish()
 {
     APH_PROFILER_SCOPE();
-    m_pDevice->waitIdle();
+    APH_VR(m_pDevice->waitIdle());
     m_pDevice->destroy(m_pVB);
     m_pDevice->destroy(m_pIB);
     m_pDevice->destroy(m_pMatBuffer);

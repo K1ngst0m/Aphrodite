@@ -8,23 +8,7 @@
 
 #include "../gpuResource.h"
 
-namespace aph::vk
-{
-#ifdef APH_DEBUG
-    #define _VR(f) \
-        { \
-            VkResult res = (f); \
-            if(res != VK_SUCCESS) \
-            { \
-                VK_LOG_ERR("Fatal : VkResult is \"%s\" in %s at line %d", aph::vk::utils::errorString(res).c_str(), __FILE__, \
-                           __LINE__); \
-                std::abort(); \
-            } \
-        }
-#else
-    #define _VR(f) (f);
-#endif
-}  // namespace aph::vk
+#include <source_location>
 
 namespace aph::vk::utils
 {
@@ -36,6 +20,7 @@ VkAccessFlags         getAccessFlags(ResourceState state);
 VkImageLayout         getImageLayout(ResourceState state);
 Format                getFormatFromVk(VkFormat format);
 Result                getResult(VkResult result);
+Result                getResult(::vk::Result result);
 VkResult              setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle, std::string_view name);
 }  // namespace aph::vk::utils
 
@@ -78,7 +63,7 @@ constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
 
 namespace aph::vk
 {
-const VkAllocationCallbacks* vkAllocator();
+const VkAllocationCallbacks*     vkAllocator();
 const ::vk::AllocationCallbacks& vk_allocator();
 }  // namespace aph::vk
 
@@ -105,18 +90,28 @@ constexpr std::string_view toString(QueueType type) noexcept
 
 constexpr std::string toString(ShaderStage stage)
 {
-    switch (stage)
+    switch(stage)
     {
-        case ShaderStage::NA:  return "NA";
-        case ShaderStage::VS:  return "VS";
-        case ShaderStage::TCS: return "TCS";
-        case ShaderStage::TES: return "TES";
-        case ShaderStage::GS:  return "GS";
-        case ShaderStage::FS:  return "FS";
-        case ShaderStage::CS:  return "CS";
-        case ShaderStage::TS:  return "TS";
-        case ShaderStage::MS:  return "MS";
-        default:               return "Unknown";
+    case ShaderStage::NA:
+        return "NA";
+    case ShaderStage::VS:
+        return "VS";
+    case ShaderStage::TCS:
+        return "TCS";
+    case ShaderStage::TES:
+        return "TES";
+    case ShaderStage::GS:
+        return "GS";
+    case ShaderStage::FS:
+        return "FS";
+    case ShaderStage::CS:
+        return "CS";
+    case ShaderStage::TS:
+        return "TS";
+    case ShaderStage::MS:
+        return "MS";
+    default:
+        return "Unknown";
     }
 }
 
@@ -137,4 +132,42 @@ inline ShaderStage getStageFromPath(std::string_view path)
         return ShaderStage::CS;
     return ShaderStage::NA;
 }
+}  // namespace aph::vk::utils
+
+namespace aph::vk
+{
+#ifdef APH_DEBUG
+template <typename T>
+inline void _VR(T result, const std::source_location source = std::source_location::current())
+{
+    if constexpr(std::is_same_v<VkResult, T>)
+    {
+        if(result != VK_SUCCESS)
+        {
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", utils::errorString(result).c_str(),
+                       source.function_name(), source.file_name(), source.line());
+            std::abort();
+        }
+    }
+    else if constexpr(std::is_same_v<::vk::Result, T>)
+    {
+        if(result != ::vk::Result::eSuccess)
+        {
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
+                       utils::errorString(static_cast<VkResult>(result)).c_str(), source.function_name(),
+                       source.file_name(), source.line());
+            std::abort();
+        }
+    }
+    else
+    {
+        static_assert(false, "Not a valid vulkan result.");
+    }
+}
+#else
+    inline void _VR(Result result)
+    {
+        return result;
+    }
+#endif
 }  // namespace aph::vk

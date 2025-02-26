@@ -62,20 +62,20 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
     }
 
     std::lock_guard<std::mutex> lock{m_lock};
-    getHandle().submit(vkSubmits, pFence ? pFence->getHandle() : VK_NULL_HANDLE);
-    return Result::Success;
+    auto                        result = getHandle().submit(vkSubmits, pFence ? pFence->getHandle() : VK_NULL_HANDLE);
+    return utils::getResult(result);
 }
 
-void Queue::waitIdle()
+Result Queue::waitIdle()
 {
     std::lock_guard<std::mutex> holder{m_lock};
-    getHandle().waitIdle();
+    return utils::getResult(getHandle().waitIdle());
 }
 
-Result Queue::present(const VkPresentInfoKHR& presentInfo)
+Result Queue::present(const ::vk::PresentInfoKHR& presentInfo)
 {
     std::lock_guard<std::mutex> lock{m_lock};
     auto                        result = getHandle().presentKHR(presentInfo);
-    return utils::getResult(static_cast<VkResult>(result));
+    return utils::getResult(result);
 }
 }  // namespace aph::vk

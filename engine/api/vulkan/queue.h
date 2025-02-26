@@ -24,9 +24,9 @@ public:
     uint32_t  getFamilyIndex() const { return m_queueFamilyIndex; }
     uint32_t  getIndex() const { return m_index; }
     QueueType getType() const { return m_type; }
-    void      waitIdle();
+    Result      waitIdle();
     Result    submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence = nullptr);
-    Result    present(const VkPresentInfoKHR& presentInfo);
+    Result    present(const ::vk::PresentInfoKHR& presentInfo);
 
 private:
     std::mutex m_lock             = {};

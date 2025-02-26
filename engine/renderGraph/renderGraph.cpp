@@ -538,7 +538,7 @@ void RenderGraph::execute(vk::Fence* pFence)
                 {m_buildData.renderSem}, {m_buildData.presentSem});
         }
 
-        APH_VR(m_buildData.pSwapchain->presentImage(queue, {m_buildData.presentSem}));
+        APH_VR(m_buildData.pSwapchain->presentImage({m_buildData.presentSem}));
 
         if(!pFence)
         {

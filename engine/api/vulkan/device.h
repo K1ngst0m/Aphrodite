@@ -88,7 +88,7 @@ public:
     VkPipelineStageFlags determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType);
 
 public:
-    void   waitIdle();
+    Result   waitIdle();
     Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 public:

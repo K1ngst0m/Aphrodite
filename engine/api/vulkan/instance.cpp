@@ -14,7 +14,8 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         HashSet<std::string> supportedExtensions{};
 
         auto getSupportExtension = [&supportedExtensions](std::string layerName) {
-            auto extensions = ::vk::enumerateInstanceExtensionProperties(layerName);
+            auto [res, extensions] = ::vk::enumerateInstanceExtensionProperties(layerName);
+            _VR(res);
             for(VkExtensionProperties extension : extensions)
             {
                 supportedExtensions.insert(extension.extensionName);
@@ -47,9 +48,11 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     // check layer support
     {
         HashSet<std::string> supportedLayers{};
-        for(const auto& layerProperties : ::vk::enumerateInstanceLayerProperties())
+        auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
+        _VR(res);
+        for(const auto& layerPropertie : layerProperties)
         {
-            supportedLayers.insert(layerProperties.layerName);
+            supportedLayers.insert(layerPropertie.layerName);
         }
 
         bool allLayerSFound = true;
@@ -68,7 +71,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     }
 
     // vk instance creation
-    ::vk::Instance instance_handle;
+    Instance* instance = {};
     {
         ::vk::ApplicationInfo app_info{};
         app_info.setPApplicationName(createInfo.appName.c_str())
@@ -85,16 +88,18 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         instance_create_info.setPNext(&createInfo.debugCreateInfo);
     #endif
 
-        instance_handle = ::vk::createInstance(instance_create_info, vk::vk_allocator());
+        auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
+        _VR(res);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
         volkLoadInstance(static_cast<VkInstance>(instance_handle));
+        instance = new Instance(createInfo, instance_handle);
     }
-
-    Instance* instance = new Instance(createInfo, instance_handle);
+    APH_ASSERT(instance);
 
     // query gpu support
     {
-        auto gpus = instance_handle.enumeratePhysicalDevices();
+        auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
+        _VR(res);
         for(uint32_t idx = 0; const auto& gpu : gpus)
         {
             auto pdImpl      = std::make_unique<PhysicalDevice>(gpu);
@@ -110,8 +115,10 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     *ppInstance = instance;
 
 #if defined(APH_DEBUG)
-    instance->m_debugMessenger =
-        instance_handle.createDebugUtilsMessengerEXT(createInfo.debugCreateInfo, vk_allocator());
+    auto [res, debugMessenger] =
+        instance->getHandle().createDebugUtilsMessengerEXT(createInfo.debugCreateInfo, vk_allocator());
+    _VR(res);
+    instance->m_debugMessenger = debugMessenger;
 #endif
 
     return Result::Success;

@@ -104,6 +104,7 @@ CPMAddPackage(
 )
 add_library(vulkan-registry INTERFACE IMPORTED)
 target_include_directories(vulkan-registry INTERFACE ${vulkan-headers_SOURCE_DIR}/include)
+target_compile_definitions(vulkan-registry INTERFACE VULKAN_HPP_NO_EXCEPTIONS)
 
 CPMAddPackage(
   NAME volk

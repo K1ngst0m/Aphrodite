@@ -401,6 +401,17 @@ Format getFormatFromVk(VkFormat format)
     return VkToAphFormatMap.at(format);
 }
 
+Result getResult(::vk::Result result)
+{
+    switch(result)
+    {
+    case ::vk::Result::eSuccess:
+        return Result::Success;
+    default:
+        return Result::RuntimeError;
+    }
+}
+
 Result getResult(VkResult result)
 {
     switch(result)

@@ -13,29 +13,27 @@ class Queue;
 class Semaphore;
 class Fence;
 
-struct SwapChainSupportDetails
+struct SwapChainSettings
 {
-    VkSurfaceCapabilitiesKHR        capabilities;
-    SmallVector<VkSurfaceFormatKHR> formats;
-    SmallVector<VkPresentModeKHR>   presentModes;
-
-    VkSurfaceFormatKHR preferedSurfaceFormat;
-    VkPresentModeKHR   preferedPresentMode;
+    ::vk::SurfaceCapabilities2KHR capabilities;
+    ::vk::SurfaceFormat2KHR       surfaceFormat;
+    ::vk::PresentModeKHR          presentMode;
 };
 
 struct SwapChainCreateInfo
 {
     Instance*     pInstance     = {};
     WindowSystem* pWindowSystem = {};
+    Queue*        pQueue        = {};
 
-    VkFormat     imageFormat;
-    VkClearValue clearValue;
-    uint32_t     imageCount;
-    bool         enableVsync;
-    bool         useFlipSwap;
+    Format           imageFormat;
+    ::vk::ClearValue clearValue;
+    uint32_t         imageCount;
+    bool             enableVsync;
+    bool             useFlipSwap;
 };
 
-class SwapChain : public ResourceHandle<VkSwapchainKHR, SwapChainCreateInfo>
+class SwapChain : public ResourceHandle<::vk::SwapchainKHR, SwapChainCreateInfo>
 {
 public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
@@ -43,7 +41,7 @@ public:
 
     Result acquireNextImage(Semaphore* pSemaphore, Fence* pFence = {});
 
-    Result presentImage(Queue* pQueue, const std::vector<Semaphore*>& waitSemaphores);
+    Result presentImage(const std::vector<Semaphore*>& waitSemaphores);
 
     void reCreate();
 
@@ -51,19 +49,23 @@ public:
     uint32_t getWidth() const { return m_extent.width; }
     uint32_t getHeight() const { return m_extent.height; }
     Image*   getImage() const { return m_images[m_imageIdx]; }
-    Format   getFormat() const { return utils::getFormatFromVk(m_surfaceFormat.format); }
+    Format   getFormat() const
+    {
+        return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
+    }
 
 private:
     Instance*                   m_pInstance{};
     Device*                     m_pDevice{};
     WindowSystem*               m_pWindowSystem{};
+    Queue*                      m_pQueue{};
     ThreadSafeObjectPool<Image> m_imagePools;
     SmallVector<Image*>         m_images{};
-    SwapChainSupportDetails     swapChainSupport{};
 
-    VkSurfaceKHR       m_surface{};
-    VkSurfaceFormatKHR m_surfaceFormat{};
-    VkExtent2D         m_extent{};
+    SwapChainSettings swapChainSettings{};
+
+    ::vk::SurfaceKHR m_surface{};
+    ::vk::Extent2D   m_extent{};
 
     uint32_t m_imageIdx{};
 

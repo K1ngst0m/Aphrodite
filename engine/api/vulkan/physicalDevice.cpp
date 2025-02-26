@@ -14,9 +14,13 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
     ::vk::PhysicalDeviceSubgroupProperties subgroupProperties =
         properties2.get<::vk::PhysicalDeviceSubgroupProperties>();
 
-    for(const auto& ext : m_handle.enumerateDeviceExtensionProperties())
     {
-        m_supportedExtensions.insert(ext.extensionName);
+        auto [result, exts] = m_handle.enumerateDeviceExtensionProperties();
+        _VR(result);
+        for(const auto& ext : exts)
+        {
+            m_supportedExtensions.insert(ext.extensionName);
+        }
     }
 
     {

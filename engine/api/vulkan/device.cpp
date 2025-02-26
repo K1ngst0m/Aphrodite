@@ -72,11 +72,11 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         // must support features
         {
             requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
             requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
             requiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
             requiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
             requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
         }
 
         // TODO renderdoc unsupported features
@@ -119,6 +119,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
         if(!allExtensionSupported)
         {
+            APH_ASSERT(false);
             return nullptr;
         }
     }
@@ -194,18 +195,19 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     ::vk::PhysicalDeviceFeatures  supportedFeatures  = gpu->getHandle().getFeatures();
     ::vk::PhysicalDeviceFeatures2 supportedFeatures2 = gpu->getHandle().getFeatures();
 
+    // TODO
     supportedFeatures.sampleRateShading = VK_TRUE;
     supportedFeatures.samplerAnisotropy = VK_TRUE;
 
-    supportedFeatures2.pNext    = gpu->getRequestedFeatures();
-    supportedFeatures2.features = supportedFeatures;
+    supportedFeatures2.setPNext(gpu->getRequestedFeatures()).setFeatures(supportedFeatures);
 
     ::vk::DeviceCreateInfo device_create_info{};
     device_create_info.setPNext(&supportedFeatures2)
         .setQueueCreateInfos(queueCreateInfos)
         .setPEnabledExtensionNames(requiredExtensions);
 
-    ::vk::Device device_handle = gpu->getHandle().createDevice(device_create_info, vk_allocator());
+    auto [result, device_handle] = gpu->getHandle().createDevice(device_create_info, vk_allocator());
+    _VR(result);
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
@@ -253,13 +255,13 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     if(createInfo.enableCapture)
     {
-        if(auto result = device->initCapture(); result.success())
+        if(auto res = device->initCapture(); res.success())
         {
             VK_LOG_INFO("Renderdoc plugin loaded.");
         }
         else
         {
-            VK_LOG_WARN("Failed to load renderdoc plugin: %s", result.toString());
+            VK_LOG_WARN("Failed to load renderdoc plugin: %s", res.toString());
         }
     }
 
@@ -270,7 +272,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 void Device::Destroy(Device* pDevice)
 {
     APH_PROFILER_SCOPE();
-    pDevice->waitIdle();
+    APH_VR(pDevice->waitIdle());
     // TODO
     delete pDevice->m_resourcePool.deviceMemory;
 
@@ -306,7 +308,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     VkDescriptorSetLayout vkSetLayout;
     _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
-                                  reinterpret_cast<uint64_t>(vkSetLayout), debugName))
+                                  reinterpret_cast<uint64_t>(vkSetLayout), debugName));
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     return Result::Success;
@@ -326,7 +328,7 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
     {
         _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
         _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
-                                      debugName))
+                                      debugName));
     }
     *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
     return Result::Success;
@@ -436,7 +438,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
             VK_LOG_ERR("Failed to create pipeline layout.");
         _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE_LAYOUT,
-                                      reinterpret_cast<uint64_t>(pipelineLayout), debugName))
+                                      reinterpret_cast<uint64_t>(pipelineLayout), debugName));
     }
 
     HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps;
@@ -487,7 +489,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         for(size_t idx = 0; idx < shaders.size(); ++idx)
         {
             _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_EXT,
-                                          reinterpret_cast<uint64_t>(shaderObjects[idx]), debugName))
+                                          reinterpret_cast<uint64_t>(shaderObjects[idx]), debugName));
             shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
         }
     }
@@ -527,7 +529,7 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
     VkImageView handle = VK_NULL_HANDLE;
     _VR(m_table.vkCreateImageView(getHandle(), &info, gVkAllocator, &handle));
     _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(handle),
-                                  debugName))
+                                  debugName));
 
     *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
 
@@ -547,7 +549,7 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
 
     VkBuffer buffer;
     m_table.vkCreateBuffer(getHandle(), &bufferInfo, vkAllocator(), &buffer);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName))
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName));
     *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     m_resourcePool.deviceMemory->allocate(*ppBuffer);
 
@@ -577,7 +579,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
 
     VkImage image;
     m_table.vkCreateImage(getHandle(), &imageCreateInfo, vkAllocator(), &image);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(image), debugName))
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(image), debugName));
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
     m_resourcePool.deviceMemory->allocate(*ppImage);
 
@@ -688,10 +690,10 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
     return nullptr;
 }
 
-void Device::waitIdle()
+Result Device::waitIdle()
 {
     APH_PROFILER_SCOPE();
-    getHandle().waitIdle();
+    return utils::getResult(getHandle().waitIdle());
 }
 
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
@@ -825,7 +827,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
 
         _VR(m_table.vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
         _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION,
-                                      reinterpret_cast<uint64_t>(ycbcr.conversion), debugName))
+                                      reinterpret_cast<uint64_t>(ycbcr.conversion), debugName));
 
         ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
         ycbcr.info.pNext      = nullptr;
@@ -835,7 +837,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
     }
 
     _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler), debugName))
+    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler), debugName));
     *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     return Result::Success;
 }

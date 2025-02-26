@@ -14,7 +14,7 @@ namespace aph
     ::vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, ::vk::DebugUtilsMessageTypeFlagsEXT messageType,
     const ::vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-    if (!pCallbackData->pMessage)
+    if(!pCallbackData->pMessage)
     {
         return VK_TRUE;
     }
@@ -85,11 +85,12 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     {
         volkInitialize();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
-        auto                   extensions = wsi->getRequiredExtensions();
+        auto                   requiredExtensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
-        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        requiredExtensions.push_back(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
         instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
 
         {
@@ -107,7 +108,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             ;
         }
 #endif
-        instanceCreateInfo.enabledExtensions = std::move(extensions);
+        instanceCreateInfo.enabledExtensions = std::move(requiredExtensions);
         APH_VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
@@ -138,6 +139,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
         vk::SwapChainCreateInfo createInfo{
             .pInstance     = m_pInstance,
             .pWindowSystem = m_pWindowSystem.get(),
+            .pQueue        = m_pDevice->getQueue(QueueType::Graphics),
         };
         auto result = m_pDevice->create(createInfo, &m_pSwapChain);
         APH_ASSERT(result.success());

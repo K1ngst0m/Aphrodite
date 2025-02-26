@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <source_location>
 #include "logger.h"
 #include "bitOp.h"
 
@@ -119,15 +120,23 @@ private:
     std::string m_msg;
 };
 
-#define APH_VR(f) \
-    { \
-        ::aph::Result res = (f); \
-        if(!res.success()) \
-        { \
-            CM_LOG_ERR("Fatal : Result is \"%s\" in %s at line %d", res.toString(), __FILE__, __LINE__); \
-            std::abort(); \
-        } \
+#ifdef APH_DEBUG
+inline void APH_VR(Result result, const std::source_location source = std::source_location::current())
+{
+    if(!result.success())
+    {
+        VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
+                    result.toString(), source.function_name(),
+                    source.file_name(), source.line());
+        std::abort();
     }
+}
+#else
+    inline void APH_VR(Result result)
+    {
+        return result;
+    }
+#endif
 }  // namespace aph
 
 namespace aph::utils

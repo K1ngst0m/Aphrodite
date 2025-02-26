@@ -4,13 +4,13 @@ aph_setup_target(api ${API_VULKAN_SRC})
 target_link_libraries(aph-api
   PUBLIC
   volk
+  vulkan-registry
 
   PRIVATE
   aph-common
   aph-allocator
   aph-threads
 
-  vulkan-registry
   GPUOpen::VulkanMemoryAllocator
   renderdoc
 )
