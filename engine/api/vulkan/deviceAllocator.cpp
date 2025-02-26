@@ -55,9 +55,9 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
 
     VmaAllocatorCreateInfo allocatorCreateInfo = {};
     allocatorCreateInfo.vulkanApiVersion       = VK_API_VERSION_1_3;
-    allocatorCreateInfo.physicalDevice         = pDevice->getPhysicalDevice()->getHandle();
-    allocatorCreateInfo.device                 = pDevice->getHandle();
-    allocatorCreateInfo.instance               = pInstance->getHandle();
+    allocatorCreateInfo.physicalDevice         = static_cast<VkPhysicalDevice>(pDevice->getPhysicalDevice()->getHandle());
+    allocatorCreateInfo.device                 = static_cast<VkDevice>(pDevice->getHandle());
+    allocatorCreateInfo.instance               = static_cast<VkInstance>(pInstance->getHandle());
     allocatorCreateInfo.pVulkanFunctions       = &vulkanFunctions;
 
     vmaCreateAllocator(&allocatorCreateInfo, &m_allocator);

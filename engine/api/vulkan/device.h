@@ -27,7 +27,7 @@ struct DeviceCreateInfo
     bool            enableCapture   = true;
 };
 
-class Device : public ResourceHandle<VkDevice, DeviceCreateInfo>
+class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
 {
 private:
     Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle);
@@ -77,7 +77,7 @@ public:
 
 public:
     VolkDeviceTable* getDeviceTable() { return &m_table; }
-    PhysicalDevice*  getPhysicalDevice() const { return m_physicalDevice; }
+    PhysicalDevice*  getPhysicalDevice() const { return m_gpu; }
     Format           getDepthFormat() const;
     Queue*           getQueue(QueueType type, uint32_t queueIndex = 0);
 
@@ -101,8 +101,7 @@ private:
     Module m_renderdocModule{};
 
 private:
-    VkPhysicalDeviceFeatures m_supportedFeatures{};
-    PhysicalDevice*          m_physicalDevice{};
+    PhysicalDevice*          m_gpu{};
     VolkDeviceTable          m_table{};
 
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
@@ -110,7 +109,7 @@ private:
 private:
     struct ResourceObjectPool
     {
-        DeviceAllocator*                          gpu;
+        DeviceAllocator*                          deviceMemory;
         ThreadSafeObjectPool<Buffer>              buffer;
         ThreadSafeObjectPool<Image>               image;
         ThreadSafeObjectPool<Sampler>             sampler;

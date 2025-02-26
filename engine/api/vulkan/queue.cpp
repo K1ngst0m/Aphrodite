@@ -5,30 +5,13 @@
 namespace aph::vk
 {
 
-Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index,
-             const VkQueueFamilyProperties& propertiesd) :
+Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index, QueueType type) :
     ResourceHandle(handle),
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
-    m_properties(propertiesd),
+    m_type(type),
     m_pDevice(pDevice)
 {
-    if(m_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-    {
-        m_type = QueueType::Graphics;
-    }
-    else if(m_properties.queueFlags & VK_QUEUE_COMPUTE_BIT)
-    {
-        m_type = QueueType::Compute;
-    }
-    else if(m_properties.queueFlags & VK_QUEUE_TRANSFER_BIT)
-    {
-        m_type = QueueType::Transfer;
-    }
-    else
-    {
-        m_type = QueueType::Unsupport;
-    }
 }
 
 Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence)
@@ -59,6 +42,9 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
             vkSignalSemaphores.push_back(sem->getHandle());
         }
 
+        // ::vk::SubmitInfo info{};
+        // info.setWaitSemaphores(vkWaitSemaphores).setPSignalSemaphores(vkSignalSemaphores);
+
         VkSubmitInfo info{
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
@@ -82,7 +68,8 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
     }
 
     std::lock_guard<std::mutex> lock{m_lock};
-    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(getHandle(), vkSubmits.size(), vkSubmits.data(),
+    // TODO hpp
+    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(static_cast<VkQueue>(getHandle()), vkSubmits.size(), vkSubmits.data(),
                                                                  pFence ? pFence->getHandle() : VK_NULL_HANDLE);
     return utils::getResult(result);
 }
