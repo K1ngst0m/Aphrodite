@@ -5,7 +5,7 @@
 #include "common/common.h"
 #include "common/logger.h"
 
-namespace aph::vk
+namespace aph
 {
 
 [[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -68,31 +68,30 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 Renderer::Renderer(const RenderConfig& config) : m_config(config)
 {
     APH_PROFILER_SCOPE();
-    m_wsi     = WSI::Create({config.width, config.height, (config.flags & RENDER_CFG_UI) != 0});
+    WSICreateInfo wsi_createInfo
+    {
+        .width = config.width,
+        .height = config.height,
+        .enableUI = false,
+    };
+    m_wsi     = WSI::Create(wsi_createInfo);
     auto& wsi = m_wsi;
     // create instance
     {
         volkInitialize();
 
         auto extensions = wsi->getRequiredExtensions();
+        vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
-        if(m_config.flags & RENDER_CFG_DEBUG)
-        {
-            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        }
-#endif
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         // extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         // extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-        InstanceCreateInfo instanceCreateInfo{.enabledExtensions = std::move(extensions)};
-
-        if(m_config.flags & RENDER_CFG_DEBUG)
-        {
-            instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
-        }
+        instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+#endif
+        instanceCreateInfo.enabledExtensions = std::move(extensions);
 
 #ifdef APH_DEBUG
-        if(m_config.flags & RENDER_CFG_DEBUG)
         {
             auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
             debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -107,14 +106,13 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             debugInfo.pUserData       = &m_frameIdx;
         }
 #endif
-
-        _VR(Instance::Create(instanceCreateInfo, &m_pInstance));
+        _VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
     {
         uint32_t         gpuIdx = 0;
-        DeviceCreateInfo createInfo{
+        vk::DeviceCreateInfo createInfo{
             // TODO select physical device
             .enabledFeatures =
                 {
@@ -122,20 +120,20 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
                     .multiDrawIndirect          = true,
                     .tessellationSupported      = true,
                     .samplerAnisotropySupported = true,
-                    .rayTracing = false,
+                    .rayTracing                 = false,
                 },
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
             .pInstance       = m_pInstance,
         };
 
-        m_pDevice = Device::Create(createInfo);
+        m_pDevice = vk::Device::Create(createInfo);
         VK_LOG_INFO("Select Device [%d].", gpuIdx);
         APH_ASSERT(m_pDevice != nullptr);
     }
 
     // setup swapchain
     {
-        SwapChainCreateInfo createInfo{
+        vk::SwapChainCreateInfo createInfo{
             .pInstance = m_pInstance,
             .pWsi      = m_wsi.get(),
         };
@@ -163,13 +161,12 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     }
 
     // init ui
-    if(m_config.flags & RENDER_CFG_UI)
-    {
-        m_pUI = std::make_unique<UI>(UICreateInfo{
-            .pRenderer = this,
-            .flags     = UI_Docking,
-        });
-    }
+    // {
+    //     m_pUI = std::make_unique<vk::UI>(vk::UICreateInfo{
+    //         .pRenderer = this,
+    //         .flags     = vk::UI_Docking,
+    //     });
+    // }
 
     m_timer.set(TIMER_TAG_GLOBAL);
 }
@@ -185,34 +182,31 @@ Renderer::~Renderer()
     m_pResourceLoader->cleanup();
     m_pDevice->destroy(m_pSwapChain);
     vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, vk::vkAllocator());
-    Device::Destroy(m_pDevice.get());
-    Instance::Destroy(m_pInstance);
+    vk::Device::Destroy(m_pDevice.get());
+    vk::Instance::Destroy(m_pInstance);
 };
 
 void Renderer::update()
 {
     APH_PROFILER_SCOPE();
-    if(m_config.flags & RENDER_CFG_UI)
-    {
-        m_pUI->update();
-    }
+    // {
+    //     m_pUI->update();
+    // }
 }
 
 void Renderer::unload()
 {
     APH_PROFILER_SCOPE();
-    if(m_config.flags & RENDER_CFG_UI)
-    {
-        m_pUI->unload();
-    }
+    // {
+    //     m_pUI->unload();
+    // }
 };
 void Renderer::load()
 {
     APH_PROFILER_SCOPE();
-    if(m_config.flags & RENDER_CFG_UI)
-    {
-        m_pUI->load();
-    }
+    // {
+    //     m_pUI->load();
+    // }
 };
 void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 {
@@ -239,4 +233,4 @@ void Renderer::render()
     // m_pDevice->endCapture();
     m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }
-}  // namespace aph::vk
+}  // namespace aph

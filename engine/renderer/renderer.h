@@ -8,31 +8,13 @@
 
 namespace aph
 {
-
-enum RenderConfigFlagBits
-{
-    RENDER_CFG_DEBUG      = (1 << 0),
-    RENDER_CFG_UI         = (1 << 1),
-    RENDER_CFG_WITHOUT_UI = RENDER_CFG_DEBUG,
-    RENDER_CFG_ALL        = RENDER_CFG_UI
-#if defined(APH_DEBUG)
-                     | RENDER_CFG_DEBUG
-#endif
-    ,
-};
-using RenderConfigFlags = uint32_t;
-
 struct RenderConfig
 {
-    RenderConfigFlags flags     = RENDER_CFG_ALL;
-    uint32_t          maxFrames = {2};
-    uint32_t          width;
-    uint32_t          height;
+    uint32_t maxFrames = {2};
+    uint32_t width;
+    uint32_t height;
 };
-}  // namespace aph
 
-namespace aph::vk
-{
 class Renderer
 {
 private:
@@ -51,11 +33,11 @@ public:
     void update();
 
 public:
-    Instance*       getInstance() const { return m_pInstance; }
-    SwapChain*      getSwapchain() const { return m_pSwapChain; }
+    vk::Instance*   getInstance() const { return m_pInstance; }
+    vk::SwapChain*  getSwapchain() const { return m_pSwapChain; }
     ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
-    Device*         getDevice() const { return m_pDevice.get(); }
-    UI*             getUI() const { return m_pUI.get(); }
+    vk::Device*     getDevice() const { return m_pDevice.get(); }
+    vk::UI*         getUI() const { return m_pUI.get(); }
     WSI*            getWSI() const { return m_wsi.get(); }
 
     void recordGraph(std::function<void(RenderGraph*)>&& func);
@@ -72,16 +54,16 @@ protected:
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
-    std::vector<Fence*>                       m_frameFence;
+    std::vector<vk::Fence*>                   m_frameFence;
     uint32_t                                  m_frameIdx = {};
 
 protected:
-    Instance*                       m_pInstance   = {};
-    SwapChain*                      m_pSwapChain  = {};
+    vk::Instance*                   m_pInstance   = {};
+    vk::SwapChain*                  m_pSwapChain  = {};
     TaskManager                     m_taskManager = {5, "renderer"};
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<Device>         m_pDevice = {};
-    std::unique_ptr<UI>             m_pUI     = {};
+    std::unique_ptr<vk::Device>     m_pDevice = {};
+    std::unique_ptr<vk::UI>         m_pUI     = {};
     std::unique_ptr<WSI>            m_wsi     = {};
 
 private:
@@ -93,6 +75,6 @@ private:
     aph::Timer m_timer;
     double     m_frameCPUTime;
 };
-}  // namespace aph::vk
+}  // namespace aph
 
 #endif  // VULKANRENDERER_H_

@@ -103,13 +103,12 @@ void hello_aphrodite::init()
 
     // setup window
     aph::RenderConfig config{
-        .flags     = aph::RENDER_CFG_WITHOUT_UI,
         .maxFrames = 3,
         .width     = m_options.windowWidth,
         .height    = m_options.windowHeight,
     };
 
-    m_renderer        = aph::vk::Renderer::Create(config);
+    m_renderer        = aph::Renderer::Create(config);
     m_pDevice         = m_renderer->getDevice();
     m_pSwapChain      = m_renderer->getSwapchain();
     m_pResourceLoader = m_renderer->getResourceLoader();
@@ -210,7 +209,7 @@ void hello_aphrodite::init()
 
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
-            auto drawPass = graph->createPass("drawing cube with texture", aph::QueueType::Graphics);
+            auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
             drawPass->setColorOut("render output",
                                   {
                                       .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},

@@ -6,11 +6,13 @@
 
 struct ImGuiContext;
 struct ImFont;
+namespace aph
+{
+class Renderer;
+}
 
 namespace aph::vk
 {
-
-class Renderer;
 
 enum UIFlags
 {
@@ -21,9 +23,9 @@ MAKE_ENUM_FLAG(uint32_t, UIFlags);
 
 struct UICreateInfo
 {
-    Renderer*   pRenderer  = {};
-    UIFlags     flags      = {};
-    std::string configFile = {};
+    aph::Renderer* pRenderer  = {};
+    UIFlags        flags      = {};
+    std::string    configFile = {};
 };
 
 class UI

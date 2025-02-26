@@ -17,11 +17,11 @@ public:
     void toggleMeshShading(bool value, bool toggle = false);
 
 private:
-    aph::vk::Buffer*        m_pVB        = {};
-    aph::vk::Buffer*        m_pIB        = {};
-    aph::vk::Buffer*        m_pMatBuffer = {};
-    aph::vk::Sampler*       m_pSampler   = {};
-    aph::vk::Image*         m_pImage     = {};
+    aph::vk::Buffer*  m_pVB        = {};
+    aph::vk::Buffer*  m_pIB        = {};
+    aph::vk::Buffer*  m_pMatBuffer = {};
+    aph::vk::Sampler* m_pSampler   = {};
+    aph::vk::Image*   m_pImage     = {};
 
     struct
     {
@@ -30,11 +30,11 @@ private:
     } m_program;
 
 private:
-    std::unique_ptr<aph::vk::Renderer> m_renderer        = {};
-    aph::ResourceLoader*               m_pResourceLoader = {};
-    aph::WSI*                          m_pWSI            = {};
-    aph::vk::Device*                   m_pDevice         = {};
-    aph::vk::SwapChain*                m_pSwapChain      = {};
+    std::unique_ptr<aph::Renderer> m_renderer        = {};
+    aph::ResourceLoader*           m_pResourceLoader = {};
+    aph::WSI*                      m_pWSI            = {};
+    aph::vk::Device*               m_pDevice         = {};
+    aph::vk::SwapChain*            m_pSwapChain      = {};
 
     bool m_enableMeshShading = true;
 
