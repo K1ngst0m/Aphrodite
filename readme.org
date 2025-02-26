@@ -36,8 +36,8 @@
   cmake --list-presets
   cmake --preset default && cmake --build build -- -j$(nproc)
   # run debug or release executable
-  ./build/debug/bin/xxx
-  ./build/release/bin/xxx
+  ./build/debug/bin/hello_aphrodite
+  ./build/release/bin/hello_aphrodite
   #+END_SRC
 
 ** Usage
@@ -86,29 +86,54 @@
 
     #+BEGIN_SRC c
     // record graph execution
-    m_renderer->recordGraph([this](auto* graph) {
-        auto drawPass = graph->createPass("drawing quad with texture", aph::QueueType::Graphics);
-        drawPass->setColorOutput("render target",
-                                    {
-                                        .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
-                                        .format = m_pSwapChain->getFormat(),
-                                    });
-        // import external resource
-        drawPass->addTextureInput("container texture", m_pImage);
+        m_renderer->recordGraph([this](auto* graph) {
+            auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
+            drawPass->setColorOut("render output",
+                                  {
+                                      .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                      .format = m_pSwapChain->getFormat(),
+                                  });
+            drawPass->setDepthStencilOut("depth buffer",
+                                         {
+                                             .extent = {m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1},
+                                             .format = m_pDevice->getDepthFormat(),
+                                         });
+            drawPass->addTextureIn("container texture", m_pImage);
+            drawPass->addUniformBufferIn("matrix ubo", m_pMatBuffer);
 
-        drawPass->recordExecute([this](auto* pCmd) {
-            pCmd->bindVertexBuffers(m_pVB);
-            pCmd->bindIndexBuffers(m_pIB);
-            pCmd->setResource({m_pImage}, 0, 0);
-            pCmd->setResource({m_pSampler}, 0, 1);
-            pCmd->setProgram(m_pProgram);
-            pCmd->insertDebugLabel({
-                .name  = "draw a quad with texture",
-                .color = {0.5f, 0.3f, 0.2f, 1.0f},
+            graph->setBackBuffer("render output");
+
+            drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->insertDebugLabel({
+                    .name  = "draw a cube with texture",
+                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                });
+                pCmd->setDepthState({
+                    .enable    = true,
+                    .write     = true,
+                    .compareOp = aph::CompareOp::Less,
+                });
+                pCmd->setResource({m_pMatBuffer}, 0, 0);
+                pCmd->setResource({m_pImage}, 1, 0);
+                pCmd->setResource({m_pSampler}, 1, 1);
+
+                if(m_enableMeshShading)
+                {
+                    pCmd->setResource({m_pVB}, 0, 1);
+                    pCmd->setResource({m_pIB}, 0, 2);
+                    pCmd->setProgram(m_program.mesh);
+                    pCmd->draw(aph::DispatchArguments{1, 1, 1});
+                }
+                else
+                {
+                    pCmd->bindVertexBuffers(m_pVB);
+                    pCmd->bindIndexBuffers(m_pIB);
+                    pCmd->setProgram(m_program.geometry);
+                    pCmd->drawIndexed({36, 1, 0, 0, 0});
+                }
             });
-            pCmd->drawIndexed({6, 1, 0, 0, 0});
         });
-    });
+
 
     ...
 
