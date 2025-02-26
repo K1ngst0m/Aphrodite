@@ -245,8 +245,8 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
                 ::vk::DeviceQueueInfo2 queueInfo{};
                 queueInfo.setQueueFamilyIndex(queueFamilyIndex).setQueueIndex(queueIndex);
                 ::vk::Queue queue = device_handle.getQueue2(queueInfo);
-                device->m_queues[queueType].push_back(device->m_resourcePool.queue.allocate(
-                    device.get(), queue, queueFamilyIndex, queueIndex, queueType));
+                device->m_queues[queueType].push_back(
+                    device->m_resourcePool.queue.allocate(queue, queueFamilyIndex, queueIndex, queueType));
             }
         }
     }

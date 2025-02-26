@@ -4,7 +4,6 @@
 
 namespace aph::vk
 {
-class Device;
 class CommandBuffer;
 class Semaphore;
 class Fence;
@@ -20,21 +19,20 @@ struct QueueSubmitInfo
 class Queue : public ResourceHandle<::vk::Queue>
 {
 public:
-    Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index, QueueType type);
+    Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, QueueType type);
 
-    uint32_t     getFamilyIndex() const { return m_queueFamilyIndex; }
-    uint32_t     getIndex() const { return m_index; }
-    QueueType    getType() const { return m_type; }
-    Result       waitIdle();
-    Result       submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence = nullptr);
-    Result       present(const VkPresentInfoKHR& presentInfo);
+    uint32_t  getFamilyIndex() const { return m_queueFamilyIndex; }
+    uint32_t  getIndex() const { return m_index; }
+    QueueType getType() const { return m_type; }
+    void      waitIdle();
+    Result    submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence = nullptr);
+    Result    present(const VkPresentInfoKHR& presentInfo);
 
 private:
-    std::mutex              m_lock             = {};
-    uint32_t                m_queueFamilyIndex = {};
-    uint32_t                m_index            = {};
-    QueueType               m_type             = {};
-    Device*                 m_pDevice          = {};
+    std::mutex m_lock             = {};
+    uint32_t   m_queueFamilyIndex = {};
+    uint32_t   m_index            = {};
+    QueueType  m_type             = {};
 };
 
 }  // namespace aph::vk

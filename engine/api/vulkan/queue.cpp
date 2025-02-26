@@ -5,27 +5,28 @@
 namespace aph::vk
 {
 
-Queue::Queue(Device* pDevice, HandleType handle, uint32_t queueFamilyIndex, uint32_t index, QueueType type) :
+Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, QueueType type) :
     ResourceHandle(handle),
     m_queueFamilyIndex(queueFamilyIndex),
     m_index(index),
-    m_type(type),
-    m_pDevice(pDevice)
+    m_type(type)
 {
 }
 
 Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence)
 {
-    std::vector<VkSubmitInfo>         vkSubmits;
-    std::vector<VkCommandBuffer>      vkCmds;
-    std::vector<VkPipelineStageFlags> vkWaitStages;
-    std::vector<VkSemaphore>          vkWaitSemaphores;
-    std::vector<VkSemaphore>          vkSignalSemaphores;
+    SmallVector<SmallVector<::vk::CommandBuffer>>      vkCmds2D;
+    SmallVector<SmallVector<::vk::PipelineStageFlags>> vkWaitStages2D;
+    SmallVector<SmallVector<::vk::Semaphore>>          vkWaitSemaphores2D;
+    SmallVector<SmallVector<::vk::Semaphore>>          vkSignalSemaphores2D;
 
+    std::vector<::vk::SubmitInfo> vkSubmits;
     for(const auto& submitInfo : submitInfos)
     {
-        uint32_t cmdOffset = {static_cast<uint32_t>(vkCmds.size())};
-        uint32_t cmdSize   = {static_cast<uint32_t>(submitInfo.commandBuffers.size())};
+        SmallVector<::vk::CommandBuffer>      vkCmds;
+        SmallVector<::vk::PipelineStageFlags> vkWaitStages;
+        SmallVector<::vk::Semaphore>          vkWaitSemaphores;
+        SmallVector<::vk::Semaphore>          vkSignalSemaphores;
 
         for(auto* cmd : submitInfo.commandBuffers)
         {
@@ -42,48 +43,39 @@ Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFe
             vkSignalSemaphores.push_back(sem->getHandle());
         }
 
-        // ::vk::SubmitInfo info{};
-        // info.setWaitSemaphores(vkWaitSemaphores).setPSignalSemaphores(vkSignalSemaphores);
-
-        VkSubmitInfo info{
-            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .waitSemaphoreCount   = static_cast<uint32_t>(submitInfo.waitSemaphores.size()),
-            .pWaitSemaphores      = vkWaitSemaphores.data(),
-            .pWaitDstStageMask    = submitInfo.waitStages.data(),
-            .commandBufferCount   = cmdSize,
-            .pCommandBuffers      = &vkCmds[cmdOffset],
-            .signalSemaphoreCount = static_cast<uint32_t>(submitInfo.signalSemaphores.size()),
-            .pSignalSemaphores    = vkSignalSemaphores.data(),
-        };
+        ::vk::SubmitInfo info{};
+        info.setCommandBuffers(vkCmds).setWaitSemaphores(vkWaitSemaphores).setSignalSemaphores(vkSignalSemaphores);
 
         if(submitInfo.waitStages.empty())
         {
             if(vkWaitStages.empty())
             {
-                vkWaitStages.resize(submitInfo.waitSemaphores.size(), VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                vkWaitStages.resize(submitInfo.waitSemaphores.size(), ::vk::PipelineStageFlagBits::eAllCommands);
             }
             info.pWaitDstStageMask = vkWaitStages.data();
         }
+        vkCmds2D.push_back(std::move(vkCmds));
+        vkWaitStages2D.push_back(std::move(vkWaitStages));
+        vkWaitSemaphores2D.push_back(std::move(vkWaitSemaphores));
+        vkSignalSemaphores2D.push_back(std::move(vkSignalSemaphores));
         vkSubmits.push_back(info);
     }
 
     std::lock_guard<std::mutex> lock{m_lock};
-    // TODO hpp
-    VkResult result = m_pDevice->getDeviceTable()->vkQueueSubmit(static_cast<VkQueue>(getHandle()), vkSubmits.size(), vkSubmits.data(),
-                                                                 pFence ? pFence->getHandle() : VK_NULL_HANDLE);
-    return utils::getResult(result);
+    getHandle().submit(vkSubmits, pFence ? pFence->getHandle() : VK_NULL_HANDLE);
+    return Result::Success;
 }
 
-Result Queue::waitIdle()
+void Queue::waitIdle()
 {
     std::lock_guard<std::mutex> holder{m_lock};
-    return utils::getResult(m_pDevice->getDeviceTable()->vkQueueWaitIdle(getHandle()));
+    getHandle().waitIdle();
 }
 
 Result Queue::present(const VkPresentInfoKHR& presentInfo)
 {
     std::lock_guard<std::mutex> lock{m_lock};
-    VkResult                    result = m_pDevice->getDeviceTable()->vkQueuePresentKHR(getHandle(), &presentInfo);
-    return utils::getResult(result);
+    auto                        result = getHandle().presentKHR(presentInfo);
+    return utils::getResult(static_cast<VkResult>(result));
 }
 }  // namespace aph::vk
