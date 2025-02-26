@@ -32,7 +32,7 @@ private:
 private:
     std::unique_ptr<aph::Renderer> m_renderer        = {};
     aph::ResourceLoader*           m_pResourceLoader = {};
-    aph::WSI*                      m_pWSI            = {};
+    aph::WindowSystem*             m_pWindowSystem   = {};
     aph::vk::Device*               m_pDevice         = {};
     aph::vk::SwapChain*            m_pSwapChain      = {};
 

@@ -112,7 +112,7 @@ void hello_aphrodite::init()
     m_pDevice         = m_renderer->getDevice();
     m_pSwapChain      = m_renderer->getSwapchain();
     m_pResourceLoader = m_renderer->getResourceLoader();
-    m_pWSI            = m_renderer->getWSI();
+    m_pWindowSystem   = m_renderer->getWindowSystem();
 
     aph::EventManager::GetInstance().registerEventHandler<aph::WindowResizeEvent>(
         [this](const aph::WindowResizeEvent& e) {
@@ -260,7 +260,7 @@ void hello_aphrodite::init()
 
 void hello_aphrodite::run()
 {
-    while(m_pWSI->update())
+    while(m_pWindowSystem->update())
     {
         APH_PROFILER_SCOPE_NAME("application loop");
         m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), {0.5f, 1.0f, 0.0f});

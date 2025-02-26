@@ -48,7 +48,7 @@ public:
     void     popFont() const;
 
 private:
-    WSI*          m_pWSI     = {};
+    WindowSystem*          m_pWSI     = {};
     ImGuiContext* m_pContext = {};
 
     UIUpdateCallback m_upateCB = {};

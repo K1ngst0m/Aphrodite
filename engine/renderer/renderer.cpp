@@ -68,30 +68,23 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 Renderer::Renderer(const RenderConfig& config) : m_config(config)
 {
     APH_PROFILER_SCOPE();
-    WSICreateInfo wsi_createInfo
-    {
-        .width = config.width,
-        .height = config.height,
+    WindowSystemCreateInfo wsi_create_info{
+        .width    = config.width,
+        .height   = config.height,
         .enableUI = false,
     };
-    m_wsi     = WSI::Create(wsi_createInfo);
-    auto& wsi = m_wsi;
+    m_pWindowSystem = WindowSystem::Create(wsi_create_info);
+    auto& wsi       = m_pWindowSystem;
     // create instance
     {
         volkInitialize();
 
-        auto extensions = wsi->getRequiredExtensions();
+        auto                   extensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-        // extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        // extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
         instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
-#endif
-        instanceCreateInfo.enabledExtensions = std::move(extensions);
-
-#ifdef APH_DEBUG
         {
             auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
             debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -106,12 +99,13 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
             debugInfo.pUserData       = &m_frameIdx;
         }
 #endif
+        instanceCreateInfo.enabledExtensions = std::move(extensions);
         _VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
     {
-        uint32_t         gpuIdx = 0;
+        uint32_t             gpuIdx = 0;
         vk::DeviceCreateInfo createInfo{
             // TODO select physical device
             .enabledFeatures =
@@ -134,8 +128,8 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     // setup swapchain
     {
         vk::SwapChainCreateInfo createInfo{
-            .pInstance = m_pInstance,
-            .pWsi      = m_wsi.get(),
+            .pInstance     = m_pInstance,
+            .pWindowSystem = m_pWindowSystem.get(),
         };
         auto result = m_pDevice->create(createInfo, &m_pSwapChain);
         APH_ASSERT(result.success());

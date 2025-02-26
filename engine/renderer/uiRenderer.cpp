@@ -14,7 +14,7 @@ enum
 };
 
 UI::UI(const UICreateInfo& ci) :
-    m_pWSI(ci.pRenderer->getWSI()),
+    m_pWSI(ci.pRenderer->getWindowSystem()),
     m_pRenderer(ci.pRenderer),
     m_pDevice(ci.pRenderer->getDevice()),
     m_pDefaultQueue(m_pDevice->getQueue(QueueType::Graphics))

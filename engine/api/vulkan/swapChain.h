@@ -25,8 +25,8 @@ struct SwapChainSupportDetails
 
 struct SwapChainCreateInfo
 {
-    Instance* pInstance = {};
-    WSI*      pWsi      = {};
+    Instance*     pInstance     = {};
+    WindowSystem* pWindowSystem = {};
 
     VkFormat     imageFormat;
     VkClearValue clearValue;
@@ -56,7 +56,7 @@ public:
 private:
     Instance*                   m_pInstance{};
     Device*                     m_pDevice{};
-    WSI*                        m_pWSI{};
+    WindowSystem*               m_pWindowSystem{};
     ThreadSafeObjectPool<Image> m_imagePools;
     SmallVector<Image*>         m_images{};
     SwapChainSupportDetails     swapChainSupport{};

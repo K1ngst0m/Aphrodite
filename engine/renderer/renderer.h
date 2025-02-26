@@ -38,7 +38,7 @@ public:
     ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
     vk::Device*     getDevice() const { return m_pDevice.get(); }
     vk::UI*         getUI() const { return m_pUI.get(); }
-    WSI*            getWSI() const { return m_wsi.get(); }
+    WindowSystem*   getWindowSystem() const { return m_pWindowSystem.get(); }
 
     void recordGraph(std::function<void(RenderGraph*)>&& func);
     void render();
@@ -62,9 +62,9 @@ protected:
     vk::SwapChain*                  m_pSwapChain  = {};
     TaskManager                     m_taskManager = {5, "renderer"};
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<vk::Device>     m_pDevice = {};
-    std::unique_ptr<vk::UI>         m_pUI     = {};
-    std::unique_ptr<WSI>            m_wsi     = {};
+    std::unique_ptr<vk::Device>     m_pDevice       = {};
+    std::unique_ptr<vk::UI>         m_pUI           = {};
+    std::unique_ptr<WindowSystem>   m_pWindowSystem = {};
 
 private:
     enum TimerTag

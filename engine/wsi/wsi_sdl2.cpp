@@ -69,7 +69,7 @@ static Key SDL2KeyCast(int key)
 #undef k
 }
 
-void WSI::init()
+void WindowSystem::init()
 {
     // Initialize SDL
     if(SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -89,21 +89,21 @@ void WSI::init()
     }
 }
 
-VkSurfaceKHR WSI::getSurface(vk::Instance* instance)
+VkSurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
 {
     VkSurfaceKHR surface;
     SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), &surface);
     return surface;
 };
 
-WSI::~WSI()
+WindowSystem::~WindowSystem()
 {
     SDL_DestroyWindow((SDL_Window*)m_window);
     SDL_Vulkan_UnloadLibrary();
     SDL_Quit();
 }
 
-bool WSI::update()
+bool WindowSystem::update()
 {
     SDL_Event windowEvent;
     while(SDL_PollEvent(&windowEvent))
@@ -221,11 +221,11 @@ bool WSI::update()
     return true;
 };
 
-void WSI::close(){
+void WindowSystem::close() {
     // glfwSetWindowShouldClose((GLFWwindow*)m_window, true);
 };
 
-void WSI::resize(uint32_t width, uint32_t height)
+void WindowSystem::resize(uint32_t width, uint32_t height)
 {
     m_width  = width;
     m_height = height;
@@ -240,7 +240,7 @@ void WSI::resize(uint32_t width, uint32_t height)
     }
 }
 
-std::vector<const char*> WSI::getRequiredExtensions()
+std::vector<const char*> WindowSystem::getRequiredExtensions()
 {
     std::vector<const char*> extensions{};
     {
@@ -252,7 +252,7 @@ std::vector<const char*> WSI::getRequiredExtensions()
     return extensions;
 }
 
-bool WSI::initUI()
+bool WindowSystem::initUI()
 {
     if(m_enabledUI)
     {
@@ -261,7 +261,7 @@ bool WSI::initUI()
     return false;
 };
 
-void WSI::deInitUI() const
+void WindowSystem::deInitUI() const
 {
     if(m_enabledUI)
     {

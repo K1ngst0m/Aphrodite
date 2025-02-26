@@ -3,7 +3,7 @@
 
 namespace
 {
-aph::vk::SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, aph::WSI* wsi)
+aph::vk::SwapChainSupportDetails querySwapChainSupport(VkSurfaceKHR surface, VkPhysicalDevice device, aph::WindowSystem* wsi)
 {
     aph::vk::SwapChainSupportDetails details;
 
@@ -65,10 +65,10 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
     ResourceHandle(VK_NULL_HANDLE, createInfo),
     m_pInstance(createInfo.pInstance),
     m_pDevice(pDevice),
-    m_pWSI(createInfo.pWsi)
+    m_pWindowSystem(createInfo.pWindowSystem)
 {
     APH_ASSERT(createInfo.pInstance);
-    APH_ASSERT(createInfo.pWsi);
+    APH_ASSERT(createInfo.pWindowSystem);
 
     // Image count
     m_createInfo            = createInfo;
@@ -159,8 +159,8 @@ void SwapChain::reCreate()
         vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, nullptr);
     }
 
-    m_surface        = m_createInfo.pWsi->getSurface(m_createInfo.pInstance);
-    swapChainSupport = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWSI);
+    m_surface        = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
+    swapChainSupport = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWindowSystem);
 
     auto& caps = swapChainSupport.capabilities;
     if((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
@@ -184,8 +184,8 @@ void SwapChain::reCreate()
 
     VkExtent2D extent = {};
 
-    extent.width  = std::clamp(m_pWSI->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
-    extent.height = std::clamp(m_pWSI->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
+    extent.width  = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+    extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
     VkSwapchainCreateInfoKHR swapChainCreateInfo{
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,

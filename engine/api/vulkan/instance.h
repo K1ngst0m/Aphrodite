@@ -7,8 +7,6 @@
 
 namespace aph::vk
 {
-
-using InstanceCreationFlags = uint32_t;
 struct InstanceCreateInfo
 {
     std::string                        appName{"Aphrodite"};
@@ -26,17 +24,6 @@ public:
     static void     Destroy(Instance* pInstance);
 
     PhysicalDevice* getPhysicalDevices(uint32_t idx) { return m_physicalDevices[idx].get(); }
-
-    template <typename... Extensions>
-        requires(std::convertible_to<Extensions, std::string_view> && ...)
-    bool checkExtensionSupported(Extensions&&... exts) const
-    {
-        auto isSupported = [this](std::string_view ext) -> bool {
-            return m_supportedExtensions.contains(std::string{ext});
-        };
-        return (isSupported(std::forward<Extensions>(exts)) && ...);
-    }
-
 private:
 #ifdef APH_DEBUG
     VkDebugUtilsMessengerEXT m_debugMessenger{};

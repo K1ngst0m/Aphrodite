@@ -1,5 +1,4 @@
-#ifndef WSI_H_
-#define WSI_H_
+#pragma once
 
 #include "event/event.h"
 #include "common/common.h"
@@ -10,7 +9,7 @@ namespace aph::vk
 class Instance;
 }
 
-struct WSICreateInfo
+struct WindowSystemCreateInfo
 {
     uint32_t width;
     uint32_t height;
@@ -20,10 +19,10 @@ struct WSICreateInfo
 namespace aph
 {
 
-class WSI
+class WindowSystem
 {
 protected:
-    WSI(const WSICreateInfo& createInfo) :
+    WindowSystem(const WindowSystemCreateInfo& createInfo) :
         m_width{createInfo.width},
         m_height(createInfo.height),
         m_enabledUI(createInfo.enableUI)
@@ -32,13 +31,13 @@ protected:
     }
 
 public:
-    static std::unique_ptr<WSI> Create(const WSICreateInfo& createInfo)
+    static std::unique_ptr<WindowSystem> Create(const WindowSystemCreateInfo& createInfo)
     {
         CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
-        return std::unique_ptr<WSI>(new WSI(createInfo));
+        return std::unique_ptr<WindowSystem>(new WindowSystem(createInfo));
     }
 
-    virtual ~WSI();
+    virtual ~WindowSystem();
 
 public:
     bool     initUI();
@@ -64,5 +63,3 @@ protected:
 };
 
 }  // namespace aph
-
-#endif  // WSI_H_
