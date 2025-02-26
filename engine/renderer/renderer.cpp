@@ -5,18 +5,24 @@
 #include "common/common.h"
 #include "common/logger.h"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 namespace aph
 {
 
-[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL
-debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType,
-              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+[[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+    ::vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, ::vk::DebugUtilsMessageTypeFlagsEXT messageType,
+    const ::vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
+    if (!pCallbackData->pMessage)
+    {
+        return VK_TRUE;
+    }
     static std::mutex errMutex;  // Mutex for thread safety
     static uint32_t   errCount = 0;
 
     std::stringstream msg;
-    if(messageType != VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
+    if(messageType != ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
     {
         uint32_t frameId = *(uint32_t*)pUserData;
         msg << "[fr:" << frameId << "] ";
@@ -33,20 +39,20 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUti
 
     msg << " >>> ";
 
-    msg << pCallbackData->pMessage;
+    msg << std::string{pCallbackData->pMessage};
 
     switch(messageSeverity)
     {
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
         VK_LOG_DEBUG("%s", msg.str());
         break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
         VK_LOG_INFO("%s", msg.str());
         break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
         VK_LOG_WARN("%s", msg.str());
         break;
-    case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+    case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
     {
         std::lock_guard<std::mutex> lock(errMutex);
         if(++errCount > 10)
@@ -78,29 +84,31 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     // create instance
     {
         volkInitialize();
-
+        VULKAN_HPP_DEFAULT_DISPATCHER.init();
         auto                   extensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
+
         {
-            auto& debugInfo           = instanceCreateInfo.debugCreateInfo;
-            debugInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-            debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-            debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
-                                    VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT;
-            debugInfo.pfnUserCallback = debugCallback;
-            debugInfo.pUserData       = &m_frameIdx;
+            ::vk::DebugUtilsMessengerCreateInfoEXT& debug_create_info = instanceCreateInfo.debugCreateInfo;
+            debug_create_info
+                .setMessageSeverity(::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
+                                    ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
+                                    ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo)
+                .setMessageType(::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance |
+                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
+                                ::vk::DebugUtilsMessageTypeFlagBitsEXT::eDeviceAddressBinding)
+                .setPUserData(&m_frameIdx)
+                .setPfnUserCallback(&debugCallback);
+            ;
         }
 #endif
         instanceCreateInfo.enabledExtensions = std::move(extensions);
-        _VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
+        APH_VR(vk::Instance::Create(instanceCreateInfo, &m_pInstance));
     }
 
     // create device
@@ -195,6 +203,7 @@ void Renderer::unload()
     //     m_pUI->unload();
     // }
 };
+
 void Renderer::load()
 {
     APH_PROFILER_SCOPE();
@@ -202,6 +211,7 @@ void Renderer::load()
     //     m_pUI->load();
     // }
 };
+
 void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 {
     APH_PROFILER_SCOPE();
@@ -216,6 +226,7 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
     }
     m_taskManager.wait();
 }
+
 void Renderer::render()
 {
     APH_PROFILER_SCOPE();

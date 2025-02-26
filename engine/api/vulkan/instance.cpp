@@ -1,197 +1,128 @@
 #include "instance.h"
 #include "api/vulkan/vkUtils.h"
-#include "common/smallVector.h"
 #include "physicalDevice.h"
 #include "common/logger.h"
 
-#ifdef APH_DEBUG
-namespace
-{
-
-bool checkValidationLayerSupport(const std::vector<const char*>& validationLayers)
-{
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-    aph::SmallVector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-    for(const char* layerName : validationLayers)
-    {
-        bool layerFound = false;
-
-        for(const auto& layerProperties : availableLayers)
-        {
-            if(strcmp(layerName, layerProperties.layerName) == 0)
-            {
-                layerFound = true;
-                break;
-            }
-        }
-
-        if(!layerFound)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-                                      const VkAllocationCallbacks* pAllocator,
-                                      VkDebugUtilsMessengerEXT*    pDebugMessenger)
-{
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if(func != nullptr)
-    {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    }
-
-    VK_LOG_ERR("Failed to create debug messenger.");
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-                                   const VkAllocationCallbacks* pAllocator)
-{
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if(func != nullptr)
-    {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
-}  // namespace
-#endif
-
 namespace aph::vk
 {
-Instance::Instance(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo){};
+Instance::Instance(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo) {};
 
-VkResult Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
+Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
     // Get extensions supported by the instance and store for later use
-    HashSet<std::string>                         supportedExtensions{};
+    {
+        HashSet<std::string> supportedExtensions{};
 
-    auto getSupportExtension = [&supportedExtensions](const char* layerName) {
-        uint32_t extCount = 0;
-        vkEnumerateInstanceExtensionProperties(layerName, &extCount, nullptr);
-        if(extCount > 0)
-        {
-            SmallVector<VkExtensionProperties> extensions(extCount);
-            if(vkEnumerateInstanceExtensionProperties(layerName, &extCount, &extensions.front()) == VK_SUCCESS)
+        auto getSupportExtension = [&supportedExtensions](std::string layerName) {
+            auto extensions = ::vk::enumerateInstanceExtensionProperties(layerName);
+            for(VkExtensionProperties extension : extensions)
             {
-                for(VkExtensionProperties extension : extensions)
-                {
-                    supportedExtensions.insert(extension.extensionName);
-                }
+                supportedExtensions.insert(extension.extensionName);
+            }
+        };
+
+        // vulkan implementation and implicit layers
+        getSupportExtension("");
+        // explicit layers
+        for(const auto& layer : createInfo.enabledLayers)
+        {
+            getSupportExtension(layer);
+        }
+
+        bool allExtensionSupported = true;
+        for(const auto& requiredExtension : createInfo.enabledExtensions)
+        {
+            if(!supportedExtensions.contains(requiredExtension))
+            {
+                VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
+                allExtensionSupported = false;
             }
         }
-    };
-
-    // vulkan implementation and implicit layers
-    getSupportExtension(nullptr);
-    // explicit layers
-    for (const auto& layer: createInfo.enabledLayers)
-    {
-        getSupportExtension(layer);
-    }
-
-    bool allExtensionSupported = true;
-    for (const auto& requiredExtension: createInfo.enabledExtensions)
-    {
-        if (!supportedExtensions.contains(requiredExtension))
+        if(!allExtensionSupported)
         {
-            VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
-            allExtensionSupported = false;
+            return {Result::RuntimeError, "Required instance extensions are not fully supported."};
         }
     }
-    if (!allExtensionSupported)
+
+    // check layer support
     {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-
-    // Fill out VkApplicationInfo struct.
-    // TODO check version with supports
-    VkApplicationInfo appInfo = {
-        .sType            = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = createInfo.appName.c_str(),
-        .pEngineName      = "Aphrodite",
-        .engineVersion    = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion       = VK_API_VERSION_1_3,
-    };
-
-    // Create VkInstance.
-    VkInstanceCreateInfo instanceCreateInfo = {
-        .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pApplicationInfo        = &appInfo,
-        .enabledLayerCount       = static_cast<uint32_t>(createInfo.enabledLayers.size()),
-        .ppEnabledLayerNames     = createInfo.enabledLayers.data(),
-        .enabledExtensionCount   = static_cast<uint32_t>(createInfo.enabledExtensions.size()),
-        .ppEnabledExtensionNames = createInfo.enabledExtensions.data(),
-    };
-
-#if defined(APH_DEBUG)
-    if(!checkValidationLayerSupport(createInfo.enabledLayers))
-    {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-    instanceCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&createInfo.debugCreateInfo;
-#endif
-
-    VkInstance handle = VK_NULL_HANDLE;
-    _VR(vkCreateInstance(&instanceCreateInfo, vkAllocator(), &handle));
-
-    volkLoadInstanceOnly(handle);
-
-    // Create a new Instance object to wrap Vulkan handle.
-    auto* instance = new Instance(createInfo, handle);
-
-    // Get the number of attached physical devices.
-    uint32_t physicalDeviceCount = 0;
-    _VR(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, nullptr));
-
-    // Make sure there is at least one physical device present.
-    if(physicalDeviceCount > 0)
-    {
-        // Enumerate physical device handles.
-        SmallVector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-        _VR(vkEnumeratePhysicalDevices(handle, &physicalDeviceCount, physicalDevices.data()));
-
-        // Wrap native Vulkan handles in PhysicalDevice class.
-        for(uint32_t idx = 0; auto& pd : physicalDevices)
+        HashSet<std::string> supportedLayers{};
+        for(const auto& layerProperties : ::vk::enumerateInstanceLayerProperties())
         {
-            auto pdImpl = std::make_unique<PhysicalDevice>(pd);
+            supportedLayers.insert(layerProperties.layerName);
+        }
+
+        bool allLayerSFound = true;
+        for(const char* layerName : createInfo.enabledLayers)
+        {
+            if(!supportedLayers.contains(layerName))
+            {
+                VK_LOG_ERR("The instance layer %s is not found.", layerName);
+                allLayerSFound = false;
+            }
+            if(!allLayerSFound)
+            {
+                return {Result::RuntimeError, "Required instance layers are not found."};
+            }
+        }
+    }
+
+    // vk instance creation
+    ::vk::Instance instance_handle;
+    {
+        ::vk::ApplicationInfo app_info{};
+        app_info.setPApplicationName(createInfo.appName.c_str())
+            .setPEngineName("Aphrodite")
+            .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
+            .setApiVersion(VK_API_VERSION_1_3);
+
+        ::vk::InstanceCreateInfo instance_create_info{};
+        instance_create_info.setPApplicationInfo(&app_info)
+            .setPEnabledLayerNames(createInfo.enabledLayers)
+            .setPEnabledExtensionNames(createInfo.enabledExtensions);
+
+    #if defined(APH_DEBUG)
+        instance_create_info.setPNext(&createInfo.debugCreateInfo);
+    #endif
+
+        instance_handle = ::vk::createInstance(instance_create_info, vk::vk_allocator());
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
+        volkLoadInstance(static_cast<VkInstance>(instance_handle));
+    }
+
+    Instance* instance = new Instance(createInfo, instance_handle);
+
+    // query gpu support
+    {
+        auto gpus = instance_handle.enumeratePhysicalDevices();
+        for(uint32_t idx = 0; const auto& gpu : gpus)
+        {
+            auto pdImpl      = std::make_unique<PhysicalDevice>(gpu);
             auto gpuSettings = pdImpl->getSettings();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuSettings.GpuVendorPreset.gpuName);
             VK_LOG_INFO("Driver Version: %s", gpuSettings.GpuVendorPreset.gpuDriverVersion);
-            idx++;
             instance->m_physicalDevices.push_back(std::move(pdImpl));
+            idx++;
         }
     }
 
-    instance->m_supportedExtensions = std::move(supportedExtensions);
-
-    // Copy address of object instance.
     *ppInstance = instance;
 
 #if defined(APH_DEBUG)
-    {
-        _VR(createDebugUtilsMessengerEXT(handle, &createInfo.debugCreateInfo, vkAllocator(),
-                                                     &instance->m_debugMessenger));
-    }
+    instance->m_debugMessenger =
+        instance_handle.createDebugUtilsMessengerEXT(createInfo.debugCreateInfo, vk_allocator());
 #endif
-    // Return success.
-    return VK_SUCCESS;
+
+    return Result::Success;
 }
 
 void Instance::Destroy(Instance* pInstance)
 {
 #ifdef APH_DEBUG
-    destroyDebugUtilsMessengerEXT(pInstance->getHandle(), pInstance->m_debugMessenger, vkAllocator());
+    pInstance->getHandle().destroyDebugUtilsMessengerEXT(pInstance->m_debugMessenger, vk_allocator());
 #endif
-    vkDestroyInstance(pInstance->getHandle(), vkAllocator());
+    pInstance->getHandle().destroy(vk_allocator());
     delete pInstance;
 }
 }  // namespace aph::vk

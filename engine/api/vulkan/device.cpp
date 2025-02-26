@@ -21,7 +21,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     APH_PROFILER_SCOPE();
     PhysicalDevice* physicalDevice = createInfo.pPhysicalDevice;
 
-    const auto& queueFamilyProperties = physicalDevice->m_queueFamilyProperties;
+    const auto& queueFamilyProperties = physicalDevice->getHandle().getQueueFamilyProperties();
     const auto  queueFamilyCount      = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
@@ -40,14 +40,13 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         };
     }
 
-    std::vector<const char*> requiredExtensions;
+    SmallVector<const char*> requiredExtensions;
     {
         const auto& feature = createInfo.enabledFeatures;
         if(feature.meshShading)
         {
             // Request Mesh Shader Features EXT
-            auto& meshShaderFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMeshShaderFeaturesEXT>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT);
+            auto& meshShaderFeature = physicalDevice->requestFeatures<::vk::PhysicalDeviceMeshShaderFeaturesEXT>();
 
             meshShaderFeature.taskShader                             = VK_TRUE;
             meshShaderFeature.meshShader                             = VK_TRUE;
@@ -60,29 +59,29 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         if(feature.rayTracing)
         {
             // Request Ray Tracing related features
-            auto& asFeature = physicalDevice->requestFeatures<VkPhysicalDeviceAccelerationStructureFeaturesKHR>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR);
+            auto& asFeature = physicalDevice->requestFeatures<::vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
             asFeature.accelerationStructure = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
 
-            auto& rtPipelineFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR);
+            auto& rtPipelineFeature =
+                physicalDevice->requestFeatures<::vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>();
             rtPipelineFeature.rayTracingPipeline = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
 
-            auto& rayQueryFeature = physicalDevice->requestFeatures<VkPhysicalDeviceRayQueryFeaturesKHR>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR);
+            auto& rayQueryFeature    = physicalDevice->requestFeatures<::vk::PhysicalDeviceRayQueryFeaturesKHR>();
             rayQueryFeature.rayQuery = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
         }
 
         // must support features
-        requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
-        requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+        {
+            requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+        }
 
         // TODO renderdoc unsupported features
         if(!createInfo.enableCapture)
@@ -90,28 +89,24 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             if(feature.multiDrawIndirect)
             {
                 // Request Multi-Draw Features EXT
-                auto& multiDrawFeature = physicalDevice->requestFeatures<VkPhysicalDeviceMultiDrawFeaturesEXT>(
-                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT);
+                auto& multiDrawFeature = physicalDevice->requestFeatures<::vk::PhysicalDeviceMultiDrawFeaturesEXT>();
                 multiDrawFeature.multiDraw = VK_TRUE;
                 requiredExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
                 requiredExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
             }
 
             requiredExtensions.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
-            auto& pipelineBinary = physicalDevice->requestFeatures<VkPhysicalDevicePipelineBinaryFeaturesKHR>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_FEATURES_KHR);
+            auto& pipelineBinary = physicalDevice->requestFeatures<::vk::PhysicalDevicePipelineBinaryFeaturesKHR>();
             pipelineBinary.pipelineBinaries = VK_TRUE;
 
             requiredExtensions.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
             auto& descriptorBufferFeatures =
-                physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorBufferFeaturesEXT>(
-                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_FEATURES_EXT);
+                physicalDevice->requestFeatures<::vk::PhysicalDeviceDescriptorBufferFeaturesEXT>();
             descriptorBufferFeatures.descriptorBuffer                = VK_TRUE;
             descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
 
             requiredExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
-            auto& maintence5 = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance5FeaturesKHR>(
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
+            auto& maintence5        = physicalDevice->requestFeatures<::vk::PhysicalDeviceMaintenance5FeaturesKHR>();
             maintence5.maintenance5 = VK_TRUE;
         }
     }
@@ -119,15 +114,15 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // verify extension support
     {
         bool allExtensionSupported = true;
-        for (const auto& requiredExtension: requiredExtensions)
+        for(const auto& requiredExtension : requiredExtensions)
         {
-            if (!physicalDevice->checkExtensionSupported(requiredExtension))
+            if(!physicalDevice->checkExtensionSupported(requiredExtension))
             {
                 VK_LOG_ERR("The device extension %s is not supported.", requiredExtension);
                 allExtensionSupported = false;
             }
         }
-        if (!allExtensionSupported)
+        if(!allExtensionSupported)
         {
             return nullptr;
         }
@@ -165,53 +160,44 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    auto& extDynamicState3 = physicalDevice->requestFeatures<VkPhysicalDeviceExtendedDynamicState3FeaturesEXT>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT);
+    auto& extDynamicState3 = physicalDevice->requestFeatures<::vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
 
-    auto& shaderObjectFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceShaderObjectFeaturesEXT>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT);
+    auto& shaderObjectFeatures        = physicalDevice->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
     shaderObjectFeatures.shaderObject = VK_TRUE;
 
-    auto& sync2Features = physicalDevice->requestFeatures<VkPhysicalDeviceSynchronization2Features>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES);
+    auto& sync2Features            = physicalDevice->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
     sync2Features.synchronization2 = VK_TRUE;
 
-    auto& timelineSemaphoreFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceTimelineSemaphoreFeatures>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES);
+    auto& timelineSemaphoreFeatures = physicalDevice->requestFeatures<::vk::PhysicalDeviceTimelineSemaphoreFeatures>();
     timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
 
-    auto& maintenance4Features = physicalDevice->requestFeatures<VkPhysicalDeviceMaintenance4Features>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES);
+    auto& maintenance4Features        = physicalDevice->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
     maintenance4Features.maintenance4 = VK_TRUE;
 
-    auto& descriptorIndexingFeatures = physicalDevice->requestFeatures<VkPhysicalDeviceDescriptorIndexingFeatures>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES);
+    auto& descriptorIndexingFeatures =
+        physicalDevice->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
     descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingPartiallyBound           = VK_TRUE;
     descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount  = VK_TRUE;
     descriptorIndexingFeatures.runtimeDescriptorArray                    = VK_TRUE;
 
     // Request Inline Uniform Block Features EXT
-    auto& inlineUniformBlockFeature = physicalDevice->requestFeatures<VkPhysicalDeviceInlineUniformBlockFeaturesEXT>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INLINE_UNIFORM_BLOCK_FEATURES_EXT);
+    auto& inlineUniformBlockFeature =
+        physicalDevice->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();
     inlineUniformBlockFeature.inlineUniformBlock = VK_TRUE;
 
     // Request Dynamic Rendering Features KHR
-    auto& dynamicRenderingFeature = physicalDevice->requestFeatures<VkPhysicalDeviceDynamicRenderingFeaturesKHR>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR);
+    auto& dynamicRenderingFeature = physicalDevice->requestFeatures<::vk::PhysicalDeviceDynamicRenderingFeaturesKHR>();
     dynamicRenderingFeature.dynamicRendering = VK_TRUE;
 
     // Request Host Query Reset Features
-    auto& hostQueryResetFeature = physicalDevice->requestFeatures<VkPhysicalDeviceHostQueryResetFeatures>(
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
+    auto& hostQueryResetFeature = physicalDevice->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
     hostQueryResetFeature.hostQueryReset = VK_TRUE;
 
     // Enable all physical device available features.
-    VkPhysicalDeviceFeatures supportedFeatures = {};
-    vkGetPhysicalDeviceFeatures(physicalDevice->getHandle(), &supportedFeatures);
-    VkPhysicalDeviceFeatures2 supportedFeatures2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    vkGetPhysicalDeviceFeatures2(physicalDevice->getHandle(), &supportedFeatures2);
+    ::vk::PhysicalDeviceFeatures supportedFeatures = physicalDevice->getHandle().getFeatures();
+    ::vk::PhysicalDeviceFeatures2 supportedFeatures2 = physicalDevice->getHandle().getFeatures();
 
     supportedFeatures.sampleRateShading = VK_TRUE;
     supportedFeatures.samplerAnisotropy = VK_TRUE;
@@ -243,24 +229,24 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     {
         for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
-            auto& queueFamily = physicalDevice->m_queueFamilyProperties[queueFamilyIndex];
+            auto& queueFamily = queueFamilyProperties[queueFamilyIndex];
             auto  queueFlags  = queueFamily.queueFlags;
 
             QueueType queueType = QueueType::Unsupport;
             // universal queue
-            if(queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if(queueFlags & ::vk::QueueFlagBits::eGraphics)
             {
                 VK_LOG_DEBUG("create graphics queue %lu", queueFamilyIndex);
                 queueType = QueueType::Graphics;
             }
             // compute queue
-            else if(queueFlags & VK_QUEUE_COMPUTE_BIT)
+            else if(queueFlags & ::vk::QueueFlagBits::eCompute)
             {
                 VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
                 queueType = QueueType::Compute;
             }
             // transfer queue
-            else if(queueFlags & VK_QUEUE_TRANSFER_BIT)
+            else if(queueFlags & ::vk::QueueFlagBits::eTransfer)
             {
                 VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
                 queueType = QueueType::Transfer;
@@ -312,10 +298,10 @@ void Device::Destroy(Device* pDevice)
 Format Device::getDepthFormat() const
 {
     APH_PROFILER_SCOPE();
-    VkFormat format = m_physicalDevice->findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    return utils::getFormatFromVk(format);
+    Format format =
+        m_physicalDevice->findSupportedFormat({Format::D32, Format::D32S8, Format::D24S8}, ::vk::ImageTiling::eOptimal,
+                                              ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    return format;
 }
 
 Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,

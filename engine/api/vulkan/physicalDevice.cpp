@@ -1,125 +1,93 @@
 #include "physicalDevice.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
-
 PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 {
+    const auto& features2 = m_handle.getFeatures2();
+    const auto& properties2 =
+        m_handle.getProperties2<::vk::PhysicalDeviceProperties2, ::vk::PhysicalDeviceDriverPropertiesKHR,
+                                ::vk::PhysicalDeviceSubgroupProperties>();
+
+    auto driverProperties = properties2.get<::vk::PhysicalDeviceDriverPropertiesKHR>();
+    ::vk::PhysicalDeviceSubgroupProperties subgroupProperties =
+        properties2.get<::vk::PhysicalDeviceSubgroupProperties>();
+
+    for(const auto& ext : m_handle.enumerateDeviceExtensionProperties())
     {
-        uint32_t queueFamilyCount;
-        vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, nullptr);
-        APH_ASSERT(queueFamilyCount > 0);
-        m_queueFamilyProperties.resize(queueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(getHandle(), &queueFamilyCount, m_queueFamilyProperties.data());
-    }
-
-    vkGetPhysicalDeviceProperties(getHandle(), &m_properties);
-    vkGetPhysicalDeviceMemoryProperties(getHandle(), &m_memoryProperties);
-
-    m_features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR;
-#if VK_EXT_fragment_shader_interlock
-    VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT fragmentShaderInterlockFeatures = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT};
-    m_features2.pNext = &fragmentShaderInterlockFeatures;
-#endif
-    vkGetPhysicalDeviceFeatures2(getHandle(), &m_features2);
-
-    m_driverProperties       = {};
-    m_driverProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES;
-    // Get device properties
-    VkPhysicalDeviceSubgroupProperties subgroupProperties = {};
-    subgroupProperties.sType                              = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES;
-    subgroupProperties.pNext                              = &m_driverProperties;
-
-    m_properties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2_KHR;
-    m_properties2.pNext = &subgroupProperties;
-    vkGetPhysicalDeviceProperties2(getHandle(), &m_properties2);
-
-    // Get list of supported extensions
-    uint32_t extCount = 0;
-    vkEnumerateDeviceExtensionProperties(getHandle(), nullptr, &extCount, nullptr);
-    if(extCount > 0)
-    {
-        std::vector<VkExtensionProperties> extensions(extCount);
-        if(vkEnumerateDeviceExtensionProperties(getHandle(), nullptr, &extCount, &extensions.front()) == VK_SUCCESS)
-        {
-            for(auto ext : extensions)
-            {
-                m_supportedExtensions.insert(ext.extensionName);
-            }
-        }
+        m_supportedExtensions.insert(ext.extensionName);
     }
 
     {
-        auto* gpuProperties2 = &m_properties2;
-        auto* gpuSettings    = &m_settings;
-        auto* gpuFeatures    = &m_features2;
+        auto* gpuProperties2 = &properties2.get<::vk::PhysicalDeviceProperties2>();
+        auto* settings    = &m_settings;
+        auto* gpuFeatures    = &features2;
 
         {
-            gpuSettings->uniformBufferAlignment =
-                (uint32_t)gpuProperties2->properties.limits.minUniformBufferOffsetAlignment;
-            gpuSettings->uploadBufferTextureAlignment =
-                (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyOffsetAlignment;
-            gpuSettings->uploadBufferTextureRowAlignment =
-                (uint32_t)gpuProperties2->properties.limits.optimalBufferCopyRowPitchAlignment;
-            gpuSettings->maxVertexInputBindings = gpuProperties2->properties.limits.maxVertexInputBindings;
+            const auto& limits                           = gpuProperties2->properties.limits;
+            settings->uniformBufferAlignment          = (uint32_t)limits.minUniformBufferOffsetAlignment;
+            settings->uploadBufferTextureAlignment    = (uint32_t)limits.optimalBufferCopyOffsetAlignment;
+            settings->uploadBufferTextureRowAlignment = (uint32_t)limits.optimalBufferCopyRowPitchAlignment;
+            settings->maxVertexInputBindings          = limits.maxVertexInputBindings;
 
-            gpuSettings->waveLaneCount       = subgroupProperties.subgroupSize;
-            gpuSettings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BASIC_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_VOTE_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_BALLOT_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_QUAD_BIT)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
-            if(subgroupProperties.supportedOperations & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
-                gpuSettings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
+            settings->waveLaneCount       = subgroupProperties.subgroupSize;
+            settings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
+            auto supportedOp = static_cast<VkSubgroupFeatureFlags>(subgroupProperties.supportedOperations);
+            if(supportedOp & VK_SUBGROUP_FEATURE_BASIC_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_VOTE_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_BALLOT_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_QUAD_BIT)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
+            if(supportedOp & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
+                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
         }
 
         // feature support
         {
-            gpuSettings->feature.multiDrawIndirect          = gpuFeatures->features.multiDrawIndirect;
-            gpuSettings->feature.tessellationSupported      = gpuFeatures->features.tessellationShader;
-            gpuSettings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+            settings->feature.multiDrawIndirect          = gpuFeatures->features.multiDrawIndirect;
+            settings->feature.tessellationSupported      = gpuFeatures->features.tessellationShader;
+            settings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
 
-            gpuSettings->feature.meshShading = false;
-            gpuSettings->feature.rayTracing = false;
+            settings->feature.meshShading = false;
+            settings->feature.rayTracing  = false;
 
-            gpuSettings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-            gpuSettings->feature.rayTracing = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-                                                                      VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                                                                      VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            settings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+            settings->feature.rayTracing  = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                                                                       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                                                                       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
         }
 
         {
             char buffer[1024];
 
             std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.deviceID);
-            gpuSettings->GpuVendorPreset.modelId = buffer;
+            settings->GpuVendorPreset.modelId = buffer;
 
             std::snprintf(buffer, sizeof(buffer), "0x%08x", gpuProperties2->properties.vendorID);
-            gpuSettings->GpuVendorPreset.vendorId = buffer;
+            settings->GpuVendorPreset.vendorId = buffer;
 
-            gpuSettings->GpuVendorPreset.gpuName = gpuProperties2->properties.deviceName;
+            settings->GpuVendorPreset.gpuName = std::string{gpuProperties2->properties.deviceName};
 
             // driver info
-            std::snprintf(buffer, sizeof(buffer), "%s - %s", m_driverProperties.driverInfo,
-                          m_driverProperties.driverName);
-            gpuSettings->GpuVendorPreset.gpuDriverVersion = buffer;
+            std::snprintf(buffer, sizeof(buffer), "%s - %s", driverProperties.driverInfo.data(),
+                          driverProperties.driverName.data());
+            settings->GpuVendorPreset.gpuDriverVersion = buffer;
         }
 
         // TODO: Fix once vulkan adds support for revision ID
-        gpuSettings->GpuVendorPreset.revisionId = "0x00";
+        settings->GpuVendorPreset.revisionId = "0x00";
     }
 }
 
@@ -149,11 +117,11 @@ uint32_t PhysicalDevice::findMemoryType(ImageDomain domain, uint32_t mask) const
         break;
     }
 
-    uint32_t index = findMemoryType(desired, mask);
+    uint32_t index = findMemoryType(static_cast<::vk::MemoryPropertyFlags>(desired), mask);
     if(index != UINT32_MAX)
         return index;
 
-    index = findMemoryType(fallback, mask);
+    index = findMemoryType(static_cast<::vk::MemoryPropertyFlags>(fallback), mask);
     if(index != UINT32_MAX)
         return index;
 
@@ -192,7 +160,7 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
 
     for(auto& p : prio)
     {
-        uint32_t index = findMemoryType(p, mask);
+        uint32_t index = findMemoryType(static_cast<::vk::MemoryPropertyFlags>(p), mask);
         if(index != UINT32_MAX)
             return index;
     }
@@ -200,13 +168,14 @@ uint32_t PhysicalDevice::findMemoryType(BufferDomain domain, uint32_t mask) cons
     return UINT32_MAX;
 }
 
-uint32_t PhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const
+uint32_t PhysicalDevice::findMemoryType(::vk::MemoryPropertyFlags required, uint32_t mask) const
 {
-    for(uint32_t i = 0; i < m_memoryProperties.memoryTypeCount; i++)
+    const auto& memoryProperties = m_handle.getMemoryProperties();
+    for(uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++)
     {
         if((1u << i) & mask)
         {
-            uint32_t flags = m_memoryProperties.memoryTypes[i].propertyFlags;
+            auto flags = memoryProperties.memoryTypes[i].propertyFlags;
             if((flags & required) == required)
                 return i;
         }
@@ -215,32 +184,34 @@ uint32_t PhysicalDevice::findMemoryType(VkMemoryPropertyFlags required, uint32_t
     return UINT32_MAX;
 }
 
-VkFormat PhysicalDevice::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-                                             VkFormatFeatureFlags features) const
+Format PhysicalDevice::findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+                                           ::vk::FormatFeatureFlags features) const
 {
-    for(VkFormat format : candidates)
+    for(Format format : candidates)
     {
-        VkFormatProperties props;
-        vkGetPhysicalDeviceFormatProperties(getHandle(), format, &props);
-        if(tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
+        // TODO cast function
+        auto vkFormat = static_cast<::vk::Format>(utils::VkCast(format));
+        auto props = m_handle.getFormatProperties(vkFormat);
+
+        if(tiling == ::vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
         {
             return format;
         }
 
-        if(tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        if(tiling == ::vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features)
         {
             return format;
         }
     }
 
     assert("failed to find supported format!");
-    return {};
+    return Format::Undefined;
 }
 
 size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
 {
     // Calculate required alignment based on minimum device offset alignment
-    size_t minUboAlignment = m_properties.limits.minUniformBufferOffsetAlignment;
+    size_t minUboAlignment = m_handle.getProperties().limits.minUniformBufferOffsetAlignment;
     size_t alignedSize     = originalSize;
     if(minUboAlignment > 0)
     {

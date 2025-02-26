@@ -7,78 +7,64 @@
 namespace aph::vk
 {
 
-class PhysicalDevice : public ResourceHandle<VkPhysicalDevice>
+class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 {
     friend class Device;
 
 public:
     PhysicalDevice(HandleType handle);
 
-    uint32_t                          findMemoryType(BufferDomain domain, uint32_t mask) const;
-    uint32_t                          findMemoryType(ImageDomain domain, uint32_t mask) const;
-    uint32_t                          findMemoryType(VkMemoryPropertyFlags required, uint32_t mask) const;
-    VkFormat                          findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
-                                                          VkFormatFeatureFlags features) const;
-    size_t                            padUniformBufferSize(size_t originalSize) const;
-    const VkPhysicalDeviceProperties& getProperties() const { return m_properties; }
-    const GPUSettings&                getSettings() const { return m_settings; }
-    VkPipelineStageFlags              determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType);
+    uint32_t                       findMemoryType(BufferDomain domain, uint32_t mask) const;
+    uint32_t                       findMemoryType(ImageDomain domain, uint32_t mask) const;
+    Format                         findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+                                                       ::vk::FormatFeatureFlags features) const;
+    size_t                         padUniformBufferSize(size_t originalSize) const;
+    ::vk::PhysicalDeviceProperties getProperties() const { return m_handle.getProperties(); }
+    const GPUSettings&             getSettings() const { return m_settings; }
 
     template <typename... Extensions>
-    requires (std::convertible_to<Extensions, std::string_view> && ...)
+        requires(std::convertible_to<Extensions, std::string_view> && ...)
     bool checkExtensionSupported(Extensions&&... exts) const
     {
-        auto isSupported = [this](std::string_view ext) -> bool
-        {
+        auto isSupported = [this](std::string_view ext) -> bool {
             return m_supportedExtensions.contains(std::string{ext});
         };
         return (isSupported(std::forward<Extensions>(exts)) && ...);
     }
 
     template <typename T>
-    T& requestFeatures(VkStructureType type)
+    T& requestFeatures()
     {
+        auto features        = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
+        auto requiredFeature = features.template get<T>();
+
+        const ::vk::StructureType type = requiredFeature.sType;
         if(m_requestedFeatures.count(type))
         {
-            return *static_cast<T*>(m_requestedFeatures.at(type).get());
+            return *std::static_pointer_cast<T>(m_requestedFeatures.at(type));
         }
-        VkPhysicalDeviceFeatures2KHR physicalDeviceFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
-        T                            extension{type};
-        physicalDeviceFeatures.pNext = &extension;
-        vkGetPhysicalDeviceFeatures2KHR(getHandle(), &physicalDeviceFeatures);
-        m_requestedFeatures.insert({type, std::make_shared<T>(extension)});
-        auto* extensionPtr = static_cast<T*>(m_requestedFeatures.find(type)->second.get());
+
+        auto extensionPtr = std::make_shared<T>(requiredFeature);
+        m_requestedFeatures.insert({type, extensionPtr});
         if(m_pLastRequestedFeature)
         {
-            extensionPtr->pNext = m_pLastRequestedFeature;
+            extensionPtr->pNext = m_pLastRequestedFeature.get();
         }
         m_pLastRequestedFeature = extensionPtr;
         return *extensionPtr;
     }
 
-    void* getRequestedFeatures() const { return m_pLastRequestedFeature; }
+    void* getRequestedFeatures() const { return m_pLastRequestedFeature.get(); }
 
 private:
-    GPUSettings                          m_settings              = {};
-    VkPhysicalDeviceDriverProperties     m_driverProperties      = {};
-    VkPhysicalDeviceProperties           m_properties            = {};
-    VkPhysicalDeviceProperties2          m_properties2           = {};
-    VkPhysicalDeviceFeatures             m_features              = {};
-    VkPhysicalDeviceFeatures2            m_features2             = {};
-    VkPhysicalDeviceMemoryProperties     m_memoryProperties      = {};
-    HashSet<std::string>                 m_supportedExtensions   = {};
-    std::vector<VkQueueFamilyProperties> m_queueFamilyProperties = {};
+    uint32_t findMemoryType(::vk::MemoryPropertyFlags required, uint32_t mask) const;
 
-    void*                                           m_pLastRequestedFeature = {};
-    HashMap<VkStructureType, std::shared_ptr<void>> m_requestedFeatures;
+    GPUSettings                                         m_settings              = {};
+    HashSet<std::string>                                m_supportedExtensions   = {};
+    std::shared_ptr<void>                               m_pLastRequestedFeature = {};
+    HashMap<::vk::StructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
 
 }  // namespace aph::vk
-
-namespace aph::vk::utils
-{
-// Determines pipeline stages involved for given accesses
-VkPipelineStageFlags determinePipelineStageFlags(PhysicalDevice* pGPU, VkAccessFlags accessFlags, QueueType queueType);
-}  // namespace aph::vk::utils
 
 #endif  // PHYSICALDEVICE_H_

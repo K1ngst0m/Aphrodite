@@ -1,20 +1,12 @@
-#ifndef VKLUTILS_H_
-#define VKLUTILS_H_
+#pragma once
 
-#if defined(__linux__)
-    #define VK_USE_PLATFORM_XCB_KHR
-#endif
 #define VK_NO_PROTOTYPES
 #include <volk.h>
+#include <vulkan/vulkan.hpp>
 #include "common/common.h"
 #include "common/logger.h"
 
 #include "../gpuResource.h"
-
-// Custom define for better code readability
-#define VK_FLAGS_NONE 0
-// Default fence timeout in nanoseconds
-#define DEFAULT_FENCE_TIMEOUT 100000000000
 
 namespace aph::vk
 {
@@ -87,6 +79,7 @@ constexpr unsigned VULKAN_DESCRIPTOR_RING_SIZE = 8;
 namespace aph::vk
 {
 const VkAllocationCallbacks* vkAllocator();
+const ::vk::AllocationCallbacks& vk_allocator();
 }  // namespace aph::vk
 
 namespace aph::vk::utils
@@ -145,5 +138,3 @@ inline ShaderStage getStageFromPath(std::string_view path)
     return ShaderStage::NA;
 }
 }  // namespace aph::vk
-
-#endif  // VKLUTILS_H_
