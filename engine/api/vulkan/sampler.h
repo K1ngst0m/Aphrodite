@@ -4,45 +4,28 @@
 #include <volk.h>
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
 class Device;
 
-struct SamplerConvertInfo
-{
-    Format                        format = Format::Undefined;
-    VkSamplerYcbcrModelConversion model;
-    VkSamplerYcbcrRange           range;
-    VkChromaLocation              chromaOffsetX;
-    VkChromaLocation              chromaOffsetY;
-    VkFilter                      chromaFilter;
-    bool                          forceExplicitReconstruction;
-};
-
 struct SamplerCreateInfo
 {
-    VkFilter             minFilter     = VK_FILTER_LINEAR;
-    VkFilter             magFilter     = VK_FILTER_LINEAR;
-    VkSamplerMipmapMode  mipMapMode    = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    VkSamplerAddressMode addressU      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    VkSamplerAddressMode addressV      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    VkSamplerAddressMode addressW      = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    VkCompareOp          compareFunc   = VK_COMPARE_OP_NEVER;
-    float                mipLodBias    = {};
-    bool                 setLodRange   = {};
-    float                minLod        = {};
-    float                maxLod        = {};
-    float                maxAnisotropy = {};
-    bool                 immutable     = {};
+    Filter             minFilter  = Filter::Linear;
+    Filter             magFilter  = Filter::Linear;
+    SamplerMipmapMode  mipMapMode = SamplerMipmapMode::Linear;
+    SamplerAddressMode addressU   = SamplerAddressMode::ClampToEdge;
+    SamplerAddressMode addressV   = SamplerAddressMode::ClampToEdge;
+    SamplerAddressMode addressW   = SamplerAddressMode::ClampToEdge;
 
-    SamplerConvertInfo* pConvertInfo = {};
-};
-
-struct YcbcrData
-{
-    VkSamplerYcbcrConversion     conversion;
-    VkSamplerYcbcrConversionInfo info;
+    CompareOp compareFunc   = CompareOp::Never;
+    float     mipLodBias    = {};
+    bool      setLodRange   = {};
+    float     minLod        = {};
+    float     maxLod        = {};
+    float     maxAnisotropy = {};
+    bool      immutable     = {};
 };
 
 class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
@@ -50,17 +33,13 @@ class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
     friend class ObjectPool<Sampler>;
 
 public:
-    VkSamplerYcbcrConversion getConversion() const { return m_ycbcr.conversion; }
-    bool                     isImmutable() const { return m_isImmutable; }
-    bool                     hasConversion() const { return m_ycbcr.conversion != VK_NULL_HANDLE; }
+    bool isImmutable() const { return m_isImmutable; }
 
 private:
-    Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle, const YcbcrData* pYcbcr = nullptr);
+    Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
 
     Device* m_pDevice     = {};
     bool    m_isImmutable = {};
-
-    YcbcrData m_ycbcr;
 };
 
 }  // namespace aph::vk
@@ -70,14 +49,14 @@ namespace aph::vk::init
 inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
 {
     SamplerCreateInfo ci;
-    ci.maxLod        = VK_LOD_CLAMP_NONE;
+    ci.maxLod        = ::vk::LodClampNone;
     ci.maxAnisotropy = 1.0f;
 
     switch(preset)
     {
     case SamplerPreset::NearestShadow:
     case SamplerPreset::LinearShadow:
-        ci.compareFunc = VK_COMPARE_OP_LESS_OR_EQUAL;
+        ci.compareFunc = CompareOp::LessEqual;
         break;
     default:
         break;
@@ -89,11 +68,10 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
     case SamplerPreset::TrilinearWrap:
     case SamplerPreset::DefaultGeometryFilterWrap:
     case SamplerPreset::DefaultGeometryFilterClamp:
-        ci.mipMapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        ci.mipMapMode = SamplerMipmapMode::Linear;
         break;
-
     default:
-        ci.mipMapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        ci.mipMapMode = SamplerMipmapMode::Nearest;
         break;
     }
 
@@ -106,13 +84,12 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
     case SamplerPreset::TrilinearClamp:
     case SamplerPreset::TrilinearWrap:
     case SamplerPreset::LinearShadow:
-        ci.magFilter = VK_FILTER_LINEAR;
-        ci.minFilter = VK_FILTER_LINEAR;
+        ci.magFilter = Filter::Linear;
+        ci.minFilter = Filter::Linear;
         break;
-
     default:
-        ci.magFilter = VK_FILTER_NEAREST;
-        ci.minFilter = VK_FILTER_NEAREST;
+        ci.magFilter = Filter::Nearest;
+        ci.minFilter = Filter::Nearest;
         break;
     }
 
@@ -123,9 +100,9 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
     case SamplerPreset::LinearWrap:
     case SamplerPreset::NearestWrap:
     case SamplerPreset::TrilinearWrap:
-        ci.addressU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        ci.addressV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        ci.addressW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        ci.addressU = SamplerAddressMode::Repeat;
+        ci.addressV = SamplerAddressMode::Repeat;
+        ci.addressW = SamplerAddressMode::Repeat;
         break;
 
     case SamplerPreset::DefaultGeometryFilterClamp:
@@ -134,9 +111,9 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
     case SamplerPreset::TrilinearClamp:
     case SamplerPreset::NearestShadow:
     case SamplerPreset::LinearShadow:
-        ci.addressU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        ci.addressV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        ci.addressW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        ci.addressU = SamplerAddressMode::ClampToEdge;
+        ci.addressV = SamplerAddressMode::ClampToEdge;
+        ci.addressW = SamplerAddressMode::ClampToEdge;
         break;
     }
 
@@ -147,7 +124,6 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
         // TODO limited by device properties
         ci.maxAnisotropy = 16.0f;
         break;
-
     default:
         break;
     }

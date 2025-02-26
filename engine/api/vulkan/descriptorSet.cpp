@@ -5,8 +5,8 @@ namespace aph::vk
 {
 
 DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
-                                         const SmallVector<VkDescriptorPoolSize>&         poolSizes,
-                                         const SmallVector<VkDescriptorSetLayoutBinding>& bindings) :
+                                         const SmallVector<::vk::DescriptorPoolSize>&         poolSizes,
+                                         const SmallVector<::vk::DescriptorSetLayoutBinding>& bindings) :
     ResourceHandle(handle, createInfo),
     m_pDevice(device),
     m_pDeviceTable(device->getDeviceTable()),
@@ -24,15 +24,15 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& c
 DescriptorSetLayout::~DescriptorSetLayout()
 {
     // Destroy all allocated descriptor sets.
-    for(auto it : m_allocatedDescriptorSets)
+    for(auto [set, id] : m_allocatedDescriptorSets)
     {
-        m_pDeviceTable->vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[it.second], 1, &it.first);
+        m_pDevice->getHandle().freeDescriptorSets(m_pools[id], {set->getHandle()});
     }
 
     // Destroy all created pools.
     for(auto pool : m_pools)
     {
-        m_pDeviceTable->vkDestroyDescriptorPool(getDevice()->getHandle(), pool, vkAllocator());
+        m_pDevice->getHandle().destroyDescriptorPool(pool, vk_allocator());
     }
 }
 
@@ -48,24 +48,22 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
         if(m_pools.size() <= m_currentAllocationPoolIndex)
         {
             // Create the Vulkan descriptor pool.
-            VkDescriptorPoolCreateInfo createInfo = {
-                .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                .maxSets       = DESCRIPTOR_POOL_MAX_NUM_SET,
-                .poolSizeCount = static_cast<uint32_t>(m_poolSizes.size()),
-                .pPoolSizes    = m_poolSizes.data(),
-            };
-            VkDescriptorPoolInlineUniformBlockCreateInfo descriptorPoolInlineUniformBlockCreateInfo{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_INLINE_UNIFORM_BLOCK_CREATE_INFO,
-                .maxInlineUniformBlockBindings =
-                    static_cast<uint32_t>(m_descriptorTypeCounts[VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK]),
-            };
-            if(m_descriptorTypeCounts.contains(VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
+            ::vk::DescriptorPoolCreateInfo createInfo{};
+            createInfo.setPoolSizes(m_poolSizes)
+                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                .setMaxSets(DESCRIPTOR_POOL_MAX_NUM_SET);
+
+            ::vk::DescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo{};
+            inlineUniformBlockCreateInfo.setMaxInlineUniformBlockBindings(
+                m_descriptorTypeCounts[::vk::DescriptorType::eInlineUniformBlock]);
+
+            if(m_descriptorTypeCounts.contains(::vk::DescriptorType::eInlineUniformBlock))
             {
-                createInfo.pNext = &descriptorPoolInlineUniformBlockCreateInfo;
+                createInfo.setPNext(&inlineUniformBlockCreateInfo);
             }
-            VkDescriptorPool handle = VK_NULL_HANDLE;
-            _VR(m_pDeviceTable->vkCreateDescriptorPool(getDevice()->getHandle(), &createInfo, vkAllocator(), &handle));
+
+            auto [result, handle] = m_pDevice->getHandle().createDescriptorPool(createInfo, vk_allocator());
+            _VR(result);
 
             // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
@@ -86,45 +84,43 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     ++m_allocatedSets[m_currentAllocationPoolIndex];
 
     // Allocate a new descriptor set from the current pool index.
-    VkDescriptorSetAllocateInfo allocInfo = {
-        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .descriptorPool     = m_pools[m_currentAllocationPoolIndex],
-        .descriptorSetCount = 1,
-        .pSetLayouts        = &getHandle(),
-    };
-    VkDescriptorSet handle = VK_NULL_HANDLE;
-    _VR(m_pDeviceTable->vkAllocateDescriptorSets(getDevice()->getHandle(), &allocInfo, &handle));
+    ::vk::DescriptorSetAllocateInfo allocInfo{};
+    allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({getHandle()});
 
+    auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
+    APH_ASSERT(handles.size() == 1);
+    _VR(res);
+
+    auto pRetHandle = new DescriptorSet(this, handles[0]);
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
-    m_allocatedDescriptorSets.emplace(handle, m_currentAllocationPoolIndex);
+    m_allocatedDescriptorSets.emplace(pRetHandle, m_currentAllocationPoolIndex);
 
     // Unlock access to internal resources.
     m_lock.unlock();
 
     // Return descriptor set handle.
-    auto pRetHandle = new DescriptorSet(this, handle);
     return pRetHandle;
 }
 
-VkResult DescriptorSetLayout::freeSet(const DescriptorSet* pSet)
+Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
 {
-    auto descriptorSet = pSet->getHandle();
-
     // Safe guard access to internal resources across threads.
     m_lock.lock();
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
-    auto it = m_allocatedDescriptorSets.find(descriptorSet);
+    auto it = m_allocatedDescriptorSets.find(pSet);
     if(it == m_allocatedDescriptorSets.end())
-        return VK_INCOMPLETE;
+    {
+        return {Result::RuntimeError, "descriptor set free error."};
+    }
 
     // Return the descriptor set to the original pool.
     auto poolIndex = it->second;
-    m_pDeviceTable->vkFreeDescriptorSets(getDevice()->getHandle(), m_pools[poolIndex], 1, &descriptorSet);
+    m_pDevice->getHandle().freeDescriptorSets(m_pools[poolIndex], {pSet->getHandle()});
 
     // Remove descriptor set from allocatedDescriptorSets map.
-    m_allocatedDescriptorSets.erase(descriptorSet);
+    m_allocatedDescriptorSets.erase(pSet);
 
     // Decrement the number of allocated descriptor sets for the pool.
     --m_allocatedSets[poolIndex];
@@ -136,58 +132,56 @@ VkResult DescriptorSetLayout::freeSet(const DescriptorSet* pSet)
     m_lock.unlock();
 
     // Return success.
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
-VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set)
+Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set)
 {
     APH_ASSERT(data.binding < m_bindings.size());
 
-    auto&                               bindingInfo    = m_bindings[data.binding];
-    VkDescriptorType                    descriptorType = bindingInfo.descriptorType;
-    std::vector<VkDescriptorImageInfo>  imageInfos;
-    std::vector<VkDescriptorBufferInfo> bufferInfos;
-    VkWriteDescriptorSet                writeInfo{
-                       .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                       .dstSet          = set->getHandle(),
-                       .dstBinding      = data.binding,
-                       .dstArrayElement = data.arrayOffset,
-                       .descriptorType  = descriptorType,
-    };
+    auto&                                   bindingInfo    = m_bindings[data.binding];
+    ::vk::DescriptorType                    descriptorType = bindingInfo.descriptorType;
+    std::vector<::vk::DescriptorImageInfo>  imageInfos;
+    std::vector<::vk::DescriptorBufferInfo> bufferInfos;
+    ::vk::WriteDescriptorSet                writeInfo{};
+    writeInfo.setDstSet(set->getHandle())
+        .setDstBinding(data.binding)
+        .setDstArrayElement(data.arrayOffset)
+        .setDescriptorType(descriptorType);
+
     switch(descriptorType)
     {
-    case VK_DESCRIPTOR_TYPE_SAMPLER:
+    case ::vk::DescriptorType::eSampler:
     {
         imageInfos.reserve(data.samplers.size());
         for(auto sampler : data.samplers)
         {
-            imageInfos.push_back({.sampler = sampler->getHandle()});
+            imageInfos.push_back({sampler->getHandle()});
         }
         writeInfo.pImageInfo      = imageInfos.data();
         writeInfo.descriptorCount = imageInfos.size();
     }
     break;
-    case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+
+    case ::vk::DescriptorType::eSampledImage:
     {
         imageInfos.reserve(data.images.size());
         for(auto image : data.images)
         {
-            imageInfos.push_back(
-                {.imageView = image->getView()->getHandle(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal});
         }
-
         writeInfo.pImageInfo      = imageInfos.data();
         writeInfo.descriptorCount = imageInfos.size();
     }
     break;
-    case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+
+    case ::vk::DescriptorType::eCombinedImageSampler:
     {
         APH_ASSERT(data.images.size() == data.samplers.size());
         imageInfos.reserve(data.images.size());
         for(auto image : data.images)
         {
-            imageInfos.push_back(
-                {.imageView = image->getView()->getHandle(), .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal});
         }
         writeInfo.pImageInfo      = imageInfos.data();
         writeInfo.descriptorCount = imageInfos.size();
@@ -198,43 +192,43 @@ VkResult DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const 
         }
     }
     break;
-    case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+
+    case ::vk::DescriptorType::eStorageImage:
     {
         imageInfos.reserve(data.images.size());
         for(auto image : data.images)
         {
-            imageInfos.push_back({.imageView = image->getView()->getHandle(), .imageLayout = VK_IMAGE_LAYOUT_GENERAL});
+            imageInfos.push_back({{}, image->getView()->getHandle(), ::vk::ImageLayout::eGeneral});
         }
-
         writeInfo.pImageInfo      = imageInfos.data();
         writeInfo.descriptorCount = imageInfos.size();
     }
     break;
-    case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
-    case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
-    case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+
+    case ::vk::DescriptorType::eUniformTexelBuffer:
+    case ::vk::DescriptorType::eStorageTexelBuffer:
+    case ::vk::DescriptorType::eUniformBuffer:
+    case ::vk::DescriptorType::eStorageBuffer:
+    case ::vk::DescriptorType::eUniformBufferDynamic:
+    case ::vk::DescriptorType::eStorageBufferDynamic:
     {
         bufferInfos.reserve(data.buffers.size());
         for(auto buffer : data.buffers)
         {
-            bufferInfos.push_back({.buffer = buffer->getHandle(), .offset = 0, .range = VK_WHOLE_SIZE});
+            bufferInfos.push_back({buffer->getHandle(), 0, VK_WHOLE_SIZE});
         }
-
         writeInfo.pBufferInfo     = bufferInfos.data();
         writeInfo.descriptorCount = bufferInfos.size();
     }
     break;
+
     default:
-        VK_LOG_ERR("Unsupported descriptor type.");
-        return VK_ERROR_FEATURE_NOT_PRESENT;
+        return {Result::RuntimeError, "Unsupported descriptor type."};
         break;
     }
 
-    m_pDeviceTable->vkUpdateDescriptorSets(m_pDevice->getHandle(), 1, &writeInfo, 0, nullptr);
+    m_pDevice->getHandle().updateDescriptorSets({writeInfo}, {});
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 }  // namespace aph::vk

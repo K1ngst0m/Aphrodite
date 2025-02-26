@@ -73,50 +73,51 @@ struct DescriptorUpdateInfo
 
 struct DescriptorSetLayoutCreateInfo
 {
-    SmallVector<VkDescriptorSetLayoutBinding> bindings;
-    SmallVector<VkDescriptorPoolSize>         poolSizes;
+    SmallVector<::vk::DescriptorSetLayoutBinding> bindings;
+    SmallVector<::vk::DescriptorPoolSize>         poolSizes;
 };
 
-class DescriptorSetLayout : public ResourceHandle<VkDescriptorSetLayout, DescriptorSetLayoutCreateInfo>
+class DescriptorSetLayout : public ResourceHandle<::vk::DescriptorSetLayout, DescriptorSetLayoutCreateInfo>
 {
     friend class ObjectPool<DescriptorSetLayout>;
     enum
     {
         DESCRIPTOR_POOL_MAX_NUM_SET = 50,
     };
+
 public:
     Device*        getDevice() const { return m_pDevice; }
     DescriptorSet* allocateSet();
-    VkResult       freeSet(const DescriptorSet* pSet);
-    VkResult       updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
+    Result         freeSet(DescriptorSet* pSet);
+    Result         updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
 
 private:
     DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
-                        const SmallVector<VkDescriptorPoolSize>&         poolSizes,
-                        const SmallVector<VkDescriptorSetLayoutBinding>& bindings);
+                        const SmallVector<::vk::DescriptorPoolSize>&         poolSizes,
+                        const SmallVector<::vk::DescriptorSetLayoutBinding>& bindings);
     ~DescriptorSetLayout();
 
-    Device*                                   m_pDevice  = {};
-    std::vector<VkDescriptorSetLayoutBinding> m_bindings = {};
+    Device*                                       m_pDevice  = {};
+    std::vector<::vk::DescriptorSetLayoutBinding> m_bindings = {};
 
 private:
-    VolkDeviceTable*                    m_pDeviceTable               = {};
-    SmallVector<VkDescriptorPoolSize>   m_poolSizes                  = {};
-    SmallVector<VkDescriptorPool>       m_pools                      = {};
-    SmallVector<uint32_t>               m_allocatedSets              = {};
-    uint32_t                            m_currentAllocationPoolIndex = {};
-    HashMap<VkDescriptorSet, uint32_t>  m_allocatedDescriptorSets    = {};
-    HashMap<VkDescriptorType, uint32_t> m_descriptorTypeCounts       = {};
-    std::mutex                          m_lock                       = {};
+    VolkDeviceTable*                        m_pDeviceTable               = {};
+    SmallVector<::vk::DescriptorPoolSize>   m_poolSizes                  = {};
+    SmallVector<::vk::DescriptorPool>       m_pools                      = {};
+    SmallVector<uint32_t>                   m_allocatedSets              = {};
+    uint32_t                                m_currentAllocationPoolIndex = {};
+    HashMap<DescriptorSet*, uint32_t>       m_allocatedDescriptorSets    = {};
+    HashMap<::vk::DescriptorType, uint32_t> m_descriptorTypeCounts       = {};
+    std::mutex                              m_lock                       = {};
 };
 
-class DescriptorSet : public ResourceHandle<VkDescriptorSet>
+class DescriptorSet : public ResourceHandle<::vk::DescriptorSet>
 {
 public:
     DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle) : ResourceHandle(handle), m_pLayout(pLayout) {}
 
-    void update(const DescriptorUpdateInfo& updateInfo) { m_pLayout->updateSet(updateInfo, this); }
-    void free() { m_pLayout->freeSet(this); }
+    Result update(const DescriptorUpdateInfo& updateInfo) { return m_pLayout->updateSet(updateInfo, this); }
+    Result free() { return m_pLayout->freeSet(this); }
 
 private:
     DescriptorSetLayout* m_pLayout = {};

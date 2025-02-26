@@ -165,7 +165,7 @@ void SwapChain::reCreate()
         minImageCount = caps.maxImageCount;
     }
 
-    m_extent.width      = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+    m_extent.width  = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
     m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
     ::vk::SwapchainCreateInfoKHR swapchain_create_info{};
@@ -198,13 +198,13 @@ void SwapChain::reCreate()
     for(auto handle : images)
     {
         ImageCreateInfo imageCreateInfo = {
-            .extent    = {m_extent.width, m_extent.height, 1},
-            .mipLevels = 1,
-            .arraySize = 1,
-            .usage     = static_cast<VkImageUsageFlags>(swapchain_create_info.imageUsage),
-            .samples   = VK_SAMPLE_COUNT_1_BIT,
-            .imageType = VK_IMAGE_TYPE_2D,
-            .format    = getFormat(),
+            .extent      = {m_extent.width, m_extent.height, 1},
+            .mipLevels   = 1,
+            .arraySize   = 1,
+            .sampleCount = 1,
+            .usage       = swapchain_create_info.imageUsage,
+            .imageType   = ImageType::e2D,
+            .format      = getFormat(),
         };
 
         auto pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);

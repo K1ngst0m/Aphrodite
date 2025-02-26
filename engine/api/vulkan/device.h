@@ -60,19 +60,18 @@ public:
     void destroy(CommandPool* pPool);
 
 public:
-    Semaphore*   acquireSemaphore();
-    Fence*       acquireFence(bool isSignaled);
-    Result       releaseSemaphore(Semaphore* semaphore);
-    Result       releaseFence(Fence* pFence);
+    Semaphore* acquireSemaphore();
+    Fence*     acquireFence(bool isSignaled);
+    Result     releaseSemaphore(Semaphore* semaphore);
+    Result     releaseFence(Fence* pFence);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeCommand(Queue* queue, const CmdRecordCallBack&& func,
-                               const std::vector<Semaphore*>& waitSems   = {},
-                               const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
+    void executeCommand(Queue* queue, const CmdRecordCallBack&& func, const std::vector<Semaphore*>& waitSems = {},
+                        const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
 
 public:
-    Result flushMemory(VkDeviceMemory memory, MemoryRange range = {});
-    Result invalidateMemory(VkDeviceMemory memory, MemoryRange range = {});
+    Result flushMemory(::vk::DeviceMemory memory, MemoryRange range = {});
+    Result invalidateMemory(::vk::DeviceMemory memory, MemoryRange range = {});
     Result mapMemory(Buffer* pBuffer, void** ppMapped) const;
     void   unMapMemory(Buffer* pBuffer) const;
 
@@ -82,14 +81,25 @@ public:
     Format           getDepthFormat() const;
     Queue*           getQueue(QueueType type, uint32_t queueIndex = 0);
 
-    double getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
+    double getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                                TimeUnit unitType = TimeUnit::Seconds);
 
 public:
-    VkPipelineStageFlags determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType);
+    ::vk::PipelineStageFlags determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType);
+
+    template <typename TObject>
+    Result setDebugObjectName(TObject object, std::string_view name)
+    {
+        return Result::Success;
+        // ::vk::DebugUtilsObjectNameInfoEXT info{};
+        // info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
+        //     .setObjectType(object.objectType)
+        //     .setPObjectName(name.data());
+        // return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
+    }
 
 public:
-    Result   waitIdle();
+    Result waitIdle();
     Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
 public:
@@ -102,8 +112,8 @@ private:
     Module m_renderdocModule{};
 
 private:
-    PhysicalDevice*          m_gpu{};
-    VolkDeviceTable          m_table{};
+    PhysicalDevice* m_gpu{};
+    VolkDeviceTable m_table{};
 
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
 
@@ -121,7 +131,7 @@ private:
         ThreadSafeObjectPool<vk::Shader>          shader;
         SyncPrimitiveAllocator                    syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) :syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice) : syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 

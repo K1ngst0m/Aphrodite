@@ -191,19 +191,19 @@ ShaderReflector::ShaderReflector(ReflectRequest request) : m_request(std::move(r
     for(unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
     {
         CombinedResourceLayout::SetInfo&           setInfo = combinedSetInfos[set];
-        std::array<VkSampler, VULKAN_NUM_BINDINGS> vkImmutableSamplers{};
+        std::array<::vk::Sampler, VULKAN_NUM_BINDINGS> vkImmutableSamplers{};
 
         const auto& pImmutableSamplers = samplerBank->samplers[set];
         const auto& shaderLayout       = setInfo.shaderLayout;
         const auto& stageForBinds      = setInfo.stagesForBindings;
 
-        SmallVector<VkDescriptorSetLayoutBinding>& vkBindings = setInfos[set].bindings;
-        SmallVector<VkDescriptorPoolSize>&         poolSizes  = setInfos[set].poolSizes;
+        SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = setInfos[set].bindings;
+        SmallVector<::vk::DescriptorPoolSize>&         poolSizes  = setInfos[set].poolSizes;
 
         for(unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
         {
-            const uint32_t stages = stageForBinds[binding];
-            if(stages == 0)
+            const auto stages = static_cast<::vk::ShaderStageFlags>(stageForBinds[binding]);
+            if(!stages)
             {
                 continue;
             }
@@ -230,58 +230,58 @@ ShaderReflector::ShaderReflector(ReflectRequest request) : m_request(std::move(r
                 }
 
                 vkBindings.push_back(
-                    {binding, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, arraySize, stages,
-                     vkImmutableSamplers[binding] != VK_NULL_HANDLE ? &vkImmutableSamplers[binding] : nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolArraySize});
+                    {binding, ::vk::DescriptorType::eCombinedImageSampler, arraySize, stages,
+                     vkImmutableSamplers[binding] != ::vk::Sampler{} ? &vkImmutableSamplers[binding] : nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eCombinedImageSampler, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.sampledTexelBufferMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eUniformTexelBuffer, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eUniformTexelBuffer, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.storageTexelBufferMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eStorageTexelBuffer, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eStorageTexelBuffer, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.storageImageMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eStorageImage, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eStorageImage, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.uniformBufferMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eUniformBuffer, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eUniformBuffer, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.storageBufferMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eStorageBuffer, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eStorageBuffer, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.inputAttachmentMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eInputAttachment, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eInputAttachment, poolArraySize});
                 types++;
             }
 
             if(shaderLayout.separateImageMask.test(binding))
             {
-                vkBindings.push_back({binding, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, arraySize, stages, nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolArraySize});
+                vkBindings.push_back({binding, ::vk::DescriptorType::eSampledImage, arraySize, stages, nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eSampledImage, poolArraySize});
                 types++;
             }
 
@@ -289,12 +289,14 @@ ShaderReflector::ShaderReflector(ReflectRequest request) : m_request(std::move(r
             {
                 if((shaderLayout.immutableSamplerMask.test(binding)) && pImmutableSamplers &&
                    pImmutableSamplers[binding])
+                {
                     vkImmutableSamplers[binding] = pImmutableSamplers[binding]->getHandle();
+                }
 
                 vkBindings.push_back(
-                    {binding, VK_DESCRIPTOR_TYPE_SAMPLER, arraySize, stages,
-                     vkImmutableSamplers[binding] != VK_NULL_HANDLE ? &vkImmutableSamplers[binding] : nullptr});
-                poolSizes.push_back({VK_DESCRIPTOR_TYPE_SAMPLER, poolArraySize});
+                    {binding, ::vk::DescriptorType::eSampler, arraySize, stages,
+                     vkImmutableSamplers[binding] != ::vk::Sampler{} ? &vkImmutableSamplers[binding] : nullptr});
+                poolSizes.push_back({::vk::DescriptorType::eSampler, poolArraySize});
                 types++;
             }
 
@@ -491,7 +493,7 @@ void ShaderReflector::reflect()
             }
         }
 
-        uint32_t stageMask = vk::utils::VkCast(stage);
+        auto stageMask = vk::utils::VkCast(stage);
         for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             CombinedResourceLayout::SetInfo& combinedSetInfo = combinedSetInfos[i];
@@ -567,7 +569,7 @@ void ShaderReflector::reflect()
                 });
         }
 
-        if(setInfo.stagesForSets != 0)
+        if(setInfo.stagesForSets)
         {
             m_combinedLayout.descriptorSetMask |= 1u << set;
 
@@ -578,7 +580,7 @@ void ShaderReflector::reflect()
                 {
                     for(unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
                     {
-                        if(setInfo.stagesForBindings[i] != 0)
+                        if(setInfo.stagesForBindings[i])
                         {
                             VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.",
                                        i, i);
@@ -586,7 +588,7 @@ void ShaderReflector::reflect()
                     }
 
                     // Allows us to have one unified descriptor set layout for bindless.
-                    setInfo.stagesForBindings[binding] = VK_SHADER_STAGE_ALL;
+                    setInfo.stagesForBindings[binding] = ::vk::ShaderStageFlagBits::eAll;
                 }
                 else if(arraySize == 0)
                 {
@@ -596,7 +598,7 @@ void ShaderReflector::reflect()
                 {
                     for(unsigned i = 1; i < arraySize; i++)
                     {
-                        if(setInfo.stagesForBindings[binding + i] != 0)
+                        if(setInfo.stagesForBindings[binding + i])
                         {
                             VK_LOG_ERR(
                                 "Detected binding aliasing for (%u, %u). Binding array with %u elements starting "
@@ -611,12 +613,12 @@ void ShaderReflector::reflect()
     }
 }
 
-SmallVector<VkDescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(uint32_t set)
+SmallVector<::vk::DescriptorSetLayoutBinding> ShaderReflector::getLayoutBindings(uint32_t set)
 {
     return setInfos[set].bindings;
 }
 
-SmallVector<VkDescriptorPoolSize> ShaderReflector::getPoolSizes(uint32_t set)
+SmallVector<::vk::DescriptorPoolSize> ShaderReflector::getPoolSizes(uint32_t set)
 {
     return setInfos[set].poolSizes;
 }

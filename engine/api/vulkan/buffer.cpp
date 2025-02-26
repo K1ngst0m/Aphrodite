@@ -1,5 +1,4 @@
 #include "buffer.h"
-#include "device.h"
 
 namespace aph::vk
 {

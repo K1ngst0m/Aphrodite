@@ -1,5 +1,4 @@
-#ifndef SYNCPRIMITIVESPOOL_H_
-#define SYNCPRIMITIVESPOOL_H_
+#pragma once
 
 #include "allocator/objectPool.h"
 #include "common/hash.h"
@@ -9,7 +8,7 @@ namespace aph::vk
 {
 class Device;
 
-class Fence : public ResourceHandle<VkFence>
+class Fence : public ResourceHandle<::vk::Fence>
 {
     friend class Device;
     friend class SyncPrimitiveAllocator;
@@ -27,7 +26,7 @@ private:
     std::mutex m_lock    = {};
 };
 
-class Semaphore : public ResourceHandle<VkSemaphore>
+class Semaphore : public ResourceHandle<::vk::Semaphore>
 {
     friend class Device;
     friend class SyncPrimitiveAllocator;
@@ -52,18 +51,17 @@ public:
 
     void clear();
 
-    VkResult acquireFence(Fence** fence, bool isSignaled = true);
-    VkResult releaseFence(Fence* fence);
+    Result acquireFence(Fence** fence, bool isSignaled = true);
+    Result releaseFence(Fence* fence);
 
-    VkResult acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores);
-    VkResult ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores);
+    Result acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores);
+    Result ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores);
 
     bool Exists(Fence* fence);
     bool Exists(Semaphore* semaphore);
 
 private:
     Device*          m_pDevice      = {};
-    VolkDeviceTable* m_pDeviceTable = {};
 
     HashSet<Fence*>                 m_allFences       = {};
     std::queue<Fence*>              m_availableFences = {};
@@ -77,5 +75,3 @@ private:
     std::mutex m_semaphoreLock = {};
 };
 }  // namespace aph::vk
-
-#endif  // SYNCPRIMITIVESPOOL_H_

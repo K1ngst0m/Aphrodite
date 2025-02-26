@@ -48,7 +48,7 @@ public:
 
     std::vector<const char*> getRequiredExtensions();
 
-    VkSurfaceKHR getSurface(vk::Instance* instance);
+    ::vk::SurfaceKHR getSurface(vk::Instance* instance);
 
     bool update();
     void close();

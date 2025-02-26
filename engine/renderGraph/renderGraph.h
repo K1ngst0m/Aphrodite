@@ -71,14 +71,14 @@ class PassImageResource : public PassResource
 public:
     PassImageResource(Type type) : PassResource(type) {}
     void setInfo(const PassImageInfo& info) { m_info = info; }
-    void addUsage(VkImageUsageFlags usage) { m_usage |= usage; }
+    void addUsage(::vk::ImageUsageFlags usage) { m_usage |= usage; }
 
     const PassImageInfo& getInfo() const { return m_info; }
-    VkImageUsageFlags    getUsage() const { return m_usage; }
+    ::vk::ImageUsageFlags    getUsage() const { return m_usage; }
 
 private:
     PassImageInfo     m_info  = {};
-    VkImageUsageFlags m_usage = {};
+    ::vk::ImageUsageFlags m_usage = {};
 };
 
 class PassBufferResource : public PassResource

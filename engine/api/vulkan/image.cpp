@@ -29,25 +29,24 @@ ImageView* Image::getView(Format imageFormat)
     std::lock_guard<std::mutex> holder{m_acquireViewLock};
     if(!m_imageViewFormatMap.contains(imageFormat))
     {
-        static const HashMap<VkImageType, VkImageViewType> imageTypeMap{
-            {VK_IMAGE_TYPE_1D, VK_IMAGE_VIEW_TYPE_1D},
-            {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_2D},
-            {VK_IMAGE_TYPE_2D, VK_IMAGE_VIEW_TYPE_3D},
-        };
+        static const std::unordered_map<ImageType, ImageViewType> imageTypeMap{
+            {ImageType::e1D, ImageViewType::e1D},
+            {ImageType::e2D, ImageViewType::e2D},
+            {ImageType::e3D, ImageViewType::e3D}};
+
         ImageViewCreateInfo createInfo{
             .viewType         = imageTypeMap.at(m_createInfo.imageType),
             .format           = imageFormat,
-            .subresourceRange = {.aspectMask     = utils::getImageAspect(utils::VkCast(m_createInfo.format)),
-                                 .baseMipLevel   = 0,
-                                 .levelCount     = m_createInfo.mipLevels,
-                                 .baseArrayLayer = 0,
-                                 .layerCount     = m_createInfo.arraySize},
             .pImage           = this,
         };
+        createInfo.subresourceRange.setAspectMask(utils::getImageAspect(m_createInfo.format))
+            .setLevelCount(m_createInfo.mipLevels)
+            .setLayerCount(m_createInfo.arraySize);
+
         // cubemap
-        if(m_createInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT && m_createInfo.arraySize == 6)
+        if(m_createInfo.flags & ::vk::ImageCreateFlagBits::eCubeCompatible &&m_createInfo.arraySize == 6)
         {
-            createInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            createInfo.viewType = ImageViewType::Cube;
         }
         APH_VR(m_pDevice->create(createInfo, &m_imageViewFormatMap[imageFormat]));
     }

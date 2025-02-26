@@ -100,7 +100,7 @@ void UI::load()
         initInfo.CheckVkResultFn           = checkResult;
         initInfo.UseDynamicRendering       = true;
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
-        auto format = utils::VkCast(m_pRenderer->getSwapchain()->getFormat());
+        auto format = static_cast<VkFormat>(utils::VkCast(m_pRenderer->getSwapchain()->getFormat()));
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
         ImGui_ImplVulkan_Init(&initInfo);
     }

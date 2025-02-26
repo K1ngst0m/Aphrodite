@@ -4,6 +4,7 @@
 #include <volk.h>
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
@@ -12,13 +13,13 @@ class Buffer;
 
 struct BufferCreateInfo
 {
-    std::size_t        size      = {0};
-    std::size_t        alignment = {0};
-    VkBufferUsageFlags usage     = {0};
-    BufferDomain       domain    = {BufferDomain::Device};
+    std::size_t            size      = {0};
+    std::size_t            alignment = {0};
+    ::vk::BufferUsageFlags usage     = {};
+    BufferDomain           domain    = {BufferDomain::Device};
 };
 
-class Buffer : public ResourceHandle<VkBuffer, BufferCreateInfo>
+class Buffer : public ResourceHandle<::vk::Buffer, BufferCreateInfo>
 {
     friend class ObjectPool<Buffer>;
     friend class CommandBuffer;

@@ -5,6 +5,8 @@
 #include "api/gpuResource.h"
 #include "common/hash.h"
 #include "allocator/objectPool.h"
+#include "vkUtils.h"
+
 namespace aph::vk
 {
 class Device;
@@ -12,22 +14,21 @@ class ImageView;
 
 struct ImageCreateInfo
 {
-    Extent3D extent      = {};
-    uint32_t flags       = {0};
-    uint32_t alignment   = {0};
-    uint32_t mipLevels   = {1};
-    uint32_t arraySize   = {1};
-    uint32_t sampleCount = {1};
+    Extent3D               extent      = {};
+    ::vk::ImageCreateFlags flags       = {};
+    uint32_t               alignment   = {0};
+    uint32_t               mipLevels   = {1};
+    uint32_t               arraySize   = {1};
+    uint32_t               sampleCount = {1};
 
-    VkImageUsageFlags  usage   = {};
-    ImageDomain        domain  = {ImageDomain::Device};
-    VkSampleCountFlags samples = {VK_SAMPLE_COUNT_1_BIT};
+    ::vk::ImageUsageFlags usage = {};
 
-    VkImageType imageType = {VK_IMAGE_TYPE_2D};
+    ImageDomain domain    = {ImageDomain::Device};
+    ImageType   imageType = {ImageType::e2D};
     Format      format    = {Format::Undefined};
 };
 
-class Image : public ResourceHandle<VkImage, ImageCreateInfo>
+class Image : public ResourceHandle<::vk::Image, ImageCreateInfo>
 {
     friend class CommandBuffer;
     friend class ObjectPool<Image>;
@@ -49,38 +50,35 @@ private:
 
     Device*                     m_pDevice            = {};
     HashMap<Format, ImageView*> m_imageViewFormatMap = {};
-    VkImageLayout               m_layout             = {VK_IMAGE_LAYOUT_UNDEFINED};
+    ::vk::ImageLayout           m_layout             = {};
     ResourceState               m_resourceState      = {};
     std::mutex                  m_acquireViewLock;
 };
 
 struct ImageViewCreateInfo
 {
-    VkImageViewType         viewType         = {VK_IMAGE_VIEW_TYPE_2D};
-    Format                  format           = {Format::Undefined};
-    VkComponentMapping      components       = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY};
-    VkImageSubresourceRange subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-    Image*                  pImage           = {};
+    ImageViewType               viewType         = {ImageViewType::e2D};
+    Format                      format           = {Format::Undefined};
+    ::vk::ComponentMapping      components       = {};
+    ::vk::ImageSubresourceRange subresourceRange = {::vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+    Image*                      pImage           = {};
 };
 
-class ImageView : public ResourceHandle<VkImageView, ImageViewCreateInfo>
+class ImageView : public ResourceHandle<::vk::ImageView, ImageViewCreateInfo>
 {
     friend class ObjectPool<ImageView>;
 
 public:
-    Format                  getFormat() const { return m_createInfo.format; }
-    VkImageViewType         getImageViewType() const { return m_createInfo.viewType; }
-    VkImageSubresourceRange GetSubresourceRange() const { return m_createInfo.subresourceRange; }
-    VkComponentMapping      getComponentMapping() const { return m_createInfo.components; }
+    Format        getFormat() const { return m_createInfo.format; }
+    ImageViewType getImageViewType() const { return m_createInfo.viewType; }
 
     Image* getImage() { return m_image; }
 
 private:
     ImageView(const CreateInfoType& createInfo, HandleType handle);
 
-    Image*                                        m_image       = {};
-    HashMap<VkImageLayout, VkDescriptorImageInfo> m_descInfoMap = {};
+    Image*                                                m_image       = {};
+    HashMap<::vk::ImageLayout, ::vk::DescriptorImageInfo> m_descInfoMap = {};
 };
 
 }  // namespace aph::vk

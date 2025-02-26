@@ -12,35 +12,40 @@
 
 namespace aph::vk::utils
 {
-std::string           errorString(VkResult errorCode);
-VkImageAspectFlags    getImageAspect(VkFormat format);
-VkImageAspectFlags    getImageAspect(Format format);
-VkSampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
-VkAccessFlags         getAccessFlags(ResourceState state);
-VkImageLayout         getImageLayout(ResourceState state);
-Format                getFormatFromVk(VkFormat format);
-Result                getResult(VkResult result);
-Result                getResult(::vk::Result result);
-VkResult              setDebugObjectName(VkDevice device, VkObjectType type, uint64_t handle, std::string_view name);
+std::string               errorString(::vk::Result errorCode);
+std::string               errorString(VkResult errorCode);
+::vk::ImageAspectFlags    getImageAspect(Format format);
+::vk::SampleCountFlagBits getSampleCountFlags(uint32_t numSamples);
+::vk::AccessFlags         getAccessFlags(ResourceState state);
+::vk::ImageLayout         getImageLayout(ResourceState state);
+Format                    getFormatFromVk(VkFormat format);
+Result                    getResult(VkResult result);
+Result                    getResult(::vk::Result result);
 }  // namespace aph::vk::utils
 
 // convert
 namespace aph::vk::utils
 {
-VkStencilOp           VkCast(StencilOp op);
-VkBlendOp             VkCast(BlendOp op);
-VkBlendFactor         VkCast(BlendFactor factor);
-VkCullModeFlags       VkCast(CullMode mode);
-VkFrontFace           VkCast(WindingMode mode);
-VkPolygonMode         VkCast(PolygonMode mode);
-VkPrimitiveTopology   VkCast(PrimitiveTopology topology);
-VkShaderStageFlagBits VkCast(ShaderStage stage);
-VkShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
-VkDebugUtilsLabelEXT  VkCast(const DebugLabel& label);
-VkFormat              VkCast(Format format);
-VkIndexType           VkCast(IndexType indexType);
-VkCompareOp           VkCast(CompareOp compareOp);
-VkPipelineBindPoint   VkCast(PipelineType type);
+::vk::StencilOp           VkCast(StencilOp op);
+::vk::BlendOp             VkCast(BlendOp op);
+::vk::BlendFactor         VkCast(BlendFactor factor);
+::vk::CullModeFlags       VkCast(CullMode mode);
+::vk::FrontFace           VkCast(WindingMode mode);
+::vk::PolygonMode         VkCast(PolygonMode mode);
+::vk::PrimitiveTopology   VkCast(PrimitiveTopology topology);
+::vk::ShaderStageFlagBits VkCast(ShaderStage stage);
+::vk::ShaderStageFlags    VkCast(const std::vector<ShaderStage>& stages);
+::vk::DebugUtilsLabelEXT  VkCast(const DebugLabel& label);
+::vk::Format              VkCast(Format format);
+::vk::IndexType           VkCast(IndexType indexType);
+::vk::CompareOp           VkCast(CompareOp compareOp);
+::vk::PipelineBindPoint   VkCast(PipelineType type);
+::vk::Filter              VkCast(Filter filter);
+::vk::SamplerAddressMode  VkCast(SamplerAddressMode mode);
+::vk::SamplerMipmapMode   VkCast(SamplerMipmapMode mode);
+::vk::ImageType           VkCast(ImageType type);
+::vk::ImageViewType       VkCast(ImageViewType viewType);
+
 }  // namespace aph::vk::utils
 
 namespace aph
@@ -165,9 +170,9 @@ inline void _VR(T result, const std::source_location source = std::source_locati
     }
 }
 #else
-    inline void _VR(Result result)
-    {
-        return result;
-    }
+inline void _VR(Result result)
+{
+    return result;
+}
 #endif
 }  // namespace aph::vk

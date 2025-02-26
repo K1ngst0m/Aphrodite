@@ -15,8 +15,6 @@
 
 #include "filesystem/filesystem.h"
 
-#include "shaderReflector.h"
-
 namespace loader::image
 {
 inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY = false)
@@ -307,7 +305,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
                     .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
                     // TODO index type
                     .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
-                                   .usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT}};
+                                   .usage = ::vk::BufferUsageFlagBits::eIndexBuffer}};
                 APH_VR(pLoader->load(loadInfo, &pIB));
                 (*ppGeometry)->indexBuffer.push_back(pIB);
             }
@@ -325,7 +323,7 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
                 aph::BufferLoadInfo loadInfo{
                     .data       = (void*)(buffer.data.data() + bufferView.byteOffset),
                     .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
-                                   .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT},
+                                   .usage = ::vk::BufferUsageFlagBits::eVertexBuffer},
                 };
                 APH_VR(pLoader->load(loadInfo, &pVB));
                 (*ppGeometry)->vertexBuffers.push_back(pVB);
@@ -436,7 +434,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
     {
         vk::BufferCreateInfo bufferCI{
             .size   = static_cast<uint32_t>(data.size()),
-            .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            .usage  = ::vk::BufferUsageFlagBits::eTransferSrc,
             .domain = BufferDomain::Host,
         };
         APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
@@ -450,11 +448,11 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         bool genMipmap = ci.mipLevels > 1;
 
         auto imageCI = ci;
-        imageCI.usage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferDst;
         imageCI.domain = ImageDomain::Device;
         if(genMipmap)
         {
-            imageCI.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
         }
 
         APH_VR(m_pDevice->create(imageCI, &image, info.debugName));
@@ -522,7 +520,7 @@ Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     vk::BufferCreateInfo bufferCI = info.createInfo;
 
     {
-        bufferCI.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        bufferCI.usage |= ::vk::BufferUsageFlagBits::eTransferDst;
         APH_VR(m_pDevice->create(bufferCI, ppBuffer, info.debugName));
     }
 
@@ -719,7 +717,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 {
                     vk::BufferCreateInfo stagingCI{
                         .size   = static_cast<uint32_t>(copyRange.size),
-                        .usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        .usage  = ::vk::BufferUsageFlagBits::eTransferSrc,
                         .domain = BufferDomain::Host,
                     };
 

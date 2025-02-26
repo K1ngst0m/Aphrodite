@@ -20,24 +20,24 @@ class DescriptorSet;
 
 struct AttachmentInfo
 {
-    Image*                             image{};
-    std::optional<VkImageLayout>       layout;
-    std::optional<VkAttachmentLoadOp>  loadOp;
-    std::optional<VkAttachmentStoreOp> storeOp;
-    std::optional<VkClearValue>        clear;
+    Image*                                 image{};
+    std::optional<::vk::ImageLayout>       layout;
+    std::optional<::vk::AttachmentLoadOp>  loadOp;
+    std::optional<::vk::AttachmentStoreOp> storeOp;
+    std::optional<::vk::ClearValue>        clear;
 };
 
 struct RenderingInfo
 {
     std::vector<AttachmentInfo> colors     = {};
     AttachmentInfo              depth      = {};
-    std::optional<VkRect2D>     renderArea = {};
+    std::optional<::vk::Rect2D> renderArea = {};
 };
 
 struct ImageBlitInfo
 {
-    VkOffset3D offset = {};
-    VkOffset3D extent = {};
+    ::vk::Offset3D offset = {};
+    ::vk::Offset3D extent = {};
 
     uint32_t level      = 0;
     uint32_t baseLayer  = 0;
@@ -46,13 +46,8 @@ struct ImageBlitInfo
 
 struct ImageCopyInfo
 {
-    VkOffset3D               offset       = {0, 0, 0};
-    VkImageSubresourceLayers subResources = {
-        .aspectMask     = VK_IMAGE_ASPECT_NONE,
-        .mipLevel       = 0,
-        .baseArrayLayer = 0,
-        .layerCount     = 1,
-    };
+    ::vk::Offset3D               offset       = {};
+    ::vk::ImageSubresourceLayers subResources = {{}, 0, 0, 1};
 };
 
 struct BufferBarrier
@@ -98,14 +93,15 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 
             struct IndexState
             {
-                VkBuffer    buffer;
-                std::size_t offset;
-                VkIndexType indexType;
+                ::vk::Buffer buffer;
+                std::size_t  offset;
+                IndexType    indexType;
+                bool         dirty = false;
             } index;
 
             struct VertexState
             {
-                VkBuffer        buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                ::vk::Buffer    buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
                 std::size_t     offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
                 std::bitset<32> dirty                              = 0;
             } vertex;
@@ -115,17 +111,17 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             PolygonMode polygonMode = PolygonMode::Fill;
 
             std::vector<AttachmentInfo> color = {};
-            AttachmentInfo depth       = {};
+            AttachmentInfo              depth = {};
 
             struct DepthState
             {
-                bool      enable = false;
-                bool      write = false;
-                bool      stencil = false;
+                bool      enable    = false;
+                bool      write     = false;
+                bool      stencil   = false;
                 CompareOp compareOp = CompareOp::Always;
             };
-            DepthState     depthState  = {};
-            uint32_t       sampleCount = 1;
+            DepthState depthState  = {};
+            uint32_t   sampleCount = 1;
         } graphics;
 
         struct ResourceBindings
@@ -148,9 +144,9 @@ public:
     ~CommandBuffer();
 
 public:
-    VkResult begin(VkCommandBufferUsageFlags flags = 0);
-    VkResult end();
-    VkResult reset();
+    Result begin(::vk::CommandBufferUsageFlags flags = {});
+    Result end();
+    Result reset();
 
 public:
     void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
@@ -176,15 +172,15 @@ public:
     void draw(DrawArguments args);
     void draw(DispatchArguments args);
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
-              uint32_t stride = sizeof(VkDrawIndirectCommand));
+              uint32_t stride = sizeof(::vk::DrawIndirectCommand));
 
 public:
     void beginDebugLabel(const DebugLabel& label);
     void insertDebugLabel(const DebugLabel& label);
     void endDebugLabel();
 
-    void resetQueryPool(VkQueryPool pool, uint32_t first = 0, uint32_t count = 1);
-    void writeTimeStamp(VkPipelineStageFlagBits stage, VkQueryPool pool, uint32_t queryIndex);
+    void resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1);
+    void writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
     void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
@@ -196,11 +192,11 @@ public:
 public:
     void updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data);
     void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range);
-    void copyImage(Image* srcImage, Image* dstImage, VkExtent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
+    void copyImage(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
                    const ImageCopyInfo& dstCopyInfo = {});
-    void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<VkBufferImageCopy>& regions = {});
+    void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions = {});
     void blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
-                   const ImageBlitInfo& dstBlitInfo = {}, VkFilter filter = VK_FILTER_LINEAR);
+                   const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
 
 private:
     void         flushComputeCommand();

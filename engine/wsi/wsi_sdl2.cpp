@@ -89,7 +89,7 @@ void WindowSystem::init()
     }
 }
 
-VkSurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
+::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
 {
     VkSurfaceKHR surface;
     SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), &surface);

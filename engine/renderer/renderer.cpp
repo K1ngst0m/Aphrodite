@@ -185,7 +185,6 @@ Renderer::~Renderer()
 
     m_pResourceLoader->cleanup();
     m_pDevice->destroy(m_pSwapChain);
-    vkDestroySurfaceKHR(m_pInstance->getHandle(), m_surface, vk::vkAllocator());
     vk::Device::Destroy(m_pDevice.get());
     vk::Instance::Destroy(m_pInstance);
 };

@@ -70,7 +70,7 @@ PassImageResource* RenderPass::addTextureOut(const std::string& name)
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addWritePass(this);
-    res->addUsage(VK_IMAGE_USAGE_STORAGE_BIT);
+    res->addUsage(::vk::ImageUsageFlagBits::eStorage);
     res->addAccessFlags(VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
 
     m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
@@ -84,7 +84,7 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addReadPass(this);
-    res->addUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+    res->addUsage(::vk::ImageUsageFlagBits::eSampled);
     res->addAccessFlags(VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     m_res.resourceStateMap[res] = ResourceState::ShaderResource;
@@ -104,7 +104,7 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const PassIm
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
-    res->addUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    res->addUsage(::vk::ImageUsageFlagBits::eColorAttachment);
     m_res.resourceStateMap[res] = ResourceState::RenderTarget;
     m_res.colorOut.push_back(res);
     return res;
@@ -116,7 +116,7 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
-    res->addUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    res->addUsage(::vk::ImageUsageFlagBits::eDepthStencilAttachment);
     m_res.resourceStateMap[res] = ResourceState::DepthStencil;
     m_res.depthOut              = res;
     return res;
@@ -269,12 +269,12 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     .extent    = colorAttachment->getInfo().extent,
                     .usage     = colorAttachment->getUsage(),
                     .domain    = ImageDomain::Device,
-                    .imageType = VK_IMAGE_TYPE_2D,
+                    .imageType = ImageType::e2D,
                     .format    = colorAttachment->getInfo().format,
                 };
                 if(!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
                 {
-                    createInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                    createInfo.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
                 }
                 APH_VR(m_pDevice->create(createInfo, &pImage));
                 m_buildData.image[colorAttachment] = pImage;
@@ -291,7 +291,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     .extent    = depthAttachment->getInfo().extent,
                     .usage     = depthAttachment->getUsage(),
                     .domain    = ImageDomain::Device,
-                    .imageType = VK_IMAGE_TYPE_2D,
+                    .imageType = ImageType::e2D,
                     .format    = depthAttachment->getInfo().format,
                 };
                 APH_VR(m_pDevice->create(createInfo, &pImage));
@@ -387,7 +387,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             taskgrp->addTask(
                 [this, pass, colorImages, pDepthImage]() {
                     auto* pCmd = m_buildData.cmds[pass];
-                    pCmd->begin();
+                    APH_VR(pCmd->begin());
                     // TODO findout why memory leaks
                     pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
@@ -395,7 +395,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     APH_ASSERT(pass->m_executeCB);
                     pass->m_executeCB(pCmd);
                     pCmd->endRendering();
-                    pCmd->end();
+                    APH_VR(pCmd->end());
 
                     // lock
                     vk::QueueSubmitInfo submitInfo{

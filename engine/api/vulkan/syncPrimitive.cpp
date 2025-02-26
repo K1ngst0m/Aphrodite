@@ -11,12 +11,10 @@ void Fence::reset()
     std::lock_guard<std::mutex> holder{m_lock};
     if(getHandle() != VK_NULL_HANDLE)
     {
-        m_pDevice->getDeviceTable()->vkResetFences(m_pDevice->getHandle(), 1, &getHandle());
+        m_pDevice->getHandle().resetFences({getHandle()});
     }
 }
-SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device) :
-    m_pDevice(device),
-    m_pDeviceTable(device->getDeviceTable())
+SyncPrimitiveAllocator::SyncPrimitiveAllocator(Device* device) : m_pDevice(device)
 {
 }
 
@@ -25,11 +23,10 @@ SyncPrimitiveAllocator::~SyncPrimitiveAllocator()
     clear();
 }
 
-VkResult SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
+Result SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
 {
     std::lock_guard<std::mutex> lock{m_fenceLock};
-    VkResult result = VK_SUCCESS;
-    auto&    pFence = *ppFence;
+    auto&                       pFence = *ppFence;
 
     // See if there's a free fence available.
     if(!m_availableFences.empty())
@@ -41,14 +38,14 @@ VkResult SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
     // Else create a new one.
     else
     {
-        VkFenceCreateInfo createInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+        ::vk::FenceCreateInfo createInfo = {};
         if(isSignaled)
         {
-            createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            createInfo.setFlags(::vk::FenceCreateFlagBits::eSignaled);
         }
-        VkFence vkFence;
-        result = m_pDeviceTable->vkCreateFence(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkFence);
-        if(result == VK_SUCCESS)
+        auto [result, vkFence] = m_pDevice->getHandle().createFence(createInfo, vk_allocator());
+
+        if(result == ::vk::Result::eSuccess)
         {
             pFence = m_fencePool.allocate(m_pDevice, vkFence);
             m_allFences.emplace(pFence);
@@ -56,28 +53,29 @@ VkResult SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
         else
         {
             APH_ASSERT(false);
+            return {Result::RuntimeError, "Failed to acquire fence."};
         }
     }
 
-    return result;
+    return Result::Success;
 }
 
-VkResult SyncPrimitiveAllocator::releaseFence(Fence* pFence)
+Result SyncPrimitiveAllocator::releaseFence(Fence* pFence)
 {
     std::lock_guard<std::mutex> lock{m_fenceLock};
 
     if(m_allFences.contains(pFence))
     {
-        VkResult result = m_pDeviceTable->vkResetFences(m_pDevice->getHandle(), 1, &pFence->getHandle());
-        if(result != VK_SUCCESS)
+        auto result = m_pDevice->getHandle().resetFences({pFence->getHandle()});
+        if(result != ::vk::Result::eSuccess)
         {
             m_fenceLock.unlock();
-            return result;
+            return {Result::RuntimeError, "Failed to reset fence."};
         }
         m_availableFences.push(pFence);
     }
 
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 bool SyncPrimitiveAllocator::Exists(Fence* pFence)
@@ -89,10 +87,9 @@ bool SyncPrimitiveAllocator::Exists(Fence* pFence)
     return result;
 }
 
-VkResult SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores)
+Result SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
     std::lock_guard<std::mutex> lock{m_semaphoreLock};
-    VkResult result = VK_SUCCESS;
 
     // See if there are free semaphores available.
     while(!m_availableSemaphores.empty())
@@ -111,24 +108,21 @@ VkResult SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semap
     // Create any remaining required semaphores.
     for(auto i = 0U; i < semaphoreCount; ++i)
     {
-        VkSemaphore           vkSemaphore;
-        VkSemaphoreCreateInfo createInfo = {};
-        createInfo.sType                 = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-        result =
-            m_pDeviceTable->vkCreateSemaphore(m_pDevice->getHandle(), &createInfo, vk::vkAllocator(), &vkSemaphore);
-        ppSemaphores[i] = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
-        if(result != VK_SUCCESS)
+        ::vk::SemaphoreCreateInfo createInfo = {};
+        auto [result, vkSemaphore]           = m_pDevice->getHandle().createSemaphore(createInfo, vk_allocator());
+        ppSemaphores[i]                      = m_semaphorePool.allocate(m_pDevice, vkSemaphore);
+        if(result != ::vk::Result::eSuccess)
         {
-            break;
+            return {Result::RuntimeError, "Failed to acquire semaphore."};
         }
 
         m_allSemaphores.emplace(ppSemaphores[i]);
     }
 
-    return result;
+    return Result::Success;
 }
 
-VkResult SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
+Result SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
     std::lock_guard<std::mutex> lock{m_semaphoreLock};
     for(auto i = 0U; i < semaphoreCount; ++i)
@@ -138,7 +132,7 @@ VkResult SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Sema
             m_availableSemaphores.push(ppSemaphores[i]);
         }
     }
-    return VK_SUCCESS;
+    return Result::Success;
 }
 
 bool SyncPrimitiveAllocator::Exists(Semaphore* semaphore)
@@ -151,8 +145,8 @@ bool SyncPrimitiveAllocator::Exists(Semaphore* semaphore)
 bool Fence::wait(uint64_t timeout)
 {
     std::lock_guard<std::mutex> holder{m_lock};
-    bool  result;
-    auto* table = m_pDevice->getDeviceTable();
+    bool                        result;
+    auto*                       table = m_pDevice->getDeviceTable();
 
     // Waiting for the same VkFence in parallel is not allowed, and there seems to be some shenanigans on Intel
     // when waiting for a timeline semaphore in parallel with same value as well.
@@ -185,7 +179,7 @@ void SyncPrimitiveAllocator::clear()
         std::lock_guard<std::mutex> lock{m_fenceLock};
         for(auto* fence : m_allFences)
         {
-            m_pDeviceTable->vkDestroyFence(m_pDevice->getHandle(), fence->getHandle(), vk::vkAllocator());
+            m_pDevice->getHandle().destroyFence(fence->getHandle(), vk_allocator());
         }
         m_allFences.clear();
     }
@@ -195,7 +189,7 @@ void SyncPrimitiveAllocator::clear()
         std::lock_guard<std::mutex> lock{m_semaphoreLock};
         for(auto* semaphore : m_allSemaphores)
         {
-            m_pDeviceTable->vkDestroySemaphore(m_pDevice->getHandle(), semaphore->getHandle(), vk::vkAllocator());
+            m_pDevice->getHandle().destroySemaphore(semaphore->getHandle(), vk_allocator());
         }
         m_allSemaphores.clear();
     }

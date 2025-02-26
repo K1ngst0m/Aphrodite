@@ -114,8 +114,8 @@ struct MemoryRange
 
 struct DebugLabel
 {
-    std::string name;
-    float       color[4];
+    std::string          name;
+    std::array<float, 4> color;
 };
 
 struct ShaderMacro
@@ -139,6 +139,43 @@ struct DummyCreateInfo
 struct DummyHandle
 {
     uint32_t typeId;
+};
+
+enum class Filter
+{
+    Nearest,
+    Linear,
+    Cubic,
+};
+
+enum class SamplerAddressMode
+{
+    Repeat,
+    MirroredRepeat,
+    ClampToEdge,
+    ClampToBorder,
+    MirrorClampToEdge,
+};
+
+enum class SamplerMipmapMode
+{
+    Nearest,
+    Linear
+};
+
+enum class ImageType
+{
+    e1D,
+    e2D,
+    e3D
+};
+
+enum class ImageViewType
+{
+    e1D,
+    e2D,
+    e3D,
+    Cube,
 };
 
 enum class Format : uint8_t
@@ -313,8 +350,17 @@ enum class IndexType : uint8_t
 
 enum class PrimitiveTopology : uint8_t
 {
+    PointList,
+    LineList,
+    LineStrip,
     TriangleList,
     TriangleStrip,
+    TriangleFan,
+    LineListWithAdjacency,
+    LineStripWithAdjacency,
+    TriangleListWithAdjacency,
+    TriangleStripWithAdjacency,
+    PatchList
 };
 
 enum class CullMode : uint8_t
@@ -457,10 +503,10 @@ public:
     operator T_Handle&() { return m_handle; }
     operator T_Handle&() const { return m_handle; }
 
-    T_Handle&       getHandle() { return m_handle; }
-    const T_Handle& getHandle() const { return m_handle; }
-    T_CreateInfo&   getCreateInfo() { return m_createInfo; }
-    const T_CreateInfo&   getCreateInfo() const { return m_createInfo; }
+    T_Handle&           getHandle() { return m_handle; }
+    const T_Handle&     getHandle() const { return m_handle; }
+    T_CreateInfo&       getCreateInfo() { return m_createInfo; }
+    const T_CreateInfo& getCreateInfo() const { return m_createInfo; }
 
 protected:
     T_Handle     m_handle     = {};

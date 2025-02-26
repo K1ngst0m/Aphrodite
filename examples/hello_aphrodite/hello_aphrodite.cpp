@@ -139,41 +139,42 @@ void hello_aphrodite::init()
 
         // vertex buffer
         APH_VR(m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{
-                .debugName  = "cube::vertex_buffer",
-                .data       = vertices.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                               .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}},
+            aph::BufferLoadInfo{.debugName  = "cube::vertex_buffer",
+                                .data       = vertices.data(),
+                                .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
+                                               .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
+                                                        ::vk::BufferUsageFlagBits::eVertexBuffer}},
             &m_pVB));
 
         // index buffer
         APH_VR(m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{
-                .debugName  = "cube::index_buffer",
-                .data       = indices.data(),
-                .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
-                               .usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT}},
+            aph::BufferLoadInfo{.debugName  = "cube::index_buffer",
+                                .data       = indices.data(),
+                                .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
+                                               .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
+                                                        ::vk::BufferUsageFlagBits::eIndexBuffer}},
             &m_pIB));
 
         // matrix uniform buffer
-        APH_VR(m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
-                                                                .data      = &m_mvp,
-                                                                .createInfo =
-                                                                    {
-                                                                        .size   = sizeof(m_mvp),
-                                                                        .usage  = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                                        .domain = aph::BufferDomain::LinkedDeviceHost,
-                                                                    }},
-                                            &m_pMatBuffer));
+        APH_VR(
+            m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
+                                                             .data      = &m_mvp,
+                                                             .createInfo =
+                                                                 {
+                                                                     .size  = sizeof(m_mvp),
+                                                                     .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                                                     .domain = aph::BufferDomain::LinkedDeviceHost,
+                                                                 }},
+                                         &m_pMatBuffer));
 
         // image and sampler
         APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
         APH_VR(m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
                                                                .createInfo =
                                                                    {
-                                                                       .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                                       .usage     = ::vk::ImageUsageFlagBits::eSampled,
                                                                        .domain    = aph::ImageDomain::Device,
-                                                                       .imageType = VK_IMAGE_TYPE_2D,
+                                                                       .imageType = aph::ImageType::e2D,
                                                                    }},
                                             &m_pImage));
 

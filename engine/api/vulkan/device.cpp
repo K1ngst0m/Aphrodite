@@ -297,17 +297,15 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
                       std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    const SmallVector<VkDescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
-    const SmallVector<VkDescriptorPoolSize>&         poolSizes  = createInfo.poolSizes;
+    const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
+    const SmallVector<::vk::DescriptorPoolSize>&         poolSizes  = createInfo.poolSizes;
 
-    VkDescriptorSetLayoutCreateInfo vkCreateInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    vkCreateInfo.bindingCount                    = vkBindings.size();
-    vkCreateInfo.pBindings                       = vkBindings.data();
+    ::vk::DescriptorSetLayoutCreateInfo vkCreateInfo = {};
+    vkCreateInfo.setBindings(vkBindings);
 
-    VkDescriptorSetLayout vkSetLayout;
-    _VR(getDeviceTable()->vkCreateDescriptorSetLayout(getHandle(), &vkCreateInfo, vk::vkAllocator(), &vkSetLayout));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT,
-                                  reinterpret_cast<uint64_t>(vkSetLayout), debugName));
+    auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
+    _VR(result);
+    APH_VR(setDebugObjectName(vkSetLayout, debugName));
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
     return Result::Success;
@@ -316,20 +314,21 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    const auto&              spv = createInfo.code;
-    VkShaderModuleCreateInfo vkCreateInfo{
-        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        .codeSize = spv.size() * sizeof(spv[0]),
-        .pCode    = spv.data(),
-    };
-    VkShaderModule handle = VK_NULL_HANDLE;
+    const auto&                  spv = createInfo.code;
+    ::vk::ShaderModuleCreateInfo vkCreateInfo{};
+    vkCreateInfo.setCodeSize(spv.size()).setPCode(spv.data());
+
     if(createInfo.compile)
     {
-        _VR(getDeviceTable()->vkCreateShaderModule(getHandle(), &vkCreateInfo, vk::vkAllocator(), &handle));
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_MODULE, reinterpret_cast<uint64_t>(handle),
-                                      debugName));
+        auto [result, handle] = getHandle().createShaderModule(vkCreateInfo, vk_allocator());
+        APH_VR(setDebugObjectName(handle, debugName));
+        *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
     }
-    *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
+    else
+    {
+        *ppShader = m_resourcePool.shader.allocate(createInfo, VK_NULL_HANDLE);
+    }
+
     return Result::Success;
 }
 
@@ -390,9 +389,9 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     const auto&     combineLayout = reflector.getReflectLayoutMeta();
 
     // setup descriptor set layouts and pipeline layouts
-    SmallVector<DescriptorSetLayout*>  setLayouts = {};
-    SmallVector<VkDescriptorSetLayout> vkSetLayouts;
-    VkPipelineLayout                   pipelineLayout;
+    SmallVector<DescriptorSetLayout*>      setLayouts = {};
+    SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
+    VkPipelineLayout                       pipelineLayout;
     {
         setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
 
@@ -416,7 +415,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                        getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
         }
 
-        VkPipelineLayoutCreateInfo info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+        ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
         if(numSets)
         {
             vkSetLayouts.reserve(setLayouts.size());
@@ -424,71 +423,62 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
             {
                 vkSetLayouts.push_back(setLayout->getHandle());
             }
-            info.setLayoutCount = numSets;
-            info.pSetLayouts    = vkSetLayouts.data();
+            pipelineLayoutCreateInfo.setLayoutCount = numSets;
+            pipelineLayoutCreateInfo.pSetLayouts    = vkSetLayouts.data();
         }
 
-        if(combineLayout.pushConstantRange.stageFlags != 0)
+        if(combineLayout.pushConstantRange.stageFlags)
         {
-            info.pushConstantRangeCount = 1;
-            info.pPushConstantRanges    = &combineLayout.pushConstantRange;
+            pipelineLayoutCreateInfo.setPushConstantRanges({combineLayout.pushConstantRange});
         }
 
-        if(getDeviceTable()->vkCreatePipelineLayout(getHandle(), &info, vkAllocator(), &pipelineLayout) != VK_SUCCESS)
-            VK_LOG_ERR("Failed to create pipeline layout.");
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE_LAYOUT,
-                                      reinterpret_cast<uint64_t>(pipelineLayout), debugName));
+        auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
+        _VR(result);
+        APH_VR(setDebugObjectName(handle, debugName));
+        pipelineLayout = std::move(handle);
     }
 
     HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps;
     // setup shader object
     {
-        SmallVector<VkShaderCreateInfoEXT> shaderCreateInfos;
+        SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos;
         for(auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
-            auto               shader    = *iter;
-            VkShaderStageFlags nextStage = 0;
+            auto                   shader    = *iter;
+            ::vk::ShaderStageFlags nextStage = {};
             if(auto nextIter = std::next(iter); nextIter != shaders.cend())
             {
                 nextStage = utils::VkCast((*nextIter)->getStage());
             }
-            VkShaderCreateInfoEXT soCreateInfo = {
-                .sType     = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
-                .pNext     = nullptr,
-                .flags     = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,
-                .stage     = utils::VkCast(shader->getStage()),
-                .nextStage = nextStage,
-                // TODO binary support
-                .codeType       = VK_SHADER_CODE_TYPE_SPIRV_EXT,
-                .codeSize       = shader->getCode().size() * sizeof(shader->getCode()[0]),
-                .pCode          = shader->getCode().data(),
-                .pName          = shader->getEntryPointName().data(),
-                .setLayoutCount = static_cast<uint32_t>(vkSetLayouts.size()),
-                .pSetLayouts    = vkSetLayouts.data(),
-            };
+            ::vk::ShaderCreateInfoEXT soCreateInfo{};
+            soCreateInfo.setFlags(::vk::ShaderCreateFlagBitsEXT::eLinkStage)
+                .setStage(utils::VkCast(shader->getStage()))
+                .setNextStage(nextStage)
+                .setPCode(shader->getCode().data())
+                .setCodeSize(shader->getCode().size() * sizeof(shader->getCode()[0]))
+                .setCodeType(::vk::ShaderCodeTypeEXT::eSpirv)
+                .setPName(shader->getEntryPointName().data())
+                .setSetLayouts(vkSetLayouts);
 
-            if(!hasTaskShader && soCreateInfo.stage == VK_SHADER_STAGE_MESH_BIT_EXT)
+            if(!hasTaskShader && soCreateInfo.stage == ::vk::ShaderStageFlagBits::eMeshEXT)
             {
-                soCreateInfo.flags |= VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT;
+                soCreateInfo.flags |= ::vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
             }
 
-            if(combineLayout.pushConstantRange.stageFlags != 0)
+            if(combineLayout.pushConstantRange.stageFlags)
             {
-                soCreateInfo.pushConstantRangeCount = 1;
-                soCreateInfo.pPushConstantRanges    = &combineLayout.pushConstantRange;
+                soCreateInfo.setPushConstantRanges({combineLayout.pushConstantRange});
             }
-
             shaderCreateInfos.push_back(soCreateInfo);
+
         }
 
-        SmallVector<VkShaderEXT> shaderObjects(shaderCreateInfos.size());
-        _VR(m_table.vkCreateShadersEXT(getHandle(), shaderCreateInfos.size(), shaderCreateInfos.data(), vkAllocator(),
-                                       shaderObjects.data()));
+        auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
+        _VR(result);
 
         for(size_t idx = 0; idx < shaders.size(); ++idx)
         {
-            _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SHADER_EXT,
-                                          reinterpret_cast<uint64_t>(shaderObjects[idx]), debugName));
+            APH_VR(setDebugObjectName(shaderObjects[idx], debugName));
             shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
         }
     }
@@ -509,26 +499,22 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    VkImageViewCreateInfo info{
-        .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext    = nullptr,
-        .image    = createInfo.pImage->getHandle(),
-        .viewType = createInfo.viewType,
-        .format   = utils::VkCast(createInfo.format),
-    };
-    info.subresourceRange = {
-        .aspectMask     = utils::getImageAspect(utils::VkCast(createInfo.format)),
-        .baseMipLevel   = createInfo.subresourceRange.baseMipLevel,
-        .levelCount     = createInfo.subresourceRange.levelCount,
-        .baseArrayLayer = createInfo.subresourceRange.baseArrayLayer,
-        .layerCount     = createInfo.subresourceRange.layerCount,
-    };
+    ::vk::ImageViewCreateInfo info{};
+    info.setImage(createInfo.pImage->getHandle())
+        .setViewType(utils::VkCast(createInfo.viewType))
+        .setFormat(utils::VkCast(createInfo.format));
+
+    info.subresourceRange.setAspectMask(utils::getImageAspect(createInfo.format))
+        .setLayerCount(createInfo.subresourceRange.layerCount)
+        .setLevelCount(createInfo.subresourceRange.levelCount)
+        .setBaseArrayLayer(createInfo.subresourceRange.baseArrayLayer)
+        .setBaseMipLevel(createInfo.subresourceRange.baseMipLevel);
+
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
-    VkImageView handle = VK_NULL_HANDLE;
-    _VR(m_table.vkCreateImageView(getHandle(), &info, gVkAllocator, &handle));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE_VIEW, reinterpret_cast<uint64_t>(handle),
-                                  debugName));
+    auto [result, handle] = getHandle().createImageView(info, vk_allocator());
+    _VR(result);
+    APH_VR(setDebugObjectName(handle, debugName));
 
     *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
 
@@ -539,16 +525,11 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
 {
     APH_PROFILER_SCOPE();
     // create buffer
-    VkBufferCreateInfo bufferInfo{
-        .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .size        = createInfo.size,
-        .usage       = createInfo.usage,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-    };
+    ::vk::BufferCreateInfo bufferInfo{};
+    bufferInfo.setSize(createInfo.size).setUsage(createInfo.usage).setSharingMode(::vk::SharingMode::eExclusive);
 
-    VkBuffer buffer;
-    m_table.vkCreateBuffer(getHandle(), &bufferInfo, vkAllocator(), &buffer);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_BUFFER, reinterpret_cast<uint64_t>(buffer), debugName));
+    auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
+    APH_VR(setDebugObjectName(buffer, debugName));
     *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     m_resourcePool.deviceMemory->allocate(*ppBuffer);
 
@@ -558,27 +539,25 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
 Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    VkImageCreateInfo imageCreateInfo{
-        .sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .flags         = createInfo.flags,
-        .imageType     = createInfo.imageType,
-        .format        = utils::VkCast(createInfo.format),
-        .mipLevels     = createInfo.mipLevels,
-        .arrayLayers   = createInfo.arraySize,
-        .samples       = static_cast<VkSampleCountFlagBits>(createInfo.samples),
-        .tiling        = VK_IMAGE_TILING_OPTIMAL,
-        .usage         = createInfo.usage,
-        .sharingMode   = VK_SHARING_MODE_EXCLUSIVE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-    };
+    ::vk::ImageCreateInfo imageCreateInfo{};
+    imageCreateInfo.setFlags(createInfo.flags)
+        .setImageType(utils::VkCast(createInfo.imageType))
+        .setFormat(utils::VkCast(createInfo.format))
+        .setMipLevels(createInfo.mipLevels)
+        .setArrayLayers(createInfo.arraySize)
+        .setSamples(utils::getSampleCountFlags(createInfo.sampleCount))
+        .setTiling(::vk::ImageTiling::eOptimal)
+        .setUsage(createInfo.usage)
+        .setSharingMode(::vk::SharingMode::eExclusive)
+        .setInitialLayout(::vk::ImageLayout::eUndefined);
 
     imageCreateInfo.extent.width  = createInfo.extent.width;
     imageCreateInfo.extent.height = createInfo.extent.height;
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
-    VkImage image;
-    m_table.vkCreateImage(getHandle(), &imageCreateInfo, vkAllocator(), &image);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_IMAGE, reinterpret_cast<uint64_t>(image), debugName));
+    auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
+    _VR(result);
+    APH_VR(setDebugObjectName(image, debugName));
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
     m_resourcePool.deviceMemory->allocate(*ppImage);
 
@@ -588,14 +567,14 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
 void Device::destroy(DescriptorSetLayout* pSetLayout)
 {
     APH_PROFILER_SCOPE();
-    getDeviceTable()->vkDestroyDescriptorSetLayout(getHandle(), pSetLayout->getHandle(), vkAllocator());
+    getHandle().destroyDescriptorSetLayout(pSetLayout->getHandle(), vk_allocator());
     m_resourcePool.setLayout.free(pSetLayout);
 }
 
 void Device::destroy(Shader* pShader)
 {
     APH_PROFILER_SCOPE();
-    getDeviceTable()->vkDestroyShaderModule(getHandle(), pShader->getHandle(), vk::vkAllocator());
+    getHandle().destroyShaderModule(pShader->getHandle(), vk_allocator());
     m_resourcePool.shader.free(pShader);
 }
 
@@ -610,10 +589,10 @@ void Device::destroy(ShaderProgram* pProgram)
 
     for(auto [_, shaderObject] : pProgram->m_shaderObjects)
     {
-        getDeviceTable()->vkDestroyShaderEXT(getHandle(), shaderObject, vk::vkAllocator());
+        getHandle().destroyShaderEXT(shaderObject, vk_allocator());
     }
 
-    getDeviceTable()->vkDestroyPipelineLayout(getHandle(), pProgram->m_pipelineLayout.handle, vkAllocator());
+    getHandle().destroyPipelineLayout(pProgram->m_pipelineLayout.handle, vk_allocator());
     m_resourcePool.program.free(pProgram);
 }
 
@@ -621,7 +600,7 @@ void Device::destroy(Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
     m_resourcePool.deviceMemory->free(pBuffer);
-    m_table.vkDestroyBuffer(getHandle(), pBuffer->getHandle(), vkAllocator());
+    getHandle().destroyBuffer(pBuffer->getHandle(), vk_allocator());
     m_resourcePool.buffer.free(pBuffer);
 }
 
@@ -629,14 +608,14 @@ void Device::destroy(Image* pImage)
 {
     APH_PROFILER_SCOPE();
     m_resourcePool.deviceMemory->free(pImage);
-    m_table.vkDestroyImage(getHandle(), pImage->getHandle(), vkAllocator());
+    getHandle().destroyImage(pImage->getHandle(), vk_allocator());
     m_resourcePool.image.free(pImage);
 }
 
 void Device::destroy(ImageView* pImageView)
 {
     APH_PROFILER_SCOPE();
-    m_table.vkDestroyImageView(m_handle, pImageView->getHandle(), gVkAllocator);
+    getHandle().destroyImageView(pImageView->getHandle(), vk_allocator());
     m_resourcePool.imageView.free(pImageView);
 }
 
@@ -650,7 +629,7 @@ Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapc
 void Device::destroy(SwapChain* pSwapchain)
 {
     APH_PROFILER_SCOPE();
-    m_table.vkDestroySwapchainKHR(getHandle(), pSwapchain->getHandle(), gVkAllocator);
+    getHandle().destroySwapchainKHR(pSwapchain->getHandle(), vk_allocator());
     delete pSwapchain;
     pSwapchain = nullptr;
 }
@@ -698,44 +677,35 @@ Result Device::waitIdle()
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
 {
     APH_PROFILER_SCOPE();
-    SmallVector<VkFence> vkFences(fences.size());
+    SmallVector<::vk::Fence> vkFences(fences.size());
     for(auto idx = 0; idx < fences.size(); ++idx)
     {
         vkFences[idx] = fences[idx]->getHandle();
     }
-    return utils::getResult(m_table.vkWaitForFences(getHandle(), vkFences.size(), vkFences.data(),
-                                                    waitAll ? VK_TRUE : VK_FALSE, UINT64_MAX));
+    return utils::getResult(getHandle().waitForFences(vkFences, waitAll, UINT64_MAX));
 }
 
-Result Device::flushMemory(VkDeviceMemory memory, MemoryRange range)
+Result Device::flushMemory(::vk::DeviceMemory memory, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
     if(range.size == 0)
     {
-        range.size = VK_WHOLE_SIZE;
+        range.size = ::vk::WholeSize;
     }
-    VkMappedMemoryRange mappedRange = {
-        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = memory,
-        .offset = range.offset,
-        .size   = range.size,
-    };
-    return utils::getResult(m_table.vkFlushMappedMemoryRanges(getHandle(), 1, &mappedRange));
+    ::vk::MappedMemoryRange mappedRange{};
+    mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
+    return utils::getResult(getHandle().flushMappedMemoryRanges({mappedRange}));
 }
-Result Device::invalidateMemory(VkDeviceMemory memory, MemoryRange range)
+Result Device::invalidateMemory(::vk::DeviceMemory memory, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
     if(range.size == 0)
     {
-        range.size = VK_WHOLE_SIZE;
+        range.size = ::vk::WholeSize;
     }
-    VkMappedMemoryRange mappedRange = {
-        .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = memory,
-        .offset = range.offset,
-        .size   = range.size,
-    };
-    return utils::getResult(m_table.vkInvalidateMappedMemoryRanges(getHandle(), 1, &mappedRange));
+    ::vk::MappedMemoryRange mappedRange{};
+    mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
+    return utils::getResult(getHandle().invalidateMappedMemoryRanges({mappedRange}));
 }
 
 Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
@@ -766,13 +736,11 @@ Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppC
 Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    VkSampler sampler = {};
-    YcbcrData ycbcr;
 
     // default sampler lod values
     // used if not overriden by mSetLodRange or not Linear mipmaps
     float minSamplerLod = 0;
-    float maxSamplerLod = createInfo.mipMapMode == VK_SAMPLER_MIPMAP_MODE_LINEAR ? VK_LOD_CLAMP_NONE : 0;
+    float maxSamplerLod = createInfo.mipMapMode == SamplerMipmapMode::Linear ? ::vk::LodClampNone : 0;
     // user provided lods
     if(createInfo.setLodRange)
     {
@@ -780,75 +748,28 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
         maxSamplerLod = createInfo.maxLod;
     }
 
-    VkSamplerCreateInfo ci{
-        .sType            = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext            = nullptr,
-        .flags            = 0,
-        .magFilter        = createInfo.magFilter,
-        .minFilter        = createInfo.minFilter,
-        .mipmapMode       = createInfo.mipMapMode,
-        .addressModeU     = createInfo.addressU,
-        .addressModeV     = createInfo.addressV,
-        .addressModeW     = createInfo.addressW,
-        .mipLodBias       = createInfo.mipLodBias,
-        .anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_gpu->getHandle().getFeatures().samplerAnisotropy)
-                                ? VK_TRUE
-                                : VK_FALSE,
-        .maxAnisotropy    = createInfo.maxAnisotropy,
-        .compareEnable    = createInfo.compareFunc != VK_COMPARE_OP_NEVER ? VK_TRUE : VK_FALSE,
-        .compareOp        = createInfo.compareFunc,
-        .minLod           = minSamplerLod,
-        .maxLod           = maxSamplerLod,
-        .borderColor      = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
-        .unnormalizedCoordinates = VK_FALSE,
-    };
-
-    if(createInfo.pConvertInfo)
+    ::vk::SamplerCreateInfo ci{};
     {
-        auto convertInfo = *createInfo.pConvertInfo;
-
-        // Check format props
-        {
-            VkFormatProperties formatProperties;
-            vkGetPhysicalDeviceFormatProperties(getPhysicalDevice()->getHandle(), utils::VkCast(convertInfo.format),
-                                                &formatProperties);
-            if(convertInfo.chromaOffsetX == VK_CHROMA_LOCATION_MIDPOINT)
-            {
-                APH_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT);
-            }
-            else if(convertInfo.chromaOffsetX == VK_CHROMA_LOCATION_COSITED_EVEN)
-            {
-                APH_ASSERT(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT);
-            }
-        }
-
-        VkSamplerYcbcrConversionCreateInfo vkConvertInfo{
-            .sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-            .pNext      = nullptr,
-            .format     = utils::VkCast(convertInfo.format),
-            .ycbcrModel = convertInfo.model,
-            .ycbcrRange = convertInfo.range,
-            .components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
-                           VK_COMPONENT_SWIZZLE_IDENTITY},
-            .xChromaOffset               = convertInfo.chromaOffsetX,
-            .yChromaOffset               = convertInfo.chromaOffsetY,
-            .chromaFilter                = convertInfo.chromaFilter,
-            .forceExplicitReconstruction = convertInfo.forceExplicitReconstruction ? VK_TRUE : VK_FALSE,
-        };
-
-        _VR(m_table.vkCreateSamplerYcbcrConversion(getHandle(), &vkConvertInfo, gVkAllocator, &ycbcr.conversion));
-        _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION,
-                                      reinterpret_cast<uint64_t>(ycbcr.conversion), debugName));
-
-        ycbcr.info.sType      = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
-        ycbcr.info.pNext      = nullptr;
-        ycbcr.info.conversion = ycbcr.conversion;
-
-        ci.pNext = &ycbcr.info;
+        ci.magFilter        = utils::VkCast(createInfo.magFilter);
+        ci.minFilter        = utils::VkCast(createInfo.minFilter);
+        ci.mipmapMode       = utils::VkCast(createInfo.mipMapMode);
+        ci.addressModeU     = utils::VkCast(createInfo.addressU);
+        ci.addressModeV     = utils::VkCast(createInfo.addressV);
+        ci.addressModeW     = utils::VkCast(createInfo.addressW);
+        ci.mipLodBias       = createInfo.mipLodBias;
+        ci.anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_gpu->getHandle().getFeatures().samplerAnisotropy);
+        ci.maxAnisotropy    = createInfo.maxAnisotropy;
+        ci.compareEnable    = createInfo.compareFunc != CompareOp::Never;
+        ci.compareOp        = utils::VkCast(createInfo.compareFunc);
+        ci.minLod           = minSamplerLod;
+        ci.maxLod           = maxSamplerLod;
+        ci.borderColor      = ::vk::BorderColor::eFloatTransparentBlack;
+        ci.unnormalizedCoordinates = ::vk::False;
     }
 
-    _VR(m_table.vkCreateSampler(getHandle(), &ci, gVkAllocator, &sampler));
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_SAMPLER, reinterpret_cast<uint64_t>(sampler), debugName));
+    auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
+    _VR(result);
+    APH_VR(setDebugObjectName(sampler, debugName));
     *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     return Result::Success;
 }
@@ -864,19 +785,22 @@ void Device::destroy(CommandPool* pPool)
 void Device::destroy(Sampler* pSampler)
 {
     APH_PROFILER_SCOPE();
-    m_table.vkDestroySampler(getHandle(), pSampler->getHandle(), gVkAllocator);
+    getHandle().destroySampler(pSampler->getHandle(), vk_allocator());
     m_resourcePool.sampler.free(pSampler);
 }
 
-double Device::getTimeQueryResults(VkQueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
+double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery, TimeUnit unitType)
 {
     APH_PROFILER_SCOPE();
     uint64_t firstTimeStamp, secondTimeStamp;
 
-    m_table.vkGetQueryPoolResults(getHandle(), pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
-                                  VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-    m_table.vkGetQueryPoolResults(getHandle(), pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp,
-                                  sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+    auto res = getHandle().getQueryPoolResults(pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
+                                               ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
+    _VR(res);
+    res = getHandle().getQueryPoolResults(pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
+                                          ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
+    _VR(res);
+
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;
     auto     timeInSeconds  = timeDifference * period;
@@ -900,7 +824,7 @@ Semaphore* Device::acquireSemaphore()
 {
     APH_PROFILER_SCOPE();
     Semaphore* semaphore;
-    m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore);
+    APH_VR(m_resourcePool.syncPrimitive.acquireSemaphore(1, &semaphore));
     return semaphore;
 }
 Result Device::releaseSemaphore(Semaphore* semaphore)
@@ -909,7 +833,7 @@ Result Device::releaseSemaphore(Semaphore* semaphore)
     if(semaphore != VK_NULL_HANDLE)
     {
         auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
-        if(result != VK_SUCCESS)
+        if(!result.success())
         {
             return Result::RuntimeError;
         }
@@ -920,23 +844,22 @@ Fence* Device::acquireFence(bool isSignaled)
 {
     APH_PROFILER_SCOPE();
     Fence* pFence = {};
-    m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled);
+    APH_VR(m_resourcePool.syncPrimitive.acquireFence(&pFence, isSignaled));
     return pFence;
 }
 Result Device::releaseFence(Fence* pFence)
 {
     APH_PROFILER_SCOPE();
     auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
-    if(res != VK_SUCCESS)
+    if(!res.success())
     {
         return Result::RuntimeError;
     }
     return Result::Success;
 }
 
-void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func,
-                                   const std::vector<Semaphore*>& waitSems, const std::vector<Semaphore*>& signalSems,
-                                   Fence* pFence)
+void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const std::vector<Semaphore*>& waitSems,
+                            const std::vector<Semaphore*>& signalSems, Fence* pFence)
 {
     APH_PROFILER_SCOPE();
 
@@ -946,9 +869,9 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func,
     CommandBuffer* cmd = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 
-    _VR(cmd->begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT));
+    APH_VR(cmd->begin(::vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
     func(cmd);
-    _VR(cmd->end());
+    APH_VR(cmd->end());
 
     QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
     if(!pFence)
@@ -966,10 +889,11 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func,
 
     destroy(commandPool);
 }
-VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFlags, QueueType queueType)
+
+::vk::PipelineStageFlags Device::determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType)
 {
     APH_PROFILER_SCOPE();
-    VkPipelineStageFlags flags = 0;
+    ::vk::PipelineStageFlags flags = {};
 
     const auto& features = getCreateInfo().enabledFeatures;
 
@@ -977,70 +901,92 @@ VkPipelineStageFlags Device::determinePipelineStageFlags(VkAccessFlags accessFla
     {
     case aph::QueueType::Graphics:
     {
-        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-
-        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
+        if((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)))
         {
-            flags |= VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            flags |= ::vk::PipelineStageFlagBits::eVertexInput;
+        }
+
+        if((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
+                           ::vk::AccessFlagBits::eShaderWrite)))
+        {
+            flags |= ::vk::PipelineStageFlagBits::eVertexShader;
+            flags |= ::vk::PipelineStageFlagBits::eFragmentShader;
             if(features.tessellationSupported)
             {
-                flags |= VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
-                flags |= VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+                flags |= ::vk::PipelineStageFlagBits::eTessellationControlShader;
+                flags |= ::vk::PipelineStageFlagBits::eTessellationEvaluationShader;
             }
-            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            flags |= ::vk::PipelineStageFlagBits::eComputeShader;
 
             if(features.rayTracing)
             {
-                flags |= VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+                flags |= ::vk::PipelineStageFlagBits::eRayTracingShaderKHR;
             }
         }
 
-        if((accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0)
-            flags |= VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        if((accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead))
+        {
+            flags |= ::vk::PipelineStageFlagBits::eFragmentShader;
+        }
 
-        if((accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        if((accessFlags & (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)))
+        {
+            flags |= ::vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        }
 
         if((accessFlags &
-            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
+        {
+            flags |= ::vk::PipelineStageFlagBits::eEarlyFragmentTests | ::vk::PipelineStageFlagBits::eLateFragmentTests;
+        }
 
         break;
     }
     case aph::QueueType::Compute:
     {
-        if((accessFlags & (VK_ACCESS_INDEX_READ_BIT | VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT)) != 0 ||
-           (accessFlags & VK_ACCESS_INPUT_ATTACHMENT_READ_BIT) != 0 ||
-           (accessFlags & (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)) != 0 ||
+        if((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)) ||
+           (accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead) ||
+           (accessFlags & (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)) ||
            (accessFlags &
-            (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT)) != 0)
-            return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+            (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
+        {
+            return ::vk::PipelineStageFlagBits::eAllCommands;
+        }
 
-        if((accessFlags & (VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT)) != 0)
-            flags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
+                           ::vk::AccessFlagBits::eShaderWrite)))
+        {
+            flags |= ::vk::PipelineStageFlagBits::eComputeShader;
+        }
 
         break;
     }
     case aph::QueueType::Transfer:
-        return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        return ::vk::PipelineStageFlagBits::eAllCommands;
     default:
         break;
     }
 
     // Compatible with both compute and graphics queues
-    if((accessFlags & VK_ACCESS_INDIRECT_COMMAND_READ_BIT) != 0)
-        flags |= VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+    if((accessFlags & ::vk::AccessFlagBits::eIndirectCommandRead))
+    {
+        flags |= ::vk::PipelineStageFlagBits::eDrawIndirect;
+    }
 
-    if((accessFlags & (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT)) != 0)
-        flags |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if((accessFlags & (::vk::AccessFlagBits::eTransferRead | ::vk::AccessFlagBits::eTransferWrite)))
+    {
+        flags |= ::vk::PipelineStageFlagBits::eTransfer;
+    }
 
-    if((accessFlags & (VK_ACCESS_HOST_READ_BIT | VK_ACCESS_HOST_WRITE_BIT)) != 0)
-        flags |= VK_PIPELINE_STAGE_HOST_BIT;
+    if((accessFlags & (::vk::AccessFlagBits::eHostRead | ::vk::AccessFlagBits::eHostWrite)))
+    {
+        flags |= ::vk::PipelineStageFlagBits::eHost;
+    }
 
-    if(flags == 0)
-        flags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    if(!flags)
+    {
+        flags = ::vk::PipelineStageFlagBits::eTopOfPipe;
+    }
 
     return flags;
 }

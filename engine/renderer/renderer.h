@@ -49,7 +49,6 @@ public:
     double getCPUFrameTime() const { return m_frameCPUTime; }
 
 protected:
-    VkSurfaceKHR m_surface = {};
     RenderConfig m_config  = {};
 
 protected:

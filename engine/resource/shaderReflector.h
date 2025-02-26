@@ -51,14 +51,14 @@ struct CombinedResourceLayout
 {
     struct SetInfo
     {
-        ShaderLayout shaderLayout                           = {};
-        uint32_t     stagesForBindings[VULKAN_NUM_BINDINGS] = {};
-        uint32_t     stagesForSets                          = {};
+        ShaderLayout           shaderLayout                           = {};
+        ::vk::ShaderStageFlags stagesForBindings[VULKAN_NUM_BINDINGS] = {};
+        ::vk::ShaderStageFlags stagesForSets                          = {};
     };
     std::array<SetInfo, VULKAN_NUM_DESCRIPTOR_SETS>          setInfos   = {};
     std::array<VertexAttribState, VULKAN_NUM_VERTEX_ATTRIBS> vertexAttr = {};
 
-    VkPushConstantRange pushConstantRange = {};
+    ::vk::PushConstantRange pushConstantRange = {};
 
     std::bitset<32> attributeMask             = {};
     std::bitset<32> renderTargetMask          = {};
@@ -80,11 +80,11 @@ class ShaderReflector
 public:
     ShaderReflector(ReflectRequest request);
 
-    VkPushConstantRange    getPushConstantRange() const { return m_combinedLayout.pushConstantRange; }
-    VertexInput            getVertexInput() const { return m_vertexInput; }
-    CombinedResourceLayout getReflectLayoutMeta() const { return m_combinedLayout; }
-    SmallVector<VkDescriptorSetLayoutBinding> getLayoutBindings(uint32_t set);
-    SmallVector<VkDescriptorPoolSize>         getPoolSizes(uint32_t set);
+    ::vk::PushConstantRange getPushConstantRange() const { return m_combinedLayout.pushConstantRange; }
+    VertexInput             getVertexInput() const { return m_vertexInput; }
+    CombinedResourceLayout  getReflectLayoutMeta() const { return m_combinedLayout; }
+    SmallVector<::vk::DescriptorSetLayoutBinding> getLayoutBindings(uint32_t set);
+    SmallVector<::vk::DescriptorPoolSize>         getPoolSizes(uint32_t set);
 
 private:
     void           reflect();
@@ -97,8 +97,8 @@ private:
 
     struct SetInfo
     {
-        SmallVector<VkDescriptorSetLayoutBinding> bindings;
-        SmallVector<VkDescriptorPoolSize>         poolSizes;
+        SmallVector<::vk::DescriptorSetLayoutBinding> bindings;
+        SmallVector<::vk::DescriptorPoolSize>         poolSizes;
     };
     SetInfo setInfos[VULKAN_NUM_DESCRIPTOR_SETS] = {};
 };
