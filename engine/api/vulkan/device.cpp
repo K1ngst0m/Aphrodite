@@ -299,7 +299,6 @@ void Device::Destroy(Device* pDevice)
     // TODO
     delete pDevice->m_resourcePool.gpu;
 
-    pDevice->m_resourcePool.pipeline.clear();
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.commandPool.clear();
@@ -719,25 +718,6 @@ void Device::waitIdle()
 {
     APH_PROFILER_SCOPE();
     m_table.vkDeviceWaitIdle(getHandle());
-}
-
-Pipeline* Device::acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName)
-{
-    APH_PROFILER_SCOPE();
-    Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
-    APH_ASSERT(pPipeline);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
-                                  reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
-    return pPipeline;
-}
-
-Pipeline* Device::acquirePipeline(const ComputePipelineCreateInfo& createInfo, std::string_view debugName)
-{
-    APH_PROFILER_SCOPE();
-    Pipeline* pPipeline = m_resourcePool.pipeline.getPipeline(createInfo);
-    _VR(utils::setDebugObjectName(getHandle(), VK_OBJECT_TYPE_PIPELINE,
-                                  reinterpret_cast<uint64_t>(pPipeline->getHandle()), debugName));
-    return pPipeline;
 }
 
 Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)

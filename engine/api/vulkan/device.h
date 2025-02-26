@@ -1,5 +1,4 @@
-#ifndef VULKAN_DEVICE_H_
-#define VULKAN_DEVICE_H_
+#pragma once
 
 #include "common/timer.h"
 #include "instance.h"
@@ -11,7 +10,6 @@
 #include "module/module.h"
 #include "sampler.h"
 #include "physicalDevice.h"
-#include "pipeline.h"
 #include "queue.h"
 #include "shader.h"
 #include "swapChain.h"
@@ -59,8 +57,6 @@ public:
     void destroy(DescriptorSetLayout* pSetLayout);
 
 public:
-    Pipeline*    acquirePipeline(const GraphicsPipelineCreateInfo& createInfo, std::string_view debugName = "");
-    Pipeline*    acquirePipeline(const ComputePipelineCreateInfo& createInfo, std::string_view debugName = "");
     CommandPool* acquireCommandPool(const CommandPoolCreateInfo& info);
     Semaphore*   acquireSemaphore();
     Fence*       acquireFence(bool isSignaled);
@@ -119,7 +115,6 @@ private:
         ThreadSafeObjectPool<Image>               image;
         ThreadSafeObjectPool<Sampler>             sampler;
         ThreadSafeObjectPool<ImageView>           imageView;
-        PipelineAllocator                         pipeline;
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
         ThreadSafeObjectPool<ShaderProgram>       program;
         ThreadSafeObjectPool<Queue>               queue;
@@ -127,10 +122,8 @@ private:
         CommandPoolAllocator                      commandPool;
         SyncPrimitiveAllocator                    syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) : pipeline(pDevice), commandPool(pDevice), syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice) : commandPool(pDevice), syncPrimitive(pDevice) {}
     } m_resourcePool;
 };
 
 }  // namespace aph::vk
-
-#endif  // VKLDEVICE_H_
