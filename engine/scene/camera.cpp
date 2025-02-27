@@ -27,9 +27,9 @@ Camera& Camera::setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::
     return *this;
 }
 
-Camera& Camera::setPosition(glm::vec4 value)
+Camera& Camera::setPosition(glm::vec3 value)
 {
-    m_position   = value;
+    m_position   = glm::vec4(value, 1.0f);
     m_dirty.view = true;
     return *this;
 }
@@ -65,7 +65,7 @@ void Camera::updateView()
     setView(rot * trans);
 }
 
-glm::mat4 Camera::getProjection()
+const glm::mat4& Camera::getProjection()
 {
     if(m_dirty.projection)
     {
@@ -74,7 +74,7 @@ glm::mat4 Camera::getProjection()
     return m_projection;
 }
 
-glm::mat4 Camera::getView()
+const glm::mat4& Camera::getView()
 {
     if(m_dirty.view)
     {

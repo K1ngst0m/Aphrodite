@@ -163,13 +163,13 @@ void hello_aphrodite::init()
 
         // matrix uniform buffer
         {
-            m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
-            m_camera.setProjection(aph::Perspective{
-                .aspect = static_cast<float>(m_options.windowWidth) / static_cast<float>(m_options.windowHeight),
-                .fov    = 90.0f,
-                .znear  = 0.1f,
-                .zfar   = 100.0f,
-            });
+            m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f})
+                .setProjection(aph::Perspective{
+                    .aspect = static_cast<float>(m_options.windowWidth) / static_cast<float>(m_options.windowHeight),
+                    .fov    = 90.0f,
+                    .znear  = 0.1f,
+                    .zfar   = 100.0f,
+                });
 
             m_mvp.view = m_camera.getView();
             m_mvp.proj = m_camera.getProjection();
