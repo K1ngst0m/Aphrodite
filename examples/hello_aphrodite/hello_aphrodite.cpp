@@ -163,6 +163,17 @@ void hello_aphrodite::init()
 
         // matrix uniform buffer
         {
+            m_camera.setLookAt({0.0f, 0.0f, 3.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f});
+            m_camera.setProjection(aph::Perspective{
+                .aspect = static_cast<float>(m_options.windowWidth) / static_cast<float>(m_options.windowHeight),
+                .fov    = 90.0f,
+                .znear  = 0.1f,
+                .zfar   = 100.0f,
+            });
+
+            m_mvp.view = m_camera.getView();
+            m_mvp.proj = m_camera.getProjection();
+
             aph::BufferLoadInfo bufferLoadInfo{.debugName  = "matrix data",
                                                .data       = &m_mvp,
                                                .createInfo = {
@@ -214,11 +225,6 @@ void hello_aphrodite::init()
         }
 
         m_pResourceLoader->wait();
-
-        m_mvp.view = glm::translate(m_mvp.view, glm::vec3(0.0f, 0.0f, 3.0f));
-        m_mvp.proj = glm::perspective(
-            glm::radians(90.0f), static_cast<float>(m_options.windowWidth) / static_cast<float>(m_options.windowHeight),
-            0.1f, 100.0f);
 
         // record graph execution
         m_renderer->recordGraph([this](auto* graph) {

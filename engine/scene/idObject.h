@@ -1,5 +1,4 @@
-#ifndef IDOBJECT_H_
-#define IDOBJECT_H_
+#pragma once
 
 #include "common/common.h"
 
@@ -21,22 +20,13 @@ public:
 
 class IdObject
 {
-private:
-    friend struct IdCmp;  // Avoid calling getId()
-    IdType m_Id;
-
-protected:
-    void _setId(IdType newId) { m_Id = newId; }
-
 public:
     IdObject(IdType id) : m_Id(id) {}
+    virtual ~IdObject() = default;
 
     IdType getId() const { return m_Id; }
 
-    bool operator()(const IdObject* left, const IdObject* right) { return left->m_Id < right->m_Id; }
-
-    bool operator()(const IdObject& left, const IdObject& right) { return left.m_Id < right.m_Id; }
+private:
+    IdType m_Id;
 };
 }  // namespace aph
-
-#endif  // IDOBJECT_H_

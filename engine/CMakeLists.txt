@@ -10,6 +10,7 @@ add_subdirectory(resource)
 add_subdirectory(api)
 add_subdirectory(renderer)
 add_subdirectory(filesystem)
+add_subdirectory(scene)
 add_subdirectory(module)
 add_subdirectory(renderGraph)
 add_subdirectory(ui)
@@ -44,6 +45,7 @@ target_link_libraries(aph-engine PUBLIC
   aphrodite::api
   aphrodite::renderer
   aphrodite::rendergraph
+  aphrodite::scene
 )
 
 add_library(aphrodite::engine ALIAS aph-engine)

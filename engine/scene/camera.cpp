@@ -2,85 +2,99 @@
 
 namespace aph
 {
-Camera::Camera(CameraType cameraType) :
-    Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
-    m_cameraType(cameraType)
+Camera& Camera::setProjection(Perspective perspective)
 {
+    m_cameraType       = CameraType::Perspective;
+    m_perspective      = perspective;
+    m_dirty.projection = true;
+    return *this;
 }
 
-void CameraController::updateView()
+Camera& Camera::setProjection(Orthographic orthographic)
 {
-    // rotation
-    glm::mat4 rotM = glm::mat4(1.0f);
-    {
-        rotM = glm::rotate(rotM, glm::radians(m_direction.x * (m_flipY ? -1.0f : 1.0f)), {1.0f, 0.0f, 0.0f});
-        rotM = glm::rotate(rotM, glm::radians(m_direction.y), {0.0f, 1.0f, 0.0f});
-        rotM = glm::rotate(rotM, glm::radians(m_direction.z), {0.0f, 0.0f, 1.0f});
-    }
+    m_cameraType       = CameraType::Orthographic;
+    m_orthographic     = orthographic;
+    m_dirty.projection = true;
+    return *this;
+}
 
-    // translation
-    glm::mat4 transM = glm::mat4(1.0f);
+Camera& Camera::setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::vec3& up)
+{
+    m_position        = glm::vec4(eye, 1.0f);
+    glm::vec3 forward = glm::normalize(at - eye);
+    m_orientation     = glm::quatLookAt(forward, glm::normalize(up));
+    m_dirty.view      = true;
+    return *this;
+}
+
+Camera& Camera::setPosition(glm::vec4 value)
+{
+    m_position   = value;
+    m_dirty.view = true;
+    return *this;
+}
+
+void Camera::updateProjection()
+{
+    switch(getType())
     {
-        glm::vec3 translation = -m_position;
+    case CameraType::Orthographic:
+    {
+        setProjection(glm::ortho(m_orthographic.left, m_orthographic.right, m_orthographic.bottom, m_orthographic.top,
+                                 m_orthographic.znear, m_orthographic.zfar));
+    }
+    break;
+    case CameraType::Perspective:
+    {
+        auto matrix = glm::perspective(glm::radians(m_perspective.fov), m_perspective.aspect, m_perspective.znear,
+                                       m_perspective.zfar);
         if(m_flipY)
         {
-            translation.y *= -1.0f;
+            matrix[1][1] *= -1.0f;
         }
-        transM = glm::translate(transM, translation);
+        setProjection(matrix);
     }
+    break;
+    }
+}
 
-    if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
-    {
-        m_camera->m_view = rotM * transM;
-    }
-    else if(m_camera->m_cameraType == CameraType::ORTHO)
-    {
-        m_camera->m_view = transM * rotM;
-    }
-};
-
-void CameraController::update(float deltaTime)
+void Camera::updateView()
 {
-    updateView();
-    updateProj();
-    if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
-    {
-        if(std::any_of(m_directions.begin(), m_directions.end(), [](const auto& key) -> bool { return key.second; }))
-        {
-            glm::vec3 camFront{-cos(glm::radians(m_direction.x)) * sin(glm::radians(m_direction.y)),
-                               sin(glm::radians(m_direction.x)),
-                               cos(glm::radians(m_direction.x)) * cos(glm::radians(m_direction.y))};
-            camFront = glm::normalize(camFront);
+    glm::mat4 rot   = glm::mat4_cast(glm::conjugate(m_orientation));
+    glm::mat4 trans = glm::translate(glm::mat4(1.0f), -glm::vec3(m_position));
+    setView(rot * trans);
+}
 
-            float moveSpeed{deltaTime * m_movementSpeed};
-
-            if(m_directions[Direction::UP])
-                m_position += camFront * moveSpeed;
-            if(m_directions[Direction::DOWN])
-                m_position -= camFront * moveSpeed;
-            if(m_directions[Direction::LEFT])
-                m_position -= glm::normalize(glm::cross(camFront, {0.0f, 1.0f, 0.0f})) * moveSpeed;
-            if(m_directions[Direction::RIGHT])
-                m_position += glm::normalize(glm::cross(camFront, {0.0f, 1.0f, 0.0f})) * moveSpeed;
-        }
-    }
-};
-
-void CameraController::updateProj()
+glm::mat4 Camera::getProjection()
 {
-    if(m_camera->m_cameraType == CameraType::PERSPECTIVE)
+    if(m_dirty.projection)
     {
-        m_camera->m_projection = glm::perspective(glm::radians(m_camera->m_perspective.fov), m_camera->m_aspect,
-                                                  m_camera->m_perspective.znear, m_camera->m_perspective.zfar);
-        if(m_flipY)
-        {
-            m_camera->m_projection[1][1] *= -1.0f;
-        }
+        updateProjection();
     }
-    else if(m_camera->m_cameraType == CameraType::ORTHO)
+    return m_projection;
+}
+
+glm::mat4 Camera::getView()
+{
+    if(m_dirty.view)
     {
-        m_camera->m_projection = glm::ortho(m_camera->m_ortho.left, m_camera->m_ortho.right, m_camera->m_ortho.bottom,
-                                            m_camera->m_ortho.top, m_camera->m_ortho.front, m_camera->m_ortho.back);
+        updateView();
     }
+    return m_view;
+}
+
+Camera& Camera::setProjection(glm::mat4 value)
+{
+    m_projection       = value;
+    m_dirty.projection = false;
+    return *this;
+}
+
+Camera& Camera::setView(glm::mat4 value)
+{
+    m_view       = value;
+    m_dirty.view = false;
+    return *this;
 }
 }  // namespace aph
+

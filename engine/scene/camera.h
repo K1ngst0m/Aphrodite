@@ -1,56 +1,81 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "object.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace aph
 {
 enum class CameraType
 {
-    UNDEFINED,
-    ORTHO,
-    PERSPECTIVE,
+    Orthographic,
+    Perspective,
 };
 
-struct Light;
-struct Camera : public Object
+struct Orthographic
 {
-    Camera(Light* light) :
-        Object{Id::generateNewId<Camera>(), ObjectType::CAMERA},
-        m_cameraType(CameraType::PERSPECTIVE)
-    {
-    }
-    Camera(CameraType cameraType);
+    float left   = {};
+    float right  = {};
+    float bottom = {};
+    float top    = {};
+    float znear  = {1.0f};
+    float zfar   = {1000.0f};
+};
+
+struct Perspective
+{
+    float aspect = {16.0f / 9.0f};
+    float fov    = {60.0f};
+    float znear  = {1.0f};
+    float zfar   = {1000.0f};
+};
+
+class Camera : public Object<Camera>
+{
+public:
+    Camera(CameraType cameraType) : Object{ObjectType::CAMERA}, m_cameraType(cameraType) {}
+
+    CameraType getType() const { return m_cameraType; }
+
+    glm::mat4 getProjection();
+    glm::mat4 getView();
+
+    Camera& setProjection(Perspective perspective);
+    Camera& setProjection(Orthographic orthographic);
+    Camera& setProjection(glm::mat4 value);
+
+    Camera& setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::vec3& up);
+    Camera& setView(glm::mat4 value);
+
+    Camera& setPosition(glm::vec4 value);
+
     ~Camera() override = default;
 
-    CameraType m_cameraType{CameraType::UNDEFINED};
+private:
+    void updateProjection();
+    void updateView();
 
-    float     m_aspect{0.0f};
+private:
+    CameraType m_cameraType{CameraType::Perspective};
+
     glm::mat4 m_projection{1.0f};
     glm::mat4 m_view{1.0f};
 
-    union
-    {
-        struct
-        {
-            float left{};
-            float right{};
-            float bottom{};
-            float top{};
-            float front{};
-            float back{};
-        } m_ortho;
+    glm::vec4 m_position{0.0f};
+    glm::quat m_orientation{1.0f, 0.0f, 0.0f, 0.0f};
 
-        struct
-        {
-            float fov{60.0f};
-            float znear{96.0f};
-            float zfar{0.01f};
-        } m_perspective;
-    };
+    bool m_flipY{true};
+
+    Orthographic m_orthographic;
+    Perspective  m_perspective;
+
+    struct
+    {
+        bool projection = true;
+        bool view       = true;
+    } m_dirty;
 };
 
 enum class Direction
@@ -61,47 +86,4 @@ enum class Direction
     DOWN,
 };
 
-class CameraController
-{
-public:
-    static std::unique_ptr<CameraController> Create(Camera* camera)
-    {
-        auto instance = std::unique_ptr<CameraController>(new CameraController(camera));
-        return instance;
-    }
-
-    void move(Direction direction, bool flag) { m_directions[direction] = flag; }
-
-    void rotate(glm::vec3 delta)
-    {
-        if(!enabled)
-        {
-            return;
-        }
-        m_direction += delta * m_rotationSpeed;
-    }
-    void translate(glm::vec3 delta) { m_position += delta * m_movementSpeed; }
-    void update(float deltaTime);
-    void setCursorEnabled(bool flag) { enabled = flag; }
-
-private:
-    CameraController(Camera* camera) : m_camera{camera} {}
-    void updateProj();
-    void updateView();
-
-    Camera* m_camera{};
-
-    bool      m_flipY{true};
-    glm::vec3 m_direction{0.0f, 180.0f, 0.0f};
-    glm::vec3 m_position{0.0f, 0.0f, -3.0f};
-    float     m_rotationSpeed{0.1f};
-    float     m_movementSpeed{2.5f};
-
-    std::unordered_map<Direction, bool> m_directions{
-        {Direction::LEFT, false}, {Direction::RIGHT, false}, {Direction::UP, false}, {Direction::DOWN, false}};
-
-    bool enabled = false;
-};
-
 }  // namespace aph
-#endif

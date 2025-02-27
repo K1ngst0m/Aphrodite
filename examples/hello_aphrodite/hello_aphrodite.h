@@ -36,6 +36,8 @@ private:
     aph::vk::Device*               m_pDevice         = {};
     aph::vk::SwapChain*            m_pSwapChain      = {};
 
+    aph::Camera m_camera = {aph::CameraType::Perspective};
+
     bool m_enableMeshShading = true;
 
     struct

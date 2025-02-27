@@ -1,14 +1,9 @@
-#ifndef VKLMODEL_H_
-#define VKLMODEL_H_
+#pragma once
 
-#include <memory>
 #include "idObject.h"
 
 namespace aph
 {
-
-class Scene;
-
 enum class ObjectType : uint8_t
 {
     UNATTACHED,
@@ -18,17 +13,13 @@ enum class ObjectType : uint8_t
     SCENENODE,
 };
 
+template <typename T>
 class Object : public IdObject
 {
 public:
-    template <typename TObject, typename... Args>
-    static std::unique_ptr<TObject> Create(Args&&... args)
-    {
-        auto instance = std::make_unique<TObject>(std::forward<Args>(args)...);
-        return instance;
-    }
-    Object(IdType id, ObjectType type) : IdObject{id}, m_ObjectType{type} {}
-    virtual ~Object() = default;
+    Object(ObjectType type) :
+        IdObject{Id::generateNewId<T>()}, m_ObjectType{type} {}
+    ~Object() override = default;
 
     ObjectType getType() { return m_ObjectType; }
 
@@ -37,5 +28,3 @@ protected:
 };
 
 }  // namespace aph
-
-#endif  // VKLMODEL_H_

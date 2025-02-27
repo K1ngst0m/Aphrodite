@@ -1,5 +1,4 @@
-#ifndef APH_H_
-#define APH_H_
+#pragma once
 
 #include "renderer/renderer.h"
 
@@ -26,4 +25,4 @@
 
 #include "math/math.h"
 
-#endif  // APH_H_
+#include "scene/camera.h"
