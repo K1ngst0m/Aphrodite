@@ -1,10 +1,8 @@
-#ifndef PIPELINE_H_
-#define PIPELINE_H_
+#pragma once
 
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
 #include "common/hash.h"
-#include "volk.h"
 
 namespace aph::vk
 {
@@ -123,5 +121,3 @@ private:
 };
 
 }  // namespace aph::vk
-
-#endif  // PIPELINE_H_

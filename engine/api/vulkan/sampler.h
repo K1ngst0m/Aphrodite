@@ -1,7 +1,5 @@
-#ifndef APH_SAMPLER_H
-#define APH_SAMPLER_H
+#pragma once
 
-#include <volk.h>
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
 #include "vkUtils.h"
@@ -131,5 +129,3 @@ inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
     return ci;
 }
 }  // namespace aph::vk::init
-
-#endif

@@ -1,7 +1,5 @@
-#ifndef VULKAN_BUFFER_H_
-#define VULKAN_BUFFER_H_
+#pragma once
 
-#include <volk.h>
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
 #include "vkUtils.h"
@@ -34,5 +32,3 @@ private:
     ResourceState m_resourceState = ResourceState::Undefined;
 };
 }  // namespace aph::vk
-
-#endif  // VKLBUFFER_H_

@@ -83,7 +83,6 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     auto& wsi       = m_pWindowSystem;
     // create instance
     {
-        volkInitialize();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
         auto                   requiredExtensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};

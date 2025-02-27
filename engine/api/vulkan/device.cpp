@@ -211,7 +211,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
-    volkLoadDeviceTable(&device->m_table, static_cast<VkDevice>(device_handle));
 
     // TODO
     device->m_resourcePool.deviceMemory = new VMADeviceAllocator(createInfo.pInstance, device.get());
@@ -438,7 +437,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         pipelineLayout = std::move(handle);
     }
 
-    HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps;
+    HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps;
     // setup shader object
     {
         SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos;

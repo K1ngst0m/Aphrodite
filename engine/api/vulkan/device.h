@@ -76,7 +76,6 @@ public:
     void   unMapMemory(Buffer* pBuffer) const;
 
 public:
-    VolkDeviceTable* getDeviceTable() { return &m_table; }
     PhysicalDevice*  getPhysicalDevice() const { return m_gpu; }
     Format           getDepthFormat() const;
     Queue*           getQueue(QueueType type, uint32_t queueIndex = 0);
@@ -113,7 +112,6 @@ private:
 
 private:
     PhysicalDevice* m_gpu{};
-    VolkDeviceTable m_table{};
 
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
 

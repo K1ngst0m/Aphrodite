@@ -1,7 +1,5 @@
-#ifndef VULKAN_IMAGE_H_
-#define VULKAN_IMAGE_H_
+#pragma once
 
-#include <volk.h>
 #include "api/gpuResource.h"
 #include "common/hash.h"
 #include "allocator/objectPool.h"
@@ -82,5 +80,3 @@ private:
 };
 
 }  // namespace aph::vk
-
-#endif  // IMAGE_H_

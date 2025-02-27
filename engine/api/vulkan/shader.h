@@ -17,11 +17,11 @@ class DescriptorSet;
 
 struct PipelineLayout
 {
-    VertexInput         vertexInput       = {};
-    VkPushConstantRange pushConstantRange = {};
+    VertexInput             vertexInput       = {};
+    ::vk::PushConstantRange pushConstantRange = {};
 
     SmallVector<DescriptorSetLayout*> setLayouts = {};
-    VkPipelineLayout                  handle     = {};
+    ::vk::PipelineLayout              handle     = {};
 };
 
 struct ImmutableSamplerBank
@@ -37,7 +37,7 @@ struct ShaderCreateInfo
     bool                  compile = false;
 };
 
-class Shader : public ResourceHandle<VkShaderModule, ShaderCreateInfo>
+class Shader : public ResourceHandle<::vk::ShaderModule, ShaderCreateInfo>
 {
     friend class ObjectPool<Shader>;
 
@@ -102,7 +102,7 @@ public:
         }
         return nullptr;
     }
-    VkShaderEXT getShaderObject(ShaderStage stage) const
+    ::vk::ShaderEXT getShaderObject(ShaderStage stage) const
     {
         if(m_shaderObjects.contains(stage))
         {
@@ -110,20 +110,20 @@ public:
         }
         return VK_NULL_HANDLE;
     }
-    VkPipelineLayout getPipelineLayout() const { return m_pipelineLayout.handle; }
-    PipelineType     getPipelineType() const { return getCreateInfo().type; }
+    ::vk::PipelineLayout getPipelineLayout() const { return m_pipelineLayout.handle; }
+    PipelineType         getPipelineType() const { return getCreateInfo().type; }
 
-    const VkPushConstantRange& getPushConstantRange() const { return m_pipelineLayout.pushConstantRange; }
+    const ::vk::PushConstantRange& getPushConstantRange() const { return m_pipelineLayout.pushConstantRange; }
 
 private:
     ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
-                  HashMap<ShaderStage, VkShaderEXT> shaderObjectMaps);
+                  HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);
     ~ShaderProgram() = default;
 
 private:
-    HashMap<ShaderStage, Shader*>     m_shaders        = {};
-    HashMap<ShaderStage, VkShaderEXT> m_shaderObjects  = {};
-    PipelineLayout                    m_pipelineLayout = {};
+    HashMap<ShaderStage, Shader*>         m_shaders        = {};
+    HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects  = {};
+    PipelineLayout                        m_pipelineLayout = {};
 };
 
 }  // namespace aph::vk

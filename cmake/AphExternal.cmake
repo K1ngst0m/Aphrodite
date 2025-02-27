@@ -104,13 +104,9 @@ CPMAddPackage(
 )
 add_library(vulkan-registry INTERFACE IMPORTED)
 target_include_directories(vulkan-registry INTERFACE ${vulkan-headers_SOURCE_DIR}/include)
-target_compile_definitions(vulkan-registry INTERFACE VULKAN_HPP_NO_EXCEPTIONS)
-
-CPMAddPackage(
-  NAME volk
-  GITHUB_REPOSITORY zeux/volk
-  GIT_TAG vulkan-sdk-${VK_SDK_VERSION}
-  PATCHES ${APH_PATCH_DIR}/volk.patch
+target_compile_definitions(vulkan-registry INTERFACE
+  VULKAN_HPP_NO_EXCEPTIONS
+  VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1
 )
 
 # wsi backend
@@ -190,3 +186,4 @@ target_link_libraries(imgui
   $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:glfw>
   $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2-static>
 )
+target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)

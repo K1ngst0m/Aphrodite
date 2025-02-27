@@ -58,7 +58,7 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
 void CommandPool::trim()
 {
     std::lock_guard<std::mutex> holder{m_lock};
-    m_pDevice->getDeviceTable()->vkTrimCommandPool(m_pDevice->getHandle(), getHandle(), 0);
+    m_pDevice->getHandle().trimCommandPool(getHandle(), {});
 }
 
 void CommandPool::reset(bool freeMemory)

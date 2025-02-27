@@ -91,7 +91,6 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
         _VR(res);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
-        volkLoadInstance(static_cast<VkInstance>(instance_handle));
         instance = new Instance(createInfo, instance_handle);
     }
     APH_ASSERT(instance);

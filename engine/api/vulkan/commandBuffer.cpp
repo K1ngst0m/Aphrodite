@@ -9,7 +9,6 @@ CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue) 
     ResourceHandle(handle),
     m_pDevice(pDevice),
     m_pQueue(pQueue),
-    m_pDeviceTable(pDevice->getDeviceTable()),
     m_state(RecordState::Initial)
 {
 }
@@ -207,29 +206,29 @@ void CommandBuffer::blitImage(Image* srcImage, Image* dstImage, const ImageBlitI
 
 void CommandBuffer::endRendering()
 {
-    m_pDeviceTable->vkCmdEndRendering(getHandle());
+    getHandle().endRendering();
 }
 
 void CommandBuffer::dispatch(DispatchArguments args)
 {
     flushComputeCommand();
-    m_pDeviceTable->vkCmdDispatch(getHandle(), args.x, args.y, args.z);
+    getHandle().dispatch(args.x, args.y, args.z);
 }
 void CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset)
 {
     flushComputeCommand();
-    m_pDeviceTable->vkCmdDispatchIndirect(getHandle(), pBuffer->getHandle(), offset);
+    getHandle().dispatchIndirect(pBuffer->getHandle(), offset);
 }
 void CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride)
 {
     flushGraphicsCommand();
-    m_pDeviceTable->vkCmdDrawIndirect(getHandle(), pBuffer->getHandle(), offset, drawCount, stride);
+    getHandle().drawIndirect(pBuffer->getHandle(), offset, drawCount, stride);
 }
 void CommandBuffer::drawIndexed(DrawIndexArguments args)
 {
     flushGraphicsCommand();
-    m_pDeviceTable->vkCmdDrawIndexed(m_handle, args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
-                                     args.firstInstance);
+    getHandle().drawIndexed(args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
+                            args.firstInstance);
 }
 
 void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
@@ -425,7 +424,7 @@ void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 void CommandBuffer::endDebugLabel()
 {
 #ifdef APH_DEBUG
-    vkCmdEndDebugUtilsLabelEXT(getHandle());
+    getHandle().endDebugUtilsLabelEXT();
 #endif
 }
 void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& bufferBarriers,
@@ -548,9 +547,9 @@ void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& bufferBarrie
 void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
 {
     aph::vk::ImageBarrier barrier{
-        .pImage       = pImage,
-        .currentState = pImage->getResourceState(),
-        .newState     = newState,
+        .pImage             = pImage,
+        .currentState       = pImage->getResourceState(),
+        .newState           = newState,
         .subresourceBarrier = 1,
     };
     insertBarrier({barrier});
@@ -625,7 +624,7 @@ void CommandBuffer::setDepthState(const CommandState::Graphics::DepthState& stat
 void CommandBuffer::draw(DispatchArguments args)
 {
     flushGraphicsCommand();
-    m_pDeviceTable->vkCmdDrawMeshTasksEXT(m_handle, args.x, args.y, args.z);
+    getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
 }
 
 void CommandBuffer::initDynamicGraphicsState()
@@ -723,9 +722,9 @@ void CommandBuffer::flushDescriptorSet()
     if(m_commandState.resourceBindings.dirtyPushConstant)
     {
         auto& range = m_commandState.pProgram->getPushConstantRange();
-        m_pDeviceTable->vkCmdPushConstants(getHandle(), m_commandState.pProgram->getPipelineLayout(), range.stageFlags,
-                                           0, sizeof(m_commandState.resourceBindings.pushConstantData),
-                                           m_commandState.resourceBindings.pushConstantData);
+        getHandle().pushConstants(m_commandState.pProgram->getPipelineLayout(), range.stageFlags, 0,
+                                  sizeof(m_commandState.resourceBindings.pushConstantData),
+                                  m_commandState.resourceBindings.pushConstantData);
         m_commandState.resourceBindings.dirtyPushConstant = false;
     }
 }

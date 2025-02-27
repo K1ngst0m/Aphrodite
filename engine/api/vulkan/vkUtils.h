@@ -1,7 +1,5 @@
 #pragma once
 
-#define VK_NO_PROTOTYPES
-#include <volk.h>
 #include <vulkan/vulkan.hpp>
 #include "common/common.h"
 #include "common/logger.h"

@@ -9,7 +9,6 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& c
                                          const SmallVector<::vk::DescriptorSetLayoutBinding>& bindings) :
     ResourceHandle(handle, createInfo),
     m_pDevice(device),
-    m_pDeviceTable(device->getDeviceTable()),
     m_poolSizes(poolSizes)
 {
     // fill bindings and count of types

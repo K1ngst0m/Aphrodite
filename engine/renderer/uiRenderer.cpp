@@ -58,17 +58,17 @@ void UI::load()
     {
         // TODO remove: descriptor pool manually creation
         {
-            VkDescriptorPoolSize poolSizes[] = {
-                {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
-            };
-            VkDescriptorPoolCreateInfo poolInfo = {};
-            poolInfo.sType                      = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-            poolInfo.flags                      = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-            poolInfo.maxSets                    = 1;
-            poolInfo.poolSizeCount              = (uint32_t)IM_ARRAYSIZE(poolSizes);
-            poolInfo.pPoolSizes                 = poolSizes;
-            _VR(m_pDevice->getDeviceTable()->vkCreateDescriptorPool(m_pDevice->getHandle(), &poolInfo, vkAllocator(),
-                                                                    &m_pool));
+            ::vk::DescriptorPoolSize poolSizes{};
+            poolSizes.setType(::vk::DescriptorType::eCombinedImageSampler).setDescriptorCount(1);
+
+            ::vk::DescriptorPoolCreateInfo poolInfo{};
+            poolInfo.setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
+                .setMaxSets(1)
+                .setPoolSizes({poolSizes});
+
+            auto [result, pool] = m_pDevice->getHandle().createDescriptorPool(poolInfo, vk_allocator());
+            _VR(result);
+            m_pool = pool;
         }
 
         auto checkResult = [](VkResult err) {
@@ -81,7 +81,8 @@ void UI::load()
 
         ImGui_ImplVulkan_LoadFunctions(
             [](const char* function_name, void* vulkan_instance) {
-                return vkGetInstanceProcAddr(*(reinterpret_cast<VkInstance*>(vulkan_instance)), function_name);
+                return VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr(
+                    *(reinterpret_cast<VkInstance*>(vulkan_instance)), function_name);
             },
             &m_pRenderer->getInstance()->getHandle());
 
@@ -99,6 +100,7 @@ void UI::load()
         initInfo.Allocator                 = vkAllocator();
         initInfo.CheckVkResultFn           = checkResult;
         initInfo.UseDynamicRendering       = true;
+        initInfo.Allocator                 = vkAllocator();
         initInfo.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
         auto format = static_cast<VkFormat>(utils::VkCast(m_pRenderer->getSwapchain()->getFormat()));
         initInfo.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
@@ -114,9 +116,7 @@ void UI::load()
 void UI::unload()
 {
     ImGui_ImplVulkan_Shutdown();
-    {
-        m_pDevice->getDeviceTable()->vkDestroyDescriptorPool(m_pDevice->getHandle(), m_pool, vkAllocator());
-    }
+    m_pDevice->getHandle().destroyDescriptorPool(m_pool, vk_allocator());
 }
 
 void UI::draw(CommandBuffer* pCmd)

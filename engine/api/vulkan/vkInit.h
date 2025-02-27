@@ -1,9 +1,7 @@
-#ifndef VKLINIT_H_
-#define VKLINIT_H_
-
-#include <volk.h>
+#pragma once
 
 #include <vector>
+#include <vulkan/vulkan.h>
 
 namespace aph::vk::init
 {
@@ -641,5 +639,3 @@ inline VkPipelineShaderStageCreateInfo pipelineShaderStageCreateInfo(VkShaderSta
 }
 
 }  // namespace aph::vk::init
-
-#endif  // VKLINIT_H_

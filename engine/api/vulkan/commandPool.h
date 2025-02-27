@@ -1,7 +1,6 @@
 #ifndef COMMANDPOOL_H_
 #define COMMANDPOOL_H_
 
-#include <volk.h>
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "common/hash.h"

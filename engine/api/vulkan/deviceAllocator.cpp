@@ -22,13 +22,13 @@ const HashMap<BufferDomain, VmaMemoryUsage> m_bufferDomainUsageMap = {
 
 VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
 {
-    auto& table = *pDevice->getDeviceTable();
+    auto& table = VULKAN_HPP_DEFAULT_DISPATCHER;
 
     VmaVulkanFunctions vulkanFunctions = {
-        .vkGetInstanceProcAddr                   = vkGetInstanceProcAddr,
-        .vkGetDeviceProcAddr                     = vkGetDeviceProcAddr,
-        .vkGetPhysicalDeviceProperties           = vkGetPhysicalDeviceProperties,
-        .vkGetPhysicalDeviceMemoryProperties     = vkGetPhysicalDeviceMemoryProperties,
+        .vkGetInstanceProcAddr                   = table.vkGetInstanceProcAddr,
+        .vkGetDeviceProcAddr                     = table.vkGetDeviceProcAddr,
+        .vkGetPhysicalDeviceProperties           = table.vkGetPhysicalDeviceProperties,
+        .vkGetPhysicalDeviceMemoryProperties     = table.vkGetPhysicalDeviceMemoryProperties,
         .vkAllocateMemory                        = table.vkAllocateMemory,
         .vkFreeMemory                            = table.vkFreeMemory,
         .vkMapMemory                             = table.vkMapMemory,
@@ -48,7 +48,7 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
         .vkGetImageMemoryRequirements2KHR        = table.vkGetImageMemoryRequirements2,
         .vkBindBufferMemory2KHR                  = table.vkBindBufferMemory2,
         .vkBindImageMemory2KHR                   = table.vkBindImageMemory2,
-        .vkGetPhysicalDeviceMemoryProperties2KHR = vkGetPhysicalDeviceMemoryProperties2,
+        .vkGetPhysicalDeviceMemoryProperties2KHR = table.vkGetPhysicalDeviceMemoryProperties2,
         .vkGetDeviceBufferMemoryRequirements     = table.vkGetDeviceBufferMemoryRequirements,
         .vkGetDeviceImageMemoryRequirements      = table.vkGetDeviceImageMemoryRequirements,
     };

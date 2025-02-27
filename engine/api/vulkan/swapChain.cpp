@@ -112,7 +112,6 @@ Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
 
 SwapChain::~SwapChain()
 {
-    // TODO figure out why pool clear could not called object deleter
     for(auto* image : m_images)
     {
         m_imagePools.free(image);

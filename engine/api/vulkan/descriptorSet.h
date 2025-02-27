@@ -101,7 +101,6 @@ private:
     std::vector<::vk::DescriptorSetLayoutBinding> m_bindings = {};
 
 private:
-    VolkDeviceTable*                        m_pDeviceTable               = {};
     SmallVector<::vk::DescriptorPoolSize>   m_poolSizes                  = {};
     SmallVector<::vk::DescriptorPool>       m_pools                      = {};
     SmallVector<uint32_t>                   m_allocatedSets              = {};

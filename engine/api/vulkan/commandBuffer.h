@@ -208,7 +208,6 @@ private:
 private:
     Device*                m_pDevice      = {};
     Queue*                 m_pQueue       = {};
-    const VolkDeviceTable* m_pDeviceTable = {};
     RecordState            m_state        = {};
 };
 }  // namespace aph::vk

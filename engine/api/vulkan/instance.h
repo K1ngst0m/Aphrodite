@@ -1,7 +1,5 @@
 #pragma once
 
-#include <volk.h>
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 #include "api/gpuResource.h"
 #include "common/hash.h"

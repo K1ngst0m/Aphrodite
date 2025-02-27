@@ -146,14 +146,13 @@ bool Fence::wait(uint64_t timeout)
 {
     std::lock_guard<std::mutex> holder{m_lock};
     bool                        result;
-    auto*                       table = m_pDevice->getDeviceTable();
 
     // Waiting for the same VkFence in parallel is not allowed, and there seems to be some shenanigans on Intel
     // when waiting for a timeline semaphore in parallel with same value as well.
 
     if(timeout == 0)
     {
-        result = table->vkGetFenceStatus(m_pDevice->getHandle(), getHandle()) == VK_SUCCESS;
+        result = m_pDevice->getHandle().getFenceStatus(getHandle()) == ::vk::Result::eSuccess;
     }
     else
     {

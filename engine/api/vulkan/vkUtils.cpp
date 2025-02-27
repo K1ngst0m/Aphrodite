@@ -1,6 +1,5 @@
 #include "vkUtils.h"
 #include "common/hash.h"
-#include "volk.h"
 
 #include "allocator/allocator.h"
 
