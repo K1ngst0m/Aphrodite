@@ -138,68 +138,80 @@ void hello_aphrodite::init()
         createCube(vertices, indices);
 
         // vertex buffer
-        APH_VR(m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{.debugName  = "cube::vertex_buffer",
-                                .data       = vertices.data(),
-                                .createInfo = {.size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                                               .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                                                        ::vk::BufferUsageFlagBits::eVertexBuffer}},
-            &m_pVB));
+        {
+            aph::BufferLoadInfo bufferLoadInfo{
+                .debugName  = "cube::vertex_buffer",
+                .data       = vertices.data(),
+                .createInfo = {
+                    .size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
+                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eVertexBuffer}};
+
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVB);
+        }
 
         // index buffer
-        APH_VR(m_pResourceLoader->loadAsync(
-            aph::BufferLoadInfo{.debugName  = "cube::index_buffer",
-                                .data       = indices.data(),
-                                .createInfo = {.size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
-                                               .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                                                        ::vk::BufferUsageFlagBits::eIndexBuffer}},
-            &m_pIB));
+        {
+            aph::BufferLoadInfo bufferLoadInfo{
+                .debugName  = "cube::index_buffer",
+                .data       = indices.data(),
+                .createInfo = {
+                    .size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
+                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eIndexBuffer}};
+
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIB);
+        }
 
         // matrix uniform buffer
-        APH_VR(
-            m_pResourceLoader->loadAsync(aph::BufferLoadInfo{.debugName = "matrix data",
-                                                             .data      = &m_mvp,
-                                                             .createInfo =
-                                                                 {
-                                                                     .size  = sizeof(m_mvp),
-                                                                     .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
-                                                                     .domain = aph::BufferDomain::LinkedDeviceHost,
-                                                                 }},
-                                         &m_pMatBuffer));
+        {
+            aph::BufferLoadInfo bufferLoadInfo{.debugName  = "matrix data",
+                                               .data       = &m_mvp,
+                                               .createInfo = {
+                                                   .size   = sizeof(m_mvp),
+                                                   .usage  = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                                   .domain = aph::BufferDomain::LinkedDeviceHost,
+                                               }};
+
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatBuffer);
+        }
 
         // image and sampler
-        APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
-        APH_VR(m_pResourceLoader->loadAsync(aph::ImageLoadInfo{.data = "texture://container2.png",
-                                                               .createInfo =
-                                                                   {
-                                                                       .usage     = ::vk::ImageUsageFlagBits::eSampled,
-                                                                       .domain    = aph::ImageDomain::Device,
-                                                                       .imageType = aph::ImageType::e2D,
-                                                                   }},
-                                            &m_pImage));
+        {
+            APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
+            aph::ImageLoadInfo imageLoadInfo{.data       = "texture://container2.png",
+                                             .createInfo = {
+                                                 .usage     = ::vk::ImageUsageFlagBits::eSampled,
+                                                 .domain    = aph::ImageDomain::Device,
+                                                 .imageType = aph::ImageType::e2D,
+                                             }};
+
+            m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
+        }
 
         // pipeline
         // mesh shading
-        APH_VR(m_pResourceLoader->loadAsync(
-            aph::ShaderLoadInfo{
-                .stageInfo =
-                    {
-                        {aph::ShaderStage::TS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "taskMain"}},
-                        {aph::ShaderStage::MS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "meshMain"}},
-                        {aph::ShaderStage::FS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain"}},
-                    }},
-            &m_program.mesh));
+        {
+            aph::ShaderLoadInfo shaderLoadInfo{
+                .stageInfo = {
+                    {aph::ShaderStage::TS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "taskMain"}},
+                    {aph::ShaderStage::MS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "meshMain"}},
+                    {aph::ShaderStage::FS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain"}},
+                }};
+
+            auto future = m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program.mesh);
+
+            APH_VR(future.get());
+        }
 
         // geometry shading
-        APH_VR(m_pResourceLoader->loadAsync(
-            aph::ShaderLoadInfo{.stageInfo =
-                                    {
-                                        {aph::ShaderStage::VS,
-                                         {.data = "shader_slang://hello_geometry.slang", .entryPoint = "vertexMain"}},
-                                        {aph::ShaderStage::FS,
-                                         {.data = "shader_slang://hello_geometry.slang", .entryPoint = "fragMain"}},
-                                    }},
-            &m_program.geometry));
+        {
+            aph::ShaderLoadInfo shaderLoadInfo{
+                .stageInfo = {
+                    {aph::ShaderStage::VS, {.data = "shader_slang://hello_geometry.slang", .entryPoint = "vertexMain"}},
+                    {aph::ShaderStage::FS, {.data = "shader_slang://hello_geometry.slang", .entryPoint = "fragMain"}},
+                }};
+
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program.geometry);
+        }
 
         m_pResourceLoader->wait();
 
@@ -227,10 +239,6 @@ void hello_aphrodite::init()
             graph->setBackBuffer("render output");
 
             drawPass->recordExecute([this](auto* pCmd) {
-                pCmd->insertDebugLabel({
-                    .name  = "draw a cube with texture",
-                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
-                });
                 pCmd->setDepthState({
                     .enable    = true,
                     .write     = true,
@@ -242,17 +250,27 @@ void hello_aphrodite::init()
 
                 if(m_enableMeshShading)
                 {
+                    pCmd->beginDebugLabel({
+                        .name  = "mesh shading path",
+                        .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                    });
                     pCmd->setResource({m_pVB}, 0, 1);
                     pCmd->setResource({m_pIB}, 0, 2);
                     pCmd->setProgram(m_program.mesh);
                     pCmd->draw(aph::DispatchArguments{1, 1, 1});
+                    pCmd->endDebugLabel();
                 }
                 else
                 {
+                    pCmd->beginDebugLabel({
+                        .name  = "geometry shading path",
+                        .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                    });
                     pCmd->bindVertexBuffers(m_pVB);
                     pCmd->bindIndexBuffers(m_pIB);
                     pCmd->setProgram(m_program.geometry);
                     pCmd->drawIndexed({36, 1, 0, 0, 0});
+                    pCmd->endDebugLabel();
                 }
             });
         });

@@ -586,8 +586,8 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         if(path.extension() == ".spv")
         {
             // TODO multi shader stage single spv binary support
-            ShaderStage stage                  = requiredStages.cbegin()->first;
-            vk::Shader* shader                 = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
+            ShaderStage stage           = requiredStages.cbegin()->first;
+            vk::Shader* shader          = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
             requiredShaderList[stage]   = shader;
             m_shaderCaches[path][stage] = shader;
         }
@@ -684,7 +684,7 @@ Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
-    vk::Buffer* pBuffer    = *ppBuffer;
+    vk::Buffer*  pBuffer    = *ppBuffer;
     BufferDomain domain     = pBuffer->getCreateInfo().domain;
     std::size_t  uploadSize = info.range.size;
 
@@ -699,8 +699,8 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeCommand(
-                m_pQueue, [=](auto* cmd) { cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data); });
+            m_pDevice->executeCommand(m_pQueue,
+                                      [=](auto* cmd) { cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data); });
         }
         else
         {
@@ -721,14 +721,13 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                         .domain = BufferDomain::Host,
                     };
 
-                    APH_VR(m_pDevice->create(stagingCI, &stagingBuffer,
-                                             std::string{info.debugName} + std::string{"_staging"}));
+                    APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
 
                     writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
                 }
 
-                m_pDevice->executeCommand(
-                    m_pQueue, [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, pBuffer, copyRange); });
+                m_pDevice->executeCommand(m_pQueue,
+                                          [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, pBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }

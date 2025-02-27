@@ -47,34 +47,46 @@
   - Resource Loading
 
     #+BEGIN_SRC c
-    // loading vertex buffer
-    aph::BufferLoadInfo loadInfo{
-        .debugName  = "triangle::vertexBuffer",
-        .data       = vertexArray.data(),
-        .createInfo = {.size  = static_cast<uint32_t>(vertexArray.size() * sizeof(vertexArray[0])),
-                        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT}};
+    // vertex buffer
+    {
+        aph::BufferLoadInfo bufferLoadInfo{
+        .debugName  = "cube::vertex_buffer",
+        .data       = vertices.data(),
+        .createInfo = {
+                .size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
+                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eVertexBuffer}};
 
-    m_pResourceLoader->loadAsync(loadInfo, &m_pVB);
+        m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVB);
+    }
 
-    // loading texture
+    // ...
 
-    aph::ImageLoadInfo loadInfo{.data       = "texture://container2.png",
-                                .createInfo = {
-                                    .alignment = 0,
-                                    .arraySize = 1,
-                                    .usage     = VK_IMAGE_USAGE_SAMPLED_BIT,
-                                    .domain    = aph::ImageDomain::Device,
-                                    .imageType = VK_IMAGE_TYPE_2D,
-                                }};
-    m_pResourceLoader->loadAsync(loadInfo, &m_pImage);
+    // image and sampler
+    {
+        APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
+        aph::ImageLoadInfo imageLoadInfo{.data       = "texture://container2.png",
+                                         .createInfo = {
+                                             .usage     = ::vk::ImageUsageFlagBits::eSampled,
+                                             .domain    = aph::ImageDomain::Device,
+                                             .imageType = aph::ImageType::e2D,
+                                         }};
 
-    // loading shader
-    aph::ShaderLoadInfo shaderLoadInfo{.stageInfo =
-            {
-              {aph::ShaderStage::VS, {"shader_slang://triangle.slang"}},
-              {aph::ShaderStage::FS, {"shader_slang://triangle.slang"}},
+        m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
+    }
+
+    // shader loading
+    {
+        aph::ShaderLoadInfo shaderLoadInfo{
+            .stageInfo = {
+                {aph::ShaderStage::TS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "taskMain"}},
+                {aph::ShaderStage::MS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "meshMain"}},
+                {aph::ShaderStage::FS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain"}},
             }};
-    m_pResourceLoader->loadAsync(shaderLoadInfo, &m_pProgram);
+
+        // wait and verify for single async operation
+        auto future = m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program.mesh);
+        APH_VR(future.get());
+    }
 
     // ...
 

@@ -1,8 +1,8 @@
-#ifndef APH_JOBSYSTEM_H_
-#define APH_JOBSYSTEM_H_
+#pragma once
 
 #include <utility>
 
+#include "common/common.h"
 #include "common/singleton.h"
 #include "allocator/objectPool.h"
 #include "common/smallVector.h"
@@ -10,7 +10,7 @@
 
 namespace aph
 {
-using TaskFunc = std::function<void()>;
+using TaskFunc = std::variant<std::function<Result()>, std::function<void()>>;
 
 struct Task;
 class TaskManager;
@@ -46,17 +46,43 @@ struct Task
 {
     friend class ObjectPool<Task>;
 
-    TaskFunc    m_callable = {};
-    TaskDeps*   m_pDeps    = {};
-    std::string m_desc     = {};
+    std::future<Result> getResult()
+    {
+        return m_promise.get_future();
+    }
+
+    void invoke()
+    {
+        Result result  = Result::Success;
+        std::visit(
+            [&result](auto&& callable) {
+                using ReturnType = decltype(callable());
+                if constexpr(std::is_same_v<ReturnType, Result>)
+                {
+                    result = callable();
+                }
+                else if constexpr(std::is_same_v<ReturnType, void>)
+                {
+                    callable();
+                }
+            },
+            m_callable);
+        m_promise.set_value(result);
+    }
+
+    TaskDeps*   m_pDeps = {};
+    std::string m_desc  = {};
 
 private:
     Task(TaskDeps* pDeps, TaskFunc&& func, std::string desc) :
-        m_callable(std::forward<TaskFunc>(func)),
         m_pDeps(pDeps),
-        m_desc(std::move(desc))
+        m_desc(std::move(desc)),
+        m_callable(std::forward<TaskFunc>(func))
     {
     }
+
+    std::promise<Result> m_promise;
+    TaskFunc            m_callable = {};
 };
 
 class TaskGroup
@@ -70,7 +96,7 @@ public:
     void flush();
     void wait();
     bool poll();
-    void addTask(TaskFunc&& func, std::string desc = "");
+    Task* addTask(TaskFunc&& func, std::string desc = "");
 
 private:
     explicit TaskGroup(TaskManager* manager, std::string desc);
@@ -92,7 +118,7 @@ public:
 
     void scheduleTasks(const SmallVector<Task*>& taskList);
 
-    void addTask(TaskGroup* pGroup, TaskFunc&& func,  std::string desc = "");
+    Task* addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc = "");
 
     void submit(TaskGroup* pGroup);
 
@@ -127,4 +153,3 @@ private:
 };
 
 }  // namespace aph
-#endif

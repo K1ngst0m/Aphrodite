@@ -73,7 +73,7 @@ TaskManager::~TaskManager()
 
 TaskGroup* TaskManager::createTaskGroup(std::string desc)
 {
-    if (desc.empty())
+    if(desc.empty())
     {
         desc = m_description + ": Untitled Group";
     }
@@ -85,9 +85,9 @@ TaskGroup* TaskManager::createTaskGroup(std::string desc)
     return group;
 }
 
-void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc)
+Task* TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc)
 {
-    if (desc.empty())
+    if(desc.empty())
     {
         desc = m_description + ": Untitled Task";
     }
@@ -96,6 +96,7 @@ void TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc)
     Task* task = m_taskPool.allocate(pGroup->m_pDeps, std::move(func), std::move(desc));
     pGroup->m_pDeps->m_pendingTasks.push_back(task);
     pGroup->m_pDeps->m_pendingTaskCount.fetch_add(1, std::memory_order_relaxed);
+    return task;
 }
 
 void TaskManager::removeTaskGroup(TaskGroup* pGroup)
@@ -170,9 +171,9 @@ bool TaskGroup::poll()
     return m_pDeps->m_pendingTaskCount.load(std::memory_order_acquire) == 0;
 }
 
-void TaskGroup::addTask(TaskFunc&& func, std::string desc)
+Task* TaskGroup::addTask(TaskFunc&& func, std::string desc)
 {
-    m_pManager->addTask(this, std::move(func), std::move(desc));
+    return m_pManager->addTask(this, std::move(func), std::move(desc));
 }
 
 TaskDeps::TaskDeps(TaskManager* manager) : m_pManager(manager)
@@ -273,7 +274,8 @@ void TaskManager::processTask(uint32_t id)
         }
 
         THREAD_LOG_DEBUG("running task [%s]", task->m_desc);
-        task->m_callable();
+
+        task->invoke();
 
         task->m_pDeps->taskCompleted();
         m_taskPool.free(task);

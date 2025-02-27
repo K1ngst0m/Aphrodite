@@ -1,10 +1,10 @@
-#ifndef RES_LOADER_H_
-#define RES_LOADER_H_
+#pragma once
 
 #include "api/vulkan/device.h"
 #include "common/hash.h"
 #include "geometry.h"
 #include "threads/taskManager.h"
+#include <format>
 
 namespace aph
 {
@@ -48,9 +48,8 @@ struct BufferLoadInfo
 
 struct BufferUpdateInfo
 {
-    const void*      data      = {};
-    MemoryRange      range     = {0, VK_WHOLE_SIZE};
-    std::string_view debugName = {};
+    const void* data  = {};
+    MemoryRange range = {0, VK_WHOLE_SIZE};
 };
 
 struct ShaderStageLoadInfo
@@ -62,6 +61,7 @@ struct ShaderStageLoadInfo
 
 struct ShaderLoadInfo
 {
+    std::string_view                          debugName = {};
     HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
     std::vector<ShaderConstant>               constants;
 };
@@ -102,15 +102,17 @@ public:
 
     ~ResourceLoader();
 
-    // FIXME dead lock when failed
-    template <typename T_CreateInfo, typename T_Resource>
-    Result loadAsync(const T_CreateInfo& info, T_Resource** ppResource)
+    template <typename T_LoadInfo, typename T_Resource>
+    std::future<Result> loadAsync(const T_LoadInfo& loadInfo, T_Resource** ppResource)
     {
-        Result result    = Result::Success;
-        auto   taskGroup = m_taskManager.createTaskGroup("resource loader.");
-        taskGroup->addTask([this, info, ppResource, &result]() { result = load(info, ppResource); });
+        auto taskGroup = m_taskManager.createTaskGroup(
+            std::format("Loading [{}]", loadInfo.debugName.empty() ? "unnamed" : loadInfo.debugName));
+
+        auto task = taskGroup->addTask(
+            std::function<Result()>{[this, loadInfo, ppResource]() { return load(loadInfo, ppResource); }});
+
         taskGroup->submit();
-        return result;
+        return task->getResult();
     }
 
     void wait() { m_taskManager.wait(); }
@@ -124,7 +126,7 @@ public:
     void cleanup();
 
 private:
-    void        writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
+    void writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
@@ -137,5 +139,3 @@ private:
     std::mutex                                              m_updateLock;
 };
 }  // namespace aph
-
-#endif
