@@ -42,7 +42,7 @@ private:
 
 }  // namespace aph::vk
 
-namespace aph::vk::init
+namespace aph::vk
 {
 inline SamplerCreateInfo samplerCreateInfo(SamplerPreset preset)
 {

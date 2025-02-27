@@ -187,7 +187,7 @@ void hello_aphrodite::init()
 
         // image and sampler
         {
-            APH_VR(m_pDevice->create(aph::vk::init::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
+            APH_VR(m_pDevice->create(aph::vk::samplerCreateInfo(aph::SamplerPreset::LinearClamp), &m_pSampler));
             aph::ImageLoadInfo imageLoadInfo{.data       = "texture://container2.png",
                                              .createInfo = {
                                                  .usage     = ::vk::ImageUsageFlagBits::eSampled,

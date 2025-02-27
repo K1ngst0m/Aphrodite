@@ -1,5 +1,4 @@
 #include "pipeline.h"
-#include "api/vulkan/vkInit.h"
 #include "device.h"
 #include "shader.h"
 #include "pipelineBuilder.h"

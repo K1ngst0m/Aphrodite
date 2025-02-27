@@ -3,7 +3,6 @@
 #include "renderer/renderer.h"
 
 #include "api/vulkan/device.h"
-#include "api/vulkan/vkInit.h"
 
 #include "wsi/wsi.h"
 
