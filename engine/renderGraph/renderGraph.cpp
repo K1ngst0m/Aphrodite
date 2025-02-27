@@ -388,7 +388,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 [this, pass, colorImages, pDepthImage]() {
                     auto* pCmd = m_buildData.cmds[pass];
                     APH_VR(pCmd->begin());
-                    // TODO findout why memory leaks
                     pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
                     pCmd->beginRendering(colorImages, pDepthImage);

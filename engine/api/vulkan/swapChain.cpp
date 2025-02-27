@@ -186,12 +186,12 @@ void SwapChain::reCreate()
 
         auto [result, swapchain_handle] =
             m_pDevice->getHandle().createSwapchainKHR(swapchain_create_info, vk_allocator());
-        _VR(result);
+        VK_VR(result);
         m_handle = std::move(swapchain_handle);
     };
 
     auto [result, images] = m_pDevice->getHandle().getSwapchainImagesKHR(getHandle());
-    _VR(result);
+    VK_VR(result);
 
     // Create an Image class instances to wrap swapchain image handles.
     for(auto handle : images)

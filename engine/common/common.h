@@ -21,28 +21,6 @@ namespace aph
     #define APH_ALWAYS_INLINE inline
 #endif
 
-APH_ALWAYS_INLINE bool Assert(bool cond, const char* file, int line, const char* format, ...)
-{
-    if(!cond)
-    {
-    }
-    return cond;
-}
-
-#ifdef APH_DEBUG
-    #define APH_ASSERT(x) \
-        do \
-        { \
-            if(!bool(x)) \
-            { \
-                CM_LOG_ERR("Error at %s:%d.", __FILE__, __LINE__); \
-                LOG_FLUSH(); \
-                aph::DebugBreak(); \
-            } \
-        } while(0)
-#else
-    #define APH_ASSERT(x) ((void)0)
-#endif
 }  // namespace aph
 
 namespace backward
@@ -54,12 +32,13 @@ class SignalHandling;
 #include <signal.h>
 
 #ifdef _MSC_VER
-#include <intrin.h>
+    #include <intrin.h>
 #endif
 namespace aph
 {
 
-APH_ALWAYS_INLINE void DebugBreak() {
+APH_ALWAYS_INLINE void DebugBreak()
+{
 #if defined(_MSC_VER)
     __debugbreak();
 #elif defined(__linux__) || defined(__APPLE__)
@@ -68,6 +47,24 @@ APH_ALWAYS_INLINE void DebugBreak() {
     assert(false && "Debugger break triggered");
 #endif
 }
+
+#ifdef APH_DEBUG
+template <typename T>
+    requires requires(T t) {
+        { static_cast<bool>(t) } -> std::same_as<bool>;
+    }
+APH_ALWAYS_INLINE void APH_ASSERT(T condition, const std::source_location& loc = std::source_location::current())
+{
+    if(!static_cast<bool>(condition))
+    {
+        CM_LOG_ERR("Error at %s:%d.", loc.file_name(), loc.line());
+        LOG_FLUSH();
+        ::aph::DebugBreak();
+    }
+}
+#else
+inline void APH_ASSERT(bool condition) {};
+#endif
 
 class TracedException : public std::runtime_error
 {
@@ -116,8 +113,8 @@ struct [[nodiscard("Result should be handled.")]] Result
     }
 
 private:
-    Code        m_code;
-    std::string m_msg;
+    Code        m_code = Success;
+    std::string m_msg  = {};
 };
 
 #ifdef APH_DEBUG
@@ -125,38 +122,18 @@ inline void APH_VR(Result result, const std::source_location source = std::sourc
 {
     if(!result.success())
     {
-        VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
-                    result.toString(), source.function_name(),
-                    source.file_name(), source.line());
+        VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
+                   source.file_name(), source.line());
         std::abort();
     }
 }
 #else
-    inline void APH_VR(Result result)
-    {
-        return result;
-    }
+inline void APH_VR(Result result)
+{
+    return result;
+}
 #endif
 }  // namespace aph
-
-namespace aph::utils
-{
-template <class T>
-void hashCombine(size_t& seed, const T& v)
-{
-    std::hash<T> hasher;
-    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-}
-constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1)
-{
-    return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-}
-template <typename T>
-std::underlying_type_t<T> getUnderLyingType(T value)
-{
-    return static_cast<std::underlying_type_t<T>>(value);
-}
-}  // namespace aph::utils
 
 namespace aph
 {
@@ -224,3 +201,21 @@ namespace aph
 
 }  // namespace aph
 
+namespace aph::utils
+{
+template <class T>
+void hashCombine(size_t& seed, const T& v)
+{
+    std::hash<T> hasher;
+    seed ^= hasher(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+constexpr uint32_t calculateFullMipLevels(uint32_t width, uint32_t height, uint32_t depth = 1)
+{
+    return static_cast<uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
+}
+template <typename T>
+std::underlying_type_t<T> getUnderLyingType(T value)
+{
+    return static_cast<std::underlying_type_t<T>>(value);
+}
+}  // namespace aph::utils

@@ -141,7 +141,7 @@ namespace aph::vk
 {
 #ifdef APH_DEBUG
 template <typename T>
-inline void _VR(T result, const std::source_location source = std::source_location::current())
+inline void VK_VR(T result, const std::source_location source = std::source_location::current())
 {
     if constexpr(std::is_same_v<VkResult, T>)
     {
@@ -168,7 +168,7 @@ inline void _VR(T result, const std::source_location source = std::source_locati
     }
 }
 #else
-inline void _VR(Result result)
+inline void VK_VR(Result result)
 {
     return result;
 }

@@ -207,7 +207,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         .setPEnabledExtensionNames(requiredExtensions);
 
     auto [result, device_handle] = gpu->getHandle().createDevice(device_create_info, vk_allocator());
-    _VR(result);
+    VK_VR(result);
 
     // Initialize Device class.
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
@@ -303,7 +303,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     vkCreateInfo.setBindings(vkBindings);
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
-    _VR(result);
+    VK_VR(result);
     APH_VR(setDebugObjectName(vkSetLayout, debugName));
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
@@ -432,7 +432,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         }
 
         auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
-        _VR(result);
+        VK_VR(result);
         APH_VR(setDebugObjectName(handle, debugName));
         pipelineLayout = std::move(handle);
     }
@@ -473,7 +473,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         }
 
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
-        _VR(result);
+        VK_VR(result);
 
         for(size_t idx = 0; idx < shaders.size(); ++idx)
         {
@@ -512,7 +512,7 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
     memcpy(&info.components, &createInfo.components, sizeof(VkComponentMapping));
 
     auto [result, handle] = getHandle().createImageView(info, vk_allocator());
-    _VR(result);
+    VK_VR(result);
     APH_VR(setDebugObjectName(handle, debugName));
 
     *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
@@ -555,7 +555,7 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
     imageCreateInfo.extent.depth  = createInfo.extent.depth;
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
-    _VR(result);
+    VK_VR(result);
     APH_VR(setDebugObjectName(image, debugName));
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
     m_resourcePool.deviceMemory->allocate(*ppImage);
@@ -727,7 +727,7 @@ Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppC
     vkCreateInfo.setQueueFamilyIndex(createInfo.queue->getFamilyIndex())
         .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
     auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
-    _VR(res);
+    VK_VR(res);
     *ppCommandPool = new CommandPool{this, createInfo, pool};
     return Result::Success;
 }
@@ -767,7 +767,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
     }
 
     auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
-    _VR(result);
+    VK_VR(result);
     APH_VR(setDebugObjectName(sampler, debugName));
     *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
     return Result::Success;
@@ -795,10 +795,10 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
 
     auto res = getHandle().getQueryPoolResults(pool, firstQuery, 1, sizeof(uint64_t), &firstTimeStamp, sizeof(uint64_t),
                                                ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
-    _VR(res);
+    VK_VR(res);
     res = getHandle().getQueryPoolResults(pool, secondQuery, 1, sizeof(uint64_t), &secondTimeStamp, sizeof(uint64_t),
                                           ::vk::QueryResultFlagBits::e64 | ::vk::QueryResultFlagBits::eWait);
-    _VR(res);
+    VK_VR(res);
 
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
     auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;

@@ -16,7 +16,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 
     {
         auto [result, exts] = m_handle.enumerateDeviceExtensionProperties();
-        _VR(result);
+        VK_VR(result);
         for(const auto& ext : exts)
         {
             m_supportedExtensions.insert(ext.extensionName);

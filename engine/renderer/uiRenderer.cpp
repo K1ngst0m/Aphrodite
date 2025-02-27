@@ -67,7 +67,7 @@ void UI::load()
                 .setPoolSizes({poolSizes});
 
             auto [result, pool] = m_pDevice->getHandle().createDescriptorPool(poolInfo, vk_allocator());
-            _VR(result);
+            VK_VR(result);
             m_pool = pool;
         }
 

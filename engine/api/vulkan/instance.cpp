@@ -15,7 +15,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
         auto getSupportExtension = [&supportedExtensions](std::string layerName) {
             auto [res, extensions] = ::vk::enumerateInstanceExtensionProperties(layerName);
-            _VR(res);
+            VK_VR(res);
             for(VkExtensionProperties extension : extensions)
             {
                 supportedExtensions.insert(extension.extensionName);
@@ -49,7 +49,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     {
         HashSet<std::string> supportedLayers{};
         auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
-        _VR(res);
+        VK_VR(res);
         for(const auto& layerPropertie : layerProperties)
         {
             supportedLayers.insert(layerPropertie.layerName);
@@ -89,7 +89,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     #endif
 
         auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
-        _VR(res);
+        VK_VR(res);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
         instance = new Instance(createInfo, instance_handle);
     }
@@ -98,7 +98,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     // query gpu support
     {
         auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
-        _VR(res);
+        VK_VR(res);
         for(uint32_t idx = 0; const auto& gpu : gpus)
         {
             auto pdImpl      = std::make_unique<PhysicalDevice>(gpu);
@@ -116,7 +116,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 #if defined(APH_DEBUG)
     auto [res, debugMessenger] =
         instance->getHandle().createDebugUtilsMessengerEXT(createInfo.debugCreateInfo, vk_allocator());
-    _VR(res);
+    VK_VR(res);
     instance->m_debugMessenger = debugMessenger;
 #endif
 

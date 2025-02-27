@@ -62,7 +62,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             }
 
             auto [result, handle] = m_pDevice->getHandle().createDescriptorPool(createInfo, vk_allocator());
-            _VR(result);
+            VK_VR(result);
 
             // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
@@ -88,7 +88,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
 
     auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
     APH_ASSERT(handles.size() == 1);
-    _VR(res);
+    VK_VR(res);
 
     auto pRetHandle = new DescriptorSet(this, handles[0]);
     // Store an internal mapping between the descriptor set handle and it's parent pool.

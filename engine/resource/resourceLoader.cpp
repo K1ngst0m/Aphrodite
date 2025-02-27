@@ -15,7 +15,7 @@
 
 #include "filesystem/filesystem.h"
 
-namespace loader::image
+namespace aph::loader::image
 {
 inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, bool isFlipY = false)
 {
@@ -96,7 +96,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 }
 }  // namespace loader::image
 
-namespace loader::shader
+namespace aph::loader::shader
 {
 
 std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
@@ -257,7 +257,7 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
 }  // namespace loader::shader
 
-namespace loader::geometry
+namespace aph::loader::geometry
 {
 inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry)
 {
