@@ -296,59 +296,59 @@ std::string errorString(::vk::Result errorCode)
     return vkLabel;
 }
 
-::vk::AccessFlags getAccessFlags(ResourceState state)
+::vk::AccessFlags getAccessFlags(ResourceStateFlags state)
 {
     ::vk::AccessFlags flags;  // ::vk::AccessFlags is a bitmask (typedef of VkAccessFlags)
 
-    if((state & ResourceState::CopySource) != 0)
+    if((state & ResourceState::CopySource))
     {
         flags |= ::vk::AccessFlagBits::eTransferRead;
     }
-    if((state & ResourceState::CopyDest) != 0)
+    if((state & ResourceState::CopyDest))
     {
         flags |= ::vk::AccessFlagBits::eTransferWrite;
     }
-    if((state & ResourceState::VertexBuffer) != 0)
+    if((state & ResourceState::VertexBuffer))
     {
         flags |= ::vk::AccessFlagBits::eVertexAttributeRead;
     }
-    if((state & ResourceState::UniformBuffer) != 0)
+    if((state & ResourceState::UniformBuffer))
     {
         flags |= ::vk::AccessFlagBits::eUniformRead;
     }
-    if((state & ResourceState::IndexBuffer) != 0)
+    if((state & ResourceState::IndexBuffer))
     {
         flags |= ::vk::AccessFlagBits::eIndexRead;
     }
-    if((state & ResourceState::UnorderedAccess) != 0)
+    if((state & ResourceState::UnorderedAccess))
     {
         flags |= ::vk::AccessFlagBits::eShaderRead | ::vk::AccessFlagBits::eShaderWrite;
     }
-    if((state & ResourceState::IndirectArgument) != 0)
+    if((state & ResourceState::IndirectArgument))
     {
         flags |= ::vk::AccessFlagBits::eIndirectCommandRead;
     }
-    if((state & ResourceState::RenderTarget) != 0)
+    if((state & ResourceState::RenderTarget))
     {
         flags |= ::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite;
     }
-    if((state & ResourceState::DepthStencil) != 0)
+    if((state & ResourceState::DepthStencil))
     {
         flags |= ::vk::AccessFlagBits::eDepthStencilAttachmentWrite;
     }
-    if((state & ResourceState::ShaderResource) != 0)
+    if((state & ResourceState::ShaderResource))
     {
         flags |= ::vk::AccessFlagBits::eShaderRead;
     }
-    if((state & ResourceState::Present) != 0)
+    if((state & ResourceState::Present))
     {
         flags |= ::vk::AccessFlagBits::eMemoryRead;
     }
-    if((state & ResourceState::AccelStructRead) != 0)
+    if((state & ResourceState::AccelStructRead))
     {
         flags |= ::vk::AccessFlagBits::eAccelerationStructureReadKHR;
     }
-    if((state & ResourceState::AccelStructWrite) != 0)
+    if((state & ResourceState::AccelStructWrite))
     {
         flags |= ::vk::AccessFlagBits::eAccelerationStructureWriteKHR;
     }
@@ -356,30 +356,30 @@ std::string errorString(::vk::Result errorCode)
     return flags;
 }
 
-::vk::ImageLayout getImageLayout(ResourceState state)
+::vk::ImageLayout getImageLayout(ResourceStateFlags state)
 {
-    if((state & ResourceState::CopySource) != 0)
+    if((state & ResourceState::CopySource))
         return ::vk::ImageLayout::eTransferSrcOptimal;
 
-    if((state & ResourceState::CopyDest) != 0)
+    if((state & ResourceState::CopyDest))
         return ::vk::ImageLayout::eTransferDstOptimal;
 
-    if((state & ResourceState::RenderTarget) != 0)
+    if((state & ResourceState::RenderTarget))
         return ::vk::ImageLayout::eColorAttachmentOptimal;
 
-    if((state & ResourceState::DepthStencil) != 0)
+    if((state & ResourceState::DepthStencil))
         return ::vk::ImageLayout::eDepthStencilAttachmentOptimal;
 
-    if((state & ResourceState::UnorderedAccess) != 0)
+    if((state & ResourceState::UnorderedAccess))
         return ::vk::ImageLayout::eGeneral;
 
-    if((state & ResourceState::ShaderResource) != 0)
+    if((state & ResourceState::ShaderResource))
         return ::vk::ImageLayout::eShaderReadOnlyOptimal;
 
-    if((state & ResourceState::Present) != 0)
+    if((state & ResourceState::Present))
         return ::vk::ImageLayout::ePresentSrcKHR;
 
-    if((state & ResourceState::General) != 0)
+    if((state & ResourceState::General))
         return ::vk::ImageLayout::eGeneral;
 
     return ::vk::ImageLayout::eUndefined;

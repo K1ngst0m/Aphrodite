@@ -36,26 +36,24 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
             settings->maxVertexInputBindings          = limits.maxVertexInputBindings;
 
             settings->waveLaneCount       = subgroupProperties.subgroupSize;
-            settings->waveOpsSupportFlags = WAVE_OPS_SUPPORT_FLAG_NONE;
+            settings->waveOpsSupportFlags = WaveOpsSupport::None;
             auto supportedOp = static_cast<VkSubgroupFeatureFlags>(subgroupProperties.supportedOperations);
             if(supportedOp & VK_SUBGROUP_FEATURE_BASIC_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BASIC_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Basic;
             if(supportedOp & VK_SUBGROUP_FEATURE_VOTE_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_VOTE_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Vote;
             if(supportedOp & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Arithmetic;
             if(supportedOp & VK_SUBGROUP_FEATURE_BALLOT_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Ballot;
             if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Shuffle;
             if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::ShuffleRelative;
             if(supportedOp & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Clustered;
             if(supportedOp & VK_SUBGROUP_FEATURE_QUAD_BIT)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_QUAD_BIT;
-            if(supportedOp & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV)
-                settings->waveOpsSupportFlags |= WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV;
+                settings->waveOpsSupportFlags |= WaveOpsSupport::Quad;
         }
 
         // feature support

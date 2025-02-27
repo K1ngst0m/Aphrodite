@@ -1,5 +1,4 @@
-#ifndef APH_RDG_H_
-#define APH_RDG_H_
+#pragma once
 
 #include "api/vulkan/device.h"
 #include "threads/taskManager.h"
@@ -9,12 +8,12 @@ namespace aph
 class RenderGraph;
 class RenderPass;
 
-enum PassResourceFlags
+enum class PassResourceFlagBits
 {
-    PASS_RESOURCE_NONE     = 0,
-    PASS_RESOURCE_EXTERNAL = (1 << 0),
+    None     = 0,
+    External = (1 << 0),
 };
-MAKE_ENUM_FLAG(uint32_t, PassResourceFlags);
+using PassResourceFlags = Flags<PassResourceFlagBits>;
 
 struct PassImageInfo
 {
@@ -63,7 +62,7 @@ protected:
     HashSet<RenderPass*>  m_readPasses;
     VkPipelineStageFlags2 m_pipelineStages = 0;
     VkAccessFlags2        m_accessFlags    = 0;
-    PassResourceFlags     m_flags          = PASS_RESOURCE_NONE;
+    PassResourceFlags     m_flags          = PassResourceFlagBits::External;
 };
 
 class PassImageResource : public PassResource
@@ -73,11 +72,11 @@ public:
     void setInfo(const PassImageInfo& info) { m_info = info; }
     void addUsage(::vk::ImageUsageFlags usage) { m_usage |= usage; }
 
-    const PassImageInfo& getInfo() const { return m_info; }
-    ::vk::ImageUsageFlags    getUsage() const { return m_usage; }
+    const PassImageInfo&  getInfo() const { return m_info; }
+    ::vk::ImageUsageFlags getUsage() const { return m_usage; }
 
 private:
-    PassImageInfo     m_info  = {};
+    PassImageInfo         m_info  = {};
     ::vk::ImageUsageFlags m_usage = {};
 };
 
@@ -121,7 +120,7 @@ public:
     void recordDepthStencil(ClearDepthStencilCallBack&& cb) { m_clearDepthStencilCB = cb; }
 
     QueueType getQueueType() const { return m_queueType; }
-    uint32_t getIndex() const { return m_index; }
+    uint32_t  getIndex() const { return m_index; }
 
 private:
     ExecuteCallBack           m_executeCB;
@@ -219,5 +218,3 @@ private:
 };
 
 }  // namespace aph
-
-#endif

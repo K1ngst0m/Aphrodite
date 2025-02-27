@@ -256,7 +256,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         if(!m_buildData.cmdPools.contains(pass))
         {
             APH_VR(m_pDevice->create({queue, false}, &m_buildData.cmdPools[pass]));
-            m_buildData.cmds[pass]     = m_buildData.cmdPools[pass]->allocate();
+            m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
         }
 
         // color attachments
@@ -340,8 +340,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             }
 
             auto queue = m_pDevice->getQueue(QueueType::Graphics);
-            m_pDevice->executeCommand(
-                queue, [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
+            m_pDevice->executeCommand(queue,
+                                      [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
 
             for(PassImageResource* textureIn : pass->m_res.textureIn)
             {
@@ -425,7 +425,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* p
     APH_PROFILER_SCOPE();
     auto res = getResource(name, PassResource::Type::Buffer);
     APH_ASSERT(!m_buildData.buffer.contains(res));
-    res->addFlags(PASS_RESOURCE_EXTERNAL);
+    res->addFlags(PassResourceFlagBits::External);
     m_buildData.buffer[res] = pBuffer;
     return res;
 }
@@ -435,7 +435,7 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pI
     APH_PROFILER_SCOPE();
     auto res = getResource(name, PassResource::Type::Image);
     APH_ASSERT(!m_buildData.image.contains(res));
-    res->addFlags(PASS_RESOURCE_EXTERNAL);
+    res->addFlags(PassResourceFlagBits::External);
     m_buildData.image[res] = pImage;
     return res;
 }
@@ -575,26 +575,26 @@ void RenderGraph::cleanup()
             m_buildData.passDependencyGraph[pass].clear();
         }
 
-        for(auto pass: m_declareData.passes)
+        for(auto pass : m_declareData.passes)
         {
             m_resourcePool.renderPass.free(pass);
         }
         m_declareData.passes.clear();
 
-        for(auto resource: m_declareData.imageResources)
+        for(auto resource : m_declareData.imageResources)
         {
             m_resourcePool.passImageResource.free(resource);
         }
         m_declareData.imageResources.clear();
 
-        for(auto resource: m_declareData.bufferResources)
+        for(auto resource : m_declareData.bufferResources)
         {
             m_resourcePool.passBufferResource.free(resource);
         }
         m_declareData.bufferResources.clear();
     }
 
-    for (auto [_, cmdPool]: m_buildData.cmdPools)
+    for(auto [_, cmdPool] : m_buildData.cmdPools)
     {
         m_pDevice->destroy(cmdPool);
     }
@@ -602,12 +602,11 @@ void RenderGraph::cleanup()
 
     for(auto* res : m_declareData.resources)
     {
-        if(!(res->getFlags() & PASS_RESOURCE_EXTERNAL))
+        if(!(res->getFlags() & PassResourceFlagBits::External))
         {
             auto pImage = m_buildData.image[res];
             m_pDevice->destroy(pImage);
         }
     }
-
 };
 }  // namespace aph

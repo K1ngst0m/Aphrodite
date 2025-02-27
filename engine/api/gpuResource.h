@@ -1,7 +1,7 @@
-#ifndef GPU_RESOURCE_H_
-#define GPU_RESOURCE_H_
+#pragma once
 
 #include "common/common.h"
+#include "common/enum.h"
 
 namespace aph
 {
@@ -64,7 +64,7 @@ enum class ResourceState : uint32_t
     AccelStructRead  = 0x00008000,
     AccelStructWrite = 0x00010000,
 };
-MAKE_ENUM_CLASS_FLAG(ResourceState);
+using ResourceStateFlags = Flags<ResourceState>;
 
 enum class CompareOp : uint8_t
 {
@@ -264,21 +264,20 @@ enum class Format : uint8_t
     COUNT,
 };
 
-enum WaveOpsSupportFlags
+enum class WaveOpsSupport
 {
-    WAVE_OPS_SUPPORT_FLAG_NONE                 = 0x0,
-    WAVE_OPS_SUPPORT_FLAG_BASIC_BIT            = 0x00000001,
-    WAVE_OPS_SUPPORT_FLAG_VOTE_BIT             = 0x00000002,
-    WAVE_OPS_SUPPORT_FLAG_ARITHMETIC_BIT       = 0x00000004,
-    WAVE_OPS_SUPPORT_FLAG_BALLOT_BIT           = 0x00000008,
-    WAVE_OPS_SUPPORT_FLAG_SHUFFLE_BIT          = 0x00000010,
-    WAVE_OPS_SUPPORT_FLAG_SHUFFLE_RELATIVE_BIT = 0x00000020,
-    WAVE_OPS_SUPPORT_FLAG_CLUSTERED_BIT        = 0x00000040,
-    WAVE_OPS_SUPPORT_FLAG_QUAD_BIT             = 0x00000080,
-    WAVE_OPS_SUPPORT_FLAG_PARTITIONED_BIT_NV   = 0x00000100,
-    WAVE_OPS_SUPPORT_FLAG_ALL                  = 0x7FFFFFFF
+    None            = 0x0,
+    Basic           = 0x00000001,
+    Vote            = 0x00000002,
+    Arithmetic      = 0x00000004,
+    Ballot          = 0x00000008,
+    Shuffle         = 0x00000010,
+    ShuffleRelative = 0x00000020,
+    Clustered       = 0x00000040,
+    Quad            = 0x00000080,
+    All             = 0x7FFFFFFF
 };
-MAKE_ENUM_FLAG(uint32_t, WaveOpsSupportFlags);
+using WaveOpsSupportFlags = Flags<WaveOpsSupport>;
 
 constexpr uint32_t MAX_GPU_VENDOR_STRING_LENGTH = 256;  // max size for GPUVendorPreset strings
 
@@ -514,5 +513,3 @@ protected:
 };
 
 }  // namespace aph
-
-#endif  // RESOURCE_H_
