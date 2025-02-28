@@ -532,9 +532,20 @@ public:
         return m_createInfo;
     }
 
+    void setDebugName(const std::string& name)
+    {
+        m_debugName = name;
+    }
+
+    std::string_view getDebugName() const
+    {
+        return m_debugName;
+    }
+
 protected:
     T_Handle m_handle = {};
     T_CreateInfo m_createInfo = {};
+    std::string m_debugName = {};
 };
 
 } // namespace aph

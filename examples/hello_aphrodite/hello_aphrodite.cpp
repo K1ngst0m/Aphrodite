@@ -201,7 +201,8 @@ void hello_aphrodite::init()
         {
             APH_VR(
                 m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
-            aph::ImageLoadInfo imageLoadInfo{ .data = "texture://container2.png",
+            aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
+                                              .data = "texture://container2.png",
                                               .createInfo = {
                                                   .usage = ::vk::ImageUsageFlagBits::eSampled,
                                                   .domain = aph::ImageDomain::Device,

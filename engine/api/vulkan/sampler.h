@@ -28,7 +28,7 @@ struct SamplerCreateInfo
     SamplerCreateInfo& preset(SamplerPreset preset);
 };
 
-class Sampler : public ResourceHandle<VkSampler, SamplerCreateInfo>
+class Sampler : public ResourceHandle<::vk::Sampler, SamplerCreateInfo>
 {
     friend class ObjectPool<Sampler>;
 

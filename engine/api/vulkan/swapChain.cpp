@@ -207,6 +207,7 @@ void SwapChain::reCreate()
         };
 
         auto pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
+        APH_VR(m_pDevice->setDebugObjectName(pImage, "swapchain Image"));
         m_images.push_back(pImage);
     }
 }

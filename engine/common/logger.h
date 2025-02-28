@@ -1,5 +1,4 @@
-#ifndef LOGGER_H_
-#define LOGGER_H_
+#pragma once
 
 #include "singleton.h"
 
@@ -171,5 +170,3 @@ inline void LOG_FLUSH()
 GENERATE_LOG_FUNCS(CM)
 GENERATE_LOG_FUNCS(VK)
 GENERATE_LOG_FUNCS(MM)
-
-#endif // LOGGER_H_

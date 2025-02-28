@@ -293,7 +293,7 @@ Format Device::getDepthFormat() const
 }
 
 Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
-                      std::string_view debugName)
+                      const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
@@ -304,13 +304,13 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
     VK_VR(result);
-    APH_VR(setDebugObjectName(vkSetLayout, debugName));
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
+    APH_VR(setDebugObjectName(*ppLayout, debugName));
     return Result::Success;
 }
 
-Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName)
+Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     const auto& spv = createInfo.code;
@@ -320,8 +320,8 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
     if (createInfo.compile)
     {
         auto [result, handle] = getHandle().createShaderModule(vkCreateInfo, vk_allocator());
-        APH_VR(setDebugObjectName(handle, debugName));
         *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
+        APH_VR(setDebugObjectName(*ppShader, debugName));
     }
     else
     {
@@ -331,7 +331,7 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
     return Result::Success;
 }
 
-Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
+Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     bool hasTaskShader = false;
@@ -494,7 +494,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     return Result::Success;
 }
 
-Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName)
+Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     ::vk::ImageViewCreateInfo info{};
@@ -512,14 +512,14 @@ Result Device::create(const ImageViewCreateInfo& createInfo, ImageView** ppImage
 
     auto [result, handle] = getHandle().createImageView(info, vk_allocator());
     VK_VR(result);
-    APH_VR(setDebugObjectName(handle, debugName));
 
     *ppImageView = m_resourcePool.imageView.allocate(createInfo, handle);
+    APH_VR(setDebugObjectName(*ppImageView, debugName));
 
     return Result::Success;
 }
 
-Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std::string_view debugName)
+Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     // create buffer
@@ -527,14 +527,14 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std
     bufferInfo.setSize(createInfo.size).setUsage(createInfo.usage).setSharingMode(::vk::SharingMode::eExclusive);
 
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
-    APH_VR(setDebugObjectName(buffer, debugName));
     *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
+    APH_VR(setDebugObjectName(*ppBuffer, debugName));
     m_resourcePool.deviceMemory->allocate(*ppBuffer);
 
     return Result::Success;
 }
 
-Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName)
+Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     ::vk::ImageCreateInfo imageCreateInfo{};
@@ -555,8 +555,8 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
     VK_VR(result);
-    APH_VR(setDebugObjectName(image, debugName));
     *ppImage = m_resourcePool.image.allocate(this, createInfo, image);
+    APH_VR(setDebugObjectName(*ppImage, debugName));
     m_resourcePool.deviceMemory->allocate(*ppImage);
 
     return Result::Success;
@@ -617,7 +617,7 @@ void Device::destroy(ImageView* pImageView)
     m_resourcePool.imageView.free(pImageView);
 }
 
-Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName)
+Result Device::create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     *ppSwapchain = new SwapChain(createInfo, this);
@@ -719,7 +719,7 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
-Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, std::string_view debugName)
+Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     ::vk::CommandPoolCreateInfo vkCreateInfo{};
@@ -727,11 +727,11 @@ Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppC
         .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
     auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
     VK_VR(res);
-    *ppCommandPool = new CommandPool{ this, createInfo, pool };
+    *ppCommandPool = m_resourcePool.commandPool.allocate( this, createInfo, pool );
     return Result::Success;
 }
 
-Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName)
+Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
 
@@ -767,8 +767,8 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
 
     auto [result, sampler] = getHandle().createSampler(ci, vk_allocator());
     VK_VR(result);
-    APH_VR(setDebugObjectName(sampler, debugName));
     *ppSampler = m_resourcePool.sampler.allocate(this, createInfo, sampler);
+    APH_VR(setDebugObjectName(*ppSampler, debugName));
     return Result::Success;
 }
 
@@ -777,7 +777,7 @@ void Device::destroy(CommandPool* pPool)
     APH_PROFILER_SCOPE();
     pPool->reset(true);
     getHandle().destroyCommandPool(pPool->getHandle(), vk_allocator());
-    delete pPool;
+    m_resourcePool.commandPool.free(pPool);
 }
 
 void Device::destroy(Sampler* pSampler)

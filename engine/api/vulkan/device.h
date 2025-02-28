@@ -37,17 +37,17 @@ public:
     static void Destroy(Device* pDevice);
 
 public:
-    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName = "");
-    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, std::string_view debugName = "");
-    Result create(const ImageCreateInfo& createInfo, Image** ppImage, std::string_view debugName = "");
-    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, std::string_view debugName = "");
-    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, std::string_view debugName = "");
-    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName = "");
-    Result create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName = "");
+    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, const std::string& debugName = "");
+    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const std::string& debugName = "");
+    Result create(const ImageCreateInfo& createInfo, Image** ppImage, const std::string& debugName = "");
+    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, const std::string& debugName = "");
+    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, const std::string& debugName = "");
+    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, const std::string& debugName = "");
+    Result create(const ShaderCreateInfo& createInfo, Shader** ppShader, const std::string& debugName = "");
     Result create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
-                  std::string_view debugName = "");
+                  const std::string& debugName = "");
     Result create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
-                  std::string_view debugName = "");
+                  const std::string& debugName = "");
 
     void destroy(Buffer* pBuffer);
     void destroy(Image* pImage);
@@ -100,7 +100,20 @@ public:
     ::vk::PipelineStageFlags determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType);
 
     template <typename TObject>
-    Result setDebugObjectName(TObject object, std::string_view name)
+        requires requires(TObject* obj, std::string name) {
+            { obj->setDebugName(name) };
+            { obj->getHandle() };
+        }
+    Result setDebugObjectName(TObject* object, const std::string& name)
+    {
+        object->setDebugName(name);
+        auto handle = object->getHandle();
+        return setDebugObjectName(handle, name);
+    }
+
+    template <typename TObject>
+        requires(!std::is_pointer_v<TObject>) && requires { typename TObject::CType; }
+    Result setDebugObjectName(TObject object, const std::string& name)
     {
         ::vk::DebugUtilsObjectNameInfoEXT info{};
         info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
@@ -132,7 +145,8 @@ private:
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue> queue;
-        ThreadSafeObjectPool<vk::Shader> shader;
+        ThreadSafeObjectPool<CommandPool> commandPool;
+        ThreadSafeObjectPool<Shader> shader;
         SyncPrimitiveAllocator syncPrimitive;
 
         ResourceObjectPool(Device* pDevice)

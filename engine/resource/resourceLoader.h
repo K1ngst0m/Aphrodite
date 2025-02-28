@@ -33,7 +33,7 @@ struct ImageInfo
 
 struct ImageLoadInfo
 {
-    std::string_view debugName = {};
+    std::string debugName = {};
     std::variant<std::string, ImageInfo> data;
     ImageContainerType containerType = { ImageContainerType::Default };
     vk::ImageCreateInfo createInfo = {};
@@ -41,7 +41,7 @@ struct ImageLoadInfo
 
 struct BufferLoadInfo
 {
-    std::string_view debugName = {};
+    std::string debugName = {};
     const void* data = {};
     vk::BufferCreateInfo createInfo = {};
 };
@@ -61,7 +61,7 @@ struct ShaderStageLoadInfo
 
 struct ShaderLoadInfo
 {
-    std::string_view debugName = {};
+    std::string debugName = {};
     HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
     std::vector<ShaderConstant> constants;
 };
