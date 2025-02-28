@@ -11,7 +11,6 @@ namespace aph::vk
 {
 Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle)
     : ResourceHandle(handle, createInfo)
-    , m_gpu(pPhysicalDevice)
     , m_resourcePool(this)
 {
 }
@@ -149,7 +148,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             CM_LOG_ERR("some gpu feature not supported!");
             APH_ASSERT(false);
         }
-        if (requiredFeature.samplerAnisotropySupported && !supportFeature.samplerAnisotropySupported)
+        if (requiredFeature.samplerAnisotropy && !supportFeature.samplerAnisotropy)
         {
             CM_LOG_ERR("some gpu feature not supported!");
             APH_ASSERT(false);
@@ -287,9 +286,9 @@ void Device::Destroy(Device* pDevice)
 Format Device::getDepthFormat() const
 {
     APH_PROFILER_SCOPE();
-    Format format =
-        m_gpu->findSupportedFormat({ Format::D32, Format::D32S8, Format::D24S8 }, ::vk::ImageTiling::eOptimal,
-                                   ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    Format format = getPhysicalDevice()->findSupportedFormat({ Format::D32, Format::D32S8, Format::D24S8 },
+                                                             ::vk::ImageTiling::eOptimal,
+                                                             ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     return format;
 }
 
@@ -756,7 +755,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
         ci.addressModeV = utils::VkCast(createInfo.addressV);
         ci.addressModeW = utils::VkCast(createInfo.addressW);
         ci.mipLodBias = createInfo.mipLodBias;
-        ci.anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_gpu->getHandle().getFeatures().samplerAnisotropy);
+        ci.anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && getEnabledFeatures().samplerAnisotropy);
         ci.maxAnisotropy = createInfo.maxAnisotropy;
         ci.compareEnable = createInfo.compareFunc != CompareOp::Never;
         ci.compareOp = utils::VkCast(createInfo.compareFunc);
@@ -894,7 +893,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     APH_PROFILER_SCOPE();
     ::vk::PipelineStageFlags flags = {};
 
-    const auto& features = getCreateInfo().enabledFeatures;
+    const auto& features = getEnabledFeatures();
 
     switch (queueType)
     {

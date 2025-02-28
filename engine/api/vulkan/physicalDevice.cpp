@@ -63,7 +63,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
         {
             settings->feature.multiDrawIndirect = gpuFeatures->features.multiDrawIndirect;
             settings->feature.tessellationSupported = gpuFeatures->features.tessellationShader;
-            settings->feature.samplerAnisotropySupported = gpuFeatures->features.samplerAnisotropy;
+            settings->feature.samplerAnisotropy = gpuFeatures->features.samplerAnisotropy;
 
             settings->feature.meshShading = false;
             settings->feature.rayTracing = false;

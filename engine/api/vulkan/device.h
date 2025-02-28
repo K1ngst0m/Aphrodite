@@ -60,6 +60,9 @@ public:
     void destroy(CommandPool* pPool);
 
 public:
+    Result waitIdle();
+    Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+
     Semaphore* acquireSemaphore();
     Fence* acquireFence(bool isSignaled);
     Result releaseSemaphore(Semaphore* semaphore);
@@ -78,7 +81,11 @@ public:
 public:
     PhysicalDevice* getPhysicalDevice() const
     {
-        return m_gpu;
+        return getCreateInfo().pPhysicalDevice;
+    }
+    GPUFeature getEnabledFeatures() const
+    {
+        return getCreateInfo().enabledFeatures;
     }
     Format getDepthFormat() const;
     Queue* getQueue(QueueType type, uint32_t queueIndex = 0);
@@ -100,10 +107,6 @@ public:
     }
 
 public:
-    Result waitIdle();
-    Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
-
-public:
     void begineCapture();
     void endCapture();
     void triggerCapture();
@@ -113,8 +116,6 @@ private:
     Module m_renderdocModule{};
 
 private:
-    PhysicalDevice* m_gpu{};
-
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
 
 private:

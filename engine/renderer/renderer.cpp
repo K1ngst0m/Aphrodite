@@ -123,7 +123,7 @@ Renderer::Renderer(const RenderConfig& config)
                     .meshShading                = true,
                     .multiDrawIndirect          = true,
                     .tessellationSupported      = true,
-                    .samplerAnisotropySupported = true,
+                    .samplerAnisotropy = true,
                     .rayTracing                 = false,
                 },
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
