@@ -88,6 +88,10 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindBufferMemory(m_allocator, allocation, pBuffer->getHandle());
     m_bufferMemoryMap[pBuffer] = std::make_unique<VMADeviceAllocation>(allocation, allocInfo);
+    if (const auto& name = pBuffer->getDebugName(); !name.empty())
+    {
+        vmaSetAllocationName(m_allocator, allocation, name.data());
+    }
     return m_bufferMemoryMap[pBuffer].get();
 }
 DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
@@ -109,6 +113,10 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     vmaAllocateMemoryForImage(m_allocator, pImage->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
     vmaBindImageMemory(m_allocator, allocation, pImage->getHandle());
     m_imageMemoryMap[pImage] = std::make_unique<VMADeviceAllocation>(allocation, allocInfo);
+    if (const auto& name = pImage->getDebugName(); !name.empty())
+    {
+        vmaSetAllocationName(m_allocator, allocation, name.data());
+    }
     return m_imageMemoryMap[pImage].get();
 }
 void VMADeviceAllocator::free(Image* pImage)

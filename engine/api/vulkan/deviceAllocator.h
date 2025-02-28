@@ -2,9 +2,27 @@
 
 #include "device.h"
 
+#ifndef VMA_ASSERT_LEAK
+#define VMA_ASSERT_LEAK(condition)                        \
+     do                                                    \
+     {                                                     \
+         if (!(condition))                                 \
+         {                                                 \
+             MM_LOG_ERR("VMA leak detected: "              \
+                        "condition (%s) failed.", \
+                        #condition);   \
+         }                                                 \
+     } while (0)
+#endif
+
+// Custom leak log macro to print detailed info about leaks.
+#ifndef VMA_LEAK_LOG_FORMAT
+#define VMA_LEAK_LOG_FORMAT(fmt, ...) MM_LOG_ERR("VMA leak detected: " fmt, __VA_ARGS__)
+#endif
+
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 0
-
+#define VMA_DEBUG_INITIALIZE_ALLOCATIONS 1
 #include "vk_mem_alloc.h"
 
 namespace aph::vk
