@@ -92,13 +92,24 @@ public:
         return m_accessFlags;
     }
 
+    const std::string& getName() const
+    {
+        return m_name;
+    }
+
+    void setName(std::string name)
+    {
+        m_name = std::move(name);
+    }
+
 protected:
     Type m_type;
     HashSet<RenderPass*> m_writePasses;
     HashSet<RenderPass*> m_readPasses;
     VkPipelineStageFlags2 m_pipelineStages = 0;
     VkAccessFlags2 m_accessFlags = 0;
-    PassResourceFlags m_flags = PassResourceFlagBits::External;
+    PassResourceFlags m_flags = PassResourceFlagBits::None;
+    std::string m_name;
 };
 
 class PassImageResource : public PassResource

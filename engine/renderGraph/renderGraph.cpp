@@ -261,7 +261,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
 
         // color attachments
-        for (auto colorAttachment : pass->m_res.colorOut)
+        for (PassImageResource* colorAttachment : pass->m_res.colorOut)
         {
             if (!m_buildData.image.contains(colorAttachment))
             {
@@ -277,7 +277,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 {
                     createInfo.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
                 }
-                APH_VR(m_pDevice->create(createInfo, &pImage));
+                APH_VR(m_pDevice->create(createInfo, &pImage, colorAttachment->getName()));
                 m_buildData.image[colorAttachment] = pImage;
             }
         }
@@ -295,7 +295,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     .imageType = ImageType::e2D,
                     .format = depthAttachment->getInfo().format,
                 };
-                APH_VR(m_pDevice->create(createInfo, &pImage));
+                APH_VR(m_pDevice->create(createInfo, &pImage, depthAttachment->getName()));
                 m_buildData.image[depthAttachment] = pImage;
             }
         }
@@ -465,6 +465,7 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
         m_declareData.bufferResources.emplace_back(static_cast<PassBufferResource*>(res));
         break;
     }
+    res->setName(name);
 
     APH_ASSERT(res);
 
@@ -603,7 +604,7 @@ void RenderGraph::cleanup()
     }
     m_buildData.cmdPools.clear();
 
-    for (auto* res : m_declareData.resources)
+    for (PassResource* res : m_declareData.resources)
     {
         if (!(res->getFlags() & PassResourceFlagBits::External))
         {
