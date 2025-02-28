@@ -140,13 +140,14 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
 
     auto& bindingInfo = m_bindings[data.binding];
     ::vk::DescriptorType descriptorType = bindingInfo.descriptorType;
-    std::vector<::vk::DescriptorImageInfo> imageInfos;
-    std::vector<::vk::DescriptorBufferInfo> bufferInfos;
     ::vk::WriteDescriptorSet writeInfo{};
     writeInfo.setDstSet(set->getHandle())
         .setDstBinding(data.binding)
         .setDstArrayElement(data.arrayOffset)
         .setDescriptorType(descriptorType);
+
+    std::vector<::vk::DescriptorImageInfo> imageInfos;
+    std::vector<::vk::DescriptorBufferInfo> bufferInfos;
 
     switch (descriptorType)
     {
@@ -157,8 +158,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         {
             imageInfos.push_back({ sampler->getHandle() });
         }
-        writeInfo.pImageInfo = imageInfos.data();
-        writeInfo.descriptorCount = imageInfos.size();
+        writeInfo.setImageInfo(imageInfos);
     }
     break;
 
@@ -169,8 +169,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         {
             imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal });
         }
-        writeInfo.pImageInfo = imageInfos.data();
-        writeInfo.descriptorCount = imageInfos.size();
+        writeInfo.setImageInfo(imageInfos);
     }
     break;
 
@@ -182,8 +181,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         {
             imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eShaderReadOnlyOptimal });
         }
-        writeInfo.pImageInfo = imageInfos.data();
-        writeInfo.descriptorCount = imageInfos.size();
+        writeInfo.setImageInfo(imageInfos);
 
         for (std::size_t idx = 0; idx < imageInfos.size(); idx++)
         {
@@ -199,8 +197,7 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         {
             imageInfos.push_back({ {}, image->getView()->getHandle(), ::vk::ImageLayout::eGeneral });
         }
-        writeInfo.pImageInfo = imageInfos.data();
-        writeInfo.descriptorCount = imageInfos.size();
+        writeInfo.setImageInfo(imageInfos);
     }
     break;
 
@@ -214,10 +211,9 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         bufferInfos.reserve(data.buffers.size());
         for (auto buffer : data.buffers)
         {
-            bufferInfos.push_back({ buffer->getHandle(), 0, VK_WHOLE_SIZE });
+            bufferInfos.push_back({ buffer->getHandle(), 0, ::vk::WholeSize });
         }
-        writeInfo.pBufferInfo = bufferInfos.data();
-        writeInfo.descriptorCount = bufferInfos.size();
+        writeInfo.setBufferInfo(bufferInfos);
     }
     break;
 

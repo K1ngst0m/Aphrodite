@@ -168,7 +168,7 @@ void VMADeviceAllocator::clear()
         free(buffer);
     }
 }
-Result VMADeviceAllocator::flush(Image* pImage, MemoryRange range)
+Result VMADeviceAllocator::flush(Image* pImage, Range range)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
@@ -179,7 +179,7 @@ Result VMADeviceAllocator::flush(Image* pImage, MemoryRange range)
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_imageMemoryMap[pImage]->getHandle(), range.offset, range.size));
 }
-Result VMADeviceAllocator::flush(Buffer* pBuffer, MemoryRange range)
+Result VMADeviceAllocator::flush(Buffer* pBuffer, Range range)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));
@@ -190,7 +190,7 @@ Result VMADeviceAllocator::flush(Buffer* pBuffer, MemoryRange range)
     return utils::getResult(
         vmaFlushAllocation(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), range.offset, range.size));
 }
-Result VMADeviceAllocator::invalidate(Image* pImage, MemoryRange range)
+Result VMADeviceAllocator::invalidate(Image* pImage, Range range)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_imageMemoryMap.contains(pImage));
@@ -201,7 +201,7 @@ Result VMADeviceAllocator::invalidate(Image* pImage, MemoryRange range)
     return utils::getResult(
         vmaInvalidateAllocation(m_allocator, m_imageMemoryMap[pImage]->getHandle(), range.offset, range.size));
 }
-Result VMADeviceAllocator::invalidate(Buffer* pBuffer, MemoryRange range)
+Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(m_bufferMemoryMap.contains(pBuffer));

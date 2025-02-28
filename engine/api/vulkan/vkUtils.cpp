@@ -406,7 +406,7 @@ Result getResult(::vk::Result result)
     case ::vk::Result::eSuccess:
         return Result::Success;
     default:
-        return Result::RuntimeError;
+        return { Result::RuntimeError, errorString(result) };
     }
 }
 
@@ -417,7 +417,7 @@ Result getResult(VkResult result)
     case VK_SUCCESS:
         return Result::Success;
     default:
-        return Result::RuntimeError;
+        return { Result::RuntimeError, errorString(result) };
     }
 }
 ::vk::IndexType VkCast(IndexType indexType)

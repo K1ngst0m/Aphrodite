@@ -516,12 +516,12 @@ void RenderGraph::execute(vk::Fence* pFence)
                         pOutImage->getDepth() == pSwapchainImage->getDepth())
                     {
                         VK_LOG_DEBUG("copy image to swapchain.");
-                        pCopyCmd->copyImage(pOutImage, pSwapchainImage);
+                        pCopyCmd->copy(pOutImage, pSwapchainImage);
                     }
                     else
                     {
                         VK_LOG_DEBUG("blit image to swapchain.");
-                        pCopyCmd->blitImage(pOutImage, pSwapchainImage);
+                        pCopyCmd->blit(pOutImage, pSwapchainImage);
                     }
 
                     pCopyCmd->insertBarrier({

@@ -10,7 +10,6 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace aph
 {
-
 [[maybe_unused]] static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     ::vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, ::vk::DebugUtilsMessageTypeFlagsEXT messageType,
     const ::vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)

@@ -1,5 +1,4 @@
-#ifndef FILESYSTEM_H_
-#define FILESYSTEM_H_
+#pragma once
 
 #include <fcntl.h>
 #include <filesystem>
@@ -55,5 +54,3 @@ private:
 };
 
 } // namespace aph
-
-#endif // FILESYSTEM_H_

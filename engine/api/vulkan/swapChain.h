@@ -1,5 +1,4 @@
-#ifndef VULKAN_SWAPCHAIN_H_
-#define VULKAN_SWAPCHAIN_H_
+#pragma once
 
 #include "allocator/objectPool.h"
 #include "vkUtils.h"
@@ -27,7 +26,6 @@ struct SwapChainCreateInfo
     Queue* pQueue = {};
 
     Format imageFormat;
-    ::vk::ClearValue clearValue;
     uint32_t imageCount;
     bool enableVsync;
     bool useFlipSwap;
@@ -81,5 +79,3 @@ private:
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };
 } // namespace aph::vk
-
-#endif // SWAPCHAIN_H_

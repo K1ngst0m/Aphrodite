@@ -25,7 +25,6 @@ void BaseAppImpl::addCLIOption(const char* cli, const std::function<void(CLIPars
 
 void BaseAppImpl::loadConfig(int argc, char** argv, std::string configPath)
 {
-
     auto& opt = m_options;
 
     // parse toml config file
@@ -76,9 +75,7 @@ void BaseAppImpl::loadConfig(int argc, char** argv, std::string configPath)
         aph::Logger::GetInstance().setLogLevel(m_options.logLevel);
     }
 
-    //
-    {
-    }
+    printOptions();
 }
 
 int BaseAppImpl::getExitCode() const
@@ -88,6 +85,7 @@ int BaseAppImpl::getExitCode() const
 
 void BaseAppImpl::printOptions() const
 {
+    APP_LOG_INFO("\n === Application Options ===");
     APP_LOG_INFO("windowWidth: %u", m_options.windowWidth);
     APP_LOG_INFO("windowHeight: %u", m_options.windowHeight);
     APP_LOG_INFO("vsync: %d", m_options.vsync);
@@ -98,5 +96,6 @@ void BaseAppImpl::printOptions() const
     APP_LOG_INFO("numThreads: %u", m_options.numThreads);
     APP_LOG_INFO("logLevel: %u", m_options.logLevel);
     APP_LOG_INFO("backtrace: %u", m_options.backtrace);
+    APP_LOG_INFO(" === Application Options ===\n");
 }
 } // namespace aph

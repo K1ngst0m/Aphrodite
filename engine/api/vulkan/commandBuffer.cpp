@@ -79,14 +79,14 @@ void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexT
     indexState.dirty = true;
 }
 
-void CommandBuffer::copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range)
+void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
 {
     ::vk::BufferCopy copyRegion{};
     copyRegion.setSize(range.size).setSrcOffset(0).setDstOffset(range.offset);
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
 }
 
-void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions)
+void CommandBuffer::copy(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions)
 {
     if (regions.empty())
     {
@@ -104,8 +104,8 @@ void CommandBuffer::copyBufferToImage(Buffer* buffer, Image* image, const std::v
     }
 }
 
-void CommandBuffer::copyImage(Image* srcImage, Image* dstImage, Extent3D extent, const ImageCopyInfo& srcCopyInfo,
-                              const ImageCopyInfo& dstCopyInfo)
+void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, const ImageCopyInfo& srcCopyInfo,
+                         const ImageCopyInfo& dstCopyInfo)
 {
     APH_ASSERT(srcImage && dstImage);
     if (extent.depth == 0 || extent.width == 0 || extent.height == 0)
@@ -149,8 +149,8 @@ void CommandBuffer::draw(DrawArguments args)
     getHandle().draw(args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
 
-void CommandBuffer::blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
-                              const ImageBlitInfo& dstBlitInfo, ::vk::Filter filter)
+void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
+                         const ImageBlitInfo& dstBlitInfo, ::vk::Filter filter)
 {
     const auto addOffset = [](const ::vk::Offset3D& a, const ::vk::Offset3D& b) -> ::vk::Offset3D
     { return { a.x + b.x, a.y + b.y, a.z + b.z }; };
@@ -428,6 +428,14 @@ void CommandBuffer::endDebugLabel()
     getHandle().endDebugUtilsLabelEXT();
 #endif
 }
+void CommandBuffer::insertBarrier(const std::vector<ImageBarrier>& pImageBarriers)
+{
+    insertBarrier({}, pImageBarriers);
+}
+void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers)
+{
+    insertBarrier(pBufferBarriers, {});
+}
 void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& bufferBarriers,
                                   const std::vector<ImageBarrier>& imageBarriers)
 {
@@ -565,64 +573,56 @@ void CommandBuffer::writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::Quer
 {
     getHandle().writeTimestamp(::vk::PipelineStageFlagBits::eBottomOfPipe, pool, queryIndex);
 }
-void CommandBuffer::updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data)
+void CommandBuffer::update(Buffer* pBuffer, Range range, const void* data)
 {
     getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
 }
-void CommandBuffer::setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(std::vector<Sampler*> samplers, uint32_t set, uint32_t binding)
 {
-    auto& resBindings = m_commandState.resourceBindings;
-
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .samplers = samplers,
+        .samplers = std::move(samplers),
     };
-
-    if (resBindings.bindings[set][binding] != newUpdate)
-    {
-        resBindings.bindings[set][binding] = std::move(newUpdate);
-        resBindings.setBit |= 1u << set;
-        resBindings.setBindingBit[set] |= 1u << binding;
-        resBindings.dirtyBinding[set] |= 1u << binding;
-    }
+    updateDescriptors(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(std::vector<Image*> images, uint32_t set, uint32_t binding)
 {
-    auto& resBindings = m_commandState.resourceBindings;
-
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .images = images,
+        .images = std::move(images),
     };
-
-    if (resBindings.bindings[set][binding] != newUpdate)
+    updateDescriptors(std::move(newUpdate), set, binding);
+}
+void CommandBuffer::setResource(std::vector<Buffer*> buffers, uint32_t set, uint32_t binding)
+{
+    DescriptorUpdateInfo newUpdate = {
+        .binding = binding,
+        .buffers = std::move(buffers),
+    };
+    updateDescriptors(std::move(newUpdate), set, binding);
+}
+void CommandBuffer::updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_t set, uint32_t binding)
+{
+    auto& resBindings = m_commandState.resourceBindings;
+    if (resBindings.bindings[set][binding] != updateInfo)
     {
-        resBindings.bindings[set][binding] = std::move(newUpdate);
-        resBindings.setBit |= 1u << set;
+        resBindings.bindings[set][binding] = std::move(updateInfo);
+        resBindings.setBit.set(set);
         resBindings.setBindingBit[set].set(binding);
         resBindings.dirtyBinding[set].set(binding);
     }
 }
-void CommandBuffer::setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding)
+void CommandBuffer::setProgram(ShaderProgram* pProgram)
 {
-    auto& resBindings = m_commandState.resourceBindings;
-
-    DescriptorUpdateInfo newUpdate = {
-        .binding = binding,
-        .buffers = buffers,
-    };
-
-    if (resBindings.bindings[set][binding] != newUpdate)
-    {
-        resBindings.bindings[set][binding] = std::move(newUpdate);
-        resBindings.setBit |= 1u << set;
-        resBindings.setBindingBit[set] |= 1u << binding;
-        resBindings.dirtyBinding[set] |= 1u << binding;
-    }
+    m_commandState.pProgram = pProgram;
 }
-void CommandBuffer::setDepthState(const CommandState::Graphics::DepthState& state)
+void CommandBuffer::setVertexInput(VertexInput inputInfo)
 {
-    m_commandState.graphics.depthState = state;
+    m_commandState.graphics.vertexInput = std::move(inputInfo);
+}
+void CommandBuffer::setDepthState(DepthState state)
+{
+    m_commandState.graphics.depthState = std::move(state);
 }
 void CommandBuffer::draw(DispatchArguments args)
 {

@@ -259,7 +259,7 @@ void hello_aphrodite::init()
                 drawPass->setDepthStencilOut("depth buffer",
                                              {
                                                  .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
-                                                 .format = m_pDevice->getDepthFormat(),
+                                                 .format = aph::Format::D32,
                                              });
                 drawPass->addTextureIn("container texture", m_pImage);
                 drawPass->addUniformBufferIn("matrix ubo", m_pMatBuffer);

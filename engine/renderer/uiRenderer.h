@@ -45,8 +45,6 @@ public:
 
 public:
     uint32_t addFont(std::string_view fontPath, float pixelSize);
-    void pushFont(uint32_t id) const;
-    void popFont() const;
 
 private:
     WindowSystem* m_pWSI = {};
@@ -61,8 +59,6 @@ private:
     VkDescriptorPool m_pool = {};
 
     Queue* m_pDefaultQueue = {};
-
-    bool m_showDemoWindow = false;
 
     std::vector<ImFont*> m_fonts;
 };

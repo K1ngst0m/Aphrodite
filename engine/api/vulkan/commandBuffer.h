@@ -1,5 +1,4 @@
-#ifndef COMMANDBUFFER_H_
-#define COMMANDBUFFER_H_
+#pragma once
 
 #include "api/vulkan/descriptorSet.h"
 #include "api/vulkan/shader.h"
@@ -7,7 +6,6 @@
 
 namespace aph::vk
 {
-
 class CommandPool;
 class Device;
 class Pipeline;
@@ -113,13 +111,6 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             std::vector<AttachmentInfo> color = {};
             AttachmentInfo depth = {};
 
-            struct DepthState
-            {
-                bool enable = false;
-                bool write = false;
-                bool stencil = false;
-                CompareOp compareOp = CompareOp::Always;
-            };
             DepthState depthState = {};
             uint32_t sampleCount = 1;
         } graphics;
@@ -153,23 +144,21 @@ public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
-    void setResource(const std::vector<Sampler*>& samplers, uint32_t set, uint32_t binding);
-    void setResource(const std::vector<Image*>& images, uint32_t set, uint32_t binding);
-    void setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding);
-
+    void setResource(std::vector<Sampler*> samplers, uint32_t set, uint32_t binding);
+    void setResource(std::vector<Image*> images, uint32_t set, uint32_t binding);
+    void setResource(std::vector<Buffer*> buffers, uint32_t set, uint32_t binding);
+public:
     void pushConstant(const void* pData, uint32_t offset, uint32_t size);
-    void setProgram(ShaderProgram* pProgram)
-    {
-        m_commandState.pProgram = pProgram;
-    }
-    void setVertexInput(const VertexInput& inputInfo)
-    {
-        m_commandState.graphics.vertexInput = inputInfo;
-    }
+
+    void setProgram(ShaderProgram* pProgram);
+
+public:
+    void setDepthState(DepthState state);
+
+    // gemometry pipeline only
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
-
-    void setDepthState(const CommandState::Graphics::DepthState& state);
+    void setVertexInput(VertexInput inputInfo);
 
 public:
     void drawIndexed(DrawIndexArguments args);
@@ -189,28 +178,23 @@ public:
     void writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
-    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers)
-    {
-        insertBarrier({}, pImageBarriers);
-    }
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers)
-    {
-        insertBarrier(pBufferBarriers, {});
-    }
+    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers);
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers);
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
                        const std::vector<ImageBarrier>& pImageBarriers);
     void transitionImageLayout(Image* pImage, ResourceState newState);
 
 public:
-    void updateBuffer(Buffer* pBuffer, MemoryRange range, const void* data);
-    void copyBuffer(Buffer* srcBuffer, Buffer* dstBuffer, MemoryRange range);
-    void copyImage(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
-                   const ImageCopyInfo& dstCopyInfo = {});
-    void copyBufferToImage(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions = {});
-    void blitImage(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
-                   const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
+    void update(Buffer* pBuffer, Range range, const void* data);
+    void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);
+    void copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
+              const ImageCopyInfo& dstCopyInfo = {});
+    void copy(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions = {});
+    void blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
+              const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
 
 private:
+    void updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_t set, uint32_t binding);
     void flushComputeCommand();
     void flushGraphicsCommand();
     void flushDescriptorSet();
@@ -223,5 +207,3 @@ private:
     RecordState m_state = {};
 };
 } // namespace aph::vk
-
-#endif // COMMANDBUFFER_H_

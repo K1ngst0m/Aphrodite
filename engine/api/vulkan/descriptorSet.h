@@ -1,5 +1,4 @@
-#ifndef DESCRIPTORSET_H_
-#define DESCRIPTORSET_H_
+#pragma once
 
 #include "api/vulkan/shader.h"
 #include "common/hash.h"
@@ -14,17 +13,11 @@ class Image;
 class Device;
 class DescriptorSet;
 
-struct DescriptorDataRange
-{
-    uint32_t offset = {};
-    uint32_t size = {};
-};
-
 struct DescriptorUpdateInfo
 {
     uint32_t binding = {};
     uint32_t arrayOffset = {};
-    DescriptorDataRange range = {};
+    Range range = {};
 
     std::vector<Image*> images;
     std::vector<Sampler*> samplers;
@@ -86,10 +79,6 @@ class DescriptorSetLayout : public ResourceHandle<::vk::DescriptorSetLayout, Des
     };
 
 public:
-    Device* getDevice() const
-    {
-        return m_pDevice;
-    }
     DescriptorSet* allocateSet();
     Result freeSet(DescriptorSet* pSet);
     Result updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
@@ -126,15 +115,8 @@ public:
     {
         return m_pLayout->updateSet(updateInfo, this);
     }
-    Result free()
-    {
-        return m_pLayout->freeSet(this);
-    }
-
 private:
     DescriptorSetLayout* m_pLayout = {};
 };
 
 } // namespace aph::vk
-
-#endif // DESCRIPTORSET_H_

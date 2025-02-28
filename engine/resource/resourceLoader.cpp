@@ -464,7 +464,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
             [&](auto* cmd)
             {
                 cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
-                cmd->copyBufferToImage(stagingBuffer, image);
+                cmd->copy(stagingBuffer, image);
 
                 if (genMipmap)
                 {
@@ -498,7 +498,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
                         cmd->insertBarrier({ barrier });
 
                         // Blit from previous level
-                        cmd->blitImage(image, image, srcBlitInfo, dstBlitInfo);
+                        cmd->blit(image, image, srcBlitInfo, dstBlitInfo);
 
                         barrier.currentState = image->getResourceState();
                         barrier.newState = ResourceState::CopySource;
@@ -703,14 +703,14 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
             m_pDevice->executeCommand(m_pQueue,
-                                      [=](auto* cmd) { cmd->updateBuffer(pBuffer, { 0, uploadSize }, info.data); });
+                                      [=](auto* cmd) { cmd->update(pBuffer, { 0, uploadSize }, info.data); });
         }
         else
         {
             APH_PROFILER_SCOPE_NAME("loading data by: staging copy.");
             for (std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
             {
-                MemoryRange copyRange = {
+                Range copyRange = {
                     .offset = offset,
                     .size = std::min(std::size_t{ LIMIT_BUFFER_UPLOAD_SIZE }, { uploadSize - offset }),
                 };
@@ -730,7 +730,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                 }
 
                 m_pDevice->executeCommand(m_pQueue,
-                                          [=](auto* cmd) { cmd->copyBuffer(stagingBuffer, pBuffer, copyRange); });
+                                          [=](auto* cmd) { cmd->copy(stagingBuffer, pBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }
@@ -743,7 +743,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
     }
 }
 
-void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range)
+void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, Range range)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(pBuffer->getCreateInfo().domain != BufferDomain::Device);

@@ -1,5 +1,4 @@
-#ifndef VULKAN_SHADER_H_
-#define VULKAN_SHADER_H_
+#pragma once
 
 #include "allocator/objectPool.h"
 #include "common/hash.h"
@@ -151,5 +150,3 @@ private:
 };
 
 } // namespace aph::vk
-
-#endif // SHADER_H_

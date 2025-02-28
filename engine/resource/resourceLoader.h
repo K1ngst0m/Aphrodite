@@ -49,7 +49,7 @@ struct BufferLoadInfo
 struct BufferUpdateInfo
 {
     const void* data = {};
-    MemoryRange range = { 0, VK_WHOLE_SIZE };
+    Range range = { 0, VK_WHOLE_SIZE };
 };
 
 struct ShaderStageLoadInfo
@@ -129,7 +129,7 @@ public:
     void cleanup();
 
 private:
-    void writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRange range = {});
+    void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
 private:
     ResourceLoaderCreateInfo m_createInfo;

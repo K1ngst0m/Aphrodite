@@ -106,7 +106,7 @@ struct Extent3D
     uint32_t depth = { 0 };
 };
 
-struct MemoryRange
+struct Range
 {
     std::size_t offset = { 0 };
     std::size_t size = { 0 };
@@ -129,16 +129,6 @@ struct ShaderConstant
     const void* pValue;
     uint32_t mIndex;
     uint32_t mSize;
-};
-
-struct DummyCreateInfo
-{
-    uint32_t typeId;
-};
-
-struct DummyHandle
-{
-    uint32_t typeId;
 };
 
 enum class Filter
@@ -467,6 +457,14 @@ struct ColorAttachment
     BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
 };
 
+struct DepthState
+{
+    bool enable = false;
+    bool write = false;
+    bool stencil = false;
+    CompareOp compareOp = CompareOp::Always;
+};
+
 struct StencilState
 {
     StencilOp stencilFailureOp = StencilOp::Keep;
@@ -477,9 +475,14 @@ struct StencilState
     uint32_t writeMask = (uint32_t)~0;
 };
 
-struct RenderPipelineDynamicState final
+struct DummyCreateInfo
 {
-    bool depthBiasEnable = false;
+    uint32_t typeId;
+};
+
+struct DummyHandle
+{
+    uint32_t typeId;
 };
 
 template <typename T_Handle = DummyHandle, typename T_CreateInfo = DummyCreateInfo>

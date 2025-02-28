@@ -683,24 +683,24 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
     return utils::getResult(getHandle().waitForFences(vkFences, waitAll, UINT64_MAX));
 }
 
-Result Device::flushMemory(Buffer* pBuffer, MemoryRange range)
+Result Device::flushMemory(Buffer* pBuffer, Range range)
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pBuffer, range);
 }
-Result Device::invalidateMemory(Buffer* pBuffer, MemoryRange range)
+Result Device::invalidateMemory(Buffer* pBuffer, Range range)
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pBuffer, range);
 }
 
-Result Device::flushMemory(Image* pImage, MemoryRange range)
+Result Device::flushMemory(Image* pImage, Range range)
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->flush(pImage, range);
 }
 
-Result Device::invalidateMemory(Image* pImage, MemoryRange range)
+Result Device::invalidateMemory(Image* pImage, Range range)
 {
     APH_PROFILER_SCOPE();
     return m_resourcePool.deviceMemory->invalidate(pImage, range);

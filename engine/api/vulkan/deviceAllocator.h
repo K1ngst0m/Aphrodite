@@ -53,10 +53,10 @@ public:
     virtual DeviceAllocation* allocate(Image* pImage) = 0;
     virtual void free(Image* pImage) = 0;
     virtual void free(Buffer* pBuffer) = 0;
-    virtual Result flush(Image* pImage, MemoryRange range) = 0;
-    virtual Result flush(Buffer* pBuffer, MemoryRange range) = 0;
-    virtual Result invalidate(Image* pImage, MemoryRange range) = 0;
-    virtual Result invalidate(Buffer* pBuffer, MemoryRange range) = 0;
+    virtual Result flush(Image* pImage, Range range) = 0;
+    virtual Result flush(Buffer* pBuffer, Range range) = 0;
+    virtual Result invalidate(Image* pImage, Range range) = 0;
+    virtual Result invalidate(Buffer* pBuffer, Range range) = 0;
     virtual void clear() = 0;
 };
 
@@ -117,10 +117,10 @@ public:
     void unMap(Buffer* pBuffer) override;
     void unMap(Image* pImage) override;
 
-    Result flush(Image* pImage, MemoryRange range = {}) override;
-    Result flush(Buffer* pBuffer, MemoryRange range = {}) override;
-    Result invalidate(Image* pImage, MemoryRange range = {}) override;
-    Result invalidate(Buffer* pBuffer, MemoryRange range = {}) override;
+    Result flush(Image* pImage, Range range = {}) override;
+    Result flush(Buffer* pBuffer, Range range = {}) override;
+    Result invalidate(Image* pImage, Range range = {}) override;
+    Result invalidate(Buffer* pBuffer, Range range = {}) override;
 
     void clear() override;
 
