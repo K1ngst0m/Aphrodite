@@ -73,8 +73,11 @@ public:
                         const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
 
 public:
-    Result flushMemory(::vk::DeviceMemory memory, MemoryRange range = {});
-    Result invalidateMemory(::vk::DeviceMemory memory, MemoryRange range = {});
+    Result flushMemory(Image* pImage, MemoryRange range = {});
+    Result flushMemory(Buffer* pBuffer, MemoryRange range = {});
+    Result invalidateMemory(Image* pImage, MemoryRange range = {});
+    Result invalidateMemory(Buffer* pBuffer, MemoryRange range = {});
+
     Result mapMemory(Buffer* pBuffer, void** ppMapped) const;
     void unMapMemory(Buffer* pBuffer) const;
 

@@ -1,5 +1,4 @@
-#ifndef APH_VK_ALLOCATOR_H_
-#define APH_VK_ALLOCATOR_H_
+#pragma once
 
 #include "device.h"
 
@@ -36,6 +35,10 @@ public:
     virtual DeviceAllocation* allocate(Image* pImage) = 0;
     virtual void free(Image* pImage) = 0;
     virtual void free(Buffer* pBuffer) = 0;
+    virtual Result flush(Image* pImage, MemoryRange range) = 0;
+    virtual Result flush(Buffer* pBuffer, MemoryRange range) = 0;
+    virtual Result invalidate(Image* pImage, MemoryRange range) = 0;
+    virtual Result invalidate(Buffer* pBuffer, MemoryRange range) = 0;
     virtual void clear() = 0;
 };
 
@@ -76,6 +79,11 @@ private:
 class VMADeviceAllocator final : public DeviceAllocator
 {
 public:
+    VMADeviceAllocator(const VMADeviceAllocator&) = delete;
+    VMADeviceAllocator(VMADeviceAllocator&&) = delete;
+    VMADeviceAllocator& operator=(const VMADeviceAllocator&) = delete;
+    VMADeviceAllocator& operator=(VMADeviceAllocator&&) = delete;
+
     VMADeviceAllocator(Instance* pInstance, Device* pDevice);
     ~VMADeviceAllocator() override;
 
@@ -91,6 +99,11 @@ public:
     void unMap(Buffer* pBuffer) override;
     void unMap(Image* pImage) override;
 
+    Result flush(Image* pImage, MemoryRange range = {}) override;
+    Result flush(Buffer* pBuffer, MemoryRange range = {}) override;
+    Result invalidate(Image* pImage, MemoryRange range = {}) override;
+    Result invalidate(Buffer* pBuffer, MemoryRange range = {}) override;
+
     void clear() override;
 
 private:
@@ -103,5 +116,3 @@ private:
 };
 
 } // namespace aph::vk
-
-#endif // MEMORY_H_

@@ -683,27 +683,27 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
     return utils::getResult(getHandle().waitForFences(vkFences, waitAll, UINT64_MAX));
 }
 
-Result Device::flushMemory(::vk::DeviceMemory memory, MemoryRange range)
+Result Device::flushMemory(Buffer* pBuffer, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
-    if (range.size == 0)
-    {
-        range.size = ::vk::WholeSize;
-    }
-    ::vk::MappedMemoryRange mappedRange{};
-    mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
-    return utils::getResult(getHandle().flushMappedMemoryRanges({ mappedRange }));
+    return m_resourcePool.deviceMemory->flush(pBuffer, range);
 }
-Result Device::invalidateMemory(::vk::DeviceMemory memory, MemoryRange range)
+Result Device::invalidateMemory(Buffer* pBuffer, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
-    if (range.size == 0)
-    {
-        range.size = ::vk::WholeSize;
-    }
-    ::vk::MappedMemoryRange mappedRange{};
-    mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
-    return utils::getResult(getHandle().invalidateMappedMemoryRanges({ mappedRange }));
+    return m_resourcePool.deviceMemory->invalidate(pBuffer, range);
+}
+
+Result Device::flushMemory(Image* pImage, MemoryRange range)
+{
+    APH_PROFILER_SCOPE();
+    return m_resourcePool.deviceMemory->flush(pImage, range);
+}
+
+Result Device::invalidateMemory(Image* pImage, MemoryRange range)
+{
+    APH_PROFILER_SCOPE();
+    return m_resourcePool.deviceMemory->invalidate(pImage, range);
 }
 
 Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
