@@ -92,12 +92,11 @@ public:
     template <typename TObject>
     Result setDebugObjectName(TObject object, std::string_view name)
     {
-        return Result::Success;
-        // ::vk::DebugUtilsObjectNameInfoEXT info{};
-        // info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
-        //     .setObjectType(object.objectType)
-        //     .setPObjectName(name.data());
-        // return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
+        ::vk::DebugUtilsObjectNameInfoEXT info{};
+        info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
+            .setObjectType(object.objectType)
+            .setPObjectName(name.data());
+        return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
     }
 
 public:
