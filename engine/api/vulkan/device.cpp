@@ -127,7 +127,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // verify feature support
     {
         const auto& requiredFeature = createInfo.enabledFeatures;
-        const auto& supportFeature  = gpu->getSettings().feature;
+        const auto& supportFeature  = gpu->getProperties().feature;
 
         if(requiredFeature.rayTracing && !supportFeature.rayTracing)
         {
@@ -408,10 +408,10 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
             }
         }
 
-        if(numSets > getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets)
+        if(auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
+           numSets > maxBoundDescSets)
         {
-            VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets,
-                       getPhysicalDevice()->getProperties().limits.maxBoundDescriptorSets);
+            VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
         }
 
         ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
@@ -469,7 +469,6 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                 soCreateInfo.setPushConstantRanges({combineLayout.pushConstantRange});
             }
             shaderCreateInfos.push_back(soCreateInfo);
-
         }
 
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
@@ -801,7 +800,7 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
     VK_VR(res);
 
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
-    auto     period         = getPhysicalDevice()->getProperties().limits.timestampPeriod;
+    auto     period         = getPhysicalDevice()->getProperties().timestampPeriod;
     auto     timeInSeconds  = timeDifference * period;
 
     switch(unitType)

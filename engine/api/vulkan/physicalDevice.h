@@ -1,5 +1,4 @@
-#ifndef PHYSICALDEVICE_H_
-#define PHYSICALDEVICE_H_
+#pragma once
 
 #include "common/hash.h"
 #include "instance.h"
@@ -14,13 +13,12 @@ class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 public:
     PhysicalDevice(HandleType handle);
 
-    uint32_t                       findMemoryType(BufferDomain domain, uint32_t mask) const;
-    uint32_t                       findMemoryType(ImageDomain domain, uint32_t mask) const;
-    Format                         findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
-                                                       ::vk::FormatFeatureFlags features) const;
-    size_t                         padUniformBufferSize(size_t originalSize) const;
-    ::vk::PhysicalDeviceProperties getProperties() const { return m_handle.getProperties(); }
-    const GPUSettings&             getSettings() const { return m_settings; }
+    uint32_t             findMemoryType(BufferDomain domain, uint32_t mask) const;
+    uint32_t             findMemoryType(ImageDomain domain, uint32_t mask) const;
+    Format               findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+                                             ::vk::FormatFeatureFlags features) const;
+    size_t               padUniformBufferSize(size_t originalSize) const;
+    const GPUProperties& getProperties() const { return m_properties; }
 
     template <typename... Extensions>
         requires(std::convertible_to<Extensions, std::string_view> && ...)
@@ -59,12 +57,10 @@ public:
 private:
     uint32_t findMemoryType(::vk::MemoryPropertyFlags required, uint32_t mask) const;
 
-    GPUSettings                                         m_settings              = {};
+    GPUProperties                                       m_properties              = {};
     HashSet<std::string>                                m_supportedExtensions   = {};
     std::shared_ptr<void>                               m_pLastRequestedFeature = {};
     HashMap<::vk::StructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
 
 }  // namespace aph::vk
-
-#endif  // PHYSICALDEVICE_H_

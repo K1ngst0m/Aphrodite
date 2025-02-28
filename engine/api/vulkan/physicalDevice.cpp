@@ -25,34 +25,36 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 
     {
         auto* gpuProperties2 = &properties2.get<::vk::PhysicalDeviceProperties2>();
-        auto* settings    = &m_settings;
+        auto* settings       = &m_properties;
         auto* gpuFeatures    = &features2;
 
         {
-            const auto& limits                           = gpuProperties2->properties.limits;
+            const auto& limits                        = gpuProperties2->properties.limits;
             settings->uniformBufferAlignment          = (uint32_t)limits.minUniformBufferOffsetAlignment;
             settings->uploadBufferTextureAlignment    = (uint32_t)limits.optimalBufferCopyOffsetAlignment;
             settings->uploadBufferTextureRowAlignment = (uint32_t)limits.optimalBufferCopyRowPitchAlignment;
             settings->maxVertexInputBindings          = limits.maxVertexInputBindings;
+            settings->maxBoundDescriptorSets          = limits.maxBoundDescriptorSets;
+            settings->timestampPeriod                 = limits.timestampPeriod;
 
             settings->waveLaneCount       = subgroupProperties.subgroupSize;
             settings->waveOpsSupportFlags = WaveOpsSupport::None;
-            auto supportedOp = static_cast<VkSubgroupFeatureFlags>(subgroupProperties.supportedOperations);
-            if(supportedOp & VK_SUBGROUP_FEATURE_BASIC_BIT)
+            auto supportedOp              = subgroupProperties.supportedOperations;
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eBasic)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Basic;
-            if(supportedOp & VK_SUBGROUP_FEATURE_VOTE_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eVote)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Vote;
-            if(supportedOp & VK_SUBGROUP_FEATURE_ARITHMETIC_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eArithmetic)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Arithmetic;
-            if(supportedOp & VK_SUBGROUP_FEATURE_BALLOT_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eBallot)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Ballot;
-            if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eShuffle)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Shuffle;
-            if(supportedOp & VK_SUBGROUP_FEATURE_SHUFFLE_RELATIVE_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eShuffleRelative)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::ShuffleRelative;
-            if(supportedOp & VK_SUBGROUP_FEATURE_CLUSTERED_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eClustered)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Clustered;
-            if(supportedOp & VK_SUBGROUP_FEATURE_QUAD_BIT)
+            if(supportedOp & ::vk::SubgroupFeatureFlagBits::eQuad)
                 settings->waveOpsSupportFlags |= WaveOpsSupport::Quad;
         }
 
@@ -67,8 +69,8 @@ PhysicalDevice::PhysicalDevice(HandleType handle) : ResourceHandle(handle)
 
             settings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
             settings->feature.rayTracing  = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-                                                                       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-                                                                       VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
         }
 
         {
@@ -193,7 +195,7 @@ Format PhysicalDevice::findSupportedFormat(const std::vector<Format>& candidates
     {
         // TODO cast function
         auto vkFormat = static_cast<::vk::Format>(utils::VkCast(format));
-        auto props = m_handle.getFormatProperties(vkFormat);
+        auto props    = m_handle.getFormatProperties(vkFormat);
 
         if(tiling == ::vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
         {

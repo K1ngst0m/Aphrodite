@@ -301,7 +301,7 @@ struct GPUFeature
     bool rayTracing : 1                 = false;
 };
 
-struct GPUSettings
+struct GPUProperties
 {
     uint64_t            vram;
     uint32_t            uniformBufferAlignment;
@@ -310,6 +310,8 @@ struct GPUSettings
     uint32_t            maxVertexInputBindings;
     uint32_t            maxRootSignatureDWORDS;
     uint32_t            waveLaneCount;
+    uint32_t            maxBoundDescriptorSets;
+    uint32_t            timestampPeriod;
     WaveOpsSupportFlags waveOpsSupportFlags;
     GPUVendorPreset     GpuVendorPreset;
 

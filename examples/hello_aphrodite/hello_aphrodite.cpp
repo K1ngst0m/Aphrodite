@@ -143,8 +143,10 @@ void hello_aphrodite::init()
                 .debugName  = "cube::vertex_buffer",
                 .data       = vertices.data(),
                 .createInfo = {
-                    .size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eVertexBuffer}};
+                    .size   = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
+                    .usage  = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eVertexBuffer,
+                    .domain = aph::BufferDomain::Device,
+                }};
 
             m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVB);
         }
@@ -155,8 +157,10 @@ void hello_aphrodite::init()
                 .debugName  = "cube::index_buffer",
                 .data       = indices.data(),
                 .createInfo = {
-                    .size  = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
-                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eIndexBuffer}};
+                    .size   = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
+                    .usage  = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eIndexBuffer,
+                    .domain = aph::BufferDomain::Device,
+                }};
 
             m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIB);
         }

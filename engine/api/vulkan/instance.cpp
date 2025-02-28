@@ -84,9 +84,9 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
             .setPEnabledLayerNames(createInfo.enabledLayers)
             .setPEnabledExtensionNames(createInfo.enabledExtensions);
 
-    #if defined(APH_DEBUG)
+#if defined(APH_DEBUG)
         instance_create_info.setPNext(&createInfo.debugCreateInfo);
-    #endif
+#endif
 
         auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
         VK_VR(res);
@@ -101,11 +101,11 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         VK_VR(res);
         for(uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl      = std::make_unique<PhysicalDevice>(gpu);
-            auto gpuSettings = pdImpl->getSettings();
+            auto pdImpl        = std::make_unique<PhysicalDevice>(gpu);
+            auto gpuProperties = pdImpl->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
-            VK_LOG_INFO("Device Name: %s", gpuSettings.GpuVendorPreset.gpuName);
-            VK_LOG_INFO("Driver Version: %s", gpuSettings.GpuVendorPreset.gpuDriverVersion);
+            VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName);
+            VK_LOG_INFO("Driver Version: %s", gpuProperties.GpuVendorPreset.gpuDriverVersion);
             instance->m_physicalDevices.push_back(std::move(pdImpl));
             idx++;
         }
