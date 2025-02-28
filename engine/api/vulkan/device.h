@@ -99,11 +99,7 @@ public:
 public:
     ::vk::PipelineStageFlags determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType);
 
-    template <typename TObject>
-        requires requires(TObject* obj, std::string name) {
-            { obj->setDebugName(name) };
-            { obj->getHandle() };
-        }
+    template <ResourceHandleType TObject>
     Result setDebugObjectName(TObject* object, const std::string& name)
     {
         object->setDebugName(name);
@@ -112,7 +108,7 @@ public:
     }
 
     template <typename TObject>
-        requires(!std::is_pointer_v<TObject>) && requires { typename TObject::CType; }
+    requires(!ResourceHandleType<TObject>)
     Result setDebugObjectName(TObject object, const std::string& name)
     {
         ::vk::DebugUtilsObjectNameInfoEXT info{};

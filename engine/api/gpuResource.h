@@ -548,4 +548,9 @@ protected:
     std::string m_debugName = {};
 };
 
+template <typename TObject>
+concept ResourceHandleType = requires(TObject* obj, std::string name) {
+    { obj->setDebugName(name) };
+    { obj->getHandle() };
+};
 } // namespace aph
