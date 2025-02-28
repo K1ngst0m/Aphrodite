@@ -96,7 +96,7 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
 }
 
 hello_aphrodite::hello_aphrodite()
-    : aph::BaseApp("base_texture")
+    : aph::BaseApp<hello_aphrodite>("base_texture")
 {
 }
 
@@ -107,8 +107,8 @@ void hello_aphrodite::init()
     // setup window
     aph::RenderConfig config{
         .maxFrames = 3,
-        .width = m_options.windowWidth,
-        .height = m_options.windowHeight,
+        .width = getOptions().windowWidth,
+        .height = getOptions().windowHeight,
     };
 
     m_renderer = aph::Renderer::Create(config);
@@ -176,7 +176,8 @@ void hello_aphrodite::init()
         {
             m_camera.setLookAt({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })
                 .setProjection(aph::Perspective{
-                    .aspect = static_cast<float>(m_options.windowWidth) / static_cast<float>(m_options.windowHeight),
+                    .aspect =
+                        static_cast<float>(getOptions().windowWidth) / static_cast<float>(getOptions().windowHeight),
                     .fov = 90.0f,
                     .znear = 0.1f,
                     .zfar = 100.0f,
@@ -305,7 +306,7 @@ void hello_aphrodite::init()
     }
 }
 
-void hello_aphrodite::run()
+void hello_aphrodite::loop()
 {
     while (m_pWindowSystem->update())
     {
@@ -361,13 +362,10 @@ void hello_aphrodite::toggleMeshShading(bool value, bool toggle)
 
 int main(int argc, char** argv)
 {
-    hello_aphrodite app;
-    app.registerOption("--mesh", [&app](auto& parser) { app.toggleMeshShading(parser.nextUint()); });
-    app.loadConfig(argc, argv);
+    hello_aphrodite app{};
 
-    app.init();
-    app.load();
-    app.run();
-    app.unload();
-    app.finish();
+    app.setVsync(false)
+        .addCLIOption("--mesh", [&app](auto& parser) { app.toggleMeshShading(parser.nextUint()); })
+        .loadConfig(argc, argv)
+        .run();
 }

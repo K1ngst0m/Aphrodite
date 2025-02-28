@@ -7,13 +7,25 @@
 
 namespace aph
 {
-BaseApp::BaseApp(std::string sessionName)
-    : m_sessionName(std::move(sessionName))
+
+const AppOptions& BaseAppImpl::getOptions() const
 {
+    return m_options;
 }
 
-void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
+AppOptions& BaseAppImpl::getMutableOptions()
 {
+    return m_options;
+}
+
+void BaseAppImpl::addCLIOption(const char* cli, const std::function<void(CLIParser&)>& func)
+{
+    m_callbacks.add(cli, func);
+}
+
+void BaseAppImpl::loadConfig(int argc, char** argv, std::string configPath)
+{
+
     auto& opt = m_options;
 
     // parse toml config file
@@ -67,10 +79,24 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
     //
     {
     }
-};
+}
 
-void BaseApp::registerOption(const char* cli, const std::function<void(CLIParser&)>& func)
+int BaseAppImpl::getExitCode() const
 {
-    m_callbacks.add(cli, func);
+    return m_exitCode;
+}
+
+void BaseAppImpl::printOptions() const
+{
+    APP_LOG_INFO("windowWidth: %u", m_options.windowWidth);
+    APP_LOG_INFO("windowHeight: %u", m_options.windowHeight);
+    APP_LOG_INFO("vsync: %d", m_options.vsync);
+    for (const auto& [protocol, path] : m_options.protocols)
+    {
+        APP_LOG_INFO("protocol: %s => %s", protocol.c_str(), path);
+    }
+    APP_LOG_INFO("numThreads: %u", m_options.numThreads);
+    APP_LOG_INFO("logLevel: %u", m_options.logLevel);
+    APP_LOG_INFO("backtrace: %u", m_options.backtrace);
 }
 } // namespace aph

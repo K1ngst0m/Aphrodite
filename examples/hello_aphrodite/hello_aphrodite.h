@@ -3,18 +3,19 @@
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
 
-class hello_aphrodite : public aph::BaseApp
+class hello_aphrodite : public aph::BaseApp<hello_aphrodite>
 {
 public:
     hello_aphrodite();
 
+    void toggleMeshShading(bool value, bool toggle = false);
+
+private:
     void init() override;
     void load() override;
-    void run() override;
+    void loop() override;
     void unload() override;
     void finish() override;
-
-    void toggleMeshShading(bool value, bool toggle = false);
 
 private:
     aph::vk::Buffer* m_pVB = {};
