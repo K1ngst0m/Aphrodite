@@ -57,13 +57,13 @@ enum class Key
 
 inline std::string KeyToStr(Key key)
 {
-    if((key >= Key::A && key <= Key::Z) || (key >= Key::_0 && key <= Key::_9))
+    if ((key >= Key::A && key <= Key::Z) || (key >= Key::_0 && key <= Key::_9))
     {
         char keyChar = static_cast<char>(key);
-        return {1, keyChar};
+        return { 1, keyChar };
     }
 
-    switch(key)
+    switch (key)
     {
     case Key::Unknown:
         return "Unknown";
@@ -110,6 +110,6 @@ enum class KeyState
     Count
 };
 
-}  // namespace aph
+} // namespace aph
 
 #endif

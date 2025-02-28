@@ -1,11 +1,11 @@
 #ifndef EVENTMANAGER_H_
 #define EVENTMANAGER_H_
 
-#include <typeindex>
-#include <any>
-#include <mutex>
 #include "common/hash.h"
 #include "threads/taskManager.h"
+#include <any>
+#include <mutex>
+#include <typeindex>
 
 namespace aph
 {
@@ -15,19 +15,19 @@ class EventManager : public Singleton<EventManager>
     template <typename TEvent>
     struct EventData
     {
-        std::queue<TEvent>                              m_events;
+        std::queue<TEvent> m_events;
         SmallVector<std::function<bool(const TEvent&)>> m_handlers;
 
         void process()
         {
-            auto& events   = m_events;
+            auto& events = m_events;
             auto& handlers = m_handlers;
 
-            while(!events.empty())
+            while (!events.empty())
             {
                 auto e = events.front();
                 events.pop();
-                for(const auto& cb : handlers)
+                for (const auto& cb : handlers)
                 {
                     cb(e);
                 }
@@ -59,18 +59,21 @@ public:
     {
         auto group = m_taskManager.createTaskGroup("event processing");
         // TODO check that different event type don't cause data race
-        for(auto& [_, value] : m_eventDataMap)
+        for (auto& [_, value] : m_eventDataMap)
         {
             group->addTask([&value]() { value.second(value.first); });
         }
         m_taskManager.submit(group);
     }
 
-    void flush() { m_taskManager.wait(); }
+    void flush()
+    {
+        m_taskManager.wait();
+    }
 
 private:
-    TaskManager m_taskManager = {5, "Event Manager"};
-    std::mutex  m_dataMapMutex;
+    TaskManager m_taskManager = { 5, "Event Manager" };
+    std::mutex m_dataMapMutex;
 
     HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
 
@@ -78,15 +81,15 @@ private:
     EventData<TEvent>& getEventData()
     {
         auto ti = std::type_index(typeid(TEvent));
-        if(!m_eventDataMap.contains(ti))
+        if (!m_eventDataMap.contains(ti))
         {
-            m_eventDataMap[ti] = {EventData<TEvent>{},
-                                  [](std::any& eventData) { std::any_cast<EventData<TEvent>&>(eventData).process(); }};
+            m_eventDataMap[ti] = { EventData<TEvent>{}, [](std::any& eventData)
+                                   { std::any_cast<EventData<TEvent>&>(eventData).process(); } };
         }
         return std::any_cast<EventData<TEvent>&>(m_eventDataMap[ti].first);
     }
 };
 
-}  // namespace aph
+} // namespace aph
 
-#endif  // EVENTMANAGER_H_
+#endif // EVENTMANAGER_H_

@@ -20,7 +20,7 @@ public:
     virtual ~DeviceAllocation() = default;
 
     virtual std::size_t getOffset() = 0;
-    virtual std::size_t getSize()   = 0;
+    virtual std::size_t getSize() = 0;
 };
 
 class DeviceAllocator
@@ -28,36 +28,48 @@ class DeviceAllocator
 public:
     virtual ~DeviceAllocator() = default;
 
-    virtual Result            map(Buffer* pBuffer, void** ppData) = 0;
-    virtual Result            map(Image* pImage, void** ppData)   = 0;
-    virtual void              unMap(Buffer* pBuffer)              = 0;
-    virtual void              unMap(Image* pImage)                = 0;
-    virtual DeviceAllocation* allocate(Buffer* pBuffer)           = 0;
-    virtual DeviceAllocation* allocate(Image* pImage)             = 0;
-    virtual void              free(Image* pImage)                 = 0;
-    virtual void              free(Buffer* pBuffer)               = 0;
-    virtual void              clear()                             = 0;
+    virtual Result map(Buffer* pBuffer, void** ppData) = 0;
+    virtual Result map(Image* pImage, void** ppData) = 0;
+    virtual void unMap(Buffer* pBuffer) = 0;
+    virtual void unMap(Image* pImage) = 0;
+    virtual DeviceAllocation* allocate(Buffer* pBuffer) = 0;
+    virtual DeviceAllocation* allocate(Image* pImage) = 0;
+    virtual void free(Image* pImage) = 0;
+    virtual void free(Buffer* pBuffer) = 0;
+    virtual void clear() = 0;
 };
 
 class VMADeviceAllocation final : public DeviceAllocation
 {
 public:
-    VMADeviceAllocation(VmaAllocation allocation, const VmaAllocationInfo& allocationInfo) :
-        m_allocation(allocation),
-        m_allocationInfo(allocationInfo)
+    VMADeviceAllocation(VmaAllocation allocation, const VmaAllocationInfo& allocationInfo)
+        : m_allocation(allocation)
+        , m_allocationInfo(allocationInfo)
     {
     }
     ~VMADeviceAllocation() override = default;
 
-    std::size_t getOffset() override { return m_allocationInfo.offset; }
-    std::size_t getSize() override { return m_allocationInfo.size; }
+    std::size_t getOffset() override
+    {
+        return m_allocationInfo.offset;
+    }
+    std::size_t getSize() override
+    {
+        return m_allocationInfo.size;
+    }
 
 public:
-    VmaAllocation            getHandle() const { return m_allocation; }
-    const VmaAllocationInfo& getInfo() const { return m_allocationInfo; }
+    VmaAllocation getHandle() const
+    {
+        return m_allocation;
+    }
+    const VmaAllocationInfo& getInfo() const
+    {
+        return m_allocationInfo;
+    }
 
 private:
-    VmaAllocation     m_allocation;
+    VmaAllocation m_allocation;
     VmaAllocationInfo m_allocationInfo;
 };
 
@@ -85,11 +97,11 @@ private:
     VmaAllocator m_allocator;
 
     HashMap<Buffer*, std::unique_ptr<VMADeviceAllocation>> m_bufferMemoryMap;
-    HashMap<Image*, std::unique_ptr<VMADeviceAllocation>>  m_imageMemoryMap;
+    HashMap<Image*, std::unique_ptr<VMADeviceAllocation>> m_imageMemoryMap;
 
     std::mutex m_allocationLock;
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk
 
-#endif  // MEMORY_H_
+#endif // MEMORY_H_

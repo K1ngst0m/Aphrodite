@@ -1,5 +1,4 @@
-#ifndef UIRENDERER_H_
-#define UIRENDERER_H_
+#pragma once
 
 #include "api/vulkan/device.h"
 #include "resource/resourceLoader.h"
@@ -19,13 +18,12 @@ enum UIFlags
     UI_Docking,
     UI_Demo,
 };
-MAKE_ENUM_FLAG(uint32_t, UIFlags);
 
 struct UICreateInfo
 {
-    aph::Renderer* pRenderer  = {};
-    UIFlags        flags      = {};
-    std::string    configFile = {};
+    aph::Renderer* pRenderer = {};
+    UIFlags flags = {};
+    std::string configFile = {};
 };
 
 class UI
@@ -35,7 +33,10 @@ public:
     ~UI();
 
     using UIUpdateCallback = std::function<void()>;
-    void record(UIUpdateCallback&& func) { m_upateCB = std::move(func); }
+    void record(UIUpdateCallback&& func)
+    {
+        m_upateCB = std::move(func);
+    }
     void update();
     void load();
     void unload();
@@ -44,18 +45,18 @@ public:
 
 public:
     uint32_t addFont(std::string_view fontPath, float pixelSize);
-    void     pushFont(uint32_t id) const;
-    void     popFont() const;
+    void pushFont(uint32_t id) const;
+    void popFont() const;
 
 private:
-    WindowSystem*          m_pWSI     = {};
+    WindowSystem* m_pWSI = {};
     ImGuiContext* m_pContext = {};
 
     UIUpdateCallback m_upateCB = {};
 
 private:
     Renderer* m_pRenderer = {};
-    Device*   m_pDevice   = {};
+    Device* m_pDevice = {};
 
     VkDescriptorPool m_pool = {};
 
@@ -65,6 +66,4 @@ private:
 
     std::vector<ImFont*> m_fonts;
 };
-}  // namespace aph::vk
-
-#endif  // UIRENDERER_H_
+} // namespace aph::vk

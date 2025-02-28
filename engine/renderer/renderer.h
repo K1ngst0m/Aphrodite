@@ -1,5 +1,4 @@
-#ifndef VULKAN_RENDERER_H_
-#define VULKAN_RENDERER_H_
+#pragma once
 
 #include "api/vulkan/device.h"
 #include "renderGraph/renderGraph.h"
@@ -10,7 +9,7 @@ namespace aph
 {
 struct RenderConfig
 {
-    uint32_t maxFrames = {2};
+    uint32_t maxFrames = { 2 };
     uint32_t width;
     uint32_t height;
 };
@@ -33,37 +32,64 @@ public:
     void update();
 
 public:
-    vk::Instance*   getInstance() const { return m_pInstance; }
-    vk::SwapChain*  getSwapchain() const { return m_pSwapChain; }
-    ResourceLoader* getResourceLoader() const { return m_pResourceLoader.get(); }
-    vk::Device*     getDevice() const { return m_pDevice.get(); }
-    vk::UI*         getUI() const { return m_pUI.get(); }
-    WindowSystem*   getWindowSystem() const { return m_pWindowSystem.get(); }
+    vk::Instance* getInstance() const
+    {
+        return m_pInstance;
+    }
+    vk::SwapChain* getSwapchain() const
+    {
+        return m_pSwapChain;
+    }
+    ResourceLoader* getResourceLoader() const
+    {
+        return m_pResourceLoader.get();
+    }
+    vk::Device* getDevice() const
+    {
+        return m_pDevice.get();
+    }
+    vk::UI* getUI() const
+    {
+        return m_pUI.get();
+    }
+    WindowSystem* getWindowSystem() const
+    {
+        return m_pWindowSystem.get();
+    }
 
     void recordGraph(std::function<void(RenderGraph*)>&& func);
     void render();
 
-    const RenderConfig& getConfig() const { return m_config; }
+    const RenderConfig& getConfig() const
+    {
+        return m_config;
+    }
 
-    double getElapsedTime() const { return m_timer.interval(TIMER_TAG_GLOBAL); }
-    double getCPUFrameTime() const { return m_frameCPUTime; }
+    double getElapsedTime() const
+    {
+        return m_timer.interval(TIMER_TAG_GLOBAL);
+    }
+    double getCPUFrameTime() const
+    {
+        return m_frameCPUTime;
+    }
 
 protected:
-    RenderConfig m_config  = {};
+    RenderConfig m_config = {};
 
 protected:
     std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
-    std::vector<vk::Fence*>                   m_frameFence;
-    uint32_t                                  m_frameIdx = {};
+    std::vector<vk::Fence*> m_frameFence;
+    uint32_t m_frameIdx = {};
 
 protected:
-    vk::Instance*                   m_pInstance   = {};
-    vk::SwapChain*                  m_pSwapChain  = {};
-    TaskManager                     m_taskManager = {5, "renderer"};
+    vk::Instance* m_pInstance = {};
+    vk::SwapChain* m_pSwapChain = {};
+    TaskManager m_taskManager = { 5, "renderer" };
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
-    std::unique_ptr<vk::Device>     m_pDevice       = {};
-    std::unique_ptr<vk::UI>         m_pUI           = {};
-    std::unique_ptr<WindowSystem>   m_pWindowSystem = {};
+    std::unique_ptr<vk::Device> m_pDevice = {};
+    std::unique_ptr<vk::UI> m_pUI = {};
+    std::unique_ptr<WindowSystem> m_pWindowSystem = {};
 
 private:
     enum TimerTag
@@ -72,8 +98,6 @@ private:
         TIMER_TAG_FRAME,
     };
     aph::Timer m_timer;
-    double     m_frameCPUTime;
+    double m_frameCPUTime;
 };
-}  // namespace aph
-
-#endif  // VULKANRENDERER_H_
+} // namespace aph

@@ -1,20 +1,20 @@
-#include "wsi.h"
 #include "imgui_impl_sdl2.h"
+#include "wsi.h"
 
 #include <SDL.h>
 #include <SDL_vulkan.h>
 
-#include "event/eventManager.h"
 #include "api/vulkan/instance.h"
+#include "event/eventManager.h"
 
 using namespace aph;
 
 static Key SDL2KeyCast(int key)
 {
-#define k(sdlk, aph) \
+#define k(sdlk, aph)  \
     case SDLK_##sdlk: \
         return Key::aph
-    switch(key)
+    switch (key)
     {
         k(a, A);
         k(b, B);
@@ -72,7 +72,7 @@ static Key SDL2KeyCast(int key)
 void WindowSystem::init()
 {
     // Initialize SDL
-    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
         CM_LOG_ERR("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
@@ -82,7 +82,7 @@ void WindowSystem::init()
     m_window = (void*)SDL_CreateWindow("Aphrodite Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_width,
                                        m_height, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
 
-    if(m_window == nullptr)
+    if (m_window == nullptr)
     {
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
@@ -106,50 +106,50 @@ WindowSystem::~WindowSystem()
 bool WindowSystem::update()
 {
     SDL_Event windowEvent;
-    while(SDL_PollEvent(&windowEvent))
+    while (SDL_PollEvent(&windowEvent))
     {
-        switch(windowEvent.type)
+        switch (windowEvent.type)
         {
         case SDL_QUIT:
             return false;
         case SDL_KEYDOWN:
         {
             KeyState state{};
-            auto     keysym = windowEvent.key.keysym.sym;
-            auto     gkey   = SDL2KeyCast(keysym);
+            auto keysym = windowEvent.key.keysym.sym;
+            auto gkey = SDL2KeyCast(keysym);
 
-            switch(windowEvent.key.type)
+            switch (windowEvent.key.type)
             {
             case SDL_KEYDOWN:
             {
                 state = KeyState::Pressed;
-                if(gkey == Key::Escape)
+                if (gkey == Key::Escape)
                 {
                     close();
                     return false;
                 }
 
-                if(gkey == Key::_1)
+                if (gkey == Key::_1)
                 {
                     // TODO cursor visible
                     static bool visible = false;
-                    visible             = !visible;
+                    visible = !visible;
                 }
                 else
                 {
-                    EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
+                    EventManager::GetInstance().pushEvent(KeyboardEvent{ gkey, state });
                 }
             }
             break;
             case SDL_KEYUP:
             {
                 state = KeyState::Released;
-                EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
+                EventManager::GetInstance().pushEvent(KeyboardEvent{ gkey, state });
             }
             break;
             }
 
-            if(windowEvent.key.repeat)
+            if (windowEvent.key.repeat)
             {
                 state = KeyState::Repeat;
             }
@@ -165,17 +165,17 @@ bool WindowSystem::update()
 
             int deltaX = lastX - x;
             int deltaY = lastY - y;
-            lastX      = x;
-            lastY      = y;
+            lastX = x;
+            lastY = y;
 
-            EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, x, y});
+            EventManager::GetInstance().pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
         }
         break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
         {
             MouseButton btn;
-            switch(windowEvent.button.button)
+            switch (windowEvent.button.button)
             {
             default:
             case SDL_BUTTON_LEFT:
@@ -192,14 +192,15 @@ bool WindowSystem::update()
             int x, y;
             SDL_GetMouseState(&x, &y);
 
-            EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN});
+            EventManager::GetInstance().pushEvent(
+                MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN });
         }
         break;
         case SDL_WINDOWEVENT_RESIZED:
         {
             resize(windowEvent.window.data1, windowEvent.window.data2);
 
-            WindowResizeEvent resizeEvent{static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)};
+            WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
 
             // Push the event to your event queue or handle it immediately
             EventManager::GetInstance().pushEvent(resizeEvent);
@@ -212,7 +213,7 @@ bool WindowSystem::update()
 
     EventManager::GetInstance().processAllAsync();
 
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         ImGui_ImplSDL2_NewFrame();
     }
@@ -227,14 +228,14 @@ void WindowSystem::close() {
 
 void WindowSystem::resize(uint32_t width, uint32_t height)
 {
-    m_width  = width;
+    m_width = width;
     m_height = height;
 
-    int  w, h;
+    int w, h;
     auto window = (SDL_Window*)m_window;
     SDL_GetWindowSize(window, &w, &h);
 
-    if(w != m_width || h != m_height)
+    if (w != m_width || h != m_height)
     {
         SDL_SetWindowSize(window, m_width, m_height);
     }
@@ -254,7 +255,7 @@ std::vector<const char*> WindowSystem::getRequiredExtensions()
 
 bool WindowSystem::initUI()
 {
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         return ImGui_ImplSDL2_InitForVulkan((SDL_Window*)m_window);
     }
@@ -263,7 +264,7 @@ bool WindowSystem::initUI()
 
 void WindowSystem::deInitUI() const
 {
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         ImGui_ImplSDL2_Shutdown();
     }

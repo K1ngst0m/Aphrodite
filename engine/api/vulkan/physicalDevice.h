@@ -13,38 +13,40 @@ class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 public:
     PhysicalDevice(HandleType handle);
 
-    uint32_t             findMemoryType(BufferDomain domain, uint32_t mask) const;
-    uint32_t             findMemoryType(ImageDomain domain, uint32_t mask) const;
-    Format               findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
-                                             ::vk::FormatFeatureFlags features) const;
-    size_t               padUniformBufferSize(size_t originalSize) const;
-    const GPUProperties& getProperties() const { return m_properties; }
+    uint32_t findMemoryType(BufferDomain domain, uint32_t mask) const;
+    uint32_t findMemoryType(ImageDomain domain, uint32_t mask) const;
+    Format findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+                               ::vk::FormatFeatureFlags features) const;
+    size_t padUniformBufferSize(size_t originalSize) const;
+    const GPUProperties& getProperties() const
+    {
+        return m_properties;
+    }
 
     template <typename... Extensions>
         requires(std::convertible_to<Extensions, std::string_view> && ...)
     bool checkExtensionSupported(Extensions&&... exts) const
     {
-        auto isSupported = [this](std::string_view ext) -> bool {
-            return m_supportedExtensions.contains(std::string{ext});
-        };
+        auto isSupported = [this](std::string_view ext) -> bool
+        { return m_supportedExtensions.contains(std::string{ ext }); };
         return (isSupported(std::forward<Extensions>(exts)) && ...);
     }
 
     template <typename T>
     T& requestFeatures()
     {
-        auto features        = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
+        auto features = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, T>();
         auto requiredFeature = features.template get<T>();
 
         const ::vk::StructureType type = requiredFeature.sType;
-        if(m_requestedFeatures.count(type))
+        if (m_requestedFeatures.count(type))
         {
             return *std::static_pointer_cast<T>(m_requestedFeatures.at(type));
         }
 
         auto extensionPtr = std::make_shared<T>(requiredFeature);
-        m_requestedFeatures.insert({type, extensionPtr});
-        if(m_pLastRequestedFeature)
+        m_requestedFeatures.insert({ type, extensionPtr });
+        if (m_pLastRequestedFeature)
         {
             extensionPtr->pNext = m_pLastRequestedFeature.get();
         }
@@ -52,15 +54,18 @@ public:
         return *extensionPtr;
     }
 
-    void* getRequestedFeatures() const { return m_pLastRequestedFeature.get(); }
+    void* getRequestedFeatures() const
+    {
+        return m_pLastRequestedFeature.get();
+    }
 
 private:
     uint32_t findMemoryType(::vk::MemoryPropertyFlags required, uint32_t mask) const;
 
-    GPUProperties                                       m_properties              = {};
-    HashSet<std::string>                                m_supportedExtensions   = {};
-    std::shared_ptr<void>                               m_pLastRequestedFeature = {};
+    GPUProperties m_properties = {};
+    HashSet<std::string> m_supportedExtensions = {};
+    std::shared_ptr<void> m_pLastRequestedFeature = {};
     HashMap<::vk::StructureType, std::shared_ptr<void>> m_requestedFeatures;
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk

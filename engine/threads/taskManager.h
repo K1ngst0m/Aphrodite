@@ -2,9 +2,9 @@
 
 #include <utility>
 
+#include "allocator/objectPool.h"
 #include "common/common.h"
 #include "common/singleton.h"
-#include "allocator/objectPool.h"
 #include "common/smallVector.h"
 #include "threadPool.h"
 
@@ -30,14 +30,14 @@ private:
     explicit TaskDeps(TaskManager* manager);
 
     SmallVector<TaskDeps*> m_pendingDeps;
-    std::atomic_uint       m_pendingTaskCount;
+    std::atomic_uint m_pendingTaskCount;
 
     SmallVector<Task*> m_pendingTasks;
-    std::atomic_uint   m_dependencyCount;
+    std::atomic_uint m_dependencyCount;
 
     std::condition_variable m_cond;
-    std::mutex              m_condLock;
-    bool                    m_done = false;
+    std::mutex m_condLock;
+    bool m_done = false;
 
     TaskManager* m_pManager = {};
 };
@@ -53,15 +53,16 @@ struct Task
 
     void invoke()
     {
-        Result result  = Result::Success;
+        Result result = Result::Success;
         std::visit(
-            [&result](auto&& callable) {
+            [&result](auto&& callable)
+            {
                 using ReturnType = decltype(callable());
-                if constexpr(std::is_same_v<ReturnType, Result>)
+                if constexpr (std::is_same_v<ReturnType, Result>)
                 {
                     result = callable();
                 }
-                else if constexpr(std::is_same_v<ReturnType, void>)
+                else if constexpr (std::is_same_v<ReturnType, void>)
                 {
                     callable();
                 }
@@ -70,19 +71,19 @@ struct Task
         m_promise.set_value(result);
     }
 
-    TaskDeps*   m_pDeps = {};
-    std::string m_desc  = {};
+    TaskDeps* m_pDeps = {};
+    std::string m_desc = {};
 
 private:
-    Task(TaskDeps* pDeps, TaskFunc&& func, std::string desc) :
-        m_pDeps(pDeps),
-        m_desc(std::move(desc)),
-        m_callable(std::forward<TaskFunc>(func))
+    Task(TaskDeps* pDeps, TaskFunc&& func, std::string desc)
+        : m_pDeps(pDeps)
+        , m_desc(std::move(desc))
+        , m_callable(std::forward<TaskFunc>(func))
     {
     }
 
     std::promise<Result> m_promise;
-    TaskFunc            m_callable = {};
+    TaskFunc m_callable = {};
 };
 
 class TaskGroup
@@ -101,9 +102,9 @@ public:
 private:
     explicit TaskGroup(TaskManager* manager, std::string desc);
     TaskManager* m_pManager = {};
-    TaskDeps*    m_pDeps    = {};
-    std::string  m_desc     = {};
-    bool         m_flushed  = {false};
+    TaskDeps* m_pDeps = {};
+    std::string m_desc = {};
+    bool m_flushed = { false };
 };
 
 class TaskManager final
@@ -113,8 +114,8 @@ public:
     ~TaskManager();
 
     TaskGroup* createTaskGroup(std::string desc = "");
-    void       removeTaskGroup(TaskGroup* pGroup);
-    void       setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
+    void removeTaskGroup(TaskGroup* pGroup);
+    void setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
 
     void scheduleTasks(const SmallVector<Task*>& taskList);
 
@@ -130,26 +131,26 @@ private:
     bool m_dead = false;
 
     std::condition_variable m_waitCond;
-    std::mutex              m_waitCondLock;
-    std::atomic_uint        m_totalTaskCount;
-    std::atomic_uint        m_completedTaskCount;
+    std::mutex m_waitCondLock;
+    std::atomic_uint m_totalTaskCount;
+    std::atomic_uint m_completedTaskCount;
 
     struct
     {
         SmallVector<std::future<void>> threadResults;
-        std::unique_ptr<ThreadPool<>>  threadPool;
-        std::queue<Task*>              readyTaskQueue;
-        std::mutex                     condLock;
-        std::condition_variable        cond;
+        std::unique_ptr<ThreadPool<>> threadPool;
+        std::queue<Task*> readyTaskQueue;
+        std::mutex condLock;
+        std::condition_variable cond;
     } m_threadData;
 
 private:
-    ThreadSafeObjectPool<Task>      m_taskPool;
+    ThreadSafeObjectPool<Task> m_taskPool;
     ThreadSafeObjectPool<TaskGroup> m_taskGroupPool;
-    ThreadSafeObjectPool<TaskDeps>  m_taskDepsPool;
+    ThreadSafeObjectPool<TaskDeps> m_taskDepsPool;
 
 private:
     std::string m_description;
 };
 
-}  // namespace aph
+} // namespace aph

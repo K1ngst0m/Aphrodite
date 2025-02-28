@@ -98,34 +98,34 @@ private:
     enum CommandBufferIdx
     {
         COMMAND_BUFFER_GEOMETRY = 0,
-        COMMAND_BUFFER_SHADOW   = 1,
+        COMMAND_BUFFER_SHADOW = 1,
         COMMAND_BUFFER_LIGHTING = 2,
-        COMMAND_BUFFER_POSTFX   = 3,
+        COMMAND_BUFFER_POSTFX = 3,
         COMMAND_BUFFER_MAX,
     };
     CommandBuffer* cb[2][COMMAND_BUFFER_MAX] = {};
 
     std::array<ShaderProgram*, SHADER_PROGRAM_MAX> m_programs;
-    std::array<Buffer*, BUFFER_MAX>                m_buffers;
-    std::array<Pipeline*, PIPELINE_MAX>            m_pipelines;
-    std::array<Sampler*, SAMP_MAX>                 m_samplers;
-    std::array<std::vector<Image*>, IMAGE_MAX>     m_images;
+    std::array<Buffer*, BUFFER_MAX> m_buffers;
+    std::array<Pipeline*, PIPELINE_MAX> m_pipelines;
+    std::array<Sampler*, SAMP_MAX> m_samplers;
+    std::array<std::vector<Image*>, IMAGE_MAX> m_images;
 
     // TODO remove
     std::vector<DescriptorSet*> m_gbufferSets{};
     std::vector<DescriptorSet*> m_postFxSets{};
-    DescriptorSet*              m_sceneSet{};
-    DescriptorSet*              m_samplerSet{};
-    DescriptorSet*              m_shadowSet{};
-    DescriptorSet*              m_geometrySet{};
-    DescriptorSet*              m_skyboxSet{};
+    DescriptorSet* m_sceneSet{};
+    DescriptorSet* m_samplerSet{};
+    DescriptorSet* m_shadowSet{};
+    DescriptorSet* m_geometrySet{};
+    DescriptorSet* m_skyboxSet{};
 
 private:
-    Scene*                  m_scene = {};
+    Scene* m_scene = {};
     std::vector<SceneNode*> m_meshNodeList;
-    std::vector<Camera*>    m_cameraList;
-    std::vector<Light*>     m_lightList;
+    std::vector<Camera*> m_cameraList;
+    std::vector<Light*> m_lightList;
 };
-}  // namespace aph::vk
+} // namespace aph::vk
 
-#endif  // VKSCENERENDERER_H_
+#endif // VKSCENERENDERER_H_

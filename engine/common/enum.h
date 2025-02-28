@@ -19,19 +19,31 @@ public:
     using MaskType = typename std::underlying_type<BitType>::type;
 
     // constructors
-    constexpr Flags() noexcept : m_mask(0) {}
+    constexpr Flags() noexcept
+        : m_mask(0)
+    {
+    }
 
-    constexpr Flags(BitType bit) noexcept : m_mask(static_cast<MaskType>(bit)) {}
+    constexpr Flags(BitType bit) noexcept
+        : m_mask(static_cast<MaskType>(bit))
+    {
+    }
 
     constexpr Flags(Flags<BitType> const& rhs) noexcept = default;
 
-    constexpr explicit Flags(MaskType flags) noexcept : m_mask(flags) {}
+    constexpr explicit Flags(MaskType flags) noexcept
+        : m_mask(flags)
+    {
+    }
 
     // relational operators
     auto operator<=>(Flags<BitType> const&) const = default;
 
     // logical operator
-    constexpr bool operator!() const noexcept { return !m_mask; }
+    constexpr bool operator!() const noexcept
+    {
+        return !m_mask;
+    }
 
     // bitwise operators
     constexpr Flags<BitType> operator&(Flags<BitType> const& rhs) const noexcept
@@ -78,9 +90,15 @@ public:
     }
 
     // cast operators
-    explicit constexpr operator bool() const noexcept { return !!m_mask; }
+    explicit constexpr operator bool() const noexcept
+    {
+        return !!m_mask;
+    }
 
-    explicit constexpr operator MaskType() const noexcept { return m_mask; }
+    explicit constexpr operator MaskType() const noexcept
+    {
+        return m_mask;
+    }
 
 private:
     MaskType m_mask;
@@ -134,4 +152,4 @@ APH_ALWAYS_INLINE constexpr Flags<BitType> operator~(BitType bit) noexcept
     return ~(Flags<BitType>(bit));
 }
 
-}  // namespace aph
+} // namespace aph

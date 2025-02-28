@@ -7,10 +7,10 @@ namespace aph
 {
 enum class BufferDomain : uint8_t
 {
-    Device,            // Device local. Probably not visible from CPU.
-    LinkedDeviceHost,  // On desktop, directly mapped VRAM over PCI.
-    Host,              // Host-only, needs to be synced to GPU. Might be device local as well on iGPUs.
-    CachedHost,        //
+    Device, // Device local. Probably not visible from CPU.
+    LinkedDeviceHost, // On desktop, directly mapped VRAM over PCI.
+    Host, // Host-only, needs to be synced to GPU. Might be device local as well on iGPUs.
+    CachedHost, //
 };
 
 enum class ImageDomain : uint8_t
@@ -32,36 +32,36 @@ enum class QueueType : uint8_t
 
 enum class ShaderStage : uint8_t
 {
-    NA  = 0,
-    VS  = 1,
+    NA = 0,
+    VS = 1,
     TCS = 2,
     TES = 3,
-    GS  = 4,
-    FS  = 5,
-    CS  = 6,
-    TS  = 7,
-    MS  = 8,
+    GS = 4,
+    FS = 5,
+    CS = 6,
+    TS = 7,
+    MS = 8,
 };
 
 enum class ResourceState : uint32_t
 {
-    Undefined        = 0,
-    General          = 0x00000001,
-    UniformBuffer    = 0x00000002,
-    VertexBuffer     = 0x00000004,
-    IndexBuffer      = 0x00000008,
+    Undefined = 0,
+    General = 0x00000001,
+    UniformBuffer = 0x00000002,
+    VertexBuffer = 0x00000004,
+    IndexBuffer = 0x00000008,
     IndirectArgument = 0x00000010,
-    ShaderResource   = 0x00000020,
-    UnorderedAccess  = 0x00000040,
-    RenderTarget     = 0x00000080,
-    DepthStencil     = 0x00000100,
-    StreamOut        = 0x00000200,
-    CopyDest         = 0x00000400,
-    CopySource       = 0x00000800,
-    ResolveDest      = 0x00001000,
-    ResolveSource    = 0x00002000,
-    Present          = 0x00004000,
-    AccelStructRead  = 0x00008000,
+    ShaderResource = 0x00000020,
+    UnorderedAccess = 0x00000040,
+    RenderTarget = 0x00000080,
+    DepthStencil = 0x00000100,
+    StreamOut = 0x00000200,
+    CopyDest = 0x00000400,
+    CopySource = 0x00000800,
+    ResolveDest = 0x00001000,
+    ResolveSource = 0x00002000,
+    Present = 0x00004000,
+    AccelStructRead = 0x00008000,
     AccelStructWrite = 0x00010000,
 };
 using ResourceStateFlags = Flags<ResourceState>;
@@ -95,26 +95,26 @@ enum class SamplerPreset : uint8_t
 
 struct Extent2D
 {
-    uint32_t width  = {0};
-    uint32_t height = {0};
+    uint32_t width = { 0 };
+    uint32_t height = { 0 };
 };
 
 struct Extent3D
 {
-    uint32_t width  = {0};
-    uint32_t height = {0};
-    uint32_t depth  = {0};
+    uint32_t width = { 0 };
+    uint32_t height = { 0 };
+    uint32_t depth = { 0 };
 };
 
 struct MemoryRange
 {
-    std::size_t offset = {0};
-    std::size_t size   = {0};
+    std::size_t offset = { 0 };
+    std::size_t size = { 0 };
 };
 
 struct DebugLabel
 {
-    std::string          name;
+    std::string name;
     std::array<float, 4> color;
 };
 
@@ -127,8 +127,8 @@ struct ShaderMacro
 struct ShaderConstant
 {
     const void* pValue;
-    uint32_t    mIndex;
-    uint32_t    mSize;
+    uint32_t mIndex;
+    uint32_t mSize;
 };
 
 struct DummyCreateInfo
@@ -266,20 +266,20 @@ enum class Format : uint8_t
 
 enum class WaveOpsSupport
 {
-    None            = 0x0,
-    Basic           = 0x00000001,
-    Vote            = 0x00000002,
-    Arithmetic      = 0x00000004,
-    Ballot          = 0x00000008,
-    Shuffle         = 0x00000010,
+    None = 0x0,
+    Basic = 0x00000001,
+    Vote = 0x00000002,
+    Arithmetic = 0x00000004,
+    Ballot = 0x00000008,
+    Shuffle = 0x00000010,
     ShuffleRelative = 0x00000020,
-    Clustered       = 0x00000040,
-    Quad            = 0x00000080,
-    All             = 0x7FFFFFFF
+    Clustered = 0x00000040,
+    Quad = 0x00000080,
+    All = 0x7FFFFFFF
 };
 using WaveOpsSupportFlags = Flags<WaveOpsSupport>;
 
-constexpr uint32_t MAX_GPU_VENDOR_STRING_LENGTH = 256;  // max size for GPUVendorPreset strings
+constexpr uint32_t MAX_GPU_VENDOR_STRING_LENGTH = 256; // max size for GPUVendorPreset strings
 
 struct GPUVendorPreset
 {
@@ -289,31 +289,31 @@ struct GPUVendorPreset
     std::string gpuName;
     std::string gpuDriverVersion;
     std::string gpuDriverDate;
-    uint32_t    rtCoresCount;
+    uint32_t rtCoresCount;
 };
 
 struct GPUFeature
 {
-    bool meshShading : 1                = false;
-    bool multiDrawIndirect : 1          = false;
-    bool tessellationSupported : 1      = false;
+    bool meshShading : 1 = false;
+    bool multiDrawIndirect : 1 = false;
+    bool tessellationSupported : 1 = false;
     bool samplerAnisotropySupported : 1 = false;
-    bool rayTracing : 1                 = false;
+    bool rayTracing : 1 = false;
 };
 
 struct GPUProperties
 {
-    uint64_t            vram;
-    uint32_t            uniformBufferAlignment;
-    uint32_t            uploadBufferTextureAlignment;
-    uint32_t            uploadBufferTextureRowAlignment;
-    uint32_t            maxVertexInputBindings;
-    uint32_t            maxRootSignatureDWORDS;
-    uint32_t            waveLaneCount;
-    uint32_t            maxBoundDescriptorSets;
-    uint32_t            timestampPeriod;
+    uint64_t vram;
+    uint32_t uniformBufferAlignment;
+    uint32_t uploadBufferTextureAlignment;
+    uint32_t uploadBufferTextureRowAlignment;
+    uint32_t maxVertexInputBindings;
+    uint32_t maxRootSignatureDWORDS;
+    uint32_t waveLaneCount;
+    uint32_t maxBoundDescriptorSets;
+    uint32_t timestampPeriod;
     WaveOpsSupportFlags waveOpsSupportFlags;
-    GPUVendorPreset     GpuVendorPreset;
+    GPUVendorPreset GpuVendorPreset;
 
     GPUFeature feature;
 };
@@ -441,9 +441,9 @@ struct VertexInput
     struct VertexAttribute
     {
         uint32_t location = 0;
-        uint32_t binding  = 0;
-        Format   format   = Format::Undefined;
-        uint32_t offset   = 0;
+        uint32_t binding = 0;
+        Format format = Format::Undefined;
+        uint32_t offset = 0;
     };
 
     struct VertexInputBinding
@@ -451,30 +451,30 @@ struct VertexInput
         uint32_t stride = 0;
     };
 
-    std::vector<VertexAttribute>    attributes;
+    std::vector<VertexAttribute> attributes;
     std::vector<VertexInputBinding> bindings;
 };
 
 struct ColorAttachment
 {
-    Format      format              = Format::Undefined;
-    bool        blendEnabled        = false;
-    BlendOp     rgbBlendOp          = BlendOp::Add;
-    BlendOp     alphaBlendOp        = BlendOp::Add;
-    BlendFactor srcRGBBlendFactor   = BlendFactor::One;
+    Format format = Format::Undefined;
+    bool blendEnabled = false;
+    BlendOp rgbBlendOp = BlendOp::Add;
+    BlendOp alphaBlendOp = BlendOp::Add;
+    BlendFactor srcRGBBlendFactor = BlendFactor::One;
     BlendFactor srcAlphaBlendFactor = BlendFactor::One;
-    BlendFactor dstRGBBlendFactor   = BlendFactor::Zero;
+    BlendFactor dstRGBBlendFactor = BlendFactor::Zero;
     BlendFactor dstAlphaBlendFactor = BlendFactor::Zero;
 };
 
 struct StencilState
 {
-    StencilOp stencilFailureOp   = StencilOp::Keep;
-    StencilOp depthFailureOp     = StencilOp::Keep;
+    StencilOp stencilFailureOp = StencilOp::Keep;
+    StencilOp depthFailureOp = StencilOp::Keep;
     StencilOp depthStencilPassOp = StencilOp::Keep;
-    CompareOp stencilCompareOp   = CompareOp::Always;
-    uint32_t  readMask           = (uint32_t)~0;
-    uint32_t  writeMask          = (uint32_t)~0;
+    CompareOp stencilCompareOp = CompareOp::Always;
+    uint32_t readMask = (uint32_t)~0;
+    uint32_t writeMask = (uint32_t)~0;
 };
 
 struct RenderPipelineDynamicState final
@@ -486,32 +486,55 @@ template <typename T_Handle = DummyHandle, typename T_CreateInfo = DummyCreateIn
 class ResourceHandle
 {
 public:
-    using HandleType     = T_Handle;
+    using HandleType = T_Handle;
     using CreateInfoType = T_CreateInfo;
 
-    ResourceHandle(HandleType handle, CreateInfoType createInfo = {}) : m_handle(handle), m_createInfo(createInfo)
+    ResourceHandle(HandleType handle, CreateInfoType createInfo = {})
+        : m_handle(handle)
+        , m_createInfo(createInfo)
     {
-        if constexpr(std::is_same_v<T_CreateInfo, DummyCreateInfo>)
+        if constexpr (std::is_same_v<T_CreateInfo, DummyCreateInfo>)
         {
             m_createInfo.typeId = typeid(T_Handle).hash_code();
         }
-        if constexpr(std::is_same_v<T_Handle, DummyHandle>)
+        if constexpr (std::is_same_v<T_Handle, DummyHandle>)
         {
             m_handle.typeId = typeid(T_Handle).hash_code();
         }
     }
-    operator T_Handle() { return m_handle; }
-    operator T_Handle&() { return m_handle; }
-    operator T_Handle&() const { return m_handle; }
+    operator T_Handle()
+    {
+        return m_handle;
+    }
+    operator T_Handle&()
+    {
+        return m_handle;
+    }
+    operator T_Handle&() const
+    {
+        return m_handle;
+    }
 
-    T_Handle&           getHandle() { return m_handle; }
-    const T_Handle&     getHandle() const { return m_handle; }
-    T_CreateInfo&       getCreateInfo() { return m_createInfo; }
-    const T_CreateInfo& getCreateInfo() const { return m_createInfo; }
+    T_Handle& getHandle()
+    {
+        return m_handle;
+    }
+    const T_Handle& getHandle() const
+    {
+        return m_handle;
+    }
+    T_CreateInfo& getCreateInfo()
+    {
+        return m_createInfo;
+    }
+    const T_CreateInfo& getCreateInfo() const
+    {
+        return m_createInfo;
+    }
 
 protected:
-    T_Handle     m_handle     = {};
+    T_Handle m_handle = {};
     T_CreateInfo m_createInfo = {};
 };
 
-}  // namespace aph
+} // namespace aph

@@ -2,8 +2,8 @@
 #define VULKAN_SWAPCHAIN_H_
 
 #include "allocator/objectPool.h"
-#include "wsi/wsi.h"
 #include "vkUtils.h"
+#include "wsi/wsi.h"
 
 namespace aph::vk
 {
@@ -16,21 +16,21 @@ class Fence;
 struct SwapChainSettings
 {
     ::vk::SurfaceCapabilities2KHR capabilities;
-    ::vk::SurfaceFormat2KHR       surfaceFormat;
-    ::vk::PresentModeKHR          presentMode;
+    ::vk::SurfaceFormat2KHR surfaceFormat;
+    ::vk::PresentModeKHR presentMode;
 };
 
 struct SwapChainCreateInfo
 {
-    Instance*     pInstance     = {};
+    Instance* pInstance = {};
     WindowSystem* pWindowSystem = {};
-    Queue*        pQueue        = {};
+    Queue* pQueue = {};
 
-    Format           imageFormat;
+    Format imageFormat;
     ::vk::ClearValue clearValue;
-    uint32_t         imageCount;
-    bool             enableVsync;
-    bool             useFlipSwap;
+    uint32_t imageCount;
+    bool enableVsync;
+    bool useFlipSwap;
 };
 
 class SwapChain : public ResourceHandle<::vk::SwapchainKHR, SwapChainCreateInfo>
@@ -46,31 +46,40 @@ public:
     void reCreate();
 
 public:
-    uint32_t getWidth() const { return m_extent.width; }
-    uint32_t getHeight() const { return m_extent.height; }
-    Image*   getImage() const { return m_images[m_imageIdx]; }
-    Format   getFormat() const
+    uint32_t getWidth() const
+    {
+        return m_extent.width;
+    }
+    uint32_t getHeight() const
+    {
+        return m_extent.height;
+    }
+    Image* getImage() const
+    {
+        return m_images[m_imageIdx];
+    }
+    Format getFormat() const
     {
         return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
     }
 
 private:
-    Instance*                   m_pInstance{};
-    Device*                     m_pDevice{};
-    WindowSystem*               m_pWindowSystem{};
-    Queue*                      m_pQueue{};
+    Instance* m_pInstance{};
+    Device* m_pDevice{};
+    WindowSystem* m_pWindowSystem{};
+    Queue* m_pQueue{};
     ThreadSafeObjectPool<Image> m_imagePools;
-    SmallVector<Image*>         m_images{};
+    SmallVector<Image*> m_images{};
 
     SwapChainSettings swapChainSettings{};
 
     ::vk::SurfaceKHR m_surface{};
-    ::vk::Extent2D   m_extent{};
+    ::vk::Extent2D m_extent{};
 
     uint32_t m_imageIdx{};
 
     constexpr static uint32_t MAX_SWAPCHAIN_IMAGE_COUNT = 3;
 };
-}  // namespace aph::vk
+} // namespace aph::vk
 
-#endif  // SWAPCHAIN_H_
+#endif // SWAPCHAIN_H_

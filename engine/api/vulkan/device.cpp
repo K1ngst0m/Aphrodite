@@ -2,17 +2,17 @@
 #include "common/profiler.h"
 #include "deviceAllocator.h"
 #include "module/module.h"
-#include "resource/shaderReflector.h"
 #include "renderdoc_app.h"
+#include "resource/shaderReflector.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
 
 namespace aph::vk
 {
-Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle) :
-    ResourceHandle(handle, createInfo),
-    m_gpu(pPhysicalDevice),
-    m_resourcePool(this)
+Device::Device(const CreateInfoType& createInfo, PhysicalDevice* pPhysicalDevice, HandleType handle)
+    : ResourceHandle(handle, createInfo)
+    , m_gpu(pPhysicalDevice)
+    , m_resourcePool(this)
 {
 }
 
@@ -22,12 +22,12 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     PhysicalDevice* gpu = createInfo.pPhysicalDevice;
 
     const auto& queueFamilyProperties = gpu->getHandle().getQueueFamilyProperties();
-    const auto  queueFamilyCount      = queueFamilyProperties.size();
+    const auto queueFamilyCount = queueFamilyProperties.size();
 
     // Allocate handles for all available queues.
     SmallVector<::vk::DeviceQueueCreateInfo> queueCreateInfos(queueFamilyCount);
-    SmallVector<SmallVector<float>>          priorities(queueFamilyCount);
-    for(auto i = 0U; i < queueFamilyCount; ++i)
+    SmallVector<SmallVector<float>> priorities(queueFamilyCount);
+    for (auto i = 0U; i < queueFamilyCount; ++i)
     {
         const float defaultPriority = 1.0f;
         priorities[i].resize(queueFamilyProperties[i].queueCount, defaultPriority);
@@ -40,20 +40,20 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     SmallVector<const char*> requiredExtensions;
     {
         const auto& feature = createInfo.enabledFeatures;
-        if(feature.meshShading)
+        if (feature.meshShading)
         {
             // Request Mesh Shader Features EXT
             auto& meshShaderFeature = gpu->requestFeatures<::vk::PhysicalDeviceMeshShaderFeaturesEXT>();
 
-            meshShaderFeature.taskShader                             = VK_TRUE;
-            meshShaderFeature.meshShader                             = VK_TRUE;
-            meshShaderFeature.meshShaderQueries                      = VK_FALSE;
-            meshShaderFeature.multiviewMeshShader                    = VK_FALSE;
+            meshShaderFeature.taskShader = VK_TRUE;
+            meshShaderFeature.meshShader = VK_TRUE;
+            meshShaderFeature.meshShaderQueries = VK_FALSE;
+            meshShaderFeature.multiviewMeshShader = VK_FALSE;
             meshShaderFeature.primitiveFragmentShadingRateMeshShader = VK_FALSE;
             requiredExtensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
         }
 
-        if(feature.rayTracing)
+        if (feature.rayTracing)
         {
             // Request Ray Tracing related features
             auto& asFeature = gpu->requestFeatures<::vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
@@ -64,7 +64,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             rtPipelineFeature.rayTracingPipeline = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
 
-            auto& rayQueryFeature    = gpu->requestFeatures<::vk::PhysicalDeviceRayQueryFeaturesKHR>();
+            auto& rayQueryFeature = gpu->requestFeatures<::vk::PhysicalDeviceRayQueryFeaturesKHR>();
             rayQueryFeature.rayQuery = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
         }
@@ -80,28 +80,28 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
 
         // TODO renderdoc unsupported features
-        if(!createInfo.enableCapture)
+        if (!createInfo.enableCapture)
         {
-            if(feature.multiDrawIndirect)
+            if (feature.multiDrawIndirect)
             {
                 // Request Multi-Draw Features EXT
-                auto& multiDrawFeature     = gpu->requestFeatures<::vk::PhysicalDeviceMultiDrawFeaturesEXT>();
+                auto& multiDrawFeature = gpu->requestFeatures<::vk::PhysicalDeviceMultiDrawFeaturesEXT>();
                 multiDrawFeature.multiDraw = VK_TRUE;
                 requiredExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
                 requiredExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
             }
 
             requiredExtensions.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
-            auto& pipelineBinary            = gpu->requestFeatures<::vk::PhysicalDevicePipelineBinaryFeaturesKHR>();
+            auto& pipelineBinary = gpu->requestFeatures<::vk::PhysicalDevicePipelineBinaryFeaturesKHR>();
             pipelineBinary.pipelineBinaries = VK_TRUE;
 
             requiredExtensions.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
             auto& descriptorBufferFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorBufferFeaturesEXT>();
-            descriptorBufferFeatures.descriptorBuffer                = VK_TRUE;
+            descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
             descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
 
             requiredExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
-            auto& maintence5        = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance5FeaturesKHR>();
+            auto& maintence5 = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance5FeaturesKHR>();
             maintence5.maintenance5 = VK_TRUE;
         }
     }
@@ -109,15 +109,15 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // verify extension support
     {
         bool allExtensionSupported = true;
-        for(const auto& requiredExtension : requiredExtensions)
+        for (const auto& requiredExtension : requiredExtensions)
         {
-            if(!gpu->checkExtensionSupported(requiredExtension))
+            if (!gpu->checkExtensionSupported(requiredExtension))
             {
                 VK_LOG_ERR("The device extension %s is not supported.", requiredExtension);
                 allExtensionSupported = false;
             }
         }
-        if(!allExtensionSupported)
+        if (!allExtensionSupported)
         {
             APH_ASSERT(false);
             return nullptr;
@@ -127,29 +127,29 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     // verify feature support
     {
         const auto& requiredFeature = createInfo.enabledFeatures;
-        const auto& supportFeature  = gpu->getProperties().feature;
+        const auto& supportFeature = gpu->getProperties().feature;
 
-        if(requiredFeature.rayTracing && !supportFeature.rayTracing)
+        if (requiredFeature.rayTracing && !supportFeature.rayTracing)
         {
             CM_LOG_ERR("Ray Tracing feature not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.meshShading && !supportFeature.meshShading)
+        if (requiredFeature.meshShading && !supportFeature.meshShading)
         {
             CM_LOG_ERR("Mesh Shading feature not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.multiDrawIndirect && !supportFeature.multiDrawIndirect)
+        if (requiredFeature.multiDrawIndirect && !supportFeature.multiDrawIndirect)
         {
             CM_LOG_ERR("Multi Draw Indrect not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.tessellationSupported && !supportFeature.tessellationSupported)
+        if (requiredFeature.tessellationSupported && !supportFeature.tessellationSupported)
         {
             CM_LOG_ERR("some gpu feature not supported!");
             APH_ASSERT(false);
         }
-        if(requiredFeature.samplerAnisotropySupported && !supportFeature.samplerAnisotropySupported)
+        if (requiredFeature.samplerAnisotropySupported && !supportFeature.samplerAnisotropySupported)
         {
             CM_LOG_ERR("some gpu feature not supported!");
             APH_ASSERT(false);
@@ -160,23 +160,23 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         auto& extDynamicState3 = gpu->requestFeatures<::vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
         extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
 
-        auto& shaderObjectFeatures        = gpu->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
+        auto& shaderObjectFeatures = gpu->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
         shaderObjectFeatures.shaderObject = VK_TRUE;
 
-        auto& sync2Features            = gpu->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
+        auto& sync2Features = gpu->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
         sync2Features.synchronization2 = VK_TRUE;
 
         auto& timelineSemaphoreFeatures = gpu->requestFeatures<::vk::PhysicalDeviceTimelineSemaphoreFeatures>();
         timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
 
-        auto& maintenance4Features        = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
+        auto& maintenance4Features = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
         maintenance4Features.maintenance4 = VK_TRUE;
 
         auto& descriptorIndexingFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
         descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingPartiallyBound           = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount  = VK_TRUE;
-        descriptorIndexingFeatures.runtimeDescriptorArray                    = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
         // Request Inline Uniform Block Features EXT
         auto& inlineUniformBlockFeature = gpu->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();
@@ -187,12 +187,12 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         dynamicRenderingFeature.dynamicRendering = VK_TRUE;
 
         // Request Host Query Reset Features
-        auto& hostQueryResetFeature          = gpu->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
+        auto& hostQueryResetFeature = gpu->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
         hostQueryResetFeature.hostQueryReset = VK_TRUE;
     }
 
     // Enable all physical device available features.
-    ::vk::PhysicalDeviceFeatures  supportedFeatures  = gpu->getHandle().getFeatures();
+    ::vk::PhysicalDeviceFeatures supportedFeatures = gpu->getHandle().getFeatures();
     ::vk::PhysicalDeviceFeatures2 supportedFeatures2 = gpu->getHandle().getFeatures();
 
     // TODO
@@ -216,32 +216,32 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     device->m_resourcePool.deviceMemory = new VMADeviceAllocator(createInfo.pInstance, device.get());
 
     {
-        for(uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
+        for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
         {
             auto& queueFamily = queueFamilyProperties[queueFamilyIndex];
-            auto  queueFlags  = queueFamily.queueFlags;
+            auto queueFlags = queueFamily.queueFlags;
 
             QueueType queueType = QueueType::Unsupport;
             // universal queue
-            if(queueFlags & ::vk::QueueFlagBits::eGraphics)
+            if (queueFlags & ::vk::QueueFlagBits::eGraphics)
             {
                 VK_LOG_DEBUG("create graphics queue %lu", queueFamilyIndex);
                 queueType = QueueType::Graphics;
             }
             // compute queue
-            else if(queueFlags & ::vk::QueueFlagBits::eCompute)
+            else if (queueFlags & ::vk::QueueFlagBits::eCompute)
             {
                 VK_LOG_DEBUG("Found compute queue %lu", queueFamilyIndex);
                 queueType = QueueType::Compute;
             }
             // transfer queue
-            else if(queueFlags & ::vk::QueueFlagBits::eTransfer)
+            else if (queueFlags & ::vk::QueueFlagBits::eTransfer)
             {
                 VK_LOG_DEBUG("Found transfer queue %lu", queueFamilyIndex);
                 queueType = QueueType::Transfer;
             }
 
-            for(auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
+            for (auto queueIndex = 0U; queueIndex < queueCreateInfos[queueFamilyIndex].queueCount; ++queueIndex)
             {
                 ::vk::DeviceQueueInfo2 queueInfo{};
                 queueInfo.setQueueFamilyIndex(queueFamilyIndex).setQueueIndex(queueIndex);
@@ -252,9 +252,9 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    if(createInfo.enableCapture)
+    if (createInfo.enableCapture)
     {
-        if(auto res = device->initCapture(); res.success())
+        if (auto res = device->initCapture(); res.success())
         {
             VK_LOG_INFO("Renderdoc plugin loaded.");
         }
@@ -287,8 +287,9 @@ void Device::Destroy(Device* pDevice)
 Format Device::getDepthFormat() const
 {
     APH_PROFILER_SCOPE();
-    Format format = m_gpu->findSupportedFormat({Format::D32, Format::D32S8, Format::D24S8}, ::vk::ImageTiling::eOptimal,
-                                               ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    Format format =
+        m_gpu->findSupportedFormat({ Format::D32, Format::D32S8, Format::D24S8 }, ::vk::ImageTiling::eOptimal,
+                                   ::vk::FormatFeatureFlagBits::eDepthStencilAttachment);
     return format;
 }
 
@@ -297,7 +298,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 {
     APH_PROFILER_SCOPE();
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
-    const SmallVector<::vk::DescriptorPoolSize>&         poolSizes  = createInfo.poolSizes;
+    const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
 
     ::vk::DescriptorSetLayoutCreateInfo vkCreateInfo = {};
     vkCreateInfo.setBindings(vkBindings);
@@ -313,11 +314,11 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    const auto&                  spv = createInfo.code;
+    const auto& spv = createInfo.code;
     ::vk::ShaderModuleCreateInfo vkCreateInfo{};
     vkCreateInfo.setCodeSize(spv.size()).setPCode(spv.data());
 
-    if(createInfo.compile)
+    if (createInfo.compile)
     {
         auto [result, handle] = getHandle().createShaderModule(vkCreateInfo, vk_allocator());
         APH_VR(setDebugObjectName(handle, debugName));
@@ -334,9 +335,9 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, std
 Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, std::string_view debugName)
 {
     APH_PROFILER_SCOPE();
-    bool                 hasTaskShader = false;
+    bool hasTaskShader = false;
     std::vector<Shader*> shaders{};
-    switch(createInfo.type)
+    switch (createInfo.type)
     {
     case PipelineType::Geometry:
     {
@@ -345,7 +346,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         APH_ASSERT(vs);
         APH_ASSERT(fs);
 
-        shaders = {vs, fs};
+        shaders = { vs, fs };
     }
     break;
     case PipelineType::Mesh:
@@ -355,7 +356,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         auto fs = createInfo.mesh.pFragment;
         APH_ASSERT(ms);
         APH_ASSERT(fs);
-        if(ts)
+        if (ts)
         {
             hasTaskShader = true;
             shaders.push_back(ts);
@@ -368,7 +369,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     {
         auto cs = createInfo.compute.pCompute;
         APH_ASSERT(cs);
-        shaders = {cs};
+        shaders = { cs };
     }
     break;
     case PipelineType::RayTracing:
@@ -384,51 +385,51 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     }
     }
 
-    ShaderReflector reflector{ReflectRequest{shaders, &createInfo.samplerBank}};
-    const auto&     combineLayout = reflector.getReflectLayoutMeta();
+    ShaderReflector reflector{ ReflectRequest{ shaders, &createInfo.samplerBank } };
+    const auto& combineLayout = reflector.getReflectLayoutMeta();
 
     // setup descriptor set layouts and pipeline layouts
-    SmallVector<DescriptorSetLayout*>      setLayouts = {};
+    SmallVector<DescriptorSetLayout*> setLayouts = {};
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
-    VkPipelineLayout                       pipelineLayout;
+    VkPipelineLayout pipelineLayout;
     {
         setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
 
         unsigned numSets = 0;
-        for(unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        for (unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
-                .bindings  = reflector.getLayoutBindings(i),
+                .bindings = reflector.getLayoutBindings(i),
                 .poolSizes = reflector.getPoolSizes(i),
             };
             APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
-            if(combineLayout.descriptorSetMask.test(i))
+            if (combineLayout.descriptorSetMask.test(i))
             {
                 numSets = i + 1;
             }
         }
 
-        if(auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
-           numSets > maxBoundDescSets)
+        if (auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
+            numSets > maxBoundDescSets)
         {
             VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
         }
 
         ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-        if(numSets)
+        if (numSets)
         {
             vkSetLayouts.reserve(setLayouts.size());
-            for(const auto& setLayout : setLayouts)
+            for (const auto& setLayout : setLayouts)
             {
                 vkSetLayouts.push_back(setLayout->getHandle());
             }
             pipelineLayoutCreateInfo.setLayoutCount = numSets;
-            pipelineLayoutCreateInfo.pSetLayouts    = vkSetLayouts.data();
+            pipelineLayoutCreateInfo.pSetLayouts = vkSetLayouts.data();
         }
 
-        if(combineLayout.pushConstantRange.stageFlags)
+        if (combineLayout.pushConstantRange.stageFlags)
         {
-            pipelineLayoutCreateInfo.setPushConstantRanges({combineLayout.pushConstantRange});
+            pipelineLayoutCreateInfo.setPushConstantRanges({ combineLayout.pushConstantRange });
         }
 
         auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
@@ -441,11 +442,11 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     // setup shader object
     {
         SmallVector<::vk::ShaderCreateInfoEXT> shaderCreateInfos;
-        for(auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
+        for (auto iter = shaders.cbegin(); iter != shaders.cend(); ++iter)
         {
-            auto                   shader    = *iter;
+            auto shader = *iter;
             ::vk::ShaderStageFlags nextStage = {};
-            if(auto nextIter = std::next(iter); nextIter != shaders.cend())
+            if (auto nextIter = std::next(iter); nextIter != shaders.cend())
             {
                 nextStage = utils::VkCast((*nextIter)->getStage());
             }
@@ -459,14 +460,14 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                 .setPName(shader->getEntryPointName().data())
                 .setSetLayouts(vkSetLayouts);
 
-            if(!hasTaskShader && soCreateInfo.stage == ::vk::ShaderStageFlagBits::eMeshEXT)
+            if (!hasTaskShader && soCreateInfo.stage == ::vk::ShaderStageFlagBits::eMeshEXT)
             {
                 soCreateInfo.flags |= ::vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
             }
 
-            if(combineLayout.pushConstantRange.stageFlags)
+            if (combineLayout.pushConstantRange.stageFlags)
             {
-                soCreateInfo.setPushConstantRanges({combineLayout.pushConstantRange});
+                soCreateInfo.setPushConstantRanges({ combineLayout.pushConstantRange });
             }
             shaderCreateInfos.push_back(soCreateInfo);
         }
@@ -474,7 +475,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         auto [result, shaderObjects] = getHandle().createShadersEXT(shaderCreateInfos, vk_allocator());
         VK_VR(result);
 
-        for(size_t idx = 0; idx < shaders.size(); ++idx)
+        for (size_t idx = 0; idx < shaders.size(); ++idx)
         {
             APH_VR(setDebugObjectName(shaderObjects[idx], debugName));
             shaderObjectMaps[shaders[idx]->getStage()] = shaderObjects[idx];
@@ -483,10 +484,10 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
     // TODO
     PipelineLayout layout{
-        .vertexInput       = reflector.getVertexInput(),
+        .vertexInput = reflector.getVertexInput(),
         .pushConstantRange = reflector.getPushConstantRange(),
-        .setLayouts        = std::move(setLayouts),
-        .handle            = pipelineLayout,
+        .setLayouts = std::move(setLayouts),
+        .handle = pipelineLayout,
     };
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
@@ -549,9 +550,9 @@ Result Device::create(const ImageCreateInfo& createInfo, Image** ppImage, std::s
         .setSharingMode(::vk::SharingMode::eExclusive)
         .setInitialLayout(::vk::ImageLayout::eUndefined);
 
-    imageCreateInfo.extent.width  = createInfo.extent.width;
+    imageCreateInfo.extent.width = createInfo.extent.width;
     imageCreateInfo.extent.height = createInfo.extent.height;
-    imageCreateInfo.extent.depth  = createInfo.extent.depth;
+    imageCreateInfo.extent.depth = createInfo.extent.depth;
 
     auto [result, image] = getHandle().createImage(imageCreateInfo, vk_allocator());
     VK_VR(result);
@@ -580,12 +581,12 @@ void Device::destroy(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
 
-    for(auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
+    for (auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
     {
         destroy(setLayout);
     }
 
-    for(auto [_, shaderObject] : pProgram->m_shaderObjects)
+    for (auto [_, shaderObject] : pProgram->m_shaderObjects)
     {
         getHandle().destroyShaderEXT(shaderObject, vk_allocator());
     }
@@ -636,16 +637,16 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
 {
     APH_PROFILER_SCOPE();
 
-    if(m_queues.count(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
+    if (m_queues.count(type) && queueIndex < m_queues[type].size() && m_queues[type][queueIndex] != nullptr)
     {
         return m_queues[type][queueIndex];
     }
 
-    const QueueType fallbackOrder[] = {QueueType::Transfer, QueueType::Compute, QueueType::Graphics};
+    const QueueType fallbackOrder[] = { QueueType::Transfer, QueueType::Compute, QueueType::Graphics };
 
-    for(QueueType fallbackType : fallbackOrder)
+    for (QueueType fallbackType : fallbackOrder)
     {
-        if(queueIndex < m_queues[fallbackType].size() && m_queues[fallbackType][queueIndex] != nullptr)
+        if (queueIndex < m_queues[fallbackType].size() && m_queues[fallbackType][queueIndex] != nullptr)
         {
             // CM_LOG_WARN("Requested queue type [%s] (index %u) not available. Falling back to queue type %d.",
             //             aph::vk::utils::toString(type), queueIndex, aph::vk::utils::toString(fallbackType));
@@ -653,7 +654,7 @@ Queue* Device::getQueue(QueueType type, uint32_t queueIndex)
         }
     }
 
-    if(type != QueueType::Graphics && type != QueueType::Compute && type != QueueType::Transfer)
+    if (type != QueueType::Graphics && type != QueueType::Compute && type != QueueType::Transfer)
     {
         CM_LOG_WARN("Unsupported queue type %d requested for index %u.", aph::vk::utils::toString(type), queueIndex);
     }
@@ -676,7 +677,7 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
 {
     APH_PROFILER_SCOPE();
     SmallVector<::vk::Fence> vkFences(fences.size());
-    for(auto idx = 0; idx < fences.size(); ++idx)
+    for (auto idx = 0; idx < fences.size(); ++idx)
     {
         vkFences[idx] = fences[idx]->getHandle();
     }
@@ -686,24 +687,24 @@ Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uin
 Result Device::flushMemory(::vk::DeviceMemory memory, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
-    if(range.size == 0)
+    if (range.size == 0)
     {
         range.size = ::vk::WholeSize;
     }
     ::vk::MappedMemoryRange mappedRange{};
     mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
-    return utils::getResult(getHandle().flushMappedMemoryRanges({mappedRange}));
+    return utils::getResult(getHandle().flushMappedMemoryRanges({ mappedRange }));
 }
 Result Device::invalidateMemory(::vk::DeviceMemory memory, MemoryRange range)
 {
     APH_PROFILER_SCOPE();
-    if(range.size == 0)
+    if (range.size == 0)
     {
         range.size = ::vk::WholeSize;
     }
     ::vk::MappedMemoryRange mappedRange{};
     mappedRange.setMemory(memory).setOffset(range.offset).setSize(range.size);
-    return utils::getResult(getHandle().invalidateMappedMemoryRanges({mappedRange}));
+    return utils::getResult(getHandle().invalidateMappedMemoryRanges({ mappedRange }));
 }
 
 Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
@@ -727,7 +728,7 @@ Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppC
         .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
     auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
     VK_VR(res);
-    *ppCommandPool = new CommandPool{this, createInfo, pool};
+    *ppCommandPool = new CommandPool{ this, createInfo, pool };
     return Result::Success;
 }
 
@@ -740,7 +741,7 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
     float minSamplerLod = 0;
     float maxSamplerLod = createInfo.mipMapMode == SamplerMipmapMode::Linear ? ::vk::LodClampNone : 0;
     // user provided lods
-    if(createInfo.setLodRange)
+    if (createInfo.setLodRange)
     {
         minSamplerLod = createInfo.minLod;
         maxSamplerLod = createInfo.maxLod;
@@ -748,20 +749,20 @@ Result Device::create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, 
 
     ::vk::SamplerCreateInfo ci{};
     {
-        ci.magFilter        = utils::VkCast(createInfo.magFilter);
-        ci.minFilter        = utils::VkCast(createInfo.minFilter);
-        ci.mipmapMode       = utils::VkCast(createInfo.mipMapMode);
-        ci.addressModeU     = utils::VkCast(createInfo.addressU);
-        ci.addressModeV     = utils::VkCast(createInfo.addressV);
-        ci.addressModeW     = utils::VkCast(createInfo.addressW);
-        ci.mipLodBias       = createInfo.mipLodBias;
+        ci.magFilter = utils::VkCast(createInfo.magFilter);
+        ci.minFilter = utils::VkCast(createInfo.minFilter);
+        ci.mipmapMode = utils::VkCast(createInfo.mipMapMode);
+        ci.addressModeU = utils::VkCast(createInfo.addressU);
+        ci.addressModeV = utils::VkCast(createInfo.addressV);
+        ci.addressModeW = utils::VkCast(createInfo.addressW);
+        ci.mipLodBias = createInfo.mipLodBias;
         ci.anisotropyEnable = (createInfo.maxAnisotropy > 0.0f && m_gpu->getHandle().getFeatures().samplerAnisotropy);
-        ci.maxAnisotropy    = createInfo.maxAnisotropy;
-        ci.compareEnable    = createInfo.compareFunc != CompareOp::Never;
-        ci.compareOp        = utils::VkCast(createInfo.compareFunc);
-        ci.minLod           = minSamplerLod;
-        ci.maxLod           = maxSamplerLod;
-        ci.borderColor      = ::vk::BorderColor::eFloatTransparentBlack;
+        ci.maxAnisotropy = createInfo.maxAnisotropy;
+        ci.compareEnable = createInfo.compareFunc != CompareOp::Never;
+        ci.compareOp = utils::VkCast(createInfo.compareFunc);
+        ci.minLod = minSamplerLod;
+        ci.maxLod = maxSamplerLod;
+        ci.borderColor = ::vk::BorderColor::eFloatTransparentBlack;
         ci.unnormalizedCoordinates = ::vk::False;
     }
 
@@ -800,10 +801,10 @@ double Device::getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, ui
     VK_VR(res);
 
     uint64_t timeDifference = secondTimeStamp - firstTimeStamp;
-    auto     period         = getPhysicalDevice()->getProperties().timestampPeriod;
-    auto     timeInSeconds  = timeDifference * period;
+    auto period = getPhysicalDevice()->getProperties().timestampPeriod;
+    auto timeInSeconds = timeDifference * period;
 
-    switch(unitType)
+    switch (unitType)
     {
     case TimeUnit::Seconds:
         return timeInSeconds * 1e-9;
@@ -828,10 +829,10 @@ Semaphore* Device::acquireSemaphore()
 Result Device::releaseSemaphore(Semaphore* semaphore)
 {
     APH_PROFILER_SCOPE();
-    if(semaphore != VK_NULL_HANDLE)
+    if (semaphore != VK_NULL_HANDLE)
     {
         auto result = m_resourcePool.syncPrimitive.ReleaseSemaphores(1, &semaphore);
-        if(!result.success())
+        if (!result.success())
         {
             return Result::RuntimeError;
         }
@@ -849,7 +850,7 @@ Result Device::releaseFence(Fence* pFence)
 {
     APH_PROFILER_SCOPE();
     auto res = m_resourcePool.syncPrimitive.releaseFence(pFence);
-    if(!res.success())
+    if (!res.success())
     {
         return Result::RuntimeError;
     }
@@ -862,7 +863,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     APH_PROFILER_SCOPE();
 
     CommandPool* commandPool = {};
-    APH_VR(create({.queue = queue, .transient = true}, &commandPool));
+    APH_VR(create({ .queue = queue, .transient = true }, &commandPool));
 
     CommandBuffer* cmd = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
@@ -871,16 +872,16 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     func(cmd);
     APH_VR(cmd->end());
 
-    QueueSubmitInfo submitInfo{.commandBuffers = {cmd}, .waitSemaphores = waitSems, .signalSemaphores = signalSems};
-    if(!pFence)
+    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd }, .waitSemaphores = waitSems, .signalSemaphores = signalSems };
+    if (!pFence)
     {
         auto fence = acquireFence(false);
-        APH_VR(queue->submit({submitInfo}, fence));
+        APH_VR(queue->submit({ submitInfo }, fence));
         fence->wait();
     }
     else
     {
-        APH_VR(queue->submit({submitInfo}, pFence));
+        APH_VR(queue->submit({ submitInfo }, pFence));
         // TODO async with caller
         pFence->wait();
     }
@@ -895,45 +896,45 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
 
     const auto& features = getCreateInfo().enabledFeatures;
 
-    switch(queueType)
+    switch (queueType)
     {
     case aph::QueueType::Graphics:
     {
-        if((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)))
+        if ((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)))
         {
             flags |= ::vk::PipelineStageFlagBits::eVertexInput;
         }
 
-        if((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
-                           ::vk::AccessFlagBits::eShaderWrite)))
+        if ((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
+                            ::vk::AccessFlagBits::eShaderWrite)))
         {
             flags |= ::vk::PipelineStageFlagBits::eVertexShader;
             flags |= ::vk::PipelineStageFlagBits::eFragmentShader;
-            if(features.tessellationSupported)
+            if (features.tessellationSupported)
             {
                 flags |= ::vk::PipelineStageFlagBits::eTessellationControlShader;
                 flags |= ::vk::PipelineStageFlagBits::eTessellationEvaluationShader;
             }
             flags |= ::vk::PipelineStageFlagBits::eComputeShader;
 
-            if(features.rayTracing)
+            if (features.rayTracing)
             {
                 flags |= ::vk::PipelineStageFlagBits::eRayTracingShaderKHR;
             }
         }
 
-        if((accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead))
+        if ((accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead))
         {
             flags |= ::vk::PipelineStageFlagBits::eFragmentShader;
         }
 
-        if((accessFlags & (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)))
+        if ((accessFlags & (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)))
         {
             flags |= ::vk::PipelineStageFlagBits::eColorAttachmentOutput;
         }
 
-        if((accessFlags &
-            (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
+        if ((accessFlags &
+             (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
         {
             flags |= ::vk::PipelineStageFlagBits::eEarlyFragmentTests | ::vk::PipelineStageFlagBits::eLateFragmentTests;
         }
@@ -942,17 +943,18 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     }
     case aph::QueueType::Compute:
     {
-        if((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)) ||
-           (accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead) ||
-           (accessFlags & (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)) ||
-           (accessFlags &
-            (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
+        if ((accessFlags & (::vk::AccessFlagBits::eIndexRead | ::vk::AccessFlagBits::eVertexAttributeRead)) ||
+            (accessFlags & ::vk::AccessFlagBits::eInputAttachmentRead) ||
+            (accessFlags &
+             (::vk::AccessFlagBits::eColorAttachmentRead | ::vk::AccessFlagBits::eColorAttachmentWrite)) ||
+            (accessFlags &
+             (::vk::AccessFlagBits::eDepthStencilAttachmentRead | ::vk::AccessFlagBits::eDepthStencilAttachmentWrite)))
         {
             return ::vk::PipelineStageFlagBits::eAllCommands;
         }
 
-        if((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
-                           ::vk::AccessFlagBits::eShaderWrite)))
+        if ((accessFlags & (::vk::AccessFlagBits::eUniformRead | ::vk::AccessFlagBits::eShaderRead |
+                            ::vk::AccessFlagBits::eShaderWrite)))
         {
             flags |= ::vk::PipelineStageFlagBits::eComputeShader;
         }
@@ -966,22 +968,22 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     }
 
     // Compatible with both compute and graphics queues
-    if((accessFlags & ::vk::AccessFlagBits::eIndirectCommandRead))
+    if ((accessFlags & ::vk::AccessFlagBits::eIndirectCommandRead))
     {
         flags |= ::vk::PipelineStageFlagBits::eDrawIndirect;
     }
 
-    if((accessFlags & (::vk::AccessFlagBits::eTransferRead | ::vk::AccessFlagBits::eTransferWrite)))
+    if ((accessFlags & (::vk::AccessFlagBits::eTransferRead | ::vk::AccessFlagBits::eTransferWrite)))
     {
         flags |= ::vk::PipelineStageFlagBits::eTransfer;
     }
 
-    if((accessFlags & (::vk::AccessFlagBits::eHostRead | ::vk::AccessFlagBits::eHostWrite)))
+    if ((accessFlags & (::vk::AccessFlagBits::eHostRead | ::vk::AccessFlagBits::eHostWrite)))
     {
         flags |= ::vk::PipelineStageFlagBits::eHost;
     }
 
-    if(!flags)
+    if (!flags)
     {
         flags = ::vk::PipelineStageFlagBits::eTopOfPipe;
     }
@@ -993,7 +995,7 @@ static RENDERDOC_API_1_6_0* rdcDispatchTable = {};
 
 void Device::begineCapture()
 {
-    if(rdcDispatchTable)
+    if (rdcDispatchTable)
     {
         rdcDispatchTable->StartFrameCapture({}, {});
     }
@@ -1001,7 +1003,7 @@ void Device::begineCapture()
 
 void Device::endCapture()
 {
-    if(rdcDispatchTable)
+    if (rdcDispatchTable)
     {
         rdcDispatchTable->EndFrameCapture({}, {});
     }
@@ -1010,29 +1012,29 @@ void Device::endCapture()
 Result Device::initCapture()
 {
     m_renderdocModule.open("librenderdoc.so");
-    if(!m_renderdocModule)
+    if (!m_renderdocModule)
     {
-        return {Result::RuntimeError, "Failed to loading renderdoc module."};
+        return { Result::RuntimeError, "Failed to loading renderdoc module." };
     }
 
     pRENDERDOC_GetAPI getAPI = m_renderdocModule.getSymbol<pRENDERDOC_GetAPI>("RENDERDOC_GetAPI");
-    if(!getAPI)
+    if (!getAPI)
     {
-        return {Result::RuntimeError, "Failed to get module symbol."};
+        return { Result::RuntimeError, "Failed to get module symbol." };
     }
 
-    if(!getAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdcDispatchTable))
+    if (!getAPI(eRENDERDOC_API_Version_1_6_0, (void**)&rdcDispatchTable))
     {
-        return {Result::RuntimeError, "Failed to get dispatch table."};
+        return { Result::RuntimeError, "Failed to get dispatch table." };
     }
 
     return Result::Success;
 }
 void Device::triggerCapture()
 {
-    if(rdcDispatchTable)
+    if (rdcDispatchTable)
     {
         rdcDispatchTable->TriggerCapture();
     }
 }
-}  // namespace aph::vk
+} // namespace aph::vk

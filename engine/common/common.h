@@ -1,9 +1,9 @@
 #pragma once
 
+#include "bitOp.h"
+#include "logger.h"
 #include <cmath>
 #include <source_location>
-#include "logger.h"
-#include "bitOp.h"
 
 #define APH_CONCAT_IMPL(x, y) x##y
 #define APH_MACRO_CONCAT(x, y) APH_CONCAT_IMPL(x, y)
@@ -12,16 +12,16 @@ namespace aph
 {
 
 #if defined(_MSC_VER)
-    #define APH_ALWAYS_INLINE __forceinline
+#define APH_ALWAYS_INLINE __forceinline
 #elif defined(__GNUC__) || defined(__clang__)
-    #define APH_ALWAYS_INLINE __attribute__((always_inline)) inline
+#define APH_ALWAYS_INLINE __attribute__((always_inline)) inline
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
-    #define APH_ALWAYS_INLINE __forceinline
+#define APH_ALWAYS_INLINE __forceinline
 #else
-    #define APH_ALWAYS_INLINE inline
+#define APH_ALWAYS_INLINE inline
 #endif
 
-}  // namespace aph
+} // namespace aph
 
 namespace backward
 {
@@ -32,7 +32,7 @@ class SignalHandling;
 #include <signal.h>
 
 #ifdef _MSC_VER
-    #include <intrin.h>
+#include <intrin.h>
 #endif
 namespace aph
 {
@@ -55,7 +55,7 @@ template <typename T>
     }
 APH_ALWAYS_INLINE void APH_ASSERT(T condition, const std::source_location& loc = std::source_location::current())
 {
-    if(!static_cast<bool>(condition))
+    if (!static_cast<bool>(condition))
     {
         CM_LOG_ERR("Error at %s:%d.", loc.file_name(), loc.line());
         LOG_FLUSH();
@@ -69,13 +69,16 @@ inline void APH_ASSERT(bool condition) {};
 class TracedException : public std::runtime_error
 {
 public:
-    TracedException() : std::runtime_error(_get_trace()) {}
+    TracedException()
+        : std::runtime_error(_get_trace())
+    {
+    }
 
 private:
     std::string _get_trace();
 };
 extern backward::SignalHandling sh;
-}  // namespace aph
+} // namespace aph
 
 namespace aph
 {
@@ -88,17 +91,24 @@ struct [[nodiscard("Result should be handled.")]] Result
         RuntimeError,
     };
 
-    APH_ALWAYS_INLINE bool success() const { return m_code == Code::Success; };
+    APH_ALWAYS_INLINE bool success() const noexcept
+    {
+        return m_code == Code::Success;
+    };
 
-    APH_ALWAYS_INLINE Result(Code code, std::string msg = "") : m_code(code), m_msg(std::move(msg)) {}
+    APH_ALWAYS_INLINE Result(Code code, std::string msg = "")
+        : m_code(code)
+        , m_msg(std::move(msg))
+    {
+    }
 
     APH_ALWAYS_INLINE std::string_view toString()
     {
-        if(!m_msg.empty())
+        if (!m_msg.empty())
         {
             return m_msg;
         }
-        switch(m_code)
+        switch (m_code)
         {
         case Success:
             return "Success.";
@@ -113,14 +123,14 @@ struct [[nodiscard("Result should be handled.")]] Result
     }
 
 private:
-    Code        m_code = Success;
-    std::string m_msg  = {};
+    Code m_code = Success;
+    std::string m_msg = {};
 };
 
 #ifdef APH_DEBUG
 inline void APH_VR(Result result, const std::source_location source = std::source_location::current())
 {
-    if(!result.success())
+    if (!result.success())
     {
         VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", result.toString(), source.function_name(),
                    source.file_name(), source.line());
@@ -133,7 +143,7 @@ inline void APH_VR(Result result)
     return result;
 }
 #endif
-}  // namespace aph
+} // namespace aph
 
 namespace aph::utils
 {
@@ -152,4 +162,4 @@ std::underlying_type_t<T> getUnderLyingType(T value)
 {
     return static_cast<std::underlying_type_t<T>>(value);
 }
-}  // namespace aph::utils
+} // namespace aph::utils

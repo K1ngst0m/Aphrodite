@@ -4,39 +4,39 @@ namespace aph
 {
 Camera& Camera::setProjection(Perspective perspective)
 {
-    m_cameraType       = CameraType::Perspective;
-    m_perspective      = perspective;
+    m_cameraType = CameraType::Perspective;
+    m_perspective = perspective;
     m_dirty.projection = true;
     return *this;
 }
 
 Camera& Camera::setProjection(Orthographic orthographic)
 {
-    m_cameraType       = CameraType::Orthographic;
-    m_orthographic     = orthographic;
+    m_cameraType = CameraType::Orthographic;
+    m_orthographic = orthographic;
     m_dirty.projection = true;
     return *this;
 }
 
 Camera& Camera::setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::vec3& up)
 {
-    m_position        = glm::vec4(eye, 1.0f);
+    m_position = glm::vec4(eye, 1.0f);
     glm::vec3 forward = glm::normalize(at - eye);
-    m_orientation     = glm::quatLookAt(forward, glm::normalize(up));
-    m_dirty.view      = true;
+    m_orientation = glm::quatLookAt(forward, glm::normalize(up));
+    m_dirty.view = true;
     return *this;
 }
 
 Camera& Camera::setPosition(glm::vec3 value)
 {
-    m_position   = glm::vec4(value, 1.0f);
+    m_position = glm::vec4(value, 1.0f);
     m_dirty.view = true;
     return *this;
 }
 
 void Camera::updateProjection()
 {
-    switch(getType())
+    switch (getType())
     {
     case CameraType::Orthographic:
     {
@@ -48,7 +48,7 @@ void Camera::updateProjection()
     {
         auto matrix = glm::perspective(glm::radians(m_perspective.fov), m_perspective.aspect, m_perspective.znear,
                                        m_perspective.zfar);
-        if(m_flipY)
+        if (m_flipY)
         {
             matrix[1][1] *= -1.0f;
         }
@@ -60,14 +60,14 @@ void Camera::updateProjection()
 
 void Camera::updateView()
 {
-    glm::mat4 rot   = glm::mat4_cast(glm::conjugate(m_orientation));
+    glm::mat4 rot = glm::mat4_cast(glm::conjugate(m_orientation));
     glm::mat4 trans = glm::translate(glm::mat4(1.0f), -glm::vec3(m_position));
     setView(rot * trans);
 }
 
 const glm::mat4& Camera::getProjection()
 {
-    if(m_dirty.projection)
+    if (m_dirty.projection)
     {
         updateProjection();
     }
@@ -76,7 +76,7 @@ const glm::mat4& Camera::getProjection()
 
 const glm::mat4& Camera::getView()
 {
-    if(m_dirty.view)
+    if (m_dirty.view)
     {
         updateView();
     }
@@ -85,16 +85,15 @@ const glm::mat4& Camera::getView()
 
 Camera& Camera::setProjection(glm::mat4 value)
 {
-    m_projection       = value;
+    m_projection = value;
     m_dirty.projection = false;
     return *this;
 }
 
 Camera& Camera::setView(glm::mat4 value)
 {
-    m_view       = value;
+    m_view = value;
     m_dirty.view = false;
     return *this;
 }
-}  // namespace aph
-
+} // namespace aph

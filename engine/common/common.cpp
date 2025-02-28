@@ -9,13 +9,13 @@ std::string TracedException::_get_trace()
 {
     std::ostringstream ss;
 
-    backward::StackTrace    stackTrace;
+    backward::StackTrace stackTrace;
     backward::TraceResolver resolver;
     stackTrace.load_here();
     resolver.load_stacktrace(stackTrace);
 
     ss << "\n\n == backtrace == \n\n";
-    for(std::size_t i = 0; i < stackTrace.size(); ++i)
+    for (std::size_t i = 0; i < stackTrace.size(); ++i)
     {
         const backward::ResolvedTrace trace = resolver.resolve(stackTrace[i]);
 
@@ -25,4 +25,4 @@ std::string TracedException::_get_trace()
 
     return ss.str();
 }
-}  // namespace aph
+} // namespace aph

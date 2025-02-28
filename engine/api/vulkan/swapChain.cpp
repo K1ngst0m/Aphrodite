@@ -15,16 +15,16 @@ aph::vk::SwapChainSettings querySwapChainSupport(::vk::SurfaceKHR surface, ::vk:
     // surface cap
     {
         auto [_, capabilities] = gpu.getSurfaceCapabilities2KHR(surfaceInfo);
-        details.capabilities   = std::move(capabilities);
+        details.capabilities = std::move(capabilities);
     }
 
     // surface format
     {
-        auto [_, formats]     = gpu.getSurfaceFormats2KHR(surfaceInfo);
+        auto [_, formats] = gpu.getSurfaceFormats2KHR(surfaceInfo);
         details.surfaceFormat = formats[0];
-        for(const auto& availableFormat : formats)
+        for (const auto& availableFormat : formats)
         {
-            if(availableFormat.surfaceFormat.format == ::vk::Format::eB8G8R8A8Unorm)
+            if (availableFormat.surfaceFormat.format == ::vk::Format::eB8G8R8A8Unorm)
             {
                 details.surfaceFormat = availableFormat;
                 break;
@@ -35,10 +35,10 @@ aph::vk::SwapChainSettings querySwapChainSupport(::vk::SurfaceKHR surface, ::vk:
     // surface present mode
     {
         auto [_, presentModes] = gpu.getSurfacePresentModesKHR(surface);
-        details.presentMode    = presentModes[0];
-        for(const auto& availablePresentMode : presentModes)
+        details.presentMode = presentModes[0];
+        for (const auto& availablePresentMode : presentModes)
         {
-            if(availablePresentMode == ::vk::PresentModeKHR::eMailbox)
+            if (availablePresentMode == ::vk::PresentModeKHR::eMailbox)
             {
                 details.presentMode = availablePresentMode;
             }
@@ -48,23 +48,23 @@ aph::vk::SwapChainSettings querySwapChainSupport(::vk::SurfaceKHR surface, ::vk:
     return details;
 }
 
-}  // namespace
+} // namespace
 
 namespace aph::vk
 {
-SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice) :
-    ResourceHandle(VK_NULL_HANDLE, createInfo),
-    m_pInstance(createInfo.pInstance),
-    m_pDevice(pDevice),
-    m_pWindowSystem(createInfo.pWindowSystem),
-    m_pQueue(createInfo.pQueue)
+SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice)
+    : ResourceHandle(VK_NULL_HANDLE, createInfo)
+    , m_pInstance(createInfo.pInstance)
+    , m_pDevice(pDevice)
+    , m_pWindowSystem(createInfo.pWindowSystem)
+    , m_pQueue(createInfo.pQueue)
 {
     APH_ASSERT(createInfo.pInstance);
     APH_ASSERT(createInfo.pWindowSystem);
     APH_ASSERT(createInfo.pQueue);
 
     // Image count
-    m_createInfo            = createInfo;
+    m_createInfo = createInfo;
     m_createInfo.imageCount = createInfo.imageCount != 0 ? createInfo.imageCount : 2;
 
     reCreate();
@@ -76,17 +76,17 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     auto result = m_pDevice->getHandle().acquireNextImageKHR(
         getHandle(), UINT64_MAX, pSemaphore->getHandle(), pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
-    if(result == ::vk::Result::eErrorOutOfDateKHR)
+    if (result == ::vk::Result::eErrorOutOfDateKHR)
     {
         m_imageIdx = -1;
-        if(pFence)
+        if (pFence)
         {
-            m_pDevice->getHandle().resetFences({pFence->getHandle()});
+            m_pDevice->getHandle().resetFences({ pFence->getHandle() });
         }
         return Result::Success;
     }
 
-    if(result == ::vk::Result::eSuboptimalKHR)
+    if (result == ::vk::Result::eSuboptimalKHR)
     {
         VK_LOG_INFO(
             "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
@@ -100,19 +100,19 @@ Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
 {
     std::vector<::vk::Semaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
-    for(auto sem : waitSemaphores)
+    for (auto sem : waitSemaphores)
     {
         vkSemaphores.push_back(sem->getHandle());
     }
 
     ::vk::PresentInfoKHR presentInfo{};
-    presentInfo.setWaitSemaphores(vkSemaphores).setSwapchains({getHandle()}).setImageIndices({m_imageIdx});
+    presentInfo.setWaitSemaphores(vkSemaphores).setSwapchains({ getHandle() }).setImageIndices({ m_imageIdx });
     return m_pQueue->present(presentInfo);
 }
 
 SwapChain::~SwapChain()
 {
-    for(auto* image : m_images)
+    for (auto* image : m_images)
     {
         m_imagePools.free(image);
     }
@@ -124,34 +124,34 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     APH_VR(m_pDevice->waitIdle());
-    for(auto* image : m_images)
+    for (auto* image : m_images)
     {
         m_imagePools.free(image);
     }
     m_images.clear();
     m_imagePools.clear();
 
-    if(getHandle() != VK_NULL_HANDLE)
+    if (getHandle() != VK_NULL_HANDLE)
     {
         m_pDevice->getHandle().destroySwapchainKHR(getHandle(), vk_allocator());
     }
 
-    if(m_surface != VK_NULL_HANDLE)
+    if (m_surface != VK_NULL_HANDLE)
     {
         m_pInstance->getHandle().destroySurfaceKHR(m_surface);
     }
 
-    m_surface         = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
+    m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
     swapChainSettings = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWindowSystem);
 
     auto& caps = swapChainSettings.capabilities.surfaceCapabilities;
-    if((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
+    if ((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
     {
         VK_LOG_WARN("Changed requested SwapChain images {%d} to maximum allowed SwapChain images {%d}",
                     m_createInfo.imageCount, caps.maxImageCount);
         m_createInfo.imageCount = caps.maxImageCount;
     }
-    if(m_createInfo.imageCount < caps.minImageCount)
+    if (m_createInfo.imageCount < caps.minImageCount)
     {
         VK_LOG_WARN("Changed requested SwapChain images {%d} to minimum required SwapChain images {%d}",
                     m_createInfo.imageCount, caps.minImageCount);
@@ -159,17 +159,17 @@ void SwapChain::reCreate()
     }
 
     uint32_t minImageCount = std::max(caps.minImageCount + 1, MAX_SWAPCHAIN_IMAGE_COUNT);
-    if(caps.maxImageCount > 0 && minImageCount > caps.maxImageCount)
+    if (caps.maxImageCount > 0 && minImageCount > caps.maxImageCount)
     {
         minImageCount = caps.maxImageCount;
     }
 
-    m_extent.width  = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
+    m_extent.width = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
     m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
     ::vk::SwapchainCreateInfoKHR swapchain_create_info{};
     {
-        SmallVector<uint32_t> queueFamilyIndices{m_pQueue->getFamilyIndex()};
+        SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
         swapchain_create_info.setSurface(m_surface)
             .setMinImageCount(minImageCount)
             .setImageFormat(swapChainSettings.surfaceFormat.surfaceFormat.format)
@@ -194,20 +194,20 @@ void SwapChain::reCreate()
     VK_VR(result);
 
     // Create an Image class instances to wrap swapchain image handles.
-    for(auto handle : images)
+    for (auto handle : images)
     {
         ImageCreateInfo imageCreateInfo = {
-            .extent      = {m_extent.width, m_extent.height, 1},
-            .mipLevels   = 1,
-            .arraySize   = 1,
+            .extent = { m_extent.width, m_extent.height, 1 },
+            .mipLevels = 1,
+            .arraySize = 1,
             .sampleCount = 1,
-            .usage       = swapchain_create_info.imageUsage,
-            .imageType   = ImageType::e2D,
-            .format      = getFormat(),
+            .usage = swapchain_create_info.imageUsage,
+            .imageType = ImageType::e2D,
+            .format = getFormat(),
         };
 
         auto pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
         m_images.push_back(pImage);
     }
 }
-}  // namespace aph::vk
+} // namespace aph::vk

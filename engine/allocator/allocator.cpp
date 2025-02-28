@@ -10,7 +10,7 @@ constexpr T alignTo(T size, T alignment) noexcept
 {
     return ((size + alignment - 1) & ~(alignment - 1));
 }
-}
+} // namespace
 
 namespace aph::memory
 {
@@ -33,7 +33,7 @@ void* calloc_internal(size_t count, size_t size, const char* f, int l, const cha
 void* calloc_memalign(size_t count, size_t alignment, size_t size)
 {
     size_t alignedArrayElementSize = alignTo(size, alignment);
-    size_t totalBytes              = count * alignedArrayElementSize;
+    size_t totalBytes = count * alignedArrayElementSize;
 
     void* ptr = memalign(alignment, totalBytes);
 
@@ -55,4 +55,4 @@ void free_internal(void* ptr, const char* f, int l, const char* sf)
 {
     std::free(ptr);
 }
-}  // namespace aph::memory
+} // namespace aph::memory

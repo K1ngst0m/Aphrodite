@@ -2,17 +2,18 @@
 
 namespace aph::vk
 {
-Shader::Shader(const CreateInfoType& createInfo, HandleType handle) :
-    ResourceHandle(handle, createInfo)
-{}
+Shader::Shader(const CreateInfoType& createInfo, HandleType handle)
+    : ResourceHandle(handle, createInfo)
+{
+}
 
 ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
-                  HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps) :
-    ResourceHandle({}, createInfo),
-    m_shaderObjects(std::move(shaderObjectMaps)),
-    m_pipelineLayout(std::move(layout))
+                             HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps)
+    : ResourceHandle({}, createInfo)
+    , m_shaderObjects(std::move(shaderObjectMaps))
+    , m_pipelineLayout(std::move(layout))
 {
-    switch(getPipelineType())
+    switch (getPipelineType())
     {
     case PipelineType::Geometry:
     {
@@ -27,7 +28,7 @@ ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const PipelineLay
         APH_ASSERT(createInfo.mesh.pMesh);
         APH_ASSERT(createInfo.mesh.pFragment);
         m_shaders[ShaderStage::MS] = createInfo.mesh.pMesh;
-        if(createInfo.mesh.pTask)
+        if (createInfo.mesh.pTask)
         {
             m_shaders[ShaderStage::TS] = createInfo.mesh.pTask;
         }
@@ -44,4 +45,4 @@ ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const PipelineLay
         break;
     }
 }
-}  // namespace aph::vk
+} // namespace aph::vk

@@ -37,26 +37,26 @@ private:
 
     SmallVector<VkPipelineShaderStageCreateInfo> m_shaderStages = {};
 
-    VkPipelineVertexInputStateCreateInfo   m_vertexInputState;
+    VkPipelineVertexInputStateCreateInfo m_vertexInputState;
     VkPipelineInputAssemblyStateCreateInfo m_inputAssembly;
     VkPipelineRasterizationStateCreateInfo m_rasterizationState;
-    VkPipelineMultisampleStateCreateInfo   m_multisampleState;
-    VkPipelineDepthStencilStateCreateInfo  m_depthStencilState;
+    VkPipelineMultisampleStateCreateInfo m_multisampleState;
+    VkPipelineDepthStencilStateCreateInfo m_depthStencilState;
 
-    VkPipelineDynamicStateCreateInfo    m_dynamicState;
-    VkPipelineViewportStateCreateInfo   m_viewportState;
+    VkPipelineDynamicStateCreateInfo m_dynamicState;
+    VkPipelineViewportStateCreateInfo m_viewportState;
     VkPipelineColorBlendStateCreateInfo m_colorBlendState;
-    VkPipelineRenderingCreateInfo       m_renderingInfo;
+    VkPipelineRenderingCreateInfo m_renderingInfo;
     VkPipelineCreateFlags2CreateInfoKHR m_createFlags;
 
     SmallVector<VkPipelineColorBlendAttachmentState> m_colorBlendAttachmentStates = {};
-    SmallVector<VkFormat>                            m_colorAttachmentFormats     = {};
+    SmallVector<VkFormat> m_colorAttachmentFormats = {};
 
-    SmallVector<VkVertexInputBindingDescription>   m_vkBindings;
+    SmallVector<VkVertexInputBindingDescription> m_vkBindings;
     SmallVector<VkVertexInputAttributeDescription> m_vkAttributes;
 
-    VkFormat m_depthAttachmentFormat   = VK_FORMAT_UNDEFINED;
+    VkFormat m_depthAttachmentFormat = VK_FORMAT_UNDEFINED;
     VkFormat m_stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk

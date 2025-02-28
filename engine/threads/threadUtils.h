@@ -5,7 +5,7 @@
 namespace aph::thread
 {
 template <typename T>
-requires std::is_constructible_v<std::string, T>
+    requires std::is_constructible_v<std::string, T>
 inline void setName(T&& name)
 {
     std::string s(std::forward<T>(name));
@@ -20,5 +20,5 @@ inline std::string getName()
     pthread_getname_np(pthread_self(), name.data(), name.size());
     return name;
 }
-}  // namespace aph::thread
+} // namespace aph::thread
 #endif

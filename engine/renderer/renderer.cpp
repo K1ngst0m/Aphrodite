@@ -1,9 +1,10 @@
 #include "renderer.h"
+
 #include "api/vulkan/device.h"
-#include "common/profiler.h"
-#include "renderer/renderer.h"
 #include "common/common.h"
 #include "common/logger.h"
+#include "common/profiler.h"
+#include "renderer/renderer.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -14,24 +15,24 @@ namespace aph
     ::vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity, ::vk::DebugUtilsMessageTypeFlagsEXT messageType,
     const ::vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
-    if(!pCallbackData->pMessage)
+    if (!pCallbackData->pMessage)
     {
         return VK_TRUE;
     }
-    static std::mutex errMutex;  // Mutex for thread safety
-    static uint32_t   errCount = 0;
+    static std::mutex errMutex; // Mutex for thread safety
+    static uint32_t errCount = 0;
 
     std::stringstream msg;
-    if(messageType != ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
+    if (messageType != ::vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral)
     {
         uint32_t frameId = *(uint32_t*)pUserData;
         msg << "[fr:" << frameId << "] ";
     }
 
-    for(uint32_t idx = 0; idx < pCallbackData->objectCount; idx++)
+    for (uint32_t idx = 0; idx < pCallbackData->objectCount; idx++)
     {
         auto& obj = pCallbackData->pObjects[idx];
-        if(obj.pObjectName)
+        if (obj.pObjectName)
         {
             msg << "[name: " << obj.pObjectName << "]";
         }
@@ -39,9 +40,9 @@ namespace aph
 
     msg << " >>> ";
 
-    msg << std::string{pCallbackData->pMessage};
+    msg << std::string{ pCallbackData->pMessage };
 
-    switch(messageSeverity)
+    switch (messageSeverity)
     {
     case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
         VK_LOG_DEBUG("%s", msg.str());
@@ -55,7 +56,7 @@ namespace aph
     case ::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
     {
         std::lock_guard<std::mutex> lock(errMutex);
-        if(++errCount > 10)
+        if (++errCount > 10)
         {
             VK_LOG_ERR("Too many errors, exit.");
             throw aph::TracedException();
@@ -71,20 +72,21 @@ namespace aph
     return VK_FALSE;
 }
 
-Renderer::Renderer(const RenderConfig& config) : m_config(config)
+Renderer::Renderer(const RenderConfig& config)
+    : m_config(config)
 {
     APH_PROFILER_SCOPE();
     WindowSystemCreateInfo wsi_create_info{
-        .width    = config.width,
-        .height   = config.height,
+        .width = config.width,
+        .height = config.height,
         .enableUI = false,
     };
     m_pWindowSystem = WindowSystem::Create(wsi_create_info);
-    auto& wsi       = m_pWindowSystem;
+    auto& wsi = m_pWindowSystem;
     // create instance
     {
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
-        auto                   requiredExtensions = wsi->getRequiredExtensions();
+        auto requiredExtensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -113,7 +115,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
     // create device
     {
-        uint32_t             gpuIdx = 0;
+        uint32_t gpuIdx = 0;
         vk::DeviceCreateInfo createInfo{
             // TODO select physical device
             .enabledFeatures =
@@ -136,9 +138,9 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     // setup swapchain
     {
         vk::SwapChainCreateInfo createInfo{
-            .pInstance     = m_pInstance,
+            .pInstance = m_pInstance,
             .pWindowSystem = m_pWindowSystem.get(),
-            .pQueue        = m_pDevice->getQueue(QueueType::Graphics),
+            .pQueue = m_pDevice->getQueue(QueueType::Graphics),
         };
         auto result = m_pDevice->create(createInfo, &m_pSwapChain);
         APH_ASSERT(result.success());
@@ -148,11 +150,11 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
     {
         m_frameGraph.resize(m_config.maxFrames);
         m_frameFence.resize(m_config.maxFrames);
-        for(auto& graph : m_frameGraph)
+        for (auto& graph : m_frameGraph)
         {
             graph = std::make_unique<RenderGraph>(m_pDevice.get());
         }
-        for(auto& fence : m_frameFence)
+        for (auto& fence : m_frameFence)
         {
             fence = m_pDevice->acquireFence(true);
         }
@@ -160,7 +162,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 
     // init resource loader
     {
-        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{.pDevice = m_pDevice.get()});
+        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{ .pDevice = m_pDevice.get() });
     }
 
     // init ui
@@ -177,7 +179,7 @@ Renderer::Renderer(const RenderConfig& config) : m_config(config)
 Renderer::~Renderer()
 {
     APH_PROFILER_SCOPE();
-    for(auto& graph : m_frameGraph)
+    for (auto& graph : m_frameGraph)
     {
         graph.reset();
     }
@@ -215,13 +217,15 @@ void Renderer::load()
 void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
 {
     APH_PROFILER_SCOPE();
-    for(auto& pGraph : m_frameGraph)
+    for (auto& pGraph : m_frameGraph)
     {
         auto taskGroup = m_taskManager.createTaskGroup("frame graph recording");
-        taskGroup->addTask([this, &pGraph, func]() {
-            func(pGraph.get());
-            pGraph->build(m_pSwapChain);
-        });
+        taskGroup->addTask(
+            [this, &pGraph, func]()
+            {
+                func(pGraph.get());
+                pGraph->build(m_pSwapChain);
+            });
         m_taskManager.submit(taskGroup);
     }
     m_taskManager.wait();
@@ -238,4 +242,4 @@ void Renderer::render()
     // m_pDevice->endCapture();
     m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }
-}  // namespace aph
+} // namespace aph

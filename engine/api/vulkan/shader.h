@@ -1,11 +1,11 @@
 #ifndef VULKAN_SHADER_H_
 #define VULKAN_SHADER_H_
 
-#include <bitset>
+#include "allocator/objectPool.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
-#include "allocator/objectPool.h"
 #include "vkUtils.h"
+#include <bitset>
 
 namespace aph::vk
 {
@@ -17,11 +17,11 @@ class DescriptorSet;
 
 struct PipelineLayout
 {
-    VertexInput             vertexInput       = {};
+    VertexInput vertexInput = {};
     ::vk::PushConstantRange pushConstantRange = {};
 
     SmallVector<DescriptorSetLayout*> setLayouts = {};
-    ::vk::PipelineLayout              handle     = {};
+    ::vk::PipelineLayout handle = {};
 };
 
 struct ImmutableSamplerBank
@@ -32,9 +32,9 @@ struct ImmutableSamplerBank
 struct ShaderCreateInfo
 {
     std::vector<uint32_t> code;
-    std::string           entrypoint = "main";
-    aph::ShaderStage      stage;
-    bool                  compile = false;
+    std::string entrypoint = "main";
+    aph::ShaderStage stage;
+    bool compile = false;
 };
 
 class Shader : public ResourceHandle<::vk::ShaderModule, ShaderCreateInfo>
@@ -42,10 +42,22 @@ class Shader : public ResourceHandle<::vk::ShaderModule, ShaderCreateInfo>
     friend class ObjectPool<Shader>;
 
 public:
-    std::string_view             getEntryPointName() const { return getCreateInfo().entrypoint; }
-    ShaderStage                  getStage() const { return getCreateInfo().stage; }
-    const std::vector<uint32_t>& getCode() const { return getCreateInfo().code; }
-    bool                         hasModule() const { return getHandle() == VK_NULL_HANDLE; }
+    std::string_view getEntryPointName() const
+    {
+        return getCreateInfo().entrypoint;
+    }
+    ShaderStage getStage() const
+    {
+        return getCreateInfo().stage;
+    }
+    const std::vector<uint32_t>& getCode() const
+    {
+        return getCreateInfo().code;
+    }
+    bool hasModule() const
+    {
+        return getHandle() == VK_NULL_HANDLE;
+    }
 
 private:
     Shader(const CreateInfoType& createInfo, HandleType handle);
@@ -57,8 +69,8 @@ struct ProgramCreateInfo
     {
         struct
         {
-            Shader* pMesh     = {};
-            Shader* pTask     = {};
+            Shader* pMesh = {};
+            Shader* pTask = {};
             Shader* pFragment = {};
         } mesh;
 
@@ -69,7 +81,7 @@ struct ProgramCreateInfo
 
         struct
         {
-            Shader* pVertex   = {};
+            Shader* pVertex = {};
             Shader* pFragment = {};
         } geometry;
     };
@@ -85,10 +97,13 @@ class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
     friend class Device;
 
 public:
-    const VertexInput&   getVertexInput() const { return m_pipelineLayout.vertexInput; }
+    const VertexInput& getVertexInput() const
+    {
+        return m_pipelineLayout.vertexInput;
+    }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) const
     {
-        if(m_pipelineLayout.setLayouts.size() > setIdx)
+        if (m_pipelineLayout.setLayouts.size() > setIdx)
         {
             return m_pipelineLayout.setLayouts[setIdx];
         }
@@ -96,7 +111,7 @@ public:
     }
     Shader* getShader(ShaderStage stage) const
     {
-        if(m_shaders.contains(stage))
+        if (m_shaders.contains(stage))
         {
             return m_shaders.at(stage);
         }
@@ -104,16 +119,25 @@ public:
     }
     ::vk::ShaderEXT getShaderObject(ShaderStage stage) const
     {
-        if(m_shaderObjects.contains(stage))
+        if (m_shaderObjects.contains(stage))
         {
             return m_shaderObjects.at(stage);
         }
         return VK_NULL_HANDLE;
     }
-    ::vk::PipelineLayout getPipelineLayout() const { return m_pipelineLayout.handle; }
-    PipelineType         getPipelineType() const { return getCreateInfo().type; }
+    ::vk::PipelineLayout getPipelineLayout() const
+    {
+        return m_pipelineLayout.handle;
+    }
+    PipelineType getPipelineType() const
+    {
+        return getCreateInfo().type;
+    }
 
-    const ::vk::PushConstantRange& getPushConstantRange() const { return m_pipelineLayout.pushConstantRange; }
+    const ::vk::PushConstantRange& getPushConstantRange() const
+    {
+        return m_pipelineLayout.pushConstantRange;
+    }
 
 private:
     ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
@@ -121,11 +145,11 @@ private:
     ~ShaderProgram() = default;
 
 private:
-    HashMap<ShaderStage, Shader*>         m_shaders        = {};
-    HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects  = {};
-    PipelineLayout                        m_pipelineLayout = {};
+    HashMap<ShaderStage, Shader*> m_shaders = {};
+    HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects = {};
+    PipelineLayout m_pipelineLayout = {};
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk
 
-#endif  // SHADER_H_
+#endif // SHADER_H_

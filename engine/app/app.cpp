@@ -7,7 +7,8 @@
 
 namespace aph
 {
-BaseApp::BaseApp(std::string sessionName) : m_sessionName(std::move(sessionName))
+BaseApp::BaseApp(std::string sessionName)
+    : m_sessionName(std::move(sessionName))
 {
 }
 
@@ -18,7 +19,7 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
     // parse toml config file
     {
         auto result = toml::parse_file(configPath);
-        if(!result)
+        if (!result)
         {
             CM_LOG_ERR("Parsing failed:\n%s\n", result.error().description());
             m_exitCode = -1;
@@ -26,13 +27,13 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
 
         const toml::table& table = result.table();
 
-        opt.windowWidth  = table.at_path("window.width").value_or(1920U);
+        opt.windowWidth = table.at_path("window.width").value_or(1920U);
         opt.windowHeight = table.at_path("window.height").value_or(1080U);
-        opt.vsync        = table.at_path("window.vsync").as_boolean();
+        opt.vsync = table.at_path("window.vsync").as_boolean();
 
-        for(auto&& [k, v] : *table.at_path("fs_protocol").as_table())
+        for (auto&& [k, v] : *table.at_path("fs_protocol").as_table())
         {
-            opt.protocols[std::string{k.data()}] = v.value_or("");
+            opt.protocols[std::string{ k.data() }] = v.value_or("");
         }
 
         opt.numThreads = table.at_path("thread.num_override").value_or(0U);
@@ -46,7 +47,7 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
         m_callbacks.add("--height", [&](aph::CLIParser& parser) { opt.windowHeight = parser.nextUint(); });
         m_callbacks.add("--vsync", [&](aph::CLIParser& parser) { opt.vsync = parser.nextUint(); });
         m_callbacks.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
-        if(!aph::parseCliFiltered(m_callbacks, argc, argv, m_exitCode))
+        if (!aph::parseCliFiltered(m_callbacks, argc, argv, m_exitCode))
         {
             std::cout << "Failed to parse command line arguments.\n";
             APH_ASSERT(false);
@@ -65,7 +66,6 @@ void BaseApp::loadConfig(int argc, char** argv, std::string configPath)
 
     //
     {
-
     }
 };
 
@@ -73,4 +73,4 @@ void BaseApp::registerOption(const char* cli, const std::function<void(CLIParser
 {
     m_callbacks.add(cli, func);
 }
-}  // namespace aph
+} // namespace aph

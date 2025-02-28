@@ -7,20 +7,20 @@
 #include "wsi/wsi.h"
 
 #include "common/common.h"
-#include "common/timer.h"
-#include "common/profiler.h"
 #include "common/logger.h"
+#include "common/profiler.h"
+#include "common/timer.h"
 
 #include "cli/cli.h"
 
 #include "app/app.h"
 
-#include "input/input.h"
 #include "event/event.h"
 #include "event/eventManager.h"
+#include "input/input.h"
 
-#include "resource/resourceLoader.h"
 #include "resource/geometry.h"
+#include "resource/resourceLoader.h"
 
 #include "math/math.h"
 

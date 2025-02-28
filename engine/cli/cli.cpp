@@ -3,7 +3,10 @@
 
 namespace aph
 {
-CLIParser::CLIParser(CLICallbacks cbs, int argc, char* argv[]) : m_cbs(std::move(cbs)), m_argc(argc), m_argv(argv)
+CLIParser::CLIParser(CLICallbacks cbs, int argc, char* argv[])
+    : m_cbs(std::move(cbs))
+    , m_argc(argc)
+    , m_argv(argv)
 {
 }
 
@@ -11,21 +14,21 @@ bool CLIParser::parse()
 {
     try
     {
-        while(m_argc && !m_endedState)
+        while (m_argc && !m_endedState)
         {
             const char* next = *m_argv++;
             m_argc--;
 
-            if(*next != '-' && m_cbs.m_defaultHandler)
+            if (*next != '-' && m_cbs.m_defaultHandler)
             {
                 m_cbs.m_defaultHandler(next);
             }
             else
             {
                 auto itr = m_cbs.m_callbacks.find(next);
-                if(itr == std::end(m_cbs.m_callbacks))
+                if (itr == std::end(m_cbs.m_callbacks))
                 {
-                    if(m_unknownArgumentIsDefault)
+                    if (m_unknownArgumentIsDefault)
                         m_cbs.m_defaultHandler(next);
                     else
                         throw std::invalid_argument("Invalid argument");
@@ -37,10 +40,10 @@ bool CLIParser::parse()
 
         return true;
     }
-    catch(const std::exception& e)
+    catch (const std::exception& e)
     {
         CM_LOG_ERR("Failed to parse arguments: %s", e.what());
-        if(m_cbs.m_errorHandler)
+        if (m_cbs.m_errorHandler)
         {
             m_cbs.m_errorHandler();
         }
@@ -55,13 +58,13 @@ void CLIParser::end()
 
 unsigned CLIParser::nextUint()
 {
-    if(!m_argc)
+    if (!m_argc)
     {
         throw std::invalid_argument("Tried to parse uint, but nothing left in arguments");
     }
 
     auto val = std::stoul(*m_argv);
-    if(val > std::numeric_limits<unsigned>::max())
+    if (val > std::numeric_limits<unsigned>::max())
     {
         throw std::invalid_argument("next_uint() out of range");
     }
@@ -74,7 +77,7 @@ unsigned CLIParser::nextUint()
 
 double CLIParser::nextDouble()
 {
-    if(!m_argc)
+    if (!m_argc)
     {
         throw std::invalid_argument("Tried to parse double, but nothing left in arguments");
     }
@@ -89,7 +92,7 @@ double CLIParser::nextDouble()
 
 const char* CLIParser::nextString()
 {
-    if(!m_argc)
+    if (!m_argc)
     {
         throw std::invalid_argument("Tried to parse string, but nothing left in arguments");
     }
@@ -102,7 +105,7 @@ const char* CLIParser::nextString()
 
 bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code)
 {
-    if(argc == 0)
+    if (argc == 0)
     {
         exit_code = 1;
         return false;
@@ -118,13 +121,13 @@ bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code)
     CLIParser parser(std::move(cbs), argc - 1, argv + 1);
     parser.ignoreUnknownArguments();
 
-    if(!parser.parse())
+    if (!parser.parse())
     {
         exit_code = 1;
         return false;
     }
 
-    if(parser.isEndedState())
+    if (parser.isEndedState())
     {
         exit_code = 0;
         return false;
@@ -135,4 +138,4 @@ bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code)
     argv[argc] = nullptr;
     return true;
 }
-}  // namespace aph
+} // namespace aph

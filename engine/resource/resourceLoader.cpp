@@ -1,10 +1,10 @@
 #include "resourceLoader.h"
+#include "api/vulkan/device.h"
 #include "common/common.h"
 #include "common/profiler.h"
-#include "api/vulkan/device.h"
 
-#include "slang.h"
 #include "slang-com-ptr.h"
+#include "slang.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define TINYGLTF_NO_INCLUDE_STB_IMAGE
@@ -22,22 +22,22 @@ inline std::shared_ptr<aph::ImageInfo> loadImageFromFile(std::string_view path, 
     APH_PROFILER_SCOPE();
     auto image = std::make_shared<aph::ImageInfo>();
     stbi_set_flip_vertically_on_load(isFlipY);
-    int      width, height, channels;
+    int width, height, channels;
     uint8_t* img = stbi_load(path.data(), &width, &height, &channels, 0);
-    if(img == nullptr)
+    if (img == nullptr)
     {
         printf("Error in loading the image\n");
         exit(0);
     }
     // printf("Loaded image with a width of %dpx, a height of %dpx and %d channels\n", width, height, channels);
-    image->width  = width;
+    image->width = width;
     image->height = height;
 
     image->data.resize(width * height * 4);
-    if(channels == 3)
+    if (channels == 3)
     {
         std::vector<uint8_t> rgba(image->data.size());
-        for(std::size_t i = 0; i < width * height; ++i)
+        for (std::size_t i = 0; i < width * height; ++i)
         {
             memcpy(&rgba[4 * i], &img[3 * i], 3);
         }
@@ -56,7 +56,7 @@ inline std::array<std::shared_ptr<aph::ImageInfo>, 6> loadSkyboxFromFile(std::ar
 {
     APH_PROFILER_SCOPE();
     std::array<std::shared_ptr<aph::ImageInfo>, 6> skyboxImages;
-    for(std::size_t idx = 0; idx < 6; idx++)
+    for (std::size_t idx = 0; idx < 6; idx++)
     {
         skyboxImages[idx] = loadImageFromFile(paths[idx]);
     }
@@ -75,7 +75,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
     APH_PROFILER_SCOPE();
     auto img = loadImageFromFile(path.c_str());
 
-    if(img == nullptr)
+    if (img == nullptr)
     {
         return false;
     }
@@ -83,9 +83,9 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
     aph::vk::ImageCreateInfo& textureCI = outCI;
 
     textureCI.extent = {
-        .width  = img->width,
+        .width = img->width,
         .height = img->height,
-        .depth  = 1,
+        .depth = 1,
     };
 
     textureCI.format = aph::Format::RGBA8_UNORM;
@@ -94,7 +94,7 @@ inline bool loadPNGJPG(const std::filesystem::path& path, aph::vk::ImageCreateIn
 
     return true;
 }
-}  // namespace loader::image
+} // namespace aph::loader::image
 
 namespace aph::loader::shader
 {
@@ -104,31 +104,31 @@ std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
     APH_PROFILER_SCOPE();
     std::string source = aph::Filesystem::GetInstance().readFileToString(filename);
     APH_ASSERT(!source.empty());
-    uint32_t              size = source.size();
+    uint32_t size = source.size();
     std::vector<uint32_t> spirv(size / sizeof(uint32_t));
     memcpy(spirv.data(), source.data(), size);
     return spirv;
 }
 
-#define SLANG_CR(diagnostics) \
-    do \
-    { \
-        if(diagnostics) \
-        { \
+#define SLANG_CR(diagnostics)                                           \
+    do                                                                  \
+    {                                                                   \
+        if (diagnostics)                                                \
+        {                                                               \
             auto errlog = (const char*)diagnostics->getBufferPointer(); \
-            CM_LOG_ERR("[slang diagnostics]: %s", errlog); \
-            APH_ASSERT(false); \
-            return {}; \
-        } \
-    } while(0)
+            CM_LOG_ERR("[slang diagnostics]: %s", errlog);              \
+            APH_ASSERT(false);                                          \
+            return {};                                                  \
+        }                                                               \
+    } while (0)
 
 aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> loadSlangFromFile(
     std::string_view filename)
 {
     APH_PROFILER_SCOPE();
     // TODO multi global session in different threads
-    static std::mutex           mtx;
-    std::lock_guard<std::mutex> lock{mtx};
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock{ mtx };
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
     slang::createGlobalSession(globalSession.writeRef());
@@ -146,22 +146,22 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
                                                       }}};
 
     TargetDesc targetDesc;
-    targetDesc.format  = SLANG_SPIRV;
+    targetDesc.format = SLANG_SPIRV;
     targetDesc.profile = globalSession->findProfile("spirv");
 
     targetDesc.compilerOptionEntryCount = compilerOptions.size();
-    targetDesc.compilerOptionEntries    = compilerOptions.data();
+    targetDesc.compilerOptionEntries = compilerOptions.data();
 
     SessionDesc sessionDesc;
-    sessionDesc.targets     = &targetDesc;
+    sessionDesc.targets = &targetDesc;
     sessionDesc.targetCount = 1;
 
-    const char* searchPath      = aph::Filesystem::GetInstance().resolvePath("shader_slang://").c_str();
-    sessionDesc.searchPaths     = &searchPath;
+    const char* searchPath = aph::Filesystem::GetInstance().resolvePath("shader_slang://").c_str();
+    sessionDesc.searchPaths = &searchPath;
     sessionDesc.searchPathCount = 1;
 
     Slang::ComPtr<ISession> session;
-    auto                    result = globalSession->createSession(sessionDesc, session.writeRef());
+    auto result = globalSession->createSession(sessionDesc, session.writeRef());
     APH_ASSERT(SLANG_SUCCEEDED(result));
 
     // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
@@ -170,7 +170,7 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
     Slang::ComPtr<IBlob> diagnostics;
 
-    auto fname  = aph::Filesystem::GetInstance().resolvePath(filename);
+    auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
     auto module = session->loadModule(fname.c_str(), diagnostics.writeRef());
 
     SLANG_CR(diagnostics);
@@ -179,7 +179,7 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
     std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
 
-    for(int i = 0; i < module->getDefinedEntryPointCount(); i++)
+    for (int i = 0; i < module->getDefinedEntryPointCount(); i++)
     {
         Slang::ComPtr<slang::IEntryPoint> entryPoint;
         result = module->getDefinedEntryPoint(i, entryPoint.writeRef());
@@ -203,7 +203,7 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
     SLANG_CR(diagnostics);
 
-    if(!programLayout)
+    if (!programLayout)
     {
         CM_LOG_ERR("Failed to get program layout");
         APH_ASSERT(false);
@@ -211,12 +211,12 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
     }
 
     static const aph::HashMap<SlangStage, aph::ShaderStage> slangStageToShaderStageMap = {
-        {SLANG_STAGE_VERTEX, aph::ShaderStage::VS},  {SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS},
-        {SLANG_STAGE_COMPUTE, aph::ShaderStage::CS}, {SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS},
-        {SLANG_STAGE_MESH, aph::ShaderStage::MS},
+        { SLANG_STAGE_VERTEX, aph::ShaderStage::VS },  { SLANG_STAGE_FRAGMENT, aph::ShaderStage::FS },
+        { SLANG_STAGE_COMPUTE, aph::ShaderStage::CS }, { SLANG_STAGE_AMPLIFICATION, aph::ShaderStage::TS },
+        { SLANG_STAGE_MESH, aph::ShaderStage::MS },
     };
 
-    for(int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
+    for (int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
     {
         EntryPointReflection* entryPointReflection = programLayout->getEntryPointByIndex(entryPointIndex);
 
@@ -232,20 +232,19 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
             retSpvCode.resize(spirvCode->getBufferSize() / sizeof(retSpvCode[0]));
             std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
 
-            std::string      entryPointName = entryPointReflection->getName();
-            aph::ShaderStage stage          = slangStageToShaderStageMap.at(entryPointReflection->getStage());
+            std::string entryPointName = entryPointReflection->getName();
+            aph::ShaderStage stage = slangStageToShaderStageMap.at(entryPointReflection->getStage());
 
             // TODO use the entrypoint name in loading info
-            if(spvCodes.contains(stage))
+            if (spvCodes.contains(stage))
             {
-                CM_LOG_WARN(
-                    "The shader file %s has mutliple entry point of [%s] stage. \
+                CM_LOG_WARN("The shader file %s has mutliple entry point of [%s] stage. \
                             \nThe shader module would use the first one.",
-                    filename, aph::vk::utils::toString(stage));
+                            filename, aph::vk::utils::toString(stage));
             }
             else
             {
-                spvCodes[stage] = {entryPointName, std::move(retSpvCode)};
+                spvCodes[stage] = { entryPointName, std::move(retSpvCode) };
             }
         }
     }
@@ -255,31 +254,31 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
 #undef SLANG_CR
 
-}  // namespace loader::shader
+} // namespace aph::loader::shader
 
 namespace aph::loader::geometry
 {
 inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, aph::Geometry** ppGeometry)
 {
     APH_PROFILER_SCOPE();
-    auto path = std::filesystem::path{info.path};
-    auto ext  = path.extension();
+    auto path = std::filesystem::path{ info.path };
+    auto ext = path.extension();
 
-    bool               fileLoaded = false;
-    tinygltf::Model    inputModel;
+    bool fileLoaded = false;
+    tinygltf::Model inputModel;
     tinygltf::TinyGLTF gltfContext;
-    std::string        error, warning;
+    std::string error, warning;
 
-    if(ext == ".glb")
+    if (ext == ".glb")
     {
         fileLoaded = gltfContext.LoadBinaryFromFile(&inputModel, &error, &warning, path);
     }
-    else if(ext == ".gltf")
+    else if (ext == ".gltf")
     {
         fileLoaded = gltfContext.LoadASCIIFromFile(&inputModel, &error, &warning, path);
     }
 
-    if(!fileLoaded)
+    if (!fileLoaded)
     {
         CM_LOG_ERR("%s", error);
         return false;
@@ -290,40 +289,40 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
 
     // Iterate over each mesh
     uint32_t vertexCount = 0;
-    for(const auto& mesh : inputModel.meshes)
+    for (const auto& mesh : inputModel.meshes)
     {
-        for(const auto& primitive : mesh.primitives)
+        for (const auto& primitive : mesh.primitives)
         {
             // Index buffer
-            const tinygltf::Accessor&   indexAccessor   = inputModel.accessors[primitive.indices];
+            const tinygltf::Accessor& indexAccessor = inputModel.accessors[primitive.indices];
             const tinygltf::BufferView& indexBufferView = inputModel.bufferViews[indexAccessor.bufferView];
-            const tinygltf::Buffer&     indexBuffer     = inputModel.buffers[indexBufferView.buffer];
+            const tinygltf::Buffer& indexBuffer = inputModel.buffers[indexBufferView.buffer];
 
             {
-                aph::vk::Buffer*    pIB;
-                aph::BufferLoadInfo loadInfo{
-                    .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
-                    // TODO index type
-                    .createInfo = {.size  = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
-                                   .usage = ::vk::BufferUsageFlagBits::eIndexBuffer}};
+                aph::vk::Buffer* pIB;
+                aph::BufferLoadInfo loadInfo{ .data = (void*)(indexBuffer.data.data() + indexBufferView.byteOffset),
+                                              // TODO index type
+                                              .createInfo = {
+                                                  .size = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
+                                                  .usage = ::vk::BufferUsageFlagBits::eIndexBuffer } };
                 APH_VR(pLoader->load(loadInfo, &pIB));
                 (*ppGeometry)->indexBuffer.push_back(pIB);
             }
 
             // Vertex buffers
-            for(const auto& attrib : primitive.attributes)
+            for (const auto& attrib : primitive.attributes)
             {
-                const tinygltf::Accessor&   accessor   = inputModel.accessors[attrib.second];
+                const tinygltf::Accessor& accessor = inputModel.accessors[attrib.second];
                 const tinygltf::BufferView& bufferView = inputModel.bufferViews[accessor.bufferView];
-                const tinygltf::Buffer&     buffer     = inputModel.buffers[bufferView.buffer];
+                const tinygltf::Buffer& buffer = inputModel.buffers[bufferView.buffer];
 
                 vertexCount += accessor.count;
 
-                aph::vk::Buffer*    pVB;
+                aph::vk::Buffer* pVB;
                 aph::BufferLoadInfo loadInfo{
-                    .data       = (void*)(buffer.data.data() + bufferView.byteOffset),
-                    .createInfo = {.size  = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
-                                   .usage = ::vk::BufferUsageFlagBits::eVertexBuffer},
+                    .data = (void*)(buffer.data.data() + bufferView.byteOffset),
+                    .createInfo = { .size = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
+                                    .usage = ::vk::BufferUsageFlagBits::eVertexBuffer },
                 };
                 APH_VR(pLoader->load(loadInfo, &pVB));
                 (*ppGeometry)->vertexBuffers.push_back(pVB);
@@ -332,33 +331,33 @@ inline bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& 
 
             // TODO: Load draw arguments, handle materials, optimize geometry etc.
 
-        }  // End of iterating through primitives
-    }  // End of iterating through meshes
+        } // End of iterating through primitives
+    } // End of iterating through meshes
 
     const uint32_t indexStride = vertexCount > UINT16_MAX ? sizeof(uint32_t) : sizeof(uint16_t);
-    (*ppGeometry)->indexType   = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
+    (*ppGeometry)->indexType = (sizeof(uint32_t) == indexStride) ? aph::IndexType::UINT16 : aph::IndexType::UINT32;
 
     return true;
 }
 
-}  // namespace loader::geometry
+} // namespace aph::loader::geometry
 
 namespace aph
 {
 ImageContainerType GetImageContainerType(const std::filesystem::path& path)
 {
     APH_PROFILER_SCOPE();
-    if(path.extension() == ".ktx")
+    if (path.extension() == ".ktx")
     {
         return ImageContainerType::Ktx;
     }
 
-    if(path.extension() == ".png")
+    if (path.extension() == ".png")
     {
         return ImageContainerType::Png;
     }
 
-    if(path.extension() == ".jpg")
+    if (path.extension() == ".jpg")
     {
         return ImageContainerType::Jpg;
     }
@@ -368,9 +367,9 @@ ImageContainerType GetImageContainerType(const std::filesystem::path& path)
     return ImageContainerType::Default;
 }
 
-ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo) :
-    m_createInfo(createInfo),
-    m_pDevice(createInfo.pDevice)
+ResourceLoader::ResourceLoader(const ResourceLoaderCreateInfo& createInfo)
+    : m_createInfo(createInfo)
+    , m_pDevice(createInfo.pDevice)
 {
     m_pQueue = m_pDevice->getQueue(QueueType::Transfer);
 }
@@ -380,9 +379,9 @@ ResourceLoader::~ResourceLoader() = default;
 void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
-    for(const auto& [_, shaderCache] : m_shaderCaches)
+    for (const auto& [_, shaderCache] : m_shaderCaches)
     {
-        for(const auto& [_, shader] : shaderCache)
+        for (const auto& [_, shader] : shaderCache)
         {
             m_pDevice->destroy(shader);
         }
@@ -393,18 +392,18 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 {
     APH_PROFILER_SCOPE();
     std::filesystem::path path;
-    std::vector<uint8_t>  data;
-    vk::ImageCreateInfo   ci;
+    std::vector<uint8_t> data;
+    vk::ImageCreateInfo ci;
     ci = info.createInfo;
 
-    if(std::holds_alternative<std::string>(info.data))
+    if (std::holds_alternative<std::string>(info.data))
     {
         path = aph::Filesystem::GetInstance().resolvePath(std::get<std::string>(info.data));
 
         auto containerType =
             info.containerType == ImageContainerType::Default ? GetImageContainerType(path) : info.containerType;
 
-        switch(containerType)
+        switch (containerType)
         {
         case ImageContainerType::Ktx:
         {
@@ -419,25 +418,25 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         break;
         case ImageContainerType::Default:
             APH_ASSERT(false);
-            return {Result::RuntimeError, "Unsupported image type."};
+            return { Result::RuntimeError, "Unsupported image type." };
         }
     }
-    else if(std::holds_alternative<ImageInfo>(info.data))
+    else if (std::holds_alternative<ImageInfo>(info.data))
     {
-        auto img  = std::get<ImageInfo>(info.data);
-        data      = img.data;
-        ci.extent = {img.width, img.height, 1};
+        auto img = std::get<ImageInfo>(info.data);
+        data = img.data;
+        ci.extent = { img.width, img.height, 1 };
     }
 
     // Load texture from image buffer
     vk::Buffer* stagingBuffer;
     {
         vk::BufferCreateInfo bufferCI{
-            .size   = static_cast<uint32_t>(data.size()),
-            .usage  = ::vk::BufferUsageFlagBits::eTransferSrc,
+            .size = static_cast<uint32_t>(data.size()),
+            .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
             .domain = BufferDomain::Host,
         };
-        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{info.debugName} + std::string{"_staging"}));
+        APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{ info.debugName } + std::string{ "_staging" }));
 
         writeBuffer(stagingBuffer, data.data());
     }
@@ -450,7 +449,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         auto imageCI = ci;
         imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferDst;
         imageCI.domain = ImageDomain::Device;
-        if(genMipmap)
+        if (genMipmap)
         {
             imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
         }
@@ -460,52 +459,55 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         auto queue = m_pQueue;
 
         // mip map opeartions
-        m_pDevice->executeCommand(queue, [&](auto* cmd) {
-            cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
-            cmd->copyBufferToImage(stagingBuffer, image);
-
-            if(genMipmap)
+        m_pDevice->executeCommand(
+            queue,
+            [&](auto* cmd)
             {
-                cmd->transitionImageLayout(image, aph::ResourceState::CopySource);
-                int32_t width  = ci.extent.width;
-                int32_t height = ci.extent.height;
+                cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
+                cmd->copyBufferToImage(stagingBuffer, image);
 
-                // generate mipmap chains
-                for(int32_t i = 1; i < imageCI.mipLevels; i++)
+                if (genMipmap)
                 {
-                    vk::ImageBlitInfo srcBlitInfo{
-                        .extent     = {int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1},
-                        .level      = static_cast<uint32_t>(i - 1),
-                        .layerCount = 1,
-                    };
+                    cmd->transitionImageLayout(image, aph::ResourceState::CopySource);
+                    int32_t width = ci.extent.width;
+                    int32_t height = ci.extent.height;
 
-                    vk::ImageBlitInfo dstBlitInfo{
-                        .extent     = {int32_t(width >> i), int32_t(height >> i), 1},
-                        .level      = static_cast<uint32_t>(i),
-                        .layerCount = 1,
-                    };
+                    // generate mipmap chains
+                    for (int32_t i = 1; i < imageCI.mipLevels; i++)
+                    {
+                        vk::ImageBlitInfo srcBlitInfo{
+                            .extent = { int32_t(width >> (i - 1)), int32_t(height >> (i - 1)), 1 },
+                            .level = static_cast<uint32_t>(i - 1),
+                            .layerCount = 1,
+                        };
 
-                    // Prepare current mip level as image blit destination
-                    vk::ImageBarrier barrier{
-                        .pImage             = image,
-                        .currentState       = image->getResourceState(),
-                        .newState           = ResourceState::CopyDest,
-                        .subresourceBarrier = 1,
-                        .mipLevel           = static_cast<uint8_t>(imageCI.mipLevels),
-                    };
-                    cmd->insertBarrier({barrier});
+                        vk::ImageBlitInfo dstBlitInfo{
+                            .extent = { int32_t(width >> i), int32_t(height >> i), 1 },
+                            .level = static_cast<uint32_t>(i),
+                            .layerCount = 1,
+                        };
 
-                    // Blit from previous level
-                    cmd->blitImage(image, image, srcBlitInfo, dstBlitInfo);
+                        // Prepare current mip level as image blit destination
+                        vk::ImageBarrier barrier{
+                            .pImage = image,
+                            .currentState = image->getResourceState(),
+                            .newState = ResourceState::CopyDest,
+                            .subresourceBarrier = 1,
+                            .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
+                        };
+                        cmd->insertBarrier({ barrier });
 
-                    barrier.currentState = image->getResourceState();
-                    barrier.newState     = ResourceState::CopySource;
-                    cmd->insertBarrier({barrier});
+                        // Blit from previous level
+                        cmd->blitImage(image, image, srcBlitInfo, dstBlitInfo);
+
+                        barrier.currentState = image->getResourceState();
+                        barrier.newState = ResourceState::CopySource;
+                        cmd->insertBarrier({ barrier });
+                    }
                 }
-            }
 
-            cmd->transitionImageLayout(image, ResourceState::ShaderResource);
-        });
+                cmd->transitionImageLayout(image, ResourceState::ShaderResource);
+            });
     }
 
     m_pDevice->destroy(stagingBuffer);
@@ -525,12 +527,12 @@ Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     }
 
     // update buffer
-    if(info.data)
+    if (info.data)
     {
         this->update(
             {
-                .data  = info.data,
-                .range = {0, info.createInfo.size},
+                .data = info.data,
+                .range = { 0, info.createInfo.size },
             },
             ppBuffer);
     }
@@ -543,22 +545,23 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     APH_PROFILER_SCOPE();
 
     auto loadShader = [this](const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
-                             const std::string& entryPoint = "main") -> vk::Shader* {
-        vk::Shader*          shader;
+                             const std::string& entryPoint = "main") -> vk::Shader*
+    {
+        vk::Shader* shader;
         vk::ShaderCreateInfo createInfo{
-            .code       = spv,
+            .code = spv,
             .entrypoint = entryPoint,
-            .stage      = stage,
+            .stage = stage,
         };
         APH_VR(m_pDevice->create(createInfo, &shader));
         return shader;
     };
 
-    HashMap<ShaderStage, vk::Shader*>                                      requiredShaderList;
+    HashMap<ShaderStage, vk::Shader*> requiredShaderList;
     HashMap<std::filesystem::path, HashMap<aph::ShaderStage, std::string>> requiredStageMaps;
-    for(auto& [stage, stageLoadInfo] : info.stageInfo)
+    for (auto& [stage, stageLoadInfo] : info.stageInfo)
     {
-        if(std::holds_alternative<std::string>(stageLoadInfo.data))
+        if (std::holds_alternative<std::string>(stageLoadInfo.data))
         {
             auto path = Filesystem::GetInstance().resolvePath(std::get<std::string>(stageLoadInfo.data));
             requiredStageMaps[path][stage] = stageLoadInfo.entryPoint;
@@ -570,12 +573,12 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         }
     }
 
-    for(const auto& [path, requiredStages] : requiredStageMaps)
+    for (const auto& [path, requiredStages] : requiredStageMaps)
     {
-        if(m_shaderCaches.contains(path.string()))
+        if (m_shaderCaches.contains(path.string()))
         {
             const auto& shaderCache = m_shaderCaches[path.string()];
-            for(const auto& [stage, entryPoint] : requiredStages)
+            for (const auto& [stage, entryPoint] : requiredStages)
             {
                 APH_ASSERT(!shaderCache.contains(stage));
                 requiredShaderList[stage] = shaderCache.at(stage);
@@ -583,30 +586,30 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
             continue;
         }
 
-        if(path.extension() == ".spv")
+        if (path.extension() == ".spv")
         {
             // TODO multi shader stage single spv binary support
-            ShaderStage stage           = requiredStages.cbegin()->first;
-            vk::Shader* shader          = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
-            requiredShaderList[stage]   = shader;
+            ShaderStage stage = requiredStages.cbegin()->first;
+            vk::Shader* shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
+            requiredShaderList[stage] = shader;
             m_shaderCaches[path][stage] = shader;
         }
-        else if(path.extension() == ".slang")
+        else if (path.extension() == ".slang")
         {
             auto spvCodeMap = loader::shader::loadSlangFromFile(path.c_str());
-            if(spvCodeMap.empty())
+            if (spvCodeMap.empty())
             {
-                return {Result::RuntimeError, "Failed to load slang shader from file."};
+                return { Result::RuntimeError, "Failed to load slang shader from file." };
             }
-            for(const auto& [stage, spvInfo] : spvCodeMap)
+            for (const auto& [stage, spvInfo] : spvCodeMap)
             {
                 const auto& [entryPointName, spv] = spvInfo;
                 APH_ASSERT(!requiredShaderList.contains(stage));
 
-                vk::Shader* shader          = loadShader(spv, stage, entryPointName);
+                vk::Shader* shader = loadShader(spv, stage, entryPointName);
                 m_shaderCaches[path][stage] = shader;
 
-                if(requiredStages.contains(stage))
+                if (requiredStages.contains(stage))
                 {
                     requiredShaderList[stage] = shader;
                 }
@@ -616,39 +619,39 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
         {
             CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
             APH_ASSERT(false);
-            return {Result::RuntimeError, "Unsupported shader format."};
+            return { Result::RuntimeError, "Unsupported shader format." };
         }
     }
 
     // vs + fs
-    if(requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
+    if (requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
     {
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .geometry{.pVertex   = requiredShaderList[ShaderStage::VS],
-                          .pFragment = requiredShaderList[ShaderStage::FS]},
+                .geometry{ .pVertex = requiredShaderList[ShaderStage::VS],
+                           .pFragment = requiredShaderList[ShaderStage::FS] },
                 .type = PipelineType::Geometry,
             },
             ppProgram));
     }
-    else if(requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
+    else if (requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
     {
         vk::ProgramCreateInfo ci{
-            .mesh{.pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS]},
+            .mesh{ .pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS] },
             .type = PipelineType::Mesh,
         };
-        if(requiredShaderList.contains(ShaderStage::TS))
+        if (requiredShaderList.contains(ShaderStage::TS))
         {
             ci.mesh.pTask = requiredShaderList[ShaderStage::TS];
         }
         APH_VR(m_pDevice->create(ci, ppProgram));
     }
     // cs
-    else if(requiredShaderList.contains(ShaderStage::CS))
+    else if (requiredShaderList.contains(ShaderStage::CS))
     {
         APH_VR(m_pDevice->create(
             vk::ProgramCreateInfo{
-                .compute{.pCompute = requiredShaderList[ShaderStage::CS]},
+                .compute{ .pCompute = requiredShaderList[ShaderStage::CS] },
                 .type = PipelineType::Compute,
             },
             ppProgram));
@@ -656,7 +659,7 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
     else
     {
         APH_ASSERT(false);
-        return {Result::RuntimeError, "Unsupported shader stage combinations."};
+        return { Result::RuntimeError, "Unsupported shader stage combinations." };
     }
 
     return Result::Success;
@@ -665,10 +668,10 @@ Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppPr
 Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 {
     APH_PROFILER_SCOPE();
-    auto path = std::filesystem::path{info.path};
-    auto ext  = path.extension();
+    auto path = std::filesystem::path{ info.path };
+    auto ext = path.extension();
 
-    if(ext == ".glb" || ext == ".gltf")
+    if (ext == ".glb" || ext == ".gltf")
     {
         loader::geometry::loadGLTF(this, info, ppGeometry);
     }
@@ -676,7 +679,7 @@ Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
     {
         CM_LOG_ERR("Unsupported model file type: %s.", ext);
         APH_ASSERT(false);
-        return {Result::RuntimeError, "Unsupported model file type."};
+        return { Result::RuntimeError, "Unsupported model file type." };
     }
     return Result::Success;
 }
@@ -684,46 +687,46 @@ Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
 void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
-    vk::Buffer*  pBuffer    = *ppBuffer;
-    BufferDomain domain     = pBuffer->getCreateInfo().domain;
-    std::size_t  uploadSize = info.range.size;
+    vk::Buffer* pBuffer = *ppBuffer;
+    BufferDomain domain = pBuffer->getCreateInfo().domain;
+    std::size_t uploadSize = info.range.size;
 
     // device only
-    if(domain == BufferDomain::Device)
+    if (domain == BufferDomain::Device)
     {
-        if(info.range.size == VK_WHOLE_SIZE)
+        if (info.range.size == VK_WHOLE_SIZE)
         {
             uploadSize = pBuffer->getSize();
         }
 
-        if(uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
+        if (uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
             m_pDevice->executeCommand(m_pQueue,
-                                      [=](auto* cmd) { cmd->updateBuffer(pBuffer, {0, uploadSize}, info.data); });
+                                      [=](auto* cmd) { cmd->updateBuffer(pBuffer, { 0, uploadSize }, info.data); });
         }
         else
         {
             APH_PROFILER_SCOPE_NAME("loading data by: staging copy.");
-            for(std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
+            for (std::size_t offset = info.range.offset; offset < uploadSize; offset += LIMIT_BUFFER_UPLOAD_SIZE)
             {
                 MemoryRange copyRange = {
                     .offset = offset,
-                    .size   = std::min(std::size_t{LIMIT_BUFFER_UPLOAD_SIZE}, {uploadSize - offset}),
+                    .size = std::min(std::size_t{ LIMIT_BUFFER_UPLOAD_SIZE }, { uploadSize - offset }),
                 };
 
                 // using staging buffer
                 vk::Buffer* stagingBuffer{};
                 {
                     vk::BufferCreateInfo stagingCI{
-                        .size   = static_cast<uint32_t>(copyRange.size),
-                        .usage  = ::vk::BufferUsageFlagBits::eTransferSrc,
+                        .size = static_cast<uint32_t>(copyRange.size),
+                        .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
                         .domain = BufferDomain::Host,
                     };
 
                     APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
 
-                    writeBuffer(stagingBuffer, info.data, {0, copyRange.size});
+                    writeBuffer(stagingBuffer, info.data, { 0, copyRange.size });
                 }
 
                 m_pDevice->executeCommand(m_pQueue,
@@ -744,12 +747,12 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(pBuffer->getCreateInfo().domain != BufferDomain::Device);
-    if(range.size == 0)
+    if (range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;
     }
 
-    if(range.size == VK_WHOLE_SIZE || range.size == 0)
+    if (range.size == VK_WHOLE_SIZE || range.size == 0)
     {
         range.size = pBuffer->getSize();
     }
@@ -759,4 +762,4 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, MemoryRa
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
 }
-}  // namespace aph
+} // namespace aph

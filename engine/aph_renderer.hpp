@@ -3,4 +3,4 @@
 
 #include "renderer/renderer.h"
 
-#endif  // HELPER_H_
+#endif // HELPER_H_

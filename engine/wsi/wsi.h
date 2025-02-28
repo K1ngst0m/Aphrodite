@@ -1,8 +1,8 @@
 #pragma once
 
-#include "event/event.h"
-#include "common/common.h"
 #include "api/vulkan/vkUtils.h"
+#include "common/common.h"
+#include "event/event.h"
 
 namespace aph::vk
 {
@@ -13,7 +13,7 @@ struct WindowSystemCreateInfo
 {
     uint32_t width;
     uint32_t height;
-    bool     enableUI;
+    bool enableUI;
 };
 
 namespace aph
@@ -22,10 +22,10 @@ namespace aph
 class WindowSystem
 {
 protected:
-    WindowSystem(const WindowSystemCreateInfo& createInfo) :
-        m_width{createInfo.width},
-        m_height(createInfo.height),
-        m_enabledUI(createInfo.enableUI)
+    WindowSystem(const WindowSystemCreateInfo& createInfo)
+        : m_width{ createInfo.width }
+        , m_height(createInfo.height)
+        , m_enabledUI(createInfo.enableUI)
     {
         init();
     }
@@ -40,11 +40,17 @@ public:
     virtual ~WindowSystem();
 
 public:
-    bool     initUI();
-    void     deInitUI() const;
-    uint32_t getWidth() const { return m_width; }
-    uint32_t getHeight() const { return m_height; }
-    void     resize(uint32_t width, uint32_t height);
+    bool initUI();
+    void deInitUI() const;
+    uint32_t getWidth() const
+    {
+        return m_width;
+    }
+    uint32_t getHeight() const
+    {
+        return m_height;
+    }
+    void resize(uint32_t width, uint32_t height);
 
     std::vector<const char*> getRequiredExtensions();
 
@@ -56,10 +62,10 @@ public:
 protected:
     void init();
 
-    void*    m_window    = {};
-    uint32_t m_width     = {};
-    uint32_t m_height    = {};
-    bool     m_enabledUI = {};
+    void* m_window = {};
+    uint32_t m_width = {};
+    uint32_t m_height = {};
+    bool m_enabledUI = {};
 };
 
-}  // namespace aph
+} // namespace aph

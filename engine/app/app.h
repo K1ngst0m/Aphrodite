@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
-#include "common/hash.h"
 #include "cli/cli.h"
+#include "common/hash.h"
+#include <string>
 
 GENERATE_LOG_FUNCS(APP)
 
@@ -14,9 +14,9 @@ public:
     BaseApp(std::string sessionName = "Untitled");
     virtual ~BaseApp() = default;
 
-    virtual void init()   = 0;
-    virtual void load()   = 0;
-    virtual void run()    = 0;
+    virtual void init() = 0;
+    virtual void load() = 0;
+    virtual void run() = 0;
     virtual void unload() = 0;
     virtual void finish() = 0;
 
@@ -26,8 +26,8 @@ public:
     struct
     {
         // window
-        uint32_t windowWidth  = {1440};
-        uint32_t windowHeight = {900};
+        uint32_t windowWidth = { 1440 };
+        uint32_t windowHeight = { 900 };
         bool vsync = true;
 
         // fs protocol
@@ -46,4 +46,4 @@ protected:
     int m_exitCode = 0;
     aph::CLICallbacks m_callbacks;
 };
-}  // namespace aph
+} // namespace aph

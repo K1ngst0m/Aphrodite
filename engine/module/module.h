@@ -19,8 +19,8 @@ public:
         return reinterpret_cast<Func>(getSymbolInternal(symbol));
     }
 
-    void  open(const char* path);
-    void  close();
+    void open(const char* path);
+    void close();
 
     explicit operator bool() const
     {
@@ -40,6 +40,6 @@ private:
 
     void* getSymbolInternal(const char* symbol);
 };
-}  // namespace aph
+} // namespace aph
 
-#endif  // MODULE_H_
+#endif // MODULE_H_

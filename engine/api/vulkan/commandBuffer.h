@@ -20,17 +20,17 @@ class DescriptorSet;
 
 struct AttachmentInfo
 {
-    Image*                                 image{};
-    std::optional<::vk::ImageLayout>       layout;
-    std::optional<::vk::AttachmentLoadOp>  loadOp;
+    Image* image{};
+    std::optional<::vk::ImageLayout> layout;
+    std::optional<::vk::AttachmentLoadOp> loadOp;
     std::optional<::vk::AttachmentStoreOp> storeOp;
-    std::optional<::vk::ClearValue>        clear;
+    std::optional<::vk::ClearValue> clear;
 };
 
 struct RenderingInfo
 {
-    std::vector<AttachmentInfo> colors     = {};
-    AttachmentInfo              depth      = {};
+    std::vector<AttachmentInfo> colors = {};
+    AttachmentInfo depth = {};
     std::optional<::vk::Rect2D> renderArea = {};
 };
 
@@ -39,38 +39,38 @@ struct ImageBlitInfo
     ::vk::Offset3D offset = {};
     ::vk::Offset3D extent = {};
 
-    uint32_t level      = 0;
-    uint32_t baseLayer  = 0;
+    uint32_t level = 0;
+    uint32_t baseLayer = 0;
     uint32_t layerCount = 1;
 };
 
 struct ImageCopyInfo
 {
-    ::vk::Offset3D               offset       = {};
-    ::vk::ImageSubresourceLayers subResources = {{}, 0, 0, 1};
+    ::vk::Offset3D offset = {};
+    ::vk::ImageSubresourceLayers subResources = { {}, 0, 0, 1 };
 };
 
 struct BufferBarrier
 {
-    Buffer*       pBuffer;
+    Buffer* pBuffer;
     ResourceState currentState;
     ResourceState newState;
-    QueueType     queueType;
-    uint8_t       acquire;
-    uint8_t       release;
+    QueueType queueType;
+    uint8_t acquire;
+    uint8_t release;
 };
 
 struct ImageBarrier
 {
-    Image*        pImage;
+    Image* pImage;
     ResourceState currentState;
     ResourceState newState;
-    QueueType     queueType;
-    uint8_t       acquire;
-    uint8_t       release;
-    uint8_t       subresourceBarrier;
-    uint8_t       mipLevel;
-    uint16_t      arrayLayer;
+    QueueType queueType;
+    uint8_t acquire;
+    uint8_t release;
+    uint8_t subresourceBarrier;
+    uint8_t mipLevel;
+    uint16_t arrayLayer;
 };
 
 class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
@@ -89,49 +89,49 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
         struct Graphics
         {
             std::optional<VertexInput> vertexInput;
-            PrimitiveTopology          topology = PrimitiveTopology::TriangleList;
+            PrimitiveTopology topology = PrimitiveTopology::TriangleList;
 
             struct IndexState
             {
                 ::vk::Buffer buffer;
-                std::size_t  offset;
-                IndexType    indexType;
-                bool         dirty = false;
+                std::size_t offset;
+                IndexType indexType;
+                bool dirty = false;
             } index;
 
             struct VertexState
             {
-                ::vk::Buffer    buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::size_t     offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::bitset<32> dirty                              = 0;
+                ::vk::Buffer buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
+                std::bitset<32> dirty = 0;
             } vertex;
 
-            CullMode    cullMode    = CullMode::None;
-            WindingMode frontFace   = WindingMode::CCW;
+            CullMode cullMode = CullMode::None;
+            WindingMode frontFace = WindingMode::CCW;
             PolygonMode polygonMode = PolygonMode::Fill;
 
             std::vector<AttachmentInfo> color = {};
-            AttachmentInfo              depth = {};
+            AttachmentInfo depth = {};
 
             struct DepthState
             {
-                bool      enable    = false;
-                bool      write     = false;
-                bool      stencil   = false;
+                bool enable = false;
+                bool write = false;
+                bool stencil = false;
                 CompareOp compareOp = CompareOp::Always;
             };
-            DepthState depthState  = {};
-            uint32_t   sampleCount = 1;
+            DepthState depthState = {};
+            uint32_t sampleCount = 1;
         } graphics;
 
         struct ResourceBindings
         {
-            std::bitset<8>       setBit                                                    = 0;
-            std::bitset<32>      dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS]                  = {};
-            std::bitset<32>      setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS]                 = {};
+            std::bitset<8> setBit = 0;
+            std::bitset<32> dirtyBinding[VULKAN_NUM_DESCRIPTOR_SETS] = {};
+            std::bitset<32> setBindingBit[VULKAN_NUM_DESCRIPTOR_SETS] = {};
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
-            uint8_t              pushConstantData[VULKAN_PUSH_CONSTANT_SIZE]               = {};
-            DescriptorSet*       sets[VULKAN_NUM_DESCRIPTOR_SETS]                          = {};
+            uint8_t pushConstantData[VULKAN_PUSH_CONSTANT_SIZE] = {};
+            DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
             // TODO
             bool dirtyPushConstant = false;
         } resourceBindings = {};
@@ -158,8 +158,14 @@ public:
     void setResource(const std::vector<Buffer*>& buffers, uint32_t set, uint32_t binding);
 
     void pushConstant(const void* pData, uint32_t offset, uint32_t size);
-    void setProgram(ShaderProgram* pProgram) { m_commandState.pProgram = pProgram; }
-    void setVertexInput(const VertexInput& inputInfo) { m_commandState.graphics.vertexInput = inputInfo; }
+    void setProgram(ShaderProgram* pProgram)
+    {
+        m_commandState.pProgram = pProgram;
+    }
+    void setVertexInput(const VertexInput& inputInfo)
+    {
+        m_commandState.graphics.vertexInput = inputInfo;
+    }
     void bindVertexBuffers(Buffer* pBuffer, uint32_t binding = 0, std::size_t offset = 0);
     void bindIndexBuffers(Buffer* pBuffer, std::size_t offset = 0, IndexType indexType = IndexType::UINT32);
 
@@ -183,10 +189,16 @@ public:
     void writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
-    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers) { insertBarrier({}, pImageBarriers); }
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers) { insertBarrier(pBufferBarriers, {}); }
+    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers)
+    {
+        insertBarrier({}, pImageBarriers);
+    }
+    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers)
+    {
+        insertBarrier(pBufferBarriers, {});
+    }
     void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
-                       const std::vector<ImageBarrier>&  pImageBarriers);
+                       const std::vector<ImageBarrier>& pImageBarriers);
     void transitionImageLayout(Image* pImage, ResourceState newState);
 
 public:
@@ -199,17 +211,17 @@ public:
                    const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
 
 private:
-    void         flushComputeCommand();
-    void         flushGraphicsCommand();
-    void         flushDescriptorSet();
-    void         initDynamicGraphicsState();
+    void flushComputeCommand();
+    void flushGraphicsCommand();
+    void flushDescriptorSet();
+    void initDynamicGraphicsState();
     CommandState m_commandState = {};
 
 private:
-    Device*                m_pDevice      = {};
-    Queue*                 m_pQueue       = {};
-    RecordState            m_state        = {};
+    Device* m_pDevice = {};
+    Queue* m_pQueue = {};
+    RecordState m_state = {};
 };
-}  // namespace aph::vk
+} // namespace aph::vk
 
-#endif  // COMMANDBUFFER_H_
+#endif // COMMANDBUFFER_H_

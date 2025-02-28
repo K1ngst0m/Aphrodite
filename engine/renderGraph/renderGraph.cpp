@@ -4,11 +4,11 @@
 
 namespace aph
 {
-RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name) :
-    m_pRenderGraph(pRDG),
-    m_index(index),
-    m_queueType(queueType),
-    m_name(name)
+RenderPass::RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name)
+    : m_pRenderGraph(pRDG)
+    , m_index(index)
+    , m_queueType(queueType)
+    , m_name(name)
 {
     APH_PROFILER_SCOPE();
     APH_ASSERT(pRDG);
@@ -25,7 +25,7 @@ PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::
     m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
     m_res.storageBufferIn.push_back(res);
 
-    if(pBuffer)
+    if (pBuffer)
     {
         m_pRenderGraph->importResource(name, pBuffer);
     }
@@ -44,7 +44,7 @@ PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::
     m_res.resourceStateMap[res] = ResourceState::UniformBuffer;
     m_res.uniformBufferIn.push_back(res);
 
-    if(pBuffer)
+    if (pBuffer)
     {
         m_pRenderGraph->importResource(name, pBuffer);
     }
@@ -90,7 +90,7 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
     m_res.resourceStateMap[res] = ResourceState::ShaderResource;
     m_res.textureIn.push_back(res);
 
-    if(pImage)
+    if (pImage)
     {
         m_pRenderGraph->importResource(name, pImage);
     }
@@ -118,14 +118,14 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     res->addWritePass(this);
     res->addUsage(::vk::ImageUsageFlagBits::eDepthStencilAttachment);
     m_res.resourceStateMap[res] = ResourceState::DepthStencil;
-    m_res.depthOut              = res;
+    m_res.depthOut = res;
     return res;
 }
 
 RenderPass* RenderGraph::getPass(const std::string& name)
 {
     APH_PROFILER_SCOPE();
-    if(m_declareData.passMap.contains(name))
+    if (m_declareData.passMap.contains(name))
     {
         return m_declareData.passes[m_declareData.passMap[name]];
     }
@@ -134,19 +134,20 @@ RenderPass* RenderGraph::getPass(const std::string& name)
 RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
 {
     APH_PROFILER_SCOPE();
-    if(m_declareData.passMap.contains(name))
+    if (m_declareData.passMap.contains(name))
     {
         return m_declareData.passes[m_declareData.passMap[name]];
     }
 
-    auto  index = m_declareData.passes.size();
-    auto* pass  = m_resourcePool.renderPass.allocate(this, index, queueType, name);
+    auto index = m_declareData.passes.size();
+    auto* pass = m_resourcePool.renderPass.allocate(this, index, queueType, name);
     m_declareData.passes.emplace_back(pass);
     m_declareData.passMap[name] = index;
     return pass;
 }
 
-RenderGraph::RenderGraph(vk::Device* pDevice) : m_pDevice(pDevice)
+RenderGraph::RenderGraph(vk::Device* pDevice)
+    : m_pDevice(pDevice)
 {
 }
 
@@ -158,34 +159,34 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
-        for(auto* pass : m_declareData.passes)
+        for (auto* pass : m_declareData.passes)
         {
             m_buildData.passDependencyGraph[pass].clear();
         }
     }
 
-    if(m_buildData.frameFence == nullptr)
+    if (m_buildData.frameFence == nullptr)
     {
         m_buildData.frameFence = m_pDevice->acquireFence(false);
     }
 
-    if(m_buildData.presentSem == nullptr)
+    if (m_buildData.presentSem == nullptr)
     {
         m_buildData.presentSem = m_pDevice->acquireSemaphore();
     }
 
-    if(m_buildData.renderSem == nullptr)
+    if (m_buildData.renderSem == nullptr)
     {
         m_buildData.renderSem = m_pDevice->acquireSemaphore();
     }
 
-    for(auto res : m_declareData.resources)
+    for (auto res : m_declareData.resources)
     {
-        for(const auto& readPass : res->getReadPasses())
+        for (const auto& readPass : res->getReadPasses())
         {
-            for(const auto& writePass : res->getWritePasses())
+            for (const auto& writePass : res->getWritePasses())
             {
-                if(readPass != writePass)
+                if (readPass != writePass)
                 {
                     m_buildData.passDependencyGraph[readPass].insert(writePass);
                 }
@@ -195,50 +196,50 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     // topological sort
     {
-        if(m_buildData.passDependencyGraph.empty())
+        if (m_buildData.passDependencyGraph.empty())
         {
             VK_LOG_WARN("render graph is empty.");
         }
         std::unordered_map<RenderPass*, int> inDegree;
-        std::queue<RenderPass*>              zeroInDegreeQueue;
-        auto&                                result = m_buildData.sortedPasses;
-        auto&                                graph  = m_buildData.passDependencyGraph;
+        std::queue<RenderPass*> zeroInDegreeQueue;
+        auto& result = m_buildData.sortedPasses;
+        auto& graph = m_buildData.passDependencyGraph;
 
         // Initialize in-degree of each node
-        for(auto& [pass, nodes] : graph)
+        for (auto& [pass, nodes] : graph)
         {
-            if(!inDegree.contains(pass))
+            if (!inDegree.contains(pass))
             {
                 inDegree[pass] = 0;
             }
 
-            for(RenderPass* node : nodes)
+            for (RenderPass* node : nodes)
             {
                 inDegree[node]++;
             }
         }
 
         // Find all nodes with in-degree of 0
-        for(auto& [pass, degree] : inDegree)
+        for (auto& [pass, degree] : inDegree)
         {
-            if(degree == 0)
+            if (degree == 0)
             {
                 zeroInDegreeQueue.push(pass);
             }
         }
 
         // Topological Sort
-        while(!zeroInDegreeQueue.empty())
+        while (!zeroInDegreeQueue.empty())
         {
             RenderPass* node = zeroInDegreeQueue.front();
             zeroInDegreeQueue.pop();
             result.push_back(node);
 
             // Decrease the in-degree of adjacent nodes
-            for(RenderPass* adjacent : graph[node])
+            for (RenderPass* adjacent : graph[node])
             {
                 --inDegree[adjacent];
-                if(inDegree[adjacent] == 0)
+                if (inDegree[adjacent] == 0)
                 {
                     zeroInDegreeQueue.push(adjacent);
                 }
@@ -250,29 +251,29 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     }
 
     // per pass resource build
-    for(auto* pass : m_buildData.sortedPasses)
+    for (auto* pass : m_buildData.sortedPasses)
     {
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-        if(!m_buildData.cmdPools.contains(pass))
+        if (!m_buildData.cmdPools.contains(pass))
         {
-            APH_VR(m_pDevice->create({queue, false}, &m_buildData.cmdPools[pass]));
+            APH_VR(m_pDevice->create({ queue, false }, &m_buildData.cmdPools[pass]));
             m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
         }
 
         // color attachments
-        for(auto colorAttachment : pass->m_res.colorOut)
+        for (auto colorAttachment : pass->m_res.colorOut)
         {
-            if(!m_buildData.image.contains(colorAttachment))
+            if (!m_buildData.image.contains(colorAttachment))
             {
-                vk::Image*          pImage = {};
+                vk::Image* pImage = {};
                 vk::ImageCreateInfo createInfo{
-                    .extent    = colorAttachment->getInfo().extent,
-                    .usage     = colorAttachment->getUsage(),
-                    .domain    = ImageDomain::Device,
+                    .extent = colorAttachment->getInfo().extent,
+                    .usage = colorAttachment->getUsage(),
+                    .domain = ImageDomain::Device,
                     .imageType = ImageType::e2D,
-                    .format    = colorAttachment->getInfo().format,
+                    .format = colorAttachment->getInfo().format,
                 };
-                if(!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
+                if (!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
                 {
                     createInfo.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
                 }
@@ -284,15 +285,15 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         // depth attachments
         {
             auto depthAttachment = pass->m_res.depthOut;
-            if(depthAttachment && !m_buildData.image.contains(depthAttachment))
+            if (depthAttachment && !m_buildData.image.contains(depthAttachment))
             {
-                vk::Image*          pImage = {};
+                vk::Image* pImage = {};
                 vk::ImageCreateInfo createInfo{
-                    .extent    = depthAttachment->getInfo().extent,
-                    .usage     = depthAttachment->getUsage(),
-                    .domain    = ImageDomain::Device,
+                    .extent = depthAttachment->getInfo().extent,
+                    .usage = depthAttachment->getUsage(),
+                    .domain = ImageDomain::Device,
                     .imageType = ImageType::e2D,
-                    .format    = depthAttachment->getInfo().format,
+                    .format = depthAttachment->getInfo().format,
                 };
                 APH_VR(m_pDevice->create(createInfo, &pImage));
                 m_buildData.image[depthAttachment] = pImage;
@@ -308,34 +309,34 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     // record commands
     {
         auto& taskMgr = m_taskManager;
-        auto  taskgrp = taskMgr.createTaskGroup();
+        auto taskgrp = taskMgr.createTaskGroup();
 
-        for(auto* pass : m_declareData.passes)
+        for (auto* pass : m_declareData.passes)
         {
-            std::vector<vk::Image*>         colorImages;
-            vk::Image*                      pDepthImage = {};
-            std::vector<vk::ImageBarrier>   initImageBarriers{};
-            std::vector<vk::ImageBarrier>&  imageBarriers  = m_buildData.imageBarriers[pass];
+            std::vector<vk::Image*> colorImages;
+            vk::Image* pDepthImage = {};
+            std::vector<vk::ImageBarrier> initImageBarriers{};
+            std::vector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
             std::vector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
 
             colorImages.reserve(pass->m_res.colorOut.size());
-            for(PassImageResource* colorAttachment : pass->m_res.colorOut)
+            for (PassImageResource* colorAttachment : pass->m_res.colorOut)
             {
                 colorImages.push_back(m_buildData.image[colorAttachment]);
                 auto& image = colorImages.back();
                 initImageBarriers.push_back({
-                    .pImage       = image,
+                    .pImage = image,
                     .currentState = ResourceState::Undefined,
-                    .newState     = ResourceState::RenderTarget,
+                    .newState = ResourceState::RenderTarget,
                 });
             }
-            if(pass->m_res.depthOut)
+            if (pass->m_res.depthOut)
             {
                 pDepthImage = m_buildData.image[pass->m_res.depthOut];
                 initImageBarriers.push_back({
-                    .pImage       = pDepthImage,
+                    .pImage = pDepthImage,
                     .currentState = ResourceState::Undefined,
-                    .newState     = ResourceState::DepthStencil,
+                    .newState = ResourceState::DepthStencil,
                 });
             }
 
@@ -343,41 +344,41 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             m_pDevice->executeCommand(queue,
                                       [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
 
-            for(PassImageResource* textureIn : pass->m_res.textureIn)
+            for (PassImageResource* textureIn : pass->m_res.textureIn)
             {
                 auto& image = m_buildData.image[textureIn];
-                if(image->getResourceState() != pass->m_res.resourceStateMap[textureIn])
+                if (image->getResourceState() != pass->m_res.resourceStateMap[textureIn])
                 {
                     imageBarriers.push_back({
-                        .pImage       = image,
+                        .pImage = image,
                         .currentState = image->getResourceState(),
-                        .newState     = pass->m_res.resourceStateMap[textureIn],
+                        .newState = pass->m_res.resourceStateMap[textureIn],
                     });
                 }
             }
 
-            for(PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+            for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
             {
                 auto& buffer = m_buildData.buffer[bufferIn];
-                if(buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
+                if (buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
                 {
                     bufferBarriers.push_back(vk::BufferBarrier{
-                        .pBuffer      = buffer,
+                        .pBuffer = buffer,
                         .currentState = buffer->getResourceState(),
-                        .newState     = pass->m_res.resourceStateMap[bufferIn],
+                        .newState = pass->m_res.resourceStateMap[bufferIn],
                     });
                 }
             }
 
-            for(PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
+            for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
             {
                 auto& buffer = m_buildData.buffer[bufferIn];
-                if(buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
+                if (buffer->getResourceState() != pass->m_res.resourceStateMap[bufferIn])
                 {
                     bufferBarriers.push_back(vk::BufferBarrier{
-                        .pBuffer      = buffer,
+                        .pBuffer = buffer,
                         .currentState = buffer->getResourceState(),
-                        .newState     = pass->m_res.resourceStateMap[bufferIn],
+                        .newState = pass->m_res.resourceStateMap[bufferIn],
                     });
                 }
             }
@@ -385,10 +386,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             APH_ASSERT(!colorImages.empty());
 
             taskgrp->addTask(
-                [this, pass, colorImages, pDepthImage]() {
+                [this, pass, colorImages, pDepthImage]()
+                {
                     auto* pCmd = m_buildData.cmds[pass];
                     APH_VR(pCmd->begin());
-                    pCmd->insertDebugLabel({.name = pass->m_name, .color = {0.6f, 0.6f, 0.6f, 0.6f}});
+                    pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
                     pCmd->beginRendering(colorImages, pDepthImage);
                     APH_ASSERT(pass->m_executeCB);
@@ -398,12 +400,12 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
                     // lock
                     vk::QueueSubmitInfo submitInfo{
-                        .commandBuffers   = {pCmd},
-                        .waitSemaphores   = {},
+                        .commandBuffers = { pCmd },
+                        .waitSemaphores = {},
                         .signalSemaphores = {},
                     };
 
-                    std::lock_guard<std::mutex> holder{m_buildData.submitLock};
+                    std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
                     m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
                 },
                 pass->m_name);
@@ -443,16 +445,16 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pI
 PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
 {
     APH_PROFILER_SCOPE();
-    if(m_declareData.resourceMap.contains(name))
+    if (m_declareData.resourceMap.contains(name))
     {
         auto res = m_declareData.resources.at(m_declareData.resourceMap[name]);
         APH_ASSERT(res->getType() == type);
         return res;
     }
 
-    std::size_t   idx = m_declareData.resources.size();
+    std::size_t idx = m_declareData.resources.size();
     PassResource* res = {};
-    switch(type)
+    switch (type)
     {
     case PassResource::Type::Image:
         res = m_resourcePool.passImageResource.allocate(type);
@@ -483,33 +485,34 @@ void RenderGraph::execute(vk::Fence* pFence)
 
         APH_VR(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
-        if(m_buildData.pSwapchain)
+        if (m_buildData.pSwapchain)
         {
             APH_VR(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
 
             m_pDevice->executeCommand(
                 m_pDevice->getQueue(aph::QueueType::Transfer),
-                [this](auto* pCopyCmd) {
+                [this](auto* pCopyCmd)
+                {
                     auto pSwapchainImage = m_buildData.pSwapchain->getImage();
                     auto pOutImage =
                         m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
 
                     pCopyCmd->insertBarrier({
                         {
-                            .pImage       = pOutImage,
+                            .pImage = pOutImage,
                             .currentState = ResourceState::RenderTarget,
-                            .newState     = ResourceState::CopySource,
+                            .newState = ResourceState::CopySource,
                         },
                         {
-                            .pImage       = pSwapchainImage,
+                            .pImage = pSwapchainImage,
                             .currentState = ResourceState::Undefined,
-                            .newState     = ResourceState::CopyDest,
+                            .newState = ResourceState::CopyDest,
                         },
                     });
 
-                    if(pOutImage->getWidth() == pSwapchainImage->getWidth() &&
-                       pOutImage->getHeight() == pSwapchainImage->getHeight() &&
-                       pOutImage->getDepth() == pSwapchainImage->getDepth())
+                    if (pOutImage->getWidth() == pSwapchainImage->getWidth() &&
+                        pOutImage->getHeight() == pSwapchainImage->getHeight() &&
+                        pOutImage->getDepth() == pSwapchainImage->getDepth())
                     {
                         VK_LOG_DEBUG("copy image to swapchain.");
                         pCopyCmd->copyImage(pOutImage, pSwapchainImage);
@@ -522,23 +525,23 @@ void RenderGraph::execute(vk::Fence* pFence)
 
                     pCopyCmd->insertBarrier({
                         {
-                            .pImage       = pOutImage,
+                            .pImage = pOutImage,
                             .currentState = ResourceState::Undefined,
-                            .newState     = ResourceState::RenderTarget,
+                            .newState = ResourceState::RenderTarget,
                         },
                         {
-                            .pImage       = pSwapchainImage,
+                            .pImage = pSwapchainImage,
                             .currentState = ResourceState::CopyDest,
-                            .newState     = ResourceState::Present,
+                            .newState = ResourceState::Present,
                         },
                     });
                 },
-                {m_buildData.renderSem}, {m_buildData.presentSem});
+                { m_buildData.renderSem }, { m_buildData.presentSem });
         }
 
-        APH_VR(m_buildData.pSwapchain->presentImage({m_buildData.presentSem}));
+        APH_VR(m_buildData.pSwapchain->presentImage({ m_buildData.presentSem }));
 
-        if(!pFence)
+        if (!pFence)
         {
             frameFence->wait();
             APH_VR(m_pDevice->releaseFence(frameFence));
@@ -570,43 +573,43 @@ void RenderGraph::cleanup()
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
-        for(auto* pass : m_declareData.passes)
+        for (auto* pass : m_declareData.passes)
         {
             m_buildData.passDependencyGraph[pass].clear();
         }
 
-        for(auto pass : m_declareData.passes)
+        for (auto pass : m_declareData.passes)
         {
             m_resourcePool.renderPass.free(pass);
         }
         m_declareData.passes.clear();
 
-        for(auto resource : m_declareData.imageResources)
+        for (auto resource : m_declareData.imageResources)
         {
             m_resourcePool.passImageResource.free(resource);
         }
         m_declareData.imageResources.clear();
 
-        for(auto resource : m_declareData.bufferResources)
+        for (auto resource : m_declareData.bufferResources)
         {
             m_resourcePool.passBufferResource.free(resource);
         }
         m_declareData.bufferResources.clear();
     }
 
-    for(auto [_, cmdPool] : m_buildData.cmdPools)
+    for (auto [_, cmdPool] : m_buildData.cmdPools)
     {
         m_pDevice->destroy(cmdPool);
     }
     m_buildData.cmdPools.clear();
 
-    for(auto* res : m_declareData.resources)
+    for (auto* res : m_declareData.resources)
     {
-        if(!(res->getFlags() & PassResourceFlagBits::External))
+        if (!(res->getFlags() & PassResourceFlagBits::External))
         {
             auto pImage = m_buildData.image[res];
             m_pDevice->destroy(pImage);
         }
     }
 };
-}  // namespace aph
+} // namespace aph

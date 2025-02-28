@@ -8,9 +8,9 @@ namespace aph
 
 enum class LightType : uint32_t
 {
-    POINT       = 0,
+    POINT = 0,
     DIRECTIONAL = 1,
-    SPOT        = 2,
+    SPOT = 2,
 };
 
 struct Light : public Object
@@ -18,15 +18,15 @@ struct Light : public Object
     Light();
     ~Light() override = default;
 
-    float     m_intensity{1.0f};
-    glm::vec3 m_color{1.0f};
-    LightType m_type{LightType::DIRECTIONAL};
+    float m_intensity{ 1.0f };
+    glm::vec3 m_color{ 1.0f };
+    LightType m_type{ LightType::DIRECTIONAL };
     union
     {
         glm::vec3 m_position;
         glm::vec3 m_direction;
     };
 };
-}  // namespace aph
+} // namespace aph
 
-#endif  // VKLLIGHT_H_
+#endif // VKLLIGHT_H_

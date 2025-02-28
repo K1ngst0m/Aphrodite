@@ -1,48 +1,48 @@
 #include "pipeline.h"
 #include "device.h"
-#include "shader.h"
 #include "pipelineBuilder.h"
+#include "shader.h"
 
 namespace aph::vk
 {
-Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle) :
-    ResourceHandle(handle),
-    m_pDevice(pDevice),
-    m_pProgram(createInfo.pProgram),
-    m_type(PipelineType::Compute)
+Pipeline::Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle)
+    : ResourceHandle(handle)
+    , m_pDevice(pDevice)
+    , m_pProgram(createInfo.pProgram)
+    , m_type(PipelineType::Compute)
 {
     APH_ASSERT(m_pProgram);
 }
 
-Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle) :
-    ResourceHandle(handle),
-    m_pDevice(pDevice),
-    m_pProgram(createInfo.pProgram),
-    m_type(createInfo.type)
+Pipeline::Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle)
+    : ResourceHandle(handle)
+    , m_pDevice(pDevice)
+    , m_pProgram(createInfo.pProgram)
+    , m_type(createInfo.type)
 {
     APH_ASSERT(m_pProgram);
 }
 
 void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineKey, Pipeline* pPipeline)
 {
-    const auto* table      = m_pDevice->getDeviceTable();
-    VkDevice    device     = m_pDevice->getHandle();
-    auto        vkPipeline = pPipeline->getHandle();
+    const auto* table = m_pDevice->getDeviceTable();
+    VkDevice device = m_pDevice->getHandle();
+    auto vkPipeline = pPipeline->getHandle();
 
     m_pipelineMap[pipelineKey] = pPipeline;
     VkPipelineBinaryCreateInfoKHR pipelineBinaryCreateInfo{
-        .sType               = VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR,
-        .pNext               = NULL,
-        .pKeysAndDataInfo    = NULL,
-        .pipeline            = vkPipeline,
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_CREATE_INFO_KHR,
+        .pNext = NULL,
+        .pKeysAndDataInfo = NULL,
+        .pipeline = vkPipeline,
         .pPipelineCreateInfo = NULL,
     };
 
     VkPipelineBinaryHandlesInfoKHR handlesInfo{
-        .sType               = VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR,
-        .pNext               = NULL,
+        .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_HANDLES_INFO_KHR,
+        .pNext = NULL,
         .pipelineBinaryCount = 0,
-        .pPipelineBinaries   = NULL,
+        .pPipelineBinaries = NULL,
     };
 
     _VR(table->vkCreatePipelineBinariesKHR(device, &pipelineBinaryCreateInfo, vkAllocator(), &handlesInfo));
@@ -50,7 +50,7 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
     std::vector<VkPipelineBinaryKHR> pipelineBinaries;
     pipelineBinaries.resize(handlesInfo.pipelineBinaryCount);
 
-    handlesInfo.pPipelineBinaries   = pipelineBinaries.data();
+    handlesInfo.pPipelineBinaries = pipelineBinaries.data();
     handlesInfo.pipelineBinaryCount = pipelineBinaries.size();
 
     _VR(table->vkCreatePipelineBinariesKHR(device, &pipelineBinaryCreateInfo, vkAllocator(), &handlesInfo));
@@ -62,11 +62,11 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
                                                        });
 
     // Store to application cache
-    for(int i = 0; i < handlesInfo.pipelineBinaryCount; ++i)
+    for (int i = 0; i < handlesInfo.pipelineBinaryCount; ++i)
     {
         VkPipelineBinaryDataInfoKHR binaryInfo{
-            .sType          = VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR,
-            .pNext          = NULL,
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_DATA_INFO_KHR,
+            .pNext = NULL,
             .pipelineBinary = pipelineBinaries[i],
         };
 
@@ -77,13 +77,13 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
 
         _VR(table->vkGetPipelineBinaryDataKHR(device, &binaryInfo, &binaryKeys[i], &binaryDataSize, binaryData.data()));
         m_binaryKeyDataMap[binaryKeys[i]].rawData = std::move(binaryData);
-        m_binaryKeyDataMap[binaryKeys[i]].binary  = pipelineBinaries[i];
+        m_binaryKeyDataMap[binaryKeys[i]].binary = pipelineBinaries[i];
     }
 
     m_pipelineKeyBinaryKeysMap[pipelineKey] = binaryKeys;
     VkReleaseCapturedPipelineDataInfoKHR releaseInfo{
-        .sType    = VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR,
-        .pNext    = nullptr,
+        .sType = VK_STRUCTURE_TYPE_RELEASE_CAPTURED_PIPELINE_DATA_INFO_KHR,
+        .pNext = nullptr,
         .pipeline = vkPipeline,
     };
     table->vkReleaseCapturedPipelineDataKHR(device, &releaseInfo, vkAllocator());
@@ -91,13 +91,13 @@ void PipelineAllocator::setupPipelineKey(const VkPipelineBinaryKeyKHR& pipelineK
 
 Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& createInfo)
 {
-    const auto*    table   = m_pDevice->getDeviceTable();
-    VkDevice       device  = m_pDevice->getHandle();
+    const auto* table = m_pDevice->getDeviceTable();
+    VkDevice device = m_pDevice->getHandle();
     ShaderProgram* program = createInfo.pProgram;
     APH_ASSERT(program);
 
     VkComputePipelineCreateInfo vkCreateInfo = init::computePipelineCreateInfo(program->getPipelineLayout());
-    const Shader*               cs           = program->getShader(ShaderStage::CS);
+    const Shader* cs = program->getShader(ShaderStage::CS);
     vkCreateInfo.stage =
         init::pipelineShaderStageCreateInfo(VK_SHADER_STAGE_COMPUTE_BIT, cs->getHandle(), cs->getEntryPointName());
 
@@ -107,11 +107,11 @@ Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& create
         .pNext = &vkCreateInfo,
     };
 
-    VkPipelineBinaryKeyKHR pipelineKey{.sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR};
+    VkPipelineBinaryKeyKHR pipelineKey{ .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR };
     table->vkGetPipelineKeyKHR(device, &pipelineCreateInfo, &pipelineKey);
 
-    std::lock_guard<std::mutex> holder{m_computeAcquireLock};
-    if(!m_pipelineKeyBinaryKeysMap.contains(pipelineKey))
+    std::lock_guard<std::mutex> holder{ m_computeAcquireLock };
+    if (!m_pipelineKeyBinaryKeysMap.contains(pipelineKey))
     {
         VkPipeline computePipeline = VK_NULL_HANDLE;
         _VR(m_pDevice->getDeviceTable()->vkCreateComputePipelines(m_pDevice->getHandle(), VK_NULL_HANDLE, 1,
@@ -125,10 +125,10 @@ Pipeline* PipelineAllocator::getPipeline(const ComputePipelineCreateInfo& create
 
 Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& createInfo)
 {
-    const auto* table  = m_pDevice->getDeviceTable();
-    VkDevice    device = m_pDevice->getHandle();
+    const auto* table = m_pDevice->getDeviceTable();
+    VkDevice device = m_pDevice->getHandle();
 
-    VulkanPipelineBuilder        builder{};
+    VulkanPipelineBuilder builder{};
     VkGraphicsPipelineCreateInfo graphicsCreateInfo = builder.getCreateInfo(createInfo);
 
     // Get the pipeline key
@@ -137,11 +137,11 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
         .pNext = &graphicsCreateInfo,
     };
 
-    VkPipelineBinaryKeyKHR pipelineKey{.sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR};
+    VkPipelineBinaryKeyKHR pipelineKey{ .sType = VK_STRUCTURE_TYPE_PIPELINE_BINARY_KEY_KHR };
     table->vkGetPipelineKeyKHR(device, &pipelineCreateInfo, &pipelineKey);
 
-    std::lock_guard<std::mutex> holder{m_graphicsAcquireLock};
-    if(!m_pipelineKeyBinaryKeysMap.contains(pipelineKey))
+    std::lock_guard<std::mutex> holder{ m_graphicsAcquireLock };
+    if (!m_pipelineKeyBinaryKeysMap.contains(pipelineKey))
     {
         // Create the pipeline
         VkPipeline graphicsPipeline;
@@ -155,16 +155,16 @@ Pipeline* PipelineAllocator::getPipeline(const GraphicsPipelineCreateInfo& creat
 
 void PipelineAllocator::clear()
 {
-    auto& table  = *m_pDevice->getDeviceTable();
-    auto  device = m_pDevice->getHandle();
-    for(auto& [_, pPipeline] : m_pipelineMap)
+    auto& table = *m_pDevice->getDeviceTable();
+    auto device = m_pDevice->getHandle();
+    for (auto& [_, pPipeline] : m_pipelineMap)
     {
         table.vkDestroyPipeline(device, pPipeline->getHandle(), vkAllocator());
     }
     m_pool.clear();
-    for(auto& [key, binaryData] : m_binaryKeyDataMap)
+    for (auto& [key, binaryData] : m_binaryKeyDataMap)
     {
         table.vkDestroyPipelineBinaryKHR(device, binaryData.binary, vkAllocator());
     }
 }
-}  // namespace aph::vk
+} // namespace aph::vk

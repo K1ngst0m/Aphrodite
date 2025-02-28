@@ -1,7 +1,7 @@
 #pragma once
 
-#include "api/gpuResource.h"
 #include "allocator/objectPool.h"
+#include "api/gpuResource.h"
 #include "common/hash.h"
 
 namespace aph::vk
@@ -18,21 +18,21 @@ struct GraphicsPipelineCreateInfo
     PipelineType type = PipelineType::Geometry;
 
     RenderPipelineDynamicState dynamicState = {};
-    PrimitiveTopology          topology     = PrimitiveTopology::TriangleList;
+    PrimitiveTopology topology = PrimitiveTopology::TriangleList;
 
     VertexInput vertexInput;
 
     ShaderProgram* pProgram = {};
 
-    std::vector<ColorAttachment> color         = {};
-    Format                       depthFormat   = Format::Undefined;
-    Format                       stencilFormat = Format::Undefined;
+    std::vector<ColorAttachment> color = {};
+    Format depthFormat = Format::Undefined;
+    Format stencilFormat = Format::Undefined;
 
-    CullMode    cullMode         = CullMode::None;
+    CullMode cullMode = CullMode::None;
     WindingMode frontFaceWinding = WindingMode::CCW;
-    PolygonMode polygonMode      = PolygonMode::Fill;
+    PolygonMode polygonMode = PolygonMode::Fill;
 
-    StencilState backFaceStencil  = {};
+    StencilState backFaceStencil = {};
     StencilState frontFaceStencil = {};
 
     uint32_t samplesCount = 1u;
@@ -41,31 +41,39 @@ struct GraphicsPipelineCreateInfo
 struct ComputePipelineCreateInfo
 {
     ImmutableSamplerBank* pSamplerBank = {};
-    ShaderProgram*        pProgram     = {};
+    ShaderProgram* pProgram = {};
 };
-
 
 class Pipeline : public ResourceHandle<VkPipeline>
 {
     friend class ObjectPool<Pipeline>;
 
 public:
-    ShaderProgram* getProgram() const { return m_pProgram; }
-    PipelineType   getType() const { return m_type; }
+    ShaderProgram* getProgram() const
+    {
+        return m_pProgram;
+    }
+    PipelineType getType() const
+    {
+        return m_type;
+    }
 
 protected:
     Pipeline(Device* pDevice, const GraphicsPipelineCreateInfo& createInfo, HandleType handle);
     Pipeline(Device* pDevice, const ComputePipelineCreateInfo& createInfo, HandleType handle);
 
-    Device*        m_pDevice  = {};
+    Device* m_pDevice = {};
     ShaderProgram* m_pProgram = {};
-    PipelineType   m_type     = {};
+    PipelineType m_type = {};
 };
 
 class PipelineAllocator
 {
 public:
-    PipelineAllocator(Device* pDevice) : m_pDevice(pDevice) {}
+    PipelineAllocator(Device* pDevice)
+        : m_pDevice(pDevice)
+    {
+    }
     ~PipelineAllocator() = default;
 
     Pipeline* getPipeline(const GraphicsPipelineCreateInfo& createInfo);
@@ -74,10 +82,10 @@ public:
     void clear();
 
 private:
-    Device*                        m_pDevice = {};
+    Device* m_pDevice = {};
     ThreadSafeObjectPool<Pipeline> m_pool;
-    std::mutex                     m_graphicsAcquireLock;
-    std::mutex                     m_computeAcquireLock;
+    std::mutex m_graphicsAcquireLock;
+    std::mutex m_computeAcquireLock;
 
 private:
     struct PipelineBinaryKeyHash
@@ -87,8 +95,8 @@ private:
             using namespace aph::utils;
             std::size_t seed = 0;
             hashCombine(seed, keyObj.keySize);
-            const char*      keyData = reinterpret_cast<const char*>(keyObj.key);
-            std::string_view keyView{keyData, keyObj.keySize};
+            const char* keyData = reinterpret_cast<const char*>(keyObj.key);
+            std::string_view keyView{ keyData, keyObj.keySize };
             hashCombine(seed, keyView);
             return seed;
         }
@@ -98,7 +106,7 @@ private:
     {
         bool operator()(const VkPipelineBinaryKeyKHR& lhs, const VkPipelineBinaryKeyKHR& rhs) const noexcept
         {
-            if(lhs.keySize != rhs.keySize)
+            if (lhs.keySize != rhs.keySize)
                 return false;
             return std::memcmp(lhs.key, rhs.key, lhs.keySize) == 0;
         }
@@ -112,7 +120,7 @@ private:
         VkPipelineBinaryKHR binary;
     };
 
-    template<typename Key, typename Val>
+    template <typename Key, typename Val>
     using PipelineKeyMap = HashMap<Key, Val, PipelineBinaryKeyHash, PipelineBinaryKeyEqual>;
 
     PipelineKeyMap<VkPipelineBinaryKeyKHR, PipelineBinaryData> m_binaryKeyDataMap;
@@ -120,4 +128,4 @@ private:
     PipelineKeyMap<VkPipelineBinaryKeyKHR, Pipeline*> m_pipelineMap;
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk

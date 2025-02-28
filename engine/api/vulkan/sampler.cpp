@@ -3,20 +3,20 @@
 
 namespace aph::vk
 {
-Sampler::Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle) :
-    ResourceHandle(handle, createInfo),
-    m_pDevice(pDevice),
-    m_isImmutable(createInfo.immutable)
+Sampler::Sampler(Device* pDevice, const CreateInfoType& createInfo, HandleType handle)
+    : ResourceHandle(handle, createInfo)
+    , m_pDevice(pDevice)
+    , m_isImmutable(createInfo.immutable)
 {
 }
 
 SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
 {
     SamplerCreateInfo& ci = *this;
-    ci.maxLod        = ::vk::LodClampNone;
+    ci.maxLod = ::vk::LodClampNone;
     ci.maxAnisotropy = 1.0f;
 
-    switch(preset)
+    switch (preset)
     {
     case SamplerPreset::NearestShadow:
     case SamplerPreset::LinearShadow:
@@ -26,7 +26,7 @@ SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
         break;
     }
 
-    switch(preset)
+    switch (preset)
     {
     case SamplerPreset::TrilinearClamp:
     case SamplerPreset::TrilinearWrap:
@@ -39,7 +39,7 @@ SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
         break;
     }
 
-    switch(preset)
+    switch (preset)
     {
     case SamplerPreset::DefaultGeometryFilterClamp:
     case SamplerPreset::DefaultGeometryFilterWrap:
@@ -57,7 +57,7 @@ SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
         break;
     }
 
-    switch(preset)
+    switch (preset)
     {
     default:
     case SamplerPreset::DefaultGeometryFilterWrap:
@@ -81,7 +81,7 @@ SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
         break;
     }
 
-    switch(preset)
+    switch (preset)
     {
     case SamplerPreset::DefaultGeometryFilterWrap:
     case SamplerPreset::DefaultGeometryFilterClamp:
@@ -94,4 +94,4 @@ SamplerCreateInfo& SamplerCreateInfo::preset(SamplerPreset preset)
 
     return *this;
 }
-}  // namespace aph::vk
+} // namespace aph::vk

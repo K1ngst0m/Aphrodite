@@ -1,16 +1,16 @@
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 
+#include <fcntl.h>
 #include <filesystem>
-#include <string>
-#include <type_traits>
-#include <utility>
 #include <memory.h>
+#include <string>
 #include <sys/inotify.h>
-#include <unistd.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
+#include <type_traits>
+#include <unistd.h>
+#include <utility>
 
 #include "common/hash.h"
 #include "common/singleton.h"
@@ -23,11 +23,11 @@ public:
     ~Filesystem() final;
 
     void* map(std::string_view path);
-    void  unmap(void* data);
-    void  clearMappedFiles();
+    void unmap(void* data);
+    void clearMappedFiles();
 
-    std::string              readFileToString(std::string_view path);
-    std::vector<uint8_t>     readFileToBytes(std::string_view path);
+    std::string readFileToString(std::string_view path);
+    std::vector<uint8_t> readFileToBytes(std::string_view path);
     std::vector<std::string> readFileLines(std::string_view path);
 
     void writeStringToFile(std::string_view path, const std::string& content);
@@ -35,7 +35,7 @@ public:
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
 
     template <typename T>
-    requires std::is_same_v<std::remove_cvref_t<T>, HashMap<std::string, std::string>>
+        requires std::is_same_v<std::remove_cvref_t<T>, HashMap<std::string, std::string>>
     void registerProtocol(T&& protocols)
     {
         m_protocols = std::forward<T>(protocols);
@@ -49,11 +49,11 @@ public:
 
 private:
     HashMap<int, std::function<void()>> m_callbacks;
-    HashMap<std::string, std::string>   m_protocols;
-    HashMap<void*, std::size_t>         m_mappedFiles;
-    std::mutex                          m_mapLock;
+    HashMap<std::string, std::string> m_protocols;
+    HashMap<void*, std::size_t> m_mappedFiles;
+    std::mutex m_mapLock;
 };
 
-}  // namespace aph
+} // namespace aph
 
-#endif  // FILESYSTEM_H_
+#endif // FILESYSTEM_H_

@@ -1,9 +1,9 @@
 #include <utility>
 
+#include "common/common.h"
+#include "common/logger.h"
 #include "taskManager.h"
 #include "threadUtils.h"
-#include "common/logger.h"
-#include "common/common.h"
 
 #ifdef APH_DEBUG
 namespace
@@ -17,25 +17,26 @@ void logThreadDebug(std::string_view fmt, Args&&... args)
     ::aph::Logger::GetInstance().debug(ss.str(), std::forward<Args>(args)...);
 }
 
-    #define THREAD_LOG_DEBUG(...) \
-        do \
-        { \
-            logThreadDebug(__VA_ARGS__); \
-        } while(0)
-}  // namespace
+#define THREAD_LOG_DEBUG(...)        \
+    do                               \
+    {                                \
+        logThreadDebug(__VA_ARGS__); \
+    } while (0)
+} // namespace
 #else
-    #define THREAD_LOG_DEBUG(...) (void(0));
+#define THREAD_LOG_DEBUG(...) (void(0));
 #endif
 
 namespace aph
 {
 
-TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_description(std::move(description))
+TaskManager::TaskManager(uint32_t threadCount, std::string description)
+    : m_description(std::move(description))
 {
     m_totalTaskCount.store(0);
     m_completedTaskCount.store(0);
 
-    if(threadCount == 0)
+    if (threadCount == 0)
     {
         threadCount = std::thread::hardware_concurrency();
     }
@@ -44,7 +45,7 @@ TaskManager::TaskManager(uint32_t threadCount, std::string description) : m_desc
 
     m_threadData.threadPool = std::make_unique<ThreadPool<>>(threadCount);
 
-    for(auto idx = 0; idx < threadCount; idx++)
+    for (auto idx = 0; idx < threadCount; idx++)
     {
         auto&& res = m_threadData.threadPool->enqueue([this, idx]() { this->processTask(idx); });
         m_threadData.threadResults.push_back(std::move(res));
@@ -56,12 +57,12 @@ TaskManager::~TaskManager()
     wait();
 
     {
-        std::lock_guard<std::mutex> holder{m_threadData.condLock};
+        std::lock_guard<std::mutex> holder{ m_threadData.condLock };
         m_dead = true;
         m_threadData.cond.notify_all();
     }
 
-    for(auto& result : m_threadData.threadResults)
+    for (auto& result : m_threadData.threadResults)
     {
         result.wait();
     }
@@ -73,13 +74,13 @@ TaskManager::~TaskManager()
 
 TaskGroup* TaskManager::createTaskGroup(std::string desc)
 {
-    if(desc.empty())
+    if (desc.empty())
     {
         desc = m_description + ": Untitled Group";
     }
 
     CM_LOG_DEBUG("create task group [%s]", desc);
-    auto group     = m_taskGroupPool.allocate(this, std::move(desc));
+    auto group = m_taskGroupPool.allocate(this, std::move(desc));
     group->m_pDeps = m_taskDepsPool.allocate(this);
     group->m_pDeps->m_pendingTaskCount.store(0, std::memory_order_relaxed);
     return group;
@@ -87,7 +88,7 @@ TaskGroup* TaskManager::createTaskGroup(std::string desc)
 
 Task* TaskManager::addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc)
 {
-    if(desc.empty())
+    if (desc.empty())
     {
         desc = m_description + ": Untitled Task";
     }
@@ -119,13 +120,15 @@ void TaskManager::submit(TaskGroup* pGroup)
     removeTaskGroup(pGroup);
 }
 
-TaskGroup::TaskGroup(TaskManager* manager, std::string desc) : m_pManager(manager), m_desc(std::move(desc))
+TaskGroup::TaskGroup(TaskManager* manager, std::string desc)
+    : m_pManager(manager)
+    , m_desc(std::move(desc))
 {
 }
 
 TaskGroup::~TaskGroup()
 {
-    if(!m_flushed)
+    if (!m_flushed)
     {
         flush();
     }
@@ -139,7 +142,7 @@ void TaskGroup::submit()
 void TaskGroup::flush()
 {
     CM_LOG_DEBUG("task group flush [%s]", m_desc);
-    if(m_flushed)
+    if (m_flushed)
     {
         CM_LOG_WARN("The task group has been already flushed.");
         return;
@@ -152,19 +155,19 @@ void TaskGroup::flush()
 void TaskGroup::wait()
 {
     CM_LOG_DEBUG("task group wait [%s]", m_desc);
-    if(!m_flushed)
+    if (!m_flushed)
     {
         flush();
     }
 
-    std::unique_lock<std::mutex> holder{m_pDeps->m_condLock};
+    std::unique_lock<std::mutex> holder{ m_pDeps->m_condLock };
     m_pDeps->m_cond.wait(holder, [this]() { return m_pDeps->m_done; });
 }
 
 bool TaskGroup::poll()
 {
     CM_LOG_DEBUG("task group poll [%s]", m_desc);
-    if(!m_flushed)
+    if (!m_flushed)
     {
         flush();
     }
@@ -176,7 +179,8 @@ Task* TaskGroup::addTask(TaskFunc&& func, std::string desc)
     return m_pManager->addTask(this, std::move(func), std::move(desc));
 }
 
-TaskDeps::TaskDeps(TaskManager* manager) : m_pManager(manager)
+TaskDeps::TaskDeps(TaskManager* manager)
+    : m_pManager(manager)
 {
     m_pendingTaskCount.store(0, std::memory_order_relaxed);
     // One implicit dependency is the flush() happening.
@@ -187,7 +191,7 @@ void TaskDeps::taskCompleted()
     THREAD_LOG_DEBUG("task deps completed.");
     auto old_tasks = m_pendingTaskCount.fetch_sub(1, std::memory_order_acq_rel);
     APH_ASSERT(old_tasks > 0);
-    if(old_tasks == 1)
+    if (old_tasks == 1)
     {
         notifyDependees();
     }
@@ -195,7 +199,7 @@ void TaskDeps::taskCompleted()
 void TaskDeps::notifyDependees()
 {
     THREAD_LOG_DEBUG("notify dependees.");
-    for(auto& dep : m_pendingDeps)
+    for (auto& dep : m_pendingDeps)
     {
         dep->dependencySatisfied();
     }
@@ -203,7 +207,7 @@ void TaskDeps::notifyDependees()
     m_pendingDeps.clear();
 
     {
-        std::lock_guard<std::mutex> holder{m_condLock};
+        std::lock_guard<std::mutex> holder{ m_condLock };
         m_done = true;
         m_cond.notify_all();
     }
@@ -213,9 +217,9 @@ void TaskDeps::dependencySatisfied()
     auto old_deps = m_dependencyCount.fetch_sub(1, std::memory_order_acq_rel);
     APH_ASSERT(old_deps > 0);
 
-    if(old_deps == 1)
+    if (old_deps == 1)
     {
-        if(m_pendingTasks.empty())
+        if (m_pendingTasks.empty())
         {
             notifyDependees();
         }
@@ -232,17 +236,17 @@ void TaskManager::scheduleTasks(const SmallVector<Task*>& taskList)
 
     m_totalTaskCount.fetch_add(taskCount, std::memory_order_relaxed);
 
-    if(taskCount)
+    if (taskCount)
     {
-        std::lock_guard<std::mutex> holder{m_threadData.condLock};
+        std::lock_guard<std::mutex> holder{ m_threadData.condLock };
 
-        for(auto& t : taskList)
+        for (auto& t : taskList)
         {
             THREAD_LOG_DEBUG("push task [%s] to ready queue.", t->m_desc);
             m_threadData.readyTaskQueue.push(t);
         }
 
-        for(unsigned i = 0; i < taskCount; i++)
+        for (unsigned i = 0; i < taskCount; i++)
         {
             m_threadData.cond.notify_one();
         }
@@ -253,17 +257,17 @@ void TaskManager::processTask(uint32_t id)
 {
     aph::thread::setName(m_description.substr(0, 12) + ":" + std::to_string(id));
 
-    while(true)
+    while (true)
     {
-        auto& ctx  = m_threadData;
+        auto& ctx = m_threadData;
         Task* task = nullptr;
 
         // grab the task from ready task queue
         {
-            std::unique_lock<std::mutex> lock{ctx.condLock};
+            std::unique_lock<std::mutex> lock{ ctx.condLock };
             ctx.cond.wait(lock, [&]() { return m_dead || !ctx.readyTaskQueue.empty(); });
 
-            if(m_dead && ctx.readyTaskQueue.empty())
+            if (m_dead && ctx.readyTaskQueue.empty())
             {
                 THREAD_LOG_DEBUG("Task manager is shutdown and all tasks has completed.");
                 break;
@@ -283,9 +287,9 @@ void TaskManager::processTask(uint32_t id)
         // check if all tasks complete
         {
             auto completed = m_completedTaskCount.fetch_add(1, std::memory_order_relaxed) + 1;
-            if(completed == m_totalTaskCount.load(std::memory_order_relaxed))
+            if (completed == m_totalTaskCount.load(std::memory_order_relaxed))
             {
-                std::lock_guard<std::mutex> holder{m_waitCondLock};
+                std::lock_guard<std::mutex> holder{ m_waitCondLock };
                 m_waitCond.notify_all();
             }
         }
@@ -293,9 +297,12 @@ void TaskManager::processTask(uint32_t id)
 }
 void TaskManager::wait()
 {
-    std::unique_lock<std::mutex> holder{m_waitCondLock};
-    m_waitCond.wait(holder, [&]() {
-        return m_totalTaskCount.load(std::memory_order_relaxed) == m_completedTaskCount.load(std::memory_order_relaxed);
-    });
+    std::unique_lock<std::mutex> holder{ m_waitCondLock };
+    m_waitCond.wait(holder,
+                    [&]()
+                    {
+                        return m_totalTaskCount.load(std::memory_order_relaxed) ==
+                               m_completedTaskCount.load(std::memory_order_relaxed);
+                    });
 }
-}  // namespace aph
+} // namespace aph

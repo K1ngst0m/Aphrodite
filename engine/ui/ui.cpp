@@ -2,4 +2,5 @@
 
 namespace aph::ui
 {
-}  // namespace aph::ui
+
+} // namespace aph::ui

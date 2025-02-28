@@ -3,27 +3,25 @@
 namespace aph::utils
 {
 template <class T>
-concept BitwiseType =
-    std::unsigned_integral<T> || requires (const T& x)
-    {
-        { x.size() } -> std::convertible_to<std::size_t>;
-        { x.test(0) } -> std::convertible_to<bool>;
-    };
+concept BitwiseType = std::unsigned_integral<T> || requires(const T& x) {
+    { x.size() } -> std::convertible_to<std::size_t>;
+    { x.test(0) } -> std::convertible_to<bool>;
+};
 
 // For 32-bit values
-template<BitwiseType T>
+template <BitwiseType T>
 constexpr uint32_t leading_zeroes(T x) noexcept
 {
     return std::countl_zero(x);
 }
 
-template<BitwiseType T>
+template <BitwiseType T>
 constexpr uint32_t trailing_zeroes(T x) noexcept
 {
     return std::countr_zero(x);
 }
 
-template<BitwiseType T>
+template <BitwiseType T>
 constexpr uint32_t trailing_ones(T x) noexcept
 {
     // ~x returns the bitwise complement, and counting its trailing zeroes gives the
@@ -36,7 +34,7 @@ inline void forEachBit(TBitwise value, const TFunc& func) noexcept
 {
     if constexpr (std::unsigned_integral<TBitwise>)
     {
-        while(value)
+        while (value)
         {
             uint32_t bit = trailing_zeroes(value);
             func(bit);
@@ -79,7 +77,7 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
             const uint32_t one_count = trailing_ones(value);
             func(bit_offset, one_count);
 
-            value &= ~((TBitwise{1} << one_count) - 1);
+            value &= ~((TBitwise{ 1 } << one_count) - 1);
             bit_offset += one_count;
         }
     }
@@ -87,7 +85,7 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
     {
         // Bitset path
         // We'll simulate the same logic:
-        if (value.all())  // If all bits in the bitset are set
+        if (value.all()) // If all bits in the bitset are set
         {
             func(0, static_cast<uint32_t>(value.size()));
             return;
@@ -135,5 +133,6 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
             }
             bit_offset += to;
         }
-    }}
-}  // namespace aph::utils
+    }
+}
+} // namespace aph::utils

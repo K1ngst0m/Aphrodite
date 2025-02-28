@@ -12,8 +12,8 @@ namespace aph
 struct ResourceLoaderCreateInfo
 {
     // TODO for debugging
-    bool        isMultiThreads = false;
-    vk::Device* pDevice        = {};
+    bool isMultiThreads = false;
+    vk::Device* pDevice = {};
 };
 
 enum class ImageContainerType
@@ -26,67 +26,67 @@ enum class ImageContainerType
 
 struct ImageInfo
 {
-    uint32_t             width  = {};
-    uint32_t             height = {};
-    std::vector<uint8_t> data   = {};
+    uint32_t width = {};
+    uint32_t height = {};
+    std::vector<uint8_t> data = {};
 };
 
 struct ImageLoadInfo
 {
-    std::string_view                     debugName = {};
+    std::string_view debugName = {};
     std::variant<std::string, ImageInfo> data;
-    ImageContainerType                   containerType = {ImageContainerType::Default};
-    vk::ImageCreateInfo                  createInfo    = {};
+    ImageContainerType containerType = { ImageContainerType::Default };
+    vk::ImageCreateInfo createInfo = {};
 };
 
 struct BufferLoadInfo
 {
-    std::string_view     debugName  = {};
-    const void*          data       = {};
+    std::string_view debugName = {};
+    const void* data = {};
     vk::BufferCreateInfo createInfo = {};
 };
 
 struct BufferUpdateInfo
 {
-    const void* data  = {};
-    MemoryRange range = {0, VK_WHOLE_SIZE};
+    const void* data = {};
+    MemoryRange range = { 0, VK_WHOLE_SIZE };
 };
 
 struct ShaderStageLoadInfo
 {
     std::variant<std::string, std::vector<uint32_t>> data;
-    std::vector<ShaderMacro>                         macros;
-    std::string                                      entryPoint = "main";
+    std::vector<ShaderMacro> macros;
+    std::string entryPoint = "main";
 };
 
 struct ShaderLoadInfo
 {
-    std::string_view                          debugName = {};
+    std::string_view debugName = {};
     HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
-    std::vector<ShaderConstant>               constants;
+    std::vector<ShaderConstant> constants;
 };
 
 enum GeometryLoadFlags
 {
-    GEOMETRY_LOAD_FLAG_SHADOWED           = 0x1,
+    GEOMETRY_LOAD_FLAG_SHADOWED = 0x1,
     GEOMETRY_LOAD_FLAG_STRUCTURED_BUFFERS = 0x2,
 };
 
 enum MeshOptimizerFlags
 {
-    MESH_OPTIMIZATION_FLAG_OFF         = 0x0,
+    MESH_OPTIMIZATION_FLAG_OFF = 0x0,
     MESH_OPTIMIZATION_FLAG_VERTEXCACHE = 0x1,
-    MESH_OPTIMIZATION_FLAG_OVERDRAW    = 0x2,
+    MESH_OPTIMIZATION_FLAG_OVERDRAW = 0x2,
     MESH_OPTIMIZATION_FLAG_VERTEXFETCH = 0x4,
-    MESH_OPTIMIZATION_FLAG_ALL         = 0x7,
+    MESH_OPTIMIZATION_FLAG_ALL = 0x7,
 };
 
 struct GeometryLoadInfo
 {
-    std::string        path;
-    GeometryLoadFlags  flags;
+    std::string path;
+    GeometryLoadFlags flags;
     MeshOptimizerFlags optimizationFlags;
-    VertexInput        vertexInput;
+    VertexInput vertexInput;
 };
 
 class ResourceLoader
@@ -94,7 +94,7 @@ class ResourceLoader
     enum
     {
         LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536,
-        LIMIT_BUFFER_UPLOAD_SIZE     = 8ull << 20,
+        LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20,
     };
 
 public:
@@ -109,19 +109,22 @@ public:
             std::format("Loading [{}]", loadInfo.debugName.empty() ? "unnamed" : loadInfo.debugName));
 
         auto task = taskGroup->addTask(
-            std::function<Result()>{[this, loadInfo, ppResource]() { return load(loadInfo, ppResource); }});
+            std::function<Result()>{ [this, loadInfo, ppResource]() { return load(loadInfo, ppResource); } });
 
         taskGroup->submit();
         return task->getResult();
     }
 
-    void wait() { m_taskManager.wait(); }
+    void wait()
+    {
+        m_taskManager.wait();
+    }
 
     Result load(const ImageLoadInfo& info, vk::Image** ppImage);
     Result load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
     Result load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
     Result load(const GeometryLoadInfo& info, Geometry** ppGeometry);
-    void   update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
+    void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
     void cleanup();
 
@@ -130,12 +133,12 @@ private:
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
-    TaskManager              m_taskManager = {5, "Resource Loader"};
-    vk::Device*              m_pDevice     = {};
-    vk::Queue*               m_pQueue      = {};
+    TaskManager m_taskManager = { 5, "Resource Loader" };
+    vk::Device* m_pDevice = {};
+    vk::Queue* m_pQueue = {};
 
 private:
     HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches = {};
-    std::mutex                                              m_updateLock;
+    std::mutex m_updateLock;
 };
-}  // namespace aph
+} // namespace aph

@@ -1,6 +1,6 @@
-#include "wsi.h"
-#include "event/eventManager.h"
 #include "api/vulkan/instance.h"
+#include "event/eventManager.h"
+#include "wsi.h"
 
 #define GLFW_INCLUDE_NONE
 #define GLFW_INCLUDE_VULKAN
@@ -12,10 +12,10 @@ using namespace aph;
 
 static Key glfwKeyCast(int key)
 {
-#define k(glfw, aph) \
+#define k(glfw, aph)      \
     case GLFW_KEY_##glfw: \
         return Key::aph
-    switch(key)
+    switch (key)
     {
         k(A, A);
         k(B, B);
@@ -78,16 +78,16 @@ static void cursorCB(GLFWwindow* window, double x, double y)
 
     int deltaX = lastX - (int)x;
     int deltaY = lastY - (int)y;
-    lastX         = (int)x;
-    lastY         = (int)y;
+    lastX = (int)x;
+    lastY = (int)y;
 
-    EventManager::GetInstance().pushEvent(MouseMoveEvent{deltaX, deltaY, (int)x, (int)y});
+    EventManager::GetInstance().pushEvent(MouseMoveEvent{ deltaX, deltaY, (int)x, (int)y });
 }
 
 static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
 {
     KeyState state{};
-    switch(action)
+    switch (action)
     {
     case GLFW_PRESS:
         state = KeyState::Pressed;
@@ -100,14 +100,14 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
         break;
     }
 
-    auto  gkey = glfwKeyCast(key);
-    auto* wsi  = static_cast<WSI*>(glfwGetWindowUserPointer(window));
+    auto gkey = glfwKeyCast(key);
+    auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
 
-    if(action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
+    if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
     {
         wsi->close();
     }
-    else if(action == GLFW_PRESS && key == GLFW_KEY_1)
+    else if (action == GLFW_PRESS && key == GLFW_KEY_1)
     {
         static bool visible = false;
         glfwSetInputMode(window, GLFW_CURSOR, visible ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
@@ -115,14 +115,14 @@ static void keyCB(GLFWwindow* window, int key, int _, int action, int mods)
     }
     else
     {
-        EventManager::GetInstance().pushEvent(KeyboardEvent{gkey, state});
+        EventManager::GetInstance().pushEvent(KeyboardEvent{ gkey, state });
     }
 }
 
 static void buttonCB(GLFWwindow* window, int button, int action, int _)
 {
     MouseButton btn;
-    switch(button)
+    switch (button)
     {
     default:
     case GLFW_MOUSE_BUTTON_LEFT:
@@ -139,7 +139,8 @@ static void buttonCB(GLFWwindow* window, int button, int action, int _)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    EventManager::GetInstance().pushEvent(MouseButtonEvent{btn, static_cast<int>(x), static_cast<int>(y), action == GLFW_PRESS});
+    EventManager::GetInstance().pushEvent(
+        MouseButtonEvent{ btn, static_cast<int>(x), static_cast<int>(y), action == GLFW_PRESS });
 }
 
 static void errorCB(int error, const char* description)
@@ -152,7 +153,7 @@ static void windowResizeCallback(GLFWwindow* window, int width, int height)
     auto* wsi = static_cast<WSI*>(glfwGetWindowUserPointer(window));
     wsi->resize(width, height);
 
-    WindowResizeEvent resizeEvent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    WindowResizeEvent resizeEvent{ static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
 
     // Push the event to your event queue or handle it immediately
     EventManager::GetInstance().pushEvent(resizeEvent);
@@ -169,7 +170,7 @@ void WSI::init()
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     m_window = (void*)glfwCreateWindow(m_width, m_height, "Aphrodite Engine", nullptr, nullptr);
-    if(!res || m_window == nullptr)
+    if (!res || m_window == nullptr)
     {
         CM_LOG_ERR("Could not create window.");
     }
@@ -199,14 +200,14 @@ WSI::~WSI()
 
 bool WSI::update()
 {
-    if(glfwWindowShouldClose((GLFWwindow*)m_window))
+    if (glfwWindowShouldClose((GLFWwindow*)m_window))
         return false;
 
     glfwPollEvents();
 
     EventManager::GetInstance().processAllAsync();
 
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         ImGui_ImplGlfw_NewFrame();
     }
@@ -222,13 +223,13 @@ void WSI::close()
 
 void WSI::resize(uint32_t width, uint32_t height)
 {
-    m_width  = width;
+    m_width = width;
     m_height = height;
 
     int w, h;
     glfwGetFramebufferSize((GLFWwindow*)m_window, &w, &h);
 
-    if(w != m_width || h != m_height)
+    if (w != m_width || h != m_height)
     {
         glfwSetWindowSize((GLFWwindow*)m_window, m_width, m_height);
     }
@@ -238,17 +239,17 @@ std::vector<const char*> aph::WSI::getRequiredExtensions()
 {
     std::vector<const char*> extensions{};
     {
-        uint32_t     glfwExtensionCount = 0;
+        uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions;
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        extensions     = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        extensions = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
     }
     return extensions;
 }
 
 bool WSI::initUI()
 {
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         return ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)m_window, true);
     }
@@ -257,7 +258,7 @@ bool WSI::initUI()
 
 void aph::WSI::deInitUI() const
 {
-    if(m_enabledUI)
+    if (m_enabledUI)
     {
         ImGui_ImplGlfw_Shutdown();
     }

@@ -21,12 +21,18 @@ public:
 class IdObject
 {
 public:
-    IdObject(IdType id) : m_Id(id) {}
+    IdObject(IdType id)
+        : m_Id(id)
+    {
+    }
     virtual ~IdObject() = default;
 
-    IdType getId() const { return m_Id; }
+    IdType getId() const
+    {
+        return m_Id;
+    }
 
 private:
     IdType m_Id;
 };
-}  // namespace aph
+} // namespace aph

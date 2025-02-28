@@ -1,11 +1,12 @@
 #include "instance.h"
 #include "api/vulkan/vkUtils.h"
-#include "physicalDevice.h"
 #include "common/logger.h"
+#include "physicalDevice.h"
 
 namespace aph::vk
 {
-Instance::Instance(const CreateInfoType& createInfo, HandleType handle) : ResourceHandle(handle, createInfo) {};
+Instance::Instance(const CreateInfoType& createInfo, HandleType handle)
+    : ResourceHandle(handle, createInfo) {};
 
 Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
@@ -13,10 +14,11 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     {
         HashSet<std::string> supportedExtensions{};
 
-        auto getSupportExtension = [&supportedExtensions](std::string layerName) {
+        auto getSupportExtension = [&supportedExtensions](std::string layerName)
+        {
             auto [res, extensions] = ::vk::enumerateInstanceExtensionProperties(layerName);
             VK_VR(res);
-            for(VkExtensionProperties extension : extensions)
+            for (VkExtensionProperties extension : extensions)
             {
                 supportedExtensions.insert(extension.extensionName);
             }
@@ -25,23 +27,23 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         // vulkan implementation and implicit layers
         getSupportExtension("");
         // explicit layers
-        for(const auto& layer : createInfo.enabledLayers)
+        for (const auto& layer : createInfo.enabledLayers)
         {
             getSupportExtension(layer);
         }
 
         bool allExtensionSupported = true;
-        for(const auto& requiredExtension : createInfo.enabledExtensions)
+        for (const auto& requiredExtension : createInfo.enabledExtensions)
         {
-            if(!supportedExtensions.contains(requiredExtension))
+            if (!supportedExtensions.contains(requiredExtension))
             {
                 VK_LOG_ERR("The instance extension %s is not supported.", requiredExtension);
                 allExtensionSupported = false;
             }
         }
-        if(!allExtensionSupported)
+        if (!allExtensionSupported)
         {
-            return {Result::RuntimeError, "Required instance extensions are not fully supported."};
+            return { Result::RuntimeError, "Required instance extensions are not fully supported." };
         }
     }
 
@@ -50,22 +52,22 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         HashSet<std::string> supportedLayers{};
         auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
         VK_VR(res);
-        for(const auto& layerPropertie : layerProperties)
+        for (const auto& layerPropertie : layerProperties)
         {
             supportedLayers.insert(layerPropertie.layerName);
         }
 
         bool allLayerSFound = true;
-        for(const char* layerName : createInfo.enabledLayers)
+        for (const char* layerName : createInfo.enabledLayers)
         {
-            if(!supportedLayers.contains(layerName))
+            if (!supportedLayers.contains(layerName))
             {
                 VK_LOG_ERR("The instance layer %s is not found.", layerName);
                 allLayerSFound = false;
             }
-            if(!allLayerSFound)
+            if (!allLayerSFound)
             {
-                return {Result::RuntimeError, "Required instance layers are not found."};
+                return { Result::RuntimeError, "Required instance layers are not found." };
             }
         }
     }
@@ -99,9 +101,9 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     {
         auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
         VK_VR(res);
-        for(uint32_t idx = 0; const auto& gpu : gpus)
+        for (uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl        = std::make_unique<PhysicalDevice>(gpu);
+            auto pdImpl = std::make_unique<PhysicalDevice>(gpu);
             auto gpuProperties = pdImpl->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName);
@@ -131,4 +133,4 @@ void Instance::Destroy(Instance* pInstance)
     pInstance->getHandle().destroy(vk_allocator());
     delete pInstance;
 }
-}  // namespace aph::vk
+} // namespace aph::vk

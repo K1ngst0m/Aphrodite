@@ -1,16 +1,16 @@
 #pragma once
 
-#include "common/timer.h"
-#include "instance.h"
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
+#include "common/timer.h"
 #include "descriptorSet.h"
 #include "image.h"
+#include "instance.h"
 #include "module/module.h"
-#include "sampler.h"
 #include "physicalDevice.h"
 #include "queue.h"
+#include "sampler.h"
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
@@ -21,10 +21,10 @@ class DeviceAllocator;
 
 struct DeviceCreateInfo
 {
-    GPUFeature      enabledFeatures = {};
+    GPUFeature enabledFeatures = {};
     PhysicalDevice* pPhysicalDevice = nullptr;
-    Instance*       pInstance       = nullptr;
-    bool            enableCapture   = true;
+    Instance* pInstance = nullptr;
+    bool enableCapture = true;
 };
 
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>
@@ -34,7 +34,7 @@ private:
 
 public:
     static std::unique_ptr<Device> Create(const DeviceCreateInfo& createInfo);
-    static void                    Destroy(Device* pDevice);
+    static void Destroy(Device* pDevice);
 
 public:
     Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, std::string_view debugName = "");
@@ -61,9 +61,9 @@ public:
 
 public:
     Semaphore* acquireSemaphore();
-    Fence*     acquireFence(bool isSignaled);
-    Result     releaseSemaphore(Semaphore* semaphore);
-    Result     releaseFence(Fence* pFence);
+    Fence* acquireFence(bool isSignaled);
+    Result releaseSemaphore(Semaphore* semaphore);
+    Result releaseFence(Fence* pFence);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
     void executeCommand(Queue* queue, const CmdRecordCallBack&& func, const std::vector<Semaphore*>& waitSems = {},
@@ -73,12 +73,15 @@ public:
     Result flushMemory(::vk::DeviceMemory memory, MemoryRange range = {});
     Result invalidateMemory(::vk::DeviceMemory memory, MemoryRange range = {});
     Result mapMemory(Buffer* pBuffer, void** ppMapped) const;
-    void   unMapMemory(Buffer* pBuffer) const;
+    void unMapMemory(Buffer* pBuffer) const;
 
 public:
-    PhysicalDevice*  getPhysicalDevice() const { return m_gpu; }
-    Format           getDepthFormat() const;
-    Queue*           getQueue(QueueType type, uint32_t queueIndex = 0);
+    PhysicalDevice* getPhysicalDevice() const
+    {
+        return m_gpu;
+    }
+    Format getDepthFormat() const;
+    Queue* getQueue(QueueType type, uint32_t queueIndex = 0);
 
     double getTimeQueryResults(::vk::QueryPool pool, uint32_t firstQuery, uint32_t secondQuery,
                                TimeUnit unitType = TimeUnit::Seconds);
@@ -118,19 +121,22 @@ private:
 private:
     struct ResourceObjectPool
     {
-        DeviceAllocator*                          deviceMemory;
-        ThreadSafeObjectPool<Buffer>              buffer;
-        ThreadSafeObjectPool<Image>               image;
-        ThreadSafeObjectPool<Sampler>             sampler;
-        ThreadSafeObjectPool<ImageView>           imageView;
+        DeviceAllocator* deviceMemory;
+        ThreadSafeObjectPool<Buffer> buffer;
+        ThreadSafeObjectPool<Image> image;
+        ThreadSafeObjectPool<Sampler> sampler;
+        ThreadSafeObjectPool<ImageView> imageView;
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;
-        ThreadSafeObjectPool<ShaderProgram>       program;
-        ThreadSafeObjectPool<Queue>               queue;
-        ThreadSafeObjectPool<vk::Shader>          shader;
-        SyncPrimitiveAllocator                    syncPrimitive;
+        ThreadSafeObjectPool<ShaderProgram> program;
+        ThreadSafeObjectPool<Queue> queue;
+        ThreadSafeObjectPool<vk::Shader> shader;
+        SyncPrimitiveAllocator syncPrimitive;
 
-        ResourceObjectPool(Device* pDevice) : syncPrimitive(pDevice) {}
+        ResourceObjectPool(Device* pDevice)
+            : syncPrimitive(pDevice)
+        {
+        }
     } m_resourcePool;
 };
 
-}  // namespace aph::vk
+} // namespace aph::vk

@@ -13,9 +13,7 @@ template <typename Lock>
 concept is_lockable = requires(Lock&& lock) {
     lock.lock();
     lock.unlock();
-    {
-        lock.try_lock()
-    } -> std::convertible_to<bool>;
+    { lock.try_lock() } -> std::convertible_to<bool>;
 };
 
 template <typename T, typename Lock = std::mutex>
@@ -24,7 +22,7 @@ class ThreadSafeQueue
 {
 public:
     using value_type = T;
-    using size_type  = typename std::deque<T>::size_type;
+    using size_type = typename std::deque<T>::size_type;
 
     ThreadSafeQueue() = default;
 
@@ -49,7 +47,7 @@ public:
     [[nodiscard]] std::optional<T> pop_front()
     {
         std::scoped_lock lock(mutex_);
-        if(data_.empty())
+        if (data_.empty())
             return std::nullopt;
 
         auto front = std::move(data_.front());
@@ -60,7 +58,7 @@ public:
     [[nodiscard]] std::optional<T> pop_back()
     {
         std::scoped_lock lock(mutex_);
-        if(data_.empty())
+        if (data_.empty())
             return std::nullopt;
 
         auto back = std::move(data_.back());
@@ -71,7 +69,7 @@ public:
     [[nodiscard]] std::optional<T> steal()
     {
         std::scoped_lock lock(mutex_);
-        if(data_.empty())
+        if (data_.empty())
             return std::nullopt;
 
         auto back = std::move(data_.back());
@@ -82,9 +80,9 @@ public:
     void rotate_to_front(const T& item)
     {
         std::scoped_lock lock(mutex_);
-        auto             iter = std::find(data_.begin(), data_.end(), item);
+        auto iter = std::find(data_.begin(), data_.end(), item);
 
-        if(iter != data_.end())
+        if (iter != data_.end())
         {
             std::ignore = data_.erase(iter);
         }
@@ -96,7 +94,7 @@ public:
     {
         std::scoped_lock lock(mutex_);
 
-        if(data_.empty())
+        if (data_.empty())
             return std::nullopt;
 
         auto front = data_.front();
@@ -109,8 +107,8 @@ public:
 
 private:
     std::deque<T> data_{};
-    mutable Lock  mutex_{};
+    mutable Lock mutex_{};
 };
-}  // namespace aph
+} // namespace aph
 
 #endif

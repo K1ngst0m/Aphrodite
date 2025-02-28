@@ -23,12 +23,12 @@ public:
     // Set a timestamp with a specific tag
     APH_ALWAYS_INLINE void set(const std::string& tag)
     {
-        std::lock_guard<std::mutex> m_holder{m_lock};
+        std::lock_guard<std::mutex> m_holder{ m_lock };
         m_strMap[tag] = Clock::now();
     }
     APH_ALWAYS_INLINE void set(uint32_t tag)
     {
-        std::lock_guard<std::mutex> m_holder{m_lock};
+        std::lock_guard<std::mutex> m_holder{ m_lock };
         m_numMap[tag] = Clock::now();
     }
 
@@ -37,7 +37,7 @@ public:
     {
         auto it1 = m_strMap.find(tag.data());
 
-        if(it1 == m_strMap.end())
+        if (it1 == m_strMap.end())
         {
             CM_LOG_ERR("Tag %s not found!", tag.data());
             return 0.0;
@@ -53,7 +53,7 @@ public:
     {
         auto it1 = m_numMap.find(tag);
 
-        if(it1 == m_numMap.end())
+        if (it1 == m_numMap.end())
         {
             CM_LOG_ERR("Tag %u not found!", tag);
             return 0.0;
@@ -70,7 +70,7 @@ public:
         auto it1 = m_strMap.find(start.data());
         auto it2 = m_strMap.find(end.data());
 
-        if(it1 == m_strMap.end() || it2 == m_strMap.end())
+        if (it1 == m_strMap.end() || it2 == m_strMap.end())
         {
             CM_LOG_ERR("One or both tags not found!");
             return 0.0;
@@ -86,7 +86,7 @@ public:
         auto it1 = m_numMap.find(start);
         auto it2 = m_numMap.find(end);
 
-        if(it1 == m_numMap.end() || it2 == m_numMap.end())
+        if (it1 == m_numMap.end() || it2 == m_numMap.end())
         {
             CM_LOG_ERR("One or both tags not found!");
             return 0.0;
@@ -98,15 +98,15 @@ public:
     }
 
 private:
-    using Clock     = std::chrono::high_resolution_clock;
+    using Clock = std::chrono::high_resolution_clock;
     using TimePoint = std::chrono::time_point<Clock>;
-    using Duration  = std::chrono::duration<double>;
+    using Duration = std::chrono::duration<double>;
 
     HashMap<std::string, TimePoint> m_strMap;
-    HashMap<uint32_t, TimePoint>    m_numMap;
-    std::mutex                      m_lock;
+    HashMap<uint32_t, TimePoint> m_numMap;
+    std::mutex m_lock;
 };
 
-}  // namespace aph
+} // namespace aph
 
-#endif  // TIMER_H_
+#endif // TIMER_H_

@@ -4,6 +4,19 @@ set(VK_SDK_VERSION 1.4.304)
 set(APH_PATCH_DIR ${CMAKE_SOURCE_DIR}/patches)
 
 CPMAddPackage(
+  NAME Format.cmake
+  VERSION 1.8.3
+  GITHUB_REPOSITORY TheLartians/Format.cmake
+  OPTIONS
+      # set to yes skip cmake formatting
+      "FORMAT_SKIP_CMAKE YES"
+      # set to yes skip clang formatting
+      "FORMAT_SKIP_CLANG NO"
+      # path to exclude (optional, supports regular expressions)
+      "CMAKE_FORMAT_EXCLUDE cmake/CPM.cmake"
+)
+
+CPMAddPackage(
   NAME tinygltf
   GITHUB_REPOSITORY syoyo/tinygltf
   VERSION 2.8.18
@@ -164,8 +177,8 @@ target_include_directories(renderdoc INTERFACE ${renderdoc_SOURCE_DIR}/include/)
 
 CPMAddPackage(
   NAME imgui
-  GITHUB_REPOSITORY ocornut/imgui
-  GIT_TAG docking
+  VERSION 1.91.8
+  URL https://github.com/ocornut/imgui/archive/refs/tags/v1.91.8-docking.tar.gz
   DOWNLOAD_ONLY YES
 )
 
