@@ -24,7 +24,7 @@ struct DeviceCreateInfo
     GPUFeature enabledFeatures = {};
     PhysicalDevice* pPhysicalDevice = nullptr;
     Instance* pInstance = nullptr;
-    bool enableCapture = true;
+    bool enableCapture = false;
 };
 
 class Device : public ResourceHandle<::vk::Device, DeviceCreateInfo>

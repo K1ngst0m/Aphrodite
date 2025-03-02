@@ -124,6 +124,7 @@ Renderer::Renderer(const RenderConfig& config)
                     .tessellationSupported      = true,
                     .samplerAnisotropy = true,
                     .rayTracing                 = false,
+                    .bindless = true,
                 },
             .pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx),
             .pInstance       = m_pInstance,

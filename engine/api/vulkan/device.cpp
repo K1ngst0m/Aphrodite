@@ -103,6 +103,17 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             auto& maintence5 = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance5FeaturesKHR>();
             maintence5.maintenance5 = VK_TRUE;
         }
+
+        if (feature.bindless)
+        {
+            auto& descriptorIndexingFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
+            descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = ::vk::True;
+            descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = ::vk::True;
+            descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = ::vk::True;
+            descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = ::vk::True;
+            descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = ::vk::True;
+            descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = ::vk::True;
+        }
     }
 
     // verify extension support
@@ -150,7 +161,12 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
         if (requiredFeature.samplerAnisotropy && !supportFeature.samplerAnisotropy)
         {
-            CM_LOG_ERR("some gpu feature not supported!");
+            CM_LOG_ERR("Sampler anisotropy feature not supported!");
+            APH_ASSERT(false);
+        }
+        if (requiredFeature.bindless && !supportFeature.bindless)
+        {
+            CM_LOG_ERR("Bindless feature not supported!");
             APH_ASSERT(false);
         }
     }
@@ -170,12 +186,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
         auto& maintenance4Features = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
         maintenance4Features.maintenance4 = VK_TRUE;
-
-        auto& descriptorIndexingFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
-        descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-        descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-        descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
         // Request Inline Uniform Block Features EXT
         auto& inlineUniformBlockFeature = gpu->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();

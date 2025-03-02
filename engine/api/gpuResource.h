@@ -289,6 +289,7 @@ struct GPUFeature
     bool tessellationSupported : 1 = false;
     bool samplerAnisotropy : 1 = false;
     bool rayTracing : 1 = false;
+    bool bindless: 1 = false;
 };
 
 struct GPUProperties

@@ -6,7 +6,7 @@ namespace aph::vk
 PhysicalDevice::PhysicalDevice(HandleType handle)
     : ResourceHandle(handle)
 {
-    const auto& features2 = m_handle.getFeatures2();
+    const auto& features2 = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, ::vk::PhysicalDeviceVulkan12Features>();
     const auto& properties2 =
         m_handle.getProperties2<::vk::PhysicalDeviceProperties2, ::vk::PhysicalDeviceDriverPropertiesKHR,
                                 ::vk::PhysicalDeviceSubgroupProperties>();
@@ -27,7 +27,8 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
     {
         auto* gpuProperties2 = &properties2.get<::vk::PhysicalDeviceProperties2>();
         auto* settings = &m_properties;
-        auto* gpuFeatures = &features2;
+        auto* gpuFeatures = &features2.get<::vk::PhysicalDeviceFeatures2>();
+        auto* gpuFeatures12 = &features2.get<::vk::PhysicalDeviceVulkan12Features>();
 
         {
             const auto& limits = gpuProperties2->properties.limits;
@@ -67,11 +68,14 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
 
             settings->feature.meshShading = false;
             settings->feature.rayTracing = false;
+            settings->feature.bindless = false;
 
             settings->feature.meshShading = checkExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME);
             settings->feature.rayTracing = checkExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
                                                                    VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+            // TODO
+            settings->feature.bindless = gpuFeatures12->descriptorIndexing;
         }
 
         {
