@@ -4,26 +4,26 @@
 namespace aph::vk
 {
 
-DescriptorSetLayout::DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
-                                         const SmallVector<::vk::DescriptorPoolSize>& poolSizes,
-                                         const SmallVector<::vk::DescriptorSetLayoutBinding>& bindings)
-    : ResourceHandle(handle, createInfo)
+DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createInfo, HandleType handle,
+                                         SmallVector<::vk::DescriptorPoolSize> poolSizes,
+                                         SmallVector<::vk::DescriptorSetLayoutBinding> bindings)
+    : ResourceHandle(handle, std::move(createInfo))
     , m_pDevice(device)
-    , m_poolSizes(poolSizes)
+    , m_bindings(std::move(bindings))
+    , m_poolSizes(std::move(poolSizes))
+
 {
-    // fill bindings and count of types
-    for (std::size_t idx = 0; idx < bindings.size(); idx++)
+    for (const auto& binding : m_bindings)
     {
-        auto& binding = bindings[idx];
-        m_bindings.push_back(binding);
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
+        m_shaderStage |= binding.stageFlags;
     }
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
 {
     // Destroy all allocated descriptor sets.
-    for (auto [set, id] : m_allocatedDescriptorSets)
+    for (auto [set, id] : m_descriptorSetCounts)
     {
         m_pDevice->getHandle().freeDescriptorSets(m_pools[id], { set->getHandle() });
     }
@@ -37,8 +37,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
 
 DescriptorSet* DescriptorSetLayout::allocateSet()
 {
-    // Safe guard access to internal resources across threads.
-    m_lock.lock();
+    std::lock_guard<std::mutex> lock{ m_mtx };
 
     // Find the next pool to allocate from.
     while (true)
@@ -49,16 +48,19 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             // Create the Vulkan descriptor pool.
             ::vk::DescriptorPoolCreateInfo createInfo{};
             createInfo.setPoolSizes(m_poolSizes)
-                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
-                .setMaxSets(DESCRIPTOR_POOL_MAX_NUM_SET);
+                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | ::vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind)
+                .setMaxSets(VULKAN_NUM_SETS_PER_POOL);
 
+            // inline uniform block
             ::vk::DescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo{};
-            inlineUniformBlockCreateInfo.setMaxInlineUniformBlockBindings(
-                m_descriptorTypeCounts[::vk::DescriptorType::eInlineUniformBlock]);
-
-            if (m_descriptorTypeCounts.contains(::vk::DescriptorType::eInlineUniformBlock))
             {
-                createInfo.setPNext(&inlineUniformBlockCreateInfo);
+                inlineUniformBlockCreateInfo.setMaxInlineUniformBlockBindings(
+                    m_descriptorTypeCounts[::vk::DescriptorType::eInlineUniformBlock]);
+
+                if (m_descriptorTypeCounts.contains(::vk::DescriptorType::eInlineUniformBlock))
+                {
+                    createInfo.setPNext(&inlineUniformBlockCreateInfo);
+                }
             }
 
             auto [result, handle] = m_pDevice->getHandle().createDescriptorPool(createInfo, vk_allocator());
@@ -70,7 +72,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             break;
         }
 
-        if (m_allocatedSets[m_currentAllocationPoolIndex] < DESCRIPTOR_POOL_MAX_NUM_SET)
+        if (m_allocatedSets[m_currentAllocationPoolIndex] < VULKAN_NUM_SETS_PER_POOL)
         {
             break;
         }
@@ -93,10 +95,7 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
     auto pRetHandle = new DescriptorSet(this, handles[0]);
     // Store an internal mapping between the descriptor set handle and it's parent pool.
     // This is used when FreeDescriptorSet is called downstream.
-    m_allocatedDescriptorSets.emplace(pRetHandle, m_currentAllocationPoolIndex);
-
-    // Unlock access to internal resources.
-    m_lock.unlock();
+    m_descriptorSetCounts.emplace(pRetHandle, m_currentAllocationPoolIndex);
 
     // Return descriptor set handle.
     return pRetHandle;
@@ -104,12 +103,11 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
 
 Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
 {
-    // Safe guard access to internal resources across threads.
-    m_lock.lock();
+    std::lock_guard<std::mutex> lock{ m_mtx };
 
     // Get the index of the descriptor pool the descriptor set was allocated from.
-    auto it = m_allocatedDescriptorSets.find(pSet);
-    if (it == m_allocatedDescriptorSets.end())
+    auto it = m_descriptorSetCounts.find(pSet);
+    if (it == m_descriptorSetCounts.end())
     {
         return { Result::RuntimeError, "descriptor set free error." };
     }
@@ -119,16 +117,13 @@ Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
     m_pDevice->getHandle().freeDescriptorSets(m_pools[poolIndex], { pSet->getHandle() });
 
     // Remove descriptor set from allocatedDescriptorSets map.
-    m_allocatedDescriptorSets.erase(pSet);
+    m_descriptorSetCounts.erase(pSet);
 
     // Decrement the number of allocated descriptor sets for the pool.
     --m_allocatedSets[poolIndex];
 
     // Set the next allocation to use this pool index.
     m_currentAllocationPoolIndex = poolIndex;
-
-    // Unlock access to internal resources.
-    m_lock.unlock();
 
     // Return success.
     return Result::Success;

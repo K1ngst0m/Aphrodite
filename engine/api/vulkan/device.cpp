@@ -310,7 +310,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
 
     ::vk::DescriptorSetLayoutCreateInfo vkCreateInfo = {};
-    vkCreateInfo.setBindings(vkBindings);
+    vkCreateInfo.setBindings(vkBindings).setFlags(::vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool);
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
     VK_VR(result);

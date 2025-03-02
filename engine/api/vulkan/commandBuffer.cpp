@@ -720,15 +720,11 @@ void CommandBuffer::flushDescriptorSet()
                                        m_commandState.resourceBindings.sets[setIdx] = set;
                                    });
                                m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
-                           });
 
-    aph::utils::forEachBit(m_commandState.resourceBindings.setBit,
-                           [this](uint32_t setIndex)
-                           {
-                               const auto& set = m_commandState.resourceBindings.sets[setIndex];
+                               const auto& set = m_commandState.resourceBindings.sets[setIdx];
                                const auto& pProgram = m_commandState.pProgram;
                                getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()),
-                                                              pProgram->getPipelineLayout(), setIndex,
+                                                              pProgram->getPipelineLayout(), setIdx,
                                                               { set->getHandle() }, {});
                            });
 

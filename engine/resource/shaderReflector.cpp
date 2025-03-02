@@ -135,6 +135,7 @@ void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType
                 else
                 {
                     resourceLayout.bindlessSetMask |= 1u << set;
+                    resourceLayout.layouts[set].fpMask.reset();
                 }
 
                 size = ShaderLayout::UNSIZED_ARRAY;
@@ -559,7 +560,6 @@ void ShaderReflector::reflect()
 
         m_combinedLayout.specConstantMask[stage] = shaderLayout.specConstantMask;
         m_combinedLayout.combinedSpecConstantMask |= shaderLayout.specConstantMask;
-
         m_combinedLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
     }
 

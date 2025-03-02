@@ -42,6 +42,7 @@ enum class ShaderStage : uint8_t
     TS = 7,
     MS = 8,
 };
+using ShaderStageFlags = Flags<ShaderStage>;
 
 enum class ResourceState : uint32_t
 {
@@ -462,7 +463,6 @@ struct DepthState
 {
     bool enable = false;
     bool write = false;
-    bool stencil = false;
     CompareOp compareOp = CompareOp::Always;
 };
 

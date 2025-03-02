@@ -73,33 +73,38 @@ struct DescriptorSetLayoutCreateInfo
 class DescriptorSetLayout : public ResourceHandle<::vk::DescriptorSetLayout, DescriptorSetLayoutCreateInfo>
 {
     friend class ObjectPool<DescriptorSetLayout>;
-    enum
-    {
-        DESCRIPTOR_POOL_MAX_NUM_SET = 50,
-    };
 
 public:
     DescriptorSet* allocateSet();
     Result freeSet(DescriptorSet* pSet);
     Result updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* pSet);
+    ::vk::ShaderStageFlags getShaderStages() const
+    {
+        return m_shaderStage;
+    }
+    ::vk::DescriptorType getDescriptorBindingType(uint32_t binding) const
+    {
+        return m_bindings[binding].descriptorType;
+    }
 
 private:
-    DescriptorSetLayout(Device* device, const CreateInfoType& createInfo, HandleType handle,
-                        const SmallVector<::vk::DescriptorPoolSize>& poolSizes,
-                        const SmallVector<::vk::DescriptorSetLayoutBinding>& bindings);
+    DescriptorSetLayout(Device* device, CreateInfoType createInfo, HandleType handle,
+                        SmallVector<::vk::DescriptorPoolSize> poolSizes,
+                        SmallVector<::vk::DescriptorSetLayoutBinding> bindings);
     ~DescriptorSetLayout();
 
     Device* m_pDevice = {};
-    std::vector<::vk::DescriptorSetLayoutBinding> m_bindings = {};
 
 private:
+    SmallVector<::vk::DescriptorSetLayoutBinding> m_bindings = {};
     SmallVector<::vk::DescriptorPoolSize> m_poolSizes = {};
     SmallVector<::vk::DescriptorPool> m_pools = {};
     SmallVector<uint32_t> m_allocatedSets = {};
     uint32_t m_currentAllocationPoolIndex = {};
-    HashMap<DescriptorSet*, uint32_t> m_allocatedDescriptorSets = {};
+    HashMap<DescriptorSet*, uint32_t> m_descriptorSetCounts = {};
     HashMap<::vk::DescriptorType, uint32_t> m_descriptorTypeCounts = {};
-    std::mutex m_lock = {};
+    ::vk::ShaderStageFlags m_shaderStage = {};
+    std::mutex m_mtx = {};
 };
 
 class DescriptorSet : public ResourceHandle<::vk::DescriptorSet>
@@ -115,6 +120,7 @@ public:
     {
         return m_pLayout->updateSet(updateInfo, this);
     }
+
 private:
     DescriptorSetLayout* m_pLayout = {};
 };

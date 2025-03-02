@@ -79,7 +79,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         app_info.setPApplicationName(createInfo.appName.c_str())
             .setPEngineName("Aphrodite")
             .setEngineVersion(VK_MAKE_VERSION(1, 0, 0))
-            .setApiVersion(VK_API_VERSION_1_3);
+            .setApiVersion(VK_API_VERSION_1_4);
 
         ::vk::InstanceCreateInfo instance_create_info{};
         instance_create_info.setPApplicationInfo(&app_info)

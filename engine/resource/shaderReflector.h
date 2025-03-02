@@ -19,12 +19,8 @@ struct ShaderLayout
     std::bitset<32> immutableSamplerMask = {};
 
     uint8_t arraySize[VULKAN_NUM_BINDINGS] = {};
-    uint32_t padding = 0;
 
-    enum
-    {
-        UNSIZED_ARRAY = 0xff
-    };
+    static constexpr uint32_t UNSIZED_ARRAY = 0xff;
 };
 
 struct VertexAttribState
