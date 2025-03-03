@@ -67,6 +67,7 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::si
     auto& vertexState = m_commandState.graphics.vertex;
     vertexState.buffers[binding] = pBuffer->getHandle();
     vertexState.offsets[binding] = offset;
+    setDirty(DirtyFlagBits::vertexState);
     vertexState.dirty.set(binding);
 }
 
@@ -76,7 +77,7 @@ void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexT
     indexState.buffer = pBuffer->getHandle();
     indexState.offset = offset;
     indexState.indexType = indexType;
-    indexState.dirty = true;
+    setDirty(DirtyFlagBits::indexState);
 }
 
 void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
@@ -303,17 +304,21 @@ void CommandBuffer::flushComputeCommand()
     SmallVector<::vk::ShaderEXT> shaderObjs = { pProgram->getShaderObject(ShaderStage::CS) };
     getHandle().bindShadersEXT(stages, shaderObjs);
     flushDescriptorSet();
+    m_commandState.dirty = {};
 }
 
 void CommandBuffer::flushGraphicsCommand()
 {
-    initDynamicGraphicsState();
+    if (m_commandState.dirty & DirtyFlagBits::dynamicState)
+    {
+        flushDynamicGraphicsState();
+    }
 
     // shader object binding
     {
         const auto& vertexInput = m_commandState.graphics.vertexInput;
-        const auto& vertexState = m_commandState.graphics.vertex;
-        const auto& indexState = m_commandState.graphics.index;
+        auto& vertexState = m_commandState.graphics.vertex;
+        auto& indexState = m_commandState.graphics.index;
         const auto& pProgram = m_commandState.pProgram;
         APH_ASSERT(pProgram);
 
@@ -348,6 +353,7 @@ void CommandBuffer::flushGraphicsCommand()
             SmallVector<::vk::VertexInputBindingDescription2EXT> vkBindings;
             SmallVector<::vk::VertexInputAttributeDescription2EXT> vkAttributes;
 
+            if (m_commandState.dirty & DirtyFlagBits::vertexInput)
             {
                 const VertexInput& vstate = vertexInput.value_or(pProgram->getVertexInput());
 
@@ -380,15 +386,22 @@ void CommandBuffer::flushGraphicsCommand()
                 getHandle().setPrimitiveRestartEnable(::vk::False);
             }
 
-            aph::utils::forEachBitRange(vertexState.dirty,
-                                        [&](uint32_t binding, uint32_t bindingCount)
-                                        {
-                                            getHandle().bindVertexBuffers(binding, bindingCount,
-                                                                          vertexState.buffers + binding,
-                                                                          vertexState.offsets + binding);
-                                        });
+            if (m_commandState.dirty & DirtyFlagBits::vertexState)
+            {
+                aph::utils::forEachBitRange(vertexState.dirty,
+                                            [&](uint32_t binding, uint32_t bindingCount)
+                                            {
+                                                getHandle().bindVertexBuffers(binding, bindingCount,
+                                                                            vertexState.buffers + binding,
+                                                                            vertexState.offsets + binding);
+                                            });
+                vertexState.dirty.reset();
+            }
 
-            getHandle().bindIndexBuffer(indexState.buffer, indexState.offset, utils::VkCast(indexState.indexType));
+            if (m_commandState.dirty & DirtyFlagBits::indexState)
+            {
+                getHandle().bindIndexBuffer(indexState.buffer, indexState.offset, utils::VkCast(indexState.indexType));
+            }
         }
         else if (pProgram->getPipelineType() == PipelineType::Mesh)
         {
@@ -406,6 +419,7 @@ void CommandBuffer::flushGraphicsCommand()
     }
 
     flushDescriptorSet();
+    m_commandState.dirty = {};
 }
 
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)
@@ -615,6 +629,7 @@ void CommandBuffer::updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_
 void CommandBuffer::setProgram(ShaderProgram* pProgram)
 {
     m_commandState.pProgram = pProgram;
+    setDirty(DirtyFlagBits::vertexInput);
 }
 void CommandBuffer::setVertexInput(VertexInput inputInfo)
 {
@@ -630,12 +645,20 @@ void CommandBuffer::draw(DispatchArguments args)
     getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
 }
 
-void CommandBuffer::initDynamicGraphicsState()
+void CommandBuffer::flushDynamicGraphicsState()
 {
+    getHandle().setCullModeEXT(utils::VkCast(m_commandState.graphics.cullMode));
+    // Set front face, cull mode is set in build_command_buffers.
+    getHandle().setFrontFaceEXT(utils::VkCast(m_commandState.graphics.frontFace));
+
+    bool wireframeEnabled = m_commandState.graphics.polygonMode == PolygonMode::Line;
+    getHandle().setPolygonModeEXT(wireframeEnabled ? ::vk::PolygonMode::eLine : ::vk::PolygonMode::eFill);
+    if (wireframeEnabled)
     {
-        getHandle().setCullModeEXT(utils::VkCast(m_commandState.graphics.cullMode));
-        getHandle().setAlphaToOneEnableEXT(::vk::False);
+        getHandle().setLineWidth(1.0f);
     }
+
+    getHandle().setAlphaToOneEnableEXT(::vk::False);
 
     {
         ::vk::ColorBlendEquationEXT colorBlendEquationEXT{};
@@ -654,15 +677,6 @@ void CommandBuffer::initDynamicGraphicsState()
     // Do not use alpha to coverage or alpha to one because not using MSAA
     getHandle().setAlphaToCoverageEnableEXT(::vk::False);
 
-    bool wireframeEnabled = m_commandState.graphics.polygonMode == PolygonMode::Line;
-    getHandle().setPolygonModeEXT(wireframeEnabled ? ::vk::PolygonMode::eLine : ::vk::PolygonMode::eFill);
-    if (wireframeEnabled)
-    {
-        getHandle().setLineWidth(1.0f);
-    }
-
-    // Set front face, cull mode is set in build_command_buffers.
-    getHandle().setFrontFaceEXT(::vk::FrontFace::eCounterClockwise);
 
     // Set depth state, the depth write. Don't enable depth bounds, bias, or stencil test.
     {
@@ -728,13 +742,12 @@ void CommandBuffer::flushDescriptorSet()
                                                               { set->getHandle() }, {});
                            });
 
-    if (m_commandState.resourceBindings.dirtyPushConstant)
+    if (m_commandState.dirty & DirtyFlagBits::pushConstant)
     {
         auto& range = m_commandState.pProgram->getPushConstantRange();
         getHandle().pushConstants(m_commandState.pProgram->getPipelineLayout(), range.stageFlags, 0,
                                   sizeof(m_commandState.resourceBindings.pushConstantData),
                                   m_commandState.resourceBindings.pushConstantData);
-        m_commandState.resourceBindings.dirtyPushConstant = false;
     }
 }
 
@@ -743,6 +756,26 @@ void CommandBuffer::pushConstant(const void* pData, uint32_t offset, uint32_t si
     auto& resBinding = m_commandState.resourceBindings;
     APH_ASSERT(offset + size <= VULKAN_PUSH_CONSTANT_SIZE);
     std::memcpy(resBinding.pushConstantData + offset, pData, size);
-    resBinding.dirtyPushConstant = true;
+    setDirty(DirtyFlagBits::pushConstant);
+}
+
+void CommandBuffer::setCullMode(const CullMode mode)
+{
+    m_commandState.graphics.cullMode = mode;
+    setDirty(DirtyFlagBits::dynamicState);
+}
+void CommandBuffer::setFrontFaceWinding(const WindingMode mode)
+{
+    m_commandState.graphics.frontFace = mode;
+    setDirty(DirtyFlagBits::dynamicState);
+}
+void CommandBuffer::setPolygonMode(const PolygonMode mode)
+{
+    m_commandState.graphics.polygonMode = mode;
+    setDirty(DirtyFlagBits::dynamicState);
+}
+void CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits)
+{
+    m_commandState.dirty |= dirtyFlagBits;
 }
 } // namespace aph::vk

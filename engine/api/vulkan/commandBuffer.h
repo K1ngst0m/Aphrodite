@@ -82,6 +82,16 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
         Invalid,
     };
 
+    enum class DirtyFlagBits
+    {
+        vertexInput,
+        indexState,
+        vertexState,
+        dynamicState,
+        pushConstant,
+    };
+    using DirtyFlags = Flags<DirtyFlagBits>;
+
     struct CommandState
     {
         struct Graphics
@@ -94,14 +104,13 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
                 ::vk::Buffer buffer;
                 std::size_t offset;
                 IndexType indexType;
-                bool dirty = false;
             } index;
 
             struct VertexState
             {
                 ::vk::Buffer buffers[VULKAN_NUM_VERTEX_BUFFERS] = {};
                 std::size_t offsets[VULKAN_NUM_VERTEX_BUFFERS] = {};
-                std::bitset<32> dirty = 0;
+                std::bitset<32> dirty = {};
             } vertex;
 
             CullMode cullMode = CullMode::None;
@@ -123,11 +132,11 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             DescriptorUpdateInfo bindings[VULKAN_NUM_DESCRIPTOR_SETS][VULKAN_NUM_BINDINGS] = {};
             uint8_t pushConstantData[VULKAN_PUSH_CONSTANT_SIZE] = {};
             DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
-            // TODO
-            bool dirtyPushConstant = false;
         } resourceBindings = {};
 
         ShaderProgram* pProgram = {};
+
+        DirtyFlags dirty = DirtyFlagBits::dynamicState;
     };
 
 public:
@@ -147,12 +156,13 @@ public:
     void setResource(std::vector<Sampler*> samplers, uint32_t set, uint32_t binding);
     void setResource(std::vector<Image*> images, uint32_t set, uint32_t binding);
     void setResource(std::vector<Buffer*> buffers, uint32_t set, uint32_t binding);
-public:
     void pushConstant(const void* pData, uint32_t offset, uint32_t size);
-
     void setProgram(ShaderProgram* pProgram);
 
 public:
+    void setCullMode(const CullMode mode);
+    void setFrontFaceWinding(const WindingMode mode);
+    void setPolygonMode(const PolygonMode mode);
     void setDepthState(DepthState state);
 
     // gemometry pipeline only
@@ -194,11 +204,13 @@ public:
               const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
 
 private:
+    void setDirty(DirtyFlagBits dirtyFlagBits);
+
     void updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_t set, uint32_t binding);
     void flushComputeCommand();
     void flushGraphicsCommand();
     void flushDescriptorSet();
-    void initDynamicGraphicsState();
+    void flushDynamicGraphicsState();
     CommandState m_commandState = {};
 
 private:
