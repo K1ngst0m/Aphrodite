@@ -313,7 +313,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
 
     auto bindlessFlags =
         ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound
-        | ::vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        // | ::vk::DescriptorBindingFlagBits::eVariableDescriptorCount
         ;
 
     SmallVector<::vk::DescriptorBindingFlags> flags(vkBindings.size(),
@@ -695,7 +695,7 @@ Result Device::waitIdle()
     return utils::getResult(getHandle().waitIdle());
 }
 
-Result Device::waitForFence(const std::vector<Fence*>& fences, bool waitAll, uint32_t timeout)
+Result Device::waitForFence(ArrayProxy<Fence*> fences, bool waitAll, uint32_t timeout)
 {
     APH_PROFILER_SCOPE();
     SmallVector<::vk::Fence> vkFences(fences.size());
@@ -885,8 +885,8 @@ Result Device::releaseFence(Fence* pFence)
     return Result::Success;
 }
 
-void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const std::vector<Semaphore*>& waitSems,
-                            const std::vector<Semaphore*>& signalSems, Fence* pFence)
+void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, std::vector<Semaphore*> waitSems,
+                            std::vector<Semaphore*> signalSems, Fence* pFence)
 {
     APH_PROFILER_SCOPE();
 
@@ -900,7 +900,9 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, const 
     func(cmd);
     APH_VR(cmd->end());
 
-    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd }, .waitSemaphores = waitSems, .signalSemaphores = signalSems };
+    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd },
+                                .waitSemaphores = std::move(waitSems),
+                                .signalSemaphores = std::move(signalSems) };
     if (!pFence)
     {
         auto fence = acquireFence(false);

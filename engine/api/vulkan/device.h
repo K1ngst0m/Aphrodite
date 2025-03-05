@@ -61,7 +61,7 @@ public:
 
 public:
     Result waitIdle();
-    Result waitForFence(const std::vector<Fence*>& fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
+    Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
     Semaphore* acquireSemaphore();
     Fence* acquireFence(bool isSignaled);
@@ -69,8 +69,8 @@ public:
     Result releaseFence(Fence* pFence);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeCommand(Queue* queue, const CmdRecordCallBack&& func, const std::vector<Semaphore*>& waitSems = {},
-                        const std::vector<Semaphore*>& signalSems = {}, Fence* pFence = nullptr);
+    void executeCommand(Queue* queue, const CmdRecordCallBack&& func, std::vector<Semaphore*> waitSems = {},
+                        std::vector<Semaphore*> signalSems = {}, Fence* pFence = nullptr);
 
 public:
     Result flushMemory(Image* pImage, Range range = {});

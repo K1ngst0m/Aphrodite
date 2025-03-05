@@ -88,7 +88,7 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
 }
 
-void CommandBuffer::copy(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions)
+void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferImageCopy> regions)
 {
     if (regions.empty())
     {
@@ -230,10 +230,10 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
                             args.firstInstance);
 }
 
-void CommandBuffer::beginRendering(const std::vector<Image*>& colors, Image* depth)
+void CommandBuffer::beginRendering(ArrayProxy<Image*> colors, Image* depth)
 {
     RenderingInfo renderingInfo;
-    std::vector<AttachmentInfo>& colorAttachments = renderingInfo.colors;
+    auto& colorAttachments = renderingInfo.colors;
     auto& depthAttachment = renderingInfo.depth;
     colorAttachments.reserve(colors.size());
     for (auto color : colors)
@@ -440,16 +440,15 @@ void CommandBuffer::endDebugLabel()
     getHandle().endDebugUtilsLabelEXT();
 #endif
 }
-void CommandBuffer::insertBarrier(const std::vector<ImageBarrier>& pImageBarriers)
+void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
 {
     insertBarrier({}, pImageBarriers);
 }
-void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers)
+void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
 {
     insertBarrier(pBufferBarriers, {});
 }
-void CommandBuffer::insertBarrier(const std::vector<BufferBarrier>& bufferBarriers,
-                                  const std::vector<ImageBarrier>& imageBarriers)
+void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
 {
     SmallVector<::vk::ImageMemoryBarrier> vkImageBarriers;
     SmallVector<::vk::BufferMemoryBarrier> vkBufferBarriers;
@@ -589,27 +588,27 @@ void CommandBuffer::update(Buffer* pBuffer, Range range, const void* data)
 {
     getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
 }
-void CommandBuffer::setResource(std::vector<Sampler*> samplers, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding)
 {
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .samplers = std::move(samplers),
+        .samplers = { samplers.begin(), samplers.end() },
     };
     updateDescriptors(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(std::vector<Image*> images, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding)
 {
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .images = std::move(images),
+        .images = { images.begin(), images.end() },
     };
     updateDescriptors(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::setResource(std::vector<Buffer*> buffers, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding)
 {
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
-        .buffers = std::move(buffers),
+        .buffers = { buffers.begin(), buffers.end() },
     };
     updateDescriptors(std::move(newUpdate), set, binding);
 }
@@ -758,11 +757,11 @@ void CommandBuffer::flushDescriptorSet()
     }
 }
 
-void CommandBuffer::pushConstant(const void* pData, uint32_t offset, uint32_t size)
+void CommandBuffer::pushConstant(const void* pData, Range range)
 {
     auto& resBinding = m_commandState.resourceBindings;
-    APH_ASSERT(offset + size <= VULKAN_PUSH_CONSTANT_SIZE);
-    std::memcpy(resBinding.pushConstantData + offset, pData, size);
+    APH_ASSERT(range.offset + range.size <= VULKAN_PUSH_CONSTANT_SIZE);
+    std::memcpy(resBinding.pushConstantData + range.offset, pData, range.size);
     setDirty(DirtyFlagBits::pushConstant);
 }
 

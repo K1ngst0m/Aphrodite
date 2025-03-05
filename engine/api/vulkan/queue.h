@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/arrayProxy.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -34,7 +35,7 @@ public:
         return m_type;
     }
     Result waitIdle();
-    Result submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence = nullptr);
+    Result submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence = nullptr);
     Result present(const ::vk::PresentInfoKHR& presentInfo);
 
 private:

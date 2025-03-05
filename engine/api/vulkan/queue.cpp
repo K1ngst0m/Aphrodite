@@ -13,7 +13,7 @@ Queue::Queue(HandleType handle, uint32_t queueFamilyIndex, uint32_t index, Queue
 {
 }
 
-Result Queue::submit(const std::vector<QueueSubmitInfo>& submitInfos, Fence* pFence)
+Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
 {
     SmallVector<SmallVector<::vk::CommandBuffer>> vkCmds2D;
     SmallVector<SmallVector<::vk::PipelineStageFlags>> vkWaitStages2D;

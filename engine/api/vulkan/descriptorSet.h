@@ -2,6 +2,7 @@
 
 #include "api/vulkan/shader.h"
 #include "common/hash.h"
+#include "common/arrayProxy.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -19,9 +20,9 @@ struct DescriptorUpdateInfo
     uint32_t arrayOffset = {};
     Range range = {};
 
-    std::vector<Image*> images;
-    std::vector<Sampler*> samplers;
-    std::vector<Buffer*> buffers;
+    SmallVector<Image*> images;
+    SmallVector<Sampler*> samplers;
+    SmallVector<Buffer*> buffers;
 
     bool operator==(const DescriptorUpdateInfo& other) const noexcept
     {

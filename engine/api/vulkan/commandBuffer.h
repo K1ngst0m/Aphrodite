@@ -2,6 +2,7 @@
 
 #include "api/vulkan/descriptorSet.h"
 #include "api/vulkan/shader.h"
+#include "common/arrayProxy.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -28,7 +29,7 @@ struct AttachmentInfo
 
 struct RenderingInfo
 {
-    std::vector<AttachmentInfo> colors = {};
+    SmallVector<AttachmentInfo> colors = {};
     AttachmentInfo depth = {};
     std::optional<::vk::Rect2D> renderArea = {};
 };
@@ -120,7 +121,7 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             WindingMode frontFace = WindingMode::CCW;
             PolygonMode polygonMode = PolygonMode::Fill;
 
-            std::vector<AttachmentInfo> color = {};
+            SmallVector<AttachmentInfo> color = {};
             AttachmentInfo depth = {};
 
             DepthState depthState = {};
@@ -154,14 +155,14 @@ public:
     Result reset();
 
 public:
-    void beginRendering(const std::vector<Image*>& colors, Image* depth = nullptr);
+    void beginRendering(ArrayProxy<Image*> colors, Image* depth = nullptr);
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
-    void setResource(std::vector<Sampler*> samplers, uint32_t set, uint32_t binding);
-    void setResource(std::vector<Image*> images, uint32_t set, uint32_t binding);
-    void setResource(std::vector<Buffer*> buffers, uint32_t set, uint32_t binding);
-    void pushConstant(const void* pData, uint32_t offset, uint32_t size);
+    void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
+    void setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding);
+    void setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding);
+    void pushConstant(const void* pData, Range range);
     void setProgram(ShaderProgram* pProgram);
 
 public:
@@ -193,10 +194,9 @@ public:
     void writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
-    void insertBarrier(const std::vector<ImageBarrier>& pImageBarriers);
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers);
-    void insertBarrier(const std::vector<BufferBarrier>& pBufferBarriers,
-                       const std::vector<ImageBarrier>& pImageBarriers);
+    void insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers);
+    void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers);
+    void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers, ArrayProxy<ImageBarrier> pImageBarriers);
     void transitionImageLayout(Image* pImage, ResourceState newState);
 
 public:
@@ -204,7 +204,7 @@ public:
     void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);
     void copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
               const ImageCopyInfo& dstCopyInfo = {});
-    void copy(Buffer* buffer, Image* image, const std::vector<::vk::BufferImageCopy>& regions = {});
+    void copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferImageCopy> regions = {});
     void blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
               const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
 
