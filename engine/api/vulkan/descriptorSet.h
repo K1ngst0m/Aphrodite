@@ -18,22 +18,12 @@ struct DescriptorUpdateInfo
 {
     uint32_t binding = {};
     uint32_t arrayOffset = {};
-    Range range = {};
 
     SmallVector<Image*> images;
     SmallVector<Sampler*> samplers;
     SmallVector<Buffer*> buffers;
 
-    bool operator==(const DescriptorUpdateInfo& other) const noexcept
-    {
-        if (binding != other.binding || arrayOffset != other.arrayOffset || range.offset != other.range.offset ||
-            range.size != other.range.size)
-        {
-            return false;
-        }
-
-        return images == other.images && samplers == other.samplers && buffers == other.buffers;
-    }
+    bool operator==(const DescriptorUpdateInfo&) const = default;
 };
 
 struct DescriptorSetLayoutCreateInfo

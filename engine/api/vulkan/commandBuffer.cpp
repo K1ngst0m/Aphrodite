@@ -594,7 +594,7 @@ void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uin
         .binding = binding,
         .samplers = { samplers.begin(), samplers.end() },
     };
-    updateDescriptors(std::move(newUpdate), set, binding);
+    setResource(std::move(newUpdate), set, binding);
 }
 void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding)
 {
@@ -602,7 +602,7 @@ void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_
         .binding = binding,
         .images = { images.begin(), images.end() },
     };
-    updateDescriptors(std::move(newUpdate), set, binding);
+    setResource(std::move(newUpdate), set, binding);
 }
 void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding)
 {
@@ -610,9 +610,9 @@ void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint3
         .binding = binding,
         .buffers = { buffers.begin(), buffers.end() },
     };
-    updateDescriptors(std::move(newUpdate), set, binding);
+    setResource(std::move(newUpdate), set, binding);
 }
-void CommandBuffer::updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_t set, uint32_t binding)
+void CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding)
 {
     auto& resBindings = m_commandState.resourceBindings;
     if (resBindings.bindings[set][binding] != updateInfo)

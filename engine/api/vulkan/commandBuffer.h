@@ -159,6 +159,7 @@ public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
+    void setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding);
@@ -211,7 +212,6 @@ public:
 private:
     void setDirty(DirtyFlagBits dirtyFlagBits);
 
-    void updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_t set, uint32_t binding);
     void flushComputeCommand();
     void flushGraphicsCommand();
     void flushDescriptorSet();

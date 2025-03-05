@@ -50,7 +50,6 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer, ::v
 
         DescriptorUpdateInfo updateInfo{
             .arrayOffset = id,
-            .range = { 0, ::vk::WholeSize },
             .buffers = { pBuffer },
         };
         switch (usage)
