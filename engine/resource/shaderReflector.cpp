@@ -125,16 +125,11 @@ void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType
             {
                 if (binding != 0)
                 {
-                    VK_LOG_ERR("Bindless textures can only be used with binding = 0 in a set.");
+                    VK_LOG_ERR("Bindless resource can only be used with binding = 0 in a set.");
                 }
 
-                if (type.basetype != spirv_cross::SPIRType::Image || type.image.dim == spv::DimBuffer)
                 {
-                    VK_LOG_ERR("Can only use bindless for sampled images.");
-                }
-                else
-                {
-                    resourceLayout.bindlessSetMask |= 1u << set;
+                    resourceLayout.bindlessSetMask.set(set);
                     resourceLayout.layouts[set].fpMask.reset();
                 }
 
@@ -322,7 +317,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
     for (const auto& res : resources.stage_inputs)
     {
         uint32_t location = compiler.get_decoration(res.id, spv::DecorationLocation);
-        layout.inputMask |= 1u << location;
+        layout.inputMask.set(location);
         APH_ASSERT(layout.inputMask.size() > location);
         const spirv_cross::SPIRType& type = compiler.get_type(res.type_id);
 
@@ -348,7 +343,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
     for (const auto& res : resources.stage_outputs)
     {
         auto location = compiler.get_decoration(res.id, spv::DecorationLocation);
-        layout.outputMask |= 1u << location;
+        layout.outputMask.set(location);
     }
     for (const auto& res : resources.uniform_buffers)
     {
@@ -357,7 +352,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.layouts[set].uniformBufferMask |= 1u << binding;
+        layout.layouts[set].uniformBufferMask.set(binding);
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for (const auto& res : resources.storage_buffers)
@@ -367,7 +362,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.layouts[set].storageBufferMask |= 1u << binding;
+        layout.layouts[set].storageBufferMask.set(binding);
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
     for (const auto& res : resources.storage_images)
@@ -380,16 +375,16 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         auto& type = compiler.get_type(res.type_id);
         if (type.image.dim == spv::DimBuffer)
         {
-            layout.layouts[set].storageTexelBufferMask |= 1u << binding;
+            layout.layouts[set].storageTexelBufferMask.set(binding);
         }
         else
         {
-            layout.layouts[set].storageImageMask |= 1u << binding;
+            layout.layouts[set].storageImageMask.set(binding);
         }
 
         if (compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.layouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask.set(binding);
         }
 
         updateArrayInfo(layout, type, set, binding);
@@ -404,15 +399,15 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         auto& type = compiler.get_type(res.type_id);
         if (compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.layouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask.set(binding);
         }
         if (type.image.dim == spv::DimBuffer)
         {
-            layout.layouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.layouts[set].sampledTexelBufferMask.set(binding);
         }
         else
         {
-            layout.layouts[set].sampledImageMask |= 1u << binding;
+            layout.layouts[set].sampledImageMask.set(binding);
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -426,15 +421,15 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         auto& type = compiler.get_type(res.type_id);
         if (compiler.get_type(type.image.type).basetype == spirv_cross::SPIRType::BaseType::Float)
         {
-            layout.layouts[set].fpMask |= 1u << binding;
+            layout.layouts[set].fpMask.set(binding);
         }
         if (type.image.dim == spv::DimBuffer)
         {
-            layout.layouts[set].sampledTexelBufferMask |= 1u << binding;
+            layout.layouts[set].sampledTexelBufferMask.set(binding);
         }
         else
         {
-            layout.layouts[set].separateImageMask |= 1u << binding;
+            layout.layouts[set].separateImageMask.set(binding);
         }
         updateArrayInfo(layout, type, set, binding);
     }
@@ -445,7 +440,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
         APH_ASSERT(set < VULKAN_NUM_DESCRIPTOR_SETS);
         APH_ASSERT(binding < VULKAN_NUM_BINDINGS);
 
-        layout.layouts[set].samplerMask |= 1u << binding;
+        layout.layouts[set].samplerMask.set(binding);
         updateArrayInfo(layout, compiler.get_type(res.type_id), set, binding);
     }
 
@@ -464,7 +459,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
             continue;
         }
 
-        layout.specConstantMask |= 1u << c.constant_id;
+        layout.specConstantMask.set(c.constant_id);
     }
 
     return layout;
@@ -576,14 +571,14 @@ void ShaderReflector::reflect()
                                        {
                                            extImmutableSamplers.samplers[set][binding] =
                                                samplerBank->samplers[set][binding];
-                                           setInfo.shaderLayout.immutableSamplerMask |= 1u << binding;
+                                           setInfo.shaderLayout.immutableSamplerMask.set(binding);
                                        }
                                    });
         }
 
         if (setInfo.stagesForSets)
         {
-            m_combinedLayout.descriptorSetMask |= 1u << set;
+            m_combinedLayout.descriptorSetMask.set(set);
 
             for (unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {

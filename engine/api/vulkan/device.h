@@ -78,7 +78,7 @@ public:
     Result invalidateMemory(Image* pImage, Range range = {});
     Result invalidateMemory(Buffer* pBuffer, Range range = {});
 
-    Result mapMemory(Buffer* pBuffer, void** ppMapped) const;
+    void* mapMemory(Buffer* pBuffer) const;
     void unMapMemory(Buffer* pBuffer) const;
 
 public:

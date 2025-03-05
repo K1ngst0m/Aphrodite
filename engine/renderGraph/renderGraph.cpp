@@ -202,7 +202,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
         std::unordered_map<RenderPass*, int> inDegree;
         std::queue<RenderPass*> zeroInDegreeQueue;
-        auto& result = m_buildData.sortedPasses;
+        auto& sortedPasses = m_buildData.sortedPasses;
         auto& graph = m_buildData.passDependencyGraph;
 
         // Initialize in-degree of each node
@@ -233,7 +233,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         {
             RenderPass* node = zeroInDegreeQueue.front();
             zeroInDegreeQueue.pop();
-            result.push_back(node);
+            sortedPasses.push_back(node);
 
             // Decrease the in-degree of adjacent nodes
             for (RenderPass* adjacent : graph[node])
@@ -247,7 +247,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
 
         // Check if there was a cycle in the graph
-        APH_ASSERT(result.size() == graph.size());
+        APH_ASSERT(sortedPasses.size() == graph.size());
     }
 
     // per pass resource build

@@ -15,6 +15,7 @@ class ImageView;
 class Sampler;
 class Queue;
 class DescriptorSet;
+class BindlessResource;
 
 struct AttachmentInfo
 {
@@ -73,6 +74,8 @@ struct ImageBarrier
 
 class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 {
+    friend class ObjectPool<CommandBuffer>;
+
     enum class RecordState
     {
         Initial,
@@ -84,11 +87,11 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
 
     enum class DirtyFlagBits
     {
-        vertexInput,
-        indexState,
-        vertexState,
-        dynamicState,
-        pushConstant,
+        vertexInput = 1 << 1,
+        indexState = 1 << 2,
+        vertexState = 1 << 3,
+        dynamicState = 1 << 4,
+        pushConstant = 1 << 5,
     };
     using DirtyFlags = Flags<DirtyFlagBits>;
 
@@ -134,12 +137,14 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
         } resourceBindings = {};
 
+        std::unique_ptr<BindlessResource> bindlessResource;
+
         ShaderProgram* pProgram = {};
 
         DirtyFlags dirty = DirtyFlagBits::dynamicState;
     };
 
-public:
+private:
     CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue);
     ~CommandBuffer();
 

@@ -309,8 +309,25 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
     const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
 
+    bool isBindless = !vkBindings.empty() && vkBindings[0].descriptorCount == VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+
+    auto bindlessFlags =
+        ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound
+        | ::vk::DescriptorBindingFlagBits::eVariableDescriptorCount
+        ;
+
+    SmallVector<::vk::DescriptorBindingFlags> flags(vkBindings.size(),
+                                                    isBindless ? bindlessFlags : ::vk::DescriptorBindingFlags{});
+
+    ::vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
+    bindingFlagsCreateInfo.setBindingFlags(flags);
+
     ::vk::DescriptorSetLayoutCreateInfo vkCreateInfo = {};
-    vkCreateInfo.setBindings(vkBindings).setFlags(::vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool);
+    vkCreateInfo.setPNext(&bindingFlagsCreateInfo).setBindings(vkBindings);
+    if (isBindless)
+    {
+        vkCreateInfo.setFlags(::vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool);
+    }
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
     VK_VR(result);
@@ -404,7 +421,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     {
         setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
 
-        unsigned numSets = 0;
+        uint32_t numSets = combineLayout.descriptorSetMask.count();
         for (unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
         {
             DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
@@ -412,10 +429,6 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
                 .poolSizes = reflector.getPoolSizes(i),
             };
             APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
-            if (combineLayout.descriptorSetMask.test(i))
-            {
-                numSets = i + 1;
-            }
         }
 
         if (auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
@@ -716,11 +729,16 @@ Result Device::invalidateMemory(Image* pImage, Range range)
     return m_resourcePool.deviceMemory->invalidate(pImage, range);
 }
 
-Result Device::mapMemory(Buffer* pBuffer, void** ppMapped) const
+void* Device::mapMemory(Buffer* pBuffer) const
 {
     APH_PROFILER_SCOPE();
-    APH_ASSERT(ppMapped);
-    return m_resourcePool.deviceMemory->map(pBuffer, ppMapped);
+    void* pMapped = {};
+    auto result = m_resourcePool.deviceMemory->map(pBuffer, &pMapped);
+    if (!result.success())
+    {
+        return nullptr;
+    }
+    return pMapped;
 }
 
 void Device::unMapMemory(Buffer* pBuffer) const
@@ -729,7 +747,8 @@ void Device::unMapMemory(Buffer* pBuffer) const
     m_resourcePool.deviceMemory->unMap(pBuffer);
 }
 
-Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool, const std::string& debugName)
+Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
+                      const std::string& debugName)
 {
     APH_PROFILER_SCOPE();
     ::vk::CommandPoolCreateInfo vkCreateInfo{};
@@ -737,7 +756,7 @@ Result Device::create(const CommandPoolCreateInfo& createInfo, CommandPool** ppC
         .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
     auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
     VK_VR(res);
-    *ppCommandPool = m_resourcePool.commandPool.allocate( this, createInfo, pool );
+    *ppCommandPool = m_resourcePool.commandPool.allocate(this, createInfo, pool);
     return Result::Success;
 }
 

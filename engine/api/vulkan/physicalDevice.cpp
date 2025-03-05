@@ -217,16 +217,12 @@ Format PhysicalDevice::findSupportedFormat(const std::vector<Format>& candidates
     return Format::Undefined;
 }
 
-size_t PhysicalDevice::padUniformBufferSize(size_t originalSize) const
+std::size_t PhysicalDevice::getUniformBufferPaddingSize(size_t originalSize) const
 {
     // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = m_handle.getProperties().limits.minUniformBufferOffsetAlignment;
     size_t alignedSize = originalSize;
-    if (minUboAlignment > 0)
-    {
-        alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
-    }
-    return alignedSize;
+    return aph::utils::paddingSize(alignedSize, minUboAlignment);
 }
 
 } // namespace aph::vk

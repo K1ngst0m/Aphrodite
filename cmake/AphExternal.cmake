@@ -1,6 +1,6 @@
 include(CPM)
 
-set(VK_SDK_VERSION 1.4.304)
+set(VK_SDK_VERSION 1.4.304.1)
 set(APH_PATCH_DIR ${CMAKE_SOURCE_DIR}/patches)
 
 CPMAddPackage(

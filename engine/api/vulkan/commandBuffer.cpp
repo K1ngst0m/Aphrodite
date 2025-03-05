@@ -1,4 +1,5 @@
 #include "commandBuffer.h"
+#include "bindless.h"
 #include "device.h"
 
 namespace aph::vk
@@ -309,10 +310,7 @@ void CommandBuffer::flushComputeCommand()
 
 void CommandBuffer::flushGraphicsCommand()
 {
-    if (m_commandState.dirty & DirtyFlagBits::dynamicState)
-    {
-        flushDynamicGraphicsState();
-    }
+    flushDynamicGraphicsState();
 
     // shader object binding
     {
@@ -392,8 +390,8 @@ void CommandBuffer::flushGraphicsCommand()
                                             [&](uint32_t binding, uint32_t bindingCount)
                                             {
                                                 getHandle().bindVertexBuffers(binding, bindingCount,
-                                                                            vertexState.buffers + binding,
-                                                                            vertexState.offsets + binding);
+                                                                              vertexState.buffers + binding,
+                                                                              vertexState.offsets + binding);
                                             });
                 vertexState.dirty.reset();
             }
@@ -629,15 +627,26 @@ void CommandBuffer::updateDescriptors(DescriptorUpdateInfo&& updateInfo, uint32_
 void CommandBuffer::setProgram(ShaderProgram* pProgram)
 {
     m_commandState.pProgram = pProgram;
-    setDirty(DirtyFlagBits::vertexInput);
+
+    if (pProgram->getPipelineType() == PipelineType::Geometry)
+    {
+        setDirty(DirtyFlagBits::vertexInput);
+    }
+
+    if (auto setLayout = pProgram->getSetLayout(0); setLayout->isBindless())
+    {
+        m_commandState.bindlessResource = std::make_unique<BindlessResource>(setLayout, m_pDevice);
+    }
 }
 void CommandBuffer::setVertexInput(VertexInput inputInfo)
 {
     m_commandState.graphics.vertexInput = std::move(inputInfo);
+    setDirty(DirtyFlagBits::vertexInput);
 }
 void CommandBuffer::setDepthState(DepthState state)
 {
     m_commandState.graphics.depthState = std::move(state);
+    setDirty(DirtyFlagBits::dynamicState);
 }
 void CommandBuffer::draw(DispatchArguments args)
 {
@@ -677,7 +686,6 @@ void CommandBuffer::flushDynamicGraphicsState()
     // Do not use alpha to coverage or alpha to one because not using MSAA
     getHandle().setAlphaToCoverageEnableEXT(::vk::False);
 
-
     // Set depth state, the depth write. Don't enable depth bounds, bias, or stencil test.
     {
         auto& state = m_commandState.graphics.depthState;
@@ -711,12 +719,12 @@ void CommandBuffer::flushDynamicGraphicsState()
 }
 void CommandBuffer::flushDescriptorSet()
 {
-    aph::utils::forEachBit(m_commandState.resourceBindings.setBit,
-                           [this](uint32_t setIdx)
-                           {
-                               APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
-                               aph::utils::forEachBit(
-                                   m_commandState.resourceBindings.setBindingBit[setIdx],
+    aph::utils::forEachBit(
+        m_commandState.resourceBindings.setBit,
+        [this](uint32_t setIdx)
+        {
+            APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
+            aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx],
                                    [this, setIdx](auto bindingIdx)
                                    {
                                        if (!(m_commandState.resourceBindings.dirtyBinding[setIdx].test(bindingIdx)))
@@ -733,14 +741,13 @@ void CommandBuffer::flushDescriptorSet()
                                            set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]));
                                        m_commandState.resourceBindings.sets[setIdx] = set;
                                    });
-                               m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
+            m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
 
-                               const auto& set = m_commandState.resourceBindings.sets[setIdx];
-                               const auto& pProgram = m_commandState.pProgram;
-                               getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()),
-                                                              pProgram->getPipelineLayout(), setIdx,
-                                                              { set->getHandle() }, {});
-                           });
+            const auto& set = m_commandState.resourceBindings.sets[setIdx];
+            const auto& pProgram = m_commandState.pProgram;
+            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
+                                           setIdx, { set->getHandle() }, {});
+        });
 
     if (m_commandState.dirty & DirtyFlagBits::pushConstant)
     {
@@ -778,4 +785,5 @@ void CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits)
 {
     m_commandState.dirty |= dirtyFlagBits;
 }
+
 } // namespace aph::vk

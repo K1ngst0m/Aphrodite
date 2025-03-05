@@ -17,7 +17,7 @@ public:
     uint32_t findMemoryType(ImageDomain domain, uint32_t mask) const;
     Format findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
                                ::vk::FormatFeatureFlags features) const;
-    size_t padUniformBufferSize(size_t originalSize) const;
+    std::size_t getUniformBufferPaddingSize(size_t originalSize) const;
     const GPUProperties& getProperties() const
     {
         return m_properties;

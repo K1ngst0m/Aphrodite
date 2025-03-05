@@ -17,6 +17,10 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createIn
     {
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
         m_shaderStage |= binding.stageFlags;
+        if (binding.descriptorCount == VULKAN_NUM_BINDINGS_BINDLESS_VARYING)
+        {
+            m_isBindless = true;
+        }
     }
 }
 
@@ -45,23 +49,13 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
         // Allocate a new VkDescriptorPool if necessary.
         if (m_pools.size() <= m_currentAllocationPoolIndex)
         {
+            ::vk::DescriptorPoolCreateFlags bindlessFlags = ::vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
             // Create the Vulkan descriptor pool.
             ::vk::DescriptorPoolCreateInfo createInfo{};
             createInfo.setPoolSizes(m_poolSizes)
-                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | ::vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind)
+                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet |
+                          (m_isBindless ? bindlessFlags : ::vk::DescriptorPoolCreateFlags{}))
                 .setMaxSets(VULKAN_NUM_SETS_PER_POOL);
-
-            // inline uniform block
-            ::vk::DescriptorPoolInlineUniformBlockCreateInfo inlineUniformBlockCreateInfo{};
-            {
-                inlineUniformBlockCreateInfo.setMaxInlineUniformBlockBindings(
-                    m_descriptorTypeCounts[::vk::DescriptorType::eInlineUniformBlock]);
-
-                if (m_descriptorTypeCounts.contains(::vk::DescriptorType::eInlineUniformBlock))
-                {
-                    createInfo.setPNext(&inlineUniformBlockCreateInfo);
-                }
-            }
 
             auto [result, handle] = m_pDevice->getHandle().createDescriptorPool(createInfo, vk_allocator());
             VK_VR(result);

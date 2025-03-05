@@ -757,8 +757,8 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, Range ra
         range.size = pBuffer->getSize();
     }
 
-    void* pMapped = {};
-    APH_VR(m_pDevice->mapMemory(pBuffer, &pMapped));
+    void* pMapped = m_pDevice->mapMemory(pBuffer);
+    APH_ASSERT(pMapped);
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
 }
