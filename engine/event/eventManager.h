@@ -1,5 +1,4 @@
-#ifndef EVENTMANAGER_H_
-#define EVENTMANAGER_H_
+#pragma once
 
 #include "common/hash.h"
 #include "threads/taskManager.h"
@@ -10,7 +9,7 @@
 namespace aph
 {
 
-class EventManager : public Singleton<EventManager>
+class EventManager
 {
     template <typename TEvent>
     struct EventData
@@ -44,7 +43,7 @@ public:
     }
 
     template <typename TEvent>
-    void registerEventHandler(std::function<bool(const TEvent&)>&& func)
+    void registerEvent(std::function<bool(const TEvent&)>&& func)
     {
         getEventData<TEvent>().m_handlers.push_back(std::move(func));
     }
@@ -91,5 +90,3 @@ private:
 };
 
 } // namespace aph
-
-#endif // EVENTMANAGER_H_

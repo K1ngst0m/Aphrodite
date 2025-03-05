@@ -87,6 +87,8 @@ void WindowSystem::init()
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
     }
+
+    m_pEventManager = std::make_unique<EventManager>();
 }
 
 ::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
@@ -137,14 +139,14 @@ bool WindowSystem::update()
                 }
                 else
                 {
-                    EventManager::GetInstance().pushEvent(KeyboardEvent{ gkey, state });
+                    m_pEventManager->pushEvent(KeyboardEvent{ gkey, state });
                 }
             }
             break;
             case SDL_KEYUP:
             {
                 state = KeyState::Released;
-                EventManager::GetInstance().pushEvent(KeyboardEvent{ gkey, state });
+                m_pEventManager->pushEvent(KeyboardEvent{ gkey, state });
             }
             break;
             }
@@ -168,7 +170,7 @@ bool WindowSystem::update()
             lastX = x;
             lastY = y;
 
-            EventManager::GetInstance().pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
+            m_pEventManager->pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
         }
         break;
         case SDL_MOUSEBUTTONDOWN:
@@ -192,7 +194,7 @@ bool WindowSystem::update()
             int x, y;
             SDL_GetMouseState(&x, &y);
 
-            EventManager::GetInstance().pushEvent(
+            m_pEventManager->pushEvent(
                 MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN });
         }
         break;
@@ -203,7 +205,7 @@ bool WindowSystem::update()
             WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
 
             // Push the event to your event queue or handle it immediately
-            EventManager::GetInstance().pushEvent(resizeEvent);
+            m_pEventManager->pushEvent(resizeEvent);
         }
         break;
         default:
@@ -211,14 +213,14 @@ bool WindowSystem::update()
         }
     }
 
-    EventManager::GetInstance().processAllAsync();
+    m_pEventManager->processAllAsync();
 
     if (m_enabledUI)
     {
         ImGui_ImplSDL2_NewFrame();
     }
 
-    EventManager::GetInstance().flush();
+    m_pEventManager->flush();
     return true;
 };
 

@@ -3,6 +3,7 @@
 #include "api/vulkan/vkUtils.h"
 #include "common/common.h"
 #include "event/event.h"
+#include "event/eventManager.h"
 
 namespace aph::vk
 {
@@ -18,7 +19,6 @@ struct WindowSystemCreateInfo
 
 namespace aph
 {
-
 class WindowSystem
 {
 protected:
@@ -56,6 +56,12 @@ public:
 
     ::vk::SurfaceKHR getSurface(vk::Instance* instance);
 
+    template <typename TEvent>
+    void registerEvent(std::function<bool(const TEvent&)>&& func)
+    {
+        m_pEventManager->registerEvent(std::move(func));
+    }
+
     bool update();
     void close();
 
@@ -66,6 +72,8 @@ protected:
     uint32_t m_width = {};
     uint32_t m_height = {};
     bool m_enabledUI = {};
+
+    std::unique_ptr<EventManager> m_pEventManager;
 };
 
 } // namespace aph
