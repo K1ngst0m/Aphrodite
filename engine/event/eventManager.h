@@ -71,7 +71,7 @@ public:
     }
 
 private:
-    TaskManager m_taskManager = { 5, "Event Manager" };
+    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
     std::mutex m_dataMapMutex;
 
     HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;

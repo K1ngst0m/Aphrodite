@@ -27,6 +27,14 @@ void logThreadDebug(std::string_view fmt, Args&&... args)
 #define THREAD_LOG_DEBUG(...) (void(0));
 #endif
 
+#ifndef APH_TASK_MANAGER_THREAD_COUNT
+#define APH_TASK_MANAGER_THREAD_COUNT 0
+#endif
+namespace aph::detail
+{
+TaskManager DefaultTaskManager = { APH_TASK_MANAGER_THREAD_COUNT, "Default Task Manager" };
+}
+
 namespace aph
 {
 

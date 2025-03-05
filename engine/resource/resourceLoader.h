@@ -133,7 +133,7 @@ private:
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
-    TaskManager m_taskManager = { 5, "Resource Loader" };
+    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
     vk::Device* m_pDevice = {};
     vk::Queue* m_pQueue = {};
 

@@ -266,7 +266,7 @@ public:
 
 private:
     vk::Device* m_pDevice = {};
-    TaskManager m_taskManager = { 5, "Render Graph" };
+    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
 
     struct
     {
