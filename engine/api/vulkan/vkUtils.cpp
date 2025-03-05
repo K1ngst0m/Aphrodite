@@ -718,19 +718,25 @@ namespace aph::vk
 const ::vk::AllocationCallbacks& vk_allocator()
 {
     // Lambdas for the Vulkan allocation callbacks:
-    auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
-                         ::vk::SystemAllocationScope allocationScope) -> void*
+    static auto vkAphAlloc = [](void* pUserData, size_t size, size_t alignment,
+                                ::vk::SystemAllocationScope allocationScope) -> void*
     { return memory::aph_memalign(alignment, size); };
 
-    auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment,
-                           ::vk::SystemAllocationScope allocationScope) -> void*
+    static auto vkAphRealloc = [](void* pUserData, void* pOriginal, size_t size, size_t alignment,
+                                  ::vk::SystemAllocationScope allocationScope) -> void*
     { return memory::aph_realloc(pOriginal, size); };
 
-    auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };
+    static auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };
 
-    static ::vk::AllocationCallbacks allocator{};
-    allocator.setPfnAllocation(vkAphAlloc).setPfnFree(vkAphFree).setPfnReallocation(vkAphRealloc);
-    return allocator;
+    static ::vk::AllocationCallbacks allocator_hpp
+    {
+        nullptr,
+        vkAphAlloc,
+        vkAphRealloc,
+        vkAphFree
+    };
+
+    return allocator_hpp;
 }
 
 const VkAllocationCallbacks* vkAllocator()
