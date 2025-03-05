@@ -9,11 +9,10 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createIn
                                          SmallVector<::vk::DescriptorSetLayoutBinding> bindings)
     : ResourceHandle(handle, std::move(createInfo))
     , m_pDevice(device)
-    , m_bindings(std::move(bindings))
     , m_poolSizes(std::move(poolSizes))
 
 {
-    for (const auto& binding : m_bindings)
+    for (const auto& binding : bindings)
     {
         m_descriptorTypeCounts[binding.descriptorType] += binding.descriptorCount;
         m_shaderStage |= binding.stageFlags;
@@ -21,6 +20,7 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createIn
         {
             m_isBindless = true;
         }
+        m_bindings[binding.binding] = std::move(binding);
     }
 }
 
@@ -125,8 +125,6 @@ Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
 
 Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const DescriptorSet* set)
 {
-    APH_ASSERT(data.binding < m_bindings.size());
-
     auto& bindingInfo = m_bindings[data.binding];
     ::vk::DescriptorType descriptorType = bindingInfo.descriptorType;
     ::vk::WriteDescriptorSet writeInfo{};

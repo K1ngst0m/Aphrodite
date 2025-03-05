@@ -55,7 +55,8 @@ public:
     }
     ::vk::DescriptorType getDescriptorBindingType(uint32_t binding) const
     {
-        return m_bindings[binding].descriptorType;
+        APH_ASSERT(m_bindings.contains(binding));
+        return m_bindings.at(binding).descriptorType;
     }
     bool isBindless() const
     {
@@ -71,7 +72,7 @@ private:
     Device* m_pDevice = {};
 
 private:
-    SmallVector<::vk::DescriptorSetLayoutBinding> m_bindings = {};
+    HashMap<uint32_t, ::vk::DescriptorSetLayoutBinding> m_bindings = {};
     SmallVector<::vk::DescriptorPoolSize> m_poolSizes = {};
     SmallVector<::vk::DescriptorPool> m_pools = {};
     SmallVector<uint32_t> m_allocatedSets = {};
