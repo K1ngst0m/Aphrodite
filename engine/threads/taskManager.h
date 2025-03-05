@@ -160,4 +160,4 @@ namespace aph::detail
 extern TaskManager DefaultTaskManager;
 }
 
-#define APH_DEFAULT_TASK_MANAGER aph::detail::DefaultTaskManager;
+#define APH_DEFAULT_TASK_MANAGER aph::detail::DefaultTaskManager

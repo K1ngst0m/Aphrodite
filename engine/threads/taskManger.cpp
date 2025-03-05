@@ -28,7 +28,7 @@ void logThreadDebug(std::string_view fmt, Args&&... args)
 #endif
 
 #ifndef APH_TASK_MANAGER_THREAD_COUNT
-#define APH_TASK_MANAGER_THREAD_COUNT 0
+#define APH_TASK_MANAGER_THREAD_COUNT 1
 #endif
 namespace aph::detail
 {

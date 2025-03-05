@@ -85,7 +85,7 @@ int BaseAppImpl::getExitCode() const
 
 void BaseAppImpl::printOptions() const
 {
-    APP_LOG_INFO("\n === Application Options ===");
+    APP_LOG_INFO("=== Application Options ===");
     APP_LOG_INFO("windowWidth: %u", m_options.windowWidth);
     APP_LOG_INFO("windowHeight: %u", m_options.windowHeight);
     APP_LOG_INFO("vsync: %d", m_options.vsync);

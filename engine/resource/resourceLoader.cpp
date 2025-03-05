@@ -131,7 +131,10 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
     std::lock_guard<std::mutex> lock{ mtx };
     using namespace slang;
     static Slang::ComPtr<IGlobalSession> globalSession;
-    slang::createGlobalSession(globalSession.writeRef());
+    {
+        static std::once_flag flag;
+        std::call_once(flag, []() { slang::createGlobalSession(globalSession.writeRef()); });
+    }
 
     std::vector<CompilerOptionEntry> compilerOptions{{.name = CompilerOptionName::VulkanUseEntryPointName,
                                                       .value =
@@ -702,8 +705,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
         if (uploadSize <= LIMIT_BUFFER_CMD_UPDATE_SIZE)
         {
             APH_PROFILER_SCOPE_NAME("loading data by: vkCmdBufferUpdate.");
-            m_pDevice->executeCommand(m_pQueue,
-                                      [=](auto* cmd) { cmd->update(pBuffer, { 0, uploadSize }, info.data); });
+            m_pDevice->executeCommand(m_pQueue, [=](auto* cmd) { cmd->update(pBuffer, { 0, uploadSize }, info.data); });
         }
         else
         {
@@ -729,8 +731,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     writeBuffer(stagingBuffer, info.data, { 0, copyRange.size });
                 }
 
-                m_pDevice->executeCommand(m_pQueue,
-                                          [=](auto* cmd) { cmd->copy(stagingBuffer, pBuffer, copyRange); });
+                m_pDevice->executeCommand(m_pQueue, [=](auto* cmd) { cmd->copy(stagingBuffer, pBuffer, copyRange); });
 
                 m_pDevice->destroy(stagingBuffer);
             }
