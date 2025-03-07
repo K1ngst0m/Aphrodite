@@ -169,7 +169,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::BufferDomain::Device,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVB);
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVertexBuffer);
         }
 
         // index buffer
@@ -183,7 +183,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::BufferDomain::Device,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIB);
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIndexBuffer);
         }
 
         // matrix uniform buffer
@@ -208,7 +208,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::BufferDomain::LinkedDeviceHost,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatBuffer);
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatrixBuffer);
         }
 
         // image and sampler
@@ -297,7 +297,7 @@ void hello_aphrodite::init()
                                                  .format = aph::Format::D32,
                                              });
                 drawPass->addTextureIn("container texture", m_pImage);
-                drawPass->addUniformBufferIn("matrix ubo", m_pMatBuffer);
+                drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBuffer);
 
                 graph->setBackBuffer("render output");
 
@@ -319,9 +319,9 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::Geometry]);
-                            pCmd->bindVertexBuffers(m_pVB);
-                            pCmd->bindIndexBuffers(m_pIB);
-                            pCmd->setResource({ m_pMatBuffer }, 0, 0);
+                            pCmd->bindVertexBuffers(m_pVertexBuffer);
+                            pCmd->bindIndexBuffers(m_pIndexBuffer);
+                            pCmd->setResource({ m_pMatrixBuffer }, 0, 0);
                             pCmd->setResource({ m_pImage }, 1, 0);
                             pCmd->setResource({ m_pSampler }, 1, 1);
                             pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
@@ -335,11 +335,11 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::Mesh]);
-                            pCmd->setResource({ m_pMatBuffer }, 0, 0);
+                            pCmd->setResource({ m_pMatrixBuffer }, 0, 0);
                             pCmd->setResource({ m_pImage }, 1, 0);
                             pCmd->setResource({ m_pSampler }, 1, 1);
-                            pCmd->setResource({ m_pVB }, 0, 1);
-                            pCmd->setResource({ m_pIB }, 0, 2);
+                            pCmd->setResource({ m_pVertexBuffer }, 0, 1);
+                            pCmd->setResource({ m_pIndexBuffer }, 0, 2);
                             pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
                             pCmd->endDebugLabel();
                         }
@@ -351,9 +351,9 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                            pCmd->setResource({ m_pMatBuffer }, 2, 0);
-                            pCmd->setResource({ m_pVB }, 2, 1);
-                            pCmd->setResource({ m_pIB }, 2, 2);
+                            pCmd->setResource({ m_pMatrixBuffer }, 2, 0);
+                            pCmd->setResource({ m_pVertexBuffer }, 2, 1);
+                            pCmd->setResource({ m_pIndexBuffer }, 2, 2);
                             pCmd->setResource({ m_pSampler }, 2, 3);
 
                             pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_handleOffset });
@@ -372,7 +372,7 @@ void hello_aphrodite::loop()
     {
         APH_PROFILER_SCOPE_NAME("application loop");
         m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
-        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatBuffer);
+        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBuffer);
         m_renderer->update();
         m_renderer->render();
     }
@@ -393,9 +393,9 @@ void hello_aphrodite::finish()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
-    m_pDevice->destroy(m_pVB);
-    m_pDevice->destroy(m_pIB);
-    m_pDevice->destroy(m_pMatBuffer);
+    m_pDevice->destroy(m_pVertexBuffer);
+    m_pDevice->destroy(m_pIndexBuffer);
+    m_pDevice->destroy(m_pMatrixBuffer);
     m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);
     for (auto [_, program] : m_program)

@@ -1,5 +1,4 @@
-#ifndef APH_CLI_H_
-#define APH_CLI_H_
+#pragma once
 
 #include "common/common.h"
 #include "common/hash.h"
@@ -57,5 +56,3 @@ private:
 // argc / argv must contain the full argc, argv, where argv[0] holds program name.
 bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code);
 } // namespace aph
-
-#endif

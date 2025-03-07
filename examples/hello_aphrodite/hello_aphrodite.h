@@ -26,9 +26,9 @@ private:
     void finish() override;
 
 private:
-    aph::vk::Buffer* m_pVB = {};
-    aph::vk::Buffer* m_pIB = {};
-    aph::vk::Buffer* m_pMatBuffer = {};
+    aph::vk::Buffer* m_pVertexBuffer = {};
+    aph::vk::Buffer* m_pIndexBuffer = {};
+    aph::vk::Buffer* m_pMatrixBuffer = {};
     aph::vk::Sampler* m_pSampler = {};
     aph::vk::Image* m_pImage = {};
 
