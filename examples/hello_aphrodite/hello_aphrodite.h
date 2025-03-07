@@ -28,11 +28,11 @@ private:
 private:
     aph::vk::Buffer* m_pVertexBuffer = {};
     aph::vk::Buffer* m_pIndexBuffer = {};
-    aph::vk::Buffer* m_pMatrixBuffer = {};
+    aph::vk::Buffer* m_pMatrixBffer = {};
     aph::vk::Sampler* m_pSampler = {};
     aph::vk::Image* m_pImage = {};
 
-    uint32_t m_handleOffset;
+    uint32_t m_handleOffset = 0;
 
 private:
     std::unique_ptr<aph::Renderer> m_renderer = {};

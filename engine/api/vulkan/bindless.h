@@ -51,22 +51,29 @@ public:
     }
 
     template <typename T_Data>
-    uint32_t addRange(T_Data dataRange)
+    uint32_t addRange(T_Data dataRange, Range range = {})
     {
+        if (range.size == 0)
+        {
+            range.size = sizeof(T_Data);
+        }
+
         static_assert(std::is_trivially_copyable_v<T_Data>, "The range data must be trivially copyable");
         const std::byte* rawDataPtr = reinterpret_cast<const std::byte*>(&dataRange);
 
-        size_t dataBytes = sizeof(dataRange);
+        APH_ASSERT(range.offset + range.size <= sizeof(T_Data));
+
+        size_t bytesToCopy = range.size;
 
         uint32_t offset = aph::utils::paddingSize(m_minAlignment, m_data.size());
 
-        size_t newSize = offset + dataBytes;
+        size_t newSize = offset + bytesToCopy;
         if (newSize > m_data.size())
         {
             m_data.resize(newSize);
         }
 
-        std::memcpy(m_data.data() + offset, rawDataPtr, dataBytes);
+        std::memcpy(m_data.data() + offset, rawDataPtr + range.offset, bytesToCopy);
 
         return offset;
     }
@@ -112,9 +119,9 @@ public:
     void clear();
 
     template <typename T_Data>
-    uint32_t addRange(T_Data&& dataRange)
+    uint32_t addRange(T_Data&& dataRange, Range range = {})
     {
-        auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange));
+        auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange), range);
 
         // TODO dirty range
         m_rangeDirty = true;

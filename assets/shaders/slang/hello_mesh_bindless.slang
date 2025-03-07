@@ -24,30 +24,27 @@ void taskMain()
 [[vk::binding(0, 0)]] Texture2D sampledImage[];
 [[vk::binding(3, 2)]] SamplerState samp;
 
-[[vk::binding(0, 1)]] cbuffer handle
-{
-    uint textureId;
-};
-
-[[vk::binding(0, 2)]] cbuffer ubo
-{
-    float4x4 model;
-    float4x4 view;
-    float4x4 projection;
-};
-
 struct VertexIn
 {
     float4 position;
     float2 uv;
     float2 padding;
 };
-[[vk::binding(1, 2)]]
-StructuredBuffer<VertexIn> vertexBuffer;
 
-[[vk::binding(2, 2)]]
-StructuredBuffer<uint> indexBuffer;
+[[vk::binding(0, 1)]] cbuffer handle
+{
+    uint textureId;
+    TransformMatrix* uboPtr;
+    VertexIn* vertexBufferPtr;
+    uint* indexBufferPtr;
+};
 
+struct TransformMatrix
+{
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+};
 
 struct VertexOutput
 {
@@ -67,13 +64,14 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
         return;
     }
 
-    float4x4 mvp = mul(mul(model, view), projection);
+    TransformMatrix mat = *uboPtr;
+    float4x4 mvp = mul(mul(mat.model, mat.view), mat.projection);
 
     int i0 = tid.x * 3;
 
-    VertexIn v0 = vertexBuffer[indexBuffer[i0]];
-    VertexIn v1 = vertexBuffer[indexBuffer[i0 + 1]];
-    VertexIn v2 = vertexBuffer[indexBuffer[i0 + 2]];
+    VertexIn v0 = vertexBufferPtr[indexBufferPtr[i0]];
+    VertexIn v1 = vertexBufferPtr[indexBufferPtr[i0 + 1]];
+    VertexIn v2 = vertexBufferPtr[indexBufferPtr[i0 + 2]];
 
     vertices[i0 + 0].position = mul(v0.position, mvp);
     vertices[i0 + 1].position = mul(v1.position, mvp);

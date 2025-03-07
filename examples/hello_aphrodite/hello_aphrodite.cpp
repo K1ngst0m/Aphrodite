@@ -208,7 +208,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::BufferDomain::LinkedDeviceHost,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatrixBuffer);
+            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatrixBffer);
         }
 
         // image and sampler
@@ -258,11 +258,7 @@ void hello_aphrodite::init()
                                                         .entryPoint = "fragMain" } },
                                                 } };
 
-            auto& program = m_program[ShadingType::MeshBindless];
-            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &program));
-            auto bindlessResource = m_pDevice->getBindlessResource(program);
-            auto textureHandle = bindlessResource->updateResource(m_pImage, ::vk::ImageUsageFlagBits::eSampled);
-            m_handleOffset = bindlessResource->addRange(textureHandle);
+            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
         }
 
         // geometry shading
@@ -281,6 +277,29 @@ void hello_aphrodite::init()
 
         m_pResourceLoader->wait();
 
+        // bindless data
+        {
+            auto bindlessResource = m_pDevice->getBindlessResource(m_program[ShadingType::MeshBindless]);
+            auto textureId = bindlessResource->updateResource(m_pImage, ::vk::ImageUsageFlagBits::eSampled);
+
+            struct ResourceHandleData
+            {
+                uint32_t textureId;
+                aph::DeviceAddress matrixAddress;
+                aph::DeviceAddress vertexBufferAddress;
+                aph::DeviceAddress indexBufferAddress;
+            };
+
+            ResourceHandleData data{
+                .textureId = textureId,
+                .matrixAddress = m_pDevice->getDeviceAddress(m_pMatrixBffer),
+                .vertexBufferAddress = m_pDevice->getDeviceAddress(m_pVertexBuffer),
+                .indexBufferAddress = m_pDevice->getDeviceAddress(m_pIndexBuffer),
+            };
+
+            m_handleOffset = bindlessResource->addRange(data);
+        }
+
         // record graph execution
         m_renderer->recordGraph(
             [this](auto* graph)
@@ -297,7 +316,7 @@ void hello_aphrodite::init()
                                                  .format = aph::Format::D32,
                                              });
                 drawPass->addTextureIn("container texture", m_pImage);
-                drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBuffer);
+                drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
 
                 graph->setBackBuffer("render output");
 
@@ -321,7 +340,7 @@ void hello_aphrodite::init()
                             pCmd->setProgram(m_program[ShadingType::Geometry]);
                             pCmd->bindVertexBuffers(m_pVertexBuffer);
                             pCmd->bindIndexBuffers(m_pIndexBuffer);
-                            pCmd->setResource({ m_pMatrixBuffer }, 0, 0);
+                            pCmd->setResource({ m_pMatrixBffer }, 0, 0);
                             pCmd->setResource({ m_pImage }, 1, 0);
                             pCmd->setResource({ m_pSampler }, 1, 1);
                             pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
@@ -335,7 +354,7 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::Mesh]);
-                            pCmd->setResource({ m_pMatrixBuffer }, 0, 0);
+                            pCmd->setResource({ m_pMatrixBffer }, 0, 0);
                             pCmd->setResource({ m_pImage }, 1, 0);
                             pCmd->setResource({ m_pSampler }, 1, 1);
                             pCmd->setResource({ m_pVertexBuffer }, 0, 1);
@@ -351,11 +370,7 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                            pCmd->setResource({ m_pMatrixBuffer }, 2, 0);
-                            pCmd->setResource({ m_pVertexBuffer }, 2, 1);
-                            pCmd->setResource({ m_pIndexBuffer }, 2, 2);
                             pCmd->setResource({ m_pSampler }, 2, 3);
-
                             pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_handleOffset });
                             pCmd->endDebugLabel();
                         }
@@ -372,7 +387,7 @@ void hello_aphrodite::loop()
     {
         APH_PROFILER_SCOPE_NAME("application loop");
         m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
-        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBuffer);
+        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
         m_renderer->update();
         m_renderer->render();
     }
@@ -395,7 +410,7 @@ void hello_aphrodite::finish()
     APH_VR(m_pDevice->waitIdle());
     m_pDevice->destroy(m_pVertexBuffer);
     m_pDevice->destroy(m_pIndexBuffer);
-    m_pDevice->destroy(m_pMatrixBuffer);
+    m_pDevice->destroy(m_pMatrixBffer);
     m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);
     for (auto [_, program] : m_program)
