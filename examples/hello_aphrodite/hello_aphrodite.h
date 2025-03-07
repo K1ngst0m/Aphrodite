@@ -8,7 +8,15 @@ class hello_aphrodite : public aph::BaseApp<hello_aphrodite>
 public:
     hello_aphrodite();
 
-    void toggleMeshShading(bool value, bool toggle = false);
+    enum class ShadingType
+    {
+        Geometry,
+        Mesh,
+        MeshBindless,
+    };
+
+    void switchShadingType(std::string_view value);
+    void switchShadingType(ShadingType type);
 
 private:
     void init() override;
@@ -24,11 +32,7 @@ private:
     aph::vk::Sampler* m_pSampler = {};
     aph::vk::Image* m_pImage = {};
 
-    struct
-    {
-        aph::vk::ShaderProgram* geometry = {};
-        aph::vk::ShaderProgram* mesh = {};
-    } m_program;
+    uint32_t m_handleOffset;
 
 private:
     std::unique_ptr<aph::Renderer> m_renderer = {};
@@ -39,7 +43,8 @@ private:
 
     aph::Camera m_camera = { aph::CameraType::Perspective };
 
-    bool m_enableMeshShading = true;
+    ShadingType m_shadingType = ShadingType::MeshBindless;
+    aph::HashMap<ShadingType, aph::vk::ShaderProgram*> m_program;
 
     struct
     {

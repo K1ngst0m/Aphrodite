@@ -8,7 +8,6 @@
 
 namespace aph::vk
 {
-class Device;
 class Sampler;
 class ImmutableSampler;
 class DescriptorSetLayout;

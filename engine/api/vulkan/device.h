@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bindless.h"
 #include "buffer.h"
 #include "commandBuffer.h"
 #include "commandPool.h"
@@ -60,6 +61,17 @@ public:
     void destroy(CommandPool* pPool);
 
 public:
+    DeviceAddress getDeviceAddress(Buffer* pBuffer) const
+    {
+        ::vk::DeviceAddress address =
+            getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{ pBuffer->getHandle() });
+        return static_cast<DeviceAddress>(address);
+    }
+    BindlessResource* getBindlessResource(ShaderProgram* pProgram) const
+    {
+        APH_ASSERT(m_resourcePool.bindless.contains(pProgram));
+        return m_resourcePool.bindless.at(pProgram).get();
+    }
     Result waitIdle();
     Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
@@ -108,7 +120,7 @@ public:
     }
 
     template <typename TObject>
-    requires(!ResourceHandleType<TObject>)
+        requires(!ResourceHandleType<TObject>)
     Result setDebugObjectName(TObject object, const std::string& name)
     {
         ::vk::DebugUtilsObjectNameInfoEXT info{};
@@ -144,6 +156,7 @@ private:
         ThreadSafeObjectPool<CommandPool> commandPool;
         ThreadSafeObjectPool<Shader> shader;
         SyncPrimitiveAllocator syncPrimitive;
+        HashMap<ShaderProgram*, std::unique_ptr<BindlessResource>> bindless;
 
         ResourceObjectPool(Device* pDevice)
             : syncPrimitive(pDevice)

@@ -35,6 +35,10 @@ class EventManager
     };
 
 public:
+    EventManager()
+    {
+        m_pendingEvent = m_taskManager.createTaskGroup("event processing");
+    }
     template <typename TEvent>
     void pushEvent(const TEvent& e)
     {
@@ -50,24 +54,10 @@ public:
 
     void processAll()
     {
-        processAllAsync();
-        flush();
-    }
-
-    void processAllAsync()
-    {
-        auto group = m_taskManager.createTaskGroup("event processing");
-        // TODO check that different event type don't cause data race
         for (auto& [_, value] : m_eventDataMap)
         {
-            group->addTask([&value]() { value.second(value.first); });
+            value.second(value.first);
         }
-        m_taskManager.submit(group);
-    }
-
-    void flush()
-    {
-        m_taskManager.wait();
     }
 
 private:
@@ -87,6 +77,8 @@ private:
         }
         return std::any_cast<EventData<TEvent>&>(m_eventDataMap[ti].first);
     }
+
+    TaskGroup* m_pendingEvent = {};
 };
 
 } // namespace aph

@@ -138,7 +138,7 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
             DescriptorSet* sets[VULKAN_NUM_DESCRIPTOR_SETS] = {};
         } resourceBindings = {};
 
-        std::unique_ptr<BindlessResource> bindlessResource;
+        BindlessResource* bindlessResource = {};
 
         ShaderProgram* pProgram = {};
 
@@ -159,6 +159,12 @@ public:
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
 
+    // TODO
+    BindlessResource* getBindlessResource()
+    {
+        return m_commandState.bindlessResource;
+    }
+
     void setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding);
@@ -178,11 +184,11 @@ public:
     void setVertexInput(VertexInput inputInfo);
 
 public:
+    void draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
     void drawIndexed(DrawIndexArguments args);
     void dispatch(Buffer* pBuffer, std::size_t offset = 0);
     void dispatch(DispatchArguments args);
     void draw(DrawArguments args);
-    void draw(DispatchArguments args);
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
               uint32_t stride = sizeof(::vk::DrawIndirectCommand));
 
@@ -212,9 +218,9 @@ public:
 private:
     void setDirty(DirtyFlagBits dirtyFlagBits);
 
-    void flushComputeCommand();
-    void flushGraphicsCommand();
-    void flushDescriptorSet();
+    void flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
+    void flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset = {});
+    void flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset);
     void flushDynamicGraphicsState();
     CommandState m_commandState = {};
 

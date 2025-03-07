@@ -59,6 +59,7 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
     allocatorCreateInfo.device = static_cast<VkDevice>(pDevice->getHandle());
     allocatorCreateInfo.instance = static_cast<VkInstance>(pInstance->getHandle());
     allocatorCreateInfo.pVulkanFunctions = &vulkanFunctions;
+    allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
     vmaCreateAllocator(&allocatorCreateInfo, &m_allocator);
 }

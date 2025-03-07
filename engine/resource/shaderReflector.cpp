@@ -261,8 +261,8 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
 
             if (shaderLayout.uniformBufferMask.test(binding))
             {
-                vkBindings.push_back({ binding, ::vk::DescriptorType::eUniformBuffer, arraySize, stages, nullptr });
-                poolSizes.push_back({ ::vk::DescriptorType::eUniformBuffer, poolArraySize });
+                vkBindings.push_back({ binding, ::vk::DescriptorType::eUniformBufferDynamic, arraySize, stages, nullptr });
+                poolSizes.push_back({ ::vk::DescriptorType::eUniformBufferDynamic, poolArraySize });
                 types++;
             }
 

@@ -3,41 +3,67 @@
 
 namespace aph::vk
 {
-BindlessResource::BindlessResource(DescriptorSetLayout* pSetLayout, Device* pDevice)
+BindlessResource::BindlessResource(ShaderProgram* pProgram, Device* pDevice)
     : m_pDevice(pDevice)
-    , m_handleResource(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
+    , m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
 {
-    // TODO verify if bindless
-    m_pSetLayout = pSetLayout;
-    APH_ASSERT(m_pSetLayout->isBindless());
-    m_pSet = m_pSetLayout->allocateSet();
-}
-
-void BindlessResource::buildHandleBuffer(DescriptorSetLayout* pSetLayout)
-{
-    if (m_handleResource.pBuffer)
-    {
-        m_pDevice->destroy(m_handleResource.pBuffer);
-    }
-
-    // handle gpu buffer
-    {
-        BufferCreateInfo bufferCreateInfo{ .size = m_handleResource.dataBuilder.getData().size(),
-                                           .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
-                                           .domain = BufferDomain::LinkedDeviceHost };
-        APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleResource.pBuffer));
-
-        void* pMapped = m_pDevice->mapMemory(m_handleResource.pBuffer);
-        APH_ASSERT(pMapped);
-        m_handleResource.dataBuilder.writeTo(pMapped);
-        m_pDevice->unMapMemory(m_handleResource.pBuffer);
-    }
-
     // handle descriptor
     {
-        m_handleResource.pSetLayout = pSetLayout;
-        m_handleResource.pSet = pSetLayout->allocateSet();
+        auto pSetLayout = pProgram->getSetLayout(BindlessResource::HandleSetIdx);
+        m_handleData.pSetLayout = pSetLayout;
+        m_handleData.pSet = pSetLayout->allocateSet();
     }
+
+    // update resource
+    {
+        auto pSetLayout = pProgram->getSetLayout(BindlessResource::ResourceSetIdx);
+        // TODO verify if bindless
+        m_resourceData.pSetLayout = pSetLayout;
+        APH_ASSERT(m_resourceData.pSetLayout->isBindless());
+        m_resourceData.pSet = m_resourceData.pSetLayout->allocateSet();
+    }
+}
+
+BindlessResource::~BindlessResource()
+{
+    clear();
+}
+
+void BindlessResource::build()
+{
+    std::lock_guard<std::mutex> lock{ m_mtx };
+
+    // handle gpu buffer
+    static uint32_t count = 0;
+    if (m_rangeDirty)
+    {
+        if (m_handleData.pBuffer)
+        {
+            m_pDevice->destroy(m_handleData.pBuffer);
+        }
+
+        BufferCreateInfo bufferCreateInfo{ .size = m_handleData.dataBuilder.getData().size(),
+                                           .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                           .domain = BufferDomain::LinkedDeviceHost };
+        APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
+                                 std::format("Bindless Handle Buffer {}", count++)));
+
+        void* pMapped = m_pDevice->mapMemory(m_handleData.pBuffer);
+        APH_ASSERT(pMapped);
+        m_handleData.dataBuilder.writeTo(pMapped);
+        m_pDevice->unMapMemory(m_handleData.pBuffer);
+
+        DescriptorUpdateInfo updateInfo{ .binding = 0, .buffers = { m_handleData.pBuffer } };
+        APH_VR(m_handleData.pSet->update(updateInfo));
+
+        m_rangeDirty = false;
+    }
+
+    for (const auto& updateInfo : m_resourceUpdateInfos)
+    {
+        APH_VR(m_resourceData.pSet->update(updateInfo));
+    }
+    m_resourceUpdateInfos.clear();
 }
 
 BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer, ::vk::BufferUsageFlagBits2 usage)
@@ -48,10 +74,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer, ::v
         m_buffers.push_back(pBuffer);
         m_bufferIds[pBuffer] = id;
 
-        DescriptorUpdateInfo updateInfo{
-            .arrayOffset = id,
-            .buffers = { pBuffer },
-        };
+        DescriptorUpdateInfo updateInfo{ .arrayOffset = id, .buffers = { pBuffer }, .bufferUsage = usage };
         switch (usage)
         {
         case ::vk::BufferUsageFlagBits2::eStorageTexelBuffer:
@@ -72,7 +95,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer, ::v
             return HandleId{};
             break;
         }
-        APH_VR(m_pSet->update(updateInfo));
+        m_resourceUpdateInfos.push_back(std::move(updateInfo));
     }
 
     return m_bufferIds.at(pBuffer);
@@ -87,7 +110,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage, ::vk:
         m_images.push_back(pImage);
         m_imageIds[pImage] = id;
 
-        DescriptorUpdateInfo updateInfo{ .arrayOffset = { id }, .images = { pImage } };
+        DescriptorUpdateInfo updateInfo{ .arrayOffset = { id }, .images = { pImage }, .imageUsage = usage };
         switch (usage)
         {
         case ::vk::ImageUsageFlagBits::eSampled:
@@ -106,6 +129,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage, ::vk:
             return HandleId{};
             break;
         }
+        m_resourceUpdateInfos.push_back(std::move(updateInfo));
     }
 
     return m_imageIds.at(pImage);
@@ -121,9 +145,19 @@ BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
         m_samplerIds[pSampler] = id;
 
         DescriptorUpdateInfo updateInfo{ .arrayOffset = { id }, .samplers = { pSampler } };
+        m_resourceUpdateInfos.push_back(std::move(updateInfo));
     }
 
     return m_samplerIds.at(pSampler);
 }
+void BindlessResource::clear()
+{
+    if (m_handleData.pBuffer)
+    {
+        m_pDevice->destroy(m_handleData.pBuffer);
+        m_handleData.pBuffer = nullptr;
+    }
 
+    m_handleData.dataBuilder.reset();
+}
 } // namespace aph::vk

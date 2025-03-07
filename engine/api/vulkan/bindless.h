@@ -1,7 +1,9 @@
 #pragma once
 
+#include "common/arrayProxy.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
+#include "descriptorSet.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -10,49 +12,53 @@ class Buffer;
 class Image;
 class Sampler;
 class Device;
-class DescriptorSet;
-class DescriptorSetLayout;
 class ShaderProgram;
 
 class DataBuilder
 {
 public:
-    explicit DataBuilder(uint32_t minAlignment)
+    explicit DataBuilder(uint32_t minAlignment) noexcept
         : m_minAlignment(minAlignment)
     {
-        APH_ASSERT((minAlignment & (minAlignment - 1)) == 0 && "minAlignment must be a power of 2!");
+        APH_ASSERT(minAlignment != 0 && (minAlignment & (minAlignment - 1)) == 0 &&
+                   "minAlignment must be a power of 2!");
     }
 
     template <typename T_Data>
         requires std::is_trivially_copyable_v<T_Data> && (!std::is_pointer_v<T_Data>)
-    void writeTo(T_Data& writePtr)
+    void writeTo(T_Data& writePtr) noexcept
     {
         writeTo(&writePtr);
     }
 
-    void writeTo(const void* writePtr)
+    void writeTo(const void* writePtr) noexcept
     {
         std::memcpy((uint8_t*)writePtr, getData().data(), getData().size());
     }
 
-    const std::vector<std::byte>& getData() const
+    const std::vector<std::byte>& getData() const noexcept
     {
         return m_data;
     }
-    std::vector<std::byte>& getData()
+    std::vector<std::byte>& getData() noexcept
     {
         return m_data;
     }
 
+    void reset() noexcept
+    {
+        m_data.clear();
+    }
+
     template <typename T_Data>
-    uint32_t addRange(T_Data&& dataRange)
+    uint32_t addRange(T_Data dataRange)
     {
         static_assert(std::is_trivially_copyable_v<T_Data>, "The range data must be trivially copyable");
         const std::byte* rawDataPtr = reinterpret_cast<const std::byte*>(&dataRange);
 
         size_t dataBytes = sizeof(dataRange);
 
-        uint32_t offset = aph::utils::paddingSize(static_cast<uint32_t>(m_data.size()), m_minAlignment);
+        uint32_t offset = aph::utils::paddingSize(m_minAlignment, m_data.size());
 
         size_t newSize = offset + dataBytes;
         if (newSize > m_data.size())
@@ -83,56 +89,73 @@ class BindlessResource
     };
 
 public:
+    enum SetIdx
+    {
+        ResourceSetIdx = 0,
+        HandleSetIdx = 1,
+        UpperBound
+    };
+
     struct HandleId
     {
-        explicit HandleId(uint32_t id = HandleId::InvalidId)
-            : id(id)
-        {
-        }
+        uint32_t id = std::numeric_limits<uint32_t>::max();
         operator uint32_t() const
         {
             return id;
         }
-        uint32_t id;
         static constexpr uint32_t InvalidId = std::numeric_limits<uint32_t>::max();
     };
 
-    BindlessResource(DescriptorSetLayout* pSetLayout, Device* pDevice);
+    BindlessResource(ShaderProgram* pProgram, Device* pDevice);
+    ~BindlessResource();
+
+    void clear();
 
     template <typename T_Data>
     uint32_t addRange(T_Data&& dataRange)
     {
-        auto offset = m_handleResource.dataBuilder.addRange(std::forward<T_Data>(dataRange));
+        auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange));
 
         // TODO dirty range
+        m_rangeDirty = true;
 
         return offset;
     }
 
-    void buildHandleBuffer(DescriptorSetLayout* pSetLayout);
+    void build();
 
     HandleId updateResource(Buffer* pBuffer, ::vk::BufferUsageFlagBits2 usage);
     HandleId updateResource(Image* pImage, ::vk::ImageUsageFlagBits usage);
     HandleId updateResource(Sampler* pSampler);
 
-    DescriptorSet* getResourceSet() const
+    DescriptorSetLayout* getResourceLayout() const noexcept
     {
-        APH_ASSERT(m_pSet);
-        return m_pSet;
+        return m_resourceData.pSetLayout;
     }
 
-    DescriptorSet* getHandleSet() const
+    DescriptorSetLayout* getHandleLayout() const noexcept
     {
-        APH_ASSERT(m_handleResource.pSet);
-        return m_handleResource.pSet;
+        return m_handleData.pSetLayout;
+    }
+
+    DescriptorSet* getResourceSet() const noexcept
+    {
+        APH_ASSERT(m_resourceData.pSet);
+        return m_resourceData.pSet;
+    }
+
+    DescriptorSet* getHandleSet() const noexcept
+    {
+        APH_ASSERT(m_handleData.pSet);
+        return m_handleData.pSet;
     }
 
 private:
     Device* m_pDevice;
 
-    struct HandleResource
+    struct Handle
     {
-        HandleResource(uint32_t minAlignment)
+        Handle(uint32_t minAlignment)
             : dataBuilder(minAlignment)
         {
         }
@@ -141,7 +164,15 @@ private:
         Buffer* pBuffer = {};
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
-    } m_handleResource;
+    } m_handleData;
+
+    struct Resource
+    {
+        DescriptorSetLayout* pSetLayout = {};
+        DescriptorSet* pSet = {};
+    } m_resourceData;
+
+    bool m_rangeDirty = false;
 
     SmallVector<Image*> m_images;
     SmallVector<Buffer*> m_buffers;
@@ -150,8 +181,8 @@ private:
     HashMap<Buffer*, HandleId> m_bufferIds;
     HashMap<Sampler*, HandleId> m_samplerIds;
 
-    DescriptorSetLayout* m_pSetLayout = {};
-    DescriptorSet* m_pSet = {};
+    SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
+    std::mutex m_mtx;
 };
 
 } // namespace aph::vk

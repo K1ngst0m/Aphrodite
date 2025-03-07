@@ -219,16 +219,9 @@ void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
     APH_PROFILER_SCOPE();
     for (auto& pGraph : m_frameGraph)
     {
-        auto taskGroup = m_taskManager.createTaskGroup("frame graph recording");
-        taskGroup->addTask(
-            [this, &pGraph, func]()
-            {
-                func(pGraph.get());
-                pGraph->build(m_pSwapChain);
-            });
-        m_taskManager.submit(taskGroup);
+        func(pGraph.get());
+        pGraph->build(m_pSwapChain);
     }
-    m_taskManager.wait();
 }
 
 void Renderer::render()

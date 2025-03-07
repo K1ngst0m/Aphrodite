@@ -296,7 +296,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     getHandle().beginRendering(vkRenderingInfo);
 }
 
-void CommandBuffer::flushComputeCommand()
+void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
     auto pProgram = m_commandState.pProgram;
     APH_ASSERT(pProgram);
@@ -304,11 +304,11 @@ void CommandBuffer::flushComputeCommand()
     SmallVector<::vk::ShaderStageFlagBits> stages = { ::vk::ShaderStageFlagBits::eCompute };
     SmallVector<::vk::ShaderEXT> shaderObjs = { pProgram->getShaderObject(ShaderStage::CS) };
     getHandle().bindShadersEXT(stages, shaderObjs);
-    flushDescriptorSet();
+    flushDescriptorSet(dynamicOffset);
     m_commandState.dirty = {};
 }
 
-void CommandBuffer::flushGraphicsCommand()
+void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
     flushDynamicGraphicsState();
 
@@ -416,7 +416,7 @@ void CommandBuffer::flushGraphicsCommand()
         getHandle().bindShadersEXT(stages, shaderObjs);
     }
 
-    flushDescriptorSet();
+    flushDescriptorSet(dynamicOffset);
     m_commandState.dirty = {};
 }
 
@@ -632,9 +632,18 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
         setDirty(DirtyFlagBits::vertexInput);
     }
 
-    if (auto setLayout = pProgram->getSetLayout(0); setLayout->isBindless())
+    if (auto setLayout = pProgram->getSetLayout(BindlessResource::ResourceSetIdx); setLayout->isBindless())
     {
-        m_commandState.bindlessResource = std::make_unique<BindlessResource>(setLayout, m_pDevice);
+        if (!m_commandState.bindlessResource)
+        {
+            m_commandState.bindlessResource = m_pDevice->getBindlessResource(pProgram);
+            auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
+            auto resourceSet = m_commandState.bindlessResource->getResourceSet();
+            SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
+            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
+                                           BindlessResource::ResourceSetIdx, { resourceSet->getHandle() },
+                                           dynamicOffsets);
+        }
     }
 }
 void CommandBuffer::setVertexInput(VertexInput inputInfo)
@@ -646,11 +655,6 @@ void CommandBuffer::setDepthState(DepthState state)
 {
     m_commandState.graphics.depthState = std::move(state);
     setDirty(DirtyFlagBits::dynamicState);
-}
-void CommandBuffer::draw(DispatchArguments args)
-{
-    flushGraphicsCommand();
-    getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
 }
 
 void CommandBuffer::flushDynamicGraphicsState()
@@ -716,36 +720,61 @@ void CommandBuffer::flushDynamicGraphicsState()
         getHandle().setColorWriteMaskEXT(0, 1, color_component_flags);
     }
 }
-void CommandBuffer::flushDescriptorSet()
+void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
+    auto& resBindings = m_commandState.resourceBindings;
+    auto& pProgram = m_commandState.pProgram;
+
+    if (m_commandState.bindlessResource)
+    {
+        m_commandState.bindlessResource->build();
+
+        {
+            const auto& bindless = m_commandState.bindlessResource;
+            SmallVector<uint32_t> dynamicOffsets(bindless->getHandleLayout()->getDynamicUniformCount(), 0);
+            ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
+            bindDescriptorSetsInfo.setFirstSet(BindlessResource::HandleSetIdx)
+                .setLayout(pProgram->getPipelineLayout())
+                .setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                .setDynamicOffsets(dynamicOffset)
+                .setDescriptorSets(bindless->getHandleSet()->getHandle())
+                .setDynamicOffsets(dynamicOffsets);
+            getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
+        }
+    }
+
     aph::utils::forEachBit(
         m_commandState.resourceBindings.setBit,
-        [this](uint32_t setIdx)
+        [this, &resBindings, &pProgram](uint32_t setIdx)
         {
+            if (m_commandState.bindlessResource && setIdx < BindlessResource::UpperBound)
+            {
+                return;
+            }
+
             APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
-            aph::utils::forEachBit(m_commandState.resourceBindings.setBindingBit[setIdx],
-                                   [this, setIdx](auto bindingIdx)
+            auto& set = resBindings.sets[setIdx];
+            aph::utils::forEachBit(resBindings.setBindingBit[setIdx],
+                                   [setIdx, &resBindings, &pProgram, &set](auto bindingIdx)
                                    {
-                                       if (!(m_commandState.resourceBindings.dirtyBinding[setIdx].test(bindingIdx)))
+                                       if (!resBindings.dirtyBinding[setIdx].test(bindingIdx))
                                        {
-                                           CM_LOG_INFO("skip update");
+                                           CM_LOG_DEBUG("skip update");
                                            return;
                                        }
-                                       auto& set = m_commandState.resourceBindings.sets[setIdx];
+
                                        if (set == nullptr)
                                        {
-                                           set = m_commandState.pProgram->getSetLayout(setIdx)->allocateSet();
+                                           auto setLayout = pProgram->getSetLayout(setIdx);
+                                           set = setLayout->allocateSet();
                                        }
-                                       APH_VR(
-                                           set->update(m_commandState.resourceBindings.bindings[setIdx][bindingIdx]));
-                                       m_commandState.resourceBindings.sets[setIdx] = set;
+                                       APH_VR(set->update(resBindings.bindings[setIdx][bindingIdx]));
                                    });
-            m_commandState.resourceBindings.dirtyBinding[setIdx] = 0;
+            resBindings.dirtyBinding[setIdx].reset();
 
-            const auto& set = m_commandState.resourceBindings.sets[setIdx];
-            const auto& pProgram = m_commandState.pProgram;
+            SmallVector<uint32_t> dynamicOffsets(pProgram->getSetLayout(setIdx)->getDynamicUniformCount(), 0);
             getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
-                                           setIdx, { set->getHandle() }, {});
+                                           setIdx, { set->getHandle() }, dynamicOffsets);
         });
 
     if (m_commandState.dirty & DirtyFlagBits::pushConstant)
@@ -785,4 +814,9 @@ void CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits)
     m_commandState.dirty |= dirtyFlagBits;
 }
 
+void CommandBuffer::draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
+{
+    flushGraphicsCommand(dynamicOffset);
+    getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
+}
 } // namespace aph::vk

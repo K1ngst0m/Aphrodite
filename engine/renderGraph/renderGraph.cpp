@@ -308,9 +308,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     // record commands
     {
-        auto& taskMgr = m_taskManager;
-        auto taskgrp = taskMgr.createTaskGroup();
-
         for (auto* pass : m_declareData.passes)
         {
             std::vector<vk::Image*> colorImages;
@@ -385,35 +382,29 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
             APH_ASSERT(!colorImages.empty());
 
-            taskgrp->addTask(
-                [this, pass, colorImages, pDepthImage]()
-                {
-                    auto* pCmd = m_buildData.cmds[pass];
-                    APH_VR(pCmd->begin());
-                    pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
-                    pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
-                    pCmd->beginRendering(colorImages, pDepthImage);
-                    APH_ASSERT(pass->m_executeCB);
-                    pass->m_executeCB(pCmd);
-                    pCmd->endRendering();
-                    APH_VR(pCmd->end());
+            {
+                auto* pCmd = m_buildData.cmds[pass];
+                APH_VR(pCmd->begin());
+                pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
+                pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
+                pCmd->beginRendering(colorImages, pDepthImage);
+                APH_ASSERT(pass->m_executeCB);
+                pass->m_executeCB(pCmd);
+                pCmd->endRendering();
+                APH_VR(pCmd->end());
 
-                    // lock
-                    vk::QueueSubmitInfo submitInfo{
-                        .commandBuffers = { pCmd },
-                        .waitSemaphores = {},
-                        .signalSemaphores = {},
-                    };
+                // lock
+                vk::QueueSubmitInfo submitInfo{
+                    .commandBuffers = { pCmd },
+                    .waitSemaphores = {},
+                    .signalSemaphores = {},
+                };
 
-                    std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
-                    m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
-                },
-                pass->m_name);
+                std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
+                m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
+            }
         }
-        taskMgr.submit(taskgrp);
     }
-
-    m_taskManager.wait();
 }
 
 RenderGraph::~RenderGraph()

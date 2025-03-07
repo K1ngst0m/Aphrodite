@@ -1,4 +1,5 @@
 #include "device.h"
+#include "bindless.h"
 #include "common/profiler.h"
 #include "deviceAllocator.h"
 #include "module/module.h"
@@ -39,6 +40,45 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     SmallVector<const char*> requiredExtensions;
     {
         const auto& feature = createInfo.enabledFeatures;
+
+        // must support features
+        {
+            requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+            requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+
+            auto& extDynamicState3 = gpu->requestFeatures<::vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
+            extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
+
+            auto& shaderObjectFeatures = gpu->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
+            shaderObjectFeatures.shaderObject = VK_TRUE;
+
+            auto& sync2Features = gpu->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
+            sync2Features.synchronization2 = VK_TRUE;
+
+            auto& timelineSemaphoreFeatures = gpu->requestFeatures<::vk::PhysicalDeviceTimelineSemaphoreFeatures>();
+            timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
+
+            auto& maintenance4Features = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
+            maintenance4Features.maintenance4 = VK_TRUE;
+
+            // Request Inline Uniform Block Features EXT
+            auto& inlineUniformBlockFeature = gpu->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();
+            inlineUniformBlockFeature.inlineUniformBlock = VK_TRUE;
+
+            // Request Dynamic Rendering Features KHR
+            auto& dynamicRenderingFeature = gpu->requestFeatures<::vk::PhysicalDeviceDynamicRenderingFeaturesKHR>();
+            dynamicRenderingFeature.dynamicRendering = VK_TRUE;
+
+            // Request Host Query Reset Features
+            auto& hostQueryResetFeature = gpu->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
+            hostQueryResetFeature.hostQueryReset = VK_TRUE;
+
+            auto& deviceAddressFeatures = gpu->requestFeatures<::vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+            deviceAddressFeatures.setBufferDeviceAddress(::vk::True);
+        }
+
         if (feature.meshShading)
         {
             // Request Mesh Shader Features EXT
@@ -66,16 +106,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             auto& rayQueryFeature = gpu->requestFeatures<::vk::PhysicalDeviceRayQueryFeaturesKHR>();
             rayQueryFeature.rayQuery = VK_TRUE;
             requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-        }
-
-        // must support features
-        {
-            requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
         }
 
         // TODO renderdoc unsupported features
@@ -109,6 +139,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             auto& descriptorIndexingFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
             descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = ::vk::True;
             descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = ::vk::True;
+            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = ::vk::True;
             descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = ::vk::True;
             descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = ::vk::True;
             descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = ::vk::True;
@@ -169,35 +200,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
             CM_LOG_ERR("Bindless feature not supported!");
             APH_ASSERT(false);
         }
-    }
-
-    {
-        auto& extDynamicState3 = gpu->requestFeatures<::vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
-        extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
-
-        auto& shaderObjectFeatures = gpu->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
-        shaderObjectFeatures.shaderObject = VK_TRUE;
-
-        auto& sync2Features = gpu->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
-        sync2Features.synchronization2 = VK_TRUE;
-
-        auto& timelineSemaphoreFeatures = gpu->requestFeatures<::vk::PhysicalDeviceTimelineSemaphoreFeatures>();
-        timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
-
-        auto& maintenance4Features = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
-        maintenance4Features.maintenance4 = VK_TRUE;
-
-        // Request Inline Uniform Block Features EXT
-        auto& inlineUniformBlockFeature = gpu->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();
-        inlineUniformBlockFeature.inlineUniformBlock = VK_TRUE;
-
-        // Request Dynamic Rendering Features KHR
-        auto& dynamicRenderingFeature = gpu->requestFeatures<::vk::PhysicalDeviceDynamicRenderingFeaturesKHR>();
-        dynamicRenderingFeature.dynamicRendering = VK_TRUE;
-
-        // Request Host Query Reset Features
-        auto& hostQueryResetFeature = gpu->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
-        hostQueryResetFeature.hostQueryReset = VK_TRUE;
     }
 
     // Enable all physical device available features.
@@ -281,14 +283,15 @@ void Device::Destroy(Device* pDevice)
 {
     APH_PROFILER_SCOPE();
     APH_VR(pDevice->waitIdle());
-    // TODO
-    delete pDevice->m_resourcePool.deviceMemory;
 
+    pDevice->m_resourcePool.bindless.clear();
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.setLayout.clear();
     pDevice->m_resourcePool.shader.clear();
 
+    // TODO
+    delete pDevice->m_resourcePool.deviceMemory;
     APH_ASSERT(pDevice->m_handle);
     pDevice->getHandle().destroy(vk_allocator());
 }
@@ -312,9 +315,7 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     bool isBindless = !vkBindings.empty() && vkBindings[0].descriptorCount == VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
 
     auto bindlessFlags =
-        ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound
-        // | ::vk::DescriptorBindingFlagBits::eVariableDescriptorCount
-        ;
+        ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound;
 
     SmallVector<::vk::DescriptorBindingFlags> flags(vkBindings.size(),
                                                     isBindless ? bindlessFlags : ::vk::DescriptorBindingFlags{});
@@ -419,16 +420,16 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
     VkPipelineLayout pipelineLayout;
     {
-        setLayouts.resize(VULKAN_NUM_DESCRIPTOR_SETS);
-
         uint32_t numSets = combineLayout.descriptorSetMask.count();
-        for (unsigned i = 0; i < VULKAN_NUM_DESCRIPTOR_SETS; i++)
+        for (unsigned i = 0; i < numSets; i++)
         {
             DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
                 .bindings = reflector.getLayoutBindings(i),
                 .poolSizes = reflector.getPoolSizes(i),
             };
-            APH_VR(create(setLayoutCreateInfo, &setLayouts[i]));
+            DescriptorSetLayout* layout = {};
+            APH_VR(create(setLayoutCreateInfo, &layout));
+            setLayouts.push_back(layout);
         }
 
         if (auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
@@ -445,8 +446,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
             {
                 vkSetLayouts.push_back(setLayout->getHandle());
             }
-            pipelineLayoutCreateInfo.setLayoutCount = numSets;
-            pipelineLayoutCreateInfo.pSetLayouts = vkSetLayouts.data();
+            pipelineLayoutCreateInfo.setSetLayouts(vkSetLayouts);
         }
 
         if (combineLayout.pushConstantRange.stageFlags)
@@ -514,6 +514,11 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
 
+    if (auto setLayout = (*ppProgram)->getSetLayout(BindlessResource::ResourceSetIdx); setLayout->isBindless())
+    {
+        m_resourcePool.bindless[*ppProgram] = std::make_unique<BindlessResource>(*ppProgram, this);
+    }
+
     return Result::Success;
 }
 
@@ -547,8 +552,9 @@ Result Device::create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, con
     APH_PROFILER_SCOPE();
     // create buffer
     ::vk::BufferCreateInfo bufferInfo{};
-    bufferInfo.setSize(createInfo.size).setUsage(createInfo.usage).setSharingMode(::vk::SharingMode::eExclusive);
-
+    bufferInfo.setSize(createInfo.size)
+        .setUsage(createInfo.usage | ::vk::BufferUsageFlagBits::eShaderDeviceAddress)
+        .setSharingMode(::vk::SharingMode::eExclusive);
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
     *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);
     APH_VR(setDebugObjectName(*ppBuffer, debugName));

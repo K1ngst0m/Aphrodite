@@ -213,14 +213,13 @@ bool WindowSystem::update()
         }
     }
 
-    m_pEventManager->processAllAsync();
+    m_pEventManager->processAll();
 
     if (m_enabledUI)
     {
         ImGui_ImplSDL2_NewFrame();
     }
 
-    m_pEventManager->flush();
     return true;
 };
 

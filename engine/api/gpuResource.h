@@ -21,6 +21,8 @@ enum class ImageDomain : uint8_t
     LinearHost
 };
 
+using DeviceAddress = uint64_t;
+
 enum class QueueType : uint8_t
 {
     Unsupport = 0,

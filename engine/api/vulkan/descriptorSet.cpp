@@ -3,14 +3,12 @@
 
 namespace aph::vk
 {
-
 DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createInfo, HandleType handle,
                                          SmallVector<::vk::DescriptorPoolSize> poolSizes,
                                          SmallVector<::vk::DescriptorSetLayoutBinding> bindings)
     : ResourceHandle(handle, std::move(createInfo))
     , m_pDevice(device)
     , m_poolSizes(std::move(poolSizes))
-
 {
     for (const auto& binding : bindings)
     {
@@ -22,6 +20,29 @@ DescriptorSetLayout::DescriptorSetLayout(Device* device, CreateInfoType createIn
         }
         m_bindings[binding.binding] = std::move(binding);
     }
+
+    if (isBindless())
+    {
+        ::vk::DescriptorPoolCreateFlags bindlessFlags = ::vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
+        ::vk::DescriptorPoolCreateInfo poolCreateInfo{};
+        poolCreateInfo.setPoolSizes(m_poolSizes)
+            .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet | bindlessFlags)
+            .setMaxSets(1);
+
+        auto [result, vkPool] = m_pDevice->getHandle().createDescriptorPool(poolCreateInfo, vk_allocator());
+        VK_VR(result);
+        m_pools.push_back(vkPool);
+
+        ::vk::DescriptorSetAllocateInfo allocInfo{};
+        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({ getHandle() });
+
+        auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
+        APH_ASSERT(handles.size() == 1);
+        VK_VR(res);
+
+        auto pRetHandle = m_setPools.allocate(this, handles[0]);
+        m_descriptorSetCounts.emplace(pRetHandle, m_currentAllocationPoolIndex);
+    }
 }
 
 DescriptorSetLayout::~DescriptorSetLayout()
@@ -30,6 +51,7 @@ DescriptorSetLayout::~DescriptorSetLayout()
     for (auto [set, id] : m_descriptorSetCounts)
     {
         m_pDevice->getHandle().freeDescriptorSets(m_pools[id], { set->getHandle() });
+        m_setPools.free(set);
     }
 
     // Destroy all created pools.
@@ -41,6 +63,10 @@ DescriptorSetLayout::~DescriptorSetLayout()
 
 DescriptorSet* DescriptorSetLayout::allocateSet()
 {
+    if (isBindless())
+    {
+        return m_descriptorSetCounts.cbegin()->first;
+    }
     std::lock_guard<std::mutex> lock{ m_mtx };
 
     // Find the next pool to allocate from.
@@ -49,18 +75,14 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
         // Allocate a new VkDescriptorPool if necessary.
         if (m_pools.size() <= m_currentAllocationPoolIndex)
         {
-            ::vk::DescriptorPoolCreateFlags bindlessFlags = ::vk::DescriptorPoolCreateFlagBits::eUpdateAfterBind;
-            // Create the Vulkan descriptor pool.
             ::vk::DescriptorPoolCreateInfo createInfo{};
             createInfo.setPoolSizes(m_poolSizes)
-                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet |
-                          (m_isBindless ? bindlessFlags : ::vk::DescriptorPoolCreateFlags{}))
+                .setFlags(::vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet)
                 .setMaxSets(VULKAN_NUM_SETS_PER_POOL);
 
             auto [result, handle] = m_pDevice->getHandle().createDescriptorPool(createInfo, vk_allocator());
             VK_VR(result);
 
-            // Add the Vulkan handle to the descriptor pool instance.
             m_pools.push_back(handle);
             m_allocatedSets.push_back(0);
             break;
@@ -71,32 +93,32 @@ DescriptorSet* DescriptorSetLayout::allocateSet()
             break;
         }
 
-        // Increment pool index.
         ++m_currentAllocationPoolIndex;
     }
 
-    // Increment allocated set count for given pool.
     ++m_allocatedSets[m_currentAllocationPoolIndex];
 
-    // Allocate a new descriptor set from the current pool index.
-    ::vk::DescriptorSetAllocateInfo allocInfo{};
-    allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({ getHandle() });
+    DescriptorSet* pRetHandle;
+    {
+        ::vk::DescriptorSetAllocateInfo allocInfo{};
+        allocInfo.setDescriptorPool(m_pools[m_currentAllocationPoolIndex]).setSetLayouts({ getHandle() });
 
-    auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
-    APH_ASSERT(handles.size() == 1);
-    VK_VR(res);
+        auto [res, handles] = m_pDevice->getHandle().allocateDescriptorSets(allocInfo);
+        APH_ASSERT(handles.size() == 1);
+        VK_VR(res);
 
-    auto pRetHandle = new DescriptorSet(this, handles[0]);
-    // Store an internal mapping between the descriptor set handle and it's parent pool.
-    // This is used when FreeDescriptorSet is called downstream.
-    m_descriptorSetCounts.emplace(pRetHandle, m_currentAllocationPoolIndex);
-
-    // Return descriptor set handle.
+        pRetHandle = m_setPools.allocate(this, handles[0]);
+        m_descriptorSetCounts.emplace(pRetHandle, m_currentAllocationPoolIndex);
+    }
     return pRetHandle;
 }
 
 Result DescriptorSetLayout::freeSet(DescriptorSet* pSet)
 {
+    if (isBindless())
+    {
+        return Result::Success;
+    }
     std::lock_guard<std::mutex> lock{ m_mtx };
 
     // Get the index of the descriptor pool the descriptor set was allocated from.

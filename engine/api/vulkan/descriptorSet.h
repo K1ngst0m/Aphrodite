@@ -1,8 +1,8 @@
 #pragma once
 
 #include "api/vulkan/shader.h"
-#include "common/hash.h"
 #include "common/arrayProxy.h"
+#include "common/hash.h"
 #include "vkUtils.h"
 
 namespace aph::vk
@@ -22,6 +22,9 @@ struct DescriptorUpdateInfo
     SmallVector<Image*> images;
     SmallVector<Sampler*> samplers;
     SmallVector<Buffer*> buffers;
+
+    ::vk::BufferUsageFlags2 bufferUsage = {};
+    ::vk::ImageUsageFlags imageUsage = {};
 
     bool operator==(const DescriptorUpdateInfo&) const = default;
 };
@@ -54,6 +57,15 @@ public:
         return m_isBindless;
     }
 
+    uint32_t getDynamicUniformCount() const
+    {
+        if (!m_descriptorTypeCounts.contains(::vk::DescriptorType::eUniformBufferDynamic))
+        {
+            return 0;
+        }
+        return m_descriptorTypeCounts.at(::vk::DescriptorType::eUniformBufferDynamic);
+    }
+
 private:
     DescriptorSetLayout(Device* device, CreateInfoType createInfo, HandleType handle,
                         SmallVector<::vk::DescriptorPoolSize> poolSizes,
@@ -73,17 +85,20 @@ private:
     ::vk::ShaderStageFlags m_shaderStage = {};
     bool m_isBindless = false;
     std::mutex m_mtx = {};
+    ThreadSafeObjectPool<DescriptorSet> m_setPools;
 };
 
 class DescriptorSet : public ResourceHandle<::vk::DescriptorSet>
 {
-public:
+private:
+    friend class ObjectPool<DescriptorSet>;
     DescriptorSet(DescriptorSetLayout* pLayout, HandleType handle)
         : ResourceHandle(handle)
         , m_pLayout(pLayout)
     {
     }
 
+public:
     Result update(const DescriptorUpdateInfo& updateInfo)
     {
         return m_pLayout->updateSet(updateInfo, this);
