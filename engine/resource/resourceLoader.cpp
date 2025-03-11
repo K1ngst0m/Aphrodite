@@ -437,7 +437,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         vk::BufferCreateInfo bufferCI{
             .size = static_cast<uint32_t>(data.size()),
             .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
-            .domain = BufferDomain::Host,
+            .domain = MemoryDomain::Host,
         };
         APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{ info.debugName } + std::string{ "_staging" }));
 
@@ -451,7 +451,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
 
         auto imageCI = ci;
         imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferDst;
-        imageCI.domain = ImageDomain::Device;
+        imageCI.domain = MemoryDomain::Device;
         if (genMipmap)
         {
             imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
@@ -691,11 +691,11 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
     vk::Buffer* pBuffer = *ppBuffer;
-    BufferDomain domain = pBuffer->getCreateInfo().domain;
+    MemoryDomain domain = pBuffer->getCreateInfo().domain;
     std::size_t uploadSize = info.range.size;
 
     // device only
-    if (domain == BufferDomain::Device)
+    if (domain == MemoryDomain::Device)
     {
         if (info.range.size == VK_WHOLE_SIZE)
         {
@@ -723,7 +723,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     vk::BufferCreateInfo stagingCI{
                         .size = static_cast<uint32_t>(copyRange.size),
                         .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
-                        .domain = BufferDomain::Host,
+                        .domain = MemoryDomain::Host,
                     };
 
                     APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
@@ -747,7 +747,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
 void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, Range range)
 {
     APH_PROFILER_SCOPE();
-    APH_ASSERT(pBuffer->getCreateInfo().domain != BufferDomain::Device);
+    APH_ASSERT(pBuffer->getCreateInfo().domain != MemoryDomain::Device);
     if (range.size == 0)
     {
         range.size = VK_WHOLE_SIZE;

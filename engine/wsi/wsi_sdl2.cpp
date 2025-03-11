@@ -242,9 +242,9 @@ void WindowSystem::resize(uint32_t width, uint32_t height)
     }
 }
 
-std::vector<const char*> WindowSystem::getRequiredExtensions()
+SmallVector<const char*> WindowSystem::getRequiredExtensions()
 {
-    std::vector<const char*> extensions{};
+    SmallVector<const char*> extensions{};
     {
         uint32_t extensionCount;
         SDL_Vulkan_GetInstanceExtensions((SDL_Window*)m_window, &extensionCount, nullptr);

@@ -12,9 +12,6 @@ class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 
 public:
     PhysicalDevice(HandleType handle);
-
-    uint32_t findMemoryType(BufferDomain domain, uint32_t mask) const;
-    uint32_t findMemoryType(ImageDomain domain, uint32_t mask) const;
     Format findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
                                ::vk::FormatFeatureFlags features) const;
     std::size_t getUniformBufferPaddingSize(size_t originalSize) const;
@@ -60,8 +57,6 @@ public:
     }
 
 private:
-    uint32_t findMemoryType(::vk::MemoryPropertyFlags required, uint32_t mask) const;
-
     GPUProperties m_properties = {};
     HashSet<std::string> m_supportedExtensions = {};
     std::shared_ptr<void> m_pLastRequestedFeature = {};

@@ -127,6 +127,10 @@ public:
 private:
     VmaAllocator m_allocator;
 
+    VmaAllocationCreateInfo getAllocationCreateInfo(Image* pImage);
+    VmaAllocationCreateInfo getAllocationCreateInfo(Buffer* pBuffer);
+    VmaAllocationCreateInfo getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess);
+
     HashMap<Buffer*, std::unique_ptr<VMADeviceAllocation>> m_bufferMemoryMap;
     HashMap<Image*, std::unique_ptr<VMADeviceAllocation>> m_imageMemoryMap;
 

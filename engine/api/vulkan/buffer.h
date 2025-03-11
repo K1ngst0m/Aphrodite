@@ -13,7 +13,7 @@ struct BufferCreateInfo
 {
     std::size_t size = { 0 };
     ::vk::BufferUsageFlags usage = {};
-    BufferDomain domain = { BufferDomain::Device };
+    MemoryDomain domain = { MemoryDomain::Auto };
 };
 
 class Buffer : public ResourceHandle<::vk::Buffer, BufferCreateInfo>

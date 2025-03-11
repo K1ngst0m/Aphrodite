@@ -269,7 +269,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 vk::ImageCreateInfo createInfo{
                     .extent = colorAttachment->getInfo().extent,
                     .usage = colorAttachment->getUsage(),
-                    .domain = ImageDomain::Device,
+                    .domain = MemoryDomain::Device,
                     .imageType = ImageType::e2D,
                     .format = colorAttachment->getInfo().format,
                 };
@@ -291,7 +291,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 vk::ImageCreateInfo createInfo{
                     .extent = depthAttachment->getInfo().extent,
                     .usage = depthAttachment->getUsage(),
-                    .domain = ImageDomain::Device,
+                    .domain = MemoryDomain::Device,
                     .imageType = ImageType::e2D,
                     .format = depthAttachment->getInfo().format,
                 };

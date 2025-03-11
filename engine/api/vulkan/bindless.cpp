@@ -44,7 +44,7 @@ void BindlessResource::build()
 
         BufferCreateInfo bufferCreateInfo{ .size = m_handleData.dataBuilder.getData().size(),
                                            .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
-                                           .domain = BufferDomain::LinkedDeviceHost };
+                                           .domain = MemoryDomain::Host };
         APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
                                  std::format("Bindless Handle Buffer {}", count++)));
 

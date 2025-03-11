@@ -5,20 +5,13 @@
 
 namespace aph
 {
-enum class BufferDomain : uint8_t
+enum class MemoryDomain : uint8_t
 {
-    Device, // Device local. Probably not visible from CPU.
-    LinkedDeviceHost, // On desktop, directly mapped VRAM over PCI.
-    Host, // Host-only, needs to be synced to GPU. Might be device local as well on iGPUs.
-    CachedHost, //
-};
-
-enum class ImageDomain : uint8_t
-{
+    Auto,
     Device,
-    Transient,
-    LinearHostCached,
-    LinearHost
+    Upload,
+    Readback,
+    Host,
 };
 
 using DeviceAddress = uint64_t;
@@ -292,7 +285,7 @@ struct GPUFeature
     bool tessellationSupported : 1 = false;
     bool samplerAnisotropy : 1 = false;
     bool rayTracing : 1 = false;
-    bool bindless: 1 = false;
+    bool bindless : 1 = false;
 };
 
 struct GPUProperties

@@ -52,7 +52,7 @@ public:
     }
     void resize(uint32_t width, uint32_t height);
 
-    std::vector<const char*> getRequiredExtensions();
+    SmallVector<const char*> getRequiredExtensions();
 
     ::vk::SurfaceKHR getSurface(vk::Instance* instance);
 

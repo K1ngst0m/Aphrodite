@@ -166,7 +166,7 @@ void hello_aphrodite::init()
                                                         static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
                                                     .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
                                                              ::vk::BufferUsageFlagBits::eVertexBuffer,
-                                                    .domain = aph::BufferDomain::Device,
+                                                    .domain = aph::MemoryDomain::Device,
                                                 } };
 
             m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVertexBuffer);
@@ -180,7 +180,7 @@ void hello_aphrodite::init()
                                                     .size = static_cast<uint32_t>(indices.size() * sizeof(indices[0])),
                                                     .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
                                                              ::vk::BufferUsageFlagBits::eIndexBuffer,
-                                                    .domain = aph::BufferDomain::Device,
+                                                    .domain = aph::MemoryDomain::Device,
                                                 } };
 
             m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIndexBuffer);
@@ -205,7 +205,7 @@ void hello_aphrodite::init()
                                                 .createInfo = {
                                                     .size = sizeof(m_mvp),
                                                     .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
-                                                    .domain = aph::BufferDomain::LinkedDeviceHost,
+                                                    .domain = aph::MemoryDomain::Host,
                                                 } };
 
             m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatrixBffer);
@@ -219,7 +219,7 @@ void hello_aphrodite::init()
                                               .data = "texture://container2.png",
                                               .createInfo = {
                                                   .usage = ::vk::ImageUsageFlagBits::eSampled,
-                                                  .domain = aph::ImageDomain::Device,
+                                                  .domain = aph::MemoryDomain::Device,
                                                   .imageType = aph::ImageType::e2D,
                                               } };
 

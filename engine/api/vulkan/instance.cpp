@@ -103,7 +103,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         VK_VR(res);
         for (uint32_t idx = 0; const auto& gpu : gpus)
         {
-            auto pdImpl = std::make_unique<PhysicalDevice>(gpu);
+            auto pdImpl = instance->m_physicalDevicePools.allocate(gpu);
             auto gpuProperties = pdImpl->getProperties();
             VK_LOG_INFO(" == Device Info [%d] ==", idx);
             VK_LOG_INFO("Device Name: %s", gpuProperties.GpuVendorPreset.gpuName);

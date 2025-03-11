@@ -1,5 +1,6 @@
 #pragma once
 
+#include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "common/hash.h"
 #include <vulkan/vulkan.hpp>
@@ -9,8 +10,8 @@ namespace aph::vk
 struct InstanceCreateInfo
 {
     std::string appName{ "Aphrodite" };
-    std::vector<const char*> enabledLayers{};
-    std::vector<const char*> enabledExtensions{};
+    SmallVector<const char*> enabledLayers{};
+    SmallVector<const char*> enabledExtensions{};
     ::vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 };
 
@@ -24,7 +25,7 @@ public:
 
     PhysicalDevice* getPhysicalDevices(uint32_t idx)
     {
-        return m_physicalDevices[idx].get();
+        return m_physicalDevices[idx];
     }
 
 private:
@@ -32,6 +33,7 @@ private:
     ::vk::DebugUtilsMessengerEXT m_debugMessenger{};
 #endif
     Instance(const CreateInfoType& createInfo, HandleType handle);
-    std::vector<std::unique_ptr<PhysicalDevice>> m_physicalDevices{};
+    SmallVector<PhysicalDevice*> m_physicalDevices{};
+    ThreadSafeObjectPool<PhysicalDevice> m_physicalDevicePools;
 };
 } // namespace aph::vk

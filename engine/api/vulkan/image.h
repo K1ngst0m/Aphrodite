@@ -21,7 +21,7 @@ struct ImageCreateInfo
 
     ::vk::ImageUsageFlags usage = {};
 
-    ImageDomain domain = { ImageDomain::Device };
+    MemoryDomain domain = { MemoryDomain::Auto };
     ImageType imageType = { ImageType::e2D };
     Format format = { Format::Undefined };
 };

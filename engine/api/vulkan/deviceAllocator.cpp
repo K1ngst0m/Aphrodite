@@ -7,19 +7,6 @@
 
 namespace aph::vk
 {
-const HashMap<ImageDomain, VmaMemoryUsage> m_imageDomainUsageMap = {
-    { ImageDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY },
-    { ImageDomain::Transient, VMA_MEMORY_USAGE_GPU_LAZILY_ALLOCATED },
-    { ImageDomain::LinearHost, VMA_MEMORY_USAGE_CPU_TO_GPU },
-    { ImageDomain::LinearHostCached, VMA_MEMORY_USAGE_GPU_TO_CPU },
-};
-const HashMap<BufferDomain, VmaMemoryUsage> m_bufferDomainUsageMap = {
-    { BufferDomain::Device, VMA_MEMORY_USAGE_GPU_ONLY },
-    { BufferDomain::LinkedDeviceHost, VMA_MEMORY_USAGE_CPU_TO_GPU },
-    { BufferDomain::Host, VMA_MEMORY_USAGE_CPU_ONLY },
-    { BufferDomain::CachedHost, VMA_MEMORY_USAGE_GPU_TO_CPU },
-};
-
 VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
 {
     auto& table = VULKAN_HPP_DEFAULT_DISPATCHER;
@@ -75,15 +62,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(!m_bufferMemoryMap.contains(pBuffer));
 
-    const auto& bufferCI = pBuffer->getCreateInfo();
-
-    VmaMemoryUsage usage = VMA_MEMORY_USAGE_UNKNOWN;
-    if (m_bufferDomainUsageMap.contains(bufferCI.domain))
-    {
-        usage = m_bufferDomainUsageMap.at(bufferCI.domain);
-    }
-
-    VmaAllocationCreateInfo allocCreateInfo = { .usage = usage };
+    VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pBuffer);
     VmaAllocationInfo allocInfo;
     VmaAllocation allocation;
     vmaAllocateMemoryForBuffer(m_allocator, pBuffer->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
@@ -100,15 +79,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     std::lock_guard<std::mutex> lock{ m_allocationLock };
     APH_ASSERT(!m_imageMemoryMap.contains(pImage));
 
-    const auto& bufferCI = pImage->getCreateInfo();
-
-    VmaMemoryUsage usage = VMA_MEMORY_USAGE_UNKNOWN;
-    if (m_imageDomainUsageMap.contains(bufferCI.domain))
-    {
-        usage = m_imageDomainUsageMap.at(bufferCI.domain);
-    }
-
-    VmaAllocationCreateInfo allocCreateInfo = { .usage = usage };
+    VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(pImage);
     VmaAllocationInfo allocInfo;
     VmaAllocation allocation;
     vmaAllocateMemoryForImage(m_allocator, pImage->getHandle(), &allocCreateInfo, &allocation, &allocInfo);
@@ -213,4 +184,68 @@ Result VMADeviceAllocator::invalidate(Buffer* pBuffer, Range range)
     return utils::getResult(
         vmaInvalidateAllocation(m_allocator, m_bufferMemoryMap[pBuffer]->getHandle(), range.offset, range.size));
 }
+
+VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(MemoryDomain memoryDomain, bool deviceAccess)
+{
+    VmaAllocationCreateInfo allocationCreateInfo{};
+    allocationCreateInfo.usage = VMA_MEMORY_USAGE_UNKNOWN; // Default to unknown usage
+
+    switch (memoryDomain)
+    {
+    // TODO
+    case MemoryDomain::Auto:
+    case MemoryDomain::Device:
+    {
+        allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    }
+    break;
+    case MemoryDomain::Host:
+    {
+        allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        allocationCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT |
+                                     VMA_ALLOCATION_CREATE_HOST_ACCESS_ALLOW_TRANSFER_INSTEAD_BIT |
+                                     VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    }
+    break;
+    case MemoryDomain::Upload:
+    {
+        allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        allocationCreateInfo.flags =
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    }
+    break;
+    case MemoryDomain::Readback:
+    {
+        allocationCreateInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        allocationCreateInfo.preferredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+        allocationCreateInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+    }
+    break;
+    }
+
+    return allocationCreateInfo;
+}
+
+VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Image* pImage)
+{
+    APH_ASSERT(pImage);
+    const auto& imageCreateInfo = pImage->getCreateInfo();
+    bool deviceAccess = static_cast<bool>(
+        imageCreateInfo.usage & ~(::vk::ImageUsageFlagBits::eTransferDst | ::vk::ImageUsageFlagBits::eTransferSrc));
+    VmaAllocationCreateInfo allocationCreateInfo = getAllocationCreateInfo(imageCreateInfo.domain, deviceAccess);
+    return allocationCreateInfo;
+}
+
+VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Buffer* pBuffer)
+{
+    APH_ASSERT(pBuffer);
+    const auto& bufferCreateInfo = pBuffer->getCreateInfo();
+    bool deviceAccess = static_cast<bool>(
+        bufferCreateInfo.usage & ~(::vk::BufferUsageFlagBits::eTransferDst | ::vk::BufferUsageFlagBits::eTransferSrc));
+    VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(bufferCreateInfo.domain, deviceAccess);
+    return allocCreateInfo;
+}
+
 } // namespace aph::vk
