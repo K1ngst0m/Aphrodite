@@ -437,7 +437,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
         vk::BufferCreateInfo bufferCI{
             .size = static_cast<uint32_t>(data.size()),
             .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
-            .domain = MemoryDomain::Host,
+            .domain = MemoryDomain::Upload,
         };
         APH_VR(m_pDevice->create(bufferCI, &stagingBuffer, std::string{ info.debugName } + std::string{ "_staging" }));
 
@@ -723,7 +723,7 @@ void ResourceLoader::update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer)
                     vk::BufferCreateInfo stagingCI{
                         .size = static_cast<uint32_t>(copyRange.size),
                         .usage = ::vk::BufferUsageFlagBits::eTransferSrc,
-                        .domain = MemoryDomain::Host,
+                        .domain = MemoryDomain::Upload,
                     };
 
                     APH_VR(m_pDevice->create(stagingCI, &stagingBuffer, "staging buffer"));
