@@ -7,13 +7,6 @@ struct VertexIn
     float2 padding;
 };
 
-struct VertexBuffer
-{
-    StructuredBuffer<VertexIn> vertices;
-    StructuredBuffer<uint> indices;
-
-};
-
 struct TransformMatrix
 {
     float4x4 model;
@@ -69,9 +62,9 @@ void taskMain()
 
 VertexIn GetVertex(uint idx)
 {
-    VertexIn* vertices = bindless::getBufferPtr<VertexIn>(handleData.vertexBuffer);
-    uint* indices = bindless::getBufferPtr<uint>(handleData.indexBuffer);
-    return vertices[indices[idx]];
+    let vertexId = bindless::getBuffer<uint>(handleData.indexBuffer, idx);
+    let vertex = bindless::getBuffer<VertexIn>(handleData.vertexBuffer, vertexId);
+    return vertex;
 }
 
 [outputtopology("triangle")]
@@ -85,24 +78,25 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
     {
         return;
     }
+    uint primId = tid.x;
 
-    let mat = bindless::getBufferPtr<TransformMatrix>(handleData.transform);
+    let mat = bindless::getBuffer<TransformMatrix>(handleData.transform);
 
-    int i0 = tid.x * 3;
+    int i0 = primId * 3;
 
     VertexIn v0 = GetVertex(i0);
     VertexIn v1 = GetVertex(i0 + 1);
     VertexIn v2 = GetVertex(i0 + 2);
 
-    vertices[i0 + 0].position = mat->transform(v0.position);
-    vertices[i0 + 1].position = mat->transform(v1.position);
-    vertices[i0 + 2].position = mat->transform(v2.position);
+    vertices[i0 + 0].position = mat.transform(v0.position);
+    vertices[i0 + 1].position = mat.transform(v1.position);
+    vertices[i0 + 2].position = mat.transform(v2.position);
 
     vertices[i0 + 0].uv = v0.uv;
     vertices[i0 + 1].uv = v1.uv;
     vertices[i0 + 2].uv = v2.uv;
 
-    triangles[tid.x] = uint3(i0, i0+1, i0+2);
+    triangles[primId] = uint3(i0, i0+1, i0+2);
 }
 
 // ╭────────────────────────────────────────────╮

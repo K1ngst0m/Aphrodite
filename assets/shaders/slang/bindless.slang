@@ -22,10 +22,17 @@ enum Set
 namespace bindless
 {
     __generic<typename T>
+    T getBuffer(uint id, uint64_t offset = 0)
+    {
+        T* ptr = (T*)bufferAddressTable[id];
+        return *(ptr + offset);
+    }
+
+    __generic<typename T>
     T* getBufferPtr(uint id)
     {
-        uint64_t address = bufferAddressTable[id];
-        return (T*)address;
+        T* ptr = (T*)bufferAddressTable[id];
+        return (T*)ptr;
     }
 
     Texture2D getSampledImage(uint id)
