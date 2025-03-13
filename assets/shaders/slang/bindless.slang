@@ -50,8 +50,58 @@ namespace bindless
         return samplers[id];
     }
 
+    float4 sample(uint textureId, uint samplerId, float2 uv)
+    {
+        let samp = bindless::getSampler(samplerId);
+        let tex = bindless::getSampledImage(textureId);
+        return tex.Sample(samp, uv);
+    }
+
     /* SamplerComparisonState getSamplerComparisons(uint id) */
     /* { */
     /*     return samplerComparisons[id]; */
     /* } */
+}
+
+namespace bindless
+{
+    struct ResourceHandle
+    {
+        __init(uint val)
+        {
+            id = val;
+        }
+        uint id;
+    };
+
+    struct Buffer: ResourceHandle
+    {
+        __generic<typename T>
+        T get(uint64_t offset = 0)
+        {
+            return getBuffer<T>(id, offset);
+        }
+
+        __generic<typename T>
+        T* getPtr()
+        {
+            return getBufferPtr<T>(id);
+        }
+    };
+
+    struct Sampler2D: ResourceHandle
+    {};
+
+    struct Texture: ResourceHandle
+    {
+        float4 sample(uint samplerId, float2 uv)
+        {
+            return sample(id, samplerId, uv);
+        }
+
+        float4 sample(Sampler2D samp, float2 uv)
+        {
+            return sample(id, samp.id, uv);
+        }
+    };
 }

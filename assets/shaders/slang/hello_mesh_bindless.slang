@@ -31,9 +31,18 @@ struct HandleData
     uint texture;
     uint samp;
     uint transform;
-    uint vertexBuffer;
-    uint indexBuffer;
+    uint vertex;
+    uint index;
 };
+
+namespace handle
+{
+    static bindless::Texture texture = bindless::Texture(handleData.texture);
+    static bindless::Sampler2D samp = bindless::Sampler2D(handleData.index);
+    static bindless::Buffer transform = bindless::Buffer(handleData.transform);
+    static bindless::Buffer vertex = bindless::Buffer(handleData.vertex);
+    static bindless::Buffer index = bindless::Buffer(handleData.index);
+}
 
 // ╭────────────────────────────────────────────╮
 // │                Task Shader                 │
@@ -60,10 +69,10 @@ void taskMain()
 
 [[vk::binding(0, 1)]] ConstantBuffer<HandleData> handleData;
 
-VertexIn GetVertex(uint idx)
+VertexIn GetVertex(uint indexId)
 {
-    let vertexId = bindless::getBuffer<uint>(handleData.indexBuffer, idx);
-    let vertex = bindless::getBuffer<VertexIn>(handleData.vertexBuffer, vertexId);
+    let vertexId = handle::index.get<uint>(indexId);
+    let vertex = handle::vertex.get<VertexIn>(vertexId);
     return vertex;
 }
 
@@ -80,7 +89,7 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
     }
     uint primId = tid.x;
 
-    let mat = bindless::getBuffer<TransformMatrix>(handleData.transform);
+    let mat = handle::transform.get<TransformMatrix>();
 
     int i0 = primId * 3;
 
@@ -105,8 +114,11 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
 [shader("fragment")]
 float4 fragMain(VertexOutput input) : SV_TARGET
 {
-    let samp = bindless::getSampler(handleData.samp);
-    let tex = bindless::getSampledImage(handleData.texture);
-    float4 color = tex.Sample(samp, input.uv);
+    // equivalent:
+    /* let samp = bindless::getSampler(handleData.samp); */
+    /* let tex = bindless::getSampledImage(handleData.texture); */
+    /* float4 color = tex.Sample(samp, input.uv); */
+    let color = handle::texture.sample(handle::samp, input.uv);
+
     return color;
 }
