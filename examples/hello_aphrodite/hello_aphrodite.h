@@ -32,7 +32,7 @@ private:
     aph::vk::Sampler* m_pSampler = {};
     aph::vk::Image* m_pImage = {};
 
-    uint32_t m_handleOffset = 0;
+    uint32_t m_drawDataOffset = 0;
 
 private:
     std::unique_ptr<aph::Renderer> m_renderer = {};

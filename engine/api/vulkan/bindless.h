@@ -89,9 +89,8 @@ class BindlessResource
     {
         eSampledImage = 0,
         eStorageImage = 1,
-        eUniformBuffer = 2,
-        eStorageBuffer = 3,
-        eSampler = 4,
+        eBuffer = 2,
+        eSampler = 3,
         ResourceTypeCount
     };
 
@@ -105,7 +104,7 @@ public:
 
     struct HandleId
     {
-        uint32_t id = std::numeric_limits<uint32_t>::max();
+        uint32_t id = InvalidId;
         operator uint32_t() const
         {
             return id;
@@ -131,7 +130,7 @@ public:
 
     void build();
 
-    HandleId updateResource(Buffer* pBuffer, ::vk::BufferUsageFlagBits2 usage);
+    HandleId updateResource(Buffer* pBuffer);
     HandleId updateResource(Image* pImage, ::vk::ImageUsageFlagBits usage);
     HandleId updateResource(Sampler* pSampler);
 
@@ -175,6 +174,9 @@ private:
 
     struct Resource
     {
+        static constexpr std::size_t AddressTableSize = 4 * memory::KB;
+        Buffer* pAddressTableBuffer = {};
+        std::span<uint64_t> addressTableMap;
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
     } m_resourceData;

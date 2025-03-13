@@ -193,6 +193,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
         SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = setInfos[set].bindings;
         SmallVector<::vk::DescriptorPoolSize>& poolSizes = setInfos[set].poolSizes;
 
+        bool hasBindless = false;
         for (unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
         {
             const auto stages = static_cast<::vk::ShaderStageFlags>(stageForBinds[binding]);
@@ -207,6 +208,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
             {
                 arraySize = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
                 poolArraySize = arraySize;
+                hasBindless = true;
             }
             else
             {
@@ -254,8 +256,11 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
 
             if (shaderLayout.uniformBufferMask.test(binding))
             {
-                vkBindings.push_back({ binding, ::vk::DescriptorType::eUniformBufferDynamic, arraySize, stages, nullptr });
-                poolSizes.push_back({ ::vk::DescriptorType::eUniformBufferDynamic, poolArraySize });
+                // TODO
+                auto descriptorType = arraySize == hasBindless ? ::vk::DescriptorType::eUniformBuffer :
+                                                                 ::vk::DescriptorType::eUniformBufferDynamic;
+                vkBindings.push_back({ binding, descriptorType, arraySize, stages, nullptr });
+                poolSizes.push_back({ descriptorType, poolArraySize });
                 types++;
             }
 

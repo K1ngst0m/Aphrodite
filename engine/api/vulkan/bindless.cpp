@@ -21,6 +21,20 @@ BindlessResource::BindlessResource(ShaderProgram* pProgram, Device* pDevice)
         m_resourceData.pSetLayout = pSetLayout;
         APH_ASSERT(m_resourceData.pSetLayout->isBindless());
         m_resourceData.pSet = m_resourceData.pSetLayout->allocateSet();
+
+        // address table buffer
+        BufferCreateInfo bufferCreateInfo{
+            .size = Resource::AddressTableSize,
+            .usage = ::vk::BufferUsageFlagBits::eStorageBuffer,
+            .domain = MemoryDomain::Host,
+        };
+        APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
+        m_resourceData.addressTableMap =
+            std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
+                       Resource::AddressTableSize };
+
+        DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
+        APH_VR(m_resourceData.pSet->update(updateInfo));
     }
 }
 
@@ -66,36 +80,15 @@ void BindlessResource::build()
     m_resourceUpdateInfos.clear();
 }
 
-BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer, ::vk::BufferUsageFlagBits2 usage)
+BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
 {
     if (!m_bufferIds.contains(pBuffer))
     {
         auto id = HandleId{ static_cast<uint32_t>(m_buffers.size()) };
+        APH_ASSERT(id >= Resource::AddressTableSize);
         m_buffers.push_back(pBuffer);
         m_bufferIds[pBuffer] = id;
-
-        DescriptorUpdateInfo updateInfo{ .arrayOffset = id, .buffers = { pBuffer }, .bufferUsage = usage };
-        switch (usage)
-        {
-        case ::vk::BufferUsageFlagBits2::eStorageTexelBuffer:
-        case ::vk::BufferUsageFlagBits2::eStorageBuffer:
-        {
-            updateInfo.binding = eStorageBuffer;
-        }
-        break;
-        case ::vk::BufferUsageFlagBits2::eUniformTexelBuffer:
-        case ::vk::BufferUsageFlagBits2::eUniformBuffer:
-        {
-            updateInfo.binding = eUniformBuffer;
-        }
-        break;
-        default:
-            VK_LOG_ERR("Buffer usage [%s] is invalid in bindless resource.", ::vk::to_string(usage));
-            APH_ASSERT(false);
-            return HandleId{};
-            break;
-        }
-        m_resourceUpdateInfos.push_back(std::move(updateInfo));
+        m_resourceData.addressTableMap[id] = m_pDevice->getDeviceAddress(pBuffer);
     }
 
     return m_bufferIds.at(pBuffer);
@@ -156,6 +149,13 @@ void BindlessResource::clear()
     {
         m_pDevice->destroy(m_handleData.pBuffer);
         m_handleData.pBuffer = nullptr;
+    }
+
+    if (m_resourceData.pAddressTableBuffer)
+    {
+        m_pDevice->unMapMemory(m_resourceData.pAddressTableBuffer);
+        m_pDevice->destroy(m_resourceData.pAddressTableBuffer);
+        m_resourceData.pAddressTableBuffer = nullptr;
     }
 
     m_handleData.dataBuilder.reset();

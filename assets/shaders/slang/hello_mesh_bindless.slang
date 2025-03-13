@@ -1,3 +1,47 @@
+import bindless;
+
+struct VertexIn
+{
+    float4 position;
+    float2 uv;
+    float2 padding;
+};
+
+struct VertexBuffer
+{
+    StructuredBuffer<VertexIn> vertices;
+    StructuredBuffer<uint> indices;
+
+};
+
+struct TransformMatrix
+{
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+
+    float4 transform(float4 position)
+    {
+        float4x4 mvp = mul(mul(model, view), projection);
+        return mul(position, mvp);
+    }
+};
+
+struct VertexOutput
+{
+    float4 position : SV_Position;
+    float2 uv : TEXCOORD0;
+};
+
+struct HandleData
+{
+    uint texture;
+    uint samp;
+    uint transform;
+    uint vertexBuffer;
+    uint indexBuffer;
+};
+
 // ╭────────────────────────────────────────────╮
 // │                Task Shader                 │
 // ╰────────────────────────────────────────────╯
@@ -21,37 +65,14 @@ void taskMain()
 #define MAX_NUM_VERTS 36
 #define MAX_NUM_PRIMS (MAX_NUM_VERTS / 3)
 
-[[vk::binding(0, 0)]] Texture2D sampledImage[];
-[[vk::binding(4, 0)]] SamplerState samp[];
+[[vk::binding(0, 1)]] ConstantBuffer<HandleData> handleData;
 
-struct VertexIn
+VertexIn GetVertex(uint idx)
 {
-    float4 position;
-    float2 uv;
-    float2 padding;
-};
-
-[[vk::binding(0, 1)]] cbuffer handle
-{
-    uint textureId;
-    uint samplerId;
-    TransformMatrix* uboPtr;
-    VertexIn* vertexBufferPtr;
-    uint* indexBufferPtr;
-};
-
-struct TransformMatrix
-{
-    float4x4 model;
-    float4x4 view;
-    float4x4 projection;
-};
-
-struct VertexOutput
-{
-    float4 position : SV_Position;
-    float2 uv : TEXCOORD0;
-};
+    VertexIn* vertices = bindless::getBufferPtr<VertexIn>(handleData.vertexBuffer);
+    uint* indices = bindless::getBufferPtr<uint>(handleData.indexBuffer);
+    return vertices[indices[idx]];
+}
 
 [outputtopology("triangle")]
 [numthreads(32, 1, 1)]
@@ -65,18 +86,17 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
         return;
     }
 
-    TransformMatrix mat = *uboPtr;
-    float4x4 mvp = mul(mul(mat.model, mat.view), mat.projection);
+    let mat = bindless::getBufferPtr<TransformMatrix>(handleData.transform);
 
     int i0 = tid.x * 3;
 
-    VertexIn v0 = vertexBufferPtr[indexBufferPtr[i0]];
-    VertexIn v1 = vertexBufferPtr[indexBufferPtr[i0 + 1]];
-    VertexIn v2 = vertexBufferPtr[indexBufferPtr[i0 + 2]];
+    VertexIn v0 = GetVertex(i0);
+    VertexIn v1 = GetVertex(i0 + 1);
+    VertexIn v2 = GetVertex(i0 + 2);
 
-    vertices[i0 + 0].position = mul(v0.position, mvp);
-    vertices[i0 + 1].position = mul(v1.position, mvp);
-    vertices[i0 + 2].position = mul(v2.position, mvp);
+    vertices[i0 + 0].position = mat->transform(v0.position);
+    vertices[i0 + 1].position = mat->transform(v1.position);
+    vertices[i0 + 2].position = mat->transform(v2.position);
 
     vertices[i0 + 0].uv = v0.uv;
     vertices[i0 + 1].uv = v1.uv;
@@ -91,6 +111,8 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
 [shader("fragment")]
 float4 fragMain(VertexOutput input) : SV_TARGET
 {
-    float4 color = sampledImage[(textureId)].Sample(samp[(samplerId)], input.uv);
+    let samp = bindless::getSampler(handleData.samp);
+    let tex = bindless::getSampledImage(handleData.texture);
+    float4 color = tex.Sample(samp, input.uv);
     return color;
 }

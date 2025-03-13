@@ -282,25 +282,28 @@ void hello_aphrodite::init()
             auto bindlessResource = m_pDevice->getBindlessResource(m_program[ShadingType::MeshBindless]);
             auto textureId = bindlessResource->updateResource(m_pImage, ::vk::ImageUsageFlagBits::eSampled);
             auto samplerId = bindlessResource->updateResource(m_pSampler);
+            auto matrixBufferId = bindlessResource->updateResource(m_pMatrixBffer);
+            auto vertexBufferId = bindlessResource->updateResource(m_pVertexBuffer);
+            auto indexBufferId = bindlessResource->updateResource(m_pIndexBuffer);
 
             struct ResourceHandleData
             {
                 uint32_t textureId;
                 uint32_t samplerId;
-                aph::DeviceAddress matrixAddress;
-                aph::DeviceAddress vertexBufferAddress;
-                aph::DeviceAddress indexBufferAddress;
+                uint32_t matrixAddress;
+                uint32_t vertexBufferAddress;
+                uint32_t indexBufferAddress;
             };
 
             ResourceHandleData data{
                 .textureId = textureId,
                 .samplerId = samplerId,
-                .matrixAddress = m_pDevice->getDeviceAddress(m_pMatrixBffer),
-                .vertexBufferAddress = m_pDevice->getDeviceAddress(m_pVertexBuffer),
-                .indexBufferAddress = m_pDevice->getDeviceAddress(m_pIndexBuffer),
+                .matrixAddress = matrixBufferId,
+                .vertexBufferAddress = vertexBufferId,
+                .indexBufferAddress = indexBufferId,
             };
 
-            m_handleOffset = bindlessResource->addRange(data);
+            m_drawDataOffset = bindlessResource->addRange(data);
         }
 
         // record graph execution
@@ -373,7 +376,7 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_handleOffset });
+                            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_drawDataOffset });
                             pCmd->endDebugLabel();
                         }
                         break;
