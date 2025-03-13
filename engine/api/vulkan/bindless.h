@@ -91,15 +91,15 @@ class BindlessResource
         eStorageImage = 1,
         eBuffer = 2,
         eSampler = 3,
-        ResourceTypeCount
+        eResourceTypeCount
     };
 
 public:
     enum SetIdx
     {
-        ResourceSetIdx = 0,
-        HandleSetIdx = 1,
-        UpperBound
+        eResourceSetIdx = 0,
+        eHandleSetIdx = 1,
+        eUpperBound
     };
 
     struct HandleId
@@ -112,7 +112,7 @@ public:
         static constexpr uint32_t InvalidId = std::numeric_limits<uint32_t>::max();
     };
 
-    BindlessResource(ShaderProgram* pProgram, Device* pDevice);
+    BindlessResource(Device* pDevice);
     ~BindlessResource();
 
     void clear();

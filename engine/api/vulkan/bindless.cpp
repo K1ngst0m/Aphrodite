@@ -3,20 +3,69 @@
 
 namespace aph::vk
 {
-BindlessResource::BindlessResource(ShaderProgram* pProgram, Device* pDevice)
+BindlessResource::BindlessResource(Device* pDevice)
     : m_pDevice(pDevice)
     , m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
 {
     // handle descriptor
     {
-        auto pSetLayout = pProgram->getSetLayout(BindlessResource::HandleSetIdx);
+        DescriptorSetLayout* pSetLayout = {};
+        {
+            DescriptorSetLayoutCreateInfo layoutCreateInfo{};
+            ::vk::DescriptorSetLayoutBinding binding{};
+            binding.setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                .setDescriptorType(::vk::DescriptorType::eUniformBufferDynamic)
+                .setBinding(0)
+                .setDescriptorCount(1);
+            layoutCreateInfo.bindings.push_back(binding);
+            ::vk::DescriptorPoolSize poolSize{};
+            poolSize.setDescriptorCount(1).setType(::vk::DescriptorType::eUniformBuffer);
+            layoutCreateInfo.poolSizes.push_back(poolSize);
+            APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout));
+        }
         m_handleData.pSetLayout = pSetLayout;
         m_handleData.pSet = pSetLayout->allocateSet();
     }
 
     // update resource
     {
-        auto pSetLayout = pProgram->getSetLayout(BindlessResource::ResourceSetIdx);
+        DescriptorSetLayout* pSetLayout = {};
+        {
+            constexpr std::array descriptorTypeMaps{ ::vk::DescriptorType::eSampledImage,
+                                                     ::vk::DescriptorType::eStorageImage,
+                                                     ::vk::DescriptorType::eStorageBuffer,
+                                                     ::vk::DescriptorType::eSampler };
+
+            DescriptorSetLayoutCreateInfo layoutCreateInfo{};
+
+            for (uint32_t idx = 0; idx < eResourceTypeCount; ++idx)
+            {
+                //TODO
+                if (idx == eStorageImage)
+                    continue;
+
+                ::vk::DescriptorSetLayoutBinding binding{};
+                auto descriptorCount = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+                auto descriptorType = descriptorTypeMaps.at(idx);
+
+                binding.setBinding(idx)
+                    .setDescriptorCount(descriptorCount)
+                    .setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                    .setDescriptorType(descriptorType);
+                layoutCreateInfo.bindings.push_back(binding);
+
+                ::vk::DescriptorPoolSize poolSize{};
+                poolSize.setDescriptorCount(descriptorCount).setType(descriptorType);
+                layoutCreateInfo.poolSizes.push_back(poolSize);
+            }
+            //TODO
+            // layoutCreateInfo.bindings[eStorageImage].setDescriptorCount(0);
+            //TODO
+            layoutCreateInfo.bindings[eBuffer - 1].setDescriptorCount(1);
+
+            APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout, "bindless resource layout"));
+        }
+
         // TODO verify if bindless
         m_resourceData.pSetLayout = pSetLayout;
         APH_ASSERT(m_resourceData.pSetLayout->isBindless());
@@ -29,9 +78,8 @@ BindlessResource::BindlessResource(ShaderProgram* pProgram, Device* pDevice)
             .domain = MemoryDomain::Host,
         };
         APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
-        m_resourceData.addressTableMap =
-            std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
-                       Resource::AddressTableSize };
+        m_resourceData.addressTableMap = std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
+                                                    Resource::AddressTableSize };
 
         DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
         APH_VR(m_resourceData.pSet->update(updateInfo));
@@ -156,6 +204,17 @@ void BindlessResource::clear()
         m_pDevice->unMapMemory(m_resourceData.pAddressTableBuffer);
         m_pDevice->destroy(m_resourceData.pAddressTableBuffer);
         m_resourceData.pAddressTableBuffer = nullptr;
+    }
+
+    if (m_resourceData.pSetLayout)
+    {
+        m_pDevice->destroy(m_resourceData.pSetLayout);
+        m_resourceData.pSetLayout = nullptr;
+    }
+
+    if (m_handleData.pSetLayout)
+    {
+        m_pDevice->destroy(m_handleData.pSetLayout);
     }
 
     m_handleData.dataBuilder.reset();

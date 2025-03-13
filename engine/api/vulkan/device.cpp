@@ -312,22 +312,28 @@ Result Device::create(const DescriptorSetLayoutCreateInfo& createInfo, Descripto
     const SmallVector<::vk::DescriptorSetLayoutBinding>& vkBindings = createInfo.bindings;
     const SmallVector<::vk::DescriptorPoolSize>& poolSizes = createInfo.poolSizes;
 
-    bool isBindless = !vkBindings.empty() && vkBindings[0].descriptorCount == VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
-
     auto bindlessFlags =
         ::vk::DescriptorBindingFlagBits::eUpdateAfterBind | ::vk::DescriptorBindingFlagBits::ePartiallyBound;
 
-    SmallVector<::vk::DescriptorBindingFlags> flags(vkBindings.size(),
-                                                    isBindless ? bindlessFlags : ::vk::DescriptorBindingFlags{});
+    bool isBindless = false;
+    for (const auto& vkBinding : vkBindings)
+    {
+        if (vkBinding.descriptorCount == VULKAN_NUM_BINDINGS_BINDLESS_VARYING)
+        {
+            isBindless = true;
+        }
+    }
 
+    SmallVector<::vk::DescriptorBindingFlags> flags(vkBindings.size(), bindlessFlags);
     ::vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
     bindingFlagsCreateInfo.setBindingFlags(flags);
 
     ::vk::DescriptorSetLayoutCreateInfo vkCreateInfo = {};
-    vkCreateInfo.setPNext(&bindingFlagsCreateInfo).setBindings(vkBindings);
+    vkCreateInfo.setBindings(vkBindings);
     if (isBindless)
     {
-        vkCreateInfo.setFlags(::vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool);
+        vkCreateInfo.setPNext(&bindingFlagsCreateInfo)
+            .setFlags(::vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool);
     }
 
     auto [result, vkSetLayout] = getHandle().createDescriptorSetLayout(vkCreateInfo, vk_allocator());
@@ -514,9 +520,9 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
 
-    if (auto setLayout = (*ppProgram)->getSetLayout(BindlessResource::ResourceSetIdx); setLayout->isBindless())
+    if (auto setLayout = (*ppProgram)->getSetLayout(BindlessResource::eResourceSetIdx); setLayout->isBindless())
     {
-        m_resourcePool.bindless[*ppProgram] = std::make_unique<BindlessResource>(*ppProgram, this);
+        m_resourcePool.bindless[*ppProgram] = std::make_unique<BindlessResource>(this);
     }
 
     return Result::Success;

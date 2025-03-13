@@ -632,7 +632,7 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
         setDirty(DirtyFlagBits::vertexInput);
     }
 
-    if (auto setLayout = pProgram->getSetLayout(BindlessResource::ResourceSetIdx); setLayout->isBindless())
+    if (auto setLayout = pProgram->getSetLayout(BindlessResource::eResourceSetIdx); setLayout->isBindless())
     {
         if (!m_commandState.bindlessResource)
         {
@@ -641,7 +641,7 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
             auto resourceSet = m_commandState.bindlessResource->getResourceSet();
             SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
             getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
-                                           BindlessResource::ResourceSetIdx, { resourceSet->getHandle() },
+                                           BindlessResource::eResourceSetIdx, { resourceSet->getHandle() },
                                            dynamicOffsets);
         }
     }
@@ -733,7 +733,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
             const auto& bindless = m_commandState.bindlessResource;
             SmallVector<uint32_t> dynamicOffsets(bindless->getHandleLayout()->getDynamicUniformCount(), 0);
             ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
-            bindDescriptorSetsInfo.setFirstSet(BindlessResource::HandleSetIdx)
+            bindDescriptorSetsInfo.setFirstSet(BindlessResource::eHandleSetIdx)
                 .setLayout(pProgram->getPipelineLayout())
                 .setStageFlags(::vk::ShaderStageFlagBits::eAll)
                 .setDynamicOffsets(dynamicOffset)
@@ -747,7 +747,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
         m_commandState.resourceBindings.setBit,
         [this, &resBindings, &pProgram](uint32_t setIdx)
         {
-            if (m_commandState.bindlessResource && setIdx < BindlessResource::UpperBound)
+            if (m_commandState.bindlessResource && setIdx < BindlessResource::eUpperBound)
             {
                 return;
             }
