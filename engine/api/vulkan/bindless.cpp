@@ -137,6 +137,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
 {
     if (!m_bufferIds.contains(pBuffer))
     {
+        std::lock_guard<std::mutex> lock{ m_mtx };
         auto id = HandleId{ static_cast<uint32_t>(m_buffers.size()) };
         APH_ASSERT(id < Resource::AddressTableSize);
         m_buffers.push_back(pBuffer);
@@ -151,6 +152,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
 {
     if (!m_imageIds.contains(pImage))
     {
+        std::lock_guard<std::mutex> lock{ m_mtx };
         APH_ASSERT(m_images.size() < std::numeric_limits<uint32_t>::max());
         auto id = HandleId{ static_cast<uint32_t>(m_images.size()) };
         m_images.push_back(pImage);
@@ -167,6 +169,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
 {
     if (!m_samplerIds.contains(pSampler))
     {
+        std::lock_guard<std::mutex> lock{ m_mtx };
         APH_ASSERT(m_samplers.size() < std::numeric_limits<uint32_t>::max());
         auto id = HandleId{ static_cast<uint32_t>(m_samplers.size()) };
         m_samplers.push_back(pSampler);
@@ -180,6 +183,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
 }
 void BindlessResource::clear()
 {
+    std::lock_guard<std::mutex> lock{ m_mtx };
     if (m_handleData.pBuffer)
     {
         m_pDevice->destroy(m_handleData.pBuffer);
