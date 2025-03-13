@@ -123,15 +123,8 @@ void updateArrayInfo(ResourceLayout& resourceLayout, const spirv_cross::SPIRType
         {
             if (type.array.front() == 0)
             {
-                if (binding != 0)
-                {
-                    VK_LOG_ERR("Bindless resource can only be used with binding = 0 in a set.");
-                }
-
-                {
-                    resourceLayout.bindlessSetMask.set(set);
-                    resourceLayout.layouts[set].fpMask.reset();
-                }
+                resourceLayout.bindlessSetMask.set(set);
+                resourceLayout.layouts[set].fpMask.reset();
 
                 size = ShaderLayout::UNSIZED_ARRAY;
             }
@@ -558,19 +551,19 @@ void ShaderReflector::reflect()
         m_combinedLayout.bindlessDescriptorSetMask |= shaderLayout.bindlessSetMask;
     }
 
-    for (unsigned set = 0; set < VULKAN_NUM_DESCRIPTOR_SETS; set++)
+    for (unsigned setIdx = 0; setIdx < VULKAN_NUM_DESCRIPTOR_SETS; setIdx++)
     {
-        CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[set];
+        CombinedResourceLayout::SetInfo& setInfo = combinedSetInfos[setIdx];
 
         if (samplerBank)
         {
             aph::utils::forEachBit(setInfo.shaderLayout.samplerMask | setInfo.shaderLayout.sampledImageMask,
                                    [&](uint32_t binding)
                                    {
-                                       if (samplerBank->samplers[set][binding])
+                                       if (samplerBank->samplers[setIdx][binding])
                                        {
-                                           extImmutableSamplers.samplers[set][binding] =
-                                               samplerBank->samplers[set][binding];
+                                           extImmutableSamplers.samplers[setIdx][binding] =
+                                               samplerBank->samplers[setIdx][binding];
                                            setInfo.shaderLayout.immutableSamplerMask.set(binding);
                                        }
                                    });
@@ -578,22 +571,13 @@ void ShaderReflector::reflect()
 
         if (setInfo.stagesForSets)
         {
-            m_combinedLayout.descriptorSetMask.set(set);
+            m_combinedLayout.descriptorSetMask.set(setIdx);
 
             for (unsigned binding = 0; binding < VULKAN_NUM_BINDINGS; binding++)
             {
                 auto& arraySize = setInfo.shaderLayout.arraySize[binding];
                 if (arraySize == ShaderLayout::UNSIZED_ARRAY)
                 {
-                    for (unsigned i = 1; i < VULKAN_NUM_BINDINGS; i++)
-                    {
-                        if (setInfo.stagesForBindings[i])
-                        {
-                            VK_LOG_ERR("Using bindless for set = %u, but binding = %u has a descriptor attached to it.",
-                                       i, i);
-                        }
-                    }
-
                     // Allows us to have one unified descriptor set layout for bindless.
                     setInfo.stagesForBindings[binding] = ::vk::ShaderStageFlagBits::eAll;
                 }

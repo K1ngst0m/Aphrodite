@@ -150,7 +150,7 @@ aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> lo
 
     TargetDesc targetDesc;
     targetDesc.format = SLANG_SPIRV;
-    targetDesc.profile = globalSession->findProfile("spirv");
+    targetDesc.profile = globalSession->findProfile("spirv_1_6");
 
     targetDesc.compilerOptionEntryCount = compilerOptions.size();
     targetDesc.compilerOptionEntries = compilerOptions.data();

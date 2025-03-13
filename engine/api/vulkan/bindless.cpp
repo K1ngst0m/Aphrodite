@@ -144,7 +144,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
         m_samplers.push_back(pSampler);
         m_samplerIds[pSampler] = id;
 
-        DescriptorUpdateInfo updateInfo{ .arrayOffset = { id }, .samplers = { pSampler } };
+        DescriptorUpdateInfo updateInfo{ .binding = eSampler, .arrayOffset = { id }, .samplers = { pSampler } };
         m_resourceUpdateInfos.push_back(std::move(updateInfo));
     }
 

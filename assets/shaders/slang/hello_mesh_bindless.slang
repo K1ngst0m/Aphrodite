@@ -22,7 +22,7 @@ void taskMain()
 #define MAX_NUM_PRIMS (MAX_NUM_VERTS / 3)
 
 [[vk::binding(0, 0)]] Texture2D sampledImage[];
-[[vk::binding(3, 2)]] SamplerState samp;
+[[vk::binding(4, 0)]] SamplerState samp[];
 
 struct VertexIn
 {
@@ -34,6 +34,7 @@ struct VertexIn
 [[vk::binding(0, 1)]] cbuffer handle
 {
     uint textureId;
+    uint samplerId;
     TransformMatrix* uboPtr;
     VertexIn* vertexBufferPtr;
     uint* indexBufferPtr;
@@ -90,6 +91,6 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
 [shader("fragment")]
 float4 fragMain(VertexOutput input) : SV_TARGET
 {
-    float4 color = sampledImage[NonUniformResourceIndex(textureId)].Sample(samp, input.uv);
+    float4 color = sampledImage[(textureId)].Sample(samp[(samplerId)], input.uv);
     return color;
 }
