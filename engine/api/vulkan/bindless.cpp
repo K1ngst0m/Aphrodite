@@ -204,7 +204,11 @@ void BindlessResource::clear()
         m_pDevice->destroy(m_handleData.pSetLayout);
     }
 
-    m_pDevice->getHandle().destroy(m_pipelineLayout.handle);
+    if (m_pipelineLayout.handle)
+    {
+        m_pDevice->getHandle().destroy(m_pipelineLayout.handle);
+        m_pipelineLayout.handle = ::vk::PipelineLayout{};
+    }
 
     m_handleData.dataBuilder.reset();
 }

@@ -636,7 +636,7 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
     {
         if (!m_commandState.bindlessResource)
         {
-            m_commandState.bindlessResource = m_pDevice->getBindlessResource(pProgram);
+            m_commandState.bindlessResource = m_pDevice->getBindlessResource();
             auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
             auto resourceSet = m_commandState.bindlessResource->getResourceSet();
             SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);

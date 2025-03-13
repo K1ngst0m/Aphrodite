@@ -225,6 +225,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
     // TODO
     device->m_resourcePool.deviceMemory = new VMADeviceAllocator(createInfo.pInstance, device.get());
+    device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
 
     {
         for (uint32_t queueFamilyIndex = 0; queueFamilyIndex < queueFamilyCount; queueFamilyIndex++)
@@ -284,7 +285,7 @@ void Device::Destroy(Device* pDevice)
     APH_PROFILER_SCOPE();
     APH_VR(pDevice->waitIdle());
 
-    pDevice->m_resourcePool.bindless.clear();
+    pDevice->m_resourcePool.bindless.reset();
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.setLayout.clear();
@@ -519,11 +520,6 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     };
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
-
-    if (auto setLayout = (*ppProgram)->getSetLayout(BindlessResource::eResourceSetIdx); setLayout->isBindless())
-    {
-        m_resourcePool.bindless[*ppProgram] = std::make_unique<BindlessResource>(this);
-    }
 
     return Result::Success;
 }
