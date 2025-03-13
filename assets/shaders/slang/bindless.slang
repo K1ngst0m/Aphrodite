@@ -1,9 +1,8 @@
 enum Binding
 {
-    eSampledImage = 0,
-    eStorageImage = 1,
-    eBuffer = 2,
-    eSampler = 3,
+    eImage = 0,
+    eBuffer = 1,
+    eSampler = 2,
     ResourceTypeCount
 };
 
@@ -13,54 +12,42 @@ enum Set
     eHandle = 1,
 };
 
-[[vk::binding(Binding::eSampledImage, Set::eResource)]] Texture2D sampledImages[];
-[[vk::binding(Binding::eStorageImage, Set::eResource)]] RWTexture2D storageImages[];
+[[vk::binding(Binding::eImage, Set::eResource)]] __DynamicResource<__DynamicResourceKind.General> images[];
 [[vk::binding(Binding::eBuffer, Set::eResource)]] StructuredBuffer<uint64_t> bufferAddressTable;
 [[vk::binding(Binding::eSampler, Set::eResource)]] SamplerState samplers[];
-/* [[vk::binding(Binding::eSampler, Set::eResource)]] SamplerComparisonState samplerComparisons[]; */
 
 namespace bindless
 {
     __generic<typename T>
-    T getBuffer(uint id, uint64_t offset = 0)
+    export T getBuffer(uint id, uint64_t offset = 0)
     {
         T* ptr = (T*)bufferAddressTable[id];
         return *(ptr + offset);
     }
 
     __generic<typename T>
-    T* getBufferPtr(uint id)
+    export T* getBufferPtr(uint id)
     {
         T* ptr = (T*)bufferAddressTable[id];
         return (T*)ptr;
     }
 
-    Texture2D getSampledImage(uint id)
+    export Texture2D getImage(uint id)
     {
-        return sampledImages[id];
+        return images[id];
     }
 
-    RWTexture2D getStorageImage(uint id)
-    {
-        return storageImages[id];
-    }
-
-    SamplerState getSampler(uint id)
+    export SamplerState getSampler(uint id)
     {
         return samplers[id];
     }
 
-    float4 sample(uint textureId, uint samplerId, float2 uv)
+    export float4 sample(uint textureId, uint samplerId, float2 uv)
     {
-        let samp = bindless::getSampler(samplerId);
-        let tex = bindless::getSampledImage(textureId);
+        let samp = getSampler(samplerId);
+        let tex = getImage(textureId);
         return tex.Sample(samp, uv);
     }
-
-    /* SamplerComparisonState getSamplerComparisons(uint id) */
-    /* { */
-    /*     return samplerComparisons[id]; */
-    /* } */
 }
 
 namespace bindless

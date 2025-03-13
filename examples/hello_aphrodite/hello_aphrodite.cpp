@@ -280,7 +280,7 @@ void hello_aphrodite::init()
         // bindless data
         {
             auto bindlessResource = m_pDevice->getBindlessResource(m_program[ShadingType::MeshBindless]);
-            auto textureId = bindlessResource->updateResource(m_pImage, ::vk::ImageUsageFlagBits::eSampled);
+            auto textureId = bindlessResource->updateResource(m_pImage);
             auto samplerId = bindlessResource->updateResource(m_pSampler);
             auto matrixBufferId = bindlessResource->updateResource(m_pMatrixBffer);
             auto vertexBufferId = bindlessResource->updateResource(m_pVertexBuffer);

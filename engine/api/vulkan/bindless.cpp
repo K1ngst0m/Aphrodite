@@ -7,6 +7,7 @@ BindlessResource::BindlessResource(Device* pDevice)
     : m_pDevice(pDevice)
     , m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
 {
+
     // handle descriptor
     {
         DescriptorSetLayout* pSetLayout = {};
@@ -32,7 +33,6 @@ BindlessResource::BindlessResource(Device* pDevice)
         DescriptorSetLayout* pSetLayout = {};
         {
             constexpr std::array descriptorTypeMaps{ ::vk::DescriptorType::eSampledImage,
-                                                     ::vk::DescriptorType::eStorageImage,
                                                      ::vk::DescriptorType::eStorageBuffer,
                                                      ::vk::DescriptorType::eSampler };
 
@@ -40,12 +40,9 @@ BindlessResource::BindlessResource(Device* pDevice)
 
             for (uint32_t idx = 0; idx < eResourceTypeCount; ++idx)
             {
-                //TODO
-                if (idx == eStorageImage)
-                    continue;
-
                 ::vk::DescriptorSetLayoutBinding binding{};
-                auto descriptorCount = VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
+                // TODO
+                auto descriptorCount = idx == ResourceType::eBuffer ? 1 : VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
                 auto descriptorType = descriptorTypeMaps.at(idx);
 
                 binding.setBinding(idx)
@@ -58,10 +55,6 @@ BindlessResource::BindlessResource(Device* pDevice)
                 poolSize.setDescriptorCount(descriptorCount).setType(descriptorType);
                 layoutCreateInfo.poolSizes.push_back(poolSize);
             }
-            //TODO
-            // layoutCreateInfo.bindings[eStorageImage].setDescriptorCount(0);
-            //TODO
-            layoutCreateInfo.bindings[eBuffer - 1].setDescriptorCount(1);
 
             APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout, "bindless resource layout"));
         }
@@ -83,6 +76,18 @@ BindlessResource::BindlessResource(Device* pDevice)
 
         DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
         APH_VR(m_resourceData.pSet->update(updateInfo));
+    }
+
+    // pipeline layout
+    {
+        // TODO
+        ::vk::PipelineLayoutCreateInfo createInfo{};
+        auto layouts = { m_resourceData.pSetLayout->getHandle(), m_handleData.pSetLayout->getHandle() };
+        createInfo.setSetLayouts(layouts);
+        auto [result, handle] = m_pDevice->getHandle().createPipelineLayout(createInfo);
+        m_pipelineLayout.setLayouts[eResourceSetIdx] = m_resourceData.pSetLayout;
+        m_pipelineLayout.setLayouts[eHandleSetIdx] = m_handleData.pSetLayout;
+        m_pipelineLayout.handle = handle;
     }
 }
 
@@ -142,7 +147,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
     return m_bufferIds.at(pBuffer);
 }
 
-BindlessResource::HandleId BindlessResource::updateResource(Image* pImage, ::vk::ImageUsageFlagBits usage)
+BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
 {
     if (!m_imageIds.contains(pImage))
     {
@@ -151,25 +156,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage, ::vk:
         m_images.push_back(pImage);
         m_imageIds[pImage] = id;
 
-        DescriptorUpdateInfo updateInfo{ .arrayOffset = { id }, .images = { pImage }, .imageUsage = usage };
-        switch (usage)
-        {
-        case ::vk::ImageUsageFlagBits::eSampled:
-        {
-            updateInfo.binding = eSampledImage;
-        }
-        break;
-        case ::vk::ImageUsageFlagBits::eStorage:
-        {
-            updateInfo.binding = eStorageImage;
-        }
-        break;
-        default:
-            VK_LOG_ERR("Image usage [%s] is invalid in bindless resource.", ::vk::to_string(usage));
-            APH_ASSERT(false);
-            return HandleId{};
-            break;
-        }
+        DescriptorUpdateInfo updateInfo{ .binding = eImage, .arrayOffset = { id }, .images = { pImage } };
         m_resourceUpdateInfos.push_back(std::move(updateInfo));
     }
 
@@ -216,6 +203,8 @@ void BindlessResource::clear()
     {
         m_pDevice->destroy(m_handleData.pSetLayout);
     }
+
+    m_pDevice->getHandle().destroy(m_pipelineLayout.handle);
 
     m_handleData.dataBuilder.reset();
 }

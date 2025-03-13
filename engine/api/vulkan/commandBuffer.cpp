@@ -640,9 +640,13 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
             auto resourceSetLayout = m_commandState.bindlessResource->getResourceLayout();
             auto resourceSet = m_commandState.bindlessResource->getResourceSet();
             SmallVector<uint32_t> dynamicOffsets(resourceSetLayout->getDynamicUniformCount(), 0);
-            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
-                                           BindlessResource::eResourceSetIdx, { resourceSet->getHandle() },
-                                           dynamicOffsets);
+            ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
+            bindDescriptorSetsInfo.setFirstSet(BindlessResource::eResourceSetIdx)
+                .setLayout(m_commandState.bindlessResource->getPipelineLayout())
+                .setStageFlags(::vk::ShaderStageFlagBits::eAll)
+                .setDynamicOffsets(dynamicOffsets)
+                .setDescriptorSets(resourceSet->getHandle());
+            getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
         }
     }
 }
@@ -731,51 +735,52 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
 
         {
             const auto& bindless = m_commandState.bindlessResource;
-            SmallVector<uint32_t> dynamicOffsets(bindless->getHandleLayout()->getDynamicUniformCount(), 0);
             ::vk::BindDescriptorSetsInfo bindDescriptorSetsInfo{};
             bindDescriptorSetsInfo.setFirstSet(BindlessResource::eHandleSetIdx)
-                .setLayout(pProgram->getPipelineLayout())
+                .setLayout(bindless->getPipelineLayout())
                 .setStageFlags(::vk::ShaderStageFlagBits::eAll)
                 .setDynamicOffsets(dynamicOffset)
-                .setDescriptorSets(bindless->getHandleSet()->getHandle())
-                .setDynamicOffsets(dynamicOffsets);
+                .setDescriptorSets(bindless->getHandleSet()->getHandle());
             getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
         }
     }
-
-    aph::utils::forEachBit(
-        m_commandState.resourceBindings.setBit,
-        [this, &resBindings, &pProgram](uint32_t setIdx)
-        {
-            if (m_commandState.bindlessResource && setIdx < BindlessResource::eUpperBound)
+    else
+    {
+        aph::utils::forEachBit(
+            m_commandState.resourceBindings.setBit,
+            [this, &resBindings, &pProgram](uint32_t setIdx)
             {
-                return;
-            }
+                if (m_commandState.bindlessResource && setIdx < BindlessResource::eUpperBound)
+                {
+                    return;
+                }
 
-            APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
-            auto& set = resBindings.sets[setIdx];
-            aph::utils::forEachBit(resBindings.setBindingBit[setIdx],
-                                   [setIdx, &resBindings, &pProgram, &set](auto bindingIdx)
-                                   {
-                                       if (!resBindings.dirtyBinding[setIdx].test(bindingIdx))
+                APH_ASSERT(setIdx < VULKAN_NUM_DESCRIPTOR_SETS);
+                auto& set = resBindings.sets[setIdx];
+                aph::utils::forEachBit(resBindings.setBindingBit[setIdx],
+                                       [setIdx, &resBindings, &pProgram, &set](auto bindingIdx)
                                        {
-                                           CM_LOG_DEBUG("skip update");
-                                           return;
-                                       }
+                                           if (!resBindings.dirtyBinding[setIdx].test(bindingIdx))
+                                           {
+                                               CM_LOG_DEBUG("skip update");
+                                               return;
+                                           }
 
-                                       if (set == nullptr)
-                                       {
-                                           auto setLayout = pProgram->getSetLayout(setIdx);
-                                           set = setLayout->allocateSet();
-                                       }
-                                       APH_VR(set->update(resBindings.bindings[setIdx][bindingIdx]));
-                                   });
-            resBindings.dirtyBinding[setIdx].reset();
+                                           if (set == nullptr)
+                                           {
+                                               auto setLayout = pProgram->getSetLayout(setIdx);
+                                               set = setLayout->allocateSet();
+                                           }
+                                           APH_VR(set->update(resBindings.bindings[setIdx][bindingIdx]));
+                                       });
+                resBindings.dirtyBinding[setIdx].reset();
 
-            SmallVector<uint32_t> dynamicOffsets(pProgram->getSetLayout(setIdx)->getDynamicUniformCount(), 0);
-            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
-                                           setIdx, { set->getHandle() }, dynamicOffsets);
-        });
+                SmallVector<uint32_t> dynamicOffsets(pProgram->getSetLayout(setIdx)->getDynamicUniformCount(), 0);
+                getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()),
+                                               pProgram->getPipelineLayout(), setIdx, { set->getHandle() },
+                                               dynamicOffsets);
+            });
+    }
 
     if (m_commandState.dirty & DirtyFlagBits::pushConstant)
     {

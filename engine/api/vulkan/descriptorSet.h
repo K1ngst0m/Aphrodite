@@ -23,9 +23,6 @@ struct DescriptorUpdateInfo
     SmallVector<Sampler*> samplers;
     SmallVector<Buffer*> buffers;
 
-    ::vk::BufferUsageFlags2 bufferUsage = {};
-    ::vk::ImageUsageFlags imageUsage = {};
-
     bool operator==(const DescriptorUpdateInfo&) const = default;
 };
 

@@ -40,6 +40,7 @@ public:
     {
         return m_data;
     }
+
     std::vector<std::byte>& getData() noexcept
     {
         return m_data;
@@ -87,10 +88,9 @@ class BindlessResource
 {
     enum ResourceType : uint32_t
     {
-        eSampledImage = 0,
-        eStorageImage = 1,
-        eBuffer = 2,
-        eSampler = 3,
+        eImage = 0,
+        eBuffer = 1,
+        eSampler = 2,
         eResourceTypeCount
     };
 
@@ -131,7 +131,7 @@ public:
     void build();
 
     HandleId updateResource(Buffer* pBuffer);
-    HandleId updateResource(Image* pImage, ::vk::ImageUsageFlagBits usage);
+    HandleId updateResource(Image* pImage);
     HandleId updateResource(Sampler* pSampler);
 
     DescriptorSetLayout* getResourceLayout() const noexcept
@@ -154,6 +154,11 @@ public:
     {
         APH_ASSERT(m_handleData.pSet);
         return m_handleData.pSet;
+    }
+
+    ::vk::PipelineLayout getPipelineLayout() const noexcept
+    {
+        return m_pipelineLayout.handle;
     }
 
 private:
@@ -192,6 +197,8 @@ private:
 
     SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
     std::mutex m_mtx;
+
+    PipelineLayout m_pipelineLayout{};
 };
 
 } // namespace aph::vk
