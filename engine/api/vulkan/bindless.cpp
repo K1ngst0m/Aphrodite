@@ -85,7 +85,7 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
     if (!m_bufferIds.contains(pBuffer))
     {
         auto id = HandleId{ static_cast<uint32_t>(m_buffers.size()) };
-        APH_ASSERT(id >= Resource::AddressTableSize);
+        APH_ASSERT(id < Resource::AddressTableSize);
         m_buffers.push_back(pBuffer);
         m_bufferIds[pBuffer] = id;
         m_resourceData.addressTableMap[id] = m_pDevice->getDeviceAddress(pBuffer);
