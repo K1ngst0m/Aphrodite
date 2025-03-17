@@ -44,7 +44,7 @@
 
   - Resource Loading
 
-    #+BEGIN_SRC c
+    #+BEGIN_SRC cpp
     // vertex buffer
     {
         aph::BufferLoadInfo bufferLoadInfo{
@@ -74,16 +74,14 @@
 
     // shader loading
     {
-        aph::ShaderLoadInfo shaderLoadInfo{
-            .stageInfo = {
-                {aph::ShaderStage::TS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "taskMain"}},
-                {aph::ShaderStage::MS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "meshMain"}},
-                {aph::ShaderStage::FS, {.data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain"}},
-            }};
+        aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh.slang" },
+                                            .stageInfo = {
+                                                { aph::ShaderStage::TS, "taskMain" },
+                                                { aph::ShaderStage::MS, "meshMain" },
+                                                { aph::ShaderStage::FS, "fragMain" },
+                                            } };
 
-        // wait and verify for single async operation
-        auto future = m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program.mesh);
-        APH_VR(future.get());
+        m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Mesh];
     }
 
     // ...
@@ -94,7 +92,7 @@
 
   - Frame Graph Operations
 
-    #+BEGIN_SRC c
+    #+BEGIN_SRC cpp
     // record graph execution
         m_renderer->recordGraph([this](auto* graph) {
             auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
@@ -114,33 +112,18 @@
             graph->setBackBuffer("render output");
 
             drawPass->recordExecute([this](auto* pCmd) {
-                pCmd->insertDebugLabel({
-                    .name  = "draw a cube with texture",
-                    .color = {0.5f, 0.3f, 0.2f, 1.0f},
+                pCmd->beginDebugLabel({
+                    .name = "mesh shading path",
+                    .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                 });
-                pCmd->setDepthState({
-                    .enable    = true,
-                    .write     = true,
-                    .compareOp = aph::CompareOp::Less,
-                });
-                pCmd->setResource({m_pMatBuffer}, 0, 0);
-                pCmd->setResource({m_pImage}, 1, 0);
-                pCmd->setResource({m_pSampler}, 1, 1);
-
-                if(m_enableMeshShading)
-                {
-                    pCmd->setResource({m_pVB}, 0, 1);
-                    pCmd->setResource({m_pIB}, 0, 2);
-                    pCmd->setProgram(m_program.mesh);
-                    pCmd->draw(aph::DispatchArguments{1, 1, 1});
-                }
-                else
-                {
-                    pCmd->bindVertexBuffers(m_pVB);
-                    pCmd->bindIndexBuffers(m_pIB);
-                    pCmd->setProgram(m_program.geometry);
-                    pCmd->drawIndexed({36, 1, 0, 0, 0});
-                }
+                pCmd->setProgram(m_program[ShadingType::Mesh]);
+                pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+                pCmd->setResource({ m_pImage }, 1, 0);
+                pCmd->setResource({ m_pSampler }, 1, 1);
+                pCmd->setResource({ m_pVertexBuffer }, 0, 1);
+                pCmd->setResource({ m_pIndexBuffer }, 0, 2);
+                pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+                pCmd->endDebugLabel();
             });
         });
 
@@ -155,6 +138,69 @@
         ...
     }
     #+END_SRC
+
+  - Bindless style
+
+    update and define the bindless handle name, the loader would automatically generate the shader module of handle definitions (default module name is same as loaded shader name on gen folder).
+
+    #+BEGIN_SRC cpp
+    // shader and resource preparation
+    {
+        auto bindless = m_pDevice->getBindlessResource();
+        {
+            m_drawDataOffset = bindless->updateResource(m_pImage, "texture_container");
+            bindless->updateResource(m_pSampler, "samp");
+            bindless->updateResource(m_pMatrixBffer, "transform_cube");
+            bindless->updateResource(m_pVertexBuffer, "vertex_cube");
+            bindless->updateResource(m_pIndexBuffer, "index_cube");
+        }
+
+        aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh_bindless.slang" },
+                                            .stageInfo = {
+                                                {  aph::ShaderStage::TS,  "taskMain" },
+                                                {  aph::ShaderStage::MS,  "meshMain" },
+                                                {  aph::ShaderStage::FS,  "fragMain" },
+                                            }, .pBindlessResource = bindless};
+
+        APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
+    }
+
+    // record graph execution
+        m_renderer->recordGraph([this](auto* graph) {
+            auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
+            ...
+  
+            drawPass->recordExecute([this](auto* pCmd) {
+                pCmd->beginDebugLabel({
+                    .name = "mesh shading path (bindless)",
+                    .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+                });
+                pCmd->setProgram(m_program[ShadingType::MeshBindless]);
+                pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_drawDataOffset });
+                pCmd->endDebugLabel();
+            });
+        });
+    ...
+    #+END_SRC
+
+    on shader (slang) part, you should import your generated module:
+    #+BEGIN_SRC hlsl
+    import modules.bindless;
+    import gen.hello_mesh_bindless;
+    ...
+
+    VertexIn GetVertex(uint indexId)
+    {
+        let vertexId = handle::index_cube.get<uint>(indexId);
+        let vertex = handle::vertex_cube.get<VertexIn>(vertexId);
+        return vertex;
+    }
+
+    ...
+        let color = handle::texture_container.sample(handle::samp, input.uv);
+    ...
+    #+END_SRC
+
 
 ** Third Party Libraries
 
