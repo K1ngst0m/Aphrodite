@@ -141,7 +141,7 @@
 
   - Bindless style
 
-    update and define the bindless handle name, the loader would automatically generate the shader module of handle definitions (default module name is same as loaded shader name on gen folder).
+    update and define the bindless handle name, the loader would automatically generate the shader module (in memory) of handle definitions.
 
     #+BEGIN_SRC cpp
     // shader and resource preparation
@@ -210,7 +210,6 @@
     on shader (slang) part, you should import your generated module on `handle::` namespace, e.g.:
     #+BEGIN_SRC hlsl
     import modules.bindless;
-    import gen.hello_mesh_bindless;
     ...
 
     VertexIn GetVertex(uint indexId)
