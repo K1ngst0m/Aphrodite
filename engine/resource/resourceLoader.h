@@ -2,7 +2,9 @@
 
 #include "api/vulkan/device.h"
 #include "common/hash.h"
-#include "geometry.h"
+#include "geometryLoader.h"
+#include "imageLoader.h"
+#include "shaderLoader.h"
 #include "threads/taskManager.h"
 #include <format>
 
@@ -16,29 +18,6 @@ struct ResourceLoaderCreateInfo
     vk::Device* pDevice = {};
 };
 
-enum class ImageContainerType
-{
-    Default = 0,
-    Ktx,
-    Png,
-    Jpg,
-};
-
-struct ImageInfo
-{
-    uint32_t width = {};
-    uint32_t height = {};
-    std::vector<uint8_t> data = {};
-};
-
-struct ImageLoadInfo
-{
-    std::string debugName = {};
-    std::variant<std::string, ImageInfo> data;
-    ImageContainerType containerType = { ImageContainerType::Default };
-    vk::ImageCreateInfo createInfo = {};
-};
-
 struct BufferLoadInfo
 {
     std::string debugName = {};
@@ -50,44 +29,6 @@ struct BufferUpdateInfo
 {
     const void* data = {};
     Range range = { 0, VK_WHOLE_SIZE };
-};
-
-struct ShaderStageLoadInfo
-{
-    std::variant<std::string, std::vector<uint32_t>> data;
-    std::vector<ShaderMacro> macros;
-    std::string entryPoint = "main";
-};
-
-struct ShaderLoadInfo
-{
-    std::string debugName = {};
-    HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
-    std::vector<ShaderConstant> constants;
-    vk::BindlessResource* pBindlessResource = {};
-};
-
-enum GeometryLoadFlags
-{
-    GEOMETRY_LOAD_FLAG_SHADOWED = 0x1,
-    GEOMETRY_LOAD_FLAG_STRUCTURED_BUFFERS = 0x2,
-};
-
-enum MeshOptimizerFlags
-{
-    MESH_OPTIMIZATION_FLAG_OFF = 0x0,
-    MESH_OPTIMIZATION_FLAG_VERTEXCACHE = 0x1,
-    MESH_OPTIMIZATION_FLAG_OVERDRAW = 0x2,
-    MESH_OPTIMIZATION_FLAG_VERTEXFETCH = 0x4,
-    MESH_OPTIMIZATION_FLAG_ALL = 0x7,
-};
-
-struct GeometryLoadInfo
-{
-    std::string path;
-    GeometryLoadFlags flags;
-    MeshOptimizerFlags optimizationFlags;
-    VertexInput vertexInput;
 };
 
 class ResourceLoader

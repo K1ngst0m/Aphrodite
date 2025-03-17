@@ -19,7 +19,6 @@
 #include "event/eventManager.h"
 #include "input/input.h"
 
-#include "resource/geometry.h"
 #include "resource/resourceLoader.h"
 
 #include "math/math.h"
