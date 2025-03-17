@@ -36,29 +36,22 @@ void Filesystem::clearMappedFiles()
     m_mappedFiles.clear();
 }
 
-std::filesystem::path Filesystem::resolvePath(std::string_view inputPath)
+std::filesystem::path Filesystem::resolvePath(std::string_view inputPath) const
 {
-    auto protocolEnd = inputPath.find("://");
-    std::string protocol;
-    std::string relativePath;
-
-    if (protocolEnd != std::string::npos)
+    if (auto protocolEnd = inputPath.find("://"); protocolEnd != std::string::npos)
     {
-        protocol = inputPath.substr(0, protocolEnd);
-        relativePath = inputPath.substr(protocolEnd + 3);
+        // TODO
+        std::string protocol = std::string{ inputPath.substr(0, protocolEnd) };
+        std::string relativePath = std::string{ inputPath.substr(protocolEnd + 3) };
         if (!m_protocols.contains(protocol))
         {
             CM_LOG_ERR("Unknown protocol: %s", protocol);
             return {};
         }
-    }
-    else
-    {
-        protocol = "file";
-        relativePath = inputPath;
+        return getCurrentWorkingDirectory() / std::filesystem::path(m_protocols.at(protocol)) / relativePath;
     }
 
-    return getCurrentWorkingDirectory() / std::filesystem::path(m_protocols[protocol]) / relativePath;
+    return inputPath;
 }
 
 void* Filesystem::map(std::string_view path)
@@ -175,8 +168,13 @@ void Filesystem::writeLinesToFile(std::string_view path, const std::vector<std::
         file << line << '\n';
     }
 }
-std::filesystem::path Filesystem::getCurrentWorkingDirectory()
+std::filesystem::path Filesystem::getCurrentWorkingDirectory() const
 {
     return std::filesystem::current_path();
+}
+
+bool Filesystem::exist(std::string_view path) const
+{
+    return std::filesystem::exists(resolvePath(path));
 }
 } // namespace aph

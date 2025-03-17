@@ -1,4 +1,5 @@
-import bindless;
+import modules.bindless;
+import gen.hello_mesh_bindless;
 
 struct VertexIn
 {
@@ -26,23 +27,6 @@ struct VertexOutput
     float2 uv : TEXCOORD0;
 };
 
-struct HandleData
-{
-    uint texture;
-    uint samp;
-    uint transform;
-    uint vertex;
-    uint index;
-};
-
-namespace handle
-{
-    static bindless::Texture texture = bindless::Texture(handleData.texture);
-    static bindless::Sampler2D samp = bindless::Sampler2D(handleData.index);
-    static bindless::Buffer transform = bindless::Buffer(handleData.transform);
-    static bindless::Buffer vertex = bindless::Buffer(handleData.vertex);
-    static bindless::Buffer index = bindless::Buffer(handleData.index);
-}
 
 // ╭────────────────────────────────────────────╮
 // │                Task Shader                 │
@@ -67,7 +51,7 @@ void taskMain()
 #define MAX_NUM_VERTS 36
 #define MAX_NUM_PRIMS (MAX_NUM_VERTS / 3)
 
-[[vk::binding(0, 1)]] ConstantBuffer<HandleData> handleData;
+
 
 VertexIn GetVertex(uint indexId)
 {

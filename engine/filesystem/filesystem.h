@@ -25,6 +25,8 @@ public:
     void unmap(void* data);
     void clearMappedFiles();
 
+    bool exist(std::string_view path) const;
+
     std::string readFileToString(std::string_view path);
     std::vector<uint8_t> readFileToBytes(std::string_view path);
     std::vector<std::string> readFileLines(std::string_view path);
@@ -43,8 +45,8 @@ public:
     bool protocolExists(const std::string& protocol);
     void removeProtocol(const std::string& protocol);
 
-    std::filesystem::path resolvePath(std::string_view inputPath);
-    std::filesystem::path getCurrentWorkingDirectory();
+    std::filesystem::path resolvePath(std::string_view inputPath) const;
+    std::filesystem::path getCurrentWorkingDirectory() const;
 
 private:
     HashMap<int, std::function<void()>> m_callbacks;

@@ -64,6 +64,7 @@ struct ShaderLoadInfo
     std::string debugName = {};
     HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
     std::vector<ShaderConstant> constants;
+    vk::BindlessResource* pBindlessResource = {};
 };
 
 enum GeometryLoadFlags

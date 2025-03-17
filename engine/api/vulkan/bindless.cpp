@@ -216,4 +216,47 @@ void BindlessResource::clear()
 
     m_handleData.dataBuilder.reset();
 }
+
+std::string BindlessResource::generateHandleSource()
+{
+    std::stringstream ss;
+    ss << "import modules.bindless;\n";
+    ss << "struct HandleData\n";
+    ss << "{\n";
+
+    for (const auto& [name, _] : m_handleNameMap)
+    {
+        ss << std::format("uint {};\n", name);
+    }
+
+    ss << "};\n";
+
+    ss << "[[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData> handleData;\n";
+    ss << "namespace handle\n";
+    ss << "{\n";
+    for (const auto& [name, resource] : m_handleNameMap)
+    {
+        std::string type;
+        {
+            std::visit(
+                [&type](auto&& arg)
+                {
+                    using T = std::decay_t<decltype(arg)>;
+                    if constexpr (std::is_same_v<T, Image*>)
+                        type = "Texture";
+                    else if constexpr (std::is_same_v<T, Buffer*>)
+                        type = "Buffer";
+                    else if constexpr (std::is_same_v<T, Sampler*>)
+                        type = "Sampler2D";
+                    else
+                        static_assert(false, "unsupported resource type.");
+                },
+                resource);
+        }
+        ss << std::format("static bindless::{} {} = bindless::{}(handleData.{});\n", type, name, type, name);
+    }
+    ss << "}\n";
+
+    return ss.str();
+}
 } // namespace aph::vk

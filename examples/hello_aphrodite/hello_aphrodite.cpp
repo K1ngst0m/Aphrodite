@@ -223,7 +223,7 @@ void hello_aphrodite::init()
                                                   .imageType = aph::ImageType::e2D,
                                               } };
 
-            m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
+            APH_VR(m_pResourceLoader->load(imageLoadInfo, &m_pImage));
         }
 
         // pipeline
@@ -239,13 +239,20 @@ void hello_aphrodite::init()
                                       { .data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain" } },
                                 } };
 
-            auto future = m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Mesh]);
-
-            APH_VR(future.get());
+            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Mesh]));
         }
 
         // bindless mesh shading
         {
+            auto bindless = m_pDevice->getBindlessResource();
+            {
+                m_drawDataOffset = bindless->updateResource(m_pImage, "texture");
+                bindless->updateResource(m_pSampler, "samp");
+                bindless->updateResource(m_pMatrixBffer, "transform");
+                bindless->updateResource(m_pVertexBuffer, "vertex");
+                bindless->updateResource(m_pIndexBuffer, "index");
+            }
+
             aph::ShaderLoadInfo shaderLoadInfo{ .stageInfo = {
                                                     { aph::ShaderStage::TS,
                                                       { .data = "shader_slang://hello_mesh_bindless.slang",
@@ -256,7 +263,9 @@ void hello_aphrodite::init()
                                                     { aph::ShaderStage::FS,
                                                       { .data = "shader_slang://hello_mesh_bindless.slang",
                                                         .entryPoint = "fragMain" } },
-                                                } };
+                                                },
+            .pBindlessResource = bindless
+        };
 
             APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
         }
@@ -272,39 +281,10 @@ void hello_aphrodite::init()
                                                         .entryPoint = "fragMain" } },
                                                 } };
 
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Geometry]);
+            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Geometry]));
         }
 
         m_pResourceLoader->wait();
-
-        // bindless data
-        {
-            auto bindlessResource = m_pDevice->getBindlessResource();
-            auto textureId = bindlessResource->updateResource(m_pImage);
-            auto samplerId = bindlessResource->updateResource(m_pSampler);
-            auto matrixBufferId = bindlessResource->updateResource(m_pMatrixBffer);
-            auto vertexBufferId = bindlessResource->updateResource(m_pVertexBuffer);
-            auto indexBufferId = bindlessResource->updateResource(m_pIndexBuffer);
-
-            struct ResourceHandleData
-            {
-                uint32_t textureId;
-                uint32_t samplerId;
-                uint32_t matrixAddress;
-                uint32_t vertexBufferAddress;
-                uint32_t indexBufferAddress;
-            };
-
-            ResourceHandleData data{
-                .textureId = textureId,
-                .samplerId = samplerId,
-                .matrixAddress = matrixBufferId,
-                .vertexBufferAddress = vertexBufferId,
-                .indexBufferAddress = indexBufferId,
-            };
-
-            m_drawDataOffset = bindlessResource->addRange(data);
-        }
 
         // record graph execution
         m_renderer->recordGraph(

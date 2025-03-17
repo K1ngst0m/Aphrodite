@@ -69,6 +69,10 @@ public:
         uint32_t offset = aph::utils::paddingSize(m_minAlignment, m_data.size());
 
         size_t newSize = offset + bytesToCopy;
+
+        CM_LOG_DEBUG("addrange: offset: %u, range_offset: %u, bytesToCopy: %u, m_data.size(): %u", offset, range.offset,
+                     bytesToCopy, m_data.size());
+
         if (newSize > m_data.size())
         {
             m_data.resize(newSize);
@@ -130,6 +134,24 @@ public:
 
     void build();
 
+    using RType = std::variant<Image*, Buffer*, Sampler*>;
+
+    uint32_t updateResource(RType resource, std::string name)
+    {
+        uint32_t offset = 0;
+        // TODO handle when resource overriding
+        m_handleNameMap[name] = resource;
+        std::visit(
+            [this, &offset](auto&& arg)
+            {
+                HandleId id = updateResource(arg);
+                offset = addRange(id);
+            },
+            resource);
+
+        return offset;
+    }
+
     HandleId updateResource(Buffer* pBuffer);
     HandleId updateResource(Image* pImage);
     HandleId updateResource(Sampler* pSampler);
@@ -160,6 +182,8 @@ public:
     {
         return m_pipelineLayout.handle;
     }
+
+    std::string generateHandleSource();
 
 private:
     Device* m_pDevice;
@@ -194,6 +218,8 @@ private:
     HashMap<Image*, HandleId> m_imageIds;
     HashMap<Buffer*, HandleId> m_bufferIds;
     HashMap<Sampler*, HandleId> m_samplerIds;
+    // TODO
+    HashMap<std::string, RType> m_handleNameMap;
 
     SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
     std::mutex m_mtx;
