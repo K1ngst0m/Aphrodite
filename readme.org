@@ -9,6 +9,7 @@
   - Vulkan
   - Mesh Shading Support
   - Render Graph
+  - Bindless Support, automatic handle code generation with built-in helper module 
   - Async Resource Management
   - Multi-threading, Job System
   - Scene Management
@@ -207,9 +208,9 @@
 
     #+END_SRC
 
-    on shader (slang) part, you should import your generated module on `handle::` namespace, e.g.:
+    on shader (slang) part, the built-in bindless module and generated handle code would automatically patched to the code, so don't need to import them manually:
     #+BEGIN_SRC hlsl
-    import modules.bindless;
+    // import modules.bindless
     ...
 
     VertexIn GetVertex(uint indexId)
