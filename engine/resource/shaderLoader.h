@@ -39,8 +39,3 @@ private:
 };
 
 } // namespace aph
-
-namespace aph::loader::shader
-{
-std::vector<uint32_t> loadSpvFromFile(std::string_view filename);
-} // namespace aph::loader::shader

@@ -12,4 +12,3 @@ build/
 /.ccls-cache/
 /log.txt
 /bin/
-/assets/shaders/slang/gen/

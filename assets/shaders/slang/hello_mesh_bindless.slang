@@ -1,5 +1,4 @@
 import modules.bindless;
-import gen.hello_mesh_bindless;
 
 struct VertexIn
 {

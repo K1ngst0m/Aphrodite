@@ -5,6 +5,20 @@
 #include "slang-com-ptr.h"
 #include "slang.h"
 
+namespace aph::loader::shader
+{
+std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
+{
+    APH_PROFILER_SCOPE();
+    std::string source = Filesystem::GetInstance().readFileToString(filename);
+    APH_ASSERT(!source.empty());
+    uint32_t size = source.size();
+    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
+    memcpy(spirv.data(), source.data(), size);
+    return spirv;
+}
+} // namespace aph::loader::shader
+
 namespace aph
 {
 #define SLANG_CR(diagnostics)                                           \
@@ -49,10 +63,26 @@ public:
         {
             IModule* module = {};
             auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
-            module = m_session->loadModule(fname.c_str(), diagnostics.writeRef());
-            SLANG_CR(diagnostics);
 
             std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
+            std::string patchCode;
+            {
+                std::stringstream ss;
+                for (const auto& [name, src] : m_moduleMap)
+                {
+                    ss << std::format("import {};\n", name);
+                    auto m =
+                        m_session->loadModuleFromSourceString(name.c_str(), "", src.c_str(), diagnostics.writeRef());
+                    componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(m));
+                }
+                patchCode = ss.str();
+            }
+
+            auto shaderSource = patchCode + aph::Filesystem::GetInstance().readFileToString(filename);
+            module = m_session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
+                                                           diagnostics.writeRef());
+            SLANG_CR(diagnostics);
+
             for (int i = 0; i < module->getDefinedEntryPointCount(); i++)
             {
                 Slang::ComPtr<slang::IEntryPoint> entryPoint;
@@ -125,6 +155,11 @@ public:
         return Result::Success;
     }
 
+    void addModule(std::string name, std::string source)
+    {
+        m_moduleMap[std::move(name)] = std::move(source);
+    }
+
 private:
     Result initSession()
     {
@@ -178,22 +213,10 @@ private:
 
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
     Slang::ComPtr<slang::ISession> m_session = {};
+
+    HashMap<std::string, std::string> m_moduleMap;
 };
 } // namespace aph
-
-namespace aph::loader::shader
-{
-std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
-{
-    APH_PROFILER_SCOPE();
-    std::string source = Filesystem::GetInstance().readFileToString(filename);
-    APH_ASSERT(!source.empty());
-    uint32_t size = source.size();
-    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
-    memcpy(spirv.data(), source.data(), size);
-    return spirv;
-}
-} // namespace aph::loader::shader
 
 namespace aph
 {
@@ -203,18 +226,9 @@ Result ShaderLoader::load(vk::ShaderProgram** ppProgram)
 
     if (info.pBindlessResource)
     {
-        const auto& fs = Filesystem::GetInstance();
         static std::mutex fileWriterMtx;
         std::lock_guard<std::mutex> lock{ fileWriterMtx };
-
-        std::string genDir = "shader_slang://gen";
-        if (!fs.exist(genDir))
-        {
-            std::filesystem::create_directory(fs.resolvePath(genDir));
-        }
-        // TODO
-        auto genFile = genDir + "/" + "hello_mesh_bindless.slang";
-        Filesystem::GetInstance().writeStringToFile(genFile, info.pBindlessResource->generateHandleSource());
+        m_pSlangLoaderImpl->addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 
     auto loadShader = [this](const std::vector<uint32_t>& spv, const ShaderStage stage,
