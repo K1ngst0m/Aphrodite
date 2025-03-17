@@ -1,11 +1,12 @@
 #pragma once
 
 #include "api/vulkan/device.h"
+#include "threads/taskManager.h"
 #include "common/hash.h"
-#include "geometryLoader.h"
 #include "imageLoader.h"
 #include "shaderLoader.h"
-#include "threads/taskManager.h"
+#include "bufferLoader.h"
+#include "geometryLoader.h"
 #include <format>
 
 namespace aph
@@ -16,19 +17,6 @@ struct ResourceLoaderCreateInfo
     // TODO for debugging
     bool isMultiThreads = false;
     vk::Device* pDevice = {};
-};
-
-struct BufferLoadInfo
-{
-    std::string debugName = {};
-    const void* data = {};
-    vk::BufferCreateInfo createInfo = {};
-};
-
-struct BufferUpdateInfo
-{
-    const void* data = {};
-    Range range = { 0, VK_WHOLE_SIZE };
 };
 
 class ResourceLoader

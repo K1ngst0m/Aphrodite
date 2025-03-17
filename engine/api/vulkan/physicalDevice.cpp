@@ -6,7 +6,8 @@ namespace aph::vk
 PhysicalDevice::PhysicalDevice(HandleType handle)
     : ResourceHandle(handle)
 {
-    const auto& features2 = m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, ::vk::PhysicalDeviceVulkan12Features>();
+    const auto& features2 =
+        m_handle.getFeatures2<::vk::PhysicalDeviceFeatures2, ::vk::PhysicalDeviceVulkan12Features>();
     const auto& properties2 =
         m_handle.getProperties2<::vk::PhysicalDeviceProperties2, ::vk::PhysicalDeviceDriverPropertiesKHR,
                                 ::vk::PhysicalDeviceSubgroupProperties>();

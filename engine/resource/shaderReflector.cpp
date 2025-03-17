@@ -304,7 +304,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
             APH_ASSERT(types <= 1 && "Descriptor set aliasing!");
         }
 
-        for (auto& vkBinding: vkBindings)
+        for (auto& vkBinding : vkBindings)
         {
             vkBinding.setStageFlags(::vk::ShaderStageFlagBits::eAll);
         }

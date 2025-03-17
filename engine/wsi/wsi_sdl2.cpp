@@ -194,8 +194,7 @@ bool WindowSystem::update()
             int x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_pEventManager->pushEvent(
-                MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN });
+            m_pEventManager->pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN });
         }
         break;
         case SDL_WINDOWEVENT_RESIZED:

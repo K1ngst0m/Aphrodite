@@ -728,13 +728,7 @@ const ::vk::AllocationCallbacks& vk_allocator()
 
     static auto vkAphFree = [](void* pUserData, void* pMemory) -> void { memory::aph_free(pMemory); };
 
-    static ::vk::AllocationCallbacks allocator_hpp
-    {
-        nullptr,
-        vkAphAlloc,
-        vkAphRealloc,
-        vkAphFree
-    };
+    static ::vk::AllocationCallbacks allocator_hpp{ nullptr, vkAphAlloc, vkAphRealloc, vkAphFree };
 
     return allocator_hpp;
 }

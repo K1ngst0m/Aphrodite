@@ -3,16 +3,16 @@
 #include "device.h"
 
 #ifndef VMA_ASSERT_LEAK
-#define VMA_ASSERT_LEAK(condition)                        \
-     do                                                    \
-     {                                                     \
-         if (!(condition))                                 \
-         {                                                 \
-             MM_LOG_ERR("VMA leak detected: "              \
-                        "condition (%s) failed.", \
-                        #condition);   \
-         }                                                 \
-     } while (0)
+#define VMA_ASSERT_LEAK(condition)               \
+    do                                           \
+    {                                            \
+        if (!(condition))                        \
+        {                                        \
+            MM_LOG_ERR("VMA leak detected: "     \
+                       "condition (%s) failed.", \
+                       #condition);              \
+        }                                        \
+    } while (0)
 #endif
 
 // Custom leak log macro to print detailed info about leaks.
