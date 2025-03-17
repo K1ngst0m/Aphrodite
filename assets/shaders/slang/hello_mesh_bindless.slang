@@ -1,5 +1,3 @@
-import modules.bindless;
-
 struct VertexIn
 {
     float4 position;

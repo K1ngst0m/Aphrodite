@@ -1,6 +1,6 @@
 include(CPM)
 
-set(VK_SDK_VERSION 1.4.304.1)
+set(VK_SDK_VERSION 1.4.309.0)
 set(APH_PATCH_DIR ${CMAKE_SOURCE_DIR}/patches)
 
 CPMAddPackage(
@@ -89,8 +89,8 @@ target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
 CPMAddPackage(
   NAME slang
-  URL https://github.com/shader-slang/slang/releases/download/v2025.5.3/slang-2025.5.3-linux-x86_64.tar.gz
-  VERSION v2025.5.3
+  URL https://github.com/shader-slang/slang/releases/download/vulkan-sdk-${VK_SDK_VERSION}/slang-ulkan-sdk-${VK_SDK_VERSION}-linux-x86_64.tar.gz
+  VERSION ${VK_SDK_VERSION}
   DOWNLOAD_ONLY YES
 )
 add_library(slang SHARED IMPORTED)

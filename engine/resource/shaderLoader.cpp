@@ -165,17 +165,12 @@ private:
     {
         SlangResult result = {};
         {
-            std::vector<CompilerOptionEntry> compilerOptions{{.name = CompilerOptionName::VulkanUseEntryPointName,
-                                                            .value =
-                                                                {
-                                                                    .kind      = CompilerOptionValueKind::Int,
-                                                                    .intValue0 = 1,
-                                                                }},
-                                                            {.name = CompilerOptionName::EmitSpirvMethod,
-                                                            .value{
-                                                                .kind      = CompilerOptionValueKind::Int,
-                                                                .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,
-                                                            }}};
+            std::vector<CompilerOptionEntry> compilerOptions{
+            // TODO not working
+            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "39001",}},
+            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "parameterBindingsOverlap",}},
+            {.name = CompilerOptionName::VulkanUseEntryPointName, .value = {.kind      = CompilerOptionValueKind::Int, .intValue0 = 1,}},
+            {.name = CompilerOptionName::EmitSpirvMethod, .value{.kind      = CompilerOptionValueKind::Int, .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,}}};
 
             TargetDesc targetDesc;
             targetDesc.format = SLANG_SPIRV;
@@ -228,6 +223,9 @@ Result ShaderLoader::load(vk::ShaderProgram** ppProgram)
     {
         static std::mutex fileWriterMtx;
         std::lock_guard<std::mutex> lock{ fileWriterMtx };
+        // TODO unused since the warning suppress compiler option not working
+        m_pSlangLoaderImpl->addModule(
+            "bindless", aph::Filesystem::GetInstance().readFileToString("shader_slang://modules/bindless.slang"));
         m_pSlangLoaderImpl->addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 

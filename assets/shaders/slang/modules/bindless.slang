@@ -12,8 +12,11 @@ enum Set
     eHandle = 1,
 };
 
+[[allow("parameterBindingsOverlap")]]
 [[vk::binding(Binding::eImage, Set::eResource)]] __DynamicResource<__DynamicResourceKind.General> images[];
+[[allow("parameterBindingsOverlap")]]
 [[vk::binding(Binding::eBuffer, Set::eResource)]] StructuredBuffer<uint64_t> bufferAddressTable;
+[[allow("parameterBindingsOverlap")]]
 [[vk::binding(Binding::eSampler, Set::eResource)]] SamplerState samplers[];
 
 namespace bindless
