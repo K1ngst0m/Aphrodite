@@ -183,7 +183,31 @@
     ...
     #+END_SRC
 
-    on shader (slang) part, you should import your generated module:
+    the generated handle code would look like this:
+    #+BEGIN_SRC hlsl
+    struct HandleData
+    {
+        uint texture_container;
+        uint samp;
+        uint transform_cube;
+        uint vertex_cube;
+        uint index_cube;
+    };
+    
+    [[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData> handleData;
+    
+    namespace handle
+    {
+        static bindless::Texture texture_container = bindless::Texture(handleData.texture_container);
+        static bindless::Sampler2D samp = bindless::Sampler2D(handleData.samp);
+        static bindless::Buffer transform_cube = bindless::Buffer(handleData.transform_cube);
+        static bindless::Buffer vertex_cube = bindless::Buffer(handleData.vertex_cube);
+        static bindless::Buffer index_cube = bindless::Buffer(handleData.index_cube);
+    }
+
+    #+END_SRC
+
+    on shader (slang) part, you should import your generated module on `handle::` namespace, e.g.:
     #+BEGIN_SRC hlsl
     import modules.bindless;
     import gen.hello_mesh_bindless;
