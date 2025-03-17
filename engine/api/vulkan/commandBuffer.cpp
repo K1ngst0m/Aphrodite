@@ -741,6 +741,12 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
                 .setStageFlags(::vk::ShaderStageFlagBits::eAll)
                 .setDynamicOffsets(dynamicOffset)
                 .setDescriptorSets(bindless->getHandleSet()->getHandle());
+
+            SmallVector<uint32_t> dOffset(bindless->getHandleLayout()->getDynamicUniformCount(), 0);
+            if (dynamicOffset.empty())
+            {
+                bindDescriptorSetsInfo.setDynamicOffsets(dOffset);
+            }
             getHandle().bindDescriptorSets2(bindDescriptorSetsInfo);
         }
     }

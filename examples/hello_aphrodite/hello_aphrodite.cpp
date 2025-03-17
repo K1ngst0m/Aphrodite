@@ -243,7 +243,7 @@ void hello_aphrodite::init()
         {
             auto bindless = m_pDevice->getBindlessResource();
             {
-                m_drawDataOffset = bindless->updateResource(m_pImage, "texture_container");
+                bindless->updateResource(m_pImage, "texture_container");
                 bindless->updateResource(m_pSampler, "samp");
                 bindless->updateResource(m_pMatrixBffer, "transform_cube");
                 bindless->updateResource(m_pVertexBuffer, "vertex_cube");
@@ -343,7 +343,7 @@ void hello_aphrodite::init()
                                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
                             });
                             pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_drawDataOffset });
+                            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
                             pCmd->endDebugLabel();
                         }
                         break;
