@@ -68,7 +68,6 @@ private:
     vk::Queue* m_pQueue = {};
 
 private:
-    HashMap<std::string, HashMap<ShaderStage, vk::Shader*>> m_shaderCaches = {};
     std::mutex m_updateLock;
 };
 } // namespace aph

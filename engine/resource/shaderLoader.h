@@ -12,29 +12,35 @@ enum class ShaderContainerType
     Slang,
 };
 
-struct ShaderStageLoadInfo
-{
-    std::variant<std::string, std::vector<uint32_t>> data;
-    std::vector<ShaderMacro> macros;
-    std::string entryPoint = "main";
-};
-
 struct ShaderLoadInfo
 {
     std::string debugName = {};
-    HashMap<ShaderStage, ShaderStageLoadInfo> stageInfo;
-    std::vector<ShaderConstant> constants;
+    std::vector<std::string> data;
+    HashMap<ShaderStage, std::string> stageInfo;
+    ShaderContainerType containerType = ShaderContainerType::Default;
     vk::BindlessResource* pBindlessResource = {};
 };
 
+class SlangLoaderImpl;
+
 class ShaderLoader
 {
+public:
+    ShaderLoader(vk::Device* pDevice, ShaderLoadInfo loadInfo);
+
+    ~ShaderLoader();
+
+    Result load(vk::ShaderProgram** ppProgram);
+
+private:
+    std::unique_ptr<SlangLoaderImpl> m_pSlangLoaderImpl = {};
+    ShaderLoadInfo m_loadInfo;
+    vk::Device* m_pDevice = {};
 };
+
 } // namespace aph
 
 namespace aph::loader::shader
 {
 std::vector<uint32_t> loadSpvFromFile(std::string_view filename);
-aph::HashMap<aph::ShaderStage, std::pair<std::string, std::vector<uint32_t>>> loadSlangFromFile(
-    std::string_view filename);
 } // namespace aph::loader::shader

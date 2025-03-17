@@ -20,6 +20,7 @@ struct PipelineLayout
 
     SmallVector<DescriptorSetLayout*> setLayouts = {};
     ::vk::PipelineLayout handle = {};
+    PipelineType type = {};
 };
 
 struct ImmutableSamplerBank
@@ -63,30 +64,7 @@ private:
 
 struct ProgramCreateInfo
 {
-    union
-    {
-        struct
-        {
-            Shader* pMesh = {};
-            Shader* pTask = {};
-            Shader* pFragment = {};
-        } mesh;
-
-        struct
-        {
-            Shader* pCompute = {};
-        } compute;
-
-        struct
-        {
-            Shader* pVertex = {};
-            Shader* pFragment = {};
-        } geometry;
-    };
-
-    PipelineType type = {};
-
-    ImmutableSamplerBank samplerBank = {};
+    HashMap<ShaderStage, Shader*> shaders;
 };
 
 class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
@@ -109,9 +87,10 @@ public:
     }
     Shader* getShader(ShaderStage stage) const
     {
-        if (m_shaders.contains(stage))
+        const auto& shaders = getCreateInfo().shaders;
+        if (shaders.contains(stage))
         {
-            return m_shaders.at(stage);
+            return shaders.at(stage);
         }
         return nullptr;
     }
@@ -129,7 +108,7 @@ public:
     }
     PipelineType getPipelineType() const
     {
-        return getCreateInfo().type;
+        return m_pipelineLayout.type;
     }
 
     const ::vk::PushConstantRange& getPushConstantRange() const
@@ -143,7 +122,6 @@ private:
     ~ShaderProgram() = default;
 
 private:
-    HashMap<ShaderStage, Shader*> m_shaders = {};
     HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects = {};
     PipelineLayout m_pipelineLayout = {};
 };

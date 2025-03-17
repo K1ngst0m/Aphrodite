@@ -1,4 +1,5 @@
 #include "resourceLoader.h"
+#include "api/vulkan/device.h"
 #include "common/common.h"
 #include "common/profiler.h"
 #include "filesystem/filesystem.h"
@@ -40,13 +41,6 @@ ResourceLoader::~ResourceLoader() = default;
 void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
-    for (const auto& [_, shaderCache] : m_shaderCaches)
-    {
-        for (const auto& [_, shader] : shaderCache)
-        {
-            m_pDevice->destroy(shader);
-        }
-    }
 }
 
 Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
@@ -204,143 +198,8 @@ Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
-
-    if (info.pBindlessResource)
-    {
-        const auto& fs = Filesystem::GetInstance();
-        static std::mutex fileWriterMtx;
-        std::lock_guard<std::mutex> lock{ fileWriterMtx };
-
-        std::string genDir = "shader_slang://gen";
-        if (!fs.exist(genDir))
-        {
-            std::filesystem::create_directory(fs.resolvePath(genDir));
-        }
-        // TODO
-        auto genFile = genDir + "/" + "hello_mesh_bindless.slang";
-        Filesystem::GetInstance().writeStringToFile(genFile, info.pBindlessResource->generateHandleSource());
-    }
-
-    auto loadShader = [this](const std::vector<uint32_t>& spv, const aph::ShaderStage stage,
-                             const std::string& entryPoint = "main") -> vk::Shader*
-    {
-        vk::Shader* shader;
-        vk::ShaderCreateInfo createInfo{
-            .code = spv,
-            .entrypoint = entryPoint,
-            .stage = stage,
-        };
-        APH_VR(m_pDevice->create(createInfo, &shader));
-        return shader;
-    };
-
-    HashMap<ShaderStage, vk::Shader*> requiredShaderList;
-    HashMap<std::filesystem::path, HashMap<aph::ShaderStage, std::string>> requiredStageMaps;
-    for (auto& [stage, stageLoadInfo] : info.stageInfo)
-    {
-        if (std::holds_alternative<std::string>(stageLoadInfo.data))
-        {
-            auto path = Filesystem::GetInstance().resolvePath(std::get<std::string>(stageLoadInfo.data));
-            requiredStageMaps[path][stage] = stageLoadInfo.entryPoint;
-        }
-        else
-        {
-            requiredShaderList[stage] =
-                loadShader(std::get<std::vector<uint32_t>>(stageLoadInfo.data), stage, stageLoadInfo.entryPoint);
-        }
-    }
-
-    for (const auto& [path, requiredStages] : requiredStageMaps)
-    {
-        if (m_shaderCaches.contains(path.string()))
-        {
-            const auto& shaderCache = m_shaderCaches[path.string()];
-            for (const auto& [stage, entryPoint] : requiredStages)
-            {
-                APH_ASSERT(!shaderCache.contains(stage));
-                requiredShaderList[stage] = shaderCache.at(stage);
-            }
-            continue;
-        }
-
-        if (path.extension() == ".spv")
-        {
-            // TODO multi shader stage single spv binary support
-            ShaderStage stage = requiredStages.cbegin()->first;
-            vk::Shader* shader = loadShader(loader::shader::loadSpvFromFile(path.c_str()), stage);
-            requiredShaderList[stage] = shader;
-            m_shaderCaches[path][stage] = shader;
-        }
-        else if (path.extension() == ".slang")
-        {
-
-            auto spvCodeMap = loader::shader::loadSlangFromFile(path.c_str());
-            if (spvCodeMap.empty())
-            {
-                return { Result::RuntimeError, "Failed to load slang shader from file." };
-            }
-            for (const auto& [stage, spvInfo] : spvCodeMap)
-            {
-                const auto& [entryPointName, spv] = spvInfo;
-                APH_ASSERT(!requiredShaderList.contains(stage));
-
-                vk::Shader* shader = loadShader(spv, stage, entryPointName);
-                m_shaderCaches[path][stage] = shader;
-
-                if (requiredStages.contains(stage))
-                {
-                    requiredShaderList[stage] = shader;
-                }
-            }
-        }
-        else
-        {
-            CM_LOG_ERR("Unsupported shader format: %s", path.extension().string());
-            APH_ASSERT(false);
-            return { Result::RuntimeError, "Unsupported shader format." };
-        }
-    }
-
-    // vs + fs
-    if (requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
-    {
-        APH_VR(m_pDevice->create(
-            vk::ProgramCreateInfo{
-                .geometry{ .pVertex = requiredShaderList[ShaderStage::VS],
-                           .pFragment = requiredShaderList[ShaderStage::FS] },
-                .type = PipelineType::Geometry,
-            },
-            ppProgram));
-    }
-    else if (requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
-    {
-        vk::ProgramCreateInfo ci{
-            .mesh{ .pMesh = requiredShaderList[ShaderStage::MS], .pFragment = requiredShaderList[ShaderStage::FS] },
-            .type = PipelineType::Mesh,
-        };
-        if (requiredShaderList.contains(ShaderStage::TS))
-        {
-            ci.mesh.pTask = requiredShaderList[ShaderStage::TS];
-        }
-        APH_VR(m_pDevice->create(ci, ppProgram));
-    }
-    // cs
-    else if (requiredShaderList.contains(ShaderStage::CS))
-    {
-        APH_VR(m_pDevice->create(
-            vk::ProgramCreateInfo{
-                .compute{ .pCompute = requiredShaderList[ShaderStage::CS] },
-                .type = PipelineType::Compute,
-            },
-            ppProgram));
-    }
-    else
-    {
-        APH_ASSERT(false);
-        return { Result::RuntimeError, "Unsupported shader stage combinations." };
-    }
-
-    return Result::Success;
+    ShaderLoader loader{ m_pDevice, info };
+    return loader.load(ppProgram);
 }
 
 Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)

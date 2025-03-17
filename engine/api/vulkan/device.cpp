@@ -349,11 +349,11 @@ Result Device::create(const ShaderCreateInfo& createInfo, Shader** ppShader, con
 {
     APH_PROFILER_SCOPE();
     const auto& spv = createInfo.code;
-    ::vk::ShaderModuleCreateInfo vkCreateInfo{};
-    vkCreateInfo.setCodeSize(spv.size()).setPCode(spv.data());
 
     if (createInfo.compile)
     {
+        ::vk::ShaderModuleCreateInfo vkCreateInfo{};
+        vkCreateInfo.setCodeSize(spv.size()).setPCode(spv.data());
         auto [result, handle] = getHandle().createShaderModule(vkCreateInfo, vk_allocator());
         *ppShader = m_resourcePool.shader.allocate(createInfo, handle);
         APH_VR(setDebugObjectName(*ppShader, debugName));
@@ -371,55 +371,39 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     APH_PROFILER_SCOPE();
     bool hasTaskShader = false;
     std::vector<Shader*> shaders{};
-    switch (createInfo.type)
-    {
-    case PipelineType::Geometry:
-    {
-        auto vs = createInfo.geometry.pVertex;
-        auto fs = createInfo.geometry.pFragment;
-        APH_ASSERT(vs);
-        APH_ASSERT(fs);
 
-        shaders = { vs, fs };
-    }
-    break;
-    case PipelineType::Mesh:
+    PipelineType pipelineType = {};
+    // vs + fs
+    if (createInfo.shaders.contains(ShaderStage::VS) && createInfo.shaders.contains(ShaderStage::FS))
     {
-        auto ms = createInfo.mesh.pMesh;
-        auto ts = createInfo.mesh.pTask;
-        auto fs = createInfo.mesh.pFragment;
-        APH_ASSERT(ms);
-        APH_ASSERT(fs);
-        if (ts)
+        shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
+        shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
+        pipelineType = PipelineType::Geometry;
+    }
+    else if (createInfo.shaders.contains(ShaderStage::MS) && createInfo.shaders.contains(ShaderStage::FS))
+    {
+        if (createInfo.shaders.contains(ShaderStage::TS))
         {
+            shaders.push_back(createInfo.shaders.at(ShaderStage::TS));
             hasTaskShader = true;
-            shaders.push_back(ts);
         }
-        shaders.push_back(ms);
-        shaders.push_back(fs);
+        shaders.push_back(createInfo.shaders.at(ShaderStage::MS));
+        shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
+        pipelineType = PipelineType::Mesh;
     }
-    break;
-    case PipelineType::Compute:
+    // cs
+    else if (createInfo.shaders.contains(ShaderStage::CS))
     {
-        auto cs = createInfo.compute.pCompute;
-        APH_ASSERT(cs);
-        shaders = { cs };
+        shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
+        pipelineType = PipelineType::Compute;
     }
-    break;
-    case PipelineType::RayTracing:
-    {
-        APH_ASSERT(false);
-        return Result::RuntimeError;
-    }
-    break;
-    default:
+    else
     {
         APH_ASSERT(false);
-        return Result::RuntimeError;
-    }
+        return { Result::RuntimeError, "Unsupported shader stage combinations." };
     }
 
-    ShaderReflector reflector{ ReflectRequest{ shaders, &createInfo.samplerBank } };
+    ShaderReflector reflector{ ReflectRequest{ shaders } };
     const auto& combineLayout = reflector.getReflectLayoutMeta();
 
     // setup descriptor set layouts and pipeline layouts
@@ -517,6 +501,7 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
         .pushConstantRange = reflector.getPushConstantRange(),
         .setLayouts = std::move(setLayouts),
         .handle = pipelineLayout,
+        .type = pipelineType
     };
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);

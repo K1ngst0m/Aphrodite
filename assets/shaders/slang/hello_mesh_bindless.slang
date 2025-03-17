@@ -55,8 +55,8 @@ void taskMain()
 
 VertexIn GetVertex(uint indexId)
 {
-    let vertexId = handle::index.get<uint>(indexId);
-    let vertex = handle::vertex.get<VertexIn>(vertexId);
+    let vertexId = handle::index_cube.get<uint>(indexId);
+    let vertex = handle::vertex_cube.get<VertexIn>(vertexId);
     return vertex;
 }
 
@@ -73,7 +73,7 @@ void meshMain(out indices uint3 triangles[MAX_NUM_PRIMS], out vertices VertexOut
     }
     uint primId = tid.x;
 
-    let mat = handle::transform.get<TransformMatrix>();
+    let mat = handle::transform_cube.get<TransformMatrix>();
 
     int i0 = primId * 3;
 
@@ -102,7 +102,7 @@ float4 fragMain(VertexOutput input) : SV_TARGET
     /* let samp = bindless::getSampler(handleData.samp); */
     /* let tex = bindless::getSampledImage(handleData.texture); */
     /* float4 color = tex.Sample(samp, input.uv); */
-    let color = handle::texture.sample(handle::samp, input.uv);
+    let color = handle::texture_container.sample(handle::samp, input.uv);
 
     return color;
 }

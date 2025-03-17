@@ -229,15 +229,12 @@ void hello_aphrodite::init()
         // pipeline
         // mesh shading
         {
-            aph::ShaderLoadInfo
-                shaderLoadInfo{ .stageInfo = {
-                                    { aph::ShaderStage::TS,
-                                      { .data = "shader_slang://hello_mesh.slang", .entryPoint = "taskMain" } },
-                                    { aph::ShaderStage::MS,
-                                      { .data = "shader_slang://hello_mesh.slang", .entryPoint = "meshMain" } },
-                                    { aph::ShaderStage::FS,
-                                      { .data = "shader_slang://hello_mesh.slang", .entryPoint = "fragMain" } },
-                                } };
+            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh.slang" },
+                                                .stageInfo = {
+                                                    { aph::ShaderStage::TS, "taskMain" },
+                                                    { aph::ShaderStage::MS, "meshMain" },
+                                                    { aph::ShaderStage::FS, "fragMain" },
+                                                } };
 
             APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Mesh]));
         }
@@ -246,39 +243,29 @@ void hello_aphrodite::init()
         {
             auto bindless = m_pDevice->getBindlessResource();
             {
-                m_drawDataOffset = bindless->updateResource(m_pImage, "texture");
+                m_drawDataOffset = bindless->updateResource(m_pImage, "texture_container");
                 bindless->updateResource(m_pSampler, "samp");
-                bindless->updateResource(m_pMatrixBffer, "transform");
-                bindless->updateResource(m_pVertexBuffer, "vertex");
-                bindless->updateResource(m_pIndexBuffer, "index");
+                bindless->updateResource(m_pMatrixBffer, "transform_cube");
+                bindless->updateResource(m_pVertexBuffer, "vertex_cube");
+                bindless->updateResource(m_pIndexBuffer, "index_cube");
             }
 
-            aph::ShaderLoadInfo shaderLoadInfo{ .stageInfo = {
-                                                    { aph::ShaderStage::TS,
-                                                      { .data = "shader_slang://hello_mesh_bindless.slang",
-                                                        .entryPoint = "taskMain" } },
-                                                    { aph::ShaderStage::MS,
-                                                      { .data = "shader_slang://hello_mesh_bindless.slang",
-                                                        .entryPoint = "meshMain" } },
-                                                    { aph::ShaderStage::FS,
-                                                      { .data = "shader_slang://hello_mesh_bindless.slang",
-                                                        .entryPoint = "fragMain" } },
-                                                },
-            .pBindlessResource = bindless
-        };
+            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh_bindless.slang" },
+                                                .stageInfo = {
+                                                    {  aph::ShaderStage::TS,  "taskMain" },
+                                                    {  aph::ShaderStage::MS,  "meshMain" },
+                                                    {  aph::ShaderStage::FS,  "fragMain" },
+                                                }, .pBindlessResource = bindless};
 
             APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
         }
 
         // geometry shading
         {
-            aph::ShaderLoadInfo shaderLoadInfo{ .stageInfo = {
-                                                    { aph::ShaderStage::VS,
-                                                      { .data = "shader_slang://hello_geometry.slang",
-                                                        .entryPoint = "vertexMain" } },
-                                                    { aph::ShaderStage::FS,
-                                                      { .data = "shader_slang://hello_geometry.slang",
-                                                        .entryPoint = "fragMain" } },
+            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_geometry.slang" },
+                                                .stageInfo = {
+                                                    { aph::ShaderStage::VS, "vertexMain" },
+                                                    { aph::ShaderStage::FS, "fragMain" },
                                                 } };
 
             APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Geometry]));
