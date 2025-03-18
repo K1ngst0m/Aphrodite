@@ -1,5 +1,4 @@
-#ifndef APH_EVENT_H
-#define APH_EVENT_H
+#pragma once
 
 #include "common/common.h"
 #include "input/input.h"
@@ -96,4 +95,3 @@ struct WindowResizeEvent : public Event
 
 } // namespace aph
 
-#endif

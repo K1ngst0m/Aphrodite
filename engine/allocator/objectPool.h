@@ -1,5 +1,4 @@
-#ifndef OBJECTPOOL_H_
-#define OBJECTPOOL_H_
+#pragma once
 
 #include "allocator/allocator.h"
 #include "common/smallVector.h"
@@ -87,4 +86,3 @@ private:
 };
 } // namespace aph
 
-#endif // OBJECTPOOL_H_

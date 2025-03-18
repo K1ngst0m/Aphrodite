@@ -1,5 +1,4 @@
-#ifndef MODULE_H_
-#define MODULE_H_
+#pragma once
 
 namespace aph
 {
@@ -42,4 +41,3 @@ private:
 };
 } // namespace aph
 
-#endif // MODULE_H_

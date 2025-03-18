@@ -1,5 +1,4 @@
-#ifndef SCENENODE_H_
-#define SCENENODE_H_
+#pragma once
 
 #include <functional>
 
@@ -151,5 +150,3 @@ private:
     Object* m_object{};
 };
 } // namespace aph
-
-#endif // SCENENODE_H_

@@ -1,5 +1,4 @@
-#ifndef COMMANDPOOL_H_
-#define COMMANDPOOL_H_
+#pragma once
 
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
@@ -45,5 +44,3 @@ private:
 };
 
 } // namespace aph::vk
-
-#endif // COMMANDPOOL_H_

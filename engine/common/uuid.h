@@ -1,5 +1,4 @@
-#ifndef APH_UUID_H
-#define APH_UUID_H
+#pragma once
 
 #include <cstdint>
 #include <iostream>
@@ -309,4 +308,3 @@ private:
 };
 } // namespace aph::uuid
 
-#endif

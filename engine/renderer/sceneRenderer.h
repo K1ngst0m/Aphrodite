@@ -1,5 +1,4 @@
-#ifndef VKSCENERENDERER_H_
-#define VKSCENERENDERER_H_
+#pragma once
 
 #include "api/vulkan/device.h"
 #include "renderer.h"
@@ -128,4 +127,3 @@ private:
 };
 } // namespace aph::vk
 
-#endif // VKSCENERENDERER_H_

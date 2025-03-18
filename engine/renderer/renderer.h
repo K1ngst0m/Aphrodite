@@ -78,8 +78,8 @@ protected:
     RenderConfig m_config = {};
 
 protected:
-    std::vector<std::unique_ptr<RenderGraph>> m_frameGraph;
-    std::vector<vk::Fence*> m_frameFence;
+    SmallVector<std::unique_ptr<RenderGraph>> m_frameGraph;
+    SmallVector<vk::Fence*> m_frameFence;
     uint32_t m_frameIdx = {};
 
 protected:

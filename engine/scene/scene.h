@@ -1,5 +1,4 @@
-#ifndef VKLSCENEMANGER_H_
-#define VKLSCENEMANGER_H_
+#pragma once
 
 #include "node.h"
 
@@ -110,4 +109,3 @@ private:
 
 } // namespace aph
 
-#endif // VKLSCENEMANGER_H_

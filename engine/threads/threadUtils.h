@@ -1,5 +1,4 @@
-#ifndef APH_THREAD_UTILS_H
-#define APH_THREAD_UTILS_H
+#pragma once
 #include <pthread.h>
 
 namespace aph::thread
@@ -21,4 +20,3 @@ inline std::string getName()
     return name;
 }
 } // namespace aph::thread
-#endif

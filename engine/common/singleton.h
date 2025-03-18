@@ -1,5 +1,4 @@
-#ifndef APH_SINGLETON_H
-#define APH_SINGLETON_H
+#pragma once
 
 #include <memory>
 #include <mutex>
@@ -30,4 +29,3 @@ protected:
 };
 
 } // namespace aph
-#endif

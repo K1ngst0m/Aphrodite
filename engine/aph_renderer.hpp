@@ -1,6 +1,4 @@
-#ifndef HELPER_H_
-#define HELPER_H_
+#pragma once
 
 #include "renderer/renderer.h"
 
-#endif // HELPER_H_

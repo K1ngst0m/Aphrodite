@@ -1,5 +1,4 @@
-#ifndef APH_SMALL_VEC_H_
-#define APH_SMALL_VEC_H_
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -145,4 +144,3 @@ public:
 };
 } // namespace aph
 
-#endif

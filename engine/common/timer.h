@@ -1,5 +1,4 @@
-#ifndef TIMER_H_
-#define TIMER_H_
+#pragma once
 
 #include "common/common.h"
 #include "common/hash.h"
@@ -109,4 +108,3 @@ private:
 
 } // namespace aph
 
-#endif // TIMER_H_

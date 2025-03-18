@@ -1,5 +1,4 @@
-#ifndef APH_ENDIANNESS_H
-#define APH_ENDIANNESS_H
+#pragma once
 #if defined(__GLIBC__) || defined(__GNU_LIBRARY__) || defined(__ANDROID__)
 #include <endian.h>
 #elif defined(__APPLE__) && defined(__MACH__)
@@ -128,4 +127,3 @@ inline uint64_t swap_u64(uint64_t value)
 }
 #endif // FALLBACK_SWAP
 
-#endif

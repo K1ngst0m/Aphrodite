@@ -1,5 +1,4 @@
-#ifndef APH_INPUT_H
-#define APH_INPUT_H
+#pragma once
 
 namespace aph
 {
@@ -111,5 +110,3 @@ enum class KeyState
 };
 
 } // namespace aph
-
-#endif

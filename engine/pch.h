@@ -1,5 +1,4 @@
-#ifndef APH_PCH_H
-#define APH_PCH_H
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -29,4 +28,3 @@
 #include <variant>
 #include <vector>
 
-#endif

@@ -1,5 +1,4 @@
-#ifndef APH_THREAD_SAFE_QUEUE
-#define APH_THREAD_SAFE_QUEUE
+#pragma once
 
 #include <algorithm>
 #include <concepts>
@@ -111,4 +110,3 @@ private:
 };
 } // namespace aph
 
-#endif

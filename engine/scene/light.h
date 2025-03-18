@@ -1,5 +1,4 @@
-#ifndef VKLLIGHT_H_
-#define VKLLIGHT_H_
+#pragma once
 
 #include "object.h"
 
@@ -29,4 +28,3 @@ struct Light : public Object
 };
 } // namespace aph
 
-#endif // VKLLIGHT_H_

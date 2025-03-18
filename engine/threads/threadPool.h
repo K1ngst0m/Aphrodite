@@ -1,5 +1,4 @@
-#ifndef APH_THREADPOOL_H_
-#define APH_THREADPOOL_H_
+#pragma once
 
 #include <atomic>
 #include <barrier>
@@ -239,4 +238,3 @@ private:
 };
 } // namespace aph
 
-#endif // APH_THREADPOOL_H_
