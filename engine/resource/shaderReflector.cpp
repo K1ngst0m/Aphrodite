@@ -169,15 +169,15 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
         const auto& shaderLayout = m_stageLayouts[ShaderStage::VS];
         VertexInput& vertexInput = m_vertexInput;
         uint32_t size = 0;
-        aph::utils::forEachBit(
-            shaderLayout.inputMask,
-            [&](uint32_t location)
-            {
-                const auto& attr = shaderLayout.vertexAttributes[location];
-                vertexInput.attributes.push_back(
-                    { .location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset });
-                size += attr.size;
-            });
+
+        for (uint32_t location : aph::utils::forEachBit(shaderLayout.inputMask))
+        {
+            const auto& attr = shaderLayout.vertexAttributes[location];
+            vertexInput.attributes.push_back(
+                { .location = location, .binding = attr.binding, .format = attr.format, .offset = attr.offset });
+            size += attr.size;
+        }
+
         vertexInput.bindings.push_back({ size });
     }
 
@@ -335,13 +335,12 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
     }
 
     uint32_t attrOffset = 0;
-    aph::utils::forEachBit(layout.inputMask,
-                           [&](uint32_t location)
-                           {
-                               auto& attr = layout.vertexAttributes[location];
-                               attr.offset = attrOffset;
-                               attrOffset += attr.size;
-                           });
+    for (uint32_t location : aph::utils::forEachBit(layout.inputMask))
+    {
+        auto& attr = layout.vertexAttributes[location];
+        attr.offset = attrOffset;
+        attrOffset += attr.size;
+    }
 
     for (const auto& res : resources.stage_outputs)
     {
@@ -528,23 +527,22 @@ void ShaderReflector::reflect()
                 combinedSetInfo.stagesForSets |= stageMask;
             }
 
-            aph::utils::forEachBit(activeBinds,
-                                   [&](uint32_t bit)
-                                   {
-                                       combinedSetInfo.stagesForBindings[bit] |= stageMask;
+            for (uint32_t bit : aph::utils::forEachBit(activeBinds))
+            {
+                combinedSetInfo.stagesForBindings[bit] |= stageMask;
 
-                                       auto& combinedSize = combinedSetInfo.shaderLayout.arraySize[bit];
-                                       auto& shaderSize = shaderLayout.layouts[i].arraySize[bit];
-                                       if (combinedSize && combinedSize != shaderSize)
-                                       {
-                                           VK_LOG_ERR("Mismatch between array sizes in different shaders.");
-                                           APH_ASSERT(false);
-                                       }
-                                       else
-                                       {
-                                           combinedSize = shaderSize;
-                                       }
-                                   });
+                auto& combinedSize = combinedSetInfo.shaderLayout.arraySize[bit];
+                auto& shaderSize = shaderLayout.layouts[i].arraySize[bit];
+                if (combinedSize && combinedSize != shaderSize)
+                {
+                    VK_LOG_ERR("Mismatch between array sizes in different shaders.");
+                    APH_ASSERT(false);
+                }
+                else
+                {
+                    combinedSize = shaderSize;
+                }
+            }
         }
 
         // Merge push constant ranges into one range.
@@ -567,16 +565,16 @@ void ShaderReflector::reflect()
 
         if (samplerBank)
         {
-            aph::utils::forEachBit(setInfo.shaderLayout.samplerMask | setInfo.shaderLayout.sampledImageMask,
-                                   [&](uint32_t binding)
-                                   {
-                                       if (samplerBank->samplers[setIdx][binding])
-                                       {
-                                           extImmutableSamplers.samplers[setIdx][binding] =
-                                               samplerBank->samplers[setIdx][binding];
-                                           setInfo.shaderLayout.immutableSamplerMask.set(binding);
-                                       }
-                                   });
+
+            for (uint32_t binding :
+                 aph::utils::forEachBit(setInfo.shaderLayout.samplerMask | setInfo.shaderLayout.sampledImageMask))
+            {
+                if (samplerBank->samplers[setIdx][binding])
+                {
+                    extImmutableSamplers.samplers[setIdx][binding] = samplerBank->samplers[setIdx][binding];
+                    setInfo.shaderLayout.immutableSamplerMask.set(binding);
+                }
+            }
         }
 
         if (setInfo.stagesForSets)

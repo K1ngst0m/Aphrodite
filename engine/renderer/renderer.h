@@ -57,7 +57,7 @@ public:
         return m_pWindowSystem.get();
     }
 
-    void recordGraph(std::function<void(RenderGraph*)>&& func);
+    Generator<RenderGraph*> recordGraph();
     void render();
 
     const RenderConfig& getConfig() const

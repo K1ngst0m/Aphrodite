@@ -209,12 +209,12 @@ void Renderer::load()
     // }
 };
 
-void Renderer::recordGraph(std::function<void(RenderGraph*)>&& func)
+Generator<RenderGraph*> Renderer::recordGraph()
 {
     APH_PROFILER_SCOPE();
     for (auto& pGraph : m_frameGraph)
     {
-        func(pGraph.get());
+        co_yield pGraph.get();
         pGraph->build(m_pSwapChain);
     }
 }

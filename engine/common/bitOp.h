@@ -1,4 +1,5 @@
 #pragma once
+#include "common/coroutine.h"
 
 namespace aph::utils
 {
@@ -29,16 +30,16 @@ constexpr uint32_t trailing_ones(T x) noexcept
     return std::countr_zero(~x);
 }
 
-template <BitwiseType TBitwise, typename TFunc>
-inline void forEachBit(TBitwise value, const TFunc& func) noexcept
+template <BitwiseType TBitwise>
+Generator<uint32_t> forEachBit(TBitwise value) noexcept
 {
     if constexpr (std::unsigned_integral<TBitwise>)
     {
         while (value)
         {
             uint32_t bit = trailing_zeroes(value);
-            func(bit);
-            value &= ~(1 << bit);
+            co_yield bit;
+            value &= ~(TBitwise(1) << bit);
         }
     }
     else
@@ -50,21 +51,21 @@ inline void forEachBit(TBitwise value, const TFunc& func) noexcept
             {
                 ++bit;
             }
-            func(bit);
+            co_yield bit;
             value.reset(bit);
         }
     }
 }
 
-template <BitwiseType TBitwise, typename TFunc>
-inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
+template <BitwiseType TBitwise>
+Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcept
 {
     if constexpr (std::unsigned_integral<TBitwise>)
     {
         if (value == std::numeric_limits<TBitwise>::max())
         {
-            func(0, static_cast<uint32_t>(sizeof(TBitwise) * 8));
-            return;
+            co_yield { 0, static_cast<uint32_t>(sizeof(TBitwise) * 8) };
+            co_return;
         }
 
         uint32_t bit_offset = 0;
@@ -75,7 +76,7 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
             value >>= zero_count;
 
             const uint32_t one_count = trailing_ones(value);
-            func(bit_offset, one_count);
+            co_yield { bit_offset, one_count };
 
             value &= ~((TBitwise{ 1 } << one_count) - 1);
             bit_offset += one_count;
@@ -84,11 +85,10 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
     else
     {
         // Bitset path
-        // We'll simulate the same logic:
-        if (value.all()) // If all bits in the bitset are set
+        if (value.all())
         {
-            func(0, static_cast<uint32_t>(value.size()));
-            return;
+            co_yield { 0, static_cast<uint32_t>(value.size()) };
+            co_return;
         }
 
         size_t bit_offset = 0;
@@ -106,25 +106,13 @@ inline void forEachBitRange(TBitwise value, const TFunc& func) noexcept
             }
             bit_offset += tz;
 
-            // Shift x right by tz bits
-            // A direct shift of std::bitset<> is awkward if tz is not constant,
-            // so we do it manually for demonstration:
-            for (size_t i = 0; i + tz < value.size(); ++i)
-            {
-                value[i] = value[i + tz];
-            }
-            for (size_t i = value.size() - tz; i < value.size(); ++i)
-            {
-                value.reset(i);
-            }
-
-            // Now count the trailing ones
+            // Count the trailing ones
             size_t to = 0;
             while (to < value.size() && value.test(to))
             {
                 ++to;
             }
-            func(static_cast<uint32_t>(bit_offset), static_cast<uint32_t>(to));
+            co_yield { static_cast<uint32_t>(bit_offset), static_cast<uint32_t>(to) };
 
             // Clear those "to" bits
             for (size_t i = 0; i < to; ++i)
