@@ -149,14 +149,9 @@ Renderer::Renderer(const RenderConfig& config)
     // init graph
     {
         m_frameGraph.resize(m_config.maxFrames);
-        m_frameFence.resize(m_config.maxFrames);
         for (auto& graph : m_frameGraph)
         {
             graph = std::make_unique<RenderGraph>(m_pDevice.get());
-        }
-        for (auto& fence : m_frameFence)
-        {
-            fence = m_pDevice->acquireFence(true);
         }
     }
 
@@ -230,8 +225,7 @@ void Renderer::render()
     m_timer.set(TIMER_TAG_FRAME);
     m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
     // m_pDevice->begineCapture();
-    m_frameFence[m_frameIdx]->wait();
-    m_frameGraph[m_frameIdx]->execute(m_frameFence[m_frameIdx]);
+    m_frameGraph[m_frameIdx]->execute();
     // m_pDevice->endCapture();
     m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
 }

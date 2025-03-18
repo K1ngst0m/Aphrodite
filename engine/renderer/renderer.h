@@ -79,7 +79,6 @@ protected:
 
 protected:
     SmallVector<std::unique_ptr<RenderGraph>> m_frameGraph;
-    SmallVector<vk::Fence*> m_frameFence;
     uint32_t m_frameIdx = {};
 
 protected:

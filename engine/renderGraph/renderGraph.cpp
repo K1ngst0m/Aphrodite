@@ -167,7 +167,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     if (m_buildData.frameFence == nullptr)
     {
-        m_buildData.frameFence = m_pDevice->acquireFence(false);
+        m_buildData.frameFence = m_pDevice->acquireFence(true);
     }
 
     if (m_buildData.presentSem == nullptr)
@@ -473,7 +473,10 @@ void RenderGraph::execute(vk::Fence* pFence)
     // submit && present
     {
         vk::Fence* frameFence = pFence ? pFence : m_buildData.frameFence;
-        frameFence->reset();
+        {
+            frameFence->wait();
+            frameFence->reset();
+        }
 
         APH_VR(queue->submit(m_buildData.frameSubmitInfos, frameFence));
 
@@ -532,12 +535,6 @@ void RenderGraph::execute(vk::Fence* pFence)
         }
 
         APH_VR(m_buildData.pSwapchain->presentImage({ m_buildData.presentSem }));
-
-        if (!pFence)
-        {
-            frameFence->wait();
-            APH_VR(m_pDevice->releaseFence(frameFence));
-        }
     }
 }
 
