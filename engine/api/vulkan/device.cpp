@@ -594,6 +594,11 @@ void Device::destroy(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
 
+    for (auto& [_, shader]: pProgram->m_createInfo.shaders)
+    {
+        destroy(shader);
+    }
+
     for (auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
     {
         destroy(setLayout);

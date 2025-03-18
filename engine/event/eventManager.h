@@ -37,7 +37,6 @@ class EventManager
 public:
     EventManager()
     {
-        m_pendingEvent = m_taskManager.createTaskGroup("event processing");
     }
     template <typename TEvent>
     void pushEvent(const TEvent& e)
@@ -61,7 +60,6 @@ public:
     }
 
 private:
-    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
     std::mutex m_dataMapMutex;
 
     HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
@@ -77,8 +75,6 @@ private:
         }
         return std::any_cast<EventData<TEvent>&>(m_eventDataMap[ti].first);
     }
-
-    TaskGroup* m_pendingEvent = {};
 };
 
 } // namespace aph

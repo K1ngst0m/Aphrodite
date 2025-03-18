@@ -127,6 +127,11 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
 void Instance::Destroy(Instance* pInstance)
 {
+    for (auto gpu: pInstance->m_physicalDevices)
+    {
+        pInstance->m_physicalDevicePools.free(gpu);
+    }
+    pInstance->m_physicalDevicePools.clear();
 #ifdef APH_DEBUG
     pInstance->getHandle().destroyDebugUtilsMessengerEXT(pInstance->m_debugMessenger, vk_allocator());
 #endif

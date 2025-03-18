@@ -23,10 +23,10 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
     std::vector<::vk::SubmitInfo> vkSubmits;
     for (const auto& submitInfo : submitInfos)
     {
-        SmallVector<::vk::CommandBuffer> vkCmds;
-        SmallVector<::vk::PipelineStageFlags> vkWaitStages;
-        SmallVector<::vk::Semaphore> vkWaitSemaphores;
-        SmallVector<::vk::Semaphore> vkSignalSemaphores;
+        auto& vkCmds = vkCmds2D.emplace_back();
+        auto&vkWaitStages = vkWaitStages2D.emplace_back();
+        auto& vkWaitSemaphores = vkWaitSemaphores2D.emplace_back();
+        auto& vkSignalSemaphores = vkSignalSemaphores2D.emplace_back();
 
         for (auto* cmd : submitInfo.commandBuffers)
         {
@@ -52,13 +52,10 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
             {
                 vkWaitStages.resize(submitInfo.waitSemaphores.size(), ::vk::PipelineStageFlagBits::eAllCommands);
             }
-            info.pWaitDstStageMask = vkWaitStages.data();
+            info.setWaitDstStageMask(vkWaitStages);
         }
-        vkCmds2D.push_back(std::move(vkCmds));
-        vkWaitStages2D.push_back(std::move(vkWaitStages));
-        vkWaitSemaphores2D.push_back(std::move(vkWaitSemaphores));
-        vkSignalSemaphores2D.push_back(std::move(vkSignalSemaphores));
-        vkSubmits.push_back(info);
+
+        vkSubmits.push_back(std::move(info));
     }
 
     std::lock_guard<std::mutex> lock{ m_lock };
