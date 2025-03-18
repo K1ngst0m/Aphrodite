@@ -1,12 +1,12 @@
 #pragma once
 
 #include "api/vulkan/device.h"
-#include "threads/taskManager.h"
+#include "bufferLoader.h"
 #include "common/hash.h"
+#include "geometryLoader.h"
 #include "imageLoader.h"
 #include "shaderLoader.h"
-#include "bufferLoader.h"
-#include "geometryLoader.h"
+#include "threads/taskManager.h"
 #include <format>
 
 namespace aph
@@ -45,20 +45,46 @@ public:
         return task->getResult();
     }
 
+    template <typename T_LoadInfo, typename T_Resource>
+    Result load(const T_LoadInfo& loadInfo, T_Resource** ppResource)
+    {
+        auto result = loadImpl(loadInfo, ppResource);
+        m_unloadQueue[*ppResource] = [this, pResource = *ppResource]() { unLoadImpl(pResource); };
+        return result;
+    }
+
+    template <typename T_Resource>
+    void unLoad(T_Resource* pResource)
+    {
+        APH_ASSERT(pResource);
+        APH_ASSERT(m_unloadQueue.contains(pResource));
+        if (pResource && m_unloadQueue.contains(pResource))
+        {
+            unLoadImpl(pResource);
+            m_unloadQueue.erase(pResource);
+        }
+    }
+
     void wait()
     {
         m_taskManager.wait();
     }
 
-    Result load(const ImageLoadInfo& info, vk::Image** ppImage);
-    Result load(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
-    Result load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
-    Result load(const GeometryLoadInfo& info, Geometry** ppGeometry);
     void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
 
     void cleanup();
 
 private:
+    Result loadImpl(const ImageLoadInfo& info, vk::Image** ppImage);
+    Result loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer);
+    Result loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram);
+    Result loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry);
+
+    void unLoadImpl(vk::Image* pImage);
+    void unLoadImpl(vk::Buffer* pBuffer);
+    void unLoadImpl(vk::ShaderProgram* pProgram);
+    void unLoadImpl(Geometry* pGeometry);
+
     void writeBuffer(vk::Buffer* pBuffer, const void* data, Range range = {});
 
 private:
@@ -69,5 +95,6 @@ private:
 
 private:
     std::mutex m_updateLock;
+    HashMap<void*, std::function<void()>> m_unloadQueue;
 };
 } // namespace aph

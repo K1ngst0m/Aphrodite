@@ -41,9 +41,15 @@ ResourceLoader::~ResourceLoader() = default;
 void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
+    APH_VR(m_pDevice->waitIdle());
+    for (auto [res, unLoadCB]: m_unloadQueue)
+    {
+        unLoadCB();
+    }
+    m_unloadQueue.clear();
 }
 
-Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
+Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
 {
     APH_PROFILER_SCOPE();
     std::filesystem::path path;
@@ -171,7 +177,7 @@ Result ResourceLoader::load(const ImageLoadInfo& info, vk::Image** ppImage)
     return Result::Success;
 }
 
-Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
+Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
 {
     APH_PROFILER_SCOPE();
     vk::BufferCreateInfo bufferCI = info.createInfo;
@@ -195,14 +201,14 @@ Result ResourceLoader::load(const BufferLoadInfo& info, vk::Buffer** ppBuffer)
     return Result::Success;
 }
 
-Result ResourceLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
+Result ResourceLoader::loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
     ShaderLoader loader{ m_pDevice, info };
     return loader.load(ppProgram);
 }
 
-Result ResourceLoader::load(const GeometryLoadInfo& info, Geometry** ppGeometry)
+Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry)
 {
     APH_PROFILER_SCOPE();
     auto path = std::filesystem::path{ info.path };
@@ -296,5 +302,28 @@ void ResourceLoader::writeBuffer(vk::Buffer* pBuffer, const void* data, Range ra
     APH_ASSERT(pMapped);
     std::memcpy((uint8_t*)pMapped + range.offset, data, range.size);
     m_pDevice->unMapMemory(pBuffer);
+}
+void ResourceLoader::unLoadImpl(vk::Image* pImage)
+{
+    m_pDevice->destroy(pImage);
+}
+void ResourceLoader::unLoadImpl(vk::Buffer* pBuffer)
+{
+    m_pDevice->destroy(pBuffer);
+}
+void ResourceLoader::unLoadImpl(vk::ShaderProgram* pProgram)
+{
+    m_pDevice->destroy(pProgram);
+}
+void ResourceLoader::unLoadImpl(Geometry* pGeometry)
+{
+    for (auto* pBuffer : pGeometry->indexBuffer)
+    {
+        m_pDevice->destroy(pBuffer);
+    }
+    for (auto* pBuffer : pGeometry->vertexBuffers)
+    {
+        m_pDevice->destroy(pBuffer);
+    }
 }
 } // namespace aph

@@ -380,15 +380,7 @@ void hello_aphrodite::finish()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
-    m_pDevice->destroy(m_pVertexBuffer);
-    m_pDevice->destroy(m_pIndexBuffer);
-    m_pDevice->destroy(m_pMatrixBffer);
-    m_pDevice->destroy(m_pImage);
     m_pDevice->destroy(m_pSampler);
-    for (auto [_, program] : m_program)
-    {
-        m_pDevice->destroy(program);
-    }
 }
 
 void hello_aphrodite::switchShadingType(ShadingType type)
