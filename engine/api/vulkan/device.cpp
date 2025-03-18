@@ -496,13 +496,11 @@ Result Device::create(const ProgramCreateInfo& createInfo, ShaderProgram** ppPro
     }
 
     // TODO
-    PipelineLayout layout{
-        .vertexInput = reflector.getVertexInput(),
-        .pushConstantRange = reflector.getPushConstantRange(),
-        .setLayouts = std::move(setLayouts),
-        .handle = pipelineLayout,
-        .type = pipelineType
-    };
+    PipelineLayout layout{ .vertexInput = reflector.getVertexInput(),
+                           .pushConstantRange = reflector.getPushConstantRange(),
+                           .setLayouts = std::move(setLayouts),
+                           .handle = pipelineLayout,
+                           .type = pipelineType };
 
     *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
 

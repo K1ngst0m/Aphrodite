@@ -109,4 +109,3 @@ private:
     mutable Lock mutex_{};
 };
 } // namespace aph
-

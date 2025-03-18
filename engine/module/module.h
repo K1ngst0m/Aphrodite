@@ -40,4 +40,3 @@ private:
     void* getSymbolInternal(const char* symbol);
 };
 } // namespace aph
-

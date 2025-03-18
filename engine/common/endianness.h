@@ -126,4 +126,3 @@ inline uint64_t swap_u64(uint64_t value)
            ((value & 0x000000000000FF00u) << 40u) | ((value & 0x00000000000000FFu) << 56u);
 }
 #endif // FALLBACK_SWAP
-

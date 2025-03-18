@@ -42,7 +42,7 @@ void ResourceLoader::cleanup()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
-    for (auto [res, unLoadCB]: m_unloadQueue)
+    for (auto [res, unLoadCB] : m_unloadQueue)
     {
         unLoadCB();
     }

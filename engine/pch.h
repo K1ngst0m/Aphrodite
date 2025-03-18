@@ -27,4 +27,3 @@
 #include <utility>
 #include <variant>
 #include <vector>
-

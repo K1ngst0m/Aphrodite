@@ -126,4 +126,3 @@ private:
     std::vector<Light*> m_lightList;
 };
 } // namespace aph::vk
-

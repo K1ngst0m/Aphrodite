@@ -94,4 +94,3 @@ struct WindowResizeEvent : public Event
 };
 
 } // namespace aph
-

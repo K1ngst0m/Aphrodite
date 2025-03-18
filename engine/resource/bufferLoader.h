@@ -16,4 +16,4 @@ struct BufferUpdateInfo
     const void* data = {};
     Range range = { 0, VK_WHOLE_SIZE };
 };
-}
+} // namespace aph

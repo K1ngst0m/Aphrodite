@@ -237,4 +237,3 @@ private:
     std::atomic_int_fast64_t m_pending_tasks{};
 };
 } // namespace aph
-
