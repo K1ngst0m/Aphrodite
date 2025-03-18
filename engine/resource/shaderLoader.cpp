@@ -41,6 +41,18 @@ struct SlangProgram
     std::vector<uint32_t> spvCodes;
 };
 
+struct CompileRequest
+{
+    std::string_view filename;
+    HashMap<std::string, std::string> moduleMap;
+
+    template<typename T, typename U>
+    void addModule(T&& name, U&& source)
+    {
+        moduleMap[std::forward<T>(name)] = std::forward<U>(source);
+    }
+};
+
 class SlangLoaderImpl
 {
 public:
@@ -49,14 +61,52 @@ public:
         slang::createGlobalSession(m_globalSession.writeRef());
     }
 
-    Result loadProgram(std::string_view filename, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
+    Result loadProgram(const CompileRequest& request, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
     {
-        if (!m_session)
+        const auto& filename = request.filename;
+        const auto& moduleMap = request.moduleMap;
+
+        Slang::ComPtr<slang::ISession> session = {};
+        SlangResult result = {};
         {
-            APH_VR(initSession());
+            std::vector<CompilerOptionEntry> compilerOptions{
+            // TODO not working
+            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "39001",}},
+            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "parameterBindingsOverlap",}},
+            {.name = CompilerOptionName::VulkanUseEntryPointName, .value = {.kind      = CompilerOptionValueKind::Int, .intValue0 = 1,}},
+            {.name = CompilerOptionName::EmitSpirvMethod, .value{.kind      = CompilerOptionValueKind::Int, .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,}}};
+
+            TargetDesc targetDesc;
+            targetDesc.format = SLANG_SPIRV;
+            targetDesc.profile = m_globalSession->findProfile("spirv_1_6");
+
+            targetDesc.compilerOptionEntryCount = compilerOptions.size();
+            targetDesc.compilerOptionEntries = compilerOptions.data();
+
+            SessionDesc sessionDesc;
+            sessionDesc.targets = &targetDesc;
+            sessionDesc.targetCount = 1;
+
+            auto shaderAssetPath = aph::Filesystem::GetInstance().resolvePath("shader_slang://");
+
+            const std::array<const char*, 1> searchPaths{
+                shaderAssetPath.c_str(),
+            };
+
+            sessionDesc.searchPaths = searchPaths.data();
+            sessionDesc.searchPathCount = searchPaths.size();
+
+            // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
+            // sessionDesc.preprocessorMacros = &fancyFlag;
+            // sessionDesc.preprocessorMacroCount = 1;
+
+            result = m_globalSession->createSession(sessionDesc, session.writeRef());
+            if (!SLANG_SUCCEEDED(result))
+            {
+                return { Result::RuntimeError, "Could not init slang session." };
+            }
         }
 
-        SlangResult result = {};
         Slang::ComPtr<IBlob> diagnostics;
 
         Slang::ComPtr<slang::IComponentType> program;
@@ -68,18 +118,18 @@ public:
             std::string patchCode;
             {
                 std::stringstream ss;
-                for (const auto& [name, src] : m_moduleMap)
+                for (const auto& [name, src] : moduleMap)
                 {
                     ss << std::format("import {};\n", name);
                     auto m =
-                        m_session->loadModuleFromSourceString(name.c_str(), "", src.c_str(), diagnostics.writeRef());
+                        session->loadModuleFromSourceString(name.c_str(), "", src.c_str(), diagnostics.writeRef());
                     componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(m));
                 }
                 patchCode = ss.str();
             }
 
             auto shaderSource = patchCode + aph::Filesystem::GetInstance().readFileToString(filename);
-            module = m_session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
+            module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
                                                            diagnostics.writeRef());
             SLANG_CR(diagnostics);
 
@@ -93,7 +143,7 @@ public:
             }
 
             Slang::ComPtr<slang::IComponentType> composed;
-            result = m_session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(),
+            result = session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(),
                                                              componentsToLink.size(), composed.writeRef(),
                                                              diagnostics.writeRef());
             APH_ASSERT(SLANG_SUCCEEDED(result));
@@ -155,78 +205,24 @@ public:
         return Result::Success;
     }
 
-    void addModule(std::string name, std::string source)
-    {
-        m_moduleMap[std::move(name)] = std::move(source);
-    }
-
 private:
-    Result initSession()
-    {
-        SlangResult result = {};
-        {
-            std::vector<CompilerOptionEntry> compilerOptions{
-            // TODO not working
-            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "39001",}},
-            {.name = CompilerOptionName::DisableWarning, .value = {.kind      = CompilerOptionValueKind::String, .stringValue0 = "parameterBindingsOverlap",}},
-            {.name = CompilerOptionName::VulkanUseEntryPointName, .value = {.kind      = CompilerOptionValueKind::Int, .intValue0 = 1,}},
-            {.name = CompilerOptionName::EmitSpirvMethod, .value{.kind      = CompilerOptionValueKind::Int, .intValue0 = SLANG_EMIT_SPIRV_DIRECTLY,}}};
-
-            TargetDesc targetDesc;
-            targetDesc.format = SLANG_SPIRV;
-            targetDesc.profile = m_globalSession->findProfile("spirv_1_6");
-
-            targetDesc.compilerOptionEntryCount = compilerOptions.size();
-            targetDesc.compilerOptionEntries = compilerOptions.data();
-
-            SessionDesc sessionDesc;
-            sessionDesc.targets = &targetDesc;
-            sessionDesc.targetCount = 1;
-
-            auto shaderAssetPath = aph::Filesystem::GetInstance().resolvePath("shader_slang://");
-
-            const std::array<const char*, 1> searchPaths{
-                shaderAssetPath.c_str(),
-            };
-
-            sessionDesc.searchPaths = searchPaths.data();
-            sessionDesc.searchPathCount = searchPaths.size();
-
-            // PreprocessorMacroDesc fancyFlag = { "ENABLE_FANCY_FEATURE", "1" };
-            // sessionDesc.preprocessorMacros = &fancyFlag;
-            // sessionDesc.preprocessorMacroCount = 1;
-
-            result = m_globalSession->createSession(sessionDesc, m_session.writeRef());
-            if (!SLANG_SUCCEEDED(result))
-            {
-                return { Result::RuntimeError, "Could not init slang session." };
-            }
-        }
-
-        return Result::Success;
-    }
-
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
-    Slang::ComPtr<slang::ISession> m_session = {};
-
-    HashMap<std::string, std::string> m_moduleMap;
 };
 } // namespace aph
 
 namespace aph
 {
-Result ShaderLoader::load(vk::ShaderProgram** ppProgram)
+Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
-    const auto& info = m_loadInfo;
-
+    CompileRequest compileRequest{};
     if (info.pBindlessResource)
     {
         static std::mutex fileWriterMtx;
         std::lock_guard<std::mutex> lock{ fileWriterMtx };
         // TODO unused since the warning suppress compiler option not working
-        m_pSlangLoaderImpl->addModule(
+        compileRequest.addModule(
             "bindless", aph::Filesystem::GetInstance().readFileToString("shader_slang://modules/bindless.slang"));
-        m_pSlangLoaderImpl->addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
+        compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 
     auto loadShader = [this](const std::vector<uint32_t>& spv, const ShaderStage stage,
@@ -247,8 +243,8 @@ Result ShaderLoader::load(vk::ShaderProgram** ppProgram)
     {
         HashMap<ShaderStage, SlangProgram> spvCodeMap;
         auto path = Filesystem::GetInstance().resolvePath(d);
-
-        APH_VR(m_pSlangLoaderImpl->loadProgram(path.c_str(), spvCodeMap));
+        compileRequest.filename = path.c_str();
+        APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
         if (spvCodeMap.empty())
         {
             return { Result::RuntimeError, "Failed to load slang shader from file." };
@@ -272,10 +268,9 @@ ShaderLoader::~ShaderLoader()
 {
 }
 
-ShaderLoader::ShaderLoader(vk::Device* pDevice, ShaderLoadInfo loadInfo)
-    : m_loadInfo(std::move(loadInfo))
-    , m_pDevice(pDevice)
+ShaderLoader::ShaderLoader(vk::Device* pDevice)
+    : m_pDevice(pDevice)
+    , m_pSlangLoaderImpl(std::make_unique<SlangLoaderImpl>())
 {
-    m_pSlangLoaderImpl = std::make_unique<SlangLoaderImpl>();
 }
 } // namespace aph

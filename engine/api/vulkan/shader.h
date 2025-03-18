@@ -117,7 +117,7 @@ public:
     }
 
 private:
-    ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
+    ShaderProgram(CreateInfoType createInfo, const PipelineLayout& layout,
                   HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);
     ~ShaderProgram() = default;
 

@@ -26,16 +26,15 @@ class SlangLoaderImpl;
 class ShaderLoader
 {
 public:
-    ShaderLoader(vk::Device* pDevice, ShaderLoadInfo loadInfo);
+    ShaderLoader(vk::Device* pDevice);
 
     ~ShaderLoader();
 
-    Result load(vk::ShaderProgram** ppProgram);
+    Result load(const ShaderLoadInfo& loadInfo, vk::ShaderProgram** ppProgram);
 
 private:
-    std::unique_ptr<SlangLoaderImpl> m_pSlangLoaderImpl = {};
-    ShaderLoadInfo m_loadInfo;
     vk::Device* m_pDevice = {};
+    std::unique_ptr<SlangLoaderImpl> m_pSlangLoaderImpl = {};
 };
 
 } // namespace aph

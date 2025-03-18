@@ -7,9 +7,9 @@ Shader::Shader(const CreateInfoType& createInfo, HandleType handle)
 {
 }
 
-ShaderProgram::ShaderProgram(const CreateInfoType& createInfo, const PipelineLayout& layout,
+ShaderProgram::ShaderProgram(CreateInfoType createInfo, const PipelineLayout& layout,
                              HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps)
-    : ResourceHandle({}, createInfo)
+    : ResourceHandle({}, std::move(createInfo))
     , m_shaderObjects(std::move(shaderObjectMaps))
     , m_pipelineLayout(std::move(layout))
 {
