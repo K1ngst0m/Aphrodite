@@ -1,6 +1,7 @@
 #pragma once
 
 #include "bitOp.h"
+#include "common/smallVector.h"
 #include "logger.h"
 #include <cmath>
 #include <source_location>
@@ -21,6 +22,7 @@ namespace aph
 #define APH_ALWAYS_INLINE inline
 #endif
 
+#define APH_FWD(x) std::forward<decltype(x)>(x)
 } // namespace aph
 
 namespace backward
@@ -122,9 +124,70 @@ struct [[nodiscard("Result should be handled.")]] Result
         return "Unknown";
     }
 
+    APH_ALWAYS_INLINE operator bool() const noexcept
+    {
+        return success();
+    }
+
 private:
     Code m_code = Success;
     std::string m_msg = {};
+};
+
+struct [[nodiscard("Result should be handled.")]] ResultGroup
+{
+    APH_ALWAYS_INLINE ResultGroup(auto&& result)
+    {
+        append(APH_FWD(result));
+    }
+
+    APH_ALWAYS_INLINE ResultGroup(Result::Code code, std::string msg = "")
+    {
+        append(code, msg);
+    }
+
+    APH_ALWAYS_INLINE void append(Result::Code code, std::string msg = "")
+    {
+        m_results.emplace_back(code, msg);
+    }
+
+    APH_ALWAYS_INLINE void append(Result&& result)
+    {
+        m_results.push_back(APH_FWD(result));
+    }
+
+    APH_ALWAYS_INLINE ResultGroup& operator+=(auto&& result)
+    {
+        append(APH_FWD(result));
+        return *this;
+    }
+
+    APH_ALWAYS_INLINE bool success() const noexcept
+    {
+        return std::all_of(m_results.cbegin(), m_results.cend(), [](const Result& res) { return res.success(); });
+    }
+
+    APH_ALWAYS_INLINE operator Result()
+    {
+        if (success())
+        {
+            return Result::Success;
+        }
+        else
+        {
+            auto errorRes =
+                std::find_if_not(m_results.cbegin(), m_results.cend(), [](const Result& res) { return res.success(); });
+            return *errorRes;
+        }
+    }
+
+    APH_ALWAYS_INLINE operator bool() const noexcept
+    {
+        return success();
+    }
+
+private:
+    SmallVector<Result> m_results;
 };
 
 #ifdef APH_DEBUG

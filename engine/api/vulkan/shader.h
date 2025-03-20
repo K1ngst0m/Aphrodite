@@ -33,10 +33,9 @@ struct ShaderCreateInfo
     std::vector<uint32_t> code;
     std::string entrypoint = "main";
     aph::ShaderStage stage;
-    bool compile = false;
 };
 
-class Shader : public ResourceHandle<::vk::ShaderModule, ShaderCreateInfo>
+class Shader : public ResourceHandle<DummyHandle, ShaderCreateInfo>
 {
     friend class ObjectPool<Shader>;
 
@@ -53,13 +52,9 @@ public:
     {
         return getCreateInfo().code;
     }
-    bool hasModule() const
-    {
-        return getHandle() == VK_NULL_HANDLE;
-    }
 
 private:
-    Shader(const CreateInfoType& createInfo, HandleType handle);
+    Shader(const CreateInfoType& createInfo);
 };
 
 struct ProgramCreateInfo

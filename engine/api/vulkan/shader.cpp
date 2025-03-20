@@ -2,8 +2,8 @@
 
 namespace aph::vk
 {
-Shader::Shader(const CreateInfoType& createInfo, HandleType handle)
-    : ResourceHandle(handle, createInfo)
+Shader::Shader(const CreateInfoType& createInfo)
+    : ResourceHandle({}, createInfo)
 {
 }
 

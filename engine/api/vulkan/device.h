@@ -38,27 +38,20 @@ public:
     static void Destroy(Device* pDevice);
 
 public:
-    Result create(const SamplerCreateInfo& createInfo, Sampler** ppSampler, const std::string& debugName = "");
-    Result create(const BufferCreateInfo& createInfo, Buffer** ppBuffer, const std::string& debugName = "");
-    Result create(const ImageCreateInfo& createInfo, Image** ppImage, const std::string& debugName = "");
-    Result create(const ImageViewCreateInfo& createInfo, ImageView** ppImageView, const std::string& debugName = "");
-    Result create(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain, const std::string& debugName = "");
-    Result create(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram, const std::string& debugName = "");
-    Result create(const ShaderCreateInfo& createInfo, Shader** ppShader, const std::string& debugName = "");
-    Result create(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout,
-                  const std::string& debugName = "");
-    Result create(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool,
-                  const std::string& debugName = "");
+    template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
+    Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {})
+    {
+        ResultGroup result = createImpl(APH_FWD(createInfo), ppResource);
+        result += setDebugObjectName(*ppResource, APH_FWD(debugName));
+        return result;
+    }
 
-    void destroy(Buffer* pBuffer);
-    void destroy(Image* pImage);
-    void destroy(ImageView* pImageView);
-    void destroy(SwapChain* pSwapchain);
-    void destroy(Sampler* pSampler);
-    void destroy(ShaderProgram* pProgram);
-    void destroy(Shader* pShader);
-    void destroy(DescriptorSetLayout* pSetLayout);
-    void destroy(CommandPool* pPool);
+    template <typename TResource>
+    void destroy(TResource* pResource)
+    {
+        CM_LOG_DEBUG("Destroy resource: %s", pResource->getDebugName());
+        destroyImpl(pResource);
+    }
 
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const
@@ -112,16 +105,20 @@ public:
     ::vk::PipelineStageFlags determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType);
 
     template <ResourceHandleType TObject>
-    Result setDebugObjectName(TObject* object, const std::string& name)
+    Result setDebugObjectName(TObject* object, auto&& name)
     {
-        object->setDebugName(name);
+        object->setDebugName(APH_FWD(name));
         auto handle = object->getHandle();
-        return setDebugObjectName(handle, name);
+        if constexpr (!std::is_same_v<DummyHandle, decltype(handle)>)
+        {
+            return setDebugObjectName(handle, object->getDebugName());
+        }
+        return Result::Success;
     }
 
     template <typename TObject>
         requires(!ResourceHandleType<TObject>)
-    Result setDebugObjectName(TObject object, const std::string& name)
+    Result setDebugObjectName(TObject object, std::string_view name)
     {
         ::vk::DebugUtilsObjectNameInfoEXT info{};
         info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
@@ -134,6 +131,28 @@ public:
     void begineCapture();
     void endCapture();
     void triggerCapture();
+
+private:
+    Result createImpl(const SamplerCreateInfo& createInfo, Sampler** ppSampler);
+    Result createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer);
+    Result createImpl(const ImageCreateInfo& createInfo, Image** ppImage);
+    Result createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
+    Result createImpl(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
+    Result createImpl(const ShaderCreateInfo& createInfo, Shader** ppShader);
+    Result createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram);
+    Result createImpl(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool);
+    Result createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout);
+
+    void destroyImpl(Buffer* pBuffer);
+    void destroyImpl(Image* pImage);
+    void destroyImpl(ImageView* pImageView);
+    void destroyImpl(SwapChain* pSwapchain);
+    void destroyImpl(Sampler* pSampler);
+    void destroyImpl(ShaderProgram* pProgram);
+    void destroyImpl(Shader* pShader);
+    void destroyImpl(DescriptorSetLayout* pSetLayout);
+    void destroyImpl(CommandPool* pPool);
+
 
 private:
     Result initCapture();

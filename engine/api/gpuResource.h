@@ -531,9 +531,9 @@ public:
         return m_createInfo;
     }
 
-    void setDebugName(const std::string& name)
+    void setDebugName(auto&& name)
     {
-        m_debugName = name;
+        m_debugName = APH_FWD(name);
     }
 
     std::string_view getDebugName() const
@@ -549,6 +549,7 @@ protected:
 
 template <typename TObject>
 concept ResourceHandleType = requires(TObject* obj, std::string name) {
+    { obj->getDebugName() };
     { obj->setDebugName(name) };
     { obj->getHandle() };
 };

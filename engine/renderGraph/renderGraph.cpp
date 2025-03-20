@@ -256,7 +256,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
         if (!m_buildData.cmdPools.contains(pass))
         {
-            APH_VR(m_pDevice->create({ queue, false }, &m_buildData.cmdPools[pass]));
+            APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
             m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
         }
 
