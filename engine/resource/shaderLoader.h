@@ -34,6 +34,10 @@ public:
 
 private:
     vk::Device* m_pDevice = {};
+    ThreadSafeObjectPool<vk::Shader> m_shaderPools;
+    using ShaderCacheData = HashMap<ShaderStage, vk::Shader*>;
+    HashMap<std::filesystem::path, std::shared_future<ShaderCacheData>> m_shaderCaches;
+    std::mutex m_loadMtx;
     std::unique_ptr<SlangLoaderImpl> m_pSlangLoaderImpl = {};
 };
 

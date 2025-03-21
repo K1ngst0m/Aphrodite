@@ -46,7 +46,7 @@ struct CompileRequest
     std::string_view filename;
     HashMap<std::string, std::string> moduleMap;
 
-    template<typename T, typename U>
+    template <typename T, typename U>
     void addModule(T&& name, U&& source)
     {
         moduleMap[std::forward<T>(name)] = std::forward<U>(source);
@@ -58,11 +58,15 @@ class SlangLoaderImpl
 public:
     SlangLoaderImpl()
     {
+        APH_PROFILER_SCOPE();
         slang::createGlobalSession(m_globalSession.writeRef());
     }
 
     Result loadProgram(const CompileRequest& request, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
     {
+        APH_PROFILER_SCOPE();
+        static std::mutex fileWriterMtx;
+        std::lock_guard<std::mutex> lock{ fileWriterMtx };
         const auto& filename = request.filename;
         const auto& moduleMap = request.moduleMap;
 
@@ -111,26 +115,35 @@ public:
 
         Slang::ComPtr<slang::IComponentType> program;
         {
+            APH_PROFILER_SCOPE();
             IModule* module = {};
             auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
 
             std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
             std::string patchCode;
             {
+                APH_PROFILER_SCOPE_NAME("load module from string");
                 std::stringstream ss;
                 for (const auto& [name, src] : moduleMap)
                 {
                     ss << std::format("import {};\n", name);
-                    auto m =
-                        session->loadModuleFromSourceString(name.c_str(), "", src.c_str(), diagnostics.writeRef());
-                    componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(m));
+                    {
+                        APH_PROFILER_SCOPE_NAME("load patch module");
+                        auto m =
+                            session->loadModuleFromSourceString(name.c_str(), "", src.c_str(), diagnostics.writeRef());
+                        componentsToLink.push_back(Slang::ComPtr<slang::IComponentType>(m));
+                    }
                 }
                 patchCode = ss.str();
+
+                auto shaderSource = patchCode + aph::Filesystem::GetInstance().readFileToString(filename);
+                {
+                    APH_PROFILER_SCOPE_NAME("load main module");
+                    module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(),
+                                                                 shaderSource.c_str(), diagnostics.writeRef());
+                }
             }
 
-            auto shaderSource = patchCode + aph::Filesystem::GetInstance().readFileToString(filename);
-            module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(), shaderSource.c_str(),
-                                                           diagnostics.writeRef());
             SLANG_CR(diagnostics);
 
             for (int i = 0; i < module->getDefinedEntryPointCount(); i++)
@@ -144,12 +157,15 @@ public:
 
             Slang::ComPtr<slang::IComponentType> composed;
             result = session->createCompositeComponentType((slang::IComponentType**)componentsToLink.data(),
-                                                             componentsToLink.size(), composed.writeRef(),
-                                                             diagnostics.writeRef());
+                                                           componentsToLink.size(), composed.writeRef(),
+                                                           diagnostics.writeRef());
             APH_ASSERT(SLANG_SUCCEEDED(result));
 
-            result = composed->link(program.writeRef(), diagnostics.writeRef());
-            SLANG_CR(diagnostics);
+            {
+                APH_PROFILER_SCOPE_NAME("link program");
+                result = composed->link(program.writeRef(), diagnostics.writeRef());
+                SLANG_CR(diagnostics);
+            }
         }
 
         slang::ProgramLayout* programLayout = program->getLayout(0, diagnostics.writeRef());
@@ -171,6 +187,7 @@ public:
 
         for (int entryPointIndex = 0; entryPointIndex < programLayout->getEntryPointCount(); entryPointIndex++)
         {
+            APH_PROFILER_SCOPE();
             EntryPointReflection* entryPointReflection = programLayout->getEntryPointByIndex(entryPointIndex);
 
             Slang::ComPtr<slang::IBlob> spirvCode;
@@ -181,6 +198,7 @@ public:
             }
 
             {
+                APH_PROFILER_SCOPE_NAME("get spirv code");
                 std::vector<uint32_t> retSpvCode;
                 retSpvCode.resize(spirvCode->getBufferSize() / sizeof(retSpvCode[0]));
                 std::memcpy(retSpvCode.data(), spirvCode->getBufferPointer(), spirvCode->getBufferSize());
@@ -214,11 +232,10 @@ namespace aph
 {
 Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
+    APH_PROFILER_SCOPE();
     CompileRequest compileRequest{};
     if (info.pBindlessResource)
     {
-        static std::mutex fileWriterMtx;
-        std::lock_guard<std::mutex> lock{ fileWriterMtx };
         // TODO unused since the warning suppress compiler option not working
         compileRequest.addModule(
             "bindless", aph::Filesystem::GetInstance().readFileToString("shader_slang://modules/bindless.slang"));
@@ -228,34 +245,65 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
     auto loadShader = [this](const std::vector<uint32_t>& spv, const ShaderStage stage,
                              const std::string& entryPoint = "main") -> vk::Shader*
     {
+        APH_PROFILER_SCOPE();
         vk::Shader* shader;
         vk::ShaderCreateInfo createInfo{
             .code = spv,
             .entrypoint = entryPoint,
             .stage = stage,
         };
-        APH_VR(m_pDevice->create(createInfo, &shader));
+        shader = m_shaderPools.allocate(createInfo);
         return shader;
     };
 
     HashMap<ShaderStage, vk::Shader*> requiredShaderList;
     for (const auto& d : info.data)
     {
-        HashMap<ShaderStage, SlangProgram> spvCodeMap;
-        auto path = Filesystem::GetInstance().resolvePath(d);
-        compileRequest.filename = path.c_str();
-        APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
-        if (spvCodeMap.empty())
+        std::shared_future<ShaderCacheData> future;
         {
-            return { Result::RuntimeError, "Failed to load slang shader from file." };
-        }
+            std::unique_lock<std::mutex> lock{ m_loadMtx };
 
-        for (const auto& [stage, entryPoint] : info.stageInfo)
-        {
-            APH_ASSERT(spvCodeMap.contains(stage) && spvCodeMap.at(stage).entryPoint == entryPoint);
-            const auto& spv = spvCodeMap.at(stage).spvCodes;
-            vk::Shader* shader = loadShader(spv, stage, entryPoint);
-            requiredShaderList[stage] = shader;
+            if (auto it = m_shaderCaches.find(d); it == m_shaderCaches.end())
+            {
+                std::promise<ShaderCacheData> promise;
+                future = promise.get_future().share();
+                m_shaderCaches[d] = future;
+                lock.unlock();
+
+                {
+                    HashMap<ShaderStage, SlangProgram> spvCodeMap;
+                    auto path = Filesystem::GetInstance().resolvePath(d);
+                    compileRequest.filename = path.c_str();
+                    APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
+                    if (spvCodeMap.empty())
+                    {
+                        return { Result::RuntimeError, "Failed to load slang shader from file." };
+                    }
+
+                    ShaderCacheData data;
+                    for (const auto& [stage, entryPoint] : info.stageInfo)
+                    {
+                        APH_ASSERT(spvCodeMap.contains(stage) && spvCodeMap.at(stage).entryPoint == entryPoint);
+                        const auto& spv = spvCodeMap.at(stage).spvCodes;
+                        vk::Shader* shader = loadShader(spv, stage, entryPoint);
+                        requiredShaderList[stage] = shader;
+                        data[stage] = shader;
+                    }
+                    promise.set_value(std::move(data));
+                }
+            }
+            else
+            {
+                future = it->second;
+                CM_LOG_INFO("use cached shader, %s", d);
+                for (const auto& [stage, entryPoint] : info.stageInfo)
+                {
+                    const auto& cachedStageMap = future.get();
+                    APH_ASSERT(cachedStageMap.contains(stage) &&
+                               cachedStageMap.at(stage)->getEntryPointName() == entryPoint);
+                    requiredShaderList[stage] = cachedStageMap.at(stage);
+                }
+            }
         }
     }
 
@@ -266,6 +314,14 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
 ShaderLoader::~ShaderLoader()
 {
+    for (auto [_, shaderStageMaps] : m_shaderCaches)
+    {
+        for (auto [_, shader] : shaderStageMaps.get())
+        {
+            m_shaderPools.free(shader);
+        }
+    }
+    m_shaderPools.clear();
 }
 
 ShaderLoader::ShaderLoader(vk::Device* pDevice)
