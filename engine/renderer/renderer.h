@@ -84,7 +84,6 @@ protected:
 protected:
     vk::Instance* m_pInstance = {};
     vk::SwapChain* m_pSwapChain = {};
-    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
     std::unique_ptr<vk::Device> m_pDevice = {};
     std::unique_ptr<vk::UI> m_pUI = {};

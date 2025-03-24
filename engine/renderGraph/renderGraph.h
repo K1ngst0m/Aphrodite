@@ -266,7 +266,6 @@ public:
 
 private:
     vk::Device* m_pDevice = {};
-    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
 
     struct
     {

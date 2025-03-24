@@ -212,8 +212,8 @@ void hello_aphrodite::init()
 
         // image and sampler
         {
-            APH_VR(
-                m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
+            APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
+
             aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
                                               .data = "texture://container2.png",
                                               .createInfo = {

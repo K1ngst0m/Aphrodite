@@ -84,6 +84,7 @@ Renderer::Renderer(const RenderConfig& config)
     auto& wsi = m_pWindowSystem;
     // create instance
     {
+        APH_PROFILER_SCOPE();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
         auto requiredExtensions = wsi->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
@@ -94,6 +95,7 @@ Renderer::Renderer(const RenderConfig& config)
         instanceCreateInfo.enabledLayers.push_back("VK_LAYER_KHRONOS_validation");
 
         {
+            APH_PROFILER_SCOPE();
             ::vk::DebugUtilsMessengerCreateInfoEXT& debug_create_info = instanceCreateInfo.debugCreateInfo;
             debug_create_info
                 .setMessageSeverity(::vk::DebugUtilsMessageSeverityFlagBitsEXT::eError |
