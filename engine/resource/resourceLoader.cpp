@@ -204,9 +204,7 @@ Result ResourceLoader::loadImpl(const BufferLoadInfo& info, vk::Buffer** ppBuffe
 Result ResourceLoader::loadImpl(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
-    // TODO promote to class member?
-    static ShaderLoader loader{ m_pDevice };
-    return loader.load(info, ppProgram);
+    return m_shaderLoader.load(info, ppProgram);
 }
 
 Result ResourceLoader::loadImpl(const GeometryLoadInfo& info, Geometry** ppGeometry)

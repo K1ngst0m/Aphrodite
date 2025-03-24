@@ -138,7 +138,6 @@ private:
     Result createImpl(const ImageCreateInfo& createInfo, Image** ppImage);
     Result createImpl(const ImageViewCreateInfo& createInfo, ImageView** ppImageView);
     Result createImpl(const SwapChainCreateInfo& createInfo, SwapChain** ppSwapchain);
-    Result createImpl(const ShaderCreateInfo& createInfo, Shader** ppShader);
     Result createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram);
     Result createImpl(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool);
     Result createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout);
@@ -149,7 +148,6 @@ private:
     void destroyImpl(SwapChain* pSwapchain);
     void destroyImpl(Sampler* pSampler);
     void destroyImpl(ShaderProgram* pProgram);
-    void destroyImpl(Shader* pShader);
     void destroyImpl(DescriptorSetLayout* pSetLayout);
     void destroyImpl(CommandPool* pPool);
 
@@ -173,7 +171,6 @@ private:
         ThreadSafeObjectPool<ShaderProgram> program;
         ThreadSafeObjectPool<Queue> queue;
         ThreadSafeObjectPool<CommandPool> commandPool;
-        ThreadSafeObjectPool<Shader> shader;
         SyncPrimitiveAllocator syncPrimitive;
         std::unique_ptr<BindlessResource> bindless;
 

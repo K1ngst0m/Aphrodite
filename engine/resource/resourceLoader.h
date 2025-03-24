@@ -96,5 +96,7 @@ private:
 private:
     std::mutex m_updateLock;
     HashMap<void*, std::function<void()>> m_unloadQueue;
+
+    ShaderLoader m_shaderLoader{ m_pDevice };
 };
 } // namespace aph

@@ -1,6 +1,7 @@
 #include "instance.h"
 #include "api/vulkan/vkUtils.h"
 #include "common/logger.h"
+#include "common/profiler.h"
 #include "physicalDevice.h"
 
 namespace aph::vk
@@ -10,8 +11,10 @@ Instance::Instance(const CreateInfoType& createInfo, HandleType handle)
 
 Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInstance)
 {
+    APH_PROFILER_SCOPE();
     // Get extensions supported by the instance and store for later use
     {
+        APH_PROFILER_SCOPE();
         HashSet<std::string> supportedExtensions{};
 
         auto getSupportExtension = [&supportedExtensions](std::string layerName)
@@ -49,6 +52,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
     // check layer support
     {
+        APH_PROFILER_SCOPE();
         HashSet<std::string> supportedLayers{};
         auto [res, layerProperties] = ::vk::enumerateInstanceLayerProperties();
         VK_VR(res);
@@ -75,6 +79,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
     // vk instance creation
     Instance* instance = {};
     {
+        APH_PROFILER_SCOPE();
         ::vk::ApplicationInfo app_info{};
         app_info.setPApplicationName(createInfo.appName.c_str())
             .setPEngineName("Aphrodite")
@@ -90,15 +95,19 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
         instance_create_info.setPNext(&createInfo.debugCreateInfo);
 #endif
 
-        auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
-        VK_VR(res);
-        VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
-        instance = new Instance(createInfo, instance_handle);
+        {
+            APH_PROFILER_SCOPE();
+            auto [res, instance_handle] = ::vk::createInstance(instance_create_info, vk::vk_allocator());
+            VK_VR(res);
+            VULKAN_HPP_DEFAULT_DISPATCHER.init(instance_handle);
+            instance = new Instance(createInfo, instance_handle);
+        }
     }
     APH_ASSERT(instance);
 
     // query gpu support
     {
+        APH_PROFILER_SCOPE();
         auto [res, gpus] = instance->getHandle().enumeratePhysicalDevices();
         VK_VR(res);
         for (uint32_t idx = 0; const auto& gpu : gpus)
@@ -127,7 +136,7 @@ Result Instance::Create(const InstanceCreateInfo& createInfo, Instance** ppInsta
 
 void Instance::Destroy(Instance* pInstance)
 {
-    for (auto gpu: pInstance->m_physicalDevices)
+    for (auto gpu : pInstance->m_physicalDevices)
     {
         pInstance->m_physicalDevicePools.free(gpu);
     }

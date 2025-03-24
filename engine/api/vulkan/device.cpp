@@ -289,7 +289,6 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.setLayout.clear();
-    pDevice->m_resourcePool.shader.clear();
 
     // TODO
     delete pDevice->m_resourcePool.deviceMemory;
@@ -340,13 +339,6 @@ Result Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo, Descr
     VK_VR(result);
 
     *ppLayout = m_resourcePool.setLayout.allocate(this, createInfo, vkSetLayout, poolSizes, vkBindings);
-    return Result::Success;
-}
-
-Result Device::createImpl(const ShaderCreateInfo& createInfo, Shader** ppShader)
-{
-    APH_PROFILER_SCOPE();
-    *ppShader = m_resourcePool.shader.allocate(createInfo);
     return Result::Success;
 }
 
@@ -563,20 +555,9 @@ void Device::destroyImpl(DescriptorSetLayout* pSetLayout)
     m_resourcePool.setLayout.free(pSetLayout);
 }
 
-void Device::destroyImpl(Shader* pShader)
-{
-    APH_PROFILER_SCOPE();
-    m_resourcePool.shader.free(pShader);
-}
-
 void Device::destroyImpl(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
-
-    for (auto& [_, shader]: pProgram->m_createInfo.shaders)
-    {
-        destroy(shader);
-    }
 
     for (auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
     {
