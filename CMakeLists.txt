@@ -15,7 +15,7 @@ aph_option(APH_ENABLE_TSAN "Enable thread sanitizer" OFF)
 aph_option(APH_ENABLE_ASAN "Enable address sanitizer" OFF)
 aph_option(APH_ENABLE_MSAN "Enable memory sanitizer" OFF)
 
-aph_option(APH_WSI_BACKEND "WSI backend (possible values: Auto, GLFW, SDL2)" "Auto" Auto GLFW SDL2)
+aph_option(APH_WSI_BACKEND "WSI backend (possible values: Auto, GLFW, SDL)" "Auto" Auto GLFW SDL)
 
 include(AphDefinitions)
 include(AphCompilerOptions)

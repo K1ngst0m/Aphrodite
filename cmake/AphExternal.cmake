@@ -53,6 +53,12 @@ CPMAddPackage(
 )
 
 CPMAddPackage(
+  NAME libcoro
+  GITHUB_REPOSITORY jbaldwin/libcoro
+  GIT_TAG v0.14.1
+)
+
+CPMAddPackage(
   NAME backward-cpp
   GITHUB_REPOSITORY bombela/backward-cpp
   GIT_TAG master
@@ -123,14 +129,14 @@ target_compile_definitions(vulkan-registry INTERFACE
 )
 
 # wsi backend
-set(VALID_WSI_BACKENDS Auto GLFW SDL2)
+set(VALID_WSI_BACKENDS Auto GLFW SDL)
 if(NOT (APH_WSI_BACKEND IN_LIST VALID_WSI_BACKENDS))
-    message(FATAL_ERROR "Wrong value passed for APH_WSI_BACKEND, use one of: Auto, GLFW, SDL2")
+    message(FATAL_ERROR "Wrong value passed for APH_WSI_BACKEND, use one of: Auto, GLFW, SDL")
 endif()
 
 if(APH_WSI_BACKEND STREQUAL "Auto")
-  message("WSI backend is set to 'Auto', choose the SDL2 by default")
-  set(APH_WSI_BACKEND "SDL2")
+  message("WSI backend is set to 'Auto', choose the SDL by default")
+  set(APH_WSI_BACKEND "SDL")
 endif()
 
 if(APH_WSI_BACKEND STREQUAL "GLFW")
@@ -148,20 +154,19 @@ if(APH_WSI_BACKEND STREQUAL "GLFW")
     if(NOT GLFW_ADDED)
         message(FATAL_ERROR "GLFW3 library not found!")
     endif()
-elseif(APH_WSI_BACKEND STREQUAL "SDL2")
-  set(APH_WSI_BACKEND_IS_SDL2 "ON")
+elseif(APH_WSI_BACKEND STREQUAL "SDL")
+  set(APH_WSI_BACKEND_IS_SDL "ON")
     CPMAddPackage(
-      NAME SDL2
-      VERSION 2.30.9
-      URL https://github.com/libsdl-org/SDL/releases/download/release-2.30.9/SDL2-2.30.9.tar.gz
-      PATCHES ${APH_PATCH_DIR}/sdl2.patch
+      NAME SDL
+      VERSION 3.2.8
+      URL https://github.com/libsdl-org/SDL/releases/download/release-3.2.8/SDL3-3.2.8.tar.gz
       OPTIONS
           "SDL_SHARED OFF"
           "SDL_STATIC ON"
           "SDL_TEST OFF"
     )
-    if(NOT SDL2_ADDED)
-        message(FATAL_ERROR "SDL2 library not found!")
+    if(NOT SDL_ADDED)
+        message(FATAL_ERROR "SDL library not found!")
     endif()
 endif()
 
@@ -191,12 +196,12 @@ add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
 
   $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp>
+  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp>
 )
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(imgui
   PRIVATE
   $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:glfw>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL2}>:SDL2::SDL2-static>
+  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:SDL3::SDL3-static>
 )
 target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)

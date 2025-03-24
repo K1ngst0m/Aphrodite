@@ -35,7 +35,7 @@ private:
 
 struct MouseButtonEvent : public Event
 {
-    MouseButtonEvent(MouseButton button, int absX, int absY, bool pressed)
+    MouseButtonEvent(MouseButton button, float absX, float absY, bool pressed)
         : Event(EventType::MOUSE_BTN)
         , m_button(button)
         , m_absX(absX)
@@ -45,14 +45,14 @@ struct MouseButtonEvent : public Event
     }
 
     MouseButton m_button;
-    int m_absX;
-    int m_absY;
+    float m_absX;
+    float m_absY;
     bool m_pressed;
 };
 
 struct MouseMoveEvent : public Event
 {
-    MouseMoveEvent(int deltaX, int deltaY, int absX, int absY)
+    MouseMoveEvent(float deltaX, float deltaY, float absX, float absY)
         : Event(EventType::MOUSE_MOVE)
         , m_deltaX(deltaX)
         , m_deltaY(deltaY)
@@ -61,10 +61,10 @@ struct MouseMoveEvent : public Event
     {
     }
 
-    int m_deltaX;
-    int m_deltaY;
-    int m_absX;
-    int m_absY;
+    float m_deltaX;
+    float m_deltaY;
+    float m_absX;
+    float m_absY;
 };
 
 struct KeyboardEvent : public Event

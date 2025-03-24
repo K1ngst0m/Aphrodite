@@ -238,7 +238,7 @@
 - [[https://github.com/nothings/stb][stb]]
 - [[https://github.com/syoyo/tinygltf][tinygltf]]
 - [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][vma]]
-- [[https://github.com/libsdl-org/SDL][SDL2]]
+- [[https://github.com/libsdl-org/SDL][SDL]]
 - [[https://github.com/glfw/glfw][glfw]]
 - [[https://github.com/wolfpld/tracy][tracy]]
 - [[https://github.com/marzer/tomlplusplus][tomlplusplus]]

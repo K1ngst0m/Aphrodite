@@ -1,47 +1,47 @@
-#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdl3.h"
 #include "wsi.h"
 
-#include <SDL.h>
-#include <SDL_vulkan.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 #include "api/vulkan/instance.h"
 #include "event/eventManager.h"
 
 using namespace aph;
 
-static Key SDL2KeyCast(int key)
+static Key SDLKeyCast(SDL_Keycode key)
 {
 #define k(sdlk, aph)  \
     case SDLK_##sdlk: \
         return Key::aph
     switch (key)
     {
-        k(a, A);
-        k(b, B);
-        k(c, C);
-        k(d, D);
-        k(e, E);
-        k(f, F);
-        k(g, G);
-        k(h, H);
-        k(i, I);
-        k(j, J);
-        k(k, K);
-        k(l, L);
-        k(m, M);
-        k(n, N);
-        k(o, O);
-        k(p, P);
-        k(q, Q);
-        k(r, R);
-        k(s, S);
-        k(t, T);
-        k(u, U);
-        k(v, V);
-        k(w, W);
-        k(x, X);
-        k(y, Y);
-        k(z, Z);
+        k(A, A);
+        k(B, B);
+        k(C, C);
+        k(D, D);
+        k(E, E);
+        k(F, F);
+        k(G, G);
+        k(H, H);
+        k(I, I);
+        k(J, J);
+        k(K, K);
+        k(L, L);
+        k(M, M);
+        k(N, N);
+        k(O, O);
+        k(P, P);
+        k(Q, Q);
+        k(R, R);
+        k(S, S);
+        k(T, T);
+        k(U, U);
+        k(V, V);
+        k(W, W);
+        k(X, X);
+        k(Y, Y);
+        k(Z, Z);
 
         k(LCTRL, LeftCtrl);
         k(LALT, LeftAlt);
@@ -72,15 +72,14 @@ static Key SDL2KeyCast(int key)
 void WindowSystem::init()
 {
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0)
+    if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
     {
         CM_LOG_ERR("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
     }
 
     // Create window
-    m_window = (void*)SDL_CreateWindow("Aphrodite Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, m_width,
-                                       m_height, SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN);
+    m_window = (void*)SDL_CreateWindow("Aphrodite Engine", m_width, m_height, SDL_WINDOW_VULKAN);
 
     if (m_window == nullptr)
     {
@@ -94,7 +93,7 @@ void WindowSystem::init()
 ::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
 {
     VkSurfaceKHR surface;
-    SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), &surface);
+    SDL_Vulkan_CreateSurface((SDL_Window*)m_window, instance->getHandle(), vk::vkAllocator(), &surface);
     return surface;
 };
 
@@ -112,17 +111,17 @@ bool WindowSystem::update()
     {
         switch (windowEvent.type)
         {
-        case SDL_QUIT:
+        case SDL_EVENT_QUIT:
             return false;
-        case SDL_KEYDOWN:
+        case SDL_EVENT_KEY_DOWN:
         {
             KeyState state{};
-            auto keysym = windowEvent.key.keysym.sym;
-            auto gkey = SDL2KeyCast(keysym);
+            auto keysym = windowEvent.key.key;
+            auto gkey = SDLKeyCast(keysym);
 
             switch (windowEvent.key.type)
             {
-            case SDL_KEYDOWN:
+            case SDL_EVENT_KEY_DOWN:
             {
                 state = KeyState::Pressed;
                 if (gkey == Key::Escape)
@@ -143,11 +142,13 @@ bool WindowSystem::update()
                 }
             }
             break;
-            case SDL_KEYUP:
+            case SDL_EVENT_KEY_UP:
             {
                 state = KeyState::Released;
                 m_pEventManager->pushEvent(KeyboardEvent{ gkey, state });
             }
+            break;
+            default:
             break;
             }
 
@@ -157,24 +158,24 @@ bool WindowSystem::update()
             }
         }
         break;
-        case SDL_MOUSEMOTION:
+        case SDL_EVENT_MOUSE_MOTION:
         {
-            int x, y;
+            float x, y;
             SDL_GetMouseState(&x, &y);
 
-            static int lastX = getWidth() / 2;
-            static int lastY = getHeight() / 2;
+            static float lastX = getWidth() / 2.0f;
+            static float lastY = getHeight() / 2.0f;
 
-            int deltaX = lastX - x;
-            int deltaY = lastY - y;
+            float deltaX = lastX - x;
+            float deltaY = lastY - y;
             lastX = x;
             lastY = y;
 
             m_pEventManager->pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
         }
         break;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
         {
             MouseButton btn;
             switch (windowEvent.button.button)
@@ -191,13 +192,13 @@ bool WindowSystem::update()
                 break;
             }
 
-            int x, y;
+            float x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_pEventManager->pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_MOUSEBUTTONDOWN });
+            m_pEventManager->pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
         }
         break;
-        case SDL_WINDOWEVENT_RESIZED:
+        case SDL_EVENT_WINDOW_RESIZED:
         {
             resize(windowEvent.window.data1, windowEvent.window.data2);
 
@@ -216,7 +217,7 @@ bool WindowSystem::update()
 
     if (m_enabledUI)
     {
-        ImGui_ImplSDL2_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
     }
 
     return true;
@@ -246,9 +247,8 @@ SmallVector<const char*> WindowSystem::getRequiredExtensions()
     SmallVector<const char*> extensions{};
     {
         uint32_t extensionCount;
-        SDL_Vulkan_GetInstanceExtensions((SDL_Window*)m_window, &extensionCount, nullptr);
-        extensions.resize(extensionCount);
-        SDL_Vulkan_GetInstanceExtensions((SDL_Window*)m_window, &extensionCount, extensions.data());
+        auto ptr = SDL_Vulkan_GetInstanceExtensions(&extensionCount);
+        extensions.assign(ptr, ptr + extensionCount);
     }
     return extensions;
 }
@@ -257,7 +257,7 @@ bool WindowSystem::initUI()
 {
     if (m_enabledUI)
     {
-        return ImGui_ImplSDL2_InitForVulkan((SDL_Window*)m_window);
+        return ImGui_ImplSDL3_InitForVulkan((SDL_Window*)m_window);
     }
     return false;
 };
@@ -266,6 +266,6 @@ void WindowSystem::deInitUI() const
 {
     if (m_enabledUI)
     {
-        ImGui_ImplSDL2_Shutdown();
+        ImGui_ImplSDL3_Shutdown();
     }
 }

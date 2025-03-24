@@ -2,6 +2,7 @@
 
 #include "api/vulkan/vkUtils.h"
 #include "common/common.h"
+#include "common/profiler.h"
 #include "event/event.h"
 #include "event/eventManager.h"
 
@@ -33,6 +34,7 @@ protected:
 public:
     static std::unique_ptr<WindowSystem> Create(const WindowSystemCreateInfo& createInfo)
     {
+        APH_PROFILER_SCOPE();
         CM_LOG_INFO("Init window: [%d, %d]", createInfo.width, createInfo.height);
         return std::unique_ptr<WindowSystem>(new WindowSystem(createInfo));
     }

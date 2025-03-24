@@ -90,6 +90,7 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     {
         VK_LOG_INFO(
             "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
+        reCreate();
         return Result::Success;
     }
 
@@ -105,9 +106,18 @@ Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
         vkSemaphores.push_back(sem->getHandle());
     }
 
+    ::vk::Result vkResult = {};
     ::vk::PresentInfoKHR presentInfo{};
-    presentInfo.setWaitSemaphores(vkSemaphores).setSwapchains({ getHandle() }).setImageIndices({ m_imageIdx });
-    return m_pQueue->present(presentInfo);
+    presentInfo.setWaitSemaphores(vkSemaphores).setSwapchains({ getHandle() }).setImageIndices({ m_imageIdx }).setResults(vkResult);
+    auto result = m_pQueue->present(presentInfo);
+    if (vkResult == ::vk::Result::eSuboptimalKHR)
+    {
+        VK_LOG_INFO(
+            "vkPresentKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
+        reCreate();
+        return Result::Success;
+    }
+    return result;
 }
 
 SwapChain::~SwapChain()
@@ -118,7 +128,7 @@ SwapChain::~SwapChain()
     }
     m_imagePools.clear();
 
-    m_pInstance->getHandle().destroySurfaceKHR(m_surface);
+    m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
 };
 
 void SwapChain::reCreate()
@@ -138,7 +148,7 @@ void SwapChain::reCreate()
 
     if (m_surface != VK_NULL_HANDLE)
     {
-        m_pInstance->getHandle().destroySurfaceKHR(m_surface);
+        m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
     }
 
     m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
