@@ -2,6 +2,7 @@
 
 #include "common/common.h"
 #include "common/enum.h"
+#include "resourcehandle.h"
 
 namespace aph
 {
@@ -469,88 +470,5 @@ struct StencilState
     CompareOp stencilCompareOp = CompareOp::Always;
     uint32_t readMask = (uint32_t)~0;
     uint32_t writeMask = (uint32_t)~0;
-};
-
-struct DummyCreateInfo
-{
-    uint32_t typeId;
-};
-
-struct DummyHandle
-{
-    uint32_t typeId;
-};
-
-template <typename T_Handle = DummyHandle, typename T_CreateInfo = DummyCreateInfo>
-class ResourceHandle
-{
-public:
-    using HandleType = T_Handle;
-    using CreateInfoType = T_CreateInfo;
-
-    ResourceHandle(HandleType handle, CreateInfoType createInfo = {})
-        : m_handle(handle)
-        , m_createInfo(createInfo)
-    {
-        if constexpr (std::is_same_v<T_CreateInfo, DummyCreateInfo>)
-        {
-            m_createInfo.typeId = typeid(T_Handle).hash_code();
-        }
-        if constexpr (std::is_same_v<T_Handle, DummyHandle>)
-        {
-            m_handle.typeId = typeid(T_Handle).hash_code();
-        }
-    }
-    operator T_Handle()
-    {
-        return m_handle;
-    }
-    operator T_Handle&()
-    {
-        return m_handle;
-    }
-    operator T_Handle&() const
-    {
-        return m_handle;
-    }
-
-    T_Handle& getHandle()
-    {
-        return m_handle;
-    }
-    const T_Handle& getHandle() const
-    {
-        return m_handle;
-    }
-    T_CreateInfo& getCreateInfo()
-    {
-        return m_createInfo;
-    }
-    const T_CreateInfo& getCreateInfo() const
-    {
-        return m_createInfo;
-    }
-
-    void setDebugName(auto&& name)
-    {
-        m_debugName = APH_FWD(name);
-    }
-
-    std::string_view getDebugName() const
-    {
-        return m_debugName;
-    }
-
-protected:
-    T_Handle m_handle = {};
-    T_CreateInfo m_createInfo = {};
-    std::string m_debugName = {};
-};
-
-template <typename TObject>
-concept ResourceHandleType = requires(TObject* obj, std::string name) {
-    { obj->getDebugName() };
-    { obj->setDebugName(name) };
-    { obj->getHandle() };
 };
 } // namespace aph
