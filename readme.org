@@ -11,7 +11,7 @@
   - Render Graph
   - Bindless Support, automatic handle code generation with built-in helper module 
   - Async Resource Management
-  - Multi-threading, Job System
+  - Coroutine-based Job System
   - Scene Management
   - Built-in Windowing, Input, Event Support
   - UI Support

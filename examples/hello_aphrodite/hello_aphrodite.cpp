@@ -212,7 +212,8 @@ void hello_aphrodite::init()
 
         // image and sampler
         {
-            APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
+            APH_VR(
+                m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
 
             aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
                                               .data = "texture://container2.png",
@@ -222,21 +223,36 @@ void hello_aphrodite::init()
                                                   .imageType = aph::ImageType::e2D,
                                               } };
 
-            APH_VR(m_pResourceLoader->load(imageLoadInfo, &m_pImage));
+            m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
         }
 
         // pipeline
+        // geometry shading
+        {
+            aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "vs + fs",
+                                                .data = { "shader_slang://hello_geometry.slang" },
+                                                .stageInfo = {
+                                                    { aph::ShaderStage::VS, "vertexMain" },
+                                                    { aph::ShaderStage::FS, "fragMain" },
+                                                } };
+
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Geometry]);
+        }
+
         // mesh shading
         {
-            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh.slang" },
+            aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "ts + ms + fs",
+                                                .data = { "shader_slang://hello_mesh.slang" },
                                                 .stageInfo = {
                                                     { aph::ShaderStage::TS, "taskMain" },
                                                     { aph::ShaderStage::MS, "meshMain" },
                                                     { aph::ShaderStage::FS, "fragMain" },
                                                 } };
 
-            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Mesh]));
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Mesh]);
         }
+
+        m_pResourceLoader->wait();
 
         // bindless mesh shading
         {
@@ -249,25 +265,15 @@ void hello_aphrodite::init()
                 bindless->updateResource(m_pIndexBuffer, "index_cube");
             }
 
-            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh_bindless.slang" },
+            aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "ts + ms + fs (bindless)",
+                                                .data = { "shader_slang://hello_mesh_bindless.slang" },
                                                 .stageInfo = {
                                                     {  aph::ShaderStage::TS,  "taskMain" },
                                                     {  aph::ShaderStage::MS,  "meshMain" },
                                                     {  aph::ShaderStage::FS,  "fragMain" },
                                                 }, .pBindlessResource = bindless};
 
-            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
-        }
-
-        // geometry shading
-        {
-            aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_geometry.slang" },
-                                                .stageInfo = {
-                                                    { aph::ShaderStage::VS, "vertexMain" },
-                                                    { aph::ShaderStage::FS, "fragMain" },
-                                                } };
-
-            APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::Geometry]));
+            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
         }
 
         m_pResourceLoader->wait();

@@ -1,6 +1,16 @@
 #pragma once
 
+#include <atomic>
+#include <condition_variable>
+#include <coro/coro.hpp>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include "allocator/objectPool.h"
 #include "common/common.h"
@@ -8,156 +18,99 @@
 #include "common/smallVector.h"
 #include "threadPool.h"
 
+#include <coro/coro.hpp>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 namespace aph
 {
-using TaskFunc = std::variant<std::function<Result()>, std::function<void()>>;
+using TaskType = coro::task<Result>;
 
-struct Task;
-class TaskManager;
-
-class TaskDeps
+/**
+ * SyncToken - A synchronization primitive for waiting on asynchronous operations
+ */
+class SyncToken
 {
-    friend class ObjectPool<TaskDeps>;
-    friend class TaskManager;
-    friend class TaskGroup;
-
 public:
-    void taskCompleted();
-    void dependencySatisfied();
-    void notifyDependees();
+    SyncToken(Result result)
+        : m_result(std::move(result))
+    {
+    }
 
 private:
-    explicit TaskDeps(TaskManager* manager);
-
-    SmallVector<TaskDeps*> m_pendingDeps;
-    std::atomic_uint m_pendingTaskCount;
-
-    SmallVector<Task*> m_pendingTasks;
-    std::atomic_uint m_dependencyCount;
-
-    std::condition_variable m_cond;
-    std::mutex m_condLock;
-    bool m_done = false;
-
-    TaskManager* m_pManager = {};
+    Result m_result;
 };
 
-struct Task
-{
-    friend class ObjectPool<Task>;
-
-    std::future<Result> getResult()
-    {
-        return m_promise.get_future();
-    }
-
-    void invoke()
-    {
-        Result result = Result::Success;
-        std::visit(
-            [&result](auto&& callable)
-            {
-                using ReturnType = decltype(callable());
-                if constexpr (std::is_same_v<ReturnType, Result>)
-                {
-                    result = callable();
-                }
-                else if constexpr (std::is_same_v<ReturnType, void>)
-                {
-                    callable();
-                }
-            },
-            m_callable);
-        m_promise.set_value(result);
-    }
-
-    TaskDeps* m_pDeps = {};
-    std::string m_desc = {};
-
-private:
-    Task(TaskDeps* pDeps, TaskFunc&& func, std::string desc)
-        : m_pDeps(pDeps)
-        , m_desc(std::move(desc))
-        , m_callable(std::forward<TaskFunc>(func))
-    {
-    }
-
-    std::promise<Result> m_promise;
-    TaskFunc m_callable = {};
-};
+class TaskManager;
 
 class TaskGroup
 {
-    friend class TaskManager;
-    friend class ObjectPool<TaskGroup>;
-
 public:
-    ~TaskGroup();
-    void submit();
-    void flush();
-    void wait();
-    bool poll();
-    Task* addTask(TaskFunc&& func, std::string desc = "");
+    ResultGroup wait()
+    {
+        if (m_tasks.empty())
+        {
+            return Result::Success;
+        }
+
+        ResultGroup resultGroup{};
+        auto results = coro::sync_wait(coro::when_all(std::move(m_tasks)));
+        for (const auto& result : results)
+        {
+            resultGroup += std::move(result.return_value());
+        }
+        return resultGroup;
+    }
 
 private:
-    explicit TaskGroup(TaskManager* manager, std::string desc);
-    TaskManager* m_pManager = {};
-    TaskDeps* m_pDeps = {};
-    std::string m_desc = {};
-    bool m_flushed = { false };
+    friend class TaskManager;
+    std::vector<TaskType> m_tasks;
 };
 
-class TaskManager final
+class TaskManager
 {
 public:
-    TaskManager(uint32_t threadCount = 0, std::string description = {});
-    ~TaskManager();
-
-    TaskGroup* createTaskGroup(std::string desc = "");
-    void removeTaskGroup(TaskGroup* pGroup);
-    void setDependency(TaskGroup* pDependee, TaskGroup* pDependency);
-
-    void scheduleTasks(const SmallVector<Task*>& taskList);
-
-    Task* addTask(TaskGroup* pGroup, TaskFunc&& func, std::string desc = "");
-
-    void submit(TaskGroup* pGroup);
-
-    void wait();
-
-private:
-    void processTask(uint32_t id);
-
-    bool m_dead = false;
-
-    std::condition_variable m_waitCond;
-    std::mutex m_waitCondLock;
-    std::atomic_uint m_totalTaskCount;
-    std::atomic_uint m_completedTaskCount;
-
-    struct
+    TaskManager(uint32_t threadCount = std::thread::hardware_concurrency())
+        : m_threadPool(
+              coro::thread_pool::options{ .thread_count = threadCount,
+                                          .on_thread_start_functor = [](std::size_t worker_idx) -> void
+                                          { CM_LOG_INFO("thread pool worker %u is starting up.", worker_idx); },
+                                          .on_thread_stop_functor = [](std::size_t worker_idx) -> void
+                                          { CM_LOG_INFO("thread pool worker %u is shutting down.", worker_idx); } })
     {
-        SmallVector<std::future<void>> threadResults;
-        std::unique_ptr<ThreadPool<>> threadPool;
-        std::queue<Task*> readyTaskQueue;
-        std::mutex condLock;
-        std::condition_variable cond;
-    } m_threadData;
+    }
+
+    TaskGroup* createTaskGroup()
+    {
+        m_taskGroups.emplace_back();
+        return &m_taskGroups.back();
+    }
+
+    void addTask(TaskGroup* pGroup, coro::task<Result> task)
+    {
+        auto taskWrapper = [](coro::thread_pool& tp, coro::task<Result> task) -> coro::task<Result>
+        { co_return co_await tp.schedule(std::move(task)); };
+        pGroup->m_tasks.emplace_back(taskWrapper(m_threadPool, std::move(task)));
+    }
 
 private:
-    ThreadSafeObjectPool<Task> m_taskPool;
-    ThreadSafeObjectPool<TaskGroup> m_taskGroupPool;
-    ThreadSafeObjectPool<TaskDeps> m_taskDepsPool;
-
-private:
-    std::string m_description;
+    std::vector<TaskGroup> m_taskGroups;
+    coro::thread_pool m_threadPool{};
 };
 
 } // namespace aph
 
-namespace aph::detail
+namespace aph::internal
 {
-extern TaskManager DefaultTaskManager;
+inline TaskManager& getDefaultTaskManager()
+{
+    static TaskManager defaultTaskManager;
+    return defaultTaskManager;
 }
+} // namespace aph::internal
 
-#define APH_DEFAULT_TASK_MANAGER aph::detail::DefaultTaskManager
+#define APH_DEFAULT_TASK_MANAGER ::aph::internal::getDefaultTaskManager()

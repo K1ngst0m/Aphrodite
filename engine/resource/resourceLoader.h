@@ -8,14 +8,14 @@
 #include "shaderLoader.h"
 #include "threads/taskManager.h"
 #include <format>
+#include <future>
 
 namespace aph
 {
 
 struct ResourceLoaderCreateInfo
 {
-    // TODO for debugging
-    bool isMultiThreads = false;
+    bool async = true;
     vk::Device* pDevice = {};
 };
 
@@ -32,42 +32,56 @@ public:
 
     ~ResourceLoader();
 
-    template <typename T_LoadInfo, typename T_Resource>
-    std::future<Result> loadAsync(const T_LoadInfo& loadInfo, T_Resource** ppResource)
+    template <typename T_LoadInfo, ResourceHandleType T_Resource>
+    void loadAsync(const T_LoadInfo& loadInfo, T_Resource** ppResource)
     {
-        auto taskGroup = m_taskManager.createTaskGroup(
-            std::format("Loading [{}]", loadInfo.debugName.empty() ? "unnamed" : loadInfo.debugName));
+        if (!m_createInfo.async)
+        {
+            APH_VR(load(loadInfo, ppResource));
+            return;
+        }
 
-        auto task = taskGroup->addTask(
-            std::function<Result()>{ [this, loadInfo, ppResource]() { return load(loadInfo, ppResource); } });
+        if (!m_pTaskGroup)
+        {
+            m_pTaskGroup = m_taskManager.createTaskGroup();
+        }
 
-        taskGroup->submit();
-        return task->getResult();
+        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> coro::task<Result>
+        { co_return pLoader->load(std::move(info), ppRes); };
+
+        m_taskManager.addTask(m_pTaskGroup, loadFunction(this, loadInfo, ppResource));
     }
 
-    template <typename T_LoadInfo, typename T_Resource>
-    Result load(const T_LoadInfo& loadInfo, T_Resource** ppResource)
+    void wait()
     {
-        auto result = loadImpl(loadInfo, ppResource);
+        APH_PROFILER_SCOPE();
+        APH_VR(m_pTaskGroup->wait());
+    }
+
+    template <typename T_LoadInfo, ResourceHandleType T_Resource>
+    Result load(T_LoadInfo&& loadInfo, T_Resource** ppResource)
+    {
+        CM_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
+        auto result = loadImpl(std::forward<T_LoadInfo>(loadInfo), ppResource);
+        std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
         m_unloadQueue[*ppResource] = [this, pResource = *ppResource]() { unLoadImpl(pResource); };
+        CM_LOG_DEBUG("Loading end: [%s]", loadInfo.debugName);
         return result;
     }
 
-    template <typename T_Resource>
+    template <ResourceHandleType T_Resource>
     void unLoad(T_Resource* pResource)
     {
+        CM_LOG_DEBUG("unLoading begin: [%s]", pResource->getDebugName());
         APH_ASSERT(pResource);
         APH_ASSERT(m_unloadQueue.contains(pResource));
         if (pResource && m_unloadQueue.contains(pResource))
         {
             unLoadImpl(pResource);
+            std::lock_guard<std::mutex> lock{ m_unloadQueueLock };
             m_unloadQueue.erase(pResource);
         }
-    }
-
-    void wait()
-    {
-        m_taskManager.wait();
+        CM_LOG_DEBUG("unLoading end: [%s]", pResource->getDebugName());
     }
 
     void update(const BufferUpdateInfo& info, vk::Buffer** ppBuffer);
@@ -89,12 +103,16 @@ private:
 
 private:
     ResourceLoaderCreateInfo m_createInfo;
-    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
+
     vk::Device* m_pDevice = {};
     vk::Queue* m_pQueue = {};
 
+    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
+    TaskGroup* m_pTaskGroup = {};
+
 private:
     std::mutex m_updateLock;
+    std::mutex m_unloadQueueLock;
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
     ShaderLoader m_shaderLoader{ m_pDevice };
