@@ -108,8 +108,8 @@ inline void aph_free(void* ptr, const std::source_location& location = std::sour
 template <typename ObjectType, typename... Args>
 ObjectType* aph_new(const std::source_location& location = std::source_location::current(), Args&&... args)
 {
-    MM_LOG_DEBUG("new: file={} line={} func={} type={}", location.file_name(), location.line(),
-                 location.function_name(), typeid(ObjectType).name());
+    MM_LOG_DEBUG("new: file={} line={} func={}", location.file_name(), location.line(),
+                 location.function_name());
 
     return new_internal<ObjectType>(location.file_name(), static_cast<int>(location.line()), location.function_name(),
                                     std::forward<Args>(args)...);
@@ -118,8 +118,8 @@ ObjectType* aph_new(const std::source_location& location = std::source_location:
 template <typename ObjectType>
 void aph_delete(ObjectType* ptr, const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG("delete: file={} line={} func={} type={} ptr={}", location.file_name(), location.line(),
-                 location.function_name(), typeid(ObjectType).name(), static_cast<void*>(ptr));
+    MM_LOG_DEBUG("delete: file={} line={} func={} ptr={}", location.file_name(), location.line(),
+                 location.function_name(), static_cast<void*>(ptr));
 
     delete_internal(ptr, location.file_name(), static_cast<int>(location.line()), location.function_name());
 }

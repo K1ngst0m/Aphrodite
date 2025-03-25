@@ -1,10 +1,11 @@
 #pragma once
 
-namespace aph
-{
 #include <functional>
 #include <tuple>
 #include <type_traits>
+
+namespace aph
+{
 
 template <typename T>
 struct FunctionTraits;

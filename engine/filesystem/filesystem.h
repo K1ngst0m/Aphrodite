@@ -35,11 +35,9 @@ public:
     void writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes);
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
 
-    template <typename T>
-        requires std::is_same_v<std::remove_cvref_t<T>, HashMap<std::string, std::string>>
-    void registerProtocol(T&& protocols)
+    void registerProtocol(auto&& protocols)
     {
-        m_protocols = std::forward<T>(protocols);
+        m_protocols = APH_FWD(protocols);
     }
     void registerProtocol(const std::string& protocol, const std::string& path);
     bool protocolExists(const std::string& protocol);

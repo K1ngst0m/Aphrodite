@@ -19,6 +19,31 @@ enum class TimeUnit
 class Timer
 {
 public:
+    Timer() = default;
+
+    Timer(const Timer&) = delete;
+    Timer& operator=(const Timer&) = delete;
+
+    Timer(Timer&& other) noexcept
+        : m_strMap(std::move(other.m_strMap))
+        , m_numMap(std::move(other.m_numMap))
+    {
+    }
+
+    Timer& operator=(Timer&& other) noexcept
+    {
+        if (this != &other)
+        {
+            std::lock_guard<std::mutex> this_lock(m_lock);
+            std::lock_guard<std::mutex> other_lock(other.m_lock);
+
+            m_strMap = std::move(other.m_strMap);
+            m_numMap = std::move(other.m_numMap);
+        }
+        return *this;
+    }
+
+public:
     // Set a timestamp with a specific tag
     APH_ALWAYS_INLINE void set(const std::string& tag)
     {
