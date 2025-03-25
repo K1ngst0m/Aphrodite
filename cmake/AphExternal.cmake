@@ -74,7 +74,7 @@ CPMAddPackage(
 CPMAddPackage(
   NAME mimalloc
   GITHUB_REPOSITORY microsoft/mimalloc
-  VERSION 2.1.2
+  VERSION 3.0.1
   OPTIONS
       "MI_BUILD_SHARED OFF"
       "MI_BUILD_OBJECT OFF"
@@ -112,6 +112,7 @@ CPMAddPackage(
   OPTIONS
       "SPIRV_CROSS_CLI OFF"
       "SPIRV_CROSS_ENABLE_TESTS OFF"
+      "SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS ON"
   PATCHES ${APH_PATCH_DIR}/spirv-cross.patch
 )
 

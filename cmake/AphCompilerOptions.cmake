@@ -24,6 +24,12 @@ if (APH_ENABLE_MSAN)
   endif()
 endif()
 
+if(MSVC)
+    add_compile_options(/GR- /EHs-c-)
+else()
+    add_compile_options(-fno-rtti -fno-exceptions)
+endif()
+
 # find linker
 find_program(MOLD_LINKER mold)
 # Set the linker

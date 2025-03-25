@@ -1,12 +1,31 @@
-diff --git a/src/alloc-aligned.c b/src/alloc-aligned.c
---- a/src/alloc-aligned.c
-+++ b/src/alloc-aligned.c
-@@ -159,7 +159,7 @@ mi_decl_nodiscard mi_decl_restrict void* mi_heap_malloc_aligned(mi_heap_t* heap,
+diff --git a/src/bitmap.c b/src/bitmap.c
+index 80bc8ff..3095b1f 100644
+--- a/src/bitmap.c
++++ b/src/bitmap.c
+@@ -153,7 +153,7 @@ static inline bool mi_bfield_atomic_setX(_Atomic(mi_bfield_t)*b, size_t* already
+   return (old==0);
+ }
  
- // ensure a definition is emitted
- #if defined(__cplusplus)
--static void* _mi_heap_malloc_aligned = (void*)&mi_heap_malloc_aligned;
-+[[maybe_unused]] static void* _mi_heap_malloc_aligned = (void*)&mi_heap_malloc_aligned;
+-static inline bool mi_bfield_atomic_clearX(_Atomic(mi_bfield_t)*b, bool* all_clear) {
++[[maybe_unused]] static inline bool mi_bfield_atomic_clearX(_Atomic(mi_bfield_t)*b, bool* all_clear) {
+   const mi_bfield_t old = mi_atomic_exchange_release(b, mi_bfield_zero());
+   if (all_clear!=NULL) { *all_clear = true; }
+   return (~old==0);
+@@ -434,7 +434,7 @@ static inline bool mi_bchunk_try_clearNX(mi_bchunk_t* chunk, size_t cidx, size_t
+ }
+ 
+ // Clear a full aligned bfield.
+-static inline bool mi_bchunk_try_clearX(mi_bchunk_t* chunk, size_t cidx, bool* pmaybe_all_clear) {
++[[maybe_unused]] static inline bool mi_bchunk_try_clearX(mi_bchunk_t* chunk, size_t cidx, bool* pmaybe_all_clear) {
+   mi_assert_internal(cidx < MI_BCHUNK_BITS);
+   mi_assert_internal((cidx%MI_BFIELD_BITS) == 0);
+   const size_t i = cidx / MI_BFIELD_BITS;
+@@ -755,7 +755,7 @@ static mi_decl_noinline  bool mi_bchunk_try_find_and_clearX(mi_bchunk_t* chunk,
  #endif
+ }
  
- // ------------------------------------------------------
+-static inline bool mi_bchunk_try_find_and_clear_X(mi_bchunk_t* chunk, size_t n, size_t* pidx) {
++[[maybe_unused]] static inline bool mi_bchunk_try_find_and_clear_X(mi_bchunk_t* chunk, size_t n, size_t* pidx) {
+   mi_assert_internal(n==MI_BFIELD_BITS); MI_UNUSED(n);
+   return mi_bchunk_try_find_and_clearX(chunk, pidx);
+ }
