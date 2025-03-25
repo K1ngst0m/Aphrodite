@@ -50,21 +50,6 @@ APH_ALWAYS_INLINE void DebugBreak()
 #endif
 }
 
-template <typename T>
-struct FunctionTraits;
-
-template <typename ClassType, typename ReturnType, typename ArgType>
-struct FunctionTraits<ReturnType (ClassType::*)(ArgType) const>
-{
-    using arg_type = std::remove_const_t<std::remove_reference_t<ArgType>>;
-    using return_type = ReturnType;
-};
-
-template <typename T>
-struct FunctionTraits : public FunctionTraits<decltype(&T::operator())>
-{
-};
-
 #ifdef APH_DEBUG
 template <typename T>
     requires requires(T t) {

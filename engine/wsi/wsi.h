@@ -2,6 +2,7 @@
 
 #include "api/vulkan/vkUtils.h"
 #include "common/common.h"
+#include "common/functiontraits.h"
 #include "common/profiler.h"
 #include "event/event.h"
 #include "event/eventManager.h"
@@ -62,9 +63,9 @@ public:
     void registerEvent(TEvent&& callback)
     {
         using traits = FunctionTraits<std::remove_reference_t<TEvent>>;
-        using event_type = typename traits::arg_type;
+        using eventType = typename traits::template ArgumentType<0>;
 
-        std::function<typename traits::return_type(const event_type&)>&& func = APH_FWD(callback);
+        std::function<typename traits::ReturnType(const eventType&)>&& func = APH_FWD(callback);
 
         m_pEventManager->registerEvent(std::move(func));
     }
