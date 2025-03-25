@@ -48,14 +48,16 @@
     #+BEGIN_SRC cpp
     // vertex buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{
-        .debugName  = "cube::vertex_buffer",
-        .data       = vertices.data(),
-        .createInfo = {
-                .size  = static_cast<uint32_t>(vertices.size() * sizeof(vertices[0])),
-                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer | ::vk::BufferUsageFlagBits::eVertexBuffer}};
+        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::vertex_buffer",
+                                        .data = vertices.data(),
+                                        .createInfo = {
+                                                .size = vertices.size() * sizeof(vertices[0]),
+                                                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
+                                                        ::vk::BufferUsageFlagBits::eVertexBuffer,
+                                                .domain = aph::MemoryDomain::Device,
+                                        } };
 
-        m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVB);
+        m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVertexBuffer);
     }
 
     // ...
