@@ -1,8 +1,11 @@
 #pragma once
-#include "common/coroutine.h"
+#include "coro/coro.hpp"
 
 namespace aph::utils
 {
+template <typename T>
+using Generator = coro::generator<T>;
+
 template <class T>
 concept BitwiseType = std::unsigned_integral<T> || requires(const T& x) {
     { x.size() } -> std::convertible_to<std::size_t>;

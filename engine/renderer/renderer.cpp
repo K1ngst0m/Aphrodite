@@ -211,7 +211,7 @@ void Renderer::load()
     // }
 };
 
-Generator<RenderGraph*> Renderer::recordGraph()
+coro::generator<RenderGraph*> Renderer::recordGraph()
 {
     APH_PROFILER_SCOPE();
     for (auto& pGraph : m_frameGraph)

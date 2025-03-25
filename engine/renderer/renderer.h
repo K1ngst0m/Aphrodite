@@ -57,7 +57,7 @@ public:
         return m_pWindowSystem.get();
     }
 
-    Generator<RenderGraph*> recordGraph();
+    coro::generator<RenderGraph*> recordGraph();
     void render();
 
     const RenderConfig& getConfig() const

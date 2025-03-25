@@ -104,6 +104,11 @@ struct [[nodiscard("Result should be handled.")]] Result
     {
     }
 
+    operator std::string_view()
+    {
+        return toString();
+    }
+
     APH_ALWAYS_INLINE std::string_view toString()
     {
         if (!m_msg.empty())
@@ -136,6 +141,7 @@ private:
 
 struct [[nodiscard("Result should be handled.")]] ResultGroup
 {
+    APH_ALWAYS_INLINE ResultGroup() = default;
     APH_ALWAYS_INLINE ResultGroup(auto&& result)
     {
         append(APH_FWD(result));
