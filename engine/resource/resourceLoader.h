@@ -29,7 +29,6 @@ class ResourceLoader
 
 public:
     ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
-
     ~ResourceLoader();
 
     template <typename T_LoadInfo, ResourceHandleType T_Resource>
@@ -43,13 +42,14 @@ public:
 
         if (!m_pTaskGroup)
         {
-            m_pTaskGroup = m_taskManager.createTaskGroup();
+            m_pTaskGroup = m_taskManager.createTaskGroup("Resource Loader");
         }
 
         auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> coro::task<Result>
         { co_return pLoader->load(std::move(info), ppRes); };
 
-        m_taskManager.addTask(m_pTaskGroup, loadFunction(this, loadInfo, ppResource));
+        m_pTaskGroup->addTask(loadFunction(this, loadInfo, ppResource));
+        m_pTaskGroup->submit();
     }
 
     void wait()

@@ -14,6 +14,7 @@
 
 #include "allocator/objectPool.h"
 #include "common/common.h"
+#include "common/hash.h"
 #include "common/singleton.h"
 #include "common/smallVector.h"
 #include "threadPool.h"
@@ -29,77 +30,57 @@
 namespace aph
 {
 using TaskType = coro::task<Result>;
-
-/**
- * SyncToken - A synchronization primitive for waiting on asynchronous operations
- */
-class SyncToken
-{
-public:
-    SyncToken(Result result)
-        : m_result(std::move(result))
-    {
-    }
-
-private:
-    Result m_result;
-};
-
 class TaskManager;
 
 class TaskGroup
 {
 public:
-    ResultGroup wait()
-    {
-        if (m_tasks.empty())
-        {
-            return Result::Success;
-        }
+    void addTask(coro::task<Result> task);
+    void submit();
+    void flush();
+    ResultGroup wait();
 
-        ResultGroup resultGroup{};
-        auto results = coro::sync_wait(coro::when_all(std::move(m_tasks)));
-        for (const auto& result : results)
-        {
-            resultGroup += std::move(result.return_value());
-        }
-        return resultGroup;
-    }
+    void waitFor(TaskGroup* pGroup);
 
 private:
     friend class TaskManager;
-    std::vector<TaskType> m_tasks;
+    friend class ObjectPool<TaskGroup>;
+    TaskGroup(TaskManager* pTaskManager, auto&& name)
+        : m_pTaskManager(pTaskManager)
+        , m_name(APH_FWD(name))
+    {
+    }
+
+    SmallVector<TaskType> m_tasks;
+    TaskManager* m_pTaskManager = {};
+    std::string m_name;
+    HashSet<TaskGroup*> m_pendingGroups;
+    coro::latch m_waitLatch{ 0 };
 };
 
 class TaskManager
 {
 public:
-    TaskManager(uint32_t threadCount = std::thread::hardware_concurrency())
-        : m_threadPool(
-              coro::thread_pool::options{ .thread_count = threadCount,
-                                          .on_thread_start_functor = [](std::size_t worker_idx) -> void
-                                          { CM_LOG_INFO("thread pool worker %u is starting up.", worker_idx); },
-                                          .on_thread_stop_functor = [](std::size_t worker_idx) -> void
-                                          { CM_LOG_INFO("thread pool worker %u is shutting down.", worker_idx); } })
+    TaskManager(uint32_t threadCount = std::thread::hardware_concurrency());
+    ~TaskManager();
+
+    template <typename TStr>
+    TaskGroup* createTaskGroup(TStr&& name = {})
     {
+        auto* pGroup = m_taskGroupPools.allocate(this, APH_FWD(name));
+        m_pendingTasks[pGroup] = {};
+        return pGroup;
     }
 
-    TaskGroup* createTaskGroup()
-    {
-        m_taskGroups.emplace_back();
-        return &m_taskGroups.back();
-    }
-
-    void addTask(TaskGroup* pGroup, coro::task<Result> task)
-    {
-        auto taskWrapper = [](coro::thread_pool& tp, coro::task<Result> task) -> coro::task<Result>
-        { co_return co_await tp.schedule(std::move(task)); };
-        pGroup->m_tasks.emplace_back(taskWrapper(m_threadPool, std::move(task)));
-    }
+    void addTask(TaskGroup* pGroup, coro::task<Result> task);
+    void submit(TaskGroup* pGroup);
+    ResultGroup wait(TaskGroup* pGroup);
+    void setDependencies(TaskGroup* pProducer, TaskGroup* pConsumer);
 
 private:
-    std::vector<TaskGroup> m_taskGroups;
+    HashMap<TaskGroup*, SmallVector<TaskType>> m_pendingTasks;
     coro::thread_pool m_threadPool{};
+    ThreadSafeObjectPool<TaskGroup> m_taskGroupPools;
 };
 
 } // namespace aph
