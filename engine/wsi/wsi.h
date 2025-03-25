@@ -59,8 +59,13 @@ public:
     ::vk::SurfaceKHR getSurface(vk::Instance* instance);
 
     template <typename TEvent>
-    void registerEvent(std::function<bool(const TEvent&)>&& func)
+    void registerEvent(TEvent&& callback)
     {
+        using traits = FunctionTraits<std::remove_reference_t<TEvent>>;
+        using event_type = typename traits::arg_type;
+
+        std::function<typename traits::return_type(const event_type&)>&& func = APH_FWD(callback);
+
         m_pEventManager->registerEvent(std::move(func));
     }
 

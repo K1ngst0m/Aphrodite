@@ -4,7 +4,6 @@
 #include "threads/taskManager.h"
 #include <any>
 #include <mutex>
-#include <typeindex>
 
 namespace aph
 {
@@ -34,6 +33,23 @@ class EventManager
         }
     };
 
+    struct TypeErased
+    {
+        virtual ~TypeErased() = default;
+        virtual void process() = 0;
+    };
+
+    template <typename TEvent>
+    struct TypedEventData : TypeErased
+    {
+        EventData<TEvent> data;
+
+        void process() override
+        {
+            data.process();
+        }
+    };
+
 public:
     EventManager()
     {
@@ -53,27 +69,47 @@ public:
 
     void processAll()
     {
-        for (auto& [_, value] : m_eventDataMap)
+        for (auto& [_, handler] : m_eventDataMap)
         {
-            value.second(value.first);
+            handler->process();
         }
     }
 
 private:
     std::mutex m_dataMapMutex;
 
-    HashMap<std::type_index, std::pair<std::any, std::function<void(std::any&)>>> m_eventDataMap;
+    using TypeID = size_t;
+
+    template <typename T>
+    static TypeID getTypeID()
+    {
+        static TypeID id = nextTypeID();
+        return id;
+    }
+
+    static TypeID nextTypeID()
+    {
+        static TypeID next = 0;
+        return next++;
+    }
+
+    HashMap<TypeID, std::unique_ptr<TypeErased>> m_eventDataMap;
 
     template <typename TEvent>
     EventData<TEvent>& getEventData()
     {
-        auto ti = std::type_index(typeid(TEvent));
-        if (!m_eventDataMap.contains(ti))
+        auto typeID = getTypeID<TEvent>();
+        auto it = m_eventDataMap.find(typeID);
+
+        if (it == m_eventDataMap.end())
         {
-            m_eventDataMap[ti] = { EventData<TEvent>{}, [](std::any& eventData)
-                                   { std::any_cast<EventData<TEvent>&>(eventData).process(); } };
+            auto typedData = std::make_unique<TypedEventData<TEvent>>();
+            auto& result = typedData->data;
+            m_eventDataMap[typeID] = std::move(typedData);
+            return result;
         }
-        return std::any_cast<EventData<TEvent>&>(m_eventDataMap[ti].first);
+
+        return static_cast<TypedEventData<TEvent>*>(it->second.get())->data;
     }
 };
 

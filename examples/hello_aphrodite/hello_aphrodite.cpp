@@ -119,14 +119,14 @@ void hello_aphrodite::init()
     m_pResourceLoader = m_renderer->getResourceLoader();
     m_pWindowSystem = m_renderer->getWindowSystem();
 
-    m_pWindowSystem->registerEvent<aph::WindowResizeEvent>(
-        [this](const aph::WindowResizeEvent& e)
+    m_pWindowSystem->registerEvent(
+        [this](const aph::WindowResizeEvent& e) -> bool
         {
             m_pSwapChain->reCreate();
             return true;
         });
 
-    m_pWindowSystem->registerEvent<aph::KeyboardEvent>(
+    m_pWindowSystem->registerEvent(
         [this](const aph::KeyboardEvent& e)
         {
             APP_LOG_INFO("key pressed.");
