@@ -35,45 +35,6 @@ public:
     LoadRequest getLoadRequest();
 
     template <typename T_LoadInfo, ResourceHandleType T_Resource>
-    void loadAsync(const T_LoadInfo& loadInfo, T_Resource** ppResource)
-    {
-        if (!m_createInfo.async)
-        {
-            APH_VR(load(loadInfo, ppResource));
-            return;
-        }
-
-        if (!m_pTaskGroup)
-        {
-            m_pTaskGroup = m_taskManager.createTaskGroup("Resource Loader");
-        }
-
-        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
-        { co_return pLoader->load(std::move(info), ppRes); };
-
-        m_pTaskGroup->addTask(loadFunction(this, loadInfo, ppResource));
-        auto token = m_pTaskGroup->submitAsync();
-        m_syncTokens.push_back(std::move(token));
-    }
-
-    void wait()
-    {
-        APH_PROFILER_SCOPE();
-        if (!m_createInfo.async)
-        {
-            return;
-        }
-
-        for (const auto& future : m_syncTokens)
-        {
-            future.wait();
-        }
-        m_syncTokens.clear();
-    }
-
-    SmallVector<std::future<Result>> m_syncTokens;
-
-    template <typename T_LoadInfo, ResourceHandleType T_Resource>
     Result load(T_LoadInfo&& loadInfo, T_Resource** ppResource)
     {
         CM_LOG_DEBUG("Loading begin: [%s]", loadInfo.debugName);
@@ -123,8 +84,6 @@ private:
     vk::Queue* m_pQueue = {};
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
-    TaskGroup* m_pTaskGroup = {};
-
 private:
     std::mutex m_updateLock;
     std::mutex m_unloadQueueLock;
