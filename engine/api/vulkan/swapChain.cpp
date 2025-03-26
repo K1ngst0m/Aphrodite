@@ -90,7 +90,6 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     {
         VK_LOG_INFO(
             "vkAcquireNextImageKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
-        reCreate();
         return Result::Success;
     }
 
