@@ -5,20 +5,6 @@
 #include "slang-com-ptr.h"
 #include "slang.h"
 
-namespace aph::loader::shader
-{
-std::vector<uint32_t> loadSpvFromFile(std::string_view filename)
-{
-    APH_PROFILER_SCOPE();
-    std::string source = Filesystem::GetInstance().readFileToString(filename);
-    APH_ASSERT(!source.empty());
-    uint32_t size = source.size();
-    std::vector<uint32_t> spirv(size / sizeof(uint32_t));
-    memcpy(spirv.data(), source.data(), size);
-    return spirv;
-}
-} // namespace aph::loader::shader
-
 namespace aph
 {
 #define SLANG_CR(diagnostics)                                           \
