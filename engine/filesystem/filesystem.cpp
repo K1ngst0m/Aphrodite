@@ -191,4 +191,20 @@ bool Filesystem::createDirectories(std::string_view path) const
     }
     return result;
 }
+
+int64_t Filesystem::getLastModifiedTime(std::string_view path) const
+{
+    auto resolvedPath = resolvePath(path);
+    
+    std::error_code ec;
+    auto fileTime = std::filesystem::last_write_time(resolvedPath, ec);
+    
+    if (ec)
+    {
+        CM_LOG_WARN("Failed to get last modified time for %s: %s", path.data(), ec.message().c_str());
+        return 0;
+    }
+    
+    return fileTime.time_since_epoch().count();
+}
 } // namespace aph

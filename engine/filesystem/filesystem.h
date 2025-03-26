@@ -79,6 +79,9 @@ public:
 
     std::filesystem::path resolvePath(std::string_view inputPath) const;
     std::filesystem::path getCurrentWorkingDirectory() const;
+    
+    // Get the last modification time of a file
+    int64_t getLastModifiedTime(std::string_view path) const;
 
 private:
     HashMap<int, std::function<void()>> m_callbacks;
