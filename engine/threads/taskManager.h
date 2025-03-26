@@ -37,7 +37,7 @@ class TaskGroup
 public:
     void addTask(TaskType task);
     std::future<Result> submitAsync();
-    void submit();
+    Result submit();
     void waitFor(TaskGroup* pGroup);
 
 private:

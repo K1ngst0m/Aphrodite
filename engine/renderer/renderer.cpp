@@ -75,18 +75,24 @@ Renderer::Renderer(const RenderConfig& config)
     : m_config(config)
 {
     APH_PROFILER_SCOPE();
-    WindowSystemCreateInfo wsi_create_info{
-        .width = config.width,
-        .height = config.height,
-        .enableUI = false,
-    };
-    m_pWindowSystem = WindowSystem::Create(wsi_create_info);
-    auto& wsi = m_pWindowSystem;
+
+    m_timer.set(TIMER_TAG_GLOBAL);
+
+    // create window system
+    {
+        WindowSystemCreateInfo wsi_create_info{
+            .width = config.width,
+            .height = config.height,
+            .enableUI = false,
+        };
+        m_pWindowSystem = WindowSystem::Create(wsi_create_info);
+    }
+
     // create instance
     {
         APH_PROFILER_SCOPE();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
-        auto requiredExtensions = wsi->getRequiredExtensions();
+        auto requiredExtensions = m_pWindowSystem->getRequiredExtensions();
         vk::InstanceCreateInfo instanceCreateInfo{};
 #ifdef APH_DEBUG
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -137,30 +143,51 @@ Renderer::Renderer(const RenderConfig& config)
         APH_ASSERT(m_pDevice != nullptr);
     }
 
-    // setup swapchain
+    auto postDeviceGroup = m_taskManager.createTaskGroup("post device object creation");
+
     {
         vk::SwapChainCreateInfo createInfo{
             .pInstance = m_pInstance,
             .pWindowSystem = m_pWindowSystem.get(),
             .pQueue = m_pDevice->getQueue(QueueType::Graphics),
         };
-        auto result = m_pDevice->create(createInfo, &m_pSwapChain);
-        APH_ASSERT(result.success());
-    }
 
-    // init graph
-    {
+        postDeviceGroup->addTask(
+            [](const vk::SwapChainCreateInfo& createInfo, vk::SwapChain** ppSwapchain, vk::Device* pDevice) -> TaskType
+            {
+                auto result = pDevice->create(createInfo, ppSwapchain);
+                co_return result;
+            }(createInfo, &m_pSwapChain, m_pDevice.get()));
+
         m_frameGraph.resize(m_config.maxFrames);
-        for (auto& graph : m_frameGraph)
-        {
-            graph = std::make_unique<RenderGraph>(m_pDevice.get());
-        }
-    }
 
-    // init resource loader
-    {
-        m_pResourceLoader =
-            std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{ .async = true, .pDevice = m_pDevice.get() });
+        postDeviceGroup->addTask(
+            [](SmallVector<std::unique_ptr<RenderGraph>>& graphs, vk::Device* pDevice) -> TaskType
+            {
+                for (auto& graph : graphs)
+                {
+                    graph = std::make_unique<RenderGraph>(pDevice);
+                    if (!graph)
+                    {
+                        co_return { Result::RuntimeError, "Failed to initialized render graph." };
+                    }
+                }
+                co_return Result::Success;
+            }(m_frameGraph, m_pDevice.get()));
+
+        postDeviceGroup->addTask(
+            [](std::unique_ptr<ResourceLoader>& resourceLoader, vk::Device* pDevice) -> TaskType
+            {
+                ResourceLoaderCreateInfo createInfo{ .async = true, .pDevice = pDevice };
+                resourceLoader = std::make_unique<ResourceLoader>(createInfo);
+                if (!resourceLoader)
+                {
+                    co_return { Result::RuntimeError, "Failed to initialized resource loader." };
+                }
+                co_return Result::Success;
+            }(m_pResourceLoader, m_pDevice.get()));
+
+        APH_VR(postDeviceGroup->submit());
     }
 
     // init ui
@@ -171,7 +198,6 @@ Renderer::Renderer(const RenderConfig& config)
     //     });
     // }
 
-    m_timer.set(TIMER_TAG_GLOBAL);
 }
 
 Renderer::~Renderer()
@@ -226,7 +252,7 @@ coro::generator<RenderGraph*> Renderer::recordGraph()
                 co_return { Result::Success };
             }(m_pSwapChain, pGraph.get()));
     }
-    group->submit();
+    APH_VR(group->submit());
 }
 void Renderer::render()
 {

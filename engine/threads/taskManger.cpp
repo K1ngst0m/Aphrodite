@@ -19,9 +19,9 @@ std::future<Result> TaskGroup::submitAsync()
     return m_pTaskManager->submit(this);
 }
 
-void TaskGroup::submit()
+Result TaskGroup::submit()
 {
-    submitAsync().wait();
+    return submitAsync().get();
 }
 
 void TaskGroup::waitFor(TaskGroup* pGroup)
