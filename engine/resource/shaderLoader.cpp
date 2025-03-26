@@ -51,6 +51,32 @@ struct CompileRequest
     {
         moduleMap[std::forward<T>(name)] = std::forward<U>(source);
     }
+
+    std::string getHash() const
+    {
+        APH_PROFILER_SCOPE();
+        std::stringstream ss;
+        ss << filename;
+
+        // Sort moduleMap entries to ensure consistent hashing
+        SmallVector<std::pair<std::string, std::string>> sortedModules(moduleMap.begin(), moduleMap.end());
+        std::sort(sortedModules.begin(), sortedModules.end());
+
+        for (const auto& [name, source] : sortedModules)
+        {
+            ss << name << source;
+        }
+
+        // Generate a simple hash from the content
+        std::string content = ss.str();
+        std::size_t hash = std::hash<std::string>{}(content);
+
+        // Convert to hex string
+        std::stringstream hexStream;
+        hexStream << std::hex << std::setw(16) << std::setfill('0') << hash;
+
+        return hexStream.str();
+    }
 };
 
 class SlangLoaderImpl
@@ -70,6 +96,120 @@ public:
         const auto& filename = request.filename;
         const auto& moduleMap = request.moduleMap;
 
+        auto& fs = aph::Filesystem::GetInstance();
+        
+        std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
+        if (!fs.exist(cacheDirPath))
+        {
+            if (!fs.createDirectories(cacheDirPath))
+            {
+                CM_LOG_WARN("Failed to create shader cache directory: %s", cacheDirPath.c_str());
+                // Continue without caching
+            }
+        }
+
+        // Generate a hash for the compile request
+        std::string requestHash = request.getHash();
+        std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
+
+        // Check if the cache file exists
+        if (fs.exist(cacheFilePath))
+        {
+            auto cacheBytes = fs.readFileToBytes(cacheFilePath);
+            if (cacheBytes.size() > 0)
+            {
+                // Parse cache data
+                size_t offset = 0;
+                
+                // Read number of shader stages
+                if (offset + sizeof(uint32_t) <= cacheBytes.size())
+                {
+                    uint32_t numStages;
+                    std::memcpy(&numStages, cacheBytes.data() + offset, sizeof(uint32_t));
+                    offset += sizeof(uint32_t);
+                    
+                    bool cacheValid = true;
+                    // Read each shader stage data
+                    for (uint32_t i = 0; i < numStages && cacheValid; ++i)
+                    {
+                        // Read stage value and entry point length
+                        if (offset + sizeof(uint32_t) * 2 > cacheBytes.size())
+                        {
+                            CM_LOG_WARN("Cache file corrupted: too small for stage header, file: %s", cacheFilePath.c_str());
+                            cacheValid = false;
+                            break;
+                        }
+                        
+                        uint32_t stageVal;
+                        std::memcpy(&stageVal, cacheBytes.data() + offset, sizeof(uint32_t));
+                        offset += sizeof(uint32_t);
+                        
+                        uint32_t entryPointLength;
+                        std::memcpy(&entryPointLength, cacheBytes.data() + offset, sizeof(uint32_t));
+                        offset += sizeof(uint32_t);
+                        
+                        aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
+                        
+                        // Read entry point
+                        if (offset + entryPointLength > cacheBytes.size())
+                        {
+                            CM_LOG_WARN("Cache file corrupted: too small for entry point, file: %s", cacheFilePath.c_str());
+                            cacheValid = false;
+                            break;
+                        }
+                        std::string entryPoint(entryPointLength, '\0');
+                        std::memcpy(entryPoint.data(), cacheBytes.data() + offset, entryPointLength);
+                        offset += entryPointLength;
+                        
+                        // Read spv code length
+                        if (offset + sizeof(uint32_t) > cacheBytes.size())
+                        {
+                            CM_LOG_WARN("Cache file corrupted: too small for code size, file: %s", cacheFilePath.c_str());
+                            cacheValid = false;
+                            break;
+                        }
+                        uint32_t codeSize;
+                        std::memcpy(&codeSize, cacheBytes.data() + offset, sizeof(uint32_t));
+                        offset += sizeof(uint32_t);
+                        
+                        // Read spv code
+                        if (offset + codeSize > cacheBytes.size())
+                        {
+                            CM_LOG_WARN("Cache file corrupted: too small for SPIR-V code, file: %s", cacheFilePath.c_str());
+                            cacheValid = false;
+                            break;
+                        }
+                        std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
+                        std::memcpy(spvCode.data(), cacheBytes.data() + offset, codeSize);
+                        offset += codeSize;
+                        
+                        // Store in spvCodeMap
+                        spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
+                    }
+                    
+                    if (cacheValid)
+                    {
+                        // Cache hit successful
+                        return Result::Success;
+                    }
+                    else
+                    {
+                        // Clear any partial data
+                        spvCodeMap.clear();
+                    }
+                }
+                else
+                {
+                    CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
+                }
+            }
+            else
+            {
+                CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
+            }
+        }
+
+        // Cache miss or failed to read cache, compile the shader
         Slang::ComPtr<slang::ISession> session = {};
         SlangResult result = {};
         {
@@ -217,6 +357,69 @@ public:
                 {
                     spvCodeMap[stage] = { entryPointName, std::move(retSpvCode) };
                 }
+            }
+        }
+
+        // Save to cache
+        // Prepare the cache data
+        std::vector<uint8_t> cacheData;
+        
+        // Reserve some initial space
+        cacheData.reserve(1024 * 1024); // 1MB initial reservation
+        
+        // Write header (number of shader stages)
+        uint32_t numStages = static_cast<uint32_t>(spvCodeMap.size());
+        size_t headerSize = sizeof(uint32_t);
+        cacheData.resize(headerSize);
+        std::memcpy(cacheData.data(), &numStages, headerSize);
+        
+        // Write each shader stage data
+        for (const auto& [stage, slangProgram] : spvCodeMap)
+        {
+            // Write stage header (stage value and entry point length)
+            uint32_t stageVal = static_cast<uint32_t>(stage);
+            uint32_t entryPointLength = static_cast<uint32_t>(slangProgram.entryPoint.size());
+            
+            size_t stageHeaderSize = sizeof(uint32_t) * 2;
+            size_t stageHeaderOffset = cacheData.size();
+            cacheData.resize(stageHeaderOffset + stageHeaderSize);
+            std::memcpy(cacheData.data() + stageHeaderOffset, &stageVal, sizeof(uint32_t));
+            std::memcpy(cacheData.data() + stageHeaderOffset + sizeof(uint32_t), &entryPointLength, sizeof(uint32_t));
+            
+            // Write entry point
+            size_t entryPointOffset = cacheData.size();
+            cacheData.resize(entryPointOffset + entryPointLength);
+            if (entryPointLength > 0) {
+                std::memcpy(cacheData.data() + entryPointOffset, slangProgram.entryPoint.data(), entryPointLength);
+            }
+            
+            // Write spv code length
+            uint32_t codeSize = static_cast<uint32_t>(slangProgram.spvCodes.size() * sizeof(uint32_t));
+            size_t codeSizeOffset = cacheData.size();
+            cacheData.resize(codeSizeOffset + sizeof(uint32_t));
+            std::memcpy(cacheData.data() + codeSizeOffset, &codeSize, sizeof(uint32_t));
+            
+            // Write spv code
+            size_t codeOffset = cacheData.size();
+            cacheData.resize(codeOffset + codeSize);
+            if (codeSize > 0) {
+                std::memcpy(cacheData.data() + codeOffset, slangProgram.spvCodes.data(), codeSize);
+            }
+        }
+        
+        // Write the cache file directly to avoid exception handling
+        // This duplicates the logic from Filesystem::writeBytesToFile but without exceptions
+        std::ofstream file(fs.resolvePath(cacheFilePath).string(), std::ios::binary);
+        if (!file)
+        {
+            CM_LOG_WARN("Failed to open cache file for writing: %s", cacheFilePath.c_str());
+        }
+        else
+        {
+            file.write(reinterpret_cast<const char*>(cacheData.data()), cacheData.size());
+            if (!file.good())
+            {
+                CM_LOG_WARN("Failed to write shader cache for %s", filename);
             }
         }
 

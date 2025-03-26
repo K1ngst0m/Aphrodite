@@ -175,6 +175,20 @@ std::filesystem::path Filesystem::getCurrentWorkingDirectory() const
 
 bool Filesystem::exist(std::string_view path) const
 {
-    return std::filesystem::exists(resolvePath(path));
+    auto resolvedPath = resolvePath(path);
+    return std::filesystem::exists(resolvedPath);
+}
+
+bool Filesystem::createDirectories(std::string_view path) const
+{
+    std::error_code ec;
+    auto resolvedPath = resolvePath(path);
+    auto result = std::filesystem::create_directories(resolvedPath, ec);
+    if (ec)
+    {
+        CM_LOG_ERR("Failed to create directories: %s, error: %s", path, ec.message().c_str());
+        return false;
+    }
+    return result;
 }
 } // namespace aph

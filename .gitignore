@@ -12,3 +12,4 @@ build/
 /.ccls-cache/
 /log.txt
 /bin/
+/cache/

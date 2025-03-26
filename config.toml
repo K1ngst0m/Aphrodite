@@ -10,6 +10,7 @@ model = "assets/models"
 shader = "assets/shaders"
 shader_glsl = "assets/shaders/glsl"
 shader_slang = "assets/shaders/slang"
+shader_cache = "cache/shaders"
 texture = "assets/textures"
 
 [thread]
