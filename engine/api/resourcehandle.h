@@ -22,19 +22,19 @@ inline size_t GetTypeId() noexcept
 template <typename T>
 constexpr const char* GetTypeName() noexcept
 {
-    #if defined(__GNUC__) || defined(__clang__)
-        std::string_view name = __PRETTY_FUNCTION__;
-        auto pos = name.find("T = ") + 4;
-        auto end = name.find_first_of(";]", pos);
-        return name.substr(pos, end - pos).data();
-    #elif defined(_MSC_VER)
-        std::string_view name = __FUNCSIG__;
-        auto pos = name.find("GetTypeName<") + 12;
-        auto end = name.find_first_of(">(", pos);
-        return name.substr(pos, end - pos).data();
-    #else
-        return "unknown_type";
-    #endif
+#if defined(__GNUC__) || defined(__clang__)
+    std::string_view name = __PRETTY_FUNCTION__;
+    auto pos = name.find("T = ") + 4;
+    auto end = name.find_first_of(";]", pos);
+    return name.substr(pos, end - pos).data();
+#elif defined(_MSC_VER)
+    std::string_view name = __FUNCSIG__;
+    auto pos = name.find("GetTypeName<") + 12;
+    auto end = name.find_first_of(">(", pos);
+    return name.substr(pos, end - pos).data();
+#else
+    return "unknown_type";
+#endif
 }
 #endif
 } // namespace internal
@@ -56,6 +56,7 @@ class ResourceHandle
     {
         eLifeTimeCreation,
     };
+
 public:
     using HandleType = T_Handle;
     using CreateInfoType = T_CreateInfo;
@@ -149,8 +150,8 @@ public:
 
         std::stringstream ss;
         ss << "ResourceHandle<" << internal::GetTypeName<T_Handle>()
-            << ">: " << (m_debugName.empty() ? "[unnamed]" : m_debugName) << " | Age: " << age << "s"
-            << " | Address: " << &m_handle;
+           << ">: " << (m_debugName.empty() ? "[unnamed]" : m_debugName) << " | Age: " << age << "s"
+           << " | Address: " << &m_handle;
 
         logFunc(ss.str());
     }

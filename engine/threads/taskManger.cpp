@@ -61,8 +61,7 @@ std::future<Result> TaskManager::submit(TaskGroup* pGroup)
             co_return result;
         };
 
-        pendingTasks.emplace_back(
-            taskWrapper(m_threadPool, std::move(task), pGroup->m_waitLatch, taskDoneLatch));
+        pendingTasks.emplace_back(taskWrapper(m_threadPool, std::move(task), pGroup->m_waitLatch, taskDoneLatch));
     }
 
     for (auto* pendingGroup : pGroup->m_pendingGroups)

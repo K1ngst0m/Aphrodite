@@ -1,5 +1,5 @@
-#include <catch2/catch_all.hpp>
 #include "threads/threadPool.h"
+#include <catch2/catch_all.hpp>
 
 using namespace aph;
 
@@ -7,7 +7,7 @@ TEST_CASE("Basic Functionality")
 {
     ThreadPool<> pool(2);
 
-    std::atomic<bool> executed{false};
+    std::atomic<bool> executed{ false };
     pool.enqueueDetach([&]() { executed = true; });
 
     // Give the task some time to execute
@@ -38,8 +38,8 @@ TEST_CASE("Multiple Tasks")
 {
     ThreadPool<> pool(2);
 
-    std::atomic<int> counter{0};
-    for(int i = 0; i < 100; ++i)
+    std::atomic<int> counter{ 0 };
+    for (int i = 0; i < 100; ++i)
     {
         pool.enqueueDetach([&]() { counter++; });
     }
@@ -54,13 +54,15 @@ TEST_CASE("Task Stealing")
 {
     ThreadPool<> pool(2);
 
-    std::atomic<int> counter{0};
-    auto             outerTaskFuture = pool.enqueue([&]() {
-        for(int i = 0; i < 50; ++i)
+    std::atomic<int> counter{ 0 };
+    auto outerTaskFuture = pool.enqueue(
+        [&]()
         {
-            pool.enqueueDetach([&]() { counter++; });
-        }
-    });
+            for (int i = 0; i < 50; ++i)
+            {
+                pool.enqueueDetach([&]() { counter++; });
+            }
+        });
 
     // Wait for the outer task to finish
     outerTaskFuture.wait();
@@ -81,8 +83,8 @@ TEST_CASE("Single Threaded Execution")
 {
     ThreadPool<> pool(1);
 
-    std::atomic<int> counter{0};
-    for(int i = 0; i < 100; ++i)
+    std::atomic<int> counter{ 0 };
+    for (int i = 0; i < 100; ++i)
     {
         pool.enqueueDetach([&]() { counter++; });
     }
@@ -97,8 +99,8 @@ TEST_CASE("Multi Threaded Execution")
 {
     ThreadPool<> pool(4);
 
-    std::atomic<int> counter{0};
-    for(int i = 0; i < 1000; ++i)
+    std::atomic<int> counter{ 0 };
+    for (int i = 0; i < 1000; ++i)
     {
         pool.enqueueDetach([&]() { counter++; });
     }
@@ -113,13 +115,15 @@ TEST_CASE("Dynamic Task Addition")
 {
     ThreadPool<> pool(4);
 
-    std::atomic<int> counter{0};
-    pool.enqueueDetach([&]() {
-        for(int i = 0; i < 100; ++i)
+    std::atomic<int> counter{ 0 };
+    pool.enqueueDetach(
+        [&]()
         {
-            pool.enqueueDetach([&]() { counter++; });
-        }
-    });
+            for (int i = 0; i < 100; ++i)
+            {
+                pool.enqueueDetach([&]() { counter++; });
+            }
+        });
 
     // Give tasks some time to execute
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -129,10 +133,10 @@ TEST_CASE("Dynamic Task Addition")
 
 TEST_CASE("Task Execution Order")
 {
-    ThreadPool<> pool(1);  // Single thread to maintain order
+    ThreadPool<> pool(1); // Single thread to maintain order
 
     std::vector<int> order;
-    for(int i = 0; i < 10; ++i)
+    for (int i = 0; i < 10; ++i)
     {
         pool.enqueueDetach([&order, i]() { order.push_back(i); });
     }
@@ -141,9 +145,9 @@ TEST_CASE("Task Execution Order")
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     bool is_ordered = true;
-    for(int i = 0; i < 10; ++i)
+    for (int i = 0; i < 10; ++i)
     {
-        if(order[i] != i)
+        if (order[i] != i)
             is_ordered = false;
     }
 
@@ -154,8 +158,8 @@ TEST_CASE("Stress Test")
 {
     ThreadPool<> pool(8);
 
-    std::atomic<int> counter{0};
-    for(int i = 0; i < 10000; ++i)
+    std::atomic<int> counter{ 0 };
+    for (int i = 0; i < 10000; ++i)
     {
         pool.enqueueDetach([&]() { counter++; });
     }

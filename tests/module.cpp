@@ -1,5 +1,5 @@
-#include <catch2/catch_test_macros.hpp>
 #include "module/module.h"
+#include <catch2/catch_test_macros.hpp>
 
 using namespace aph;
 
@@ -10,21 +10,21 @@ TEST_CASE("Module Constructors and Destructor", "[Module]")
     SECTION("Default Constructor")
     {
         Module mod;
-        REQUIRE(!mod);  // Module should be in a falsey state
+        REQUIRE(!mod); // Module should be in a falsey state
     }
 
     SECTION("Parameterized Constructor")
     {
         Module mod(test_module);
-        REQUIRE(mod);  // Module should be in a truthy state
+        REQUIRE(mod); // Module should be in a truthy state
     }
 
     SECTION("Move Constructor")
     {
         Module mod1(test_module);
         Module mod2(std::move(mod1));
-        REQUIRE(mod2);   // mod2 should be in a truthy state
-        REQUIRE(!mod1);  // mod1 should be in a falsey state
+        REQUIRE(mod2); // mod2 should be in a truthy state
+        REQUIRE(!mod1); // mod1 should be in a falsey state
     }
 
     SECTION("Move Assignment Operator")
@@ -32,8 +32,8 @@ TEST_CASE("Module Constructors and Destructor", "[Module]")
         Module mod1(test_module);
         Module mod2;
         mod2 = std::move(mod1);
-        REQUIRE(mod2);   // mod2 should be in a truthy state
-        REQUIRE(!mod1);  // mod1 should be in a falsey state
+        REQUIRE(mod2); // mod2 should be in a truthy state
+        REQUIRE(!mod1); // mod1 should be in a falsey state
     }
 }
 

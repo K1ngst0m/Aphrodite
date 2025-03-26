@@ -151,7 +151,6 @@ private:
     void destroyImpl(DescriptorSetLayout* pSetLayout);
     void destroyImpl(CommandPool* pPool);
 
-
 private:
     Result initCapture();
     Module m_renderdocModule{};

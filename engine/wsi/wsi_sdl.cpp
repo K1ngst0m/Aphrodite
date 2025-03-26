@@ -149,7 +149,7 @@ bool WindowSystem::update()
             }
             break;
             default:
-            break;
+                break;
             }
 
             if (windowEvent.key.repeat)

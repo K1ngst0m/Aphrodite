@@ -9,7 +9,7 @@ TEST_CASE("Basic Task Creation and Execution")
     TaskManager taskManager;
 
     auto taskGroup = taskManager.createTaskGroup("BasicGroup");
-    bool executed  = false;
+    bool executed = false;
 
     taskGroup->addTask([&executed]() { executed = true; }, "SimpleTask");
     taskGroup->flush();
@@ -23,7 +23,7 @@ TEST_CASE("Task Dependencies")
 {
     TaskManager taskManager;
 
-    auto mainTaskGroup      = taskManager.createTaskGroup("MainGroup");
+    auto mainTaskGroup = taskManager.createTaskGroup("MainGroup");
     auto dependentTaskGroup = taskManager.createTaskGroup("DependentGroup");
 
     int value = 0;
@@ -48,9 +48,9 @@ TEST_CASE("Multiple Tasks Execution")
     TaskManager taskManager;
 
     auto taskGroup = taskManager.createTaskGroup("MultiGroup");
-    int  count     = 0;
+    int count = 0;
 
-    for(int i = 0; i < 5; i++)
+    for (int i = 0; i < 5; i++)
     {
         taskGroup->addTask([&count]() { count++; }, "CountTask" + std::to_string(i));
     }

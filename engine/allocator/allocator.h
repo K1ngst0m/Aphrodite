@@ -108,8 +108,7 @@ inline void aph_free(void* ptr, const std::source_location& location = std::sour
 template <typename ObjectType, typename... Args>
 ObjectType* aph_new(const std::source_location& location = std::source_location::current(), Args&&... args)
 {
-    MM_LOG_DEBUG("new: file={} line={} func={}", location.file_name(), location.line(),
-                 location.function_name());
+    MM_LOG_DEBUG("new: file={} line={} func={}", location.file_name(), location.line(), location.function_name());
 
     return new_internal<ObjectType>(location.file_name(), static_cast<int>(location.line()), location.function_name(),
                                     std::forward<Args>(args)...);

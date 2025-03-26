@@ -1,8 +1,8 @@
 #include <catch2/catch_test_macros.hpp>
 
-#include <thread>
-#include <set>
 #include "allocator/objectPool.h"
+#include <set>
+#include <thread>
 
 // - Test allocation and deallocation for single objects.
 // - Test allocation and deallocation for multiple objects.
@@ -16,8 +16,14 @@ struct TestObject
 {
     int value;
 
-    TestObject() : value(0) {}
-    explicit TestObject(int v) : value(v) {}
+    TestObject()
+        : value(0)
+    {
+    }
+    explicit TestObject(int v)
+        : value(v)
+    {
+    }
 };
 
 TEST_CASE("ObjectPool functionality", "[ObjectPool]")
@@ -36,7 +42,7 @@ TEST_CASE("ObjectPool functionality", "[ObjectPool]")
     SECTION("Multiple object allocation and deallocation")
     {
         std::vector<TestObject*> objects;
-        for(int i = 0; i < 100; ++i)
+        for (int i = 0; i < 100; ++i)
         {
             TestObject* obj = pool.allocate(i);
             REQUIRE(obj != nullptr);
@@ -44,7 +50,7 @@ TEST_CASE("ObjectPool functionality", "[ObjectPool]")
             objects.push_back(obj);
         }
 
-        for(auto obj : objects)
+        for (auto obj : objects)
         {
             pool.free(obj);
         }
@@ -80,7 +86,7 @@ TEST_CASE("ThreadSafeObjectPool functionality", "[ThreadSafeObjectPool]")
     SECTION("Multiple object allocation and deallocation")
     {
         std::vector<TestObject*> objects;
-        for(int i = 0; i < 100; ++i)
+        for (int i = 0; i < 100; ++i)
         {
             TestObject* obj = pool.allocate(i);
             REQUIRE(obj != nullptr);
@@ -88,7 +94,7 @@ TEST_CASE("ThreadSafeObjectPool functionality", "[ThreadSafeObjectPool]")
             objects.push_back(obj);
         }
 
-        for(auto obj : objects)
+        for (auto obj : objects)
         {
             pool.free(obj);
         }
@@ -109,25 +115,27 @@ TEST_CASE("ThreadSafeObjectPool functionality", "[ThreadSafeObjectPool]")
 
     SECTION("Multithreaded allocation and deallocation")
     {
-        std::atomic<int>         counter(0);
+        std::atomic<int> counter(0);
         std::vector<std::thread> threads;
 
         threads.reserve(10);
-        for(int i = 0; i < 10; ++i)
+        for (int i = 0; i < 10; ++i)
         {
-            threads.emplace_back([&pool, &counter]() {
-                for(int j = 0; j < 100; ++j)
+            threads.emplace_back(
+                [&pool, &counter]()
                 {
-                    TestObject* obj = pool.allocate(j);
-                    REQUIRE(obj != nullptr);
-                    REQUIRE(obj->value == j);
-                    pool.free(obj);
-                    counter++;
-                }
-            });
+                    for (int j = 0; j < 100; ++j)
+                    {
+                        TestObject* obj = pool.allocate(j);
+                        REQUIRE(obj != nullptr);
+                        REQUIRE(obj->value == j);
+                        pool.free(obj);
+                        counter++;
+                    }
+                });
         }
 
-        for(auto& t : threads)
+        for (auto& t : threads)
         {
             t.join();
         }

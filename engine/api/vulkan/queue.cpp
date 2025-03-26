@@ -24,7 +24,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
     for (const auto& submitInfo : submitInfos)
     {
         auto& vkCmds = vkCmds2D.emplace_back();
-        auto&vkWaitStages = vkWaitStages2D.emplace_back();
+        auto& vkWaitStages = vkWaitStages2D.emplace_back();
         auto& vkWaitSemaphores = vkWaitSemaphores2D.emplace_back();
         auto& vkSignalSemaphores = vkSignalSemaphores2D.emplace_back();
 

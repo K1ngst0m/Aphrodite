@@ -78,6 +78,7 @@ private:
     vk::Queue* m_pQueue = {};
 
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
+
 private:
     std::mutex m_updateLock;
     std::mutex m_unloadQueueLock;
@@ -116,7 +117,7 @@ struct LoadRequest
             CM_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
             load();
             std::promise<Result> promise;
-            promise.set_value(Result{Result::Success});
+            promise.set_value(Result{ Result::Success });
             return promise.get_future();
         }
         return m_pTaskGroup->submitAsync();
@@ -125,8 +126,11 @@ struct LoadRequest
 private:
     friend class ResourceLoader;
     LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async)
-        :m_pLoader(pLoader), m_pTaskGroup(pGroup), m_async(async)
-    {}
+        : m_pLoader(pLoader)
+        , m_pTaskGroup(pGroup)
+        , m_async(async)
+    {
+    }
     ResourceLoader* m_pLoader = {};
     TaskGroup* m_pTaskGroup = {};
     bool m_async = true;

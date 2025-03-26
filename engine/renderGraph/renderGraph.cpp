@@ -484,7 +484,8 @@ void RenderGraph::execute(vk::Fence* pFence)
 
         if (m_buildData.pSwapchain)
         {
-            auto outImage = m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
+            auto outImage =
+                m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
             APH_VR(m_buildData.pSwapchain->presentImage({}, outImage));
         }
     }
