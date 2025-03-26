@@ -327,10 +327,7 @@ void ResourceLoader::unLoadImpl(Geometry* pGeometry)
 }
 LoadRequest ResourceLoader::getLoadRequest()
 {
-    LoadRequest request{};
-    request.m_pTaskGroup = m_taskManager.createTaskGroup("Load Request");
-    request.m_async = m_createInfo.async;
-    request.m_pLoader = this;
+    LoadRequest request{ this, m_taskManager.createTaskGroup("Load Request"), m_createInfo.async };
     return request;
 }
 } // namespace aph

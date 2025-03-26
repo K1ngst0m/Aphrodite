@@ -22,12 +22,6 @@ struct ResourceLoaderCreateInfo
 struct LoadRequest;
 class ResourceLoader
 {
-    enum
-    {
-        LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536,
-        LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20,
-    };
-
 public:
     ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
     ~ResourceLoader();
@@ -90,6 +84,10 @@ private:
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
     ShaderLoader m_shaderLoader{ m_pDevice };
+
+private:
+    static constexpr uint32_t LIMIT_BUFFER_CMD_UPDATE_SIZE = 65536U;
+    static constexpr uint32_t LIMIT_BUFFER_UPLOAD_SIZE = 8ull << 20;
 };
 
 struct LoadRequest
@@ -126,7 +124,9 @@ struct LoadRequest
 
 private:
     friend class ResourceLoader;
-    LoadRequest() = default;
+    LoadRequest(ResourceLoader* pLoader, TaskGroup* pGroup, bool async)
+        :m_pLoader(pLoader), m_pTaskGroup(pGroup), m_async(async)
+    {}
     ResourceLoader* m_pLoader = {};
     TaskGroup* m_pTaskGroup = {};
     bool m_async = true;
