@@ -19,16 +19,22 @@ struct SwapChainSettings
     ::vk::PresentModeKHR presentMode;
 };
 
+enum class PresentMode
+{
+    eImmediate,
+    eVsync,
+    eAdaptiveVsync,
+};
+
 struct SwapChainCreateInfo
 {
     Instance* pInstance = {};
     WindowSystem* pWindowSystem = {};
     Queue* pQueue = {};
 
-    Format imageFormat;
+    Format imageFormat = Format::Undefined;
     uint32_t imageCount;
-    bool enableVsync;
-    bool useFlipSwap;
+    PresentMode presentMode = PresentMode::eVsync;
 };
 
 class SwapChain : public ResourceHandle<::vk::SwapchainKHR, SwapChainCreateInfo>
@@ -60,6 +66,9 @@ public:
     {
         return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
     }
+
+private:
+    SwapChainSettings querySwapChainSupport();
 
 private:
     Instance* m_pInstance{};

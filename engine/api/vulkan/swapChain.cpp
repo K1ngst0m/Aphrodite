@@ -4,49 +4,6 @@
 
 namespace
 {
-aph::vk::SwapChainSettings querySwapChainSupport(::vk::SurfaceKHR surface, ::vk::PhysicalDevice gpu,
-                                                 aph::WindowSystem* wsi)
-{
-    aph::vk::SwapChainSettings details;
-
-    vk::PhysicalDeviceSurfaceInfo2KHR surfaceInfo{};
-    surfaceInfo.setSurface(surface);
-
-    // surface cap
-    {
-        auto [_, capabilities] = gpu.getSurfaceCapabilities2KHR(surfaceInfo);
-        details.capabilities = std::move(capabilities);
-    }
-
-    // surface format
-    {
-        auto [_, formats] = gpu.getSurfaceFormats2KHR(surfaceInfo);
-        details.surfaceFormat = formats[0];
-        for (const auto& availableFormat : formats)
-        {
-            if (availableFormat.surfaceFormat.format == ::vk::Format::eB8G8R8A8Unorm)
-            {
-                details.surfaceFormat = availableFormat;
-                break;
-            }
-        }
-    }
-
-    // surface present mode
-    {
-        auto [_, presentModes] = gpu.getSurfacePresentModesKHR(surface);
-        details.presentMode = presentModes[0];
-        for (const auto& availablePresentMode : presentModes)
-        {
-            if (availablePresentMode == ::vk::PresentModeKHR::eMailbox)
-            {
-                details.presentMode = availablePresentMode;
-            }
-        }
-    }
-
-    return details;
-}
 
 } // namespace
 
@@ -107,12 +64,14 @@ Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
 
     ::vk::Result vkResult = {};
     ::vk::PresentInfoKHR presentInfo{};
-    presentInfo.setWaitSemaphores(vkSemaphores).setSwapchains({ getHandle() }).setImageIndices({ m_imageIdx }).setResults(vkResult);
+    presentInfo.setWaitSemaphores(vkSemaphores)
+        .setSwapchains({ getHandle() })
+        .setImageIndices({ m_imageIdx })
+        .setResults(vkResult);
     auto result = m_pQueue->present(presentInfo);
     if (vkResult == ::vk::Result::eSuboptimalKHR)
     {
-        VK_LOG_INFO(
-            "vkPresentKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
+        VK_LOG_INFO("vkPresentKHR returned VK_SUBOPTIMAL_KHR. If window was just resized, ignore this message.");
         reCreate();
         return Result::Success;
     }
@@ -151,7 +110,7 @@ void SwapChain::reCreate()
     }
 
     m_surface = m_createInfo.pWindowSystem->getSurface(m_createInfo.pInstance);
-    swapChainSettings = querySwapChainSupport(m_surface, m_pDevice->getPhysicalDevice()->getHandle(), m_pWindowSystem);
+    swapChainSettings = querySwapChainSupport();
 
     auto& caps = swapChainSettings.capabilities.surfaceCapabilities;
     if ((caps.maxImageCount > 0) && (m_createInfo.imageCount > caps.maxImageCount))
@@ -219,5 +178,69 @@ void SwapChain::reCreate()
         APH_VR(m_pDevice->setDebugObjectName(pImage, "swapchain Image"));
         m_images.push_back(pImage);
     }
+}
+
+SwapChainSettings SwapChain::querySwapChainSupport()
+{
+    auto& gpu = m_pDevice->getPhysicalDevice()->getHandle();
+    aph::vk::SwapChainSettings details;
+
+    ::vk::PhysicalDeviceSurfaceInfo2KHR surfaceInfo{};
+    surfaceInfo.setSurface(m_surface);
+
+    // surface cap
+    {
+        auto [_, capabilities] = gpu.getSurfaceCapabilities2KHR(surfaceInfo);
+        details.capabilities = std::move(capabilities);
+    }
+
+    // surface format
+    {
+        auto [_, formats] = gpu.getSurfaceFormats2KHR(surfaceInfo);
+        details.surfaceFormat = formats[0];
+        auto preferredFormat = m_createInfo.imageFormat == Format::Undefined ?
+                                   ::vk::Format::eB8G8R8A8Unorm :
+                                   vk::utils::VkCast(m_createInfo.imageFormat);
+        for (const auto& availableFormat : formats)
+        {
+            if (availableFormat.surfaceFormat.format == preferredFormat)
+            {
+                details.surfaceFormat = availableFormat;
+                break;
+            }
+        }
+    }
+
+    // surface present mode
+    {
+        auto [_, presentModes] = gpu.getSurfacePresentModesKHR(m_surface);
+        details.presentMode = presentModes[0];
+        auto preferredMode = presentModes[0];
+        switch (m_createInfo.presentMode)
+        {
+        case PresentMode::eImmediate:
+            preferredMode = ::vk::PresentModeKHR::eImmediate;
+        case PresentMode::eVsync:
+            if (m_createInfo.imageCount <= 2)
+                preferredMode = ::vk::PresentModeKHR::eFifo;
+            else
+                preferredMode = ::vk::PresentModeKHR::eMailbox;
+
+        case PresentMode::eAdaptiveVsync:
+            preferredMode = ::vk::PresentModeKHR::eFifoRelaxed;
+
+        default:
+            preferredMode = ::vk::PresentModeKHR::eFifo;
+        }
+        for (const auto& availablePresentMode : presentModes)
+        {
+            if (availablePresentMode == preferredMode)
+            {
+                details.presentMode = availablePresentMode;
+            }
+        }
+    }
+
+    return details;
 }
 } // namespace aph::vk
