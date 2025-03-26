@@ -53,6 +53,7 @@ void TaskManager::submit(TaskGroup* pGroup)
         auto taskWrapper = [](coro::thread_pool& tp, coro::task<Result> task, const coro::latch& waitLatch,
                               std::shared_ptr<coro::latch> signalLatch) -> TaskType
         {
+            co_await tp.schedule();
             co_await waitLatch;
             auto result = co_await tp.schedule(std::move(task));
             signalLatch->count_down();
@@ -65,14 +66,16 @@ void TaskManager::submit(TaskGroup* pGroup)
 
     for (auto* pendingGroup : pGroup->m_pendingGroups)
     {
-        m_pendingTasks[pGroup].emplace_back(
-            [](coro::thread_pool& tp, TaskGroup* pPendingGroup, std::shared_ptr<coro::latch> waitLatch) -> TaskType
-            {
-                co_await *waitLatch;
-                co_await tp.schedule();
-                pPendingGroup->m_waitLatch.count_down();
-                co_return Result::Success;
-            }(m_threadPool, pendingGroup, taskDoneLatch));
+        auto signalTask = [](coro::thread_pool& tp, TaskGroup* pPendingGroup,
+                             std::shared_ptr<coro::latch> waitLatch) -> TaskType
+        {
+            co_await tp.schedule();
+            co_await *waitLatch;
+            pPendingGroup->m_waitLatch.count_down();
+            co_return Result::Success;
+        };
+
+        m_pendingTasks[pGroup].emplace_back(signalTask(m_threadPool, pendingGroup, taskDoneLatch));
     }
 
     pGroup->m_tasks.clear();
@@ -100,6 +103,7 @@ void TaskManager::setDependencies(TaskGroup* pProducer, TaskGroup* pConsumer)
     // TODO check if UB
     pConsumer->m_waitLatch.count_down(-1);
 }
+
 void TaskGroup::flush()
 {
     if (!m_tasks.empty())
@@ -107,6 +111,7 @@ void TaskGroup::flush()
         submit();
     }
 }
+
 TaskManager::~TaskManager()
 {
     for (const auto& [group, _] : m_pendingTasks)

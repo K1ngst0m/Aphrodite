@@ -367,7 +367,7 @@ void hello_aphrodite::loop()
 {
     while (m_pWindowSystem->update())
     {
-        APH_PROFILER_SCOPE_NAME("application loop");
+        APH_PROFILER_FRAME("application loop");
         m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
         m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
         m_renderer->update();

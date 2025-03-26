@@ -35,7 +35,7 @@ class TaskManager;
 class TaskGroup
 {
 public:
-    void addTask(coro::task<Result> task);
+    void addTask(TaskType task);
     void submit();
     void flush();
     ResultGroup wait();
@@ -72,7 +72,7 @@ public:
         return pGroup;
     }
 
-    void addTask(TaskGroup* pGroup, coro::task<Result> task);
+    void addTask(TaskGroup* pGroup, TaskType task);
     void submit(TaskGroup* pGroup);
     ResultGroup wait(TaskGroup* pGroup);
     void setDependencies(TaskGroup* pProducer, TaskGroup* pConsumer);
