@@ -43,9 +43,7 @@ public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
-    Result acquireNextImage(Semaphore* pSemaphore, Fence* pFence = {});
-
-    Result presentImage(const std::vector<Semaphore*>& waitSemaphores);
+    Result presentImage(const std::vector<Semaphore*>& waitSemaphores, Image* pImage = {});
 
     void reCreate();
 
@@ -58,17 +56,18 @@ public:
     {
         return m_extent.height;
     }
-    Image* getImage() const
-    {
-        return m_images[m_imageIdx];
-    }
     Format getFormat() const
     {
         return utils::getFormatFromVk(static_cast<VkFormat>(swapChainSettings.surfaceFormat.surfaceFormat.format));
     }
+    Image* getImage()
+    {
+        return m_imageResources[m_imageIdx].pImage;
+    }
 
 private:
     SwapChainSettings querySwapChainSupport();
+    Result acquireNextImage(Semaphore* pSemaphore, Fence* pFence = {});
 
 private:
     Instance* m_pInstance{};
@@ -76,7 +75,16 @@ private:
     WindowSystem* m_pWindowSystem{};
     Queue* m_pQueue{};
     ThreadSafeObjectPool<Image> m_imagePools;
-    SmallVector<Image*> m_images{};
+
+    Fence* m_pAcquireImageFence = {};
+
+    struct ImageResource
+    {
+        Image* pImage = {};
+        Semaphore* pPresentSemaphore = {};
+    };
+
+    SmallVector<ImageResource> m_imageResources;
 
     SwapChainSettings swapChainSettings{};
 

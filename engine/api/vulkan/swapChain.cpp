@@ -29,9 +29,9 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice)
 
 Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
 {
-    APH_ASSERT(pSemaphore);
     auto result = m_pDevice->getHandle().acquireNextImageKHR(
-        getHandle(), UINT64_MAX, pSemaphore->getHandle(), pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
+        getHandle(), UINT64_MAX, pSemaphore ? pSemaphore->getHandle() : VK_NULL_HANDLE,
+        pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
 
     if (result == ::vk::Result::eErrorOutOfDateKHR)
     {
@@ -53,13 +53,70 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     return utils::getResult(result);
 }
 
-Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
+Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores, Image* pImage)
 {
     std::vector<::vk::Semaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
     for (auto sem : waitSemaphores)
     {
         vkSemaphores.push_back(sem->getHandle());
+    }
+
+    if (pImage)
+    {
+        APH_VR(acquireNextImage({}, m_pAcquireImageFence));
+        m_pAcquireImageFence->wait();
+        m_pAcquireImageFence->reset();
+
+        const auto& imageRes = m_imageResources[m_imageIdx];
+        vkSemaphores.push_back(imageRes.pPresentSemaphore->getHandle());
+
+        m_pDevice->executeCommand(m_pDevice->getQueue(aph::QueueType::Transfer),
+                                  [this, pImage](auto* pCopyCmd)
+                                  {
+                                      auto pSwapchainImage = getImage();
+                                      auto pOutImage = pImage;
+
+                                      pCopyCmd->insertBarrier({
+                                          {
+                                              .pImage = pOutImage,
+                                              .currentState = ResourceState::RenderTarget,
+                                              .newState = ResourceState::CopySource,
+                                          },
+                                          {
+                                              .pImage = pSwapchainImage,
+                                              .currentState = ResourceState::Undefined,
+                                              .newState = ResourceState::CopyDest,
+                                          },
+                                      });
+
+                                      if (pOutImage->getWidth() == pSwapchainImage->getWidth() &&
+                                          pOutImage->getHeight() == pSwapchainImage->getHeight() &&
+                                          pOutImage->getDepth() == pSwapchainImage->getDepth())
+                                      {
+                                          VK_LOG_DEBUG("copy image to swapchain.");
+                                          pCopyCmd->copy(pOutImage, pSwapchainImage);
+                                      }
+                                      else
+                                      {
+                                          VK_LOG_DEBUG("blit image to swapchain.");
+                                          pCopyCmd->blit(pOutImage, pSwapchainImage);
+                                      }
+
+                                      pCopyCmd->insertBarrier({
+                                          {
+                                              .pImage = pOutImage,
+                                              .currentState = ResourceState::Undefined,
+                                              .newState = ResourceState::RenderTarget,
+                                          },
+                                          {
+                                              .pImage = pSwapchainImage,
+                                              .currentState = ResourceState::CopyDest,
+                                              .newState = ResourceState::Present,
+                                          },
+                                      });
+                                  },
+                                  {}, { imageRes.pPresentSemaphore });
     }
 
     ::vk::Result vkResult = {};
@@ -80,11 +137,13 @@ Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores)
 
 SwapChain::~SwapChain()
 {
-    for (auto* image : m_images)
+    for (const auto& imageResource : m_imageResources)
     {
-        m_imagePools.free(image);
+        m_imagePools.free(imageResource.pImage);
+        APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
     }
     m_imagePools.clear();
+    APH_VR(m_pDevice->releaseFence(m_pAcquireImageFence));
 
     m_pInstance->getHandle().destroySurfaceKHR(m_surface, vk_allocator());
 };
@@ -92,11 +151,12 @@ SwapChain::~SwapChain()
 void SwapChain::reCreate()
 {
     APH_VR(m_pDevice->waitIdle());
-    for (auto* image : m_images)
+    for (const auto& imageResource : m_imageResources)
     {
-        m_imagePools.free(image);
+        m_imagePools.free(imageResource.pImage);
+        APH_VR(m_pDevice->releaseSemaphore(imageResource.pPresentSemaphore));
     }
-    m_images.clear();
+    m_imageResources.clear();
     m_imagePools.clear();
 
     if (getHandle() != VK_NULL_HANDLE)
@@ -174,9 +234,19 @@ void SwapChain::reCreate()
             .format = getFormat(),
         };
 
-        auto pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
-        APH_VR(m_pDevice->setDebugObjectName(pImage, "swapchain Image"));
-        m_images.push_back(pImage);
+        ImageResource imageRes{};
+
+        imageRes.pImage = m_imagePools.allocate(m_pDevice, imageCreateInfo, handle);
+        APH_VR(m_pDevice->setDebugObjectName(imageRes.pImage, "swapchain Image"));
+
+        imageRes.pPresentSemaphore = m_pDevice->acquireSemaphore();
+
+        m_imageResources.push_back(imageRes);
+    }
+
+    if (!m_pAcquireImageFence)
+    {
+        m_pAcquireImageFence = m_pDevice->acquireFence(false);
     }
 }
 

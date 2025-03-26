@@ -484,58 +484,8 @@ void RenderGraph::execute(vk::Fence* pFence)
 
         if (m_buildData.pSwapchain)
         {
-            APH_VR(m_buildData.pSwapchain->acquireNextImage(m_buildData.renderSem));
-
-            m_pDevice->executeCommand(
-                m_pDevice->getQueue(aph::QueueType::Transfer),
-                [this](auto* pCopyCmd)
-                {
-                    auto pSwapchainImage = m_buildData.pSwapchain->getImage();
-                    auto pOutImage =
-                        m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
-
-                    pCopyCmd->insertBarrier({
-                        {
-                            .pImage = pOutImage,
-                            .currentState = ResourceState::RenderTarget,
-                            .newState = ResourceState::CopySource,
-                        },
-                        {
-                            .pImage = pSwapchainImage,
-                            .currentState = ResourceState::Undefined,
-                            .newState = ResourceState::CopyDest,
-                        },
-                    });
-
-                    if (pOutImage->getWidth() == pSwapchainImage->getWidth() &&
-                        pOutImage->getHeight() == pSwapchainImage->getHeight() &&
-                        pOutImage->getDepth() == pSwapchainImage->getDepth())
-                    {
-                        VK_LOG_DEBUG("copy image to swapchain.");
-                        pCopyCmd->copy(pOutImage, pSwapchainImage);
-                    }
-                    else
-                    {
-                        VK_LOG_DEBUG("blit image to swapchain.");
-                        pCopyCmd->blit(pOutImage, pSwapchainImage);
-                    }
-
-                    pCopyCmd->insertBarrier({
-                        {
-                            .pImage = pOutImage,
-                            .currentState = ResourceState::Undefined,
-                            .newState = ResourceState::RenderTarget,
-                        },
-                        {
-                            .pImage = pSwapchainImage,
-                            .currentState = ResourceState::CopyDest,
-                            .newState = ResourceState::Present,
-                        },
-                    });
-                },
-                { m_buildData.renderSem }, { m_buildData.presentSem });
-
-            APH_VR(m_buildData.pSwapchain->presentImage({ m_buildData.presentSem }));
+            auto outImage = m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
+            APH_VR(m_buildData.pSwapchain->presentImage({}, outImage));
         }
     }
 }
