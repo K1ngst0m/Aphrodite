@@ -71,12 +71,150 @@ public:
     SlangLoaderImpl()
     {
         APH_PROFILER_SCOPE();
+        // We'll initialize the global session asynchronously
+        m_initialized = false;
+    }
+
+    TaskType initialize()
+    {
+        APH_PROFILER_SCOPE();
+        // Only initialize once
+        if (m_initialized.exchange(true))
+        {
+            co_return Result::Success;
+        }
+
+        // The expensive operation will be done in a separate thread
         slang::createGlobalSession(m_globalSession.writeRef());
+        
+        co_return Result::Success;
+    }
+
+    // Add a method to check if the cache exists without requiring initialization
+    bool checkShaderCache(const CompileRequest& request, std::string& outCachePath)
+    {
+        APH_PROFILER_SCOPE();
+        auto& fs = aph::Filesystem::GetInstance();
+        
+        // Make sure the cache directory exists
+        std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
+        if (!fs.exist(cacheDirPath))
+        {
+            return false;
+        }
+        
+        // Generate hash and check if cache file exists
+        std::string requestHash = request.getHash();
+        outCachePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
+        return fs.exist(outCachePath);
+    }
+
+    // Helper to read shader cache data
+    bool readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
+    {
+        APH_PROFILER_SCOPE();
+        auto& fs = aph::Filesystem::GetInstance();
+        
+        auto cacheBytes = fs.readFileToBytes(cacheFilePath);
+        if (cacheBytes.size() == 0)
+        {
+            CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
+            return false;
+        }
+        
+        // Parse cache data
+        size_t offset = 0;
+        
+        // Read number of shader stages
+        if (offset + sizeof(uint32_t) > cacheBytes.size())
+        {
+            CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
+            return false;
+        }
+        
+        uint32_t numStages;
+        std::memcpy(&numStages, cacheBytes.data() + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+        
+        bool cacheValid = true;
+        // Read each shader stage data
+        for (uint32_t i = 0; i < numStages && cacheValid; ++i)
+        {
+            // Read stage value and entry point length
+            if (offset + sizeof(uint32_t) * 2 > cacheBytes.size())
+            {
+                CM_LOG_WARN("Cache file corrupted: too small for stage header, file: %s", cacheFilePath.c_str());
+                cacheValid = false;
+                break;
+            }
+            
+            uint32_t stageVal;
+            std::memcpy(&stageVal, cacheBytes.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+            
+            uint32_t entryPointLength;
+            std::memcpy(&entryPointLength, cacheBytes.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+            
+            aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
+            
+            // Read entry point
+            if (offset + entryPointLength > cacheBytes.size())
+            {
+                CM_LOG_WARN("Cache file corrupted: too small for entry point, file: %s", cacheFilePath.c_str());
+                cacheValid = false;
+                break;
+            }
+            std::string entryPoint(entryPointLength, '\0');
+            std::memcpy(entryPoint.data(), cacheBytes.data() + offset, entryPointLength);
+            offset += entryPointLength;
+            
+            // Read spv code length
+            if (offset + sizeof(uint32_t) > cacheBytes.size())
+            {
+                CM_LOG_WARN("Cache file corrupted: too small for code size, file: %s", cacheFilePath.c_str());
+                cacheValid = false;
+                break;
+            }
+            uint32_t codeSize;
+            std::memcpy(&codeSize, cacheBytes.data() + offset, sizeof(uint32_t));
+            offset += sizeof(uint32_t);
+            
+            // Read spv code
+            if (offset + codeSize > cacheBytes.size())
+            {
+                CM_LOG_WARN("Cache file corrupted: too small for SPIR-V code, file: %s", cacheFilePath.c_str());
+                cacheValid = false;
+                break;
+            }
+            std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
+            std::memcpy(spvCode.data(), cacheBytes.data() + offset, codeSize);
+            offset += codeSize;
+            
+            // Store in spvCodeMap
+            spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
+        }
+        
+        if (!cacheValid)
+        {
+            // Clear any partial data
+            spvCodeMap.clear();
+            return false;
+        }
+        
+        return true;
     }
 
     Result loadProgram(const CompileRequest& request, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
     {
         APH_PROFILER_SCOPE();
+        // Make sure initialization is complete before proceeding
+        if (!m_initialized.load())
+        {
+            CM_LOG_ERR("SlangLoaderImpl not initialized before use");
+            return Result::RuntimeError;
+        }
+
         static std::mutex fileWriterMtx;
         std::lock_guard<std::mutex> lock{ fileWriterMtx };
         const auto& filename = request.filename;
@@ -98,104 +236,9 @@ public:
         std::string requestHash = request.getHash();
         std::string cacheFilePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
 
-        // Check if the cache file exists
-        if (fs.exist(cacheFilePath))
-        {
-            auto cacheBytes = fs.readFileToBytes(cacheFilePath);
-            if (cacheBytes.size() > 0)
-            {
-                // Parse cache data
-                size_t offset = 0;
-                
-                // Read number of shader stages
-                if (offset + sizeof(uint32_t) <= cacheBytes.size())
-                {
-                    uint32_t numStages;
-                    std::memcpy(&numStages, cacheBytes.data() + offset, sizeof(uint32_t));
-                    offset += sizeof(uint32_t);
-                    
-                    bool cacheValid = true;
-                    // Read each shader stage data
-                    for (uint32_t i = 0; i < numStages && cacheValid; ++i)
-                    {
-                        // Read stage value and entry point length
-                        if (offset + sizeof(uint32_t) * 2 > cacheBytes.size())
-                        {
-                            CM_LOG_WARN("Cache file corrupted: too small for stage header, file: %s", cacheFilePath.c_str());
-                            cacheValid = false;
-                            break;
-                        }
-                        
-                        uint32_t stageVal;
-                        std::memcpy(&stageVal, cacheBytes.data() + offset, sizeof(uint32_t));
-                        offset += sizeof(uint32_t);
-                        
-                        uint32_t entryPointLength;
-                        std::memcpy(&entryPointLength, cacheBytes.data() + offset, sizeof(uint32_t));
-                        offset += sizeof(uint32_t);
-                        
-                        aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
-                        
-                        // Read entry point
-                        if (offset + entryPointLength > cacheBytes.size())
-                        {
-                            CM_LOG_WARN("Cache file corrupted: too small for entry point, file: %s", cacheFilePath.c_str());
-                            cacheValid = false;
-                            break;
-                        }
-                        std::string entryPoint(entryPointLength, '\0');
-                        std::memcpy(entryPoint.data(), cacheBytes.data() + offset, entryPointLength);
-                        offset += entryPointLength;
-                        
-                        // Read spv code length
-                        if (offset + sizeof(uint32_t) > cacheBytes.size())
-                        {
-                            CM_LOG_WARN("Cache file corrupted: too small for code size, file: %s", cacheFilePath.c_str());
-                            cacheValid = false;
-                            break;
-                        }
-                        uint32_t codeSize;
-                        std::memcpy(&codeSize, cacheBytes.data() + offset, sizeof(uint32_t));
-                        offset += sizeof(uint32_t);
-                        
-                        // Read spv code
-                        if (offset + codeSize > cacheBytes.size())
-                        {
-                            CM_LOG_WARN("Cache file corrupted: too small for SPIR-V code, file: %s", cacheFilePath.c_str());
-                            cacheValid = false;
-                            break;
-                        }
-                        std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
-                        std::memcpy(spvCode.data(), cacheBytes.data() + offset, codeSize);
-                        offset += codeSize;
-                        
-                        // Store in spvCodeMap
-                        spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
-                    }
-                    
-                    if (cacheValid)
-                    {
-                        // Cache hit successful
-                        return Result::Success;
-                    }
-                    else
-                    {
-                        // Clear any partial data
-                        spvCodeMap.clear();
-                    }
-                }
-                else
-                {
-                    CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
-                }
-            }
-            else
-            {
-                CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
-            }
-        }
+        // Skip cache checking - ShaderLoader already checked the cache
+        // Proceed directly to compilation
 
-        // Cache miss or failed to read cache, compile the shader
         Slang::ComPtr<slang::ISession> session = {};
         SlangResult result = {};
         {
@@ -414,6 +457,7 @@ public:
 
 private:
     Slang::ComPtr<slang::IGlobalSession> m_globalSession = {};
+    std::atomic<bool> m_initialized = false;
 };
 } // namespace aph
 
@@ -422,6 +466,7 @@ namespace aph
 Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
+    
     CompileRequest compileRequest{};
     if (info.pBindlessResource)
     {
@@ -454,15 +499,54 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 
             if (auto it = m_shaderCaches.find(d); it == m_shaderCaches.end())
             {
+                // Check if we can use the cache directly without initialization
+                std::string cacheFilePath;
+                auto path = Filesystem::GetInstance().resolvePath(d);
+                compileRequest.filename = path.c_str();
+                bool cacheExists = m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
+                
+                if (cacheExists)
+                {
+                    HashMap<ShaderStage, SlangProgram> spvCodeMap;
+                    if (m_pSlangLoaderImpl->readShaderCache(cacheFilePath, spvCodeMap))
+                    {
+                        ShaderCacheData data;
+                        
+                        for (const auto& [stage, slangProgram] : spvCodeMap)
+                        {
+                            for (const auto& [reqStage, reqEntryPoint] : info.stageInfo)
+                            {
+                                if (reqStage == stage && reqEntryPoint == slangProgram.entryPoint)
+                                {
+                                    vk::Shader* shader = loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
+                                    requiredShaderList[stage] = shader;
+                                    data[stage] = shader;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        std::promise<ShaderCacheData> promise;
+                        promise.set_value(std::move(data));
+                        future = promise.get_future().share();
+                        m_shaderCaches[d] = future;
+                        
+                        CM_LOG_DEBUG("loaded shader from cache without initialization: %s", d.c_str());
+                        continue;
+                    }
+                }
+                
+                // Cache doesn't exist or is invalid
                 std::promise<ShaderCacheData> promise;
                 future = promise.get_future().share();
                 m_shaderCaches[d] = future;
                 lock.unlock();
 
                 {
+                    // Create global session only when cache missed
+                    APH_VR(waitForInitialization());
+                    
                     HashMap<ShaderStage, SlangProgram> spvCodeMap;
-                    auto path = Filesystem::GetInstance().resolvePath(d);
-                    compileRequest.filename = path.c_str();
                     APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
                     if (spvCodeMap.empty())
                     {
@@ -517,5 +601,20 @@ ShaderLoader::ShaderLoader(vk::Device* pDevice)
     : m_pDevice(pDevice)
     , m_pSlangLoaderImpl(std::make_unique<SlangLoaderImpl>())
 {
+    // Start the initialization task in the background
+    auto& taskManager = APH_DEFAULT_TASK_MANAGER;
+    auto taskGroup = taskManager.createTaskGroup("SlangInitialization");
+    taskGroup->addTask(m_pSlangLoaderImpl->initialize());
+    m_initFuture = taskGroup->submitAsync();
+}
+
+// Add a wait for initialization method
+Result ShaderLoader::waitForInitialization()
+{
+    if (m_initFuture.valid())
+    {
+        return m_initFuture.get();
+    }
+    return Result::Success;
 }
 } // namespace aph
