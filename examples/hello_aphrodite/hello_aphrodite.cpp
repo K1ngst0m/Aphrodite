@@ -152,6 +152,7 @@ void hello_aphrodite::init()
 
     // setup cube
     {
+        aph::LoadRequest loadRequest = m_pResourceLoader->getLoadRequest();
         // vertex: position, color
         std::vector<VertexData> vertices;
         std::vector<uint32_t> indices;
@@ -168,7 +169,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVertexBuffer);
+            loadRequest.add(bufferLoadInfo, &m_pVertexBuffer);
         }
 
         // index buffer
@@ -182,7 +183,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pIndexBuffer);
+            loadRequest.add(bufferLoadInfo, &m_pIndexBuffer);
         }
 
         // matrix uniform buffer
@@ -207,7 +208,7 @@ void hello_aphrodite::init()
                                                     .domain = aph::MemoryDomain::Host,
                                                 } };
 
-            m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pMatrixBffer);
+            loadRequest.add(bufferLoadInfo, &m_pMatrixBffer);
         }
 
         // image and sampler
@@ -223,10 +224,15 @@ void hello_aphrodite::init()
                                                   .imageType = aph::ImageType::e2D,
                                               } };
 
-            m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
+            loadRequest.add(imageLoadInfo, &m_pImage);
         }
 
-        // pipeline
+        loadRequest.load();
+    }
+
+    // setup pipeline
+    {
+        aph::LoadRequest loadRequest = m_pResourceLoader->getLoadRequest();
         // geometry shading
         {
             aph::ShaderLoadInfo shaderLoadInfo{ .debugName = "vs + fs",
@@ -236,7 +242,7 @@ void hello_aphrodite::init()
                                                     { aph::ShaderStage::FS, "fragMain" },
                                                 } };
 
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Geometry]);
+            loadRequest.add(shaderLoadInfo, &m_program[ShadingType::Geometry]);
         }
 
         // mesh shading
@@ -249,10 +255,8 @@ void hello_aphrodite::init()
                                                     { aph::ShaderStage::FS, "fragMain" },
                                                 } };
 
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Mesh]);
+            loadRequest.add(shaderLoadInfo, &m_program[ShadingType::Mesh]);
         }
-
-        m_pResourceLoader->wait();
 
         // bindless mesh shading
         {
@@ -273,12 +277,14 @@ void hello_aphrodite::init()
                                                     {  aph::ShaderStage::FS,  "fragMain" },
                                                 }, .pBindlessResource = bindless};
 
-            m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
+            loadRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
         }
 
-        m_pResourceLoader->wait();
+        loadRequest.load();
+    }
 
-        // record graph execution
+    // record graph execution
+    {
         for (auto* graph : m_renderer->recordGraph())
         {
             auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);

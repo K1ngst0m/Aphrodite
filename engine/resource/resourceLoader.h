@@ -19,6 +19,7 @@ struct ResourceLoaderCreateInfo
     vk::Device* pDevice = {};
 };
 
+struct LoadRequest;
 class ResourceLoader
 {
     enum
@@ -30,6 +31,8 @@ class ResourceLoader
 public:
     ResourceLoader(const ResourceLoaderCreateInfo& createInfo);
     ~ResourceLoader();
+
+    LoadRequest getLoadRequest();
 
     template <typename T_LoadInfo, ResourceHandleType T_Resource>
     void loadAsync(const T_LoadInfo& loadInfo, T_Resource** ppResource)
@@ -45,7 +48,7 @@ public:
             m_pTaskGroup = m_taskManager.createTaskGroup("Resource Loader");
         }
 
-        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> coro::task<Result>
+        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
         { co_return pLoader->load(std::move(info), ppRes); };
 
         m_pTaskGroup->addTask(loadFunction(this, loadInfo, ppResource));
@@ -55,6 +58,10 @@ public:
     void wait()
     {
         APH_PROFILER_SCOPE();
+        if (!m_createInfo.async)
+        {
+            return;
+        }
         APH_VR(m_pTaskGroup->wait());
     }
 
@@ -116,5 +123,32 @@ private:
     HashMap<void*, std::function<void()>> m_unloadQueue;
 
     ShaderLoader m_shaderLoader{ m_pDevice };
+};
+
+struct LoadRequest
+{
+    template <typename T_LoadInfo, ResourceHandleType T_Resource>
+    LoadRequest& add(T_LoadInfo loadInfo, T_Resource** ppResource)
+    {
+        auto loadFunction = [](ResourceLoader* pLoader, T_LoadInfo info, T_Resource** ppRes) -> TaskType
+        { co_return pLoader->load(std::move(info), ppRes); };
+
+        m_pTaskGroup->addTask(loadFunction(m_pLoader, loadInfo, ppResource));
+        m_pTaskGroup->submit();
+        return *this;
+    }
+
+    void load()
+    {
+        m_pTaskGroup->submit();
+        APH_VR(m_pTaskGroup->wait());
+    }
+
+private:
+    friend class ResourceLoader;
+    LoadRequest() = default;
+    ResourceLoader* m_pLoader = {};
+    TaskGroup* m_pTaskGroup = {};
+    bool m_async = true;
 };
 } // namespace aph

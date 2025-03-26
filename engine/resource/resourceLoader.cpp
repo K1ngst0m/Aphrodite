@@ -325,4 +325,12 @@ void ResourceLoader::unLoadImpl(Geometry* pGeometry)
         m_pDevice->destroy(pBuffer);
     }
 }
+LoadRequest ResourceLoader::getLoadRequest()
+{
+    LoadRequest request{};
+    request.m_pTaskGroup = m_taskManager.createTaskGroup("Load Request");
+    request.m_async = m_createInfo.async;
+    request.m_pLoader = this;
+    return request;
+}
 } // namespace aph
