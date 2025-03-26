@@ -19,19 +19,19 @@ SwapChain::SwapChain(const CreateInfoType& createInfo, Device* pDevice)
     APH_ASSERT(createInfo.pInstance);
     APH_ASSERT(createInfo.pWindowSystem);
     APH_ASSERT(createInfo.pQueue);
-
-    // Image count
-    m_createInfo = createInfo;
-    m_createInfo.imageCount = createInfo.imageCount != 0 ? createInfo.imageCount : 2;
-
     reCreate();
 }
 
 Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
 {
-    auto result = m_pDevice->getHandle().acquireNextImageKHR(
-        getHandle(), UINT64_MAX, pSemaphore ? pSemaphore->getHandle() : VK_NULL_HANDLE,
-        pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
+    APH_PROFILER_SCOPE();
+    ::vk::Result result{};
+    {
+        APH_PROFILER_SCOPE_NAME("vkAcuiqreNextImageKHR");
+        result = m_pDevice->getHandle().acquireNextImageKHR(
+            getHandle(), UINT64_MAX, pSemaphore ? pSemaphore->getHandle() : VK_NULL_HANDLE,
+            pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
+    }
 
     if (result == ::vk::Result::eErrorOutOfDateKHR)
     {
@@ -55,6 +55,7 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
 
 Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores, Image* pImage)
 {
+    APH_PROFILER_SCOPE();
     std::vector<::vk::Semaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
     for (auto sem : waitSemaphores)
@@ -150,6 +151,7 @@ SwapChain::~SwapChain()
 
 void SwapChain::reCreate()
 {
+    APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
     for (const auto& imageResource : m_imageResources)
     {
@@ -307,6 +309,7 @@ SwapChainSettings SwapChain::querySwapChainSupport()
             if (availablePresentMode == preferredMode)
             {
                 details.presentMode = availablePresentMode;
+                break;
             }
         }
     }

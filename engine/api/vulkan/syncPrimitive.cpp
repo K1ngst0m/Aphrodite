@@ -28,6 +28,7 @@ SyncPrimitiveAllocator::~SyncPrimitiveAllocator()
 
 Result SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> lock{ m_fenceLock };
     auto& pFence = *ppFence;
 
@@ -65,6 +66,7 @@ Result SyncPrimitiveAllocator::acquireFence(Fence** ppFence, bool isSignaled)
 
 Result SyncPrimitiveAllocator::releaseFence(Fence* pFence)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> lock{ m_fenceLock };
 
     if (m_allFences.contains(pFence))
@@ -92,6 +94,7 @@ bool SyncPrimitiveAllocator::Exists(Fence* pFence)
 
 Result SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> lock{ m_semaphoreLock };
 
     // See if there are free semaphores available.
@@ -127,6 +130,7 @@ Result SyncPrimitiveAllocator::acquireSemaphore(uint32_t semaphoreCount, Semapho
 
 Result SyncPrimitiveAllocator::ReleaseSemaphores(uint32_t semaphoreCount, Semaphore** ppSemaphores)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> lock{ m_semaphoreLock };
     for (auto i = 0U; i < semaphoreCount; ++i)
     {
@@ -147,6 +151,7 @@ bool SyncPrimitiveAllocator::Exists(Semaphore* semaphore)
 
 bool Fence::wait(uint64_t timeout)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> holder{ m_lock };
     bool result;
 

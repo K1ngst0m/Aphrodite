@@ -11,12 +11,14 @@ CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue)
     , m_pQueue(pQueue)
     , m_state(RecordState::Initial)
 {
+    APH_PROFILER_SCOPE();
 }
 
 CommandBuffer::~CommandBuffer() = default;
 
 Result CommandBuffer::begin(::vk::CommandBufferUsageFlags flags)
 {
+    APH_PROFILER_SCOPE();
     if (m_state == RecordState::Recording)
     {
         return { Result::RuntimeError, "Command buffer is not ready." };
@@ -41,6 +43,7 @@ Result CommandBuffer::begin(::vk::CommandBufferUsageFlags flags)
 
 Result CommandBuffer::end()
 {
+    APH_PROFILER_SCOPE();
     if (m_state != RecordState::Recording)
     {
         return { Result::RuntimeError, "Commands are not recorded yet" };
@@ -53,6 +56,7 @@ Result CommandBuffer::end()
 
 Result CommandBuffer::reset()
 {
+    APH_PROFILER_SCOPE();
     if (m_handle != VK_NULL_HANDLE)
     {
         getHandle().reset(::vk::CommandBufferResetFlagBits::eReleaseResources);
@@ -63,6 +67,7 @@ Result CommandBuffer::reset()
 
 void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::size_t offset)
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(binding < VULKAN_NUM_VERTEX_BUFFERS);
 
     auto& vertexState = m_commandState.graphics.vertex;
@@ -74,6 +79,7 @@ void CommandBuffer::bindVertexBuffers(Buffer* pBuffer, uint32_t binding, std::si
 
 void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexType indexType)
 {
+    APH_PROFILER_SCOPE();
     auto& indexState = m_commandState.graphics.index;
     indexState.buffer = pBuffer->getHandle();
     indexState.offset = offset;
@@ -83,6 +89,7 @@ void CommandBuffer::bindIndexBuffers(Buffer* pBuffer, std::size_t offset, IndexT
 
 void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
 {
+    APH_PROFILER_SCOPE();
     ::vk::BufferCopy copyRegion{};
     copyRegion.setSize(range.size).setSrcOffset(0).setDstOffset(range.offset);
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
@@ -90,6 +97,7 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
 
 void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferImageCopy> regions)
 {
+    APH_PROFILER_SCOPE();
     if (regions.empty())
     {
         ::vk::BufferImageCopy region{};
@@ -109,6 +117,7 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferIm
 void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, const ImageCopyInfo& srcCopyInfo,
                          const ImageCopyInfo& dstCopyInfo)
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(srcImage && dstImage);
     if (extent.depth == 0 || extent.width == 0 || extent.height == 0)
     {
@@ -147,6 +156,7 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
 }
 void CommandBuffer::draw(DrawArguments args)
 {
+    APH_PROFILER_SCOPE();
     flushGraphicsCommand();
     getHandle().draw(args.vertexCount, args.instanceCount, args.firstVertex, args.firstInstance);
 }
@@ -154,6 +164,7 @@ void CommandBuffer::draw(DrawArguments args)
 void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
                          const ImageBlitInfo& dstBlitInfo, ::vk::Filter filter)
 {
+    APH_PROFILER_SCOPE();
     const auto addOffset = [](const ::vk::Offset3D& a, const ::vk::Offset3D& b) -> ::vk::Offset3D
     { return { a.x + b.x, a.y + b.y, a.z + b.z }; };
 
@@ -205,26 +216,31 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
 
 void CommandBuffer::endRendering()
 {
+    APH_PROFILER_SCOPE();
     getHandle().endRendering();
 }
 
 void CommandBuffer::dispatch(DispatchArguments args)
 {
+    APH_PROFILER_SCOPE();
     flushComputeCommand();
     getHandle().dispatch(args.x, args.y, args.z);
 }
 void CommandBuffer::dispatch(Buffer* pBuffer, std::size_t offset)
 {
+    APH_PROFILER_SCOPE();
     flushComputeCommand();
     getHandle().dispatchIndirect(pBuffer->getHandle(), offset);
 }
 void CommandBuffer::draw(Buffer* pBuffer, std::size_t offset, uint32_t drawCount, uint32_t stride)
 {
+    APH_PROFILER_SCOPE();
     flushGraphicsCommand();
     getHandle().drawIndirect(pBuffer->getHandle(), offset, drawCount, stride);
 }
 void CommandBuffer::drawIndexed(DrawIndexArguments args)
 {
+    APH_PROFILER_SCOPE();
     flushGraphicsCommand();
     getHandle().drawIndexed(args.indexCount, args.instanceCount, args.firstIndex, args.vertexOffset,
                             args.firstInstance);
@@ -232,6 +248,7 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
 
 void CommandBuffer::beginRendering(ArrayProxy<Image*> colors, Image* depth)
 {
+    APH_PROFILER_SCOPE();
     RenderingInfo renderingInfo;
     auto& colorAttachments = renderingInfo.colors;
     auto& depthAttachment = renderingInfo.depth;
@@ -246,6 +263,7 @@ void CommandBuffer::beginRendering(ArrayProxy<Image*> colors, Image* depth)
 }
 void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.color = renderingInfo.colors;
     m_commandState.graphics.depth = renderingInfo.depth;
 
@@ -298,6 +316,7 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 
 void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
+    APH_PROFILER_SCOPE();
     auto pProgram = m_commandState.pProgram;
     APH_ASSERT(pProgram);
     APH_ASSERT(pProgram->getPipelineType() == PipelineType::Compute);
@@ -310,6 +329,7 @@ void CommandBuffer::flushComputeCommand(const ArrayProxyNoTemporaries<uint32_t>&
 
 void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
+    APH_PROFILER_SCOPE();
     flushDynamicGraphicsState();
 
     // shader object binding
@@ -421,6 +441,7 @@ void CommandBuffer::flushGraphicsCommand(const ArrayProxyNoTemporaries<uint32_t>
 
 void CommandBuffer::beginDebugLabel(const DebugLabel& label)
 {
+    APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
     const ::vk::DebugUtilsLabelEXT vkLabel = utils::VkCast(label);
     getHandle().beginDebugUtilsLabelEXT(vkLabel);
@@ -428,6 +449,7 @@ void CommandBuffer::beginDebugLabel(const DebugLabel& label)
 }
 void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 {
+    APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
     const ::vk::DebugUtilsLabelEXT vkLabel = utils::VkCast(label);
     getHandle().insertDebugUtilsLabelEXT(vkLabel);
@@ -435,20 +457,24 @@ void CommandBuffer::insertDebugLabel(const DebugLabel& label)
 }
 void CommandBuffer::endDebugLabel()
 {
+    APH_PROFILER_SCOPE();
 #ifdef APH_DEBUG
     getHandle().endDebugUtilsLabelEXT();
 #endif
 }
 void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
 {
+    APH_PROFILER_SCOPE();
     insertBarrier({}, pImageBarriers);
 }
 void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
 {
+    APH_PROFILER_SCOPE();
     insertBarrier(pBufferBarriers, {});
 }
 void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
 {
+    APH_PROFILER_SCOPE();
     SmallVector<::vk::ImageMemoryBarrier> vkImageBarriers;
     SmallVector<::vk::BufferMemoryBarrier> vkBufferBarriers;
 
@@ -567,6 +593,7 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
 }
 void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
 {
+    APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
         .pImage = pImage,
         .currentState = pImage->getResourceState(),
@@ -577,18 +604,22 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
 }
 void CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count)
 {
+    APH_PROFILER_SCOPE();
     getHandle().resetQueryPool(pool, first, count);
 }
 void CommandBuffer::writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex)
 {
+    APH_PROFILER_SCOPE();
     getHandle().writeTimestamp(::vk::PipelineStageFlagBits::eBottomOfPipe, pool, queryIndex);
 }
 void CommandBuffer::update(Buffer* pBuffer, Range range, const void* data)
 {
+    APH_PROFILER_SCOPE();
     getHandle().updateBuffer(pBuffer->getHandle(), range.offset, range.size, data);
 }
 void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding)
 {
+    APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
         .samplers = { samplers.begin(), samplers.end() },
@@ -597,6 +628,7 @@ void CommandBuffer::setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uin
 }
 void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_t binding)
 {
+    APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
         .images = { images.begin(), images.end() },
@@ -605,6 +637,7 @@ void CommandBuffer::setResource(ArrayProxy<Image*> images, uint32_t set, uint32_
 }
 void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint32_t binding)
 {
+    APH_PROFILER_SCOPE();
     DescriptorUpdateInfo newUpdate = {
         .binding = binding,
         .buffers = { buffers.begin(), buffers.end() },
@@ -613,6 +646,7 @@ void CommandBuffer::setResource(ArrayProxy<Buffer*> buffers, uint32_t set, uint3
 }
 void CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding)
 {
+    APH_PROFILER_SCOPE();
     auto& resBindings = m_commandState.resourceBindings;
     if (resBindings.bindings[set][binding] != updateInfo)
     {
@@ -624,6 +658,7 @@ void CommandBuffer::setResource(DescriptorUpdateInfo updateInfo, uint32_t set, u
 }
 void CommandBuffer::setProgram(ShaderProgram* pProgram)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.pProgram = pProgram;
 
     if (pProgram->getPipelineType() == PipelineType::Geometry)
@@ -651,17 +686,20 @@ void CommandBuffer::setProgram(ShaderProgram* pProgram)
 }
 void CommandBuffer::setVertexInput(VertexInput inputInfo)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.vertexInput = std::move(inputInfo);
     setDirty(DirtyFlagBits::vertexInput);
 }
 void CommandBuffer::setDepthState(DepthState state)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.depthState = std::move(state);
     setDirty(DirtyFlagBits::dynamicState);
 }
 
 void CommandBuffer::flushDynamicGraphicsState()
 {
+    APH_PROFILER_SCOPE();
     getHandle().setCullModeEXT(utils::VkCast(m_commandState.graphics.cullMode));
     // Set front face, cull mode is set in build_command_buffers.
     getHandle().setFrontFaceEXT(utils::VkCast(m_commandState.graphics.frontFace));
@@ -725,6 +763,7 @@ void CommandBuffer::flushDynamicGraphicsState()
 }
 void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
+    APH_PROFILER_SCOPE();
     auto& resBindings = m_commandState.resourceBindings;
     auto& pProgram = m_commandState.pProgram;
 
@@ -796,6 +835,7 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
 
 void CommandBuffer::pushConstant(const void* pData, Range range)
 {
+    APH_PROFILER_SCOPE();
     auto& resBinding = m_commandState.resourceBindings;
     APH_ASSERT(range.offset + range.size <= VULKAN_PUSH_CONSTANT_SIZE);
     std::memcpy(resBinding.pushConstantData + range.offset, pData, range.size);
@@ -804,26 +844,31 @@ void CommandBuffer::pushConstant(const void* pData, Range range)
 
 void CommandBuffer::setCullMode(const CullMode mode)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.cullMode = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
 void CommandBuffer::setFrontFaceWinding(const WindingMode mode)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.frontFace = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
 void CommandBuffer::setPolygonMode(const PolygonMode mode)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.graphics.polygonMode = mode;
     setDirty(DirtyFlagBits::dynamicState);
 }
 void CommandBuffer::setDirty(DirtyFlagBits dirtyFlagBits)
 {
+    APH_PROFILER_SCOPE();
     m_commandState.dirty |= dirtyFlagBits;
 }
 
 void CommandBuffer::draw(DispatchArguments args, const ArrayProxyNoTemporaries<uint32_t>& dynamicOffset)
 {
+    APH_PROFILER_SCOPE();
     flushGraphicsCommand(dynamicOffset);
     getHandle().drawMeshTasksEXT(args.x, args.y, args.z);
 }

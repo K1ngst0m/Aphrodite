@@ -198,6 +198,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
     // topological sort
     {
+        APH_PROFILER_SCOPE_NAME("topological sort");
         if (m_buildData.passDependencyGraph.empty())
         {
             VK_LOG_WARN("render graph is empty.");
@@ -255,6 +256,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     // per pass resource build
     for (auto* pass : m_buildData.sortedPasses)
     {
+        APH_PROFILER_SCOPE_NAME("pass resource build");
         auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
         if (!m_buildData.cmdPools.contains(pass))
         {
@@ -312,6 +314,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     {
         for (auto* pass : m_declareData.passes)
         {
+            APH_PROFILER_SCOPE_NAME("pass commands recording");
             std::vector<vk::Image*> colorImages;
             vk::Image* pDepthImage = {};
             std::vector<vk::ImageBarrier> initImageBarriers{};
@@ -385,6 +388,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             APH_ASSERT(!colorImages.empty());
 
             {
+                APH_PROFILER_SCOPE_NAME("pass commands submit");
                 auto* pCmd = m_buildData.cmds[pass];
                 APH_VR(pCmd->begin());
                 pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });

@@ -1,5 +1,6 @@
 #include "shaderReflector.h"
 #include "api/vulkan/sampler.h"
+#include "common/profiler.h"
 #include "spirv_cross.hpp"
 
 namespace aph
@@ -159,6 +160,7 @@ namespace aph
 ShaderReflector::ShaderReflector(ReflectRequest request)
     : m_request(std::move(request))
 {
+    APH_PROFILER_SCOPE();
     reflect();
 
     const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
@@ -313,6 +315,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
 
 ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& spvCode)
 {
+    APH_PROFILER_SCOPE();
     spirv_cross::Compiler compiler{ spvCode.data(), spvCode.size() };
     spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
@@ -469,6 +472,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
 
 void ShaderReflector::reflect()
 {
+    APH_PROFILER_SCOPE();
     const std::vector<vk::Shader*>& shaders = m_request.shaders;
     const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
 

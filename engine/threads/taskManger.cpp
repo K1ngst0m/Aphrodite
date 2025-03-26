@@ -2,6 +2,7 @@
 
 #include "common/common.h"
 #include "common/logger.h"
+#include "common/profiler.h"
 #include "taskManager.h"
 #include "threadUtils.h"
 
@@ -45,6 +46,7 @@ void TaskManager::addTask(TaskGroup* pGroup, coro::task<Result> task)
 
 std::future<Result> TaskManager::submit(TaskGroup* pGroup)
 {
+    APH_PROFILER_SCOPE();
     auto taskDoneLatch = std::make_shared<coro::latch>(pGroup->m_tasks.size());
 
     SmallVector<TaskType> pendingTasks;

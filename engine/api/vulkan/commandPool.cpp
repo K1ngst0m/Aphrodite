@@ -14,6 +14,7 @@ CommandPool::~CommandPool() = default;
 
 Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> holder{ m_lock };
 
     // Allocate a new command buffer.
@@ -33,6 +34,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
 
 CommandBuffer* CommandPool::allocate()
 {
+    APH_PROFILER_SCOPE();
     CommandBuffer* pCmd = {};
     APH_VR(allocate(1, &pCmd));
     return pCmd;
@@ -40,6 +42,7 @@ CommandBuffer* CommandPool::allocate()
 
 void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
 {
+    APH_PROFILER_SCOPE();
     APH_ASSERT(ppCommandBuffers);
 
     std::lock_guard<std::mutex> holder{ m_lock };
@@ -57,12 +60,14 @@ void CommandPool::free(uint32_t count, CommandBuffer** ppCommandBuffers)
 
 void CommandPool::trim()
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> holder{ m_lock };
     m_pDevice->getHandle().trimCommandPool(getHandle(), {});
 }
 
 void CommandPool::reset(bool freeMemory)
 {
+    APH_PROFILER_SCOPE();
     std::lock_guard<std::mutex> holder{ m_lock };
     auto deviceHandle = m_pDevice->getHandle();
     ::vk::CommandPoolResetFlagBits flags = {};
