@@ -36,10 +36,8 @@ class TaskGroup
 {
 public:
     void addTask(TaskType task);
+    std::future<Result> submitAsync();
     void submit();
-    void flush();
-    ResultGroup wait();
-
     void waitFor(TaskGroup* pGroup);
 
 private:
@@ -73,8 +71,7 @@ public:
     }
 
     void addTask(TaskGroup* pGroup, TaskType task);
-    void submit(TaskGroup* pGroup);
-    ResultGroup wait(TaskGroup* pGroup);
+    std::future<Result> submit(TaskGroup* pGroup);
     void setDependencies(TaskGroup* pProducer, TaskGroup* pConsumer);
 
 private:

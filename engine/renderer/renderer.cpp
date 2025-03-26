@@ -159,7 +159,8 @@ Renderer::Renderer(const RenderConfig& config)
 
     // init resource loader
     {
-        m_pResourceLoader = std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{ .pDevice = m_pDevice.get() });
+        m_pResourceLoader =
+            std::make_unique<ResourceLoader>(ResourceLoaderCreateInfo{ .async = true, .pDevice = m_pDevice.get() });
     }
 
     // init ui
@@ -214,13 +215,19 @@ void Renderer::load()
 coro::generator<RenderGraph*> Renderer::recordGraph()
 {
     APH_PROFILER_SCOPE();
+    auto group = m_taskManager.createTaskGroup("record render graph");
     for (auto& pGraph : m_frameGraph)
     {
         co_yield pGraph.get();
-        pGraph->build(m_pSwapChain);
+        group->addTask(
+            [](vk::SwapChain* swapchain, RenderGraph* graph) -> TaskType
+            {
+                graph->build(swapchain);
+                co_return { Result::Success };
+            }(m_pSwapChain, pGraph.get()));
     }
+    group->submit();
 }
-
 void Renderer::render()
 {
     APH_PROFILER_SCOPE();

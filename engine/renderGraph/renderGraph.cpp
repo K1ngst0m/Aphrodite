@@ -158,6 +158,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     {
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
+
+        std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
         m_buildData.frameSubmitInfos.clear();
         for (auto* pass : m_declareData.passes)
         {

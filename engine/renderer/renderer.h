@@ -88,6 +88,7 @@ protected:
     std::unique_ptr<vk::Device> m_pDevice = {};
     std::unique_ptr<vk::UI> m_pUI = {};
     std::unique_ptr<WindowSystem> m_pWindowSystem = {};
+    TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
 
 private:
     enum TimerTag

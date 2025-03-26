@@ -52,7 +52,8 @@ public:
         { co_return pLoader->load(std::move(info), ppRes); };
 
         m_pTaskGroup->addTask(loadFunction(this, loadInfo, ppResource));
-        m_pTaskGroup->submit();
+        auto token = m_pTaskGroup->submitAsync();
+        m_syncTokens.push_back(std::move(token));
     }
 
     void wait()
@@ -62,8 +63,15 @@ public:
         {
             return;
         }
-        APH_VR(m_pTaskGroup->wait());
+
+        for (const auto& future : m_syncTokens)
+        {
+            future.wait();
+        }
+        m_syncTokens.clear();
     }
+
+    SmallVector<std::future<Result>> m_syncTokens;
 
     template <typename T_LoadInfo, ResourceHandleType T_Resource>
     Result load(T_LoadInfo&& loadInfo, T_Resource** ppResource)
@@ -134,14 +142,27 @@ struct LoadRequest
         { co_return pLoader->load(std::move(info), ppRes); };
 
         m_pTaskGroup->addTask(loadFunction(m_pLoader, loadInfo, ppResource));
-        m_pTaskGroup->submit();
         return *this;
     }
 
     void load()
     {
+        APH_PROFILER_SCOPE();
         m_pTaskGroup->submit();
-        APH_VR(m_pTaskGroup->wait());
+    }
+
+    std::future<Result> loadAsync()
+    {
+        APH_PROFILER_SCOPE();
+        if (!m_async)
+        {
+            CM_LOG_WARN("Async path requested but not available. Falling back to synchronous loading.");
+            load();
+            std::promise<Result> promise;
+            promise.set_value(Result{Result::Success});
+            return promise.get_future();
+        }
+        return m_pTaskGroup->submitAsync();
     }
 
 private:
