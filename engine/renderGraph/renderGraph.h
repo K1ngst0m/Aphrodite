@@ -295,8 +295,6 @@ private:
 
         vk::SwapChain* pSwapchain = {};
         vk::Fence* frameFence = {};
-        vk::Semaphore* presentSem = {};
-        vk::Semaphore* renderSem = {};
 
         std::vector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex submitLock;

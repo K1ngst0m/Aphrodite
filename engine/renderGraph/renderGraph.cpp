@@ -172,16 +172,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         m_buildData.frameFence = m_pDevice->acquireFence(true);
     }
 
-    if (m_buildData.presentSem == nullptr)
-    {
-        m_buildData.presentSem = m_pDevice->acquireSemaphore();
-    }
-
-    if (m_buildData.renderSem == nullptr)
-    {
-        m_buildData.renderSem = m_pDevice->acquireSemaphore();
-    }
-
     for (auto res : m_declareData.resources)
     {
         for (const auto& readPass : res->getReadPasses())
