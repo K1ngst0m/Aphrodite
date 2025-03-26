@@ -15,7 +15,7 @@
   - Scene Management
   - Built-in Windowing, Input, Event Support
   - UI Support
-  - Shader Reflections
+  - Shader Reflections and Caching
   - Application Framework
 
 ** Cloning
@@ -46,51 +46,79 @@
   - Resource Loading
 
     #+BEGIN_SRC cpp
+    // Create a batch loading request
+    aph::LoadRequest loadRequest = m_pResourceLoader->getLoadRequest();
+    
     // vertex buffer
     {
-        aph::BufferLoadInfo bufferLoadInfo{ .debugName = "cube::vertex_buffer",
-                                        .data = vertices.data(),
-                                        .createInfo = {
-                                                .size = vertices.size() * sizeof(vertices[0]),
-                                                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                                                        ::vk::BufferUsageFlagBits::eVertexBuffer,
-                                                .domain = aph::MemoryDomain::Device,
-                                        } };
+        aph::BufferLoadInfo bufferLoadInfo{ 
+            .debugName = "cube::vertex_buffer",
+            .data = vertices.data(),
+            .createInfo = {
+                .size = vertices.size() * sizeof(vertices[0]),
+                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
+                         ::vk::BufferUsageFlagBits::eVertexBuffer,
+                .domain = aph::MemoryDomain::Device,
+            } 
+        };
 
-        m_pResourceLoader->loadAsync(bufferLoadInfo, &m_pVertexBuffer);
+        loadRequest.add(bufferLoadInfo, &m_pVertexBuffer);
     }
 
-    // ...
+    // index buffer
+    {
+        aph::BufferLoadInfo bufferLoadInfo{ 
+            .debugName = "cube::index_buffer",
+            .data = indices.data(),
+            .createInfo = {
+                .size = indices.size() * sizeof(indices[0]),
+                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
+                         ::vk::BufferUsageFlagBits::eIndexBuffer,
+                .domain = aph::MemoryDomain::Device,
+            } 
+        };
+
+        loadRequest.add(bufferLoadInfo, &m_pIndexBuffer);
+    }
 
     // image and sampler
     {
         APH_VR(m_pDevice->create(aph::vk::SamplerCreateInfo{}.preset(aph::SamplerPreset::LinearClamp), &m_pSampler));
-        aph::ImageLoadInfo imageLoadInfo{.data       = "texture://container2.png",
-                                         .createInfo = {
-                                             .usage     = ::vk::ImageUsageFlagBits::eSampled,
-                                             .domain    = aph::ImageDomain::Device,
-                                             .imageType = aph::ImageType::e2D,
-                                         }};
+        
+        aph::ImageLoadInfo imageLoadInfo{
+            .debugName = "container texture",
+            .data = "texture://container2.png",
+            .createInfo = {
+                .usage = ::vk::ImageUsageFlagBits::eSampled,
+                .domain = aph::ImageDomain::Device,
+                .imageType = aph::ImageType::e2D,
+            }
+        };
 
-        m_pResourceLoader->loadAsync(imageLoadInfo, &m_pImage);
+        loadRequest.add(imageLoadInfo, &m_pImage);
     }
 
     // shader loading
     {
-        aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh.slang" },
-                                            .stageInfo = {
-                                                { aph::ShaderStage::TS, "taskMain" },
-                                                { aph::ShaderStage::MS, "meshMain" },
-                                                { aph::ShaderStage::FS, "fragMain" },
-                                            } };
+        aph::ShaderLoadInfo shaderLoadInfo{ 
+            .debugName = "ts + ms + fs",
+            .data = { "shader_slang://hello_mesh.slang" },
+            .stageInfo = {
+                { aph::ShaderStage::TS, "taskMain" },
+                { aph::ShaderStage::MS, "meshMain" },
+                { aph::ShaderStage::FS, "fragMain" },
+            } 
+        };
 
-        m_pResourceLoader->loadAsync(shaderLoadInfo, &m_program[ShadingType::Mesh];
+        loadRequest.add(shaderLoadInfo, &m_program[ShadingType::Mesh]);
     }
 
-    // ...
-
-    // wait for resource loading complete
-    m_pResourceLoader->wait();
+    // Execute all loading tasks synchronously
+    loadRequest.load();
+    
+    // Or execute asynchronously and get a future to check completion
+    // std::future<Result> future = loadRequest.loadAsync();
+    // future.wait();
     #+END_SRC
 
   - Frame Graph Operations
@@ -121,7 +149,7 @@
                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
             });
             pCmd->setProgram(m_program[ShadingType::Mesh]);
-            pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+            pCmd->setResource({ m_pMatrixBuffer }, 0, 0);
             pCmd->setResource({ m_pImage }, 1, 0);
             pCmd->setResource({ m_pSampler }, 1, 1);
             pCmd->setResource({ m_pVertexBuffer }, 0, 1);
@@ -131,49 +159,55 @@
         });
     }
 
-
-    ...
+    // ...
 
     // render loop
     {
-        ...
+        // ...
         m_renderer->update();
         m_renderer->render();
-        ...
+        // ...
     }
     #+END_SRC
 
   - Bindless style
 
-    update and define the bindless handle name, the loader would automatically generate the shader module (in memory) of handle definitions.
+    Update and define the bindless handle name, the loader will automatically generate the shader module (in memory) with handle definitions.
 
     #+BEGIN_SRC cpp
     // shader and resource preparation
     {
         auto bindless = m_pDevice->getBindlessResource();
         {
-            m_drawDataOffset = bindless->updateResource(m_pImage, "texture_container");
+            bindless->updateResource(m_pImage, "texture_container");
             bindless->updateResource(m_pSampler, "samp");
-            bindless->updateResource(m_pMatrixBffer, "transform_cube");
+            bindless->updateResource(m_pMatrixBuffer, "transform_cube");
             bindless->updateResource(m_pVertexBuffer, "vertex_cube");
             bindless->updateResource(m_pIndexBuffer, "index_cube");
         }
 
-        aph::ShaderLoadInfo shaderLoadInfo{ .data = { "shader_slang://hello_mesh_bindless.slang" },
-                                            .stageInfo = {
-                                                {  aph::ShaderStage::TS,  "taskMain" },
-                                                {  aph::ShaderStage::MS,  "meshMain" },
-                                                {  aph::ShaderStage::FS,  "fragMain" },
-                                            }, .pBindlessResource = bindless};
+        aph::LoadRequest loadRequest = m_pResourceLoader->getLoadRequest();
+        
+        aph::ShaderLoadInfo shaderLoadInfo{ 
+            .debugName = "ts + ms + fs (bindless)",
+            .data = { "shader_slang://hello_mesh_bindless.slang" },
+            .stageInfo = {
+                { aph::ShaderStage::TS, "taskMain" },
+                { aph::ShaderStage::MS, "meshMain" },
+                { aph::ShaderStage::FS, "fragMain" },
+            }, 
+            .pBindlessResource = bindless
+        };
 
-        APH_VR(m_pResourceLoader->load(shaderLoadInfo, &m_program[ShadingType::MeshBindless]));
+        loadRequest.add(shaderLoadInfo, &m_program[ShadingType::MeshBindless]);
+        loadRequest.load();
     }
 
     // record graph execution
     for (auto* graph : m_renderer->recordGraph())
     {
         auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
-        ...
+        // ...
 
         drawPass->recordExecute([this](auto* pCmd) {
             pCmd->beginDebugLabel({
@@ -181,14 +215,14 @@
                 .color = { 0.5f, 0.3f, 0.2f, 1.0f },
             });
             pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 }, { m_drawDataOffset });
+            pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
             pCmd->endDebugLabel();
         });
     }
-    ...
+    // ...
     #+END_SRC
 
-    the generated handle code would look like this:
+    The generated handle code would look like this:
     #+BEGIN_SRC hlsl
     struct HandleData
     {
@@ -209,13 +243,12 @@
         static bindless::Buffer vertex_cube = bindless::Buffer(handleData.vertex_cube);
         static bindless::Buffer index_cube = bindless::Buffer(handleData.index_cube);
     }
-
     #+END_SRC
 
-    on shader (slang) part, the built-in bindless module and generated handle code would automatically patched to the code, so don't need to import them manually:
+    In shader (slang) code, the built-in bindless module and generated handle code are automatically patched to the code, so you don't need to import them manually:
     #+BEGIN_SRC hlsl
     // import modules.bindless
-    ...
+    // ...
 
     VertexIn GetVertex(uint indexId)
     {
@@ -224,11 +257,10 @@
         return vertex;
     }
 
-    ...
-        let color = handle::texture_container.sample(handle::samp, input.uv);
-    ...
+    // ...
+    let color = handle::texture_container.sample(handle::samp, input.uv);
+    // ...
     #+END_SRC
-
 
 ** Third Party Libraries
 
@@ -239,12 +271,12 @@
 - [[https://github.com/shader-slang/slang][slang]]
 - [[https://github.com/nothings/stb][stb]]
 - [[https://github.com/syoyo/tinygltf][tinygltf]]
-- [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][vma]]
+- [[https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator][Vulkan Memory Allocator]]
 - [[https://github.com/libsdl-org/SDL][SDL]]
 - [[https://github.com/glfw/glfw][glfw]]
 - [[https://github.com/wolfpld/tracy][tracy]]
 - [[https://github.com/marzer/tomlplusplus][tomlplusplus]]
 - [[https://github.com/martinus/unordered_dense][unordered_dense]]
-- [[https://github.com/bombela/backward-cpp][backward-cpp]]
-- [[https://github.com/KhronosGroup/SPIRV-Cross][SPIRV-cross]]
-
+- [[https://github.com/jbaldwin/libcoro][libcoro]]
+- [[https://github.com/KhronosGroup/SPIRV-Cross][SPIRV-Cross]]
+- [[https://github.com/KhronosGroup/Vulkan-Headers][Vulkan-Headers]]
