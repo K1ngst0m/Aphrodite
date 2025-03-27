@@ -839,8 +839,8 @@ Result Device::releaseFence(Fence* pFence)
     return Result::Success;
 }
 
-void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, std::vector<Semaphore*> waitSems,
-                            std::vector<Semaphore*> signalSems, Fence* pFence)
+void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayProxy<Semaphore*> waitSems,
+                            ArrayProxy<Semaphore*> signalSems, Fence* pFence)
 {
     APH_PROFILER_SCOPE();
 
@@ -855,8 +855,9 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, std::v
     APH_VR(cmd->end());
 
     QueueSubmitInfo submitInfo{ .commandBuffers = { cmd },
-                                .waitSemaphores = std::move(waitSems),
-                                .signalSemaphores = std::move(signalSems) };
+                                .waitSemaphores = waitSems,
+                                .signalSemaphores = signalSems };
+
     if (!pFence)
     {
         auto fence = acquireFence(false);
@@ -1020,5 +1021,23 @@ void Device::triggerCapture()
     {
         rdcDispatchTable->TriggerCapture();
     }
+}
+DeviceAddress Device::getDeviceAddress(Buffer* pBuffer) const
+{
+    ::vk::DeviceAddress address = getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{ pBuffer->getHandle() });
+    return static_cast<DeviceAddress>(address);
+}
+BindlessResource* Device::getBindlessResource() const
+{
+    APH_ASSERT(m_resourcePool.bindless);
+    return m_resourcePool.bindless.get();
+}
+PhysicalDevice* Device::getPhysicalDevice() const
+{
+    return getCreateInfo().pPhysicalDevice;
+}
+GPUFeature Device::getEnabledFeatures() const
+{
+    return getCreateInfo().enabledFeatures;
 }
 } // namespace aph::vk

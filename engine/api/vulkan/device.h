@@ -54,17 +54,8 @@ public:
     }
 
 public:
-    DeviceAddress getDeviceAddress(Buffer* pBuffer) const
-    {
-        ::vk::DeviceAddress address =
-            getHandle().getBufferAddress(::vk::BufferDeviceAddressInfo{ pBuffer->getHandle() });
-        return static_cast<DeviceAddress>(address);
-    }
-    BindlessResource* getBindlessResource() const
-    {
-        APH_ASSERT(m_resourcePool.bindless);
-        return m_resourcePool.bindless.get();
-    }
+    DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
+    BindlessResource* getBindlessResource() const;
     Result waitIdle();
     Result waitForFence(ArrayProxy<Fence*> fences, bool waitAll = true, uint32_t timeout = UINT32_MAX);
 
@@ -74,8 +65,8 @@ public:
     Result releaseFence(Fence* pFence);
 
     using CmdRecordCallBack = std::function<void(CommandBuffer* pCmdBuffer)>;
-    void executeCommand(Queue* queue, const CmdRecordCallBack&& func, std::vector<Semaphore*> waitSems = {},
-                        std::vector<Semaphore*> signalSems = {}, Fence* pFence = nullptr);
+    void executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayProxy<Semaphore*> waitSems = {},
+                        ArrayProxy<Semaphore*> signalSems = {}, Fence* pFence = nullptr);
 
 public:
     Result flushMemory(Image* pImage, Range range = {});
@@ -87,14 +78,8 @@ public:
     void unMapMemory(Buffer* pBuffer) const;
 
 public:
-    PhysicalDevice* getPhysicalDevice() const
-    {
-        return getCreateInfo().pPhysicalDevice;
-    }
-    GPUFeature getEnabledFeatures() const
-    {
-        return getCreateInfo().enabledFeatures;
-    }
+    PhysicalDevice* getPhysicalDevice() const;
+    GPUFeature getEnabledFeatures() const;
     Format getDepthFormat() const;
     Queue* getQueue(QueueType type, uint32_t queueIndex = 0);
 

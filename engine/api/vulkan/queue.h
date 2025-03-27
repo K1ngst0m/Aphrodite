@@ -8,10 +8,10 @@ namespace aph::vk
 {
 struct QueueSubmitInfo
 {
-    std::vector<CommandBuffer*> commandBuffers;
-    std::vector<VkPipelineStageFlags> waitStages;
-    std::vector<Semaphore*> waitSemaphores;
-    std::vector<Semaphore*> signalSemaphores;
+    SmallVector<CommandBuffer*> commandBuffers;
+    SmallVector<VkPipelineStageFlags> waitStages;
+    SmallVector<Semaphore*> waitSemaphores;
+    SmallVector<Semaphore*> signalSemaphores;
 };
 
 class Queue : public ResourceHandle<::vk::Queue>

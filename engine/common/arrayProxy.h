@@ -2,6 +2,12 @@
 
 namespace aph
 {
+template <typename V, typename T>
+concept ViewCompatible = requires(V v) {
+    { v.data() } -> std::convertible_to<T*>;
+    { v.size() } -> std::convertible_to<std::size_t>;
+};
+
 template <typename T>
 class ArrayProxy
 {
@@ -48,7 +54,8 @@ public:
     {
     }
 
-    template <typename B = T, typename std::enable_if<std::is_const<B>::value, int>::type = 0>
+    template <typename B = T>
+        requires std::is_const_v<B>
     ArrayProxy(std::initializer_list<typename std::remove_const<T>::type> const& list) noexcept
         : m_count(static_cast<uint32_t>(list.size()))
         , m_ptr(list.begin())
@@ -59,15 +66,21 @@ public:
 #pragma GCC diagnostic pop
 #endif
 
-    // Any type with a .data() return type implicitly convertible to T*, and a .size() return type implicitly
-    // convertible to size_t. The const version can capture temporaries, with lifetime ending at end of statement.
-    template <typename V, typename std::enable_if<std::is_convertible<decltype(std::declval<V>().data()), T*>::value &&
-                                                  std::is_convertible<decltype(std::declval<V>().size()),
-                                                                      std::size_t>::value>::type* = nullptr>
+    // Any type with a .data() return type implicitly convertible to T*, and a .size() return type
+    template <ViewCompatible<T> V>
     ArrayProxy(V const& v) noexcept
         : m_count(static_cast<uint32_t>(v.size()))
         , m_ptr(v.data())
     {
+    }
+
+    // Templated conversion operator to convert to any type constructible from iterators
+    template <typename Container>
+        requires std::is_constructible_v<Container, const T*, const T*> && 
+                 (!std::is_same_v<Container, ArrayProxy<T>>)
+    operator Container() const 
+    {
+        return Container(begin(), end());
     }
 
     const T* begin() const noexcept
@@ -143,9 +156,8 @@ public:
     {
     }
 
-    template <
-        typename B = T,
-        typename std::enable_if<std::is_convertible<B, T>::value && std::is_lvalue_reference<B>::value, int>::type = 0>
+    template <typename B = T>
+        requires std::is_convertible_v<B, T> && std::is_lvalue_reference_v<B>
     ArrayProxyNoTemporaries(B&& value) noexcept
         : m_count(1)
         , m_ptr(&value)
@@ -168,29 +180,22 @@ public:
     template <std::size_t C>
     ArrayProxyNoTemporaries(T (&&ptr)[C]) = delete;
 
-    // Any l-value reference with a .data() return type implicitly convertible to T*, and a .size() return type implicitly convertible to size_t.
-    template <typename V,
-              typename std::enable_if<!std::is_convertible<decltype(std::declval<V>().begin()), T*>::value &&
-                                          std::is_convertible<decltype(std::declval<V>().data()), T*>::value &&
-                                          std::is_convertible<decltype(std::declval<V>().size()), std::size_t>::value &&
-                                          std::is_lvalue_reference<V>::value,
-                                      int>::type = 0>
+    // For l-value references that meet the criteria
+    template <ViewCompatible<T> V>
+        requires std::is_lvalue_reference_v<V> && std::ranges::range<V>
     ArrayProxyNoTemporaries(V&& v) noexcept
         : m_count(static_cast<uint32_t>(v.size()))
-        , m_ptr(v.data())
+        , m_ptr(v.begin() ? v.begin() : v.data())
     {
     }
 
-    // Any l-value reference with a .begin() return type implicitly convertible to T*, and a .size() return type implicitly convertible to size_t.
-    template <typename V,
-              typename std::enable_if<std::is_convertible<decltype(std::declval<V>().begin()), T*>::value &&
-                                          std::is_convertible<decltype(std::declval<V>().size()), std::size_t>::value &&
-                                          std::is_lvalue_reference<V>::value,
-                                      int>::type = 0>
-    ArrayProxyNoTemporaries(V&& v) noexcept
-        : m_count(static_cast<uint32_t>(v.size()))
-        , m_ptr(v.begin())
+    // Templated conversion operator to convert to any type constructible from iterators
+    template <typename Container>
+        requires std::is_constructible_v<Container, T*, T*> && 
+                 (!std::is_same_v<Container, ArrayProxyNoTemporaries<T>>)
+    operator Container() const 
     {
+        return Container(begin(), end());
     }
 
     const T* begin() const noexcept
