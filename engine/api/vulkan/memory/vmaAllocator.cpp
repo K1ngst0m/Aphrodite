@@ -1,6 +1,6 @@
-#include "deviceAllocator.h"
-#include "buffer.h"
-#include "image.h"
+#include "vmaAllocator.h"
+
+#include "api/vulkan/device.h"
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
@@ -53,8 +53,8 @@ VMADeviceAllocator::VMADeviceAllocator(Instance* pInstance, Device* pDevice)
 
 VMADeviceAllocator::~VMADeviceAllocator()
 {
-    vmaDestroyAllocator(m_allocator);
     clear();
+    vmaDestroyAllocator(m_allocator);
 }
 
 DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
@@ -74,6 +74,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Buffer* pBuffer)
     }
     return m_bufferMemoryMap[pBuffer].get();
 }
+
 DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };
@@ -91,6 +92,7 @@ DeviceAllocation* VMADeviceAllocator::allocate(Image* pImage)
     }
     return m_imageMemoryMap[pImage].get();
 }
+
 void VMADeviceAllocator::free(Image* pImage)
 {
     std::lock_guard<std::mutex> lock{ m_allocationLock };

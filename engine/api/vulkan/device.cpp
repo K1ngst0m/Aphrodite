@@ -1,7 +1,7 @@
 #include "device.h"
 #include "bindless.h"
 #include "common/profiler.h"
-#include "deviceAllocator.h"
+#include "memory/vmaAllocator.h"
 #include "module/module.h"
 #include "renderdoc_app.h"
 #include "resource/shaderReflector.h"
@@ -224,7 +224,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     auto device = std::unique_ptr<Device>(new Device(createInfo, gpu, device_handle));
 
     // TODO
-    device->m_resourcePool.deviceMemory = new VMADeviceAllocator(createInfo.pInstance, device.get());
+    device->m_resourcePool.deviceMemory = std::make_unique<VMADeviceAllocator>(createInfo.pInstance, device.get());
     device->m_resourcePool.bindless = std::make_unique<BindlessResource>(device.get());
 
     {
@@ -289,9 +289,8 @@ void Device::Destroy(Device* pDevice)
     pDevice->m_resourcePool.program.clear();
     pDevice->m_resourcePool.syncPrimitive.clear();
     pDevice->m_resourcePool.setLayout.clear();
+    pDevice->m_resourcePool.deviceMemory.reset();
 
-    // TODO
-    delete pDevice->m_resourcePool.deviceMemory;
     APH_ASSERT(pDevice->m_handle);
     pDevice->getHandle().destroy(vk_allocator());
 }

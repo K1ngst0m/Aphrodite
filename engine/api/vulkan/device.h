@@ -15,6 +15,7 @@
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
+#include "memory/deviceAllocator.h"
 
 namespace aph::vk
 {
@@ -159,9 +160,9 @@ private:
     HashMap<QueueType, SmallVector<Queue*>> m_queues;
 
 private:
-    struct ResourceObjectPool
+    struct ResourcePool
     {
-        DeviceAllocator* deviceMemory;
+        std::unique_ptr<DeviceAllocator> deviceMemory;
         ThreadSafeObjectPool<Buffer> buffer;
         ThreadSafeObjectPool<Image> image;
         ThreadSafeObjectPool<Sampler> sampler;
@@ -173,7 +174,7 @@ private:
         SyncPrimitiveAllocator syncPrimitive;
         std::unique_ptr<BindlessResource> bindless;
 
-        ResourceObjectPool(Device* pDevice)
+        ResourcePool(Device* pDevice)
             : syncPrimitive(pDevice)
         {
         }
