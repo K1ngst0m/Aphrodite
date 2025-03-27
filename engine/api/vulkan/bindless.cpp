@@ -7,8 +7,8 @@ BindlessResource::BindlessResource(Device* pDevice)
     : m_pDevice(pDevice)
     , m_handleData(pDevice->getPhysicalDevice()->getProperties().uniformBufferAlignment)
 {
-
-    // handle descriptor
+    APH_PROFILER_SCOPE();
+    // Initialize handle descriptor set layout and allocate descriptor set
     {
         DescriptorSetLayout* pSetLayout = {};
         {
@@ -28,7 +28,7 @@ BindlessResource::BindlessResource(Device* pDevice)
         m_handleData.pSet = pSetLayout->allocateSet();
     }
 
-    // update resource
+    // Initialize resource descriptor set layout and allocate descriptor set
     {
         DescriptorSetLayout* pSetLayout = {};
         {
@@ -41,7 +41,7 @@ BindlessResource::BindlessResource(Device* pDevice)
             for (uint32_t idx = 0; idx < eResourceTypeCount; ++idx)
             {
                 ::vk::DescriptorSetLayoutBinding binding{};
-                // TODO
+                // Use a single descriptor for buffer address table
                 auto descriptorCount = idx == ResourceType::eBuffer ? 1 : VULKAN_NUM_BINDINGS_BINDLESS_VARYING;
                 auto descriptorType = descriptorTypeMaps.at(idx);
 
@@ -59,28 +59,27 @@ BindlessResource::BindlessResource(Device* pDevice)
             APH_VR(m_pDevice->create(layoutCreateInfo, &pSetLayout, "bindless resource layout"));
         }
 
-        // TODO verify if bindless
         m_resourceData.pSetLayout = pSetLayout;
         APH_ASSERT(m_resourceData.pSetLayout->isBindless());
         m_resourceData.pSet = m_resourceData.pSetLayout->allocateSet();
 
-        // address table buffer
-        BufferCreateInfo bufferCreateInfo{
-            .size = Resource::AddressTableSize,
-            .usage = ::vk::BufferUsageFlagBits::eStorageBuffer,
-            .domain = MemoryDomain::Host,
-        };
-        APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
-        m_resourceData.addressTableMap = std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
-                                                    Resource::AddressTableSize };
-
-        DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
-        APH_VR(m_resourceData.pSet->update(updateInfo));
+        // Create and bind buffer address table
+        {
+            BufferCreateInfo bufferCreateInfo{
+                .size = Resource::AddressTableSize,
+                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer,
+                .domain = MemoryDomain::Host,
+            };
+            APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
+            m_resourceData.addressTableMap = std::span{ (uint64_t*)m_pDevice->mapMemory(m_resourceData.pAddressTableBuffer),
+                                                        Resource::AddressTableSize };
+            DescriptorUpdateInfo updateInfo{ .binding = eBuffer, .buffers = { m_resourceData.pAddressTableBuffer } };
+            APH_VR(m_resourceData.pSet->update(updateInfo));
+        }
     }
 
-    // pipeline layout
+    // Create pipeline layout resource
     {
-        // TODO
         ::vk::PipelineLayoutCreateInfo createInfo{};
         auto layouts = { m_resourceData.pSetLayout->getHandle(), m_handleData.pSetLayout->getHandle() };
         createInfo.setSetLayouts(layouts);
@@ -93,51 +92,90 @@ BindlessResource::BindlessResource(Device* pDevice)
 
 BindlessResource::~BindlessResource()
 {
+    APH_PROFILER_SCOPE();
     clear();
 }
 
 void BindlessResource::build()
 {
-    std::lock_guard<std::mutex> lock{ m_mtx };
-
-    // handle gpu buffer
-    static uint32_t count = 0;
-    if (m_rangeDirty)
+    APH_PROFILER_SCOPE();
+    
+    // Update handle buffer if data has changed
     {
-        if (m_handleData.pBuffer)
+        std::lock_guard<std::mutex> lock{ m_handleMtx };
+        static uint32_t count = 0;
+        if (m_rangeDirty.load(std::memory_order_acquire))
         {
-            m_pDevice->destroy(m_handleData.pBuffer);
+            if (m_handleData.pBuffer)
+            {
+                m_pDevice->destroy(m_handleData.pBuffer);
+            }
+
+            // Update handle buffer
+            {
+                BufferCreateInfo bufferCreateInfo{ .size = m_handleData.dataBuilder.getData().size(),
+                                                .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                                .domain = MemoryDomain::Host };
+                APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
+                                        std::format("Bindless Handle Buffer {}", count++)));
+                void* pMapped = m_pDevice->mapMemory(m_handleData.pBuffer);
+                APH_ASSERT(pMapped);
+                m_handleData.dataBuilder.writeTo(pMapped);
+                m_pDevice->unMapMemory(m_handleData.pBuffer);
+                DescriptorUpdateInfo updateInfo{ .binding = 0, .buffers = { m_handleData.pBuffer } };
+                APH_VR(m_handleData.pSet->update(updateInfo));
+            }
+
+            m_rangeDirty.store(false, std::memory_order_release);
         }
-
-        BufferCreateInfo bufferCreateInfo{ .size = m_handleData.dataBuilder.getData().size(),
-                                           .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
-                                           .domain = MemoryDomain::Host };
-        APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
-                                 std::format("Bindless Handle Buffer {}", count++)));
-
-        void* pMapped = m_pDevice->mapMemory(m_handleData.pBuffer);
-        APH_ASSERT(pMapped);
-        m_handleData.dataBuilder.writeTo(pMapped);
-        m_pDevice->unMapMemory(m_handleData.pBuffer);
-
-        DescriptorUpdateInfo updateInfo{ .binding = 0, .buffers = { m_handleData.pBuffer } };
-        APH_VR(m_handleData.pSet->update(updateInfo));
-
-        m_rangeDirty = false;
     }
 
-    for (const auto& updateInfo : m_resourceUpdateInfos)
+    // Apply all pending descriptor updates to the resource set
+    SmallVector<DescriptorUpdateInfo> updateInfos;
+    {
+        std::lock_guard<std::mutex> lock{ m_updateInfoMtx };
+        updateInfos = std::move(m_resourceUpdateInfos);
+    }
+    for (const auto& updateInfo : updateInfos)
     {
         APH_VR(m_resourceData.pSet->update(updateInfo));
     }
-    m_resourceUpdateInfos.clear();
+}
+
+uint32_t BindlessResource::updateResource(RType resource, std::string name)
+{
+    APH_PROFILER_SCOPE();
+    
+    // Register resource name in the handle map
+    {
+        std::unique_lock<std::shared_mutex> lock{ m_nameMtx };
+        m_handleNameMap[name] = resource;
+    }
+    
+    uint32_t offset = 0;
+    
+    std::visit(
+        [this, &offset](auto&& arg)
+        {
+            // Register the specific resource type and add handle ID to the buffer
+            HandleId id = updateResource(arg);
+            {
+                std::lock_guard<std::mutex> handleLock{ m_handleMtx };
+                offset = m_handleData.dataBuilder.addRange(id);
+                m_rangeDirty.store(true, std::memory_order_release);
+            }
+        },
+        resource);
+
+    return offset;
 }
 
 BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
 {
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_bufferIds.contains(pBuffer))
     {
-        std::lock_guard<std::mutex> lock{ m_mtx };
+        // Register new buffer and store its device address
         auto id = HandleId{ static_cast<uint32_t>(m_buffers.size()) };
         APH_ASSERT(id < Resource::AddressTableSize);
         m_buffers.push_back(pBuffer);
@@ -150,16 +188,22 @@ BindlessResource::HandleId BindlessResource::updateResource(Buffer* pBuffer)
 
 BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
 {
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_imageIds.contains(pImage))
     {
-        std::lock_guard<std::mutex> lock{ m_mtx };
+        // Register new image and queue descriptor update
         APH_ASSERT(m_images.size() < std::numeric_limits<uint32_t>::max());
         auto id = HandleId{ static_cast<uint32_t>(m_images.size()) };
         m_images.push_back(pImage);
         m_imageIds[pImage] = id;
 
         DescriptorUpdateInfo updateInfo{ .binding = eImage, .arrayOffset = { id }, .images = { pImage } };
-        m_resourceUpdateInfos.push_back(std::move(updateInfo));
+        
+        // Queue descriptor update for next build() call
+        {
+            std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
+            m_resourceUpdateInfos.push_back(std::move(updateInfo));
+        }
     }
 
     return m_imageIds.at(pImage);
@@ -167,63 +211,110 @@ BindlessResource::HandleId BindlessResource::updateResource(Image* pImage)
 
 BindlessResource::HandleId BindlessResource::updateResource(Sampler* pSampler)
 {
+    std::unique_lock<std::shared_mutex> lock{ m_resourceMapsMtx };
     if (!m_samplerIds.contains(pSampler))
     {
-        std::lock_guard<std::mutex> lock{ m_mtx };
+        // Register new sampler and queue descriptor update
         APH_ASSERT(m_samplers.size() < std::numeric_limits<uint32_t>::max());
         auto id = HandleId{ static_cast<uint32_t>(m_samplers.size()) };
         m_samplers.push_back(pSampler);
         m_samplerIds[pSampler] = id;
 
         DescriptorUpdateInfo updateInfo{ .binding = eSampler, .arrayOffset = { id }, .samplers = { pSampler } };
-        m_resourceUpdateInfos.push_back(std::move(updateInfo));
+        
+        // Queue descriptor update for next build() call
+        {
+            std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
+            m_resourceUpdateInfos.push_back(std::move(updateInfo));
+        }
     }
 
     return m_samplerIds.at(pSampler);
 }
+
 void BindlessResource::clear()
 {
-    std::lock_guard<std::mutex> lock{ m_mtx };
-    if (m_handleData.pBuffer)
+    APH_PROFILER_SCOPE();
+    // Store resources that need to be destroyed
+    Buffer* handleBuffer = nullptr;
+    Buffer* addressTableBuffer = nullptr;
+    DescriptorSetLayout* resourceSetLayout = nullptr;
+    DescriptorSetLayout* handleSetLayout = nullptr;
+    ::vk::PipelineLayout pipelineLayout;
+    
     {
-        m_pDevice->destroy(m_handleData.pBuffer);
+        std::lock_guard<std::mutex> handleLock{ m_handleMtx };
+        std::unique_lock<std::shared_mutex> nameLock{ m_nameMtx };
+        std::unique_lock<std::shared_mutex> resourceLock{ m_resourceMapsMtx };
+        std::lock_guard<std::mutex> updateLock{ m_updateInfoMtx };
+        
+        // Store resources for destruction outside the lock
+        handleBuffer = m_handleData.pBuffer;
+        addressTableBuffer = m_resourceData.pAddressTableBuffer;
+        resourceSetLayout = m_resourceData.pSetLayout;
+        handleSetLayout = m_handleData.pSetLayout;
+        pipelineLayout = m_pipelineLayout.handle;
+        
+        // Reset member variables to null state
         m_handleData.pBuffer = nullptr;
-    }
-
-    if (m_resourceData.pAddressTableBuffer)
-    {
-        m_pDevice->unMapMemory(m_resourceData.pAddressTableBuffer);
-        m_pDevice->destroy(m_resourceData.pAddressTableBuffer);
         m_resourceData.pAddressTableBuffer = nullptr;
-    }
-
-    if (m_resourceData.pSetLayout)
-    {
-        m_pDevice->destroy(m_resourceData.pSetLayout);
         m_resourceData.pSetLayout = nullptr;
-    }
-
-    if (m_handleData.pSetLayout)
-    {
-        m_pDevice->destroy(m_handleData.pSetLayout);
-    }
-
-    if (m_pipelineLayout.handle)
-    {
-        m_pDevice->getHandle().destroy(m_pipelineLayout.handle);
+        m_handleData.pSetLayout = nullptr;
         m_pipelineLayout.handle = ::vk::PipelineLayout{};
+        
+        // Clear all collections and reset state
+        m_images.clear();
+        m_buffers.clear();
+        m_samplers.clear();
+        m_imageIds.clear();
+        m_bufferIds.clear();
+        m_samplerIds.clear();
+        m_handleNameMap.clear();
+        m_resourceUpdateInfos.clear();
+        m_handleData.dataBuilder.reset();
+        m_rangeDirty.store(false, std::memory_order_relaxed);
+    }
+    
+    if (handleBuffer)
+    {
+        m_pDevice->destroy(handleBuffer);
     }
 
-    m_handleData.dataBuilder.reset();
+    if (addressTableBuffer)
+    {
+        m_pDevice->unMapMemory(addressTableBuffer);
+        m_pDevice->destroy(addressTableBuffer);
+    }
+
+    if (resourceSetLayout)
+    {
+        m_pDevice->destroy(resourceSetLayout);
+    }
+
+    if (handleSetLayout)
+    {
+        m_pDevice->destroy(handleSetLayout);
+    }
+
+    if (pipelineLayout)
+    {
+        m_pDevice->getHandle().destroy(pipelineLayout);
+    }
 }
 
-std::string BindlessResource::generateHandleSource()
+std::string BindlessResource::generateHandleSource() const
 {
+    APH_PROFILER_SCOPE();
+    
+    std::shared_lock<std::shared_mutex> nameLock{ m_nameMtx };
+    
+    // Build Slang source code for bindless resource access
     std::stringstream ss;
     ss << "import modules.bindless;\n";
     ss << "struct HandleData\n";
     ss << "{\n";
-
+    
+    // Generate uint handle fields for each named resource
     for (const auto& [name, _] : m_handleNameMap)
     {
         ss << std::format("uint {};\n", name);
@@ -231,9 +322,12 @@ std::string BindlessResource::generateHandleSource()
 
     ss << "};\n";
 
+    // Create constant buffer binding for the handle data
     ss << "[[vk::binding(0, Set::eHandle)]] ConstantBuffer<HandleData> handleData;\n";
     ss << "namespace handle\n";
     ss << "{\n";
+    
+    // Create typed accessors
     for (const auto& [name, resource] : m_handleNameMap)
     {
         std::string type;

@@ -3,6 +3,7 @@
 #include "common/arrayProxy.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
+#include "common/dataBuilder.h"
 #include "descriptorSet.h"
 #include "vkUtils.h"
 
@@ -14,95 +15,13 @@ class Sampler;
 class Device;
 class ShaderProgram;
 
-class DataBuilder
-{
-public:
-    explicit DataBuilder(uint32_t minAlignment) noexcept
-        : m_minAlignment(minAlignment)
-    {
-        APH_ASSERT(minAlignment != 0 && (minAlignment & (minAlignment - 1)) == 0 &&
-                   "minAlignment must be a power of 2!");
-    }
-
-    template <typename T_Data>
-        requires std::is_trivially_copyable_v<T_Data> && (!std::is_pointer_v<T_Data>)
-    void writeTo(T_Data& writePtr) noexcept
-    {
-        writeTo(&writePtr);
-    }
-
-    void writeTo(const void* writePtr) noexcept
-    {
-        std::memcpy((uint8_t*)writePtr, getData().data(), getData().size());
-    }
-
-    const std::vector<std::byte>& getData() const noexcept
-    {
-        return m_data;
-    }
-
-    std::vector<std::byte>& getData() noexcept
-    {
-        return m_data;
-    }
-
-    void reset() noexcept
-    {
-        m_data.clear();
-    }
-
-    template <typename T_Data>
-    uint32_t addRange(T_Data dataRange, Range range = {})
-    {
-        if (range.size == 0)
-        {
-            range.size = sizeof(T_Data);
-        }
-
-        static_assert(std::is_trivially_copyable_v<T_Data>, "The range data must be trivially copyable");
-        const std::byte* rawDataPtr = reinterpret_cast<const std::byte*>(&dataRange);
-
-        APH_ASSERT(range.offset + range.size <= sizeof(T_Data));
-
-        size_t bytesToCopy = range.size;
-
-        uint32_t offset = aph::utils::paddingSize(m_minAlignment, m_data.size());
-
-        size_t newSize = offset + bytesToCopy;
-
-        CM_LOG_DEBUG("addrange: offset: %u, range_offset: %u, bytesToCopy: %u, m_data.size(): %u", offset, range.offset,
-                     bytesToCopy, m_data.size());
-
-        if (newSize > m_data.size())
-        {
-            m_data.resize(newSize);
-        }
-
-        std::memcpy(m_data.data() + offset, rawDataPtr + range.offset, bytesToCopy);
-
-        return offset;
-    }
-
-private:
-    std::vector<std::byte> m_data;
-    uint32_t m_minAlignment;
-};
-
 class BindlessResource
 {
-    enum ResourceType : uint32_t
-    {
-        eImage = 0,
-        eBuffer = 1,
-        eSampler = 2,
-        eResourceTypeCount
-    };
-
 public:
     enum SetIdx
     {
-        eResourceSetIdx = 0,
-        eHandleSetIdx = 1,
+        eResourceSetIdx = 0,   // Index of resource descriptor set (textures, buffers, samplers)
+        eHandleSetIdx = 1,     // Index of handle descriptor set (resource indices)
         eUpperBound
     };
 
@@ -116,45 +35,78 @@ public:
         static constexpr uint32_t InvalidId = std::numeric_limits<uint32_t>::max();
     };
 
-    BindlessResource(Device* pDevice);
+    explicit BindlessResource(Device* pDevice);
     ~BindlessResource();
 
-    void clear();
+    // Variant type that can hold any supported resource type
+    using RType = std::variant<Image*, Buffer*, Sampler*>;
 
+
+    /**
+     * @brief Registers a resource with the bindless system and gives it a name
+     * 
+     * This method registers a resource (image, buffer, or sampler) and associates
+     * it with a name that can be used in shader code. The resource is assigned a
+     * unique identifier, and descriptor updates are scheduled if needed.
+     * 
+     * Thread-safe: Uses multiple synchronization points to ensure consistency.
+     * 
+     * @param resource The resource to register (image, buffer, or sampler)
+     * @param name The name to associate with this resource
+     * @return The offset of the resource handle in the handle buffer
+     */
+    uint32_t updateResource(RType resource, std::string name);
+    
+    /**
+     * @brief Adds raw data to the handle buffer
+     * 
+     * Allows adding arbitrary data to the handle buffer. Typically used to add
+     * resource identifiers but can be used for other purposes.
+     * 
+     * Thread-safe: Protected by handle mutex.
+     * 
+     * @param dataRange The data to add
+     * @param range Optional range within the data to add
+     * @return The offset of the data in the handle buffer
+     */
     template <typename T_Data>
     uint32_t addRange(T_Data&& dataRange, Range range = {})
     {
+        std::lock_guard<std::mutex> lock{ m_handleMtx };
         auto offset = m_handleData.dataBuilder.addRange(std::forward<T_Data>(dataRange), range);
-
-        // TODO dirty range
-        m_rangeDirty = true;
-
+        m_rangeDirty.store(true, std::memory_order_release);
         return offset;
     }
 
+    /**
+     * @brief Commits all pending resource updates to the GPU
+     * 
+     * This method should be called after registering resources to ensure that:
+     * 1. The handle buffer is updated on the GPU
+     * 2. All pending descriptor updates are applied
+     * 
+     * Thread-safe: Uses synchronized access to multiple resources.
+     */
     void build();
 
-    using RType = std::variant<Image*, Buffer*, Sampler*>;
+    /**
+     * @brief Releases all resources and resets to initial state
+     * 
+     * Thread-safe: Uses comprehensive locking to ensure safe cleanup.
+     */
+    void clear();
 
-    uint32_t updateResource(RType resource, std::string name)
-    {
-        uint32_t offset = 0;
-        // TODO handle when resource overriding
-        m_handleNameMap[name] = resource;
-        std::visit(
-            [this, &offset](auto&& arg)
-            {
-                HandleId id = updateResource(arg);
-                offset = addRange(id);
-            },
-            resource);
-
-        return offset;
-    }
-
-    HandleId updateResource(Buffer* pBuffer);
-    HandleId updateResource(Image* pImage);
-    HandleId updateResource(Sampler* pSampler);
+    /**
+     * @brief Generates Slang shader code for accessing bindless resources
+     *
+     * Creates structures and helper functions to access the registered resources
+     * by name in shader code. The generated code can be included in shaders.
+     *
+     * Thread-safe: Uses shared lock to allow concurrent reads.
+     *
+     * @return Slang source code for bindless resource access
+     */
+    std::string generateHandleSource() const;
 
     DescriptorSetLayout* getResourceLayout() const noexcept
     {
@@ -183,11 +135,23 @@ public:
         return m_pipelineLayout.handle;
     }
 
-    std::string generateHandleSource();
+private:
+    enum ResourceType : uint32_t
+    {
+        eImage = 0,
+        eBuffer = 1,
+        eSampler = 2,
+        eResourceTypeCount
+    };
+
+    HandleId updateResource(Buffer* pBuffer);
+    HandleId updateResource(Image* pImage);
+    HandleId updateResource(Sampler* pSampler);
 
 private:
-    Device* m_pDevice;
+    Device* m_pDevice = {};
 
+    // Handle data storage and management
     struct Handle
     {
         Handle(uint32_t minAlignment)
@@ -195,36 +159,46 @@ private:
         {
         }
 
-        DataBuilder dataBuilder;
-        Buffer* pBuffer = {};
+        DataBuilder dataBuilder;        // Builder for CPU-side handle data
+        Buffer* pBuffer = {};           // GPU buffer containing handle data
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
     } m_handleData;
 
+    // Resource data storage and management
     struct Resource
     {
         static constexpr std::size_t AddressTableSize = 4 * memory::KB;
-        Buffer* pAddressTableBuffer = {};
-        std::span<uint64_t> addressTableMap;
+        Buffer* pAddressTableBuffer = {};          // GPU buffer for buffer addresses
+        std::span<uint64_t> addressTableMap;       // Mapped view of address table
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
     } m_resourceData;
 
-    bool m_rangeDirty = false;
+    // Pipeline layout combining resource and handle sets
+    PipelineLayout m_pipelineLayout{};
 
-    SmallVector<Image*> m_images;
-    SmallVector<Buffer*> m_buffers;
-    SmallVector<Sampler*> m_samplers;
+    // Flag indicating if handle data needs to be uploaded to GPU
+    std::atomic<bool> m_rangeDirty{false};
+
+    // Resources
+    SmallVector<Image*> m_images;                // All registered images
+    SmallVector<Buffer*> m_buffers;              // All registered buffers
+    SmallVector<Sampler*> m_samplers;            // All registered samplers
     HashMap<Image*, HandleId> m_imageIds;
     HashMap<Buffer*, HandleId> m_bufferIds;
     HashMap<Sampler*, HandleId> m_samplerIds;
-    // TODO
-    HashMap<std::string, RType> m_handleNameMap;
 
+    HashMap<std::string, RType> m_handleNameMap; // Maps names to resources
+
+    // Pending descriptor updates
     SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
-    std::mutex m_mtx;
+    
+    mutable std::mutex m_handleMtx;               // Protects handle data buffer
+    mutable std::shared_mutex m_nameMtx;          // Protects name map (shared for reads)
+    mutable std::shared_mutex m_resourceMapsMtx;  // Protects resource collections
+    mutable std::mutex m_updateInfoMtx;           // Protects update info collection
 
-    PipelineLayout m_pipelineLayout{};
 };
 
 } // namespace aph::vk
