@@ -56,8 +56,8 @@
             .data = vertices.data(),
             .createInfo = {
                 .size = vertices.size() * sizeof(vertices[0]),
-                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                         ::vk::BufferUsageFlagBits::eVertexBuffer,
+                .usage = aph::BufferUsage::StorageBuffer |
+                         aph::BufferUsage::VertexBuffer,
                 .domain = aph::MemoryDomain::Device,
             } 
         };
@@ -72,8 +72,8 @@
             .data = indices.data(),
             .createInfo = {
                 .size = indices.size() * sizeof(indices[0]),
-                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                         ::vk::BufferUsageFlagBits::eIndexBuffer,
+                .usage = aph::BufferUsage::StorageBuffer |
+                         aph::BufferUsage::IndexBuffer,
                 .domain = aph::MemoryDomain::Device,
             } 
         };
@@ -89,7 +89,7 @@
             .debugName = "container texture",
             .data = "texture://container2.png",
             .createInfo = {
-                .usage = ::vk::ImageUsageFlagBits::eSampled,
+                .usage = aph::ImageUsage::Sampled,
                 .domain = aph::ImageDomain::Device,
                 .imageType = aph::ImageType::e2D,
             }
