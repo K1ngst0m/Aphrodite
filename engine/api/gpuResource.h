@@ -471,4 +471,31 @@ struct StencilState
     uint32_t readMask = (uint32_t)~0;
     uint32_t writeMask = (uint32_t)~0;
 };
+
+enum class BufferUsage : uint32_t
+{
+    None = 0,
+    VertexBuffer = 0x00000001,
+    IndexBuffer = 0x00000002,
+    UniformBuffer = 0x00000004,
+    StorageBuffer = 0x00000008,
+    IndirectBuffer = 0x00000010,
+    TransferSrc = 0x00000020,
+    TransferDst = 0x00000040,
+    AccelStructBuild = 0x00000080,
+    AccelStructStorage = 0x00000100,
+    ShaderBindingTable = 0x00000200,
+    ShaderDeviceAddress = 0x00000400,
+};
+using BufferUsageFlags = Flags<BufferUsage>;
+template <>
+struct FlagTraits<BufferUsage>
+{
+    static constexpr bool isBitmask = true;
+    static constexpr BufferUsageFlags allFlags =
+        BufferUsage::VertexBuffer | BufferUsage::IndexBuffer | BufferUsage::UniformBuffer | BufferUsage::StorageBuffer |
+        BufferUsage::IndirectBuffer | BufferUsage::TransferSrc | BufferUsage::TransferDst |
+        BufferUsage::AccelStructBuild | BufferUsage::AccelStructStorage | BufferUsage::ShaderBindingTable |
+        BufferUsage::ShaderDeviceAddress;
+};
 } // namespace aph

@@ -511,7 +511,7 @@ Result Device::createImpl(const BufferCreateInfo& createInfo, Buffer** ppBuffer)
     // create buffer
     ::vk::BufferCreateInfo bufferInfo{};
     bufferInfo.setSize(createInfo.size)
-        .setUsage(createInfo.usage | ::vk::BufferUsageFlagBits::eShaderDeviceAddress)
+        .setUsage(utils::VkCast(createInfo.usage | BufferUsage::ShaderDeviceAddress))
         .setSharingMode(::vk::SharingMode::eExclusive);
     auto [result, buffer] = getHandle().createBuffer(bufferInfo, vk_allocator());
     *ppBuffer = m_resourcePool.buffer.allocate(createInfo, buffer);

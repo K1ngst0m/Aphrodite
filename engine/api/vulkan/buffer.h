@@ -12,7 +12,7 @@ class Buffer;
 struct BufferCreateInfo
 {
     std::size_t size = { 0 };
-    ::vk::BufferUsageFlags usage = {};
+    BufferUsageFlags usage = {};
     MemoryDomain domain = { MemoryDomain::Auto };
 };
 

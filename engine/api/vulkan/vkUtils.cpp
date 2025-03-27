@@ -710,6 +710,36 @@ Result getResult(VkResult result)
     APH_ASSERT(false && "Unhandled ImageType in VkCast");
     return ::vk::ImageType::e1D; // Fallback
 }
+
+::vk::BufferUsageFlags VkCast(BufferUsageFlags usage)
+{
+    ::vk::BufferUsageFlags vkUsage;
+    
+    if (usage & BufferUsage::VertexBuffer)
+        vkUsage |= ::vk::BufferUsageFlagBits::eVertexBuffer;
+    if (usage & BufferUsage::IndexBuffer)
+        vkUsage |= ::vk::BufferUsageFlagBits::eIndexBuffer;
+    if (usage & BufferUsage::UniformBuffer)
+        vkUsage |= ::vk::BufferUsageFlagBits::eUniformBuffer;
+    if (usage & BufferUsage::StorageBuffer)
+        vkUsage |= ::vk::BufferUsageFlagBits::eStorageBuffer;
+    if (usage & BufferUsage::IndirectBuffer)
+        vkUsage |= ::vk::BufferUsageFlagBits::eIndirectBuffer;
+    if (usage & BufferUsage::TransferSrc)
+        vkUsage |= ::vk::BufferUsageFlagBits::eTransferSrc;
+    if (usage & BufferUsage::TransferDst)
+        vkUsage |= ::vk::BufferUsageFlagBits::eTransferDst;
+    if (usage & BufferUsage::AccelStructBuild)
+        vkUsage |= ::vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
+    if (usage & BufferUsage::AccelStructStorage)
+        vkUsage |= ::vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
+    if (usage & BufferUsage::ShaderBindingTable)
+        vkUsage |= ::vk::BufferUsageFlagBits::eShaderBindingTableKHR;
+    if (usage & BufferUsage::ShaderDeviceAddress)
+        vkUsage |= ::vk::BufferUsageFlagBits::eShaderDeviceAddress;
+    
+    return vkUsage;
+}
 } // namespace aph::vk::utils
 
 namespace aph::vk

@@ -164,8 +164,8 @@ void hello_aphrodite::init()
                                                 .data = vertices.data(),
                                                 .createInfo = {
                                                     .size = vertices.size() * sizeof(vertices[0]),
-                                                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                                                             ::vk::BufferUsageFlagBits::eVertexBuffer,
+                                                    .usage = aph::BufferUsage::StorageBuffer |
+                                                             aph::BufferUsage::VertexBuffer,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
@@ -178,8 +178,8 @@ void hello_aphrodite::init()
                                                 .data = indices.data(),
                                                 .createInfo = {
                                                     .size = indices.size() * sizeof(indices[0]),
-                                                    .usage = ::vk::BufferUsageFlagBits::eStorageBuffer |
-                                                             ::vk::BufferUsageFlagBits::eIndexBuffer,
+                                                    .usage = aph::BufferUsage::StorageBuffer |
+                                                             aph::BufferUsage::IndexBuffer,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
@@ -204,7 +204,7 @@ void hello_aphrodite::init()
                                                 .data = &m_mvp,
                                                 .createInfo = {
                                                     .size = sizeof(m_mvp),
-                                                    .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                                    .usage = aph::BufferUsage::UniformBuffer,
                                                     .domain = aph::MemoryDomain::Host,
                                                 } };
 

@@ -43,7 +43,7 @@ namespace aph::vk::utils
 ::vk::SamplerMipmapMode VkCast(SamplerMipmapMode mode);
 ::vk::ImageType VkCast(ImageType type);
 ::vk::ImageViewType VkCast(ImageViewType viewType);
-
+::vk::BufferUsageFlags VkCast(BufferUsageFlags usage);
 } // namespace aph::vk::utils
 
 namespace aph

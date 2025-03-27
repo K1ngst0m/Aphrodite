@@ -245,7 +245,7 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Buffer* pBuf
     APH_ASSERT(pBuffer);
     const auto& bufferCreateInfo = pBuffer->getCreateInfo();
     bool deviceAccess = static_cast<bool>(
-        bufferCreateInfo.usage & ~(::vk::BufferUsageFlagBits::eTransferDst | ::vk::BufferUsageFlagBits::eTransferSrc));
+        bufferCreateInfo.usage & ~(BufferUsage::TransferDst | BufferUsage::TransferSrc));
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(bufferCreateInfo.domain, deviceAccess);
     return allocCreateInfo;
 }

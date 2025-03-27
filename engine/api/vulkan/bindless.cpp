@@ -67,7 +67,7 @@ BindlessResource::BindlessResource(Device* pDevice)
         {
             BufferCreateInfo bufferCreateInfo{
                 .size = Resource::AddressTableSize,
-                .usage = ::vk::BufferUsageFlagBits::eStorageBuffer,
+                .usage = BufferUsage::StorageBuffer,
                 .domain = MemoryDomain::Host,
             };
             APH_VR(m_pDevice->create(bufferCreateInfo, &m_resourceData.pAddressTableBuffer, "buffer address table"));
@@ -114,7 +114,7 @@ void BindlessResource::build()
             // Update handle buffer
             {
                 BufferCreateInfo bufferCreateInfo{ .size = m_handleData.dataBuilder.getData().size(),
-                                                .usage = ::vk::BufferUsageFlagBits::eUniformBuffer,
+                                                .usage = BufferUsage::UniformBuffer,
                                                 .domain = MemoryDomain::Host };
                 APH_VR(m_pDevice->create(bufferCreateInfo, &m_handleData.pBuffer,
                                         std::format("Bindless Handle Buffer {}", count++)));
