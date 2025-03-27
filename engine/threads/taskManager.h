@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <condition_variable>
 #include <coro/coro.hpp>
 #include <functional>
 #include <memory>
@@ -17,15 +16,6 @@
 #include "common/hash.h"
 #include "common/singleton.h"
 #include "common/smallVector.h"
-#include "threadPool.h"
-
-#include <coro/coro.hpp>
-#include <functional>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace aph
 {
