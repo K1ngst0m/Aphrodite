@@ -235,7 +235,7 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Image* pImag
     APH_ASSERT(pImage);
     const auto& imageCreateInfo = pImage->getCreateInfo();
     bool deviceAccess = static_cast<bool>(
-        imageCreateInfo.usage & ~(::vk::ImageUsageFlagBits::eTransferDst | ::vk::ImageUsageFlagBits::eTransferSrc));
+        imageCreateInfo.usage & ~(ImageUsage::TransferDst | ImageUsage::TransferSrc));
     VmaAllocationCreateInfo allocationCreateInfo = getAllocationCreateInfo(imageCreateInfo.domain, deviceAccess);
     return allocationCreateInfo;
 }

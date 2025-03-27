@@ -13,13 +13,12 @@ class ImageView;
 struct ImageCreateInfo
 {
     Extent3D extent = {};
-    ::vk::ImageCreateFlags flags = {};
     uint32_t alignment = { 0 };
     uint32_t mipLevels = { 1 };
     uint32_t arraySize = { 1 };
     uint32_t sampleCount = { 1 };
 
-    ::vk::ImageUsageFlags usage = {};
+    ImageUsageFlags usage = {};
 
     MemoryDomain domain = { MemoryDomain::Auto };
     ImageType imageType = { ImageType::e2D };

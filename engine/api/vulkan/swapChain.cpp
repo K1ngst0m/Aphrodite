@@ -197,10 +197,10 @@ void SwapChain::reCreate()
     m_extent.width = std::clamp(m_pWindowSystem->getWidth(), caps.minImageExtent.width, caps.maxImageExtent.width);
     m_extent.height = std::clamp(m_pWindowSystem->getHeight(), caps.minImageExtent.height, caps.maxImageExtent.height);
 
-    ::vk::SwapchainCreateInfoKHR swapchain_create_info{};
+    ::vk::SwapchainCreateInfoKHR swapchainIreateInfo{};
     {
         SmallVector<uint32_t> queueFamilyIndices{ m_pQueue->getFamilyIndex() };
-        swapchain_create_info.setSurface(m_surface)
+        swapchainIreateInfo.setSurface(m_surface)
             .setMinImageCount(minImageCount)
             .setImageFormat(swapChainSettings.surfaceFormat.surfaceFormat.format)
             .setImageColorSpace(swapChainSettings.surfaceFormat.surfaceFormat.colorSpace)
@@ -215,7 +215,7 @@ void SwapChain::reCreate()
             .setPresentMode(swapChainSettings.presentMode);
 
         auto [result, swapchain_handle] =
-            m_pDevice->getHandle().createSwapchainKHR(swapchain_create_info, vk_allocator());
+            m_pDevice->getHandle().createSwapchainKHR(swapchainIreateInfo, vk_allocator());
         VK_VR(result);
         m_handle = std::move(swapchain_handle);
     };
@@ -231,7 +231,7 @@ void SwapChain::reCreate()
             .mipLevels = 1,
             .arraySize = 1,
             .sampleCount = 1,
-            .usage = swapchain_create_info.imageUsage,
+            .usage = utils::getImageUsage(swapchainIreateInfo.imageUsage),
             .imageType = ImageType::e2D,
             .format = getFormat(),
         };

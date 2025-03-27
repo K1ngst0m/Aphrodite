@@ -123,7 +123,7 @@ public:
     {
         m_info = info;
     }
-    void addUsage(::vk::ImageUsageFlags usage)
+    void addUsage(ImageUsageFlags usage)
     {
         m_usage |= usage;
     }
@@ -132,14 +132,14 @@ public:
     {
         return m_info;
     }
-    ::vk::ImageUsageFlags getUsage() const
+    ImageUsageFlags getUsage() const
     {
         return m_usage;
     }
 
 private:
     PassImageInfo m_info = {};
-    ::vk::ImageUsageFlags m_usage = {};
+    ImageUsageFlags m_usage = {};
 };
 
 class PassBufferResource : public PassResource

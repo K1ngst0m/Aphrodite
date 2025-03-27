@@ -44,7 +44,7 @@ ImageView* Image::getView(Format imageFormat)
             .setLayerCount(m_createInfo.arraySize);
 
         // cubemap
-        if (m_createInfo.flags & ::vk::ImageCreateFlagBits::eCubeCompatible && m_createInfo.arraySize == 6)
+        if (m_createInfo.usage & ImageUsage::CubeCompatible && m_createInfo.arraySize == 6)
         {
             createInfo.viewType = ImageViewType::Cube;
         }

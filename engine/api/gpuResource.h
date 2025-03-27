@@ -498,4 +498,48 @@ struct FlagTraits<BufferUsage>
         BufferUsage::AccelStructBuild | BufferUsage::AccelStructStorage | BufferUsage::ShaderBindingTable |
         BufferUsage::ShaderDeviceAddress;
 };
+
+enum class ImageUsage : uint32_t
+{
+    None = 0,
+
+    // Usage flags - using lower 16 bits (0x0000FFFF)
+    TransferSrc = 0x00000001,
+    TransferDst = 0x00000002,
+    Sampled = 0x00000004,
+    Storage = 0x00000008,
+    ColorAttachment = 0x00000010,
+    DepthStencil = 0x00000020,
+    Transient = 0x00000040,
+    InputAttachment = 0x00000080,
+
+    // Create flags - using upper 16 bits (0xFFFF0000)
+    SparseBinding = 0x00010000,
+    SparseResidency = 0x00020000,
+    SparseAliased = 0x00040000,
+    MutableFormat = 0x00080000,
+    CubeCompatible = 0x00100000,
+    Array2DCompatible = 0x00200000,
+    BlockTexelView = 0x00400000,
+
+    // Preset flags
+    RenderTarget = ColorAttachment | TransferSrc,
+    DepthTarget = DepthStencil | Sampled,
+    Texture = Sampled | TransferDst,
+    Storage_Preset = Storage | TransferDst | TransferSrc,
+};
+using ImageUsageFlags = Flags<ImageUsage>;
+
+template <>
+struct FlagTraits<ImageUsage>
+{
+    static constexpr bool isBitmask = true;
+    static constexpr ImageUsageFlags allFlags =
+        ImageUsage::TransferSrc | ImageUsage::TransferDst | ImageUsage::Sampled | ImageUsage::Storage |
+        ImageUsage::ColorAttachment | ImageUsage::DepthStencil | ImageUsage::Transient | ImageUsage::InputAttachment |
+        ImageUsage::SparseBinding | ImageUsage::SparseResidency | ImageUsage::SparseAliased |
+        ImageUsage::MutableFormat | ImageUsage::CubeCompatible | ImageUsage::Array2DCompatible |
+        ImageUsage::BlockTexelView;
+};
+
 } // namespace aph

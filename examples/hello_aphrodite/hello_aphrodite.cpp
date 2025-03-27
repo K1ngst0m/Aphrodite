@@ -219,7 +219,7 @@ void hello_aphrodite::init()
             aph::ImageLoadInfo imageLoadInfo{ .debugName = "container texture",
                                               .data = "texture://container2.png",
                                               .createInfo = {
-                                                  .usage = ::vk::ImageUsageFlagBits::eSampled,
+                                                  .usage = aph::ImageUsage::Sampled,
                                                   .domain = aph::MemoryDomain::Device,
                                                   .imageType = aph::ImageType::e2D,
                                               } };

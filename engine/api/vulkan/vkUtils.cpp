@@ -740,6 +740,59 @@ Result getResult(VkResult result)
     
     return vkUsage;
 }
+
+std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags usage)
+{
+    ::vk::ImageUsageFlags usageFlags = {};
+    ::vk::ImageCreateFlags createFlags = {};
+    
+    // Map usage flags (lower 16 bits)
+    if (usage & ImageUsage::TransferSrc)        usageFlags |= ::vk::ImageUsageFlagBits::eTransferSrc;
+    if (usage & ImageUsage::TransferDst)        usageFlags |= ::vk::ImageUsageFlagBits::eTransferDst;
+    if (usage & ImageUsage::Sampled)            usageFlags |= ::vk::ImageUsageFlagBits::eSampled;
+    if (usage & ImageUsage::Storage)            usageFlags |= ::vk::ImageUsageFlagBits::eStorage;
+    if (usage & ImageUsage::ColorAttachment)    usageFlags |= ::vk::ImageUsageFlagBits::eColorAttachment;
+    if (usage & ImageUsage::DepthStencil)       usageFlags |= ::vk::ImageUsageFlagBits::eDepthStencilAttachment;
+    if (usage & ImageUsage::Transient)          usageFlags |= ::vk::ImageUsageFlagBits::eTransientAttachment;
+    if (usage & ImageUsage::InputAttachment)    usageFlags |= ::vk::ImageUsageFlagBits::eInputAttachment;
+    
+    // Map create flags (upper 16 bits)
+    if (usage & ImageUsage::SparseBinding)      createFlags |= ::vk::ImageCreateFlagBits::eSparseBinding;
+    if (usage & ImageUsage::SparseResidency)    createFlags |= ::vk::ImageCreateFlagBits::eSparseResidency;
+    if (usage & ImageUsage::SparseAliased)      createFlags |= ::vk::ImageCreateFlagBits::eSparseAliased;
+    if (usage & ImageUsage::MutableFormat)      createFlags |= ::vk::ImageCreateFlagBits::eMutableFormat;
+    if (usage & ImageUsage::CubeCompatible)     createFlags |= ::vk::ImageCreateFlagBits::eCubeCompatible;
+    if (usage & ImageUsage::Array2DCompatible)  createFlags |= ::vk::ImageCreateFlagBits::e2DArrayCompatible;
+    if (usage & ImageUsage::BlockTexelView)     createFlags |= ::vk::ImageCreateFlagBits::eBlockTexelViewCompatible;
+    
+    return {usageFlags, createFlags};
+}
+
+ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags)
+{
+    ImageUsageFlags result = ImageUsage::None;
+    
+    // Map usage flags (lower 16 bits)
+    if (usageFlags & ::vk::ImageUsageFlagBits::eTransferSrc)           result |= ImageUsage::TransferSrc;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eTransferDst)           result |= ImageUsage::TransferDst;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eSampled)               result |= ImageUsage::Sampled;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eStorage)               result |= ImageUsage::Storage;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eColorAttachment)       result |= ImageUsage::ColorAttachment;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eDepthStencilAttachment) result |= ImageUsage::DepthStencil;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eTransientAttachment)   result |= ImageUsage::Transient;
+    if (usageFlags & ::vk::ImageUsageFlagBits::eInputAttachment)       result |= ImageUsage::InputAttachment;
+    
+    // Map create flags (upper 16 bits)
+    if (createFlags & ::vk::ImageCreateFlagBits::eSparseBinding)         result |= ImageUsage::SparseBinding;
+    if (createFlags & ::vk::ImageCreateFlagBits::eSparseResidency)       result |= ImageUsage::SparseResidency;
+    if (createFlags & ::vk::ImageCreateFlagBits::eSparseAliased)         result |= ImageUsage::SparseAliased;
+    if (createFlags & ::vk::ImageCreateFlagBits::eMutableFormat)         result |= ImageUsage::MutableFormat;
+    if (createFlags & ::vk::ImageCreateFlagBits::eCubeCompatible)        result |= ImageUsage::CubeCompatible;
+    if (createFlags & ::vk::ImageCreateFlagBits::e2DArrayCompatible)     result |= ImageUsage::Array2DCompatible;
+    if (createFlags & ::vk::ImageCreateFlagBits::eBlockTexelViewCompatible) result |= ImageUsage::BlockTexelView;
+    
+    return result;
+}
 } // namespace aph::vk::utils
 
 namespace aph::vk

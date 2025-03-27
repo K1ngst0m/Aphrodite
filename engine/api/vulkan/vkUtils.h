@@ -19,11 +19,13 @@ std::string errorString(VkResult errorCode);
 Format getFormatFromVk(VkFormat format);
 Result getResult(VkResult result);
 Result getResult(::vk::Result result);
+ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags = {});
 } // namespace aph::vk::utils
 
 // convert
 namespace aph::vk::utils
 {
+std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags usage);
 ::vk::StencilOp VkCast(StencilOp op);
 ::vk::BlendOp VkCast(BlendOp op);
 ::vk::BlendFactor VkCast(BlendFactor factor);

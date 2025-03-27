@@ -70,7 +70,7 @@ PassImageResource* RenderPass::addTextureOut(const std::string& name)
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addWritePass(this);
-    res->addUsage(::vk::ImageUsageFlagBits::eStorage);
+    res->addUsage(ImageUsage::Storage);
     res->addAccessFlags(VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT);
 
     m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
@@ -84,7 +84,7 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->addReadPass(this);
-    res->addUsage(::vk::ImageUsageFlagBits::eSampled);
+    res->addUsage(ImageUsage::Sampled);
     res->addAccessFlags(VK_ACCESS_2_SHADER_SAMPLED_READ_BIT);
 
     m_res.resourceStateMap[res] = ResourceState::ShaderResource;
@@ -104,7 +104,7 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const PassIm
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
-    res->addUsage(::vk::ImageUsageFlagBits::eColorAttachment);
+    res->addUsage(ImageUsage::ColorAttachment);
     m_res.resourceStateMap[res] = ResourceState::RenderTarget;
     m_res.colorOut.push_back(res);
     return res;
@@ -116,7 +116,7 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
-    res->addUsage(::vk::ImageUsageFlagBits::eDepthStencilAttachment);
+    res->addUsage(ImageUsage::DepthStencil);
     m_res.resourceStateMap[res] = ResourceState::DepthStencil;
     m_res.depthOut = res;
     return res;
@@ -269,7 +269,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 };
                 if (!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
                 {
-                    createInfo.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
+                    createInfo.usage |= ImageUsage::TransferSrc;
                 }
                 APH_VR(m_pDevice->create(createInfo, &pImage, colorAttachment->getName()));
                 m_buildData.image[colorAttachment] = pImage;

@@ -108,11 +108,11 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         bool genMipmap = ci.mipLevels > 1;
 
         auto imageCI = ci;
-        imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferDst;
+        imageCI.usage |= ImageUsage::TransferDst;
         imageCI.domain = MemoryDomain::Device;
         if (genMipmap)
         {
-            imageCI.usage |= ::vk::ImageUsageFlagBits::eTransferSrc;
+            imageCI.usage |= ImageUsage::TransferSrc;
         }
 
         APH_VR(m_pDevice->create(imageCI, &image, info.debugName));

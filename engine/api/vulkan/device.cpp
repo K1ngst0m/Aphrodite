@@ -524,14 +524,15 @@ Result Device::createImpl(const ImageCreateInfo& createInfo, Image** ppImage)
 {
     APH_PROFILER_SCOPE();
     ::vk::ImageCreateInfo imageCreateInfo{};
-    imageCreateInfo.setFlags(createInfo.flags)
+    auto [usage, flags] = utils::VkCast(createInfo.usage);
+    imageCreateInfo.setFlags(flags)
         .setImageType(utils::VkCast(createInfo.imageType))
         .setFormat(utils::VkCast(createInfo.format))
         .setMipLevels(createInfo.mipLevels)
         .setArrayLayers(createInfo.arraySize)
         .setSamples(utils::getSampleCountFlags(createInfo.sampleCount))
         .setTiling(::vk::ImageTiling::eOptimal)
-        .setUsage(createInfo.usage)
+        .setUsage(usage)
         .setSharingMode(::vk::SharingMode::eExclusive)
         .setInitialLayout(::vk::ImageLayout::eUndefined);
 
