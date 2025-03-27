@@ -1,5 +1,7 @@
 #pragma once
 
+#include "forward.h"
+#include "vkUtils.h"
 #include "common/hash.h"
 #include "instance.h"
 

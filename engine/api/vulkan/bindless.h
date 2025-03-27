@@ -1,20 +1,17 @@
 #pragma once
 
-#include "common/arrayProxy.h"
-#include "common/hash.h"
-#include "common/smallVector.h"
-#include "common/dataBuilder.h"
-#include "descriptorSet.h"
+#include "forward.h"
 #include "vkUtils.h"
+#include "common/arrayProxy.h"
+#include "common/dataBuilder.h"
+#include "common/hash.h"
+#include "common/profiler.h"
+#include "common/smallVector.h"
+#include "descriptorSet.h"
+#include <bitset>
 
 namespace aph::vk
 {
-class Buffer;
-class Image;
-class Sampler;
-class Device;
-class ShaderProgram;
-
 class BindlessResource
 {
 public:

@@ -1,23 +1,13 @@
 #pragma once
 
 #include "api/vulkan/descriptorSet.h"
+#include "api/vulkan/forward.h"
 #include "api/vulkan/shader.h"
 #include "common/arrayProxy.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
-class CommandPool;
-class Device;
-class Pipeline;
-class Buffer;
-class Image;
-class ImageView;
-class Sampler;
-class Queue;
-class DescriptorSet;
-class BindlessResource;
-
 struct AttachmentInfo
 {
     Image* image{};

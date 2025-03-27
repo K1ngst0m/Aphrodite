@@ -1,13 +1,12 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
-class Device;
-
 struct SamplerCreateInfo
 {
     Filter minFilter = Filter::Linear;

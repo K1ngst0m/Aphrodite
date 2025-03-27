@@ -1,5 +1,6 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "common/hash.h"
 #include "common/smallVector.h"
@@ -8,11 +9,6 @@
 
 namespace aph::vk
 {
-class Sampler;
-class ImmutableSampler;
-class DescriptorSetLayout;
-class DescriptorSet;
-
 struct PipelineLayout
 {
     VertexInput vertexInput = {};

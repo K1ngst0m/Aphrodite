@@ -1,19 +1,15 @@
 #pragma once
 
+#include "forward.h"
+#include "allocator/objectPool.h"
+#include "api/gpuResource.h"
+#include "vkUtils.h"
 #include "api/vulkan/shader.h"
 #include "common/arrayProxy.h"
 #include "common/hash.h"
-#include "vkUtils.h"
 
 namespace aph::vk
 {
-class ImageView;
-class Buffer;
-class Sampler;
-class Image;
-class Device;
-class DescriptorSet;
-
 struct DescriptorUpdateInfo
 {
     uint32_t binding = {};

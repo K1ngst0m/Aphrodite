@@ -1,5 +1,6 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "common/hash.h"
@@ -7,10 +8,6 @@
 
 namespace aph::vk
 {
-class Device;
-class CommandBuffer;
-class Queue;
-
 struct CommandPoolCreateInfo
 {
     Queue* queue = {};

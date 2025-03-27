@@ -1,14 +1,12 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
-class Device;
-class Buffer;
-
 struct BufferCreateInfo
 {
     std::size_t size = { 0 };

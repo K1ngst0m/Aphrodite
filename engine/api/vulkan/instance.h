@@ -1,8 +1,10 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "api/gpuResource.h"
 #include "common/hash.h"
+#include "vkUtils.h"
 #include <vulkan/vulkan.hpp>
 
 namespace aph::vk
@@ -14,8 +16,6 @@ struct InstanceCreateInfo
     SmallVector<const char*> enabledExtensions{};
     ::vk::DebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
 };
-
-class PhysicalDevice;
 
 class Instance : public ResourceHandle<::vk::Instance, InstanceCreateInfo>
 {

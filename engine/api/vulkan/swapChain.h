@@ -1,17 +1,13 @@
 #pragma once
 
+#include "forward.h"
+#include "api/gpuResource.h"
 #include "allocator/objectPool.h"
 #include "vkUtils.h"
 #include "wsi/wsi.h"
 
 namespace aph::vk
 {
-class Device;
-class Image;
-class Queue;
-class Semaphore;
-class Fence;
-
 struct SwapChainSettings
 {
     ::vk::SurfaceCapabilities2KHR capabilities;

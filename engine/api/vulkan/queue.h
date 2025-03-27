@@ -1,14 +1,11 @@
 #pragma once
 
+#include "forward.h"
 #include "common/arrayProxy.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
-class CommandBuffer;
-class Semaphore;
-class Fence;
-
 struct QueueSubmitInfo
 {
     std::vector<CommandBuffer*> commandBuffers;

@@ -1,13 +1,12 @@
 #pragma once
 
+#include "forward.h"
 #include "allocator/objectPool.h"
 #include "common/hash.h"
 #include "vkUtils.h"
 
 namespace aph::vk
 {
-class Device;
-
 class Fence : public ResourceHandle<::vk::Fence>
 {
     friend class Device;

@@ -6,6 +6,7 @@
 #include "commandPool.h"
 #include "common/timer.h"
 #include "descriptorSet.h"
+#include "forward.h"
 #include "image.h"
 #include "instance.h"
 #include "module/module.h"
@@ -19,8 +20,6 @@
 
 namespace aph::vk
 {
-class DeviceAllocator;
-
 struct DeviceCreateInfo
 {
     GPUFeature enabledFeatures = {};
