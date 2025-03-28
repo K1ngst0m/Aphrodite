@@ -56,8 +56,8 @@
             .data = vertices.data(),
             .createInfo = {
                 .size = vertices.size() * sizeof(vertices[0]),
-                .usage = aph::BufferUsage::StorageBuffer |
-                         aph::BufferUsage::VertexBuffer,
+                .usage = aph::BufferUsage::Storage |
+                         aph::BufferUsage::Vertex,
                 .domain = aph::MemoryDomain::Device,
             } 
         };
@@ -72,8 +72,8 @@
             .data = indices.data(),
             .createInfo = {
                 .size = indices.size() * sizeof(indices[0]),
-                .usage = aph::BufferUsage::StorageBuffer |
-                         aph::BufferUsage::IndexBuffer,
+                .usage = aph::BufferUsage::Storage |
+                         aph::BufferUsage::Index,
                 .domain = aph::MemoryDomain::Device,
             } 
         };
@@ -157,6 +157,9 @@
             pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
             pCmd->endDebugLabel();
         });
+
+        // export to the graphviz dot code and write to the filesystem
+        // fs.write(..., graph->exportToGraphViz());
     }
 
     // ...
