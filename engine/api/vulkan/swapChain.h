@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/arrayProxy.h"
 #include "forward.h"
 #include "api/gpuResource.h"
 #include "allocator/objectPool.h"
@@ -39,7 +40,7 @@ public:
     SwapChain(const CreateInfoType& createInfo, Device* pDevice);
     ~SwapChain();
 
-    Result presentImage(const std::vector<Semaphore*>& waitSemaphores, Image* pImage = {});
+    Result presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage = {});
 
     void reCreate();
 

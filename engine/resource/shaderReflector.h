@@ -67,7 +67,7 @@ struct CombinedResourceLayout
 
 struct ReflectRequest
 {
-    std::vector<vk::Shader*> shaders;
+    SmallVector<vk::Shader*> shaders;
     const vk::ImmutableSamplerBank* samplerBank = {};
 };
 
@@ -93,7 +93,7 @@ public:
 
 private:
     void reflect();
-    ResourceLayout reflectStageLayout(const std::vector<uint32_t>& spvCode);
+    ResourceLayout reflectStageLayout(ArrayProxy<uint32_t> spvCode);
 
     VertexInput m_vertexInput;
     ReflectRequest m_request;

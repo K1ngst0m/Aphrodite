@@ -112,7 +112,7 @@ bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code)
     }
 
     exit_code = 0;
-    std::vector<char*> filtered;
+    SmallVector<char*> filtered;
     filtered.reserve(argc + 1);
     filtered.push_back(argv[0]);
 

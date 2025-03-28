@@ -60,6 +60,6 @@ private:
 
     Queue* m_pDefaultQueue = {};
 
-    std::vector<ImFont*> m_fonts;
+    SmallVector<ImFont*> m_fonts;
 };
 } // namespace aph::vk

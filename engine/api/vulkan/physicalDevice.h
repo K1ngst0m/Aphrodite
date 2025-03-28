@@ -1,9 +1,9 @@
 #pragma once
 
-#include "forward.h"
-#include "vkUtils.h"
 #include "common/hash.h"
+#include "forward.h"
 #include "instance.h"
+#include "vkUtils.h"
 
 namespace aph::vk
 {
@@ -14,7 +14,7 @@ class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 
 public:
     PhysicalDevice(HandleType handle);
-    Format findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+    Format findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
                                ::vk::FormatFeatureFlags features) const;
     std::size_t getUniformBufferPaddingSize(size_t originalSize) const;
     const GPUProperties& getProperties() const

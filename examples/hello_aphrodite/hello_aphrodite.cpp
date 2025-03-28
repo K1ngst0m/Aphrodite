@@ -164,8 +164,7 @@ void hello_aphrodite::init()
                                                 .data = vertices.data(),
                                                 .createInfo = {
                                                     .size = vertices.size() * sizeof(vertices[0]),
-                                                    .usage = aph::BufferUsage::Storage |
-                                                             aph::BufferUsage::Vertex,
+                                                    .usage = aph::BufferUsage::Storage | aph::BufferUsage::Vertex,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
@@ -178,8 +177,7 @@ void hello_aphrodite::init()
                                                 .data = indices.data(),
                                                 .createInfo = {
                                                     .size = indices.size() * sizeof(indices[0]),
-                                                    .usage = aph::BufferUsage::Storage |
-                                                             aph::BufferUsage::Index,
+                                                    .usage = aph::BufferUsage::Storage | aph::BufferUsage::Index,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 

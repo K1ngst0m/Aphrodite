@@ -25,7 +25,6 @@ public:
     void setBackBuffer(const std::string& backBuffer);
 
     void build(vk::SwapChain* pSwapChain = nullptr);
-    void rebuildDirtyParts();
     void execute(vk::Fence* pFence = nullptr);
     void cleanup();
 
@@ -43,16 +42,14 @@ private:
         All = 0xFFFFFFFF           // Everything is dirty
     };
     using DirtyFlags = uint32_t;
-    // Resets all dirty flags
+    DirtyFlags m_dirtyFlags = DirtyFlagBits::All;
+
     void clearDirtyFlags() { m_dirtyFlags = DirtyFlagBits::None; }
-    // Check if specific flags are set
     bool isDirty(DirtyFlags flags) const { return (m_dirtyFlags & flags) != 0; }
-    // Mark specific aspects as dirty
-    void markDirty(DirtyFlags flags) { m_dirtyFlags |= flags; }
+    void setDirty(DirtyFlags flags) { m_dirtyFlags |= flags; }
 
 private:
     vk::Device* m_pDevice = {};
-    DirtyFlags m_dirtyFlags = DirtyFlagBits::All; // Start with everything dirty
 
     struct
     {

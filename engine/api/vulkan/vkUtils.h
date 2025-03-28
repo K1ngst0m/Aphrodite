@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/arrayProxy.h"
 #include "common/common.h"
 #include "common/logger.h"
 #include <vulkan/vulkan.hpp>
@@ -34,7 +35,7 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
 ::vk::PolygonMode VkCast(PolygonMode mode);
 ::vk::PrimitiveTopology VkCast(PrimitiveTopology topology);
 ::vk::ShaderStageFlagBits VkCast(ShaderStage stage);
-::vk::ShaderStageFlags VkCast(const std::vector<ShaderStage>& stages);
+::vk::ShaderStageFlags VkCast(ArrayProxy<ShaderStage> stages);
 ::vk::DebugUtilsLabelEXT VkCast(const DebugLabel& label);
 ::vk::Format VkCast(Format format);
 ::vk::IndexType VkCast(IndexType indexType);

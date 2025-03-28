@@ -345,7 +345,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
 {
     APH_PROFILER_SCOPE();
     bool hasTaskShader = false;
-    std::vector<Shader*> shaders{};
+    SmallVector<Shader*> shaders{};
 
     PipelineType pipelineType = {};
     // vs + fs

@@ -5,7 +5,7 @@
 
 namespace aph
 {
-const std::unordered_map<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
+const HashMap<spirv_cross::SPIRType::BaseType, size_t> baseTypeSizeMap = {
     { spirv_cross::SPIRType::Float, 4 },
     { spirv_cross::SPIRType::Int, 4 },
     { spirv_cross::SPIRType::UInt, 4 },
@@ -313,7 +313,7 @@ ShaderReflector::ShaderReflector(ReflectRequest request)
     }
 }
 
-ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& spvCode)
+ResourceLayout ShaderReflector::reflectStageLayout(ArrayProxy<uint32_t> spvCode)
 {
     APH_PROFILER_SCOPE();
     spirv_cross::Compiler compiler{ spvCode.data(), spvCode.size() };
@@ -473,7 +473,7 @@ ResourceLayout ShaderReflector::reflectStageLayout(const std::vector<uint32_t>& 
 void ShaderReflector::reflect()
 {
     APH_PROFILER_SCOPE();
-    const std::vector<vk::Shader*>& shaders = m_request.shaders;
+    const auto& shaders = m_request.shaders;
     const vk::ImmutableSamplerBank* samplerBank = m_request.samplerBank;
 
     vk::ImmutableSamplerBank extImmutableSamplers = {};

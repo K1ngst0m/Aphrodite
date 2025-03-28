@@ -1,4 +1,5 @@
 #include "vkUtils.h"
+#include "common/arrayProxy.h"
 #include "common/hash.h"
 
 #include "allocator/allocator.h"
@@ -210,7 +211,7 @@ std::string errorString(::vk::Result errorCode)
     return errorString(static_cast<VkResult>(errorCode));
 }
 
-::vk::ShaderStageFlags VkCast(const std::vector<ShaderStage>& stages)
+::vk::ShaderStageFlags VkCast(ArrayProxy<ShaderStage> stages)
 {
     ::vk::ShaderStageFlags flags{};
     for (const auto& stage : stages)

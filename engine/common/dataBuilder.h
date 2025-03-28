@@ -27,12 +27,12 @@ public:
         std::memcpy((uint8_t*)writePtr, getData().data(), getData().size());
     }
 
-    const std::vector<std::byte>& getData() const noexcept
+    const SmallVector<std::byte>& getData() const noexcept
     {
         return m_data;
     }
 
-    std::vector<std::byte>& getData() noexcept
+    SmallVector<std::byte>& getData() noexcept
     {
         return m_data;
     }
@@ -75,7 +75,7 @@ public:
     }
 
 private:
-    std::vector<std::byte> m_data;
+    SmallVector<std::byte> m_data;
     uint32_t m_minAlignment;
 };
 } // namespace aph

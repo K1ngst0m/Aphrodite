@@ -20,7 +20,7 @@ Result Queue::submit(ArrayProxy<QueueSubmitInfo> submitInfos, Fence* pFence)
     SmallVector<SmallVector<::vk::Semaphore>> vkWaitSemaphores2D;
     SmallVector<SmallVector<::vk::Semaphore>> vkSignalSemaphores2D;
 
-    std::vector<::vk::SubmitInfo> vkSubmits;
+    SmallVector<::vk::SubmitInfo> vkSubmits;
     for (const auto& submitInfo : submitInfos)
     {
         auto& vkCmds = vkCmds2D.emplace_back();

@@ -155,8 +155,8 @@ Result DescriptorSetLayout::updateSet(const DescriptorUpdateInfo& data, const De
         .setDstArrayElement(data.arrayOffset)
         .setDescriptorType(descriptorType);
 
-    std::vector<::vk::DescriptorImageInfo> imageInfos;
-    std::vector<::vk::DescriptorBufferInfo> bufferInfos;
+    SmallVector<::vk::DescriptorImageInfo> imageInfos;
+    SmallVector<::vk::DescriptorBufferInfo> bufferInfos;
 
     switch (descriptorType)
     {

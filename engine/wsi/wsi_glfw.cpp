@@ -235,14 +235,14 @@ void WSI::resize(uint32_t width, uint32_t height)
     }
 }
 
-std::vector<const char*> aph::WSI::getRequiredExtensions()
+SmallVector<const char*> aph::WSI::getRequiredExtensions()
 {
-    std::vector<const char*> extensions{};
+    SmallVector<const char*> extensions{};
     {
         uint32_t glfwExtensionCount = 0;
         const char** glfwExtensions;
         glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-        extensions = std::vector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
+        extensions = SmallVector<const char*>(glfwExtensions, glfwExtensions + glfwExtensionCount);
     }
     return extensions;
 }

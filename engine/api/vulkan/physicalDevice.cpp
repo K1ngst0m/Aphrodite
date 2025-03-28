@@ -101,7 +101,7 @@ PhysicalDevice::PhysicalDevice(HandleType handle)
     }
 }
 
-Format PhysicalDevice::findSupportedFormat(const std::vector<Format>& candidates, ::vk::ImageTiling tiling,
+Format PhysicalDevice::findSupportedFormat(ArrayProxy<Format> candidates, ::vk::ImageTiling tiling,
                                            ::vk::FormatFeatureFlags features) const
 {
     for (Format format : candidates)

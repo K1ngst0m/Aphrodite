@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/smallVector.h"
 #include "singleton.h"
 
 namespace aph
@@ -130,7 +131,7 @@ private:
         std::function<void()> flushCallback;
     };
 
-    std::vector<SinkEntry> m_sinks;
+    SmallVector<SinkEntry> m_sinks;
 };
 
 } // namespace aph

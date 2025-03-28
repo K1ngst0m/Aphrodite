@@ -53,10 +53,10 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     return utils::getResult(result);
 }
 
-Result SwapChain::presentImage(const std::vector<Semaphore*>& waitSemaphores, Image* pImage)
+Result SwapChain::presentImage(ArrayProxy<Semaphore*> waitSemaphores, Image* pImage)
 {
     APH_PROFILER_SCOPE();
-    std::vector<::vk::Semaphore> vkSemaphores;
+    SmallVector<::vk::Semaphore> vkSemaphores;
     vkSemaphores.reserve(waitSemaphores.size());
     for (auto sem : waitSemaphores)
     {

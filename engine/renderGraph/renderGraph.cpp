@@ -39,7 +39,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     if (pSwapChain != m_buildData.pSwapchain)
     {
         m_buildData.pSwapchain = pSwapChain;
-        markDirty(DirtyFlagBits::SwapChainDirty);
+        setDirty(DirtyFlagBits::SwapChainDirty);
     }
 
     // If nothing is dirty, no need to rebuild
@@ -240,7 +240,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         for (auto [name, pass] : m_declareData.passMap)
         {
             APH_PROFILER_SCOPE_NAME("pass commands recording");
-            std::vector<vk::Image*> colorImages;
+            SmallVector<vk::Image*> colorImages;
             vk::Image* pDepthImage = {};
             SmallVector<vk::ImageBarrier> initImageBarriers{};
             SmallVector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];

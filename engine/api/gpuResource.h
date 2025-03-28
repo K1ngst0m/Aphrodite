@@ -439,8 +439,8 @@ struct VertexInput
         uint32_t stride = 0;
     };
 
-    std::vector<VertexAttribute> attributes;
-    std::vector<VertexInputBinding> bindings;
+    SmallVector<VertexAttribute> attributes;
+    SmallVector<VertexInputBinding> bindings;
 };
 
 struct ColorAttachment
