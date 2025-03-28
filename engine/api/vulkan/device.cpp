@@ -850,7 +850,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     CommandBuffer* cmd = nullptr;
     APH_VR(commandPool->allocate(1, &cmd));
 
-    APH_VR(cmd->begin(::vk::CommandBufferUsageFlagBits::eOneTimeSubmit));
+    APH_VR(cmd->begin());
     func(cmd);
     APH_VR(cmd->end());
 

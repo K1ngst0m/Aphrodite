@@ -5,18 +5,19 @@
 namespace aph::vk
 {
 
-CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue)
+CommandBuffer::CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue, bool transient)
     : ResourceHandle(handle)
     , m_pDevice(pDevice)
     , m_pQueue(pQueue)
     , m_state(RecordState::Initial)
+    , m_transient(transient)
 {
     APH_PROFILER_SCOPE();
 }
 
 CommandBuffer::~CommandBuffer() = default;
 
-Result CommandBuffer::begin(::vk::CommandBufferUsageFlags flags)
+Result CommandBuffer::begin()
 {
     APH_PROFILER_SCOPE();
     if (m_state == RecordState::Recording)
@@ -26,7 +27,10 @@ Result CommandBuffer::begin(::vk::CommandBufferUsageFlags flags)
 
     // Begin command recording.
     ::vk::CommandBufferBeginInfo beginInfo{};
-    beginInfo.setFlags(flags);
+    if (m_transient)
+    {
+        beginInfo.setFlags(::vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    }
 
     auto result = getHandle().begin(beginInfo);
     if (result != ::vk::Result::eSuccess)

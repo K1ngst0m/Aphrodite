@@ -136,11 +136,11 @@ class CommandBuffer : public ResourceHandle<::vk::CommandBuffer>
     };
 
 private:
-    CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue);
+    CommandBuffer(Device* pDevice, HandleType handle, Queue* pQueue, bool transient = false);
     ~CommandBuffer();
 
 public:
-    Result begin(::vk::CommandBufferUsageFlags flags = {});
+    Result begin();
     Result end();
     Result reset();
 
@@ -218,5 +218,6 @@ private:
     Device* m_pDevice = {};
     Queue* m_pQueue = {};
     RecordState m_state = {};
+    bool m_transient = {};
 };
 } // namespace aph::vk

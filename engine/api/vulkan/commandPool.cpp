@@ -24,7 +24,7 @@ Result CommandPool::allocate(uint32_t count, CommandBuffer** ppCommandBuffers)
 
     for (auto i = 0; i < count; i++)
     {
-        ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue);
+        ppCommandBuffers[i] = m_commandBufferPool.allocate(m_pDevice, handles[i], m_pQueue, getCreateInfo().transient);
         APH_ASSERT(!m_allocatedCommandBuffers.contains(ppCommandBuffers[i]));
         m_allocatedCommandBuffers.insert(ppCommandBuffers[i]);
     }
