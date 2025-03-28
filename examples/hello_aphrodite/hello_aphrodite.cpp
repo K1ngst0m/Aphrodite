@@ -164,8 +164,8 @@ void hello_aphrodite::init()
                                                 .data = vertices.data(),
                                                 .createInfo = {
                                                     .size = vertices.size() * sizeof(vertices[0]),
-                                                    .usage = aph::BufferUsage::StorageBuffer |
-                                                             aph::BufferUsage::VertexBuffer,
+                                                    .usage = aph::BufferUsage::Storage |
+                                                             aph::BufferUsage::Vertex,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
@@ -178,8 +178,8 @@ void hello_aphrodite::init()
                                                 .data = indices.data(),
                                                 .createInfo = {
                                                     .size = indices.size() * sizeof(indices[0]),
-                                                    .usage = aph::BufferUsage::StorageBuffer |
-                                                             aph::BufferUsage::IndexBuffer,
+                                                    .usage = aph::BufferUsage::Storage |
+                                                             aph::BufferUsage::Index,
                                                     .domain = aph::MemoryDomain::Device,
                                                 } };
 
@@ -204,7 +204,7 @@ void hello_aphrodite::init()
                                                 .data = &m_mvp,
                                                 .createInfo = {
                                                     .size = sizeof(m_mvp),
-                                                    .usage = aph::BufferUsage::UniformBuffer,
+                                                    .usage = aph::BufferUsage::Uniform,
                                                     .domain = aph::MemoryDomain::Host,
                                                 } };
 

@@ -715,15 +715,15 @@ Result getResult(VkResult result)
 {
     ::vk::BufferUsageFlags vkUsage;
     
-    if (usage & BufferUsage::VertexBuffer)
+    if (usage & BufferUsage::Vertex)
         vkUsage |= ::vk::BufferUsageFlagBits::eVertexBuffer;
-    if (usage & BufferUsage::IndexBuffer)
+    if (usage & BufferUsage::Index)
         vkUsage |= ::vk::BufferUsageFlagBits::eIndexBuffer;
-    if (usage & BufferUsage::UniformBuffer)
+    if (usage & BufferUsage::Uniform)
         vkUsage |= ::vk::BufferUsageFlagBits::eUniformBuffer;
-    if (usage & BufferUsage::StorageBuffer)
+    if (usage & BufferUsage::Storage)
         vkUsage |= ::vk::BufferUsageFlagBits::eStorageBuffer;
-    if (usage & BufferUsage::IndirectBuffer)
+    if (usage & BufferUsage::Indirect)
         vkUsage |= ::vk::BufferUsageFlagBits::eIndirectBuffer;
     if (usage & BufferUsage::TransferSrc)
         vkUsage |= ::vk::BufferUsageFlagBits::eTransferSrc;

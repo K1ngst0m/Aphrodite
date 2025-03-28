@@ -475,11 +475,11 @@ struct StencilState
 enum class BufferUsage : uint32_t
 {
     None = 0,
-    VertexBuffer = 0x00000001,
-    IndexBuffer = 0x00000002,
-    UniformBuffer = 0x00000004,
-    StorageBuffer = 0x00000008,
-    IndirectBuffer = 0x00000010,
+    Vertex = 0x00000001,
+    Index = 0x00000002,
+    Uniform = 0x00000004,
+    Storage = 0x00000008,
+    Indirect = 0x00000010,
     TransferSrc = 0x00000020,
     TransferDst = 0x00000040,
     AccelStructBuild = 0x00000080,
@@ -493,8 +493,8 @@ struct FlagTraits<BufferUsage>
 {
     static constexpr bool isBitmask = true;
     static constexpr BufferUsageFlags allFlags =
-        BufferUsage::VertexBuffer | BufferUsage::IndexBuffer | BufferUsage::UniformBuffer | BufferUsage::StorageBuffer |
-        BufferUsage::IndirectBuffer | BufferUsage::TransferSrc | BufferUsage::TransferDst |
+        BufferUsage::Vertex | BufferUsage::Index | BufferUsage::Uniform | BufferUsage::Storage |
+        BufferUsage::Indirect | BufferUsage::TransferSrc | BufferUsage::TransferDst |
         BufferUsage::AccelStructBuild | BufferUsage::AccelStructStorage | BufferUsage::ShaderBindingTable |
         BufferUsage::ShaderDeviceAddress;
 };

@@ -57,7 +57,7 @@ bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, a
                                               // TODO index type
                                               .createInfo = {
                                                   .size = static_cast<uint32_t>(indexAccessor.count * sizeof(uint16_t)),
-                                                  .usage = BufferUsage::IndexBuffer } };
+                                                  .usage = BufferUsage::Index } };
                 APH_VR(pLoader->load(loadInfo, &pIB));
                 (*ppGeometry)->indexBuffer.push_back(pIB);
             }
@@ -75,7 +75,7 @@ bool loadGLTF(aph::ResourceLoader* pLoader, const aph::GeometryLoadInfo& info, a
                 aph::BufferLoadInfo loadInfo{
                     .data = (void*)(buffer.data.data() + bufferView.byteOffset),
                     .createInfo = { .size = static_cast<uint32_t>(accessor.count * accessor.ByteStride(bufferView)),
-                                    .usage = BufferUsage::VertexBuffer },
+                                    .usage = BufferUsage::Vertex },
                 };
                 APH_VR(pLoader->load(loadInfo, &pVB));
                 (*ppGeometry)->vertexBuffers.push_back(pVB);
