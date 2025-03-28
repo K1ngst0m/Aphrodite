@@ -9,7 +9,10 @@ namespace aph
 class RenderGraph
 {
 public:
-
+    RenderGraph(const RenderGraph&) = delete;
+    RenderGraph(RenderGraph&&) = delete;
+    RenderGraph& operator=(const RenderGraph&) = delete;
+    RenderGraph& operator=(RenderGraph&&) = delete;
     RenderGraph(vk::Device* pDevice);
     ~RenderGraph();
 
@@ -28,25 +31,36 @@ public:
     void execute(vk::Fence* pFence = nullptr);
     void cleanup();
 
+    std::string exportToGraphviz() const;
+
 private:
     // Dirty flags to track what needs to be rebuilt
     enum DirtyFlagBits : uint32_t
     {
         None = 0,
-        PassDirty = 1 << 0,        // Render passes changed
+        PassDirty = 1 << 0, // Render passes changed
         ImageResourceDirty = 1 << 1, // Image resources changed
         BufferResourceDirty = 1 << 2, // Buffer resources changed
-        TopologyDirty = 1 << 3,     // Graph topology changed
-        BackBufferDirty = 1 << 4,   // Back buffer changed
-        SwapChainDirty = 1 << 5,    // Swapchain changed
-        All = 0xFFFFFFFF           // Everything is dirty
+        TopologyDirty = 1 << 3, // Graph topology changed
+        BackBufferDirty = 1 << 4, // Back buffer changed
+        SwapChainDirty = 1 << 5, // Swapchain changed
+        All = 0xFFFFFFFF // Everything is dirty
     };
     using DirtyFlags = uint32_t;
     DirtyFlags m_dirtyFlags = DirtyFlagBits::All;
 
-    void clearDirtyFlags() { m_dirtyFlags = DirtyFlagBits::None; }
-    bool isDirty(DirtyFlags flags) const { return (m_dirtyFlags & flags) != 0; }
-    void setDirty(DirtyFlags flags) { m_dirtyFlags |= flags; }
+    void clearDirtyFlags()
+    {
+        m_dirtyFlags = DirtyFlagBits::None;
+    }
+    bool isDirty(DirtyFlags flags) const
+    {
+        return (m_dirtyFlags & flags) != 0;
+    }
+    void setDirty(DirtyFlags flags)
+    {
+        m_dirtyFlags |= flags;
+    }
 
 private:
     vk::Device* m_pDevice = {};

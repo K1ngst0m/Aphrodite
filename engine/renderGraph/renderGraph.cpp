@@ -1,4 +1,5 @@
 #include "renderGraph.h"
+#include "common/graphView.h"
 #include "common/profiler.h"
 #include "threads/taskManager.h"
 
@@ -499,4 +500,174 @@ void RenderGraph::cleanup()
     }
     m_buildData.cmdPools.clear();
 };
+
+std::string RenderGraph::exportToGraphviz() const
+{
+    APH_PROFILER_SCOPE();
+
+    // Create a graph visualizer instance
+    GraphVisualizer visualizer;
+
+    // Configure the graph settings
+    visualizer.setName("RenderGraph");
+    visualizer.setDirection(GraphDirection::LeftToRight);
+    visualizer.setFontName("Arial");
+    visualizer.setNodeSeparation(0.8f);
+    visualizer.setRankSeparation(1.0f);
+
+    // Define default styles
+    GraphColor nodeGraphicsFill = GraphColor::fromHex("#A3D977");
+    GraphColor nodeGraphicsBorder = GraphColor::fromHex("#2D6016");
+    GraphColor nodeComputeFill = GraphColor::fromHex("#7891D0");
+    GraphColor nodeComputeBorder = GraphColor::fromHex("#1A337E");
+    GraphColor nodeTransferFill = GraphColor::fromHex("#E8C477");
+    GraphColor nodeTransferBorder = GraphColor::fromHex("#8E6516");
+    GraphColor nodeDefaultFill = GraphColor::fromHex("#D3D3D3");
+    GraphColor nodeDefaultBorder = GraphColor::fromHex("#5A5A5A");
+
+    GraphColor edgeImageColor = GraphColor::fromHex("#4285F4");
+    GraphColor edgeBufferColor = GraphColor::fromHex("#EA4335");
+
+    // Add nodes (passes)
+    for (const auto& [name, pass] : m_declareData.passMap)
+    {
+        GraphNode* node = visualizer.addNode(name);
+
+        // Set color based on queue type
+        switch (pass->getQueueType())
+        {
+        case QueueType::Graphics:
+            node->setFillColor(nodeGraphicsFill);
+            node->setBorderColor(nodeGraphicsBorder);
+            break;
+        case QueueType::Compute:
+            node->setFillColor(nodeComputeFill);
+            node->setBorderColor(nodeComputeBorder);
+            break;
+        case QueueType::Transfer:
+            node->setFillColor(nodeTransferFill);
+            node->setBorderColor(nodeTransferBorder);
+            break;
+        default:
+            node->setFillColor(nodeDefaultFill);
+            node->setBorderColor(nodeDefaultBorder);
+        }
+
+        // Create HTML-like table for the node content
+        node->beginTable();
+
+        // Add pass name as header
+        node->addTableRow(name, "", true);
+
+        // Add queue type
+        std::string queueTypeStr;
+        switch (pass->getQueueType())
+        {
+        case QueueType::Graphics:
+            queueTypeStr = "Graphics";
+            break;
+        case QueueType::Compute:
+            queueTypeStr = "Compute";
+            break;
+        case QueueType::Transfer:
+            queueTypeStr = "Transfer";
+            break;
+        default:
+            queueTypeStr = "Unknown";
+        }
+        node->addTableRow("Queue:", queueTypeStr);
+
+        // Add resource inputs
+        if (!pass->m_res.textureIn.empty() || !pass->m_res.uniformBufferIn.empty() ||
+            !pass->m_res.storageBufferIn.empty())
+        {
+
+            std::string inputs;
+            bool first = true;
+
+            for (const auto& resource : pass->m_res.textureIn)
+            {
+                inputs += (first ? "" : "<BR/>") + std::string("Texture: ") + resource->getName();
+                first = false;
+            }
+            for (const auto& resource : pass->m_res.uniformBufferIn)
+            {
+                inputs += (first ? "" : "<BR/>") + std::string("Uniform: ") + resource->getName();
+                first = false;
+            }
+            for (const auto& resource : pass->m_res.storageBufferIn)
+            {
+                inputs += (first ? "" : "<BR/>") + std::string("Storage: ") + resource->getName();
+                first = false;
+            }
+
+            node->addTableRow("Inputs:", inputs);
+        }
+
+        // Add resource outputs
+        if (!pass->m_res.textureOut.empty() || !pass->m_res.storageBufferOut.empty() || !pass->m_res.colorOut.empty() ||
+            pass->m_res.depthOut)
+        {
+
+            std::string outputs;
+            bool first = true;
+
+            for (const auto& resource : pass->m_res.textureOut)
+            {
+                outputs += (first ? "" : "<BR/>") + std::string("Texture: ") + resource->getName();
+                first = false;
+            }
+            for (const auto& resource : pass->m_res.storageBufferOut)
+            {
+                outputs += (first ? "" : "<BR/>") + std::string("Storage: ") + resource->getName();
+                first = false;
+            }
+            for (const auto& resource : pass->m_res.colorOut)
+            {
+                outputs += (first ? "" : "<BR/>") + std::string("Color: ") + resource->getName();
+                first = false;
+            }
+            if (pass->m_res.depthOut)
+            {
+                outputs += (first ? "" : "<BR/>") + std::string("Depth: ") + pass->m_res.depthOut->getName();
+            }
+
+            node->addTableRow("Outputs:", outputs);
+        }
+
+        node->endTable();
+    }
+
+    // Add edges based on resource dependencies
+    for (const auto& [name, resource] : m_declareData.resourceMap)
+    {
+        // For each resource, draw edges from write passes to read passes
+        for (const auto& writePass : resource->getWritePasses())
+        {
+            for (const auto& readPass : resource->getReadPasses())
+            {
+                if (writePass != readPass)
+                {
+                    // Create edge
+                    GraphEdge* edge = visualizer.addEdge(writePass->m_name, readPass->m_name);
+                    edge->setLabel(name);
+
+                    // Style based on resource type
+                    if (resource->getType() == PassResource::Type::Image)
+                    {
+                        edge->setColor(edgeImageColor);
+                    }
+                    else
+                    {
+                        edge->setColor(edgeBufferColor);
+                    }
+                    edge->setThickness(1.5f);
+                }
+            }
+        }
+    }
+
+    // Export to DOT format
+    return visualizer.exportToDot();
+}
 } // namespace aph
