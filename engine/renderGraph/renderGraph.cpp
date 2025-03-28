@@ -10,16 +10,6 @@ RenderGraph::RenderGraph(vk::Device* pDevice)
 {
 }
 
-RenderPass* RenderGraph::getPass(const std::string& name)
-{
-    APH_PROFILER_SCOPE();
-    if (m_declareData.passMap.contains(name))
-    {
-        return m_declareData.passMap[name];
-    }
-    return nullptr;
-}
-
 RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
 {
     APH_PROFILER_SCOPE();
@@ -434,18 +424,6 @@ void RenderGraph::execute(vk::Fence* pFence)
     }
 }
 
-vk::Image* RenderGraph::getBuildResource(PassImageResource* pResource) const
-{
-    APH_PROFILER_SCOPE();
-    APH_ASSERT(m_buildData.image.contains(pResource));
-    return m_buildData.image.at(pResource);
-}
-vk::Buffer* RenderGraph::getBuildResource(PassBufferResource* pResource) const
-{
-    APH_PROFILER_SCOPE();
-    APH_ASSERT(m_buildData.buffer.contains(pResource));
-    return m_buildData.buffer.at(pResource);
-}
 void RenderGraph::setBackBuffer(const std::string& backBuffer)
 {
     APH_PROFILER_SCOPE();

@@ -17,14 +17,6 @@ public:
     ~RenderGraph();
 
     RenderPass* createPass(const std::string& name, QueueType queueType);
-    RenderPass* getPass(const std::string& name);
-
-    PassResource* importResource(const std::string& name, vk::Image* pImage);
-    PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
-    PassResource* getResource(const std::string& name, PassResource::Type type);
-    vk::Image* getBuildResource(PassImageResource* pResource) const;
-    vk::Buffer* getBuildResource(PassBufferResource* pResource) const;
-
     void setBackBuffer(const std::string& backBuffer);
 
     void build(vk::SwapChain* pSwapChain = nullptr);
@@ -32,6 +24,12 @@ public:
     void cleanup();
 
     std::string exportToGraphviz() const;
+
+private:
+    friend class RenderPass;
+    PassResource* importResource(const std::string& name, vk::Image* pImage);
+    PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
+    PassResource* getResource(const std::string& name, PassResource::Type type);
 
 private:
     // Dirty flags to track what needs to be rebuilt
