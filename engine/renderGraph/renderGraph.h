@@ -1,7 +1,7 @@
 #pragma once
 
-#include "renderPass.h"
 #include "api/vulkan/device.h"
+#include "renderPass.h"
 #include "threads/taskManager.h"
 
 namespace aph
@@ -9,6 +9,7 @@ namespace aph
 class RenderGraph
 {
 public:
+
     RenderGraph(vk::Device* pDevice);
     ~RenderGraph();
 
@@ -18,44 +19,57 @@ public:
     PassResource* importResource(const std::string& name, vk::Image* pImage);
     PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
     PassResource* getResource(const std::string& name, PassResource::Type type);
-    bool hasResource(const std::string& name) const
-    {
-        return m_declareData.resourceMap.contains(name);
-    }
     vk::Image* getBuildResource(PassImageResource* pResource) const;
     vk::Buffer* getBuildResource(PassBufferResource* pResource) const;
 
     void setBackBuffer(const std::string& backBuffer);
 
     void build(vk::SwapChain* pSwapChain = nullptr);
+    void rebuildDirtyParts();
     void execute(vk::Fence* pFence = nullptr);
     void cleanup();
 
 private:
+    // Dirty flags to track what needs to be rebuilt
+    enum DirtyFlagBits : uint32_t
+    {
+        None = 0,
+        PassDirty = 1 << 0,        // Render passes changed
+        ImageResourceDirty = 1 << 1, // Image resources changed
+        BufferResourceDirty = 1 << 2, // Buffer resources changed
+        TopologyDirty = 1 << 3,     // Graph topology changed
+        BackBufferDirty = 1 << 4,   // Back buffer changed
+        SwapChainDirty = 1 << 5,    // Swapchain changed
+        All = 0xFFFFFFFF           // Everything is dirty
+    };
+    using DirtyFlags = uint32_t;
+    // Resets all dirty flags
+    void clearDirtyFlags() { m_dirtyFlags = DirtyFlagBits::None; }
+    // Check if specific flags are set
+    bool isDirty(DirtyFlags flags) const { return (m_dirtyFlags & flags) != 0; }
+    // Mark specific aspects as dirty
+    void markDirty(DirtyFlags flags) { m_dirtyFlags |= flags; }
+
+private:
     vk::Device* m_pDevice = {};
+    DirtyFlags m_dirtyFlags = DirtyFlagBits::All; // Start with everything dirty
 
     struct
     {
         std::string backBuffer = {};
-
-        SmallVector<RenderPass*> passes;
-        HashMap<std::string, std::size_t> passMap;
-
-        SmallVector<PassBufferResource*> bufferResources;
-        SmallVector<PassImageResource*> imageResources;
-        SmallVector<PassResource*> resources;
-        HashMap<std::string, std::size_t> resourceMap;
+        HashMap<std::string, RenderPass*> passMap;
+        HashMap<std::string, PassResource*> resourceMap;
     } m_declareData;
 
     struct
     {
+        HashMap<RenderPass*, HashSet<RenderPass*>> passDependencyGraph;
         SmallVector<RenderPass*> sortedPasses;
 
         HashMap<RenderPass*, vk::CommandPool*> cmdPools;
         HashMap<RenderPass*, vk::CommandBuffer*> cmds;
-        HashMap<RenderPass*, HashSet<RenderPass*>> passDependencyGraph;
-        HashMap<RenderPass*, std::vector<vk::ImageBarrier>> imageBarriers;
-        HashMap<RenderPass*, std::vector<vk::BufferBarrier>> bufferBarriers;
+        HashMap<RenderPass*, SmallVector<vk::ImageBarrier>> imageBarriers;
+        HashMap<RenderPass*, SmallVector<vk::BufferBarrier>> bufferBarriers;
 
         HashMap<PassResource*, vk::Image*> image;
         HashMap<PassResource*, vk::Buffer*> buffer;
@@ -63,9 +77,8 @@ private:
         vk::SwapChain* pSwapchain = {};
         vk::Fence* frameFence = {};
 
-        std::vector<vk::QueueSubmitInfo> frameSubmitInfos{};
+        SmallVector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex submitLock;
-
     } m_buildData;
 
     struct

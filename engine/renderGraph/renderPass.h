@@ -15,25 +15,11 @@ enum class PassResourceFlagBits
 };
 using PassResourceFlags = Flags<PassResourceFlagBits>;
 
-struct PassImageInfo
-{
-    Extent3D extent = {};
-    Format format = Format::Undefined;
-    uint32_t samples = 1;
-    uint32_t levels = 1;
-    uint32_t layers = 1;
-};
-
-struct PassBufferInfo
-{
-    VkDeviceSize size = 0;
-    VkBufferUsageFlags usage = 0;
-    PassResourceFlags flags = {};
-};
-
 class PassResource
 {
 public:
+    virtual ~PassResource() = default;
+
     enum class Type
     {
         Image,
@@ -53,11 +39,7 @@ public:
     {
         m_readPasses.insert(pPass);
     }
-    void addPipelineStage(VkPipelineStageFlagBits2 stage)
-    {
-        m_pipelineStages |= stage;
-    }
-    void addAccessFlags(VkAccessFlagBits2 flag)
+    void addAccessFlags(::vk::AccessFlagBits2 flag)
     {
         m_accessFlags |= flag;
     }
@@ -83,11 +65,7 @@ public:
     {
         return m_flags;
     }
-    VkPipelineStageFlags2 getPipelineStage() const
-    {
-        return m_pipelineStages;
-    }
-    VkAccessFlags2 getAccessFlags() const
+    ::vk::AccessFlags2 getAccessFlags() const
     {
         return m_accessFlags;
     }
@@ -106,8 +84,7 @@ protected:
     Type m_type;
     HashSet<RenderPass*> m_writePasses;
     HashSet<RenderPass*> m_readPasses;
-    VkPipelineStageFlags2 m_pipelineStages = 0;
-    VkAccessFlags2 m_accessFlags = 0;
+    ::vk::AccessFlags2 m_accessFlags = {};
     PassResourceFlags m_flags = PassResourceFlagBits::None;
     std::string m_name;
 };
@@ -119,7 +96,7 @@ public:
         : PassResource(type)
     {
     }
-    void setInfo(const PassImageInfo& info)
+    void setInfo(const vk::ImageCreateInfo& info)
     {
         m_info = info;
     }
@@ -128,7 +105,7 @@ public:
         m_usage |= usage;
     }
 
-    const PassImageInfo& getInfo() const
+    const vk::ImageCreateInfo& getInfo() const
     {
         return m_info;
     }
@@ -138,7 +115,7 @@ public:
     }
 
 private:
-    PassImageInfo m_info = {};
+    vk::ImageCreateInfo m_info = {};
     ImageUsageFlags m_usage = {};
 };
 
@@ -149,7 +126,7 @@ public:
         : PassResource(type)
     {
     }
-    void addInfo(const PassBufferInfo& info)
+    void addInfo(const vk::BufferCreateInfo& info)
     {
         m_info = info;
     }
@@ -158,7 +135,7 @@ public:
         m_usage |= usage;
     }
 
-    const PassBufferInfo& getInfo() const
+    const vk::BufferCreateInfo& getInfo() const
     {
         return m_info;
     }
@@ -168,7 +145,7 @@ public:
     }
 
 private:
-    PassBufferInfo m_info;
+    vk::BufferCreateInfo m_info;
     BufferUsageFlags m_usage;
 };
 
@@ -177,7 +154,7 @@ class RenderPass
     friend class RenderGraph;
 
 public:
-    RenderPass(RenderGraph* pRDG, uint32_t index, QueueType queueType, std::string_view name);
+    RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
 
     PassBufferResource* addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
     PassBufferResource* addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
@@ -185,8 +162,8 @@ public:
 
     PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr);
     PassImageResource* addTextureOut(const std::string& name);
-    PassImageResource* setColorOut(const std::string& name, const PassImageInfo& info);
-    PassImageResource* setDepthStencilOut(const std::string& name, const PassImageInfo& info);
+    PassImageResource* setColorOut(const std::string& name, const vk::ImageCreateInfo& info);
+    PassImageResource* setDepthStencilOut(const std::string& name, const vk::ImageCreateInfo& info);
 
     using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
@@ -209,10 +186,6 @@ public:
     {
         return m_queueType;
     }
-    uint32_t getIndex() const
-    {
-        return m_index;
-    }
 
 private:
     ExecuteCallBack m_executeCB;
@@ -234,9 +207,8 @@ private:
 
 private:
     RenderGraph* m_pRenderGraph = {};
-    uint32_t m_index = {};
     QueueType m_queueType = {};
     std::string m_name;
 };
 
-}
+} // namespace aph

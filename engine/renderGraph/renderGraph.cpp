@@ -4,78 +4,89 @@
 
 namespace aph
 {
-RenderPass* RenderGraph::getPass(const std::string& name)
-{
-    APH_PROFILER_SCOPE();
-    if (m_declareData.passMap.contains(name))
-    {
-        return m_declareData.passes[m_declareData.passMap[name]];
-    }
-    return nullptr;
-}
-RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
-{
-    APH_PROFILER_SCOPE();
-    if (m_declareData.passMap.contains(name))
-    {
-        return m_declareData.passes[m_declareData.passMap[name]];
-    }
-
-    auto index = m_declareData.passes.size();
-    auto* pass = m_resourcePool.renderPass.allocate(this, index, queueType, name);
-    m_declareData.passes.emplace_back(pass);
-    m_declareData.passMap[name] = index;
-    return pass;
-}
-
 RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
 {
 }
 
+RenderPass* RenderGraph::getPass(const std::string& name)
+{
+    APH_PROFILER_SCOPE();
+    if (m_declareData.passMap.contains(name))
+    {
+        return m_declareData.passMap[name];
+    }
+    return nullptr;
+}
+
+RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
+{
+    APH_PROFILER_SCOPE();
+    if (m_declareData.passMap.contains(name))
+    {
+        return m_declareData.passMap[name];
+    }
+
+    auto* pass = m_resourcePool.renderPass.allocate(this, queueType, name);
+    m_declareData.passMap[name] = pass;
+    return pass;
+}
+
 void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
     APH_PROFILER_SCOPE();
-    // TODO clear on demand
+
+    if (pSwapChain != m_buildData.pSwapchain)
     {
+        m_buildData.pSwapchain = pSwapChain;
+        markDirty(DirtyFlagBits::SwapChainDirty);
+    }
+
+    // If nothing is dirty, no need to rebuild
+    if (m_dirtyFlags == DirtyFlagBits::None)
+    {
+        return;
+    }
+
+    // Clear relevant data structures based on what's dirty
+    if (isDirty(DirtyFlagBits::TopologyDirty | DirtyFlagBits::PassDirty))
+    {
+        std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
-
-        std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
         m_buildData.frameSubmitInfos.clear();
-        for (auto* pass : m_declareData.passes)
+        m_buildData.sortedPasses.clear();
+
+        for (auto [name, pass] : m_declareData.passMap)
         {
             m_buildData.passDependencyGraph[pass].clear();
         }
     }
 
-    if (m_buildData.frameFence == nullptr)
+    if (isDirty(DirtyFlagBits::TopologyDirty | DirtyFlagBits::PassDirty))
     {
-        m_buildData.frameFence = m_pDevice->acquireFence(true);
-    }
+        APH_PROFILER_SCOPE_NAME("topological sort");
 
-    for (auto res : m_declareData.resources)
-    {
-        for (const auto& readPass : res->getReadPasses())
+        for (auto [name, res] : m_declareData.resourceMap)
         {
-            for (const auto& writePass : res->getWritePasses())
+            for (const auto& readPass : res->getReadPasses())
             {
-                if (readPass != writePass)
+                for (const auto& writePass : res->getWritePasses())
                 {
-                    m_buildData.passDependencyGraph[readPass].insert(writePass);
+                    if (readPass != writePass)
+                    {
+                        m_buildData.passDependencyGraph[readPass].insert(writePass);
+                    }
                 }
             }
         }
-    }
 
-    // topological sort
-    {
-        APH_PROFILER_SCOPE_NAME("topological sort");
         if (m_buildData.passDependencyGraph.empty())
         {
             VK_LOG_WARN("render graph is empty.");
         }
-        std::unordered_map<RenderPass*, int> inDegree;
+
+        HashMap<RenderPass*, int> inDegree;
         std::queue<RenderPass*> zeroInDegreeQueue;
         auto& sortedPasses = m_buildData.sortedPasses;
         auto& graph = m_buildData.passDependencyGraph;
@@ -125,74 +136,121 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         APH_ASSERT(sortedPasses.size() == graph.size());
     }
 
-    // per pass resource build
-    for (auto* pass : m_buildData.sortedPasses)
+    if (isDirty(DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty | DirtyFlagBits::PassDirty |
+                DirtyFlagBits::BackBufferDirty))
     {
-        APH_PROFILER_SCOPE_NAME("pass resource build");
-        auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-        if (!m_buildData.cmdPools.contains(pass))
+        // per pass resource build
+        for (auto* pass : m_buildData.sortedPasses)
         {
-            APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
-            m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
-        }
+            APH_PROFILER_SCOPE_NAME("pass resource build");
+            auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
-        // color attachments
-        for (PassImageResource* colorAttachment : pass->m_res.colorOut)
-        {
-            if (!m_buildData.image.contains(colorAttachment))
+            // Create command pools and allocate command buffers if needed
+            if (!m_buildData.cmdPools.contains(pass))
             {
-                vk::Image* pImage = {};
-                vk::ImageCreateInfo createInfo{
-                    .extent = colorAttachment->getInfo().extent,
-                    .usage = colorAttachment->getUsage(),
-                    .domain = MemoryDomain::Device,
-                    .imageType = ImageType::e2D,
-                    .format = colorAttachment->getInfo().format,
-                };
-                if (!m_declareData.backBuffer.empty() && m_declareData.resourceMap.contains(m_declareData.backBuffer))
+                APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
+                m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
+            }
+
+            // Create or update color attachments
+            for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+            {
+                bool needsRebuild = !m_buildData.image.contains(colorAttachment);
+
+                // Rebuild if image resource is dirty and this resource isn't external
+                if (isDirty(DirtyFlagBits::ImageResourceDirty) &&
+                    !(colorAttachment->getFlags() & PassResourceFlagBits::External))
                 {
-                    createInfo.usage |= ImageUsage::TransferSrc;
+                    needsRebuild = true;
                 }
-                APH_VR(m_pDevice->create(createInfo, &pImage, colorAttachment->getName()));
-                m_buildData.image[colorAttachment] = pImage;
-            }
-        }
 
-        // depth attachments
-        {
-            auto depthAttachment = pass->m_res.depthOut;
-            if (depthAttachment && !m_buildData.image.contains(depthAttachment))
+                if (needsRebuild)
+                {
+                    // Clean up previous image if one exists
+                    if (m_buildData.image.contains(colorAttachment) &&
+                        !(colorAttachment->getFlags() & PassResourceFlagBits::External))
+                    {
+                        m_pDevice->destroy(m_buildData.image[colorAttachment]);
+                    }
+
+                    vk::Image* pImage = {};
+                    vk::ImageCreateInfo createInfo{
+                        .extent = colorAttachment->getInfo().extent,
+                        .usage = colorAttachment->getUsage(),
+                        .domain = MemoryDomain::Device,
+                        .imageType = ImageType::e2D,
+                        .format = colorAttachment->getInfo().format,
+                    };
+
+                    if (!m_declareData.backBuffer.empty() &&
+                        m_declareData.resourceMap.contains(m_declareData.backBuffer))
+                    {
+                        createInfo.usage |= ImageUsage::TransferSrc;
+                    }
+
+                    APH_VR(m_pDevice->create(createInfo, &pImage, colorAttachment->getName()));
+                    m_buildData.image[colorAttachment] = pImage;
+                }
+            }
+
+            // Create or update depth attachments
             {
-                vk::Image* pImage = {};
-                vk::ImageCreateInfo createInfo{
-                    .extent = depthAttachment->getInfo().extent,
-                    .usage = depthAttachment->getUsage(),
-                    .domain = MemoryDomain::Device,
-                    .imageType = ImageType::e2D,
-                    .format = depthAttachment->getInfo().format,
-                };
-                APH_VR(m_pDevice->create(createInfo, &pImage, depthAttachment->getName()));
-                m_buildData.image[depthAttachment] = pImage;
+                auto depthAttachment = pass->m_res.depthOut;
+                if (depthAttachment)
+                {
+                    bool needsRebuild = !m_buildData.image.contains(depthAttachment);
+
+                    // Rebuild if image resource is dirty and this resource isn't external
+                    if (isDirty(DirtyFlagBits::ImageResourceDirty) &&
+                        !(depthAttachment->getFlags() & PassResourceFlagBits::External))
+                    {
+                        needsRebuild = true;
+                    }
+
+                    if (needsRebuild)
+                    {
+                        // Clean up previous image if one exists
+                        if (m_buildData.image.contains(depthAttachment) &&
+                            !(depthAttachment->getFlags() & PassResourceFlagBits::External))
+                        {
+                            m_pDevice->destroy(m_buildData.image[depthAttachment]);
+                        }
+
+                        vk::Image* pImage = {};
+                        vk::ImageCreateInfo createInfo{
+                            .extent = depthAttachment->getInfo().extent,
+                            .usage = depthAttachment->getUsage(),
+                            .domain = MemoryDomain::Device,
+                            .imageType = ImageType::e2D,
+                            .format = depthAttachment->getInfo().format,
+                        };
+
+                        APH_VR(m_pDevice->create(createInfo, &pImage, depthAttachment->getName()));
+                        m_buildData.image[depthAttachment] = pImage;
+                    }
+                }
             }
         }
     }
 
-    // swapchain
+    // Record commands for each pass
+    if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
+                DirtyFlagBits::TopologyDirty))
     {
-        m_buildData.pSwapchain = pSwapChain;
-    }
-
-    // record commands
-    {
-        for (auto* pass : m_declareData.passes)
+        for (auto [name, pass] : m_declareData.passMap)
         {
             APH_PROFILER_SCOPE_NAME("pass commands recording");
             std::vector<vk::Image*> colorImages;
             vk::Image* pDepthImage = {};
-            std::vector<vk::ImageBarrier> initImageBarriers{};
-            std::vector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
-            std::vector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
+            SmallVector<vk::ImageBarrier> initImageBarriers{};
+            SmallVector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
+            SmallVector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
 
+            // Clear existing barriers
+            imageBarriers.clear();
+            bufferBarriers.clear();
+
+            // Collect color images
             colorImages.reserve(pass->m_res.colorOut.size());
             for (PassImageResource* colorAttachment : pass->m_res.colorOut)
             {
@@ -204,6 +262,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     .newState = ResourceState::RenderTarget,
                 });
             }
+
+            // Set up depth image
             if (pass->m_res.depthOut)
             {
                 pDepthImage = m_buildData.image[pass->m_res.depthOut];
@@ -218,6 +278,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             m_pDevice->executeCommand(queue,
                                       [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
 
+            // Set up texture barriers
             for (PassImageResource* textureIn : pass->m_res.textureIn)
             {
                 auto& image = m_buildData.image[textureIn];
@@ -231,6 +292,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 }
             }
 
+            // Set up storage buffer barriers
             for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
             {
                 auto& buffer = m_buildData.buffer[bufferIn];
@@ -244,6 +306,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 }
             }
 
+            // Set up uniform buffer barriers
             for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
             {
                 auto& buffer = m_buildData.buffer[bufferIn];
@@ -259,6 +322,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
             APH_ASSERT(!colorImages.empty());
 
+            // Record and submit commands
             {
                 APH_PROFILER_SCOPE_NAME("pass commands submit");
                 auto* pCmd = m_buildData.cmds[pass];
@@ -271,7 +335,6 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                 pCmd->endRendering();
                 APH_VR(pCmd->end());
 
-                // lock
                 vk::QueueSubmitInfo submitInfo{
                     .commandBuffers = { pCmd },
                     .waitSemaphores = {},
@@ -283,6 +346,9 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             }
         }
     }
+
+    // All dirty flags have been handled
+    clearDirtyFlags();
 }
 
 RenderGraph::~RenderGraph()
@@ -316,30 +382,26 @@ PassResource* RenderGraph::getResource(const std::string& name, PassResource::Ty
     APH_PROFILER_SCOPE();
     if (m_declareData.resourceMap.contains(name))
     {
-        auto res = m_declareData.resources.at(m_declareData.resourceMap[name]);
+        auto res = m_declareData.resourceMap[name];
         APH_ASSERT(res->getType() == type);
         return res;
     }
 
-    std::size_t idx = m_declareData.resources.size();
     PassResource* res = {};
     switch (type)
     {
     case PassResource::Type::Image:
         res = m_resourcePool.passImageResource.allocate(type);
-        m_declareData.imageResources.emplace_back(static_cast<PassImageResource*>(res));
         break;
     case PassResource::Type::Buffer:
         res = m_resourcePool.passBufferResource.allocate(type);
-        m_declareData.bufferResources.emplace_back(static_cast<PassBufferResource*>(res));
         break;
     }
     res->setName(name);
 
     APH_ASSERT(res);
 
-    m_declareData.resources.emplace_back(res);
-    m_declareData.resourceMap[name] = idx;
+    m_declareData.resourceMap[name] = res;
     return res;
 }
 
@@ -350,6 +412,11 @@ void RenderGraph::execute(vk::Fence* pFence)
 
     // submit && present
     {
+        if (m_buildData.frameFence == nullptr)
+        {
+            m_buildData.frameFence = m_pDevice->acquireFence(true);
+        }
+
         vk::Fence* frameFence = pFence ? pFence : m_buildData.frameFence;
         {
             frameFence->wait();
@@ -360,8 +427,7 @@ void RenderGraph::execute(vk::Fence* pFence)
 
         if (m_buildData.pSwapchain)
         {
-            auto outImage =
-                m_buildData.image[m_declareData.resources[m_declareData.resourceMap[m_declareData.backBuffer]]];
+            auto outImage = m_buildData.image[m_declareData.resourceMap[m_declareData.backBuffer]];
             APH_VR(m_buildData.pSwapchain->presentImage({}, outImage));
         }
     }
@@ -391,28 +457,40 @@ void RenderGraph::cleanup()
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
-        for (auto* pass : m_declareData.passes)
+        for (auto [name, pass] : m_declareData.passMap)
         {
             m_buildData.passDependencyGraph[pass].clear();
-        }
-
-        for (auto pass : m_declareData.passes)
-        {
             m_resourcePool.renderPass.free(pass);
         }
-        m_declareData.passes.clear();
+        m_declareData.passMap.clear();
 
-        for (auto resource : m_declareData.imageResources)
+        for (auto [name, pResource] : m_declareData.resourceMap)
         {
-            m_resourcePool.passImageResource.free(resource);
+            switch (pResource->getType())
+            {
+            case PassResource::Type::Image:
+            {
+                m_resourcePool.passImageResource.free(static_cast<PassImageResource*>(pResource));
+                if (!(pResource->getFlags() & PassResourceFlagBits::External))
+                {
+                    auto pImage = m_buildData.image[pResource];
+                    m_pDevice->destroy(pImage);
+                }
+            }
+            break;
+            case PassResource::Type::Buffer:
+            {
+                m_resourcePool.passBufferResource.free(static_cast<PassBufferResource*>(pResource));
+                if (!(pResource->getFlags() & PassResourceFlagBits::External))
+                {
+                    auto pBuffer = m_buildData.buffer[pResource];
+                    m_pDevice->destroy(pBuffer);
+                }
+            }
+            break;
+            }
         }
-        m_declareData.imageResources.clear();
-
-        for (auto resource : m_declareData.bufferResources)
-        {
-            m_resourcePool.passBufferResource.free(resource);
-        }
-        m_declareData.bufferResources.clear();
+        m_declareData.resourceMap.clear();
     }
 
     for (auto [_, cmdPool] : m_buildData.cmdPools)
@@ -420,14 +498,5 @@ void RenderGraph::cleanup()
         m_pDevice->destroy(cmdPool);
     }
     m_buildData.cmdPools.clear();
-
-    for (PassResource* res : m_declareData.resources)
-    {
-        if (!(res->getFlags() & PassResourceFlagBits::External))
-        {
-            auto pImage = m_buildData.image[res];
-            m_pDevice->destroy(pImage);
-        }
-    }
 };
 } // namespace aph
