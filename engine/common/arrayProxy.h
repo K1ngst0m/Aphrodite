@@ -76,9 +76,8 @@ public:
 
     // Templated conversion operator to convert to any type constructible from iterators
     template <typename Container>
-        requires std::is_constructible_v<Container, const T*, const T*> && 
-                 (!std::is_same_v<Container, ArrayProxy<T>>)
-    operator Container() const 
+        requires std::is_constructible_v<Container, const T*, const T*> && (!std::is_same_v<Container, ArrayProxy<T>>)
+    operator Container() const
     {
         return Container(begin(), end());
     }
@@ -191,9 +190,8 @@ public:
 
     // Templated conversion operator to convert to any type constructible from iterators
     template <typename Container>
-        requires std::is_constructible_v<Container, T*, T*> && 
-                 (!std::is_same_v<Container, ArrayProxyNoTemporaries<T>>)
-    operator Container() const 
+        requires std::is_constructible_v<Container, T*, T*> && (!std::is_same_v<Container, ArrayProxyNoTemporaries<T>>)
+    operator Container() const
     {
         return Container(begin(), end());
     }

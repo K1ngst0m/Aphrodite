@@ -9,6 +9,7 @@
 #include "forward.h"
 #include "image.h"
 #include "instance.h"
+#include "memory/deviceAllocator.h"
 #include "module/module.h"
 #include "physicalDevice.h"
 #include "queue.h"
@@ -16,7 +17,6 @@
 #include "shader.h"
 #include "swapChain.h"
 #include "syncPrimitive.h"
-#include "memory/deviceAllocator.h"
 
 namespace aph::vk
 {

@@ -493,10 +493,9 @@ struct FlagTraits<BufferUsage>
 {
     static constexpr bool isBitmask = true;
     static constexpr BufferUsageFlags allFlags =
-        BufferUsage::Vertex | BufferUsage::Index | BufferUsage::Uniform | BufferUsage::Storage |
-        BufferUsage::Indirect | BufferUsage::TransferSrc | BufferUsage::TransferDst |
-        BufferUsage::AccelStructBuild | BufferUsage::AccelStructStorage | BufferUsage::ShaderBindingTable |
-        BufferUsage::ShaderDeviceAddress;
+        BufferUsage::Vertex | BufferUsage::Index | BufferUsage::Uniform | BufferUsage::Storage | BufferUsage::Indirect |
+        BufferUsage::TransferSrc | BufferUsage::TransferDst | BufferUsage::AccelStructBuild |
+        BufferUsage::AccelStructStorage | BufferUsage::ShaderBindingTable | BufferUsage::ShaderDeviceAddress;
 };
 
 enum class ImageUsage : uint32_t

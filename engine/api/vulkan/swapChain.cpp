@@ -28,9 +28,9 @@ Result SwapChain::acquireNextImage(Semaphore* pSemaphore, Fence* pFence)
     ::vk::Result result{};
     {
         APH_PROFILER_SCOPE_NAME("vkAcuiqreNextImageKHR");
-        result = m_pDevice->getHandle().acquireNextImageKHR(
-            getHandle(), UINT64_MAX, pSemaphore ? pSemaphore->getHandle() : VK_NULL_HANDLE,
-            pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
+        result = m_pDevice->getHandle().acquireNextImageKHR(getHandle(), UINT64_MAX,
+                                                            pSemaphore ? pSemaphore->getHandle() : VK_NULL_HANDLE,
+                                                            pFence ? pFence->getHandle() : VK_NULL_HANDLE, &m_imageIdx);
     }
 
     if (result == ::vk::Result::eErrorOutOfDateKHR)

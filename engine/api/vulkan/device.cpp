@@ -854,9 +854,7 @@ void Device::executeCommand(Queue* queue, const CmdRecordCallBack&& func, ArrayP
     func(cmd);
     APH_VR(cmd->end());
 
-    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd },
-                                .waitSemaphores = waitSems,
-                                .signalSemaphores = signalSems };
+    QueueSubmitInfo submitInfo{ .commandBuffers = { cmd }, .waitSemaphores = waitSems, .signalSemaphores = signalSems };
 
     if (!pFence)
     {

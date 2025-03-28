@@ -1,9 +1,9 @@
 #pragma once
 
+#include "allocator/objectPool.h"
+#include "api/gpuResource.h"
 #include "common/arrayProxy.h"
 #include "forward.h"
-#include "api/gpuResource.h"
-#include "allocator/objectPool.h"
 #include "vkUtils.h"
 #include "wsi/wsi.h"
 

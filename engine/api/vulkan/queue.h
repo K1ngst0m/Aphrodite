@@ -1,7 +1,7 @@
 #pragma once
 
-#include "forward.h"
 #include "common/arrayProxy.h"
+#include "forward.h"
 #include "vkUtils.h"
 
 namespace aph::vk

@@ -2,6 +2,7 @@
 
 #include <fcntl.h>
 #include <filesystem>
+#include <fstream>
 #include <memory.h>
 #include <string>
 #include <sys/inotify.h>
@@ -10,7 +11,6 @@
 #include <type_traits>
 #include <unistd.h>
 #include <utility>
-#include <fstream>
 
 #include "common/hash.h"
 #include "common/logger.h"
@@ -37,34 +37,37 @@ public:
     void writeStringToFile(std::string_view path, const std::string& content);
     void writeBytesToFile(std::string_view path, const std::vector<uint8_t>& bytes);
     void writeLinesToFile(std::string_view path, const std::vector<std::string>& lines);
-    
+
     template <typename T>
     bool writeBinaryData(std::string_view path, const T* data, size_t count) const
     {
-        if (!data || count == 0) return false;
-        
+        if (!data || count == 0)
+            return false;
+
         std::vector<uint8_t> bytes(sizeof(T) * count);
         std::memcpy(bytes.data(), data, bytes.size());
-        
+
         std::ofstream file(resolvePath(path).string(), std::ios::binary);
         if (!file)
         {
             CM_LOG_ERR("Failed to open file for writing: %s", path);
             return false;
         }
-        
+
         file.write(reinterpret_cast<const char*>(bytes.data()), bytes.size());
         return file.good();
     }
-    
+
     template <typename T>
     bool readBinaryData(std::string_view path, T* data, size_t count) const
     {
-        if (!exist(path) || !data || count == 0) return false;
-        
+        if (!exist(path) || !data || count == 0)
+            return false;
+
         auto bytes = const_cast<Filesystem*>(this)->readFileToBytes(path);
-        if (bytes.size() < sizeof(T) * count) return false;
-        
+        if (bytes.size() < sizeof(T) * count)
+            return false;
+
         std::memcpy(data, bytes.data(), sizeof(T) * count);
         return true;
     }
@@ -79,7 +82,7 @@ public:
 
     std::filesystem::path resolvePath(std::string_view inputPath) const;
     std::filesystem::path getCurrentWorkingDirectory() const;
-    
+
     // Get the last modification time of a file
     int64_t getLastModifiedTime(std::string_view path) const;
 

@@ -86,7 +86,7 @@ public:
 
         // The expensive operation will be done in a separate thread
         slang::createGlobalSession(m_globalSession.writeRef());
-        
+
         co_return Result::Success;
     }
 
@@ -95,14 +95,14 @@ public:
     {
         APH_PROFILER_SCOPE();
         auto& fs = aph::Filesystem::GetInstance();
-        
+
         // Make sure the cache directory exists
         std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
         if (!fs.exist(cacheDirPath))
         {
             return false;
         }
-        
+
         // Generate hash and check if cache file exists
         std::string requestHash = request.getHash();
         outCachePath = fs.resolvePath("shader_cache://" + requestHash + ".cache").string();
@@ -114,28 +114,28 @@ public:
     {
         APH_PROFILER_SCOPE();
         auto& fs = aph::Filesystem::GetInstance();
-        
+
         auto cacheBytes = fs.readFileToBytes(cacheFilePath);
         if (cacheBytes.size() == 0)
         {
             CM_LOG_WARN("Empty cache file: %s", cacheFilePath.c_str());
             return false;
         }
-        
+
         // Parse cache data
         size_t offset = 0;
-        
+
         // Read number of shader stages
         if (offset + sizeof(uint32_t) > cacheBytes.size())
         {
             CM_LOG_WARN("Cache file too small for header: %s", cacheFilePath.c_str());
             return false;
         }
-        
+
         uint32_t numStages;
         std::memcpy(&numStages, cacheBytes.data() + offset, sizeof(uint32_t));
         offset += sizeof(uint32_t);
-        
+
         bool cacheValid = true;
         // Read each shader stage data
         for (uint32_t i = 0; i < numStages && cacheValid; ++i)
@@ -147,17 +147,17 @@ public:
                 cacheValid = false;
                 break;
             }
-            
+
             uint32_t stageVal;
             std::memcpy(&stageVal, cacheBytes.data() + offset, sizeof(uint32_t));
             offset += sizeof(uint32_t);
-            
+
             uint32_t entryPointLength;
             std::memcpy(&entryPointLength, cacheBytes.data() + offset, sizeof(uint32_t));
             offset += sizeof(uint32_t);
-            
+
             aph::ShaderStage stage = static_cast<aph::ShaderStage>(stageVal);
-            
+
             // Read entry point
             if (offset + entryPointLength > cacheBytes.size())
             {
@@ -168,7 +168,7 @@ public:
             std::string entryPoint(entryPointLength, '\0');
             std::memcpy(entryPoint.data(), cacheBytes.data() + offset, entryPointLength);
             offset += entryPointLength;
-            
+
             // Read spv code length
             if (offset + sizeof(uint32_t) > cacheBytes.size())
             {
@@ -179,7 +179,7 @@ public:
             uint32_t codeSize;
             std::memcpy(&codeSize, cacheBytes.data() + offset, sizeof(uint32_t));
             offset += sizeof(uint32_t);
-            
+
             // Read spv code
             if (offset + codeSize > cacheBytes.size())
             {
@@ -190,18 +190,18 @@ public:
             std::vector<uint32_t> spvCode(codeSize / sizeof(uint32_t));
             std::memcpy(spvCode.data(), cacheBytes.data() + offset, codeSize);
             offset += codeSize;
-            
+
             // Store in spvCodeMap
             spvCodeMap[stage] = { entryPoint, std::move(spvCode) };
         }
-        
+
         if (!cacheValid)
         {
             // Clear any partial data
             spvCodeMap.clear();
             return false;
         }
-        
+
         return true;
     }
 
@@ -221,7 +221,7 @@ public:
         const auto& moduleMap = request.moduleMap;
 
         auto& fs = aph::Filesystem::GetInstance();
-        
+
         std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
         if (!fs.exist(cacheDirPath))
         {
@@ -392,50 +392,52 @@ public:
         // Save to cache
         // Prepare the cache data
         std::vector<uint8_t> cacheData;
-        
+
         // Reserve some initial space
         cacheData.reserve(1024 * 1024); // 1MB initial reservation
-        
+
         // Write header (number of shader stages)
         uint32_t numStages = static_cast<uint32_t>(spvCodeMap.size());
         size_t headerSize = sizeof(uint32_t);
         cacheData.resize(headerSize);
         std::memcpy(cacheData.data(), &numStages, headerSize);
-        
+
         // Write each shader stage data
         for (const auto& [stage, slangProgram] : spvCodeMap)
         {
             // Write stage header (stage value and entry point length)
             uint32_t stageVal = static_cast<uint32_t>(stage);
             uint32_t entryPointLength = static_cast<uint32_t>(slangProgram.entryPoint.size());
-            
+
             size_t stageHeaderSize = sizeof(uint32_t) * 2;
             size_t stageHeaderOffset = cacheData.size();
             cacheData.resize(stageHeaderOffset + stageHeaderSize);
             std::memcpy(cacheData.data() + stageHeaderOffset, &stageVal, sizeof(uint32_t));
             std::memcpy(cacheData.data() + stageHeaderOffset + sizeof(uint32_t), &entryPointLength, sizeof(uint32_t));
-            
+
             // Write entry point
             size_t entryPointOffset = cacheData.size();
             cacheData.resize(entryPointOffset + entryPointLength);
-            if (entryPointLength > 0) {
+            if (entryPointLength > 0)
+            {
                 std::memcpy(cacheData.data() + entryPointOffset, slangProgram.entryPoint.data(), entryPointLength);
             }
-            
+
             // Write spv code length
             uint32_t codeSize = static_cast<uint32_t>(slangProgram.spvCodes.size() * sizeof(uint32_t));
             size_t codeSizeOffset = cacheData.size();
             cacheData.resize(codeSizeOffset + sizeof(uint32_t));
             std::memcpy(cacheData.data() + codeSizeOffset, &codeSize, sizeof(uint32_t));
-            
+
             // Write spv code
             size_t codeOffset = cacheData.size();
             cacheData.resize(codeOffset + codeSize);
-            if (codeSize > 0) {
+            if (codeSize > 0)
+            {
                 std::memcpy(cacheData.data() + codeOffset, slangProgram.spvCodes.data(), codeSize);
             }
         }
-        
+
         // Write the cache file directly to avoid exception handling
         // This duplicates the logic from Filesystem::writeBytesToFile but without exceptions
         std::ofstream file(fs.resolvePath(cacheFilePath).string(), std::ios::binary);
@@ -466,7 +468,7 @@ namespace aph
 Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
-    
+
     CompileRequest compileRequest{};
     if (info.pBindlessResource)
     {
@@ -504,38 +506,39 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 auto path = Filesystem::GetInstance().resolvePath(d);
                 compileRequest.filename = path.c_str();
                 bool cacheExists = m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
-                
+
                 if (cacheExists)
                 {
                     HashMap<ShaderStage, SlangProgram> spvCodeMap;
                     if (m_pSlangLoaderImpl->readShaderCache(cacheFilePath, spvCodeMap))
                     {
                         ShaderCacheData data;
-                        
+
                         for (const auto& [stage, slangProgram] : spvCodeMap)
                         {
                             for (const auto& [reqStage, reqEntryPoint] : info.stageInfo)
                             {
                                 if (reqStage == stage && reqEntryPoint == slangProgram.entryPoint)
                                 {
-                                    vk::Shader* shader = loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
+                                    vk::Shader* shader =
+                                        loadShader(slangProgram.spvCodes, stage, slangProgram.entryPoint);
                                     requiredShaderList[stage] = shader;
                                     data[stage] = shader;
                                     break;
                                 }
                             }
                         }
-                        
+
                         std::promise<ShaderCacheData> promise;
                         promise.set_value(std::move(data));
                         future = promise.get_future().share();
                         m_shaderCaches[d] = future;
-                        
+
                         CM_LOG_DEBUG("loaded shader from cache without initialization: %s", d.c_str());
                         continue;
                     }
                 }
-                
+
                 // Cache doesn't exist or is invalid
                 std::promise<ShaderCacheData> promise;
                 future = promise.get_future().share();
@@ -545,7 +548,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
                 {
                     // Create global session only when cache missed
                     APH_VR(waitForInitialization());
-                    
+
                     HashMap<ShaderStage, SlangProgram> spvCodeMap;
                     APH_VR(m_pSlangLoaderImpl->loadProgram(compileRequest, spvCodeMap));
                     if (spvCodeMap.empty())

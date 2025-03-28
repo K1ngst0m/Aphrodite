@@ -234,8 +234,7 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Image* pImag
 {
     APH_ASSERT(pImage);
     const auto& imageCreateInfo = pImage->getCreateInfo();
-    bool deviceAccess = static_cast<bool>(
-        imageCreateInfo.usage & ~(ImageUsage::TransferDst | ImageUsage::TransferSrc));
+    bool deviceAccess = static_cast<bool>(imageCreateInfo.usage & ~(ImageUsage::TransferDst | ImageUsage::TransferSrc));
     VmaAllocationCreateInfo allocationCreateInfo = getAllocationCreateInfo(imageCreateInfo.domain, deviceAccess);
     return allocationCreateInfo;
 }
@@ -244,8 +243,8 @@ VmaAllocationCreateInfo VMADeviceAllocator::getAllocationCreateInfo(Buffer* pBuf
 {
     APH_ASSERT(pBuffer);
     const auto& bufferCreateInfo = pBuffer->getCreateInfo();
-    bool deviceAccess = static_cast<bool>(
-        bufferCreateInfo.usage & ~(BufferUsage::TransferDst | BufferUsage::TransferSrc));
+    bool deviceAccess =
+        static_cast<bool>(bufferCreateInfo.usage & ~(BufferUsage::TransferDst | BufferUsage::TransferSrc));
     VmaAllocationCreateInfo allocCreateInfo = getAllocationCreateInfo(bufferCreateInfo.domain, deviceAccess);
     return allocCreateInfo;
 }

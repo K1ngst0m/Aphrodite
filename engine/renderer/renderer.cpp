@@ -197,7 +197,6 @@ Renderer::Renderer(const RenderConfig& config)
     //         .flags     = vk::UI_Docking,
     //     });
     // }
-
 }
 
 Renderer::~Renderer()

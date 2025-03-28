@@ -52,7 +52,6 @@ PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::
     return res;
 }
 
-
 PassBufferResource* RenderPass::addBufferOut(const std::string& name)
 {
     APH_PROFILER_SCOPE();
@@ -128,4 +127,4 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     return res;
 }
 
-}
+} // namespace aph

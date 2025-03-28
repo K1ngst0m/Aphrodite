@@ -67,7 +67,6 @@ private:
 class VMADeviceAllocator final : public DeviceAllocator
 {
 public:
-
     VMADeviceAllocator(Instance* pInstance, Device* pDevice);
     ~VMADeviceAllocator() override;
 

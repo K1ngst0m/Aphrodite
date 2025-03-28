@@ -1,13 +1,13 @@
 #pragma once
 
-#include "forward.h"
-#include "vkUtils.h"
 #include "common/arrayProxy.h"
 #include "common/dataBuilder.h"
 #include "common/hash.h"
 #include "common/profiler.h"
 #include "common/smallVector.h"
 #include "descriptorSet.h"
+#include "forward.h"
+#include "vkUtils.h"
 #include <bitset>
 
 namespace aph::vk
@@ -17,8 +17,8 @@ class BindlessResource
 public:
     enum SetIdx
     {
-        eResourceSetIdx = 0,   // Index of resource descriptor set (textures, buffers, samplers)
-        eHandleSetIdx = 1,     // Index of handle descriptor set (resource indices)
+        eResourceSetIdx = 0, // Index of resource descriptor set (textures, buffers, samplers)
+        eHandleSetIdx = 1, // Index of handle descriptor set (resource indices)
         eUpperBound
     };
 
@@ -38,7 +38,6 @@ public:
     // Variant type that can hold any supported resource type
     using RType = std::variant<Image*, Buffer*, Sampler*>;
 
-
     /**
      * @brief Registers a resource with the bindless system and gives it a name
      * 
@@ -53,7 +52,7 @@ public:
      * @return The offset of the resource handle in the handle buffer
      */
     uint32_t updateResource(RType resource, std::string name);
-    
+
     /**
      * @brief Adds raw data to the handle buffer
      * 
@@ -156,8 +155,8 @@ private:
         {
         }
 
-        DataBuilder dataBuilder;        // Builder for CPU-side handle data
-        Buffer* pBuffer = {};           // GPU buffer containing handle data
+        DataBuilder dataBuilder; // Builder for CPU-side handle data
+        Buffer* pBuffer = {}; // GPU buffer containing handle data
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
     } m_handleData;
@@ -166,8 +165,8 @@ private:
     struct Resource
     {
         static constexpr std::size_t AddressTableSize = 4 * memory::KB;
-        Buffer* pAddressTableBuffer = {};          // GPU buffer for buffer addresses
-        std::span<uint64_t> addressTableMap;       // Mapped view of address table
+        Buffer* pAddressTableBuffer = {}; // GPU buffer for buffer addresses
+        std::span<uint64_t> addressTableMap; // Mapped view of address table
         DescriptorSetLayout* pSetLayout = {};
         DescriptorSet* pSet = {};
     } m_resourceData;
@@ -176,12 +175,12 @@ private:
     PipelineLayout m_pipelineLayout{};
 
     // Flag indicating if handle data needs to be uploaded to GPU
-    std::atomic<bool> m_rangeDirty{false};
+    std::atomic<bool> m_rangeDirty{ false };
 
     // Resources
-    SmallVector<Image*> m_images;                // All registered images
-    SmallVector<Buffer*> m_buffers;              // All registered buffers
-    SmallVector<Sampler*> m_samplers;            // All registered samplers
+    SmallVector<Image*> m_images; // All registered images
+    SmallVector<Buffer*> m_buffers; // All registered buffers
+    SmallVector<Sampler*> m_samplers; // All registered samplers
     HashMap<Image*, HandleId> m_imageIds;
     HashMap<Buffer*, HandleId> m_bufferIds;
     HashMap<Sampler*, HandleId> m_samplerIds;
@@ -190,12 +189,11 @@ private:
 
     // Pending descriptor updates
     SmallVector<DescriptorUpdateInfo> m_resourceUpdateInfos;
-    
-    mutable std::mutex m_handleMtx;               // Protects handle data buffer
-    mutable std::shared_mutex m_nameMtx;          // Protects name map (shared for reads)
-    mutable std::shared_mutex m_resourceMapsMtx;  // Protects resource collections
-    mutable std::mutex m_updateInfoMtx;           // Protects update info collection
 
+    mutable std::mutex m_handleMtx; // Protects handle data buffer
+    mutable std::shared_mutex m_nameMtx; // Protects name map (shared for reads)
+    mutable std::shared_mutex m_resourceMapsMtx; // Protects resource collections
+    mutable std::mutex m_updateInfoMtx; // Protects update info collection
 };
 
 } // namespace aph::vk
