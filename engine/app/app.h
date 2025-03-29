@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cli/cli.h"
+#include "common/functiontraits.h"
 #include "common/hash.h"
 #include <string>
 
@@ -29,7 +30,18 @@ struct AppOptions
 class BaseAppImpl
 {
 public:
-    void addCLIOption(const char* cli, const std::function<void(CLIParser&)>& func);
+    template <typename T>
+    void registerCLIValue(const char* cli, T& value)
+    {
+        addCLICallback(cli, [&value](T v) { value = v; });
+    }
+    template <typename Func>
+    void addCLICallback(const char* cli, Func&& func)
+    {
+        using argType = FunctionArgumentType<Func, 0>;
+        auto callbacks = [f = APH_FWD(func)](const CLIParser& parser) { f(parser.next<argType>()); };
+        m_callbacks.add(cli, std::move(callbacks));
+    }
     void loadConfig(int argc, char** argv, std::string configPath);
 
     void printOptions() const;
@@ -62,9 +74,17 @@ public:
         return m_impl->getOptions();
     }
 
-    T& addCLIOption(const char* cli, const std::function<void(CLIParser&)>& func)
+    template <typename Func>
+    T& addCLICallback(const char* cli, Func&& func)
     {
-        m_impl->addCLIOption(cli, func);
+        m_impl->addCLICallback(cli, APH_FWD(func));
+        return *static_cast<T*>(this);
+    }
+
+    template <typename TVal>
+    void registerCLIValue(const char* cli, TVal& value)
+    {
+        m_impl->registerCLIValue(cli, value);
         return *static_cast<T*>(this);
     }
 

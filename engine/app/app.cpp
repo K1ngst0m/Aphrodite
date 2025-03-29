@@ -18,11 +18,6 @@ AppOptions& BaseAppImpl::getMutableOptions()
     return m_options;
 }
 
-void BaseAppImpl::addCLIOption(const char* cli, const std::function<void(CLIParser&)>& func)
-{
-    m_callbacks.add(cli, func);
-}
-
 void BaseAppImpl::loadConfig(int argc, char** argv, std::string configPath)
 {
     auto& opt = m_options;
@@ -54,11 +49,13 @@ void BaseAppImpl::loadConfig(int argc, char** argv, std::string configPath)
 
     // parse command
     {
-        m_callbacks.add("--width", [&](aph::CLIParser& parser) { opt.windowWidth = parser.nextUint(); });
-        m_callbacks.add("--height", [&](aph::CLIParser& parser) { opt.windowHeight = parser.nextUint(); });
-        m_callbacks.add("--vsync", [&](aph::CLIParser& parser) { opt.vsync = parser.nextUint(); });
-        m_callbacks.m_errorHandler = [&]() { CM_LOG_ERR("Failed to parse CLI arguments."); };
-        if (!aph::parseCliFiltered(m_callbacks, argc, argv, m_exitCode))
+        registerCLIValue("--width", opt.windowWidth);
+        registerCLIValue("--height", opt.windowHeight);
+        registerCLIValue("--vsync", opt.vsync);
+
+        m_callbacks.setErrorHandler([&](const CLIErrorInfo& info)
+                                    { CM_LOG_ERR("Failed to parse CLI arguments. %s", info.message); });
+        if (!m_callbacks.parse(argc, argv, m_exitCode))
         {
             std::cout << "Failed to parse command line arguments.\n";
             APH_ASSERT(false);

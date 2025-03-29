@@ -436,7 +436,7 @@ int main(int argc, char** argv)
     hello_aphrodite app{};
 
     app.setVsync(false)
-        .addCLIOption("--shading-type", [&app](auto& parser) { app.switchShadingType(parser.nextString()); })
+        .addCLICallback("--shading-type", [&app](std::string_view value) { app.switchShadingType(value); })
         .loadConfig(argc, argv)
         .run();
 }

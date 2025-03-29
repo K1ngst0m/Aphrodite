@@ -1,8 +1,9 @@
 #pragma once
 
 #include "bitOp.h"
-#include "common/smallVector.h"
+#include "concept.h"
 #include "logger.h"
+#include "smallVector.h"
 #include <cmath>
 #include <source_location>
 

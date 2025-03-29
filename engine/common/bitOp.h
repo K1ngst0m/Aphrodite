@@ -1,18 +1,12 @@
 #pragma once
 #include "coro/coro.hpp"
+#include "common/concept.h"
 
 namespace aph::utils
 {
 template <typename T>
 using Generator = coro::generator<T>;
 
-template <class T>
-concept BitwiseType = std::unsigned_integral<T> || requires(const T& x) {
-    { x.size() } -> std::convertible_to<std::size_t>;
-    { x.test(0) } -> std::convertible_to<bool>;
-};
-
-// For 32-bit values
 template <BitwiseType T>
 constexpr uint32_t leading_zeroes(T x) noexcept
 {

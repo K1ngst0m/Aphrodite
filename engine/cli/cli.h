@@ -7,52 +7,122 @@ namespace aph
 {
 class CLIParser;
 
+enum class CLIError
+{
+    None,
+    MissingArgument,
+    InvalidArgumentType,
+    UnknownArgument,
+    Custom
+};
+
+struct CLIErrorInfo
+{
+    CLIError type = CLIError::None;
+    std::string message;
+};
+
 struct CLICallbacks
 {
-    void add(const char* cli, const std::function<void(CLIParser&)>& func)
+    /**
+     * Adds a CLI command handler
+     * @param cli - token for the command
+     * @param func - Callable taking CLIParser& and returning void
+     */
+    void add(auto&& cli, auto&& func)
     {
-        m_callbacks[cli] = func;
+        m_callbacks[APH_FWD(cli)] = APH_FWD(func);
     }
 
+    /**
+     * Sets the error handler
+     * @param func - Callable taking const CLIErrorInfo& and returning void
+     */
+    void setErrorHandler(auto&& func)
+    {
+        m_errorHandler = APH_FWD(func);
+    }
+
+    bool parse(int& argc, char* argv[], int& exit_code);
+
+private:
+    friend class CLIParser;
     HashMap<std::string, std::function<void(CLIParser&)>> m_callbacks;
-    std::function<void()> m_errorHandler;
-    std::function<void(const char*)> m_defaultHandler;
+    std::function<void(const CLIErrorInfo&)> m_errorHandler;
+    std::function<void(std::string_view)> m_defaultHandler;
 };
 
 class CLIParser
 {
 public:
-    // Don't pass in argv[0], which is the application name.
-    // Pass in argc - 1, argv + 1.
-    CLIParser(CLICallbacks cbs, int argc, char* argv[]);
-
-    bool parse();
-    void end();
-
-    uint32_t nextUint();
-    double nextDouble();
-    const char* nextString();
-
-    bool isEndedState() const
+    // Type-safe argument parsing with templates
+    template <typename T>
+    T next() const
     {
-        return m_endedState;
+        static_assert(false, "Invalid value type of the argument.");
     }
 
-    void ignoreUnknownArguments()
+    template <NumericType T>
+    T next() const
     {
-        m_unknownArgumentIsDefault = true;
+        if (m_args.empty())
+        {
+            reportError(CLIError::MissingArgument, "Missing numeric argument");
+        }
+
+        try
+        {
+            T value;
+            if constexpr (std::is_integral_v<T> && std::is_unsigned_v<T>)
+            {
+                value = static_cast<T>(std::stoull(m_args[0]));
+            }
+            else if constexpr (std::is_integral_v<T>)
+            {
+                value = static_cast<T>(std::stoll(m_args[0]));
+            }
+            else
+            {
+                value = static_cast<T>(std::stod(m_args[0]));
+            }
+
+            m_args = m_args.subspan(1);
+            return value;
+        }
+        catch (const std::exception& e)
+        {
+            reportError(CLIError::InvalidArgumentType, std::string("Failed to parse numeric value: ") + e.what());
+            return T{};
+        }
     }
+
+    template <StringType T>
+    T next() const
+    {
+        return nextString();
+    }
+
+    std::string_view nextString() const;
+
+    // Peek at next argument without consuming
+    std::optional<std::string_view> peekNext() const;
 
 private:
+    bool parse();
+    void end();
+    bool isEndedState() const;
+    void ignoreUnknownArguments();
+    void reportError(CLIError type, std::string_view message) const;
+
+private:
+    friend struct CLICallbacks;
+    // Don't pass in argv[0], which is the application name.
+    // Pass in argc - 1, argv + 1.
+    CLIParser(CLICallbacks cbs, std::span<char*> args);
+
     CLICallbacks m_cbs;
-    int m_argc;
-    char** m_argv;
+    mutable std::span<char*> m_args;
     bool m_endedState = false;
     bool m_unknownArgumentIsDefault = false;
 };
-
-// Returns false is parsing requires an exit, either because of error, or by request.
-// In that case, exit_code should be returned from main().
-// argc / argv must contain the full argc, argv, where argv[0] holds program name.
-bool parseCliFiltered(CLICallbacks cbs, int& argc, char* argv[], int& exit_code);
 } // namespace aph
