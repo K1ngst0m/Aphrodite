@@ -2,8 +2,7 @@
 
 #include "cli/cli.h"
 #include "common/functiontraits.h"
-#include "common/hash.h"
-#include <string>
+#include "common/logger.h"
 
 GENERATE_LOG_FUNCS(APP)
 
@@ -12,12 +11,12 @@ namespace aph
 struct AppOptions
 {
     // window
-    uint32_t windowWidth = { 1440 };
-    uint32_t windowHeight = { 900 };
+    uint32_t windowWidth = 1440;
+    uint32_t windowHeight = 900;
     bool vsync = true;
 
     // fs protocol
-    aph::HashMap<std::string, std::string> protocols;
+    HashMap<std::string, std::string> protocols;
 
     // thread
     uint32_t numThreads = 0;
@@ -27,161 +26,54 @@ struct AppOptions
     uint32_t backtrace = 0;
 };
 
-class BaseAppImpl
+class App
 {
 public:
+    App(std::string sessionName);
+    virtual ~App();
+
+public:
+    // Run the application
+    int run();
+
+public:
+    // Configuration methods
+    App& loadConfig(int argc, char** argv, std::string configPath = "config.toml");
+
     template <typename T>
-    void registerCLIValue(const char* cli, T& value)
-    {
-        addCLICallback(cli, [&value](T v) { value = v; });
-    }
+    void registerCLIValue(const char* cli, T& value);
+
     template <typename Func>
-    void addCLICallback(const char* cli, Func&& func)
-    {
-        using argType = FunctionArgumentType<Func, 0>;
-        auto callbacks = [f = APH_FWD(func)](const CLIParser& parser) { f(parser.next<argType>()); };
-        m_callbacks.add(cli, std::move(callbacks));
-    }
-    void loadConfig(int argc, char** argv, std::string configPath);
+    App& addCLICallback(const char* cli, Func&& func);
 
-    void printOptions() const;
-
+    // Options access
     const AppOptions& getOptions() const;
     AppOptions& getMutableOptions();
 
-    int getExitCode() const;
+    // Window options
+    uint32_t getWindowWidth() const;
+    App& setWindowWidth(uint32_t width);
 
-private:
-    AppOptions m_options;
-    int m_exitCode = 0;
-    aph::CLICallbacks m_callbacks;
-};
+    uint32_t getWindowHeight() const;
+    App& setWindowHeight(uint32_t height);
 
-template <typename T>
-class BaseApp
-{
-public:
-    BaseApp(std::string sessionName)
-        : m_sessionName(std::move(sessionName))
-    {
-        m_impl = std::make_unique<BaseAppImpl>();
-    }
+    bool getVsync() const;
+    App& setVsync(bool flag);
 
-    virtual ~BaseApp() = default;
+    // Protocol options
+    const HashMap<std::string, std::string>& getProtocols() const;
+    App& addProtocol(const std::string& protocol, const std::string& path);
 
-    const AppOptions& getOptions() const
-    {
-        return m_impl->getOptions();
-    }
+    // Thread options
+    uint32_t getNumThreads() const;
+    App& setNumThreads(uint32_t numThreads);
 
-    template <typename Func>
-    T& addCLICallback(const char* cli, Func&& func)
-    {
-        m_impl->addCLICallback(cli, APH_FWD(func));
-        return *static_cast<T*>(this);
-    }
+    // Debug options
+    uint32_t getLogLevel() const;
+    App& setLogLevel(uint32_t logLevel);
 
-    template <typename TVal>
-    void registerCLIValue(const char* cli, TVal& value)
-    {
-        m_impl->registerCLIValue(cli, value);
-        return *static_cast<T*>(this);
-    }
-
-    T& loadConfig(int argc, char** argv, std::string configPath = "config.toml")
-    {
-        m_impl->loadConfig(argc, argv, configPath);
-        return *static_cast<T*>(this);
-    }
-
-    int run()
-    {
-        init();
-        load();
-        loop();
-        unload();
-        finish();
-
-        return m_impl->getExitCode();
-    }
-
-    // windowWidth
-    uint32_t getWindowWidth() const
-    {
-        return m_impl->getOptions().windowWidth;
-    }
-    T& setWindowWidth(uint32_t width)
-    {
-        m_impl->getMutableOptions().windowWidth = width;
-        return *static_cast<T*>(this);
-    }
-
-    // windowHeight
-    uint32_t getWindowHeight() const
-    {
-        return m_impl->getOptions().windowHeight;
-    }
-    T& setWindowHeight(uint32_t height)
-    {
-        m_impl->getMutableOptions().windowHeight = height;
-        return *static_cast<T*>(this);
-    }
-
-    // vsync
-    bool getVsync() const
-    {
-        return m_impl->getOptions().vsync;
-    }
-    T& setVsync(bool flag)
-    {
-        m_impl->getMutableOptions().vsync = flag;
-        return *static_cast<T*>(this);
-    }
-
-    // protocols
-    const aph::HashMap<std::string, std::string>& getProtocols(std::string_view protocol) const
-    {
-        return m_impl->getOptions().protocols;
-    }
-
-    T& addProtocols(const std::string protocol, const std::string& path)
-    {
-        m_impl->getMutableOptions().protocols[protocol] = path;
-        return *static_cast<T*>(this);
-    }
-
-    // numThreads
-    uint32_t getNumThreads() const
-    {
-        return m_impl->getOptions().numThreads;
-    }
-    T& setNumThreads(uint32_t numThreads)
-    {
-        m_impl->getMutableOptions().numThreads = numThreads;
-        return *static_cast<T*>(this);
-    }
-
-    // logLevel
-    uint32_t getLogLevel() const
-    {
-        return m_impl->getOptions().logLevel;
-    }
-    T& setLogLevel(uint32_t logLevel)
-    {
-        m_impl->getMutableOptions().logLevel = logLevel;
-        return *static_cast<T*>(this);
-    }
-
-    // backtrace
-    uint32_t getBacktrace() const
-    {
-        return m_impl->getOptions().backtrace;
-    }
-    T& setBacktrace(uint32_t backtrace)
-    {
-        m_impl->getMutableOptions().backtrace = backtrace;
-        return *static_cast<T*>(this);
-    }
+    uint32_t getBacktrace() const;
+    App& setBacktrace(uint32_t backtrace);
 
 protected:
     virtual void init() = 0;
@@ -191,8 +83,26 @@ protected:
     virtual void finish() = 0;
 
 private:
-    std::unique_ptr<BaseAppImpl> m_impl;
+    void addCLICallbackHelper(const char* cli, std::function<void(const CLIParser&)> callback);
+    class Impl;
+    std::unique_ptr<Impl> m_impl;
     const std::string m_sessionName;
 };
+
+template <typename T>
+void App::registerCLIValue(const char* cli, T& value)
+{
+    addCLICallback(cli, [&value](T v) { value = v; });
+}
+
+template <typename Func>
+App& App::addCLICallback(const char* cli, Func&& func)
+{
+    class Impl;
+    using argType = FunctionArgumentType<Func, 0>;
+    auto callback = [f = APH_FWD(func)](const CLIParser& parser) { f(parser.next<argType>()); };
+    addCLICallbackHelper(cli, std::move(callback));
+    return *this;
+}
 
 } // namespace aph

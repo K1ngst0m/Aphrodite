@@ -3,7 +3,7 @@
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
 
-class hello_aphrodite : public aph::BaseApp<hello_aphrodite>
+class hello_aphrodite : public aph::App
 {
 public:
     hello_aphrodite();

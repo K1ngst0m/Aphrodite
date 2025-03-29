@@ -98,7 +98,7 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
 }
 
 hello_aphrodite::hello_aphrodite()
-    : aph::BaseApp<hello_aphrodite>("base_texture")
+    : aph::App("hello aphrdite")
 {
 }
 
