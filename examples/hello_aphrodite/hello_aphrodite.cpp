@@ -109,8 +109,8 @@ void hello_aphrodite::init()
     // setup window
     aph::RenderConfig config{
         .maxFrames = 3,
-        .width = getOptions().windowWidth,
-        .height = getOptions().windowHeight,
+        .width = getOptions().getWindowWidth(),
+        .height = getOptions().getWindowHeight(),
     };
 
     m_renderer = aph::Renderer::Create(config);
@@ -188,8 +188,8 @@ void hello_aphrodite::init()
         {
             m_camera.setLookAt({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })
                 .setProjection(aph::Perspective{
-                    .aspect =
-                        static_cast<float>(getOptions().windowWidth) / static_cast<float>(getOptions().windowHeight),
+                    .aspect = static_cast<float>(getOptions().getWindowWidth()) /
+                              static_cast<float>(getOptions().getWindowHeight()),
                     .fov = 90.0f,
                     .znear = 0.1f,
                     .zfar = 100.0f,
@@ -435,8 +435,13 @@ int main(int argc, char** argv)
 {
     hello_aphrodite app{};
 
-    app.setVsync(false)
-        .addCLICallback("--shading-type", [&app](std::string_view value) { app.switchShadingType(value); })
-        .loadConfig(argc, argv)
-        .run();
+    auto result =
+        app.getOptions()
+            .setVsync(false)
+            .addCLICallback("--shading-type", [&app](std::string_view value) { app.switchShadingType(value); })
+            .parse(argc, argv);
+
+    APH_VR(result);
+
+    app.run();
 }
