@@ -287,6 +287,8 @@ struct GPUFeature
     bool samplerAnisotropy : 1 = false;
     bool rayTracing : 1 = false;
     bool bindless : 1 = false;
+    bool variableRateShading : 1 = false;
+    bool capture : 1 = false;
 };
 
 struct GPUProperties

@@ -41,110 +41,16 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
     {
         const auto& feature = createInfo.enabledFeatures;
 
-        // must support features
+        // Setup required extensions based on feature requirements
+        gpu->setupRequiredExtensions(feature, requiredExtensions);
+
+        // adding addition extension/features
         {
-            requiredExtensions.push_back(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-            requiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
 
-            auto& extDynamicState3 = gpu->requestFeatures<::vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
-            extDynamicState3.extendedDynamicState3ColorBlendEquation = VK_TRUE;
-
-            auto& shaderObjectFeatures = gpu->requestFeatures<::vk::PhysicalDeviceShaderObjectFeaturesEXT>();
-            shaderObjectFeatures.shaderObject = VK_TRUE;
-
-            auto& sync2Features = gpu->requestFeatures<::vk::PhysicalDeviceSynchronization2Features>();
-            sync2Features.synchronization2 = VK_TRUE;
-
-            auto& timelineSemaphoreFeatures = gpu->requestFeatures<::vk::PhysicalDeviceTimelineSemaphoreFeatures>();
-            timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
-
-            auto& maintenance4Features = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance4Features>();
-            maintenance4Features.maintenance4 = VK_TRUE;
-
-            // Request Inline Uniform Block Features EXT
-            auto& inlineUniformBlockFeature = gpu->requestFeatures<::vk::PhysicalDeviceInlineUniformBlockFeaturesEXT>();
-            inlineUniformBlockFeature.inlineUniformBlock = VK_TRUE;
-
-            // Request Dynamic Rendering Features KHR
-            auto& dynamicRenderingFeature = gpu->requestFeatures<::vk::PhysicalDeviceDynamicRenderingFeaturesKHR>();
-            dynamicRenderingFeature.dynamicRendering = VK_TRUE;
-
-            // Request Host Query Reset Features
-            auto& hostQueryResetFeature = gpu->requestFeatures<::vk::PhysicalDeviceHostQueryResetFeatures>();
-            hostQueryResetFeature.hostQueryReset = VK_TRUE;
-
-            auto& deviceAddressFeatures = gpu->requestFeatures<::vk::PhysicalDeviceBufferDeviceAddressFeatures>();
-            deviceAddressFeatures.setBufferDeviceAddress(::vk::True);
         }
 
-        if (feature.meshShading)
-        {
-            // Request Mesh Shader Features EXT
-            auto& meshShaderFeature = gpu->requestFeatures<::vk::PhysicalDeviceMeshShaderFeaturesEXT>();
-
-            meshShaderFeature.taskShader = VK_TRUE;
-            meshShaderFeature.meshShader = VK_TRUE;
-            meshShaderFeature.meshShaderQueries = VK_FALSE;
-            meshShaderFeature.multiviewMeshShader = VK_FALSE;
-            meshShaderFeature.primitiveFragmentShadingRateMeshShader = VK_FALSE;
-            requiredExtensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
-        }
-
-        if (feature.rayTracing)
-        {
-            // Request Ray Tracing related features
-            auto& asFeature = gpu->requestFeatures<::vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
-            asFeature.accelerationStructure = VK_TRUE;
-            requiredExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-
-            auto& rtPipelineFeature = gpu->requestFeatures<::vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>();
-            rtPipelineFeature.rayTracingPipeline = VK_TRUE;
-            requiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-
-            auto& rayQueryFeature = gpu->requestFeatures<::vk::PhysicalDeviceRayQueryFeaturesKHR>();
-            rayQueryFeature.rayQuery = VK_TRUE;
-            requiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-        }
-
-        // TODO renderdoc unsupported features
-        if (!createInfo.enableCapture)
-        {
-            if (feature.multiDrawIndirect)
-            {
-                // Request Multi-Draw Features EXT
-                auto& multiDrawFeature = gpu->requestFeatures<::vk::PhysicalDeviceMultiDrawFeaturesEXT>();
-                multiDrawFeature.multiDraw = VK_TRUE;
-                requiredExtensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-                requiredExtensions.push_back(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
-            }
-
-            requiredExtensions.push_back(VK_KHR_PIPELINE_BINARY_EXTENSION_NAME);
-            auto& pipelineBinary = gpu->requestFeatures<::vk::PhysicalDevicePipelineBinaryFeaturesKHR>();
-            pipelineBinary.pipelineBinaries = VK_TRUE;
-
-            requiredExtensions.push_back(VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
-            auto& descriptorBufferFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorBufferFeaturesEXT>();
-            descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
-            descriptorBufferFeatures.descriptorBufferPushDescriptors = VK_TRUE;
-
-            requiredExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
-            auto& maintence5 = gpu->requestFeatures<::vk::PhysicalDeviceMaintenance5FeaturesKHR>();
-            maintence5.maintenance5 = VK_TRUE;
-        }
-
-        if (feature.bindless)
-        {
-            auto& descriptorIndexingFeatures = gpu->requestFeatures<::vk::PhysicalDeviceDescriptorIndexingFeatures>();
-            descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = ::vk::True;
-            descriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind = ::vk::True;
-            descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = ::vk::True;
-            descriptorIndexingFeatures.shaderUniformBufferArrayNonUniformIndexing = ::vk::True;
-            descriptorIndexingFeatures.descriptorBindingUniformBufferUpdateAfterBind = ::vk::True;
-            descriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing = ::vk::True;
-            descriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind = ::vk::True;
-        }
+        // Enable required features
+        gpu->enableFeatures(feature);
     }
 
     // verify extension support
@@ -165,41 +71,11 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    // verify feature support
+    // Validate features against hardware support
+    if (!gpu->validateFeatures(createInfo.enabledFeatures))
     {
-        const auto& requiredFeature = createInfo.enabledFeatures;
-        const auto& supportFeature = gpu->getProperties().feature;
-
-        if (requiredFeature.rayTracing && !supportFeature.rayTracing)
-        {
-            CM_LOG_ERR("Ray Tracing feature not supported!");
-            APH_ASSERT(false);
-        }
-        if (requiredFeature.meshShading && !supportFeature.meshShading)
-        {
-            CM_LOG_ERR("Mesh Shading feature not supported!");
-            APH_ASSERT(false);
-        }
-        if (requiredFeature.multiDrawIndirect && !supportFeature.multiDrawIndirect)
-        {
-            CM_LOG_ERR("Multi Draw Indrect not supported!");
-            APH_ASSERT(false);
-        }
-        if (requiredFeature.tessellationSupported && !supportFeature.tessellationSupported)
-        {
-            CM_LOG_ERR("some gpu feature not supported!");
-            APH_ASSERT(false);
-        }
-        if (requiredFeature.samplerAnisotropy && !supportFeature.samplerAnisotropy)
-        {
-            CM_LOG_ERR("Sampler anisotropy feature not supported!");
-            APH_ASSERT(false);
-        }
-        if (requiredFeature.bindless && !supportFeature.bindless)
-        {
-            CM_LOG_ERR("Bindless feature not supported!");
-            APH_ASSERT(false);
-        }
+        VK_LOG_ERR("Critical GPU features not supported by hardware");
+        return nullptr;
     }
 
     // Enable all physical device available features.
@@ -264,7 +140,7 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
         }
     }
 
-    if (createInfo.enableCapture)
+    if (createInfo.enabledFeatures.capture)
     {
         if (auto res = device->initCapture(); res.success())
         {

@@ -1,9 +1,14 @@
 #pragma once
 
+#include "api/gpuResource.h"
 #include "common/hash.h"
 #include "forward.h"
 #include "instance.h"
 #include "vkUtils.h"
+#include <array>
+#include <functional>
+#include <string_view>
+#include <span>
 
 namespace aph::vk
 {
@@ -11,6 +16,31 @@ namespace aph::vk
 class PhysicalDevice : public ResourceHandle<::vk::PhysicalDevice>
 {
     friend class Device;
+
+public:
+    /**
+     * @brief Structure representing a single GPU feature
+     */
+    struct FeatureEntry
+    {
+        // Feature identifier for debugging and error messages
+        std::string_view name;
+
+        // Function to check if the feature is required
+        std::function<bool(const GPUFeature&)> isRequired;
+
+        // Function to check if the feature is supported
+        std::function<bool(const GPUFeature&)> isSupported;
+
+        // Function to enable the feature in Vulkan's structure chain
+        std::function<void(PhysicalDevice*, bool)> enableFeature;
+
+        // Extensions related to this feature
+        SmallVector<std::string_view> extensionNames;
+
+        // Is this feature critical (will cause application to fail if not supported)
+        bool isCritical = true;
+    };
 
 public:
     PhysicalDevice(HandleType handle);
@@ -21,6 +51,30 @@ public:
     {
         return m_properties;
     }
+
+    /**
+     * @brief Validate all required features against supported features
+     * 
+     * @param requiredFeatures Features required by the application
+     * @return true if all required features are supported
+     */
+    bool validateFeatures(const GPUFeature& requiredFeatures) const;
+
+    /**
+     * @brief Setup required extensions based on feature requirements
+     * 
+     * @param requiredFeatures Features required by the application
+     * @param requiredExtensions Vector to populate with required extension names
+     */
+    void setupRequiredExtensions(const GPUFeature& requiredFeatures,
+                                 SmallVector<const char*>& requiredExtensions) const;
+
+    /**
+     * @brief Enable features in the Vulkan structures before device creation
+     * 
+     * @param requiredFeatures Features required by the application
+     */
+    void enableFeatures(const GPUFeature& requiredFeatures);
 
     template <typename... Extensions>
         requires(std::convertible_to<Extensions, std::string_view> && ...)
