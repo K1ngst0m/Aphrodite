@@ -4,6 +4,7 @@
 #include "renderGraph/renderGraph.h"
 #include "resource/resourceLoader.h"
 #include "uiRenderer.h"
+#include "global/globalManager.h"
 
 namespace aph
 {

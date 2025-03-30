@@ -14,6 +14,7 @@ add_subdirectory(scene)
 add_subdirectory(module)
 add_subdirectory(renderGraph)
 add_subdirectory(ui)
+add_subdirectory(global)
 
 set(EMPTY_SOURCE_FILES ${CMAKE_CURRENT_BINARY_DIR}/aph.cpp)
 add_custom_command(
@@ -36,6 +37,7 @@ target_link_libraries(aph-engine PUBLIC
   aphrodite::allocator
   aphrodite::threads
   aphrodite::filesystem
+  aphrodite::global
   aphrodite::module
   aphrodite::ui
   aphrodite::cli

@@ -58,16 +58,4 @@ private:
     coro::thread_pool m_threadPool{};
     ThreadSafeObjectPool<TaskGroup> m_taskGroupPools;
 };
-
 } // namespace aph
-
-namespace aph::internal
-{
-inline TaskManager& getDefaultTaskManager()
-{
-    static TaskManager defaultTaskManager;
-    return defaultTaskManager;
-}
-} // namespace aph::internal
-
-#define APH_DEFAULT_TASK_MANAGER ::aph::internal::getDefaultTaskManager()

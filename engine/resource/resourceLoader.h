@@ -4,6 +4,7 @@
 #include "bufferLoader.h"
 #include "common/hash.h"
 #include "geometryLoader.h"
+#include "global/globalManager.h"
 #include "imageLoader.h"
 #include "shaderLoader.h"
 #include "threads/taskManager.h"
