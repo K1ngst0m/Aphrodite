@@ -69,9 +69,6 @@ auto getFeatureEntries()
             {
                 if (required)
                 {
-                    auto& pipelineBinary = device->requestFeatures<::vk::PhysicalDevicePipelineBinaryFeaturesKHR>();
-                    pipelineBinary.pipelineBinaries = VK_TRUE;
-
                     auto& descriptorBufferFeatures =
                         device->requestFeatures<::vk::PhysicalDeviceDescriptorBufferFeaturesEXT>();
                     descriptorBufferFeatures.descriptorBuffer = VK_TRUE;
@@ -81,7 +78,7 @@ auto getFeatureEntries()
                     maintence5.maintenance5 = VK_TRUE;
                 }
             },
-            .extensionNames = { VK_KHR_PIPELINE_BINARY_EXTENSION_NAME, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,
+            .extensionNames = { VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME,
                                 VK_KHR_MAINTENANCE_5_EXTENSION_NAME },
             .isCritical = true },
           { .name = "Ray Tracing",
