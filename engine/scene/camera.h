@@ -11,7 +11,7 @@ enum class CameraType
     Perspective,
 };
 
-struct Orthographic
+struct OrthographicInfo
 {
     float left = {};
     float right = {};
@@ -21,7 +21,7 @@ struct Orthographic
     float zfar = { 1000.0f };
 };
 
-struct Perspective
+struct PerspectiveInfo
 {
     float aspect = { 16.0f / 9.0f };
     float fov = { 60.0f };
@@ -43,17 +43,17 @@ public:
         return m_cameraType;
     }
 
-    const glm::mat4& getProjection();
-    const glm::mat4& getView();
+    const Mat4& getProjection();
+    const Mat4& getView();
 
-    Camera& setProjection(Perspective perspective);
-    Camera& setProjection(Orthographic orthographic);
-    Camera& setProjection(glm::mat4 value);
+    Camera& setProjection(PerspectiveInfo perspective);
+    Camera& setProjection(OrthographicInfo orthographic);
+    Camera& setProjection(Mat4 value);
 
-    Camera& setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::vec3& up);
-    Camera& setView(glm::mat4 value);
+    Camera& setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up);
+    Camera& setView(Mat4 value);
 
-    Camera& setPosition(glm::vec3 value);
+    Camera& setPosition(Vec3 value);
 
     ~Camera() override = default;
 
@@ -64,16 +64,16 @@ private:
 private:
     CameraType m_cameraType{ CameraType::Perspective };
 
-    glm::mat4 m_projection{ 1.0f };
-    glm::mat4 m_view{ 1.0f };
+    Mat4 m_projection{ 1.0f };
+    Mat4 m_view{ 1.0f };
 
-    glm::vec4 m_position{ 0.0f };
-    glm::quat m_orientation{ 1.0f, 0.0f, 0.0f, 0.0f };
+    Vec4 m_position{ 0.0f };
+    Quat m_orientation{ 1.0f, 0.0f, 0.0f, 0.0f };
 
     bool m_flipY{ true };
 
-    Orthographic m_orthographic;
-    Perspective m_perspective;
+    OrthographicInfo m_orthographic;
+    PerspectiveInfo m_perspective;
 
     struct
     {

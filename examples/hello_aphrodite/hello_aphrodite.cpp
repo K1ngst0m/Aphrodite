@@ -187,7 +187,7 @@ void HelloAphrodite::init()
         // matrix uniform buffer
         {
             m_camera.setLookAt({ 0.0f, 0.0f, 3.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f })
-                .setProjection(aph::Perspective{
+                .setProjection(aph::PerspectiveInfo{
                     .aspect = static_cast<float>(getOptions().getWindowWidth()) /
                               static_cast<float>(getOptions().getWindowHeight()),
                     .fov = 90.0f,

@@ -2,7 +2,7 @@
 
 namespace aph
 {
-Camera& Camera::setProjection(Perspective perspective)
+Camera& Camera::setProjection(PerspectiveInfo perspective)
 {
     m_cameraType = CameraType::Perspective;
     m_perspective = perspective;
@@ -10,7 +10,7 @@ Camera& Camera::setProjection(Perspective perspective)
     return *this;
 }
 
-Camera& Camera::setProjection(Orthographic orthographic)
+Camera& Camera::setProjection(OrthographicInfo orthographic)
 {
     m_cameraType = CameraType::Orthographic;
     m_orthographic = orthographic;
@@ -18,18 +18,21 @@ Camera& Camera::setProjection(Orthographic orthographic)
     return *this;
 }
 
-Camera& Camera::setLookAt(const glm::vec3& eye, const glm::vec3& at, const glm::vec3& up)
+Camera& Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up)
 {
-    m_position = glm::vec4(eye, 1.0f);
-    glm::vec3 forward = glm::normalize(at - eye);
-    m_orientation = glm::quatLookAt(forward, glm::normalize(up));
+    m_position = Vec4(eye, 1.0f);
+    // Since glm::quatLookAt isn't directly wrapped, we'll create a look-at rotation matrix
+    // and convert it to a quaternion
+    Mat4 lookMat = LookAt(eye, at, up);
+    m_orientation = Mat4ToQuat(lookMat);
+    
     m_dirty.view = true;
     return *this;
 }
 
-Camera& Camera::setPosition(glm::vec3 value)
+Camera& Camera::setPosition(Vec3 value)
 {
-    m_position = glm::vec4(value, 1.0f);
+    m_position = Vec4(value, 1.0f);
     m_dirty.view = true;
     return *this;
 }
@@ -40,14 +43,15 @@ void Camera::updateProjection()
     {
     case CameraType::Orthographic:
     {
-        setProjection(glm::ortho(m_orthographic.left, m_orthographic.right, m_orthographic.bottom, m_orthographic.top,
-                                 m_orthographic.znear, m_orthographic.zfar));
+        setProjection(Ortho(m_orthographic.left, m_orthographic.right, 
+                           m_orthographic.bottom, m_orthographic.top,
+                           m_orthographic.znear, m_orthographic.zfar));
     }
     break;
     case CameraType::Perspective:
     {
-        auto matrix = glm::perspective(glm::radians(m_perspective.fov), m_perspective.aspect, m_perspective.znear,
-                                       m_perspective.zfar);
+        auto matrix = Perspective(Radians(m_perspective.fov), m_perspective.aspect, 
+                                 m_perspective.znear, m_perspective.zfar);
         if (m_flipY)
         {
             matrix[1][1] *= -1.0f;
@@ -60,12 +64,14 @@ void Camera::updateProjection()
 
 void Camera::updateView()
 {
-    glm::mat4 rot = glm::mat4_cast(glm::conjugate(m_orientation));
-    glm::mat4 trans = glm::translate(glm::mat4(1.0f), -glm::vec3(m_position));
+    // Conjugate the quaternion (equivalent to inverse for unit quaternions)
+    Quat conjugate = Quat(m_orientation.w, -m_orientation.x, -m_orientation.y, -m_orientation.z);
+    Mat4 rot = QuatToMat4(conjugate);
+    Mat4 trans = Translate(Mat4(1.0f), -Vec3(m_position));
     setView(rot * trans);
 }
 
-const glm::mat4& Camera::getProjection()
+const Mat4& Camera::getProjection()
 {
     if (m_dirty.projection)
     {
@@ -74,7 +80,7 @@ const glm::mat4& Camera::getProjection()
     return m_projection;
 }
 
-const glm::mat4& Camera::getView()
+const Mat4& Camera::getView()
 {
     if (m_dirty.view)
     {
@@ -83,14 +89,14 @@ const glm::mat4& Camera::getView()
     return m_view;
 }
 
-Camera& Camera::setProjection(glm::mat4 value)
+Camera& Camera::setProjection(Mat4 value)
 {
     m_projection = value;
     m_dirty.projection = false;
     return *this;
 }
 
-Camera& Camera::setView(glm::mat4 value)
+Camera& Camera::setView(Mat4 value)
 {
     m_view = value;
     m_dirty.view = false;
