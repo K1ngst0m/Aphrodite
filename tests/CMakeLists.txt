@@ -5,7 +5,7 @@ enable_testing()
 CPMAddPackage(
   NAME Catch2
   GITHUB_REPOSITORY catchorg/Catch2
-  GIT_TAG v3.4.0
+  GIT_TAG v3.8.0
 )
 
 file(GLOB TEST_FILES *.cpp)
@@ -21,7 +21,7 @@ foreach(TEST_FILE ${TEST_FILES})
 
     # Link necessary libraries, for instance, Catch2
     target_link_libraries(${TEST_TARGET} PRIVATE
-      aph_engine
+      aphrodite::engine
       Catch2::Catch2WithMain
     )
     target_include_directories(${TEST_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/engine)

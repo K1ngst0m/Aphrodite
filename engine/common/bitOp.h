@@ -75,8 +75,8 @@ Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcep
             const uint32_t one_count = trailing_ones(value);
             co_yield { bit_offset, one_count };
 
-            value &= ~((TBitwise{ 1 } << one_count) - 1);
             bit_offset += one_count;
+            value >>= one_count;
         }
     }
     else
@@ -88,35 +88,32 @@ Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcep
             co_return;
         }
 
-        size_t bit_offset = 0;
-        while (true)
+        uint32_t bit_offset = 0;
+        while (bit_offset < value.size())
         {
-            // Skip trailing zeroes
-            size_t tz = 0;
-            while (tz < value.size() && !value.test(tz))
+            // Skip zeroes
+            while (bit_offset < value.size() && !value.test(bit_offset))
             {
-                ++tz;
+                ++bit_offset;
             }
-            if (tz >= value.size())
+            
+            if (bit_offset >= value.size())
             {
                 break; // no more set bits
             }
-            bit_offset += tz;
-
-            // Count the trailing ones
-            size_t to = 0;
-            while (to < value.size() && value.test(to))
+            
+            // Start of a range of ones
+            uint32_t start_pos = bit_offset;
+            
+            // Count consecutive ones
+            uint32_t length = 0;
+            while (bit_offset < value.size() && value.test(bit_offset))
             {
-                ++to;
+                ++bit_offset;
+                ++length;
             }
-            co_yield { static_cast<uint32_t>(bit_offset), static_cast<uint32_t>(to) };
-
-            // Clear those "to" bits
-            for (size_t i = 0; i < to; ++i)
-            {
-                value.reset(i);
-            }
-            bit_offset += to;
+            
+            co_yield { start_pos, length };
         }
     }
 }
