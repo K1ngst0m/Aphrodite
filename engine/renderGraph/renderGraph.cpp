@@ -5,9 +5,27 @@
 
 namespace aph
 {
+// Constructor for normal GPU mode
 RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
 {
+}
+
+// Constructor for dry run mode (no GPU operations)
+RenderGraph::RenderGraph()
+    : m_pDevice(nullptr)
+    , m_debugOutputEnabled(true)
+{
+    if (m_debugOutputEnabled)
+    {
+        RDG_LOG_INFO("[DryRun] Created RenderGraph in dry run mode (no GPU operations)");
+    }
+}
+
+RenderGraph::~RenderGraph()
+{
+    APH_PROFILER_SCOPE();
+    cleanup();
 }
 
 RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType)
@@ -15,12 +33,18 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
     APH_PROFILER_SCOPE();
     if (m_declareData.passMap.contains(name))
     {
-        CM_LOG_ERR("The pass [%s] has been already created.", name);
+        RDG_LOG_ERR("The pass [%s] has been already created.", name);
         APH_ASSERT(false);
         return {};
     }
     auto* pass = m_resourcePool.renderPass.allocate(this, queueType, name);
     m_declareData.passMap[name] = pass;
+
+    if (isDryRunMode() && m_debugOutputEnabled)
+    {
+        RDG_LOG_INFO("[DryRun] Created pass '%s' with queue type %s", name, aph::vk::utils::toString(queueType));
+    }
+
     return pass;
 }
 
@@ -28,10 +52,17 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 {
     APH_PROFILER_SCOPE();
 
-    if (pSwapChain != m_buildData.pSwapchain)
+    if (!isDryRunMode())
     {
-        m_buildData.pSwapchain = pSwapChain;
-        setDirty(DirtyFlagBits::SwapChainDirty);
+        if (pSwapChain != m_buildData.pSwapchain)
+        {
+            m_buildData.pSwapchain = pSwapChain;
+            setDirty(DirtyFlagBits::SwapChainDirty);
+        }
+    }
+    else if (m_debugOutputEnabled)
+    {
+        RDG_LOG_INFO("[DryRun] Building render graph (topology generation only)...");
     }
 
     // If nothing is dirty, no need to rebuild
@@ -43,10 +74,13 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     // Clear relevant data structures based on what's dirty
     if (isDirty(DirtyFlagBits::TopologyDirty | DirtyFlagBits::PassDirty))
     {
-        std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
-        m_buildData.bufferBarriers.clear();
-        m_buildData.imageBarriers.clear();
-        m_buildData.frameSubmitInfos.clear();
+        if (!isDryRunMode())
+        {
+            std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
+            m_buildData.bufferBarriers.clear();
+            m_buildData.imageBarriers.clear();
+            m_buildData.frameSubmitInfos.clear();
+        }
         m_buildData.sortedPasses.clear();
         m_buildData.currentResourceStates.clear();
 
@@ -60,6 +94,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     {
         APH_PROFILER_SCOPE_NAME("topological sort");
 
+        if (isDryRunMode() && m_debugOutputEnabled)
+        {
+            RDG_LOG_INFO("[DryRun] Building dependency graph based on resources...");
+        }
+
         for (auto [name, res] : m_declareData.resourceMap)
         {
             for (const auto& readPass : res->getReadPasses())
@@ -69,6 +108,12 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
                     if (readPass != writePass)
                     {
                         m_buildData.passDependencyGraph[readPass].insert(writePass);
+
+                        if (isDryRunMode() && m_debugOutputEnabled)
+                        {
+                            RDG_LOG_DEBUG("[DryRun] %s depends on %s (resource: %s)", readPass->m_name,
+                                          writePass->m_name, name);
+                        }
                     }
                 }
             }
@@ -76,7 +121,20 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
 
         if (m_buildData.passDependencyGraph.empty())
         {
-            VK_LOG_WARN("render graph is empty.");
+            if (isDryRunMode() && m_debugOutputEnabled)
+            {
+                RDG_LOG_WARN("[DryRun] Warning: Render graph is empty (no dependencies found)");
+            }
+            else
+            {
+                RDG_LOG_WARN("render graph is empty.");
+            }
+        }
+
+        // Perform topological sort
+        if (isDryRunMode() && m_debugOutputEnabled)
+        {
+            RDG_LOG_INFO("[DryRun] Performing topological sort...");
         }
 
         HashMap<RenderPass*, int> inDegree;
@@ -104,6 +162,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             if (degree == 0)
             {
                 zeroInDegreeQueue.push(pass);
+
+                if (isDryRunMode() && m_debugOutputEnabled)
+                {
+                    RDG_LOG_DEBUG("[DryRun] Starting node: %s (in-degree = 0)", pass->m_name);
+                }
             }
         }
 
@@ -113,6 +176,11 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
             RenderPass* node = zeroInDegreeQueue.front();
             zeroInDegreeQueue.pop();
             sortedPasses.push_back(node);
+
+            if (isDryRunMode() && m_debugOutputEnabled)
+            {
+                RDG_LOG_DEBUG("[DryRun] Adding to sorted order: %s", node->m_name);
+            }
 
             // Decrease the in-degree of adjacent nodes
             for (RenderPass* adjacent : passDependencyGraph[node])
@@ -126,138 +194,178 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
 
         // Check if there was a cycle in the graph
-        APH_ASSERT(sortedPasses.size() == passDependencyGraph.size());
-    }
-
-    if (isDirty(DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty | DirtyFlagBits::PassDirty |
-                DirtyFlagBits::BackBufferDirty))
-    {
-        // per pass resource build
-        for (auto* pass : m_buildData.sortedPasses)
+        bool hasCycle = sortedPasses.size() != passDependencyGraph.size();
+        if (hasCycle)
         {
-            APH_PROFILER_SCOPE_NAME("pass resource build");
-            auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
-
-            // Create command pools and allocate command buffers if needed
-            if (!m_buildData.cmdPools.contains(pass))
+            if (isDryRunMode() && m_debugOutputEnabled)
             {
-                APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
-                m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
+                RDG_LOG_ERR("[DryRun] ERROR: Cycle detected in the render graph!");
             }
-
-            // Create or update color attachments
-            for (PassImageResource* colorAttachment : pass->m_res.colorOut)
-            {
-                setupImageResource(colorAttachment, true);
-            }
-
-            // Create or update depth attachments
-            if (pass->m_res.depthOut)
-            {
-                setupImageResource(pass->m_res.depthOut, false);
-            }
-
-            // Initialize resource states for buffer resources
-            {
-                auto resetResourceStates = [this](ArrayProxy<PassBufferResource*> resources)
-                {
-                    APH_PROFILER_SCOPE();
-                    for (auto* resource : resources)
-                    {
-                        if (!m_buildData.currentResourceStates.contains(resource))
-                        {
-                            m_buildData.currentResourceStates[resource] = ResourceState::Undefined;
-                        }
-                    }
-                };
-
-                resetResourceStates(pass->m_res.storageBufferIn);
-                resetResourceStates(pass->m_res.uniformBufferIn);
-                resetResourceStates(pass->m_res.storageBufferOut);
-            }
+            APH_ASSERT(!hasCycle);
+        }
+        else if (isDryRunMode() && m_debugOutputEnabled)
+        {
+            RDG_LOG_INFO("[DryRun] Topological sort completed successfully.");
         }
     }
 
-    // Record commands for each pass
-    if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
-                DirtyFlagBits::TopologyDirty))
+    // Skip GPU resource allocation in dry run mode
+    if (!isDryRunMode())
     {
-        for (auto* pass : m_buildData.sortedPasses)
+        if (isDirty(DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty | DirtyFlagBits::PassDirty |
+                    DirtyFlagBits::BackBufferDirty))
         {
-            APH_PROFILER_SCOPE_NAME("pass commands recording");
-            SmallVector<vk::Image*> colorImages;
-            vk::Image* pDepthImage = {};
-            SmallVector<vk::ImageBarrier> initImageBarriers{};
-            SmallVector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
-            SmallVector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
-
-            // Clear existing barriers
-            imageBarriers.clear();
-            bufferBarriers.clear();
-
-            // Collect color images
-            colorImages.reserve(pass->m_res.colorOut.size());
-            for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+            // per pass resource build
+            for (auto* pass : m_buildData.sortedPasses)
             {
-                colorImages.push_back(m_buildData.image[colorAttachment]);
-                setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
+                APH_PROFILER_SCOPE_NAME("pass resource build");
+                auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
+
+                // Create command pools and allocate command buffers if needed
+                if (!m_buildData.cmdPools.contains(pass))
+                {
+                    APH_VR(m_pDevice->create(vk::CommandPoolCreateInfo{ queue, false }, &m_buildData.cmdPools[pass]));
+                    m_buildData.cmds[pass] = m_buildData.cmdPools[pass]->allocate();
+                }
+
+                // Create or update color attachments
+                for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                {
+                    setupImageResource(colorAttachment, true);
+                }
+
+                // Create or update depth attachments
+                if (pass->m_res.depthOut)
+                {
+                    setupImageResource(pass->m_res.depthOut, false);
+                }
+
+                // Initialize resource states for buffer resources
+                {
+                    auto resetResourceStates = [this](ArrayProxy<PassBufferResource*> resources)
+                    {
+                        APH_PROFILER_SCOPE();
+                        for (auto* resource : resources)
+                        {
+                            if (!m_buildData.currentResourceStates.contains(resource))
+                            {
+                                m_buildData.currentResourceStates[resource] = ResourceState::Undefined;
+                            }
+                        }
+                    };
+
+                    resetResourceStates(pass->m_res.storageBufferIn);
+                    resetResourceStates(pass->m_res.uniformBufferIn);
+                    resetResourceStates(pass->m_res.storageBufferOut);
+                }
             }
+        }
 
-            // Set up depth image
-            if (pass->m_res.depthOut)
+        // Record commands for each pass
+        if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
+                    DirtyFlagBits::TopologyDirty))
+        {
+            for (auto* pass : m_buildData.sortedPasses)
             {
-                pDepthImage = m_buildData.image[pass->m_res.depthOut];
-                setupImageBarrier(initImageBarriers, pass->m_res.depthOut, ResourceState::DepthStencil);
+                APH_PROFILER_SCOPE_NAME("pass commands recording");
+                SmallVector<vk::Image*> colorImages;
+                vk::Image* pDepthImage = {};
+                SmallVector<vk::ImageBarrier> initImageBarriers{};
+                SmallVector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
+                SmallVector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
+
+                // Clear existing barriers
+                imageBarriers.clear();
+                bufferBarriers.clear();
+
+                // Collect color images
+                colorImages.reserve(pass->m_res.colorOut.size());
+                for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                {
+                    colorImages.push_back(m_buildData.image[colorAttachment]);
+                    setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
+                }
+
+                // Set up depth image
+                if (pass->m_res.depthOut)
+                {
+                    pDepthImage = m_buildData.image[pass->m_res.depthOut];
+                    setupImageBarrier(initImageBarriers, pass->m_res.depthOut, ResourceState::DepthStencil);
+                }
+
+                auto queue = m_pDevice->getQueue(QueueType::Graphics);
+                m_pDevice->executeCommand(queue,
+                                          [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
+
+                // Set up texture barriers
+                for (PassImageResource* textureIn : pass->m_res.textureIn)
+                {
+                    ResourceState targetState = pass->m_res.resourceStateMap[textureIn];
+                    setupResourceBarrier(imageBarriers, textureIn, targetState);
+                }
+
+                // Set up storage buffer barriers
+                for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+                {
+                    ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                    setupResourceBarrier(bufferBarriers, bufferIn, targetState);
+                }
+
+                // Set up uniform buffer barriers
+                for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
+                {
+                    ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                    setupResourceBarrier(bufferBarriers, bufferIn, targetState);
+                }
+
+                APH_ASSERT(!colorImages.empty());
+
+                // Record and submit commands
+                {
+                    APH_PROFILER_SCOPE_NAME("pass commands submit");
+                    auto* pCmd = m_buildData.cmds[pass];
+                    APH_VR(pCmd->begin());
+                    pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
+                    pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
+                    pCmd->beginRendering(colorImages, pDepthImage);
+                    if (!isDryRunMode())
+                    {
+                        APH_ASSERT(pass->m_executeCB);
+                        pass->m_executeCB(pCmd);
+                    }
+                    pCmd->endRendering();
+                    APH_VR(pCmd->end());
+
+                    vk::QueueSubmitInfo submitInfo{
+                        .commandBuffers = { pCmd },
+                        .waitSemaphores = {},
+                        .signalSemaphores = {},
+                    };
+
+                    std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
+                    m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
+                }
             }
-
-            auto queue = m_pDevice->getQueue(QueueType::Graphics);
-            m_pDevice->executeCommand(queue,
-                                      [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
-
-            // Set up texture barriers
-            for (PassImageResource* textureIn : pass->m_res.textureIn)
+        }
+    }
+    else
+    {
+        // In dry run mode, just initialize resource states for tracking
+        for (auto [name, res] : m_declareData.resourceMap)
+        {
+            if (!m_buildData.currentResourceStates.contains(res))
             {
-                ResourceState targetState = pass->m_res.resourceStateMap[textureIn];
-                setupResourceBarrier(imageBarriers, textureIn, targetState);
+                m_buildData.currentResourceStates[res] = ResourceState::Undefined;
             }
+        }
 
-            // Set up storage buffer barriers
-            for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+        if (m_debugOutputEnabled)
+        {
+            RDG_LOG_INFO("[DryRun] Generated execution order:");
+            int i = 1;
+            for (auto* pass : m_buildData.sortedPasses)
             {
-                ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
-                setupResourceBarrier(bufferBarriers, bufferIn, targetState);
-            }
-
-            // Set up uniform buffer barriers
-            for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
-            {
-                ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
-                setupResourceBarrier(bufferBarriers, bufferIn, targetState);
-            }
-
-            APH_ASSERT(!colorImages.empty());
-
-            // Record and submit commands
-            {
-                APH_PROFILER_SCOPE_NAME("pass commands submit");
-                auto* pCmd = m_buildData.cmds[pass];
-                APH_VR(pCmd->begin());
-                pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
-                pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
-                pCmd->beginRendering(colorImages, pDepthImage);
-                APH_ASSERT(pass->m_executeCB);
-                pass->m_executeCB(pCmd);
-                pCmd->endRendering();
-                APH_VR(pCmd->end());
-
-                vk::QueueSubmitInfo submitInfo{
-                    .commandBuffers = { pCmd },
-                    .waitSemaphores = {},
-                    .signalSemaphores = {},
-                };
-
-                std::lock_guard<std::mutex> holder{ m_buildData.submitLock };
-                m_buildData.frameSubmitInfos.push_back(std::move(submitInfo));
+                RDG_LOG_INFO("[DryRun] %d. %s", i++, pass->m_name);
             }
         }
     }
@@ -359,15 +467,27 @@ void RenderGraph::setupResourceBarrier(SmallVector<BarrierType>& barriers, Resou
     }
 }
 
-RenderGraph::~RenderGraph()
-{
-    APH_PROFILER_SCOPE();
-    cleanup();
-}
-
 PassResource* RenderGraph::importPassResource(const std::string& name, ResourcePtr resource)
 {
     APH_PROFILER_SCOPE();
+
+    if (isDryRunMode())
+    {
+        auto type =
+            std::holds_alternative<vk::Buffer*>(resource) ? PassResource::Type::Buffer : PassResource::Type::Image;
+
+        auto* res = createPassResource(name, type);
+
+        if (m_debugOutputEnabled)
+        {
+            const char* typeStr = (type == PassResource::Type::Buffer) ? "Buffer" : "Image";
+            RDG_LOG_INFO("[DryRun] Imported resource '%s' of type %s", name, typeStr);
+        }
+
+        res->addFlags(PassResourceFlagBits::External);
+        m_buildData.currentResourceStates[res] = ResourceState::General;
+        return res;
+    }
 
     PassResource* passResource = std::visit(
         [this, &name](auto* ptr) -> PassResource*
@@ -406,9 +526,9 @@ PassResource* RenderGraph::createPassResource(const std::string& name, PassResou
     APH_PROFILER_SCOPE();
     if (m_declareData.resourceMap.contains(name))
     {
-        CM_LOG_ERR("The pass resource [%s] has been already created.", name);
-        APH_ASSERT(false);
-        return {};
+        auto res = m_declareData.resourceMap.at(name);
+        APH_ASSERT(res->getType() == type);
+        return res;
     }
 
     PassResource* res = {};
@@ -426,12 +546,93 @@ PassResource* RenderGraph::createPassResource(const std::string& name, PassResou
     APH_ASSERT(res);
 
     m_declareData.resourceMap[name] = res;
+
+    if (isDryRunMode() && m_debugOutputEnabled)
+    {
+        const char* typeStr = (type == PassResource::Type::Buffer) ? "Buffer" : "Image";
+        RDG_LOG_INFO("[DryRun] Created resource '%s' of type %s", name, typeStr);
+    }
+
     return res;
 }
 
 void RenderGraph::execute(vk::Fence* pFence)
 {
     APH_PROFILER_SCOPE();
+
+    if (isDryRunMode())
+    {
+        if (m_debugOutputEnabled)
+        {
+            RDG_LOG_INFO("[DryRun] Executing render graph simulation...");
+
+            for (auto* pass : m_buildData.sortedPasses)
+            {
+                RDG_LOG_INFO("[DryRun] Executing pass: %s", pass->m_name);
+
+                // Debug info about resources used by this pass
+                if (!pass->m_res.textureIn.empty())
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Reading textures: ");
+                    for (auto* tex : pass->m_res.textureIn)
+                    {
+                        RDG_LOG_DEBUG("%s ", tex->getName());
+                    }
+                }
+
+                if (!pass->m_res.colorOut.empty())
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Writing color outputs: ");
+                    for (auto* tex : pass->m_res.colorOut)
+                    {
+                        RDG_LOG_DEBUG("%s ", tex->getName());
+                    }
+                }
+
+                if (pass->m_res.depthOut)
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Writing depth output: %s", pass->m_res.depthOut->getName());
+                }
+
+                if (!pass->m_res.storageBufferIn.empty())
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Reading storage buffers: ");
+                    for (auto* buf : pass->m_res.storageBufferIn)
+                    {
+                        RDG_LOG_DEBUG("%s ", buf->getName());
+                    }
+                }
+
+                if (!pass->m_res.uniformBufferIn.empty())
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Reading uniform buffers: ");
+                    for (auto* buf : pass->m_res.uniformBufferIn)
+                    {
+                        RDG_LOG_DEBUG("%s ", buf->getName());
+                    }
+                }
+
+                if (!pass->m_res.storageBufferOut.empty())
+                {
+                    RDG_LOG_DEBUG("[DryRun]   Writing storage buffers: ");
+                    for (auto* buf : pass->m_res.storageBufferOut)
+                    {
+                        RDG_LOG_DEBUG("%s ", buf->getName());
+                    }
+                }
+            }
+
+            RDG_LOG_INFO("[DryRun] Render graph execution completed");
+
+            if (!m_declareData.backBuffer.empty())
+            {
+                RDG_LOG_INFO("[DryRun] Presenting back buffer: %s", m_declareData.backBuffer);
+            }
+        }
+
+        return;
+    }
+
     auto* queue = m_pDevice->getQueue(aph::QueueType::Graphics);
 
     // submit && present
@@ -466,28 +667,28 @@ void RenderGraph::setBackBuffer(const std::string& backBuffer)
 {
     APH_PROFILER_SCOPE();
     m_declareData.backBuffer = backBuffer;
+
+    if (isDryRunMode() && m_debugOutputEnabled)
+    {
+        RDG_LOG_INFO("[DryRun] Set back buffer to '%s'", backBuffer);
+    }
 }
 
 void RenderGraph::cleanup()
 {
+    if (!isDryRunMode())
     {
         m_buildData.bufferBarriers.clear();
         m_buildData.imageBarriers.clear();
         m_buildData.frameSubmitInfos.clear();
-        for (auto [name, pass] : m_declareData.passMap)
-        {
-            m_buildData.passDependencyGraph[pass].clear();
-            m_resourcePool.renderPass.free(pass);
-        }
-        m_declareData.passMap.clear();
 
+        // Clean up GPU resources
         for (auto [name, pResource] : m_declareData.resourceMap)
         {
             switch (pResource->getType())
             {
             case PassResource::Type::Image:
             {
-                m_resourcePool.passImageResource.free(static_cast<PassImageResource*>(pResource));
                 if (!(pResource->getFlags() & PassResourceFlagBits::External))
                 {
                     auto pImage = m_buildData.image[pResource];
@@ -497,7 +698,6 @@ void RenderGraph::cleanup()
             break;
             case PassResource::Type::Buffer:
             {
-                m_resourcePool.passBufferResource.free(static_cast<PassBufferResource*>(pResource));
                 if (!(pResource->getFlags() & PassResourceFlagBits::External))
                 {
                     auto pBuffer = m_buildData.buffer[pResource];
@@ -507,14 +707,43 @@ void RenderGraph::cleanup()
             break;
             }
         }
-        m_declareData.resourceMap.clear();
+
+        for (auto [_, cmdPool] : m_buildData.cmdPools)
+        {
+            m_pDevice->destroy(cmdPool);
+        }
+        m_buildData.cmdPools.clear();
     }
 
-    for (auto [_, cmdPool] : m_buildData.cmdPools)
+    // Clean up graph data structures in both modes
+    for (auto [name, pass] : m_declareData.passMap)
     {
-        m_pDevice->destroy(cmdPool);
+        m_buildData.passDependencyGraph[pass].clear();
+        m_resourcePool.renderPass.free(pass);
     }
-    m_buildData.cmdPools.clear();
+    m_declareData.passMap.clear();
+
+    for (auto [name, pResource] : m_declareData.resourceMap)
+    {
+        switch (pResource->getType())
+        {
+        case PassResource::Type::Image:
+            m_resourcePool.passImageResource.free(static_cast<PassImageResource*>(pResource));
+            break;
+        case PassResource::Type::Buffer:
+            m_resourcePool.passBufferResource.free(static_cast<PassBufferResource*>(pResource));
+            break;
+        }
+    }
+    m_declareData.resourceMap.clear();
+
+    m_buildData.image.clear();
+    m_buildData.buffer.clear();
+
+    if (isDryRunMode() && m_debugOutputEnabled)
+    {
+        RDG_LOG_INFO("[DryRun] Cleaned up render graph");
+    }
 };
 
 std::string RenderGraph::exportToGraphviz() const
@@ -576,22 +805,7 @@ std::string RenderGraph::exportToGraphviz() const
         node->addTableRow(name, "", true);
 
         // Add queue type
-        std::string queueTypeStr;
-        switch (pass->getQueueType())
-        {
-        case QueueType::Graphics:
-            queueTypeStr = "Graphics";
-            break;
-        case QueueType::Compute:
-            queueTypeStr = "Compute";
-            break;
-        case QueueType::Transfer:
-            queueTypeStr = "Transfer";
-            break;
-        default:
-            queueTypeStr = "Unknown";
-        }
-        node->addTableRow("Queue:", queueTypeStr);
+        node->addTableRow("Queue:", std::string{ aph::vk::utils::toString(pass->getQueueType()) });
 
         // Add resource inputs
         if (!pass->m_res.textureIn.empty() || !pass->m_res.uniformBufferIn.empty() ||

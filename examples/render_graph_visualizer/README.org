@@ -1,0 +1,68 @@
+#+TITLE: Render Graph Visualizer
+#+OPTIONS: toc:nil
+
+* Render Graph Visualizer
+
+This example demonstrates how to use the Render Graph system in dry run mode to visualize and debug complex rendering pipelines without needing a GPU. It's a powerful tool for designing and understanding your render graph structure.
+
+** Features
+
+- *Two Example Render Graphs*:
+  - *Simple*: A basic forward rendering pipeline with main pass and post processing
+  - *Complex*: A deferred rendering pipeline with G-buffer, compute, lighting, and post processing
+
+- *GraphViz Visualization*: Exports render graphs to DOT format for visualization
+
+- *Dependency Analysis*: Demonstrates how passes connect through resources
+
+- *Dry Run Mode*: Shows how to use the render graph without GPU operations
+
+** Understanding the Output
+
+When you run the example, you'll see detailed console output showing:
+
+1. Resource creation
+2. Pass dependencies 
+3. Topological sorting results
+4. Execution order
+
+The example also generates DOT files (=simple_render_graph.dot= and =complex_render_graph.dot=) that you can visualize with tools like:
+
+- Online visualizers: [[https://dreampuf.github.io/GraphvizOnline/][GraphvizOnline]]
+- Command line: =dot -Tpng complex_render_graph.dot -o render_graph.png=
+
+** How It Works
+
+The RenderGraph class in dry run mode builds the dependency graph by analyzing resource connections between passes, but skips all GPU operations. This allows you to:
+
+1. Test and debug complex render graph architectures quickly
+2. Visualize data flow between passes
+3. Detect cycles and optimize your rendering pipeline
+4. Document your rendering architecture
+
+** Key Concepts
+
+*** Passes
+
+Passes represent distinct stages in the rendering pipeline, such as:
+- Geometry Pass - Produces G-buffer data (positions, normals, albedo)
+- Lighting Pass - Consumes G-buffer to calculate lighting
+- Post-Process Pass - Applies final effects to the rendered image
+
+*** Resources
+
+Resources connect passes and define their dependencies:
+- *Read resources*: Data consumed by a pass
+- *Write resources*: Data produced by a pass
+
+*** Dependencies
+
+The render graph analyzes resource connections to automatically build the dependency graph and determine the execution order.
+
+** Customizing
+
+You can modify this example to:
+1. Model your own rendering pipeline
+2. Experiment with different pass configurations
+3. Test resource dependencies
+4. Visualize complex multi-pass effects

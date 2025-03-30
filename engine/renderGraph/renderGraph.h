@@ -5,6 +5,8 @@
 #include "threads/taskManager.h"
 #include <variant>
 
+GENERATE_LOG_FUNCS(RDG)
+
 namespace aph
 {
 class RenderGraph
@@ -14,20 +16,50 @@ public:
     RenderGraph(RenderGraph&&) = delete;
     RenderGraph& operator=(const RenderGraph&) = delete;
     RenderGraph& operator=(RenderGraph&&) = delete;
+
+public:
+    // Constructor with device parameter for normal mode
     RenderGraph(vk::Device* pDevice);
+
+    // Constructor for dry run mode (no GPU operations)
+    RenderGraph();
+
     ~RenderGraph();
 
+public:
     RenderPass* createPass(const std::string& name, QueueType queueType);
     void setBackBuffer(const std::string& backBuffer);
+    template <typename T>
+    T* getResource(const std::string& name);
 
     void build(vk::SwapChain* pSwapChain = nullptr);
     void execute(vk::Fence* pFence = nullptr);
     void cleanup();
 
+public:
     std::string exportToGraphviz() const;
 
-    template <typename T>
-    T* getResource(const std::string& name);
+    // Debug logging for dry run mode
+    void enableDebugOutput(bool enable)
+    {
+        m_debugOutputEnabled = enable;
+    }
+
+    void setForceDryRun(bool value)
+    {
+        m_forceDryRun = value;
+    }
+
+private:
+    bool isDryRunMode() const
+    {
+        return m_pDevice == nullptr || m_forceDryRun;
+    }
+
+    bool isDebugOutputEnabled() const
+    {
+        return m_debugOutputEnabled;
+    }
 
 private:
     friend class RenderPass;
@@ -74,7 +106,7 @@ private:
     }
 
 private:
-    vk::Device* m_pDevice = {};
+    vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
 
     struct
     {
@@ -112,6 +144,10 @@ private:
         ThreadSafeObjectPool<PassImageResource> passImageResource;
         ThreadSafeObjectPool<RenderPass> renderPass;
     } m_resourcePool;
+
+    // Debug output for dry run mode
+    bool m_debugOutputEnabled = false;
+    bool m_forceDryRun = false;
 };
 
 template <typename T>
@@ -133,7 +169,7 @@ T* RenderGraph::getResource(const std::string& name)
         }
     }
 
-    CM_LOG_ERR("Could not find the pass resource [%s].");
+    RDG_LOG_ERR("Could not find the pass resource [%s].", name.c_str());
     APH_ASSERT(false);
     return nullptr;
 }

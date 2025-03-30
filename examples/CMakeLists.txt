@@ -28,6 +28,9 @@ function(buildExamples)
     endforeach(EXAMPLE)
 endfunction(buildExamples)
 
-set(EXAMPLES hello_aphrodite)
+set(EXAMPLES 
+    hello_aphrodite
+    render_graph_visualizer
+)
 
 buildExamples()

@@ -11,6 +11,8 @@
 #include "common/profiler.h"
 #include "common/timer.h"
 
+#include "filesystem/filesystem.h"
+
 #include "cli/cli.h"
 
 #include "app/app.h"
