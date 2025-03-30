@@ -39,6 +39,23 @@
   ./build/release/bin/hello_aphrodite
   #+END_SRC
 
+** Examples
+
+  Aphrodite includes several examples to demonstrate key engine features:
+
+*** [[./examples/hello_aphrodite][Hello Aphrodite]]
+  A basic example showcasing the core rendering features of the engine:
+  - Three rendering approaches: geometry shading, mesh shading, and bindless mesh shading
+  - Resource loading system
+  - Render-graph recording
+
+*** [[./examples/render_graph_visualizer][Render Graph Visualizer]]
+  A utility example that demonstrates Aphrodite's render graph system in dry run mode:
+  - Visualizes render graph structures
+  - Exports to GraphViz DOT format
+  - Demonstrates dependency analysis
+  - Includes simple and complex rendering pipeline examples
+
 ** Usage
 
   For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.

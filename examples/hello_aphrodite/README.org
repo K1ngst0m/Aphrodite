@@ -1,0 +1,70 @@
+#+TITLE: Hello Aphrodite
+#+OPTIONS: toc:nil
+
+* Hello Aphrodite
+
+This example demonstrates the core features of Aphrodite engine, including different rendering approaches, resource loading, and bindless rendering. It renders a textured cube that can be viewed using geometry shading, mesh shading, or bindless mesh shading.
+
+** Features
+
+- *Three Rendering Approaches*:
+  - *Geometry Shading*: Traditional vertex/fragment shader pipeline
+  - *Mesh Shading*: Advanced rendering using task/mesh shaders
+  - *Bindless Mesh Shading*: Mesh shading with automatic handle generation
+
+- *Resource Loading*: Shows how to load vertex buffers, index buffers, textures, and shaders
+
+- *Render Graph*: Demonstrates setting up a render pass with color and depth attachments
+
+- *Runtime Switching*: Press Spacebar to cycle between rendering approaches
+
+** Command Line Usage
+
+You can run the application with the following command line options:
+
+- =--shading-type <type>=: Choose the rendering approach
+  - =geometry=: Use geometry shading (vertex/fragment)
+  - =mesh=: Use mesh shading (task/mesh/fragment)
+  - =mesh_bindless=: Use mesh shading with bindless resources (default)
+
+Example usage:
+#+begin_src sh
+# Run with geometry shading
+./bin/{debug,release}/hello_aphrodite --shading-type geometry
+
+# Run with mesh shading
+./bin/{debug,release}/hello_aphrodite --shading-type mesh
+
+# Run with bindless mesh shading (default)
+./bin/{debug,release}/hello_aphrodite --shading-type mesh_bindless
+#+end_src
+
+** How It Works
+
+The application demonstrates several key Aphrodite engine concepts:
+
+*** Resource Loading System
+
+The example shows how to use the batch loading request system to load:
+- Vertex and index buffers for a cube
+- Camera MVP uniforms
+- Textures and samplers
+- Multiple shader programs
+
+*** Render Graph
+
+A simple render graph with a single draw pass that:
+1. Sets up color and depth attachments
+2. Configures resource inputs and outputs
+3. Records command buffer execution
+
+*** Bindless Resources
+
+The bindless system demonstrates how to:
+1. Register resources with semantic names
+2. Automatically generate shader bindings
+3. Access resources in shaders without explicit binding configuration
+
+*** Input Handling
+
+Shows event registration for keyboard events to switch rendering modes at runtime.

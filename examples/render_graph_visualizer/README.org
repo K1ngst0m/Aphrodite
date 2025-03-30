@@ -17,6 +17,23 @@ This example demonstrates how to use the Render Graph system in dry run mode to 
 
 - *Dry Run Mode*: Shows how to use the render graph without GPU operations
 
+** Command Line Usage
+
+You can run the application with the following command line options:
+
+- =--example-type <type>=: Choose the render graph example type
+  - =simple=: Run the simple forward rendering example
+  - =complex=: Run the complex deferred rendering example (default)
+
+Example usage:
+#+begin_src sh
+# Run with the simple render graph example
+./bin/{debug,release}/render_graph_visualizer --example-type simple
+
+# Run with the complex render graph example (default)
+./bin/{debug,release}/render_graph_visualizer --example-type complex
+#+end_src
+
 ** Understanding the Output
 
 When you run the example, you'll see detailed console output showing:
