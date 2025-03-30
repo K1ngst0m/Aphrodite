@@ -3,10 +3,10 @@
 #include "aph_core.hpp"
 #include "aph_renderer.hpp"
 
-class hello_aphrodite : public aph::App
+class HelloAphrodite : public aph::App
 {
 public:
-    hello_aphrodite();
+    HelloAphrodite();
 
     enum class ShadingType
     {

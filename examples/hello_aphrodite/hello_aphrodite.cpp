@@ -97,12 +97,12 @@ void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& out
     };
 }
 
-hello_aphrodite::hello_aphrodite()
+HelloAphrodite::HelloAphrodite()
     : aph::App("hello aphrdite")
 {
 }
 
-void hello_aphrodite::init()
+void HelloAphrodite::init()
 {
     APH_PROFILER_SCOPE();
 
@@ -300,7 +300,6 @@ void hello_aphrodite::init()
             drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
 
             graph->setBackBuffer("render output");
-            graph->getResource<vk::Buffer*>("matrix ubo");
 
             drawPass->recordExecute(
                 [this](auto* pCmd)
@@ -362,7 +361,7 @@ void hello_aphrodite::init()
     }
 }
 
-void hello_aphrodite::loop()
+void HelloAphrodite::loop()
 {
     while (m_pWindowSystem->update())
     {
@@ -374,26 +373,26 @@ void hello_aphrodite::loop()
     }
 }
 
-void hello_aphrodite::load()
+void HelloAphrodite::load()
 {
     APH_PROFILER_SCOPE();
     m_renderer->load();
 }
 
-void hello_aphrodite::unload()
+void HelloAphrodite::unload()
 {
     APH_PROFILER_SCOPE();
     m_renderer->unload();
 }
 
-void hello_aphrodite::finish()
+void HelloAphrodite::finish()
 {
     APH_PROFILER_SCOPE();
     APH_VR(m_pDevice->waitIdle());
     m_pDevice->destroy(m_pSampler);
 }
 
-void hello_aphrodite::switchShadingType(ShadingType type)
+void HelloAphrodite::switchShadingType(ShadingType type)
 {
     switch (type)
     {
@@ -409,7 +408,7 @@ void hello_aphrodite::switchShadingType(ShadingType type)
     m_shadingType = type;
 }
 
-void hello_aphrodite::switchShadingType(std::string_view value)
+void HelloAphrodite::switchShadingType(std::string_view value)
 {
     ShadingType type = ShadingType::Geometry;
     if (value == "geometry")
@@ -434,7 +433,7 @@ void hello_aphrodite::switchShadingType(std::string_view value)
 
 int main(int argc, char** argv)
 {
-    hello_aphrodite app{};
+    HelloAphrodite app{};
 
     auto result =
         app.getOptions()
