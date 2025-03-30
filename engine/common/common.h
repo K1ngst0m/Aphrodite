@@ -99,18 +99,19 @@ struct [[nodiscard("Result should be handled.")]] Result
         return m_code == Code::Success;
     };
 
-    APH_ALWAYS_INLINE Result(Code code, std::string msg = "")
+    APH_ALWAYS_INLINE Result(Code code, std::string_view msg = "")
         : m_code(code)
-        , m_msg(std::move(msg))
     {
+        if (!msg.empty())
+            m_msg = std::string(msg);
     }
 
-    operator std::string_view()
+    operator std::string_view() const noexcept
     {
         return toString();
     }
 
-    APH_ALWAYS_INLINE std::string_view toString()
+    APH_ALWAYS_INLINE std::string_view toString() const noexcept
     {
         if (!m_msg.empty())
         {
@@ -124,10 +125,9 @@ struct [[nodiscard("Result should be handled.")]] Result
             return "Argument Out of Range.";
         case RuntimeError:
             return "Runtime Error.";
+        default:
+            return "Unknown";
         }
-
-        APH_ASSERT(false);
-        return "Unknown";
     }
 
     APH_ALWAYS_INLINE operator bool() const noexcept
@@ -143,38 +143,59 @@ private:
 struct [[nodiscard("Result should be handled.")]] ResultGroup
 {
     APH_ALWAYS_INLINE ResultGroup() = default;
-    APH_ALWAYS_INLINE ResultGroup(auto&& result)
+    
+    APH_ALWAYS_INLINE ResultGroup(const Result& result)
     {
-        append(APH_FWD(result));
+        append(result);
+    }
+    
+    APH_ALWAYS_INLINE ResultGroup(Result&& result)
+    {
+        append(std::move(result));
     }
 
-    APH_ALWAYS_INLINE ResultGroup(Result::Code code, std::string msg = "")
+    APH_ALWAYS_INLINE ResultGroup(Result::Code code, std::string_view msg = "")
     {
         append(code, msg);
     }
 
-    APH_ALWAYS_INLINE void append(Result::Code code, std::string msg = "")
+    APH_ALWAYS_INLINE void append(Result::Code code, std::string_view msg = "")
     {
+        if (code != Result::Success)
+            m_hasFailure = true;
+            
         m_results.emplace_back(code, msg);
     }
 
     APH_ALWAYS_INLINE void append(Result&& result)
     {
-        m_results.push_back(APH_FWD(result));
+        if (!result.success())
+            m_hasFailure = true;
+            
+        m_results.push_back(std::move(result));
+    }
+    
+    APH_ALWAYS_INLINE void append(const Result& result)
+    {
+        if (!result.success())
+            m_hasFailure = true;
+            
+        m_results.push_back(result);
     }
 
-    APH_ALWAYS_INLINE ResultGroup& operator+=(auto&& result)
+    template<typename T>
+    APH_ALWAYS_INLINE ResultGroup& operator+=(T&& result)
     {
-        append(APH_FWD(result));
+        append(std::forward<T>(result));
         return *this;
     }
 
     APH_ALWAYS_INLINE bool success() const noexcept
     {
-        return std::all_of(m_results.cbegin(), m_results.cend(), [](const Result& res) { return res.success(); });
+        return !m_hasFailure;
     }
 
-    APH_ALWAYS_INLINE operator Result()
+    APH_ALWAYS_INLINE operator Result() const noexcept
     {
         if (success())
         {
@@ -182,9 +203,13 @@ struct [[nodiscard("Result should be handled.")]] ResultGroup
         }
         else
         {
-            auto errorRes =
-                std::find_if_not(m_results.cbegin(), m_results.cend(), [](const Result& res) { return res.success(); });
-            return *errorRes;
+            for (const auto& res : m_results)
+            {
+                if (!res.success())
+                    return res;
+            }
+            // Should never reach here if m_hasFailure is correctly maintained
+            return Result::RuntimeError;
         }
     }
 
@@ -195,6 +220,7 @@ struct [[nodiscard("Result should be handled.")]] ResultGroup
 
 private:
     SmallVector<Result> m_results;
+    bool m_hasFailure = false;
 };
 
 #ifdef APH_DEBUG
