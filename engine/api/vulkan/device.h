@@ -39,19 +39,10 @@ public:
 
 public:
     template <typename TCreateInfo, typename TResource, typename TDebugName = std::string>
-    Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {})
-    {
-        ResultGroup result = createImpl(APH_FWD(createInfo), ppResource);
-        result += setDebugObjectName(*ppResource, APH_FWD(debugName));
-        return result;
-    }
+    Result create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName = {});
 
     template <typename TResource>
-    void destroy(TResource* pResource)
-    {
-        CM_LOG_DEBUG("Destroy resource: %s", pResource->getDebugName());
-        destroyImpl(pResource);
-    }
+    void destroy(TResource* pResource);
 
 public:
     DeviceAddress getDeviceAddress(Buffer* pBuffer) const;
@@ -90,27 +81,11 @@ public:
     ::vk::PipelineStageFlags determinePipelineStageFlags(::vk::AccessFlags accessFlags, QueueType queueType);
 
     template <ResourceHandleType TObject>
-    Result setDebugObjectName(TObject* object, auto&& name)
-    {
-        object->setDebugName(APH_FWD(name));
-        auto handle = object->getHandle();
-        if constexpr (!std::is_same_v<DummyHandle, decltype(handle)>)
-        {
-            return setDebugObjectName(handle, object->getDebugName());
-        }
-        return Result::Success;
-    }
+    Result setDebugObjectName(TObject* object, auto&& name);
 
     template <typename TObject>
         requires(!ResourceHandleType<TObject>)
-    Result setDebugObjectName(TObject object, std::string_view name)
-    {
-        ::vk::DebugUtilsObjectNameInfoEXT info{};
-        info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
-            .setObjectType(object.objectType)
-            .setPObjectName(name.data());
-        return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
-    }
+    Result setDebugObjectName(TObject object, std::string_view name);
 
 public:
     void begineCapture();
@@ -165,4 +140,41 @@ private:
     } m_resourcePool;
 };
 
+template <typename TCreateInfo, typename TResource, typename TDebugName>
+Result Device::create(TCreateInfo&& createInfo, TResource** ppResource, TDebugName&& debugName)
+{
+    ResultGroup result = createImpl(APH_FWD(createInfo), ppResource);
+    result += setDebugObjectName(*ppResource, APH_FWD(debugName));
+    return result;
+}
+
+template <typename TResource>
+void Device::destroy(TResource* pResource)
+{
+    CM_LOG_DEBUG("Destroy resource: %s", pResource->getDebugName());
+    destroyImpl(pResource);
+}
+
+template <ResourceHandleType TObject>
+Result Device::setDebugObjectName(TObject* object, auto&& name)
+{
+    object->setDebugName(APH_FWD(name));
+    auto handle = object->getHandle();
+    if constexpr (!std::is_same_v<DummyHandle, decltype(handle)>)
+    {
+        return setDebugObjectName(handle, object->getDebugName());
+    }
+    return Result::Success;
+}
+
+template <typename TObject>
+    requires(!ResourceHandleType<TObject>)
+Result Device::setDebugObjectName(TObject object, std::string_view name)
+{
+    ::vk::DebugUtilsObjectNameInfoEXT info{};
+    info.setObjectHandle(uint64_t(static_cast<TObject::CType>(object)))
+        .setObjectType(object.objectType)
+        .setPObjectName(name.data());
+    return utils::getResult(getHandle().setDebugUtilsObjectNameEXT(info));
+}
 } // namespace aph::vk

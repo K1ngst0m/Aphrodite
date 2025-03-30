@@ -351,7 +351,7 @@ RenderGraph::~RenderGraph()
 PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
-    auto res = getResource(name, PassResource::Type::Buffer);
+    auto res = getPassResource(name, PassResource::Type::Buffer);
     APH_ASSERT(!m_buildData.buffer.contains(res));
     res->addFlags(PassResourceFlagBits::External);
     m_buildData.buffer[res] = pBuffer;
@@ -361,14 +361,14 @@ PassResource* RenderGraph::importResource(const std::string& name, vk::Buffer* p
 PassResource* RenderGraph::importResource(const std::string& name, vk::Image* pImage)
 {
     APH_PROFILER_SCOPE();
-    auto res = getResource(name, PassResource::Type::Image);
+    auto res = getPassResource(name, PassResource::Type::Image);
     APH_ASSERT(!m_buildData.image.contains(res));
     res->addFlags(PassResourceFlagBits::External);
     m_buildData.image[res] = pImage;
     return res;
 }
 
-PassResource* RenderGraph::getResource(const std::string& name, PassResource::Type type)
+PassResource* RenderGraph::getPassResource(const std::string& name, PassResource::Type type)
 {
     APH_PROFILER_SCOPE();
     if (m_declareData.resourceMap.contains(name))
@@ -648,4 +648,41 @@ std::string RenderGraph::exportToGraphviz() const
     // Export to DOT format
     return visualizer.exportToDot();
 }
+
+PassResource* RenderGraph::findPassResource(const std::string& name) const
+{
+    APH_PROFILER_SCOPE();
+    if (auto it = m_declareData.resourceMap.find(name); it != m_declareData.resourceMap.end())
+    {
+        return it->second;
+    }
+    return nullptr;
+}
+
+template <>
+vk::Image* RenderGraph::getResource<vk::Image>(const std::string& name)
+{
+    if (auto* resource = findPassResource(name); resource && resource->getType() == PassResource::Type::Image)
+    {
+        if (auto it = m_buildData.image.find(resource); it != m_buildData.image.end())
+        {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
+template <>
+vk::Buffer* RenderGraph::getResource<vk::Buffer>(const std::string& name)
+{
+    if (auto* resource = findPassResource(name); resource && resource->getType() == PassResource::Type::Buffer)
+    {
+        if (auto it = m_buildData.buffer.find(resource); it != m_buildData.buffer.end())
+        {
+            return it->second;
+        }
+    }
+    return nullptr;
+}
+
 } // namespace aph

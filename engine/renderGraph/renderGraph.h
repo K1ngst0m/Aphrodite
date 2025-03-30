@@ -25,11 +25,15 @@ public:
 
     std::string exportToGraphviz() const;
 
+    template<typename T>
+    T* getResource(const std::string& name);
+
 private:
     friend class RenderPass;
+    PassResource* findPassResource(const std::string& name) const;
+    PassResource* getPassResource(const std::string& name, PassResource::Type type);
     PassResource* importResource(const std::string& name, vk::Image* pImage);
     PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
-    PassResource* getResource(const std::string& name, PassResource::Type type);
 
 private:
     // Dirty flags to track what needs to be rebuilt
@@ -97,5 +101,4 @@ private:
         ThreadSafeObjectPool<RenderPass> renderPass;
     } m_resourcePool;
 };
-
 } // namespace aph
