@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/enum.h"
-#include "threads/taskManager.h"
+#include "common/hash.h"
 #include <functional>
 
 namespace aph
@@ -17,6 +17,7 @@ class GlobalManager
 public:
     // Names for built-in subsystems
     static constexpr const char* TASK_MANAGER_NAME = "TaskManager";
+    static constexpr const char* FILESYSTEM_NAME = "Filesystem";
 
 public:
     /**
@@ -26,6 +27,7 @@ public:
     {
         None = 0,
         TaskManager = (1 << 0),
+        Filesystem = (1 << 1),
 
         // Add other built-in systems here with bit flags
         // Example: RenderSystem = (1 << 1),
@@ -100,7 +102,6 @@ bool GlobalManager::registerSubsystem(std::string_view name, std::unique_ptr<T> 
     std::string nameStr{ name };
     if (m_subsystems.find(nameStr) != m_subsystems.end())
     {
-        CM_LOG_WARN("the system %s has already registered.");
         return false;
     }
 
@@ -132,6 +133,13 @@ inline GlobalManager& getGlobalManager()
 
 } // namespace aph
 
+namespace aph
+{
+class TaskManager;
+class Filesystem;
+} // namespace aph
+
 #define APH_GLOBAL_MANAGER ::aph::getGlobalManager()
 #define APH_DEFAULT_TASK_MANAGER \
-    *::aph::getGlobalManager().getSubsystem<aph::TaskManager>(aph::GlobalManager::TASK_MANAGER_NAME)
+    (*::aph::getGlobalManager().getSubsystem<aph::TaskManager>(aph::GlobalManager::TASK_MANAGER_NAME))
+#define APH_DEFAULT_FILESYSTEM (*::aph::getGlobalManager().getSubsystem<aph::Filesystem>(aph::GlobalManager::FILESYSTEM_NAME))

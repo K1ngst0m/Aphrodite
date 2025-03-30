@@ -1,8 +1,8 @@
 #include "shaderLoader.h"
 #include "common/profiler.h"
 #include "filesystem/filesystem.h"
-
 #include "global/globalManager.h"
+
 #include "slang-com-ptr.h"
 #include "slang.h"
 
@@ -95,7 +95,7 @@ public:
     bool checkShaderCache(const CompileRequest& request, std::string& outCachePath)
     {
         APH_PROFILER_SCOPE();
-        auto& fs = aph::Filesystem::GetInstance();
+        auto& fs = APH_DEFAULT_FILESYSTEM;
 
         // Make sure the cache directory exists
         std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
@@ -114,7 +114,7 @@ public:
     bool readShaderCache(const std::string& cacheFilePath, HashMap<aph::ShaderStage, SlangProgram>& spvCodeMap)
     {
         APH_PROFILER_SCOPE();
-        auto& fs = aph::Filesystem::GetInstance();
+        auto& fs = APH_DEFAULT_FILESYSTEM;
 
         auto cacheBytes = fs.readFileToBytes(cacheFilePath);
         if (cacheBytes.size() == 0)
@@ -221,7 +221,7 @@ public:
         const auto& filename = request.filename;
         const auto& moduleMap = request.moduleMap;
 
-        auto& fs = aph::Filesystem::GetInstance();
+        auto& fs = APH_DEFAULT_FILESYSTEM;
 
         std::string cacheDirPath = fs.resolvePath("shader_cache://").string();
         if (!fs.exist(cacheDirPath))
@@ -261,7 +261,7 @@ public:
             sessionDesc.targets = &targetDesc;
             sessionDesc.targetCount = 1;
 
-            auto shaderAssetPath = aph::Filesystem::GetInstance().resolvePath("shader_slang://");
+            auto shaderAssetPath = fs.resolvePath("shader_slang://");
 
             const std::array<const char*, 1> searchPaths{
                 shaderAssetPath.c_str(),
@@ -287,7 +287,7 @@ public:
         {
             APH_PROFILER_SCOPE();
             IModule* module = {};
-            auto fname = aph::Filesystem::GetInstance().resolvePath(filename);
+            auto fname = fs.resolvePath(filename);
 
             std::vector<Slang::ComPtr<slang::IComponentType>> componentsToLink;
             std::string patchCode;
@@ -306,7 +306,7 @@ public:
                 }
                 patchCode = ss.str();
 
-                auto shaderSource = patchCode + aph::Filesystem::GetInstance().readFileToString(filename);
+                auto shaderSource = patchCode + fs.readFileToString(filename);
                 {
                     APH_PROFILER_SCOPE_NAME("load main module");
                     module = session->loadModuleFromSourceString("hello_mesh_bindless", fname.c_str(),
@@ -470,12 +470,13 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
 {
     APH_PROFILER_SCOPE();
 
+    auto& fs = APH_DEFAULT_FILESYSTEM;
+
     CompileRequest compileRequest{};
     if (info.pBindlessResource)
     {
         // TODO unused since the warning suppress compiler option not working
-        compileRequest.addModule(
-            "bindless", aph::Filesystem::GetInstance().readFileToString("shader_slang://modules/bindless.slang"));
+        compileRequest.addModule("bindless", fs.readFileToString("shader_slang://modules/bindless.slang"));
         compileRequest.addModule("gen_bindless", info.pBindlessResource->generateHandleSource());
     }
 
@@ -504,7 +505,7 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
             {
                 // Check if we can use the cache directly without initialization
                 std::string cacheFilePath;
-                auto path = Filesystem::GetInstance().resolvePath(d);
+                auto path = fs.resolvePath(d);
                 compileRequest.filename = path.c_str();
                 bool cacheExists = m_pSlangLoaderImpl->checkShaderCache(compileRequest, cacheFilePath);
 

@@ -3,7 +3,6 @@
 #include "common/common.h"
 #include "common/hash.h"
 #include "common/logger.h"
-#include "common/singleton.h"
 
 namespace aph
 {

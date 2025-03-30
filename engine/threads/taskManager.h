@@ -3,7 +3,6 @@
 #include "allocator/objectPool.h"
 #include "common/common.h"
 #include "common/hash.h"
-#include "common/singleton.h"
 #include "common/smallVector.h"
 
 namespace aph

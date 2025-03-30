@@ -14,14 +14,14 @@
 
 #include "common/hash.h"
 #include "common/logger.h"
-#include "common/singleton.h"
 
 namespace aph
 {
-class Filesystem final : public Singleton<Filesystem>
+class Filesystem final
 {
 public:
-    ~Filesystem() final;
+    Filesystem() = default;
+    ~Filesystem();
 
     void* map(std::string_view path);
     void unmap(void* data);

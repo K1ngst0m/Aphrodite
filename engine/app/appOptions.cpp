@@ -4,6 +4,7 @@
 #include "common/hash.h"
 #include "common/logger.h"
 #include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 
 #define TOML_EXCEPTIONS 0
 #include "toml++/toml.hpp"
@@ -96,10 +97,11 @@ Result AppOptions::processConfigFile(const std::string& configPath)
 void AppOptions::setupSystems()
 {
     // registering protocol
-    aph::Filesystem::GetInstance().registerProtocol(protocols);
+    auto& fs = APH_DEFAULT_FILESYSTEM;
+    fs.registerProtocol(protocols);
 
     // setup logger
-    aph::Logger::GetInstance().setLogLevel(logLevel);
+    APH_LOGGER.setLogLevel(logLevel);
 }
 
 void AppOptions::printOptions() const

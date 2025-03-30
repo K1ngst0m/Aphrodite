@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common/smallVector.h"
-#include "singleton.h"
 
 namespace aph
 {
@@ -12,7 +11,7 @@ concept LogSinkConcept = requires(T t, const std::string& msg) {
     { t.flush() } -> std::same_as<void>;
 };
 
-class Logger : public Singleton<Logger>
+class Logger
 {
 public:
     Logger();
@@ -121,7 +120,7 @@ private:
 
     std::string getCurrentTime();
 
-    Level m_logLevel;
+    Level m_logLevel = Level::Info;
     bool m_enableTime = false;
     std::mutex m_mutex;
 
@@ -136,36 +135,48 @@ private:
 
 } // namespace aph
 
+namespace aph::details
+{
+inline Logger& getLogger()
+{
+    static Logger logger{};
+    return logger;
+}
+} // namespace aph::details
+
+// TODO register to global manager
+#define APH_LOGGER (::aph::details::getLogger())
+
 inline void LOG_FLUSH()
 {
-    ::aph::Logger::GetInstance().flush();
+    APH_LOGGER.flush();
 }
 
-#define GENERATE_LOG_FUNCS(TAG)                                                    \
-    template <typename... Args>                                                    \
-    void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)                     \
-    {                                                                              \
-        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);  \
-        ::aph::Logger::GetInstance().debug(combined, std::forward<Args>(args)...); \
-    }                                                                              \
-    template <typename... Args>                                                    \
-    void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)                      \
-    {                                                                              \
-        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);  \
-        ::aph::Logger::GetInstance().warn(combined, std::forward<Args>(args)...);  \
-    }                                                                              \
-    template <typename... Args>                                                    \
-    void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)                      \
-    {                                                                              \
-        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);  \
-        ::aph::Logger::GetInstance().info(combined, std::forward<Args>(args)...);  \
-    }                                                                              \
-    template <typename... Args>                                                    \
-    void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)                       \
-    {                                                                              \
-        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt);  \
-        ::aph::Logger::GetInstance().error(combined, std::forward<Args>(args)...); \
-        ::aph::Logger::GetInstance().flush();                                      \
+#define GENERATE_LOG_FUNCS(TAG)                                                   \
+    template <typename... Args>                                                   \
+    void TAG##_LOG_DEBUG(std::string_view fmt, Args&&... args)                    \
+    {                                                                             \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt); \
+        APH_LOGGER.debug(combined, std::forward<Args>(args)...);                  \
+    }                                                                             \
+    template <typename... Args>                                                   \
+    void TAG##_LOG_WARN(std::string_view fmt, Args&&... args)                     \
+    {                                                                             \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt); \
+        APH_LOGGER.warn(combined, std::forward<Args>(args)...);                   \
+    }                                                                             \
+    template <typename... Args>                                                   \
+    void TAG##_LOG_INFO(std::string_view fmt, Args&&... args)                     \
+    {                                                                             \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt); \
+        APH_LOGGER.info(combined, std::forward<Args>(args)...);                   \
+    }                                                                             \
+    template <typename... Args>                                                   \
+    void TAG##_LOG_ERR(std::string_view fmt, Args&&... args)                      \
+    {                                                                             \
+        std::string combined = std::string("[") + #TAG + "] " + std::string(fmt); \
+        APH_LOGGER.error(combined, std::forward<Args>(args)...);                  \
+        APH_LOGGER.flush();                                                       \
     }
 
 GENERATE_LOG_FUNCS(CM)

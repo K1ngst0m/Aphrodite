@@ -1,5 +1,6 @@
 #include "uiRenderer.h"
 #include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 #include "renderer.h"
 
 #include "imgui.h"
@@ -143,7 +144,8 @@ void UI::update()
 uint32_t UI::addFont(std::string_view fontPath, float pixelSize)
 {
     ImGuiIO& io = ImGui::GetIO();
-    auto font = io.Fonts->AddFontFromFileTTF(aph::Filesystem::GetInstance().resolvePath(fontPath).c_str(), pixelSize);
+    auto& filesystem = APH_DEFAULT_FILESYSTEM;
+    auto font = io.Fonts->AddFontFromFileTTF(filesystem.resolvePath(fontPath).c_str(), pixelSize);
     m_fonts.push_back(font);
     return m_fonts.size() - 1;
 }

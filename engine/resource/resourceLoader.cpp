@@ -3,6 +3,7 @@
 #include "common/common.h"
 #include "common/profiler.h"
 #include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 
 namespace aph
 {
@@ -59,7 +60,8 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
 
     if (std::holds_alternative<std::string>(info.data))
     {
-        path = aph::Filesystem::GetInstance().resolvePath(std::get<std::string>(info.data));
+        auto& filesystem = APH_DEFAULT_FILESYSTEM;
+        path = filesystem.resolvePath(std::get<std::string>(info.data));
 
         auto containerType =
             info.containerType == ImageContainerType::Default ? GetImageContainerType(path) : info.containerType;
