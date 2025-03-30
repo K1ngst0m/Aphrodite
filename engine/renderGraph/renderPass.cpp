@@ -15,7 +15,7 @@ RenderPass::RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_vie
 PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Buffer));
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for buffer '%s'", m_name.c_str(), name.c_str());
     res->addUsage(BufferUsage::Storage);
@@ -26,7 +26,7 @@ PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::
 
     if (pBuffer)
     {
-        m_pRenderGraph->importResource(name, pBuffer);
+        m_pRenderGraph->importPassResource(name, pBuffer);
     }
 
     return res;
@@ -35,7 +35,7 @@ PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::
 PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Buffer));
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for buffer '%s'", m_name.c_str(), name.c_str());
     res->addUsage(BufferUsage::Uniform);
@@ -46,7 +46,7 @@ PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::
 
     if (pBuffer)
     {
-        m_pRenderGraph->importResource(name, pBuffer);
+        m_pRenderGraph->importPassResource(name, pBuffer);
     }
 
     return res;
@@ -55,7 +55,7 @@ PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::
 PassBufferResource* RenderPass::addBufferOut(const std::string& name)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Buffer));
+    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for buffer '%s'", m_name.c_str(), name.c_str());
     res->addUsage(BufferUsage::Storage);
@@ -69,7 +69,7 @@ PassBufferResource* RenderPass::addBufferOut(const std::string& name)
 PassImageResource* RenderPass::addTextureOut(const std::string& name)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Image));
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for texture '%s'", m_name.c_str(), name.c_str());
     res->addUsage(ImageUsage::Storage);
@@ -84,7 +84,7 @@ PassImageResource* RenderPass::addTextureOut(const std::string& name)
 PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* pImage)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Image));
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for texture '%s'", m_name.c_str(), name.c_str());
     res->addUsage(ImageUsage::Sampled);
@@ -95,7 +95,7 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
 
     if (pImage)
     {
-        m_pRenderGraph->importResource(name, pImage);
+        m_pRenderGraph->importPassResource(name, pImage);
     }
 
     return res;
@@ -104,7 +104,7 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
 PassImageResource* RenderPass::setColorOut(const std::string& name, const vk::ImageCreateInfo& info)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Image));
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for color output '%s'", m_name.c_str(), name.c_str());
@@ -117,7 +117,7 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const vk::Im
 PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const vk::ImageCreateInfo& info)
 {
     APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->getPassResource(name, PassResource::Type::Image));
+    auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->setInfo(info);
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for depth output '%s'", m_name.c_str(), name.c_str());

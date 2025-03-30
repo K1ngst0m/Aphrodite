@@ -126,12 +126,12 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
             queue,
             [&](auto* cmd)
             {
-                cmd->transitionImageLayout(image, aph::ResourceState::CopyDest);
+                cmd->transitionImageLayout(image, ResourceState::Undefined, ResourceState::CopyDest);
                 cmd->copy(stagingBuffer, image);
 
                 if (genMipmap)
                 {
-                    cmd->transitionImageLayout(image, aph::ResourceState::CopySource);
+                    cmd->transitionImageLayout(image, ResourceState::CopyDest, ResourceState::CopySource);
                     int32_t width = ci.extent.width;
                     int32_t height = ci.extent.height;
 
@@ -153,7 +153,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                         // Prepare current mip level as image blit destination
                         vk::ImageBarrier barrier{
                             .pImage = image,
-                            .currentState = image->getResourceState(),
+                            .currentState = ResourceState::CopySource,
                             .newState = ResourceState::CopyDest,
                             .subresourceBarrier = 1,
                             .mipLevel = static_cast<uint8_t>(imageCI.mipLevels),
@@ -163,13 +163,16 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                         // Blit from previous level
                         cmd->blit(image, image, srcBlitInfo, dstBlitInfo);
 
-                        barrier.currentState = image->getResourceState();
+                        barrier.currentState = ResourceState::CopyDest;
                         barrier.newState = ResourceState::CopySource;
                         cmd->insertBarrier({ barrier });
                     }
                 }
 
-                cmd->transitionImageLayout(image, ResourceState::ShaderResource);
+                // Final transition to ShaderResource
+                cmd->transitionImageLayout(image, 
+                    genMipmap ? ResourceState::CopySource : ResourceState::CopyDest, 
+                    ResourceState::ShaderResource);
             });
     }
 

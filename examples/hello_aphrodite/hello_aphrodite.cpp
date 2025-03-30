@@ -300,6 +300,7 @@ void hello_aphrodite::init()
             drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
 
             graph->setBackBuffer("render output");
+            graph->getResource<vk::Buffer*>("matrix ubo");
 
             drawPass->recordExecute(
                 [this](auto* pCmd)

@@ -214,7 +214,11 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
                                                    static_cast<int32_t>(dstImage->getHeight()), 1 };
     }
 
-    getHandle().blitImage(srcImage->getHandle(), srcImage->m_layout, dstImage->getHandle(), dstImage->m_layout,
+    // Instead of accessing m_layout directly, use appropriate layouts based on usage
+    ::vk::ImageLayout srcLayout = ::vk::ImageLayout::eTransferSrcOptimal;
+    ::vk::ImageLayout dstLayout = ::vk::ImageLayout::eTransferDstOptimal;
+
+    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout,
                           { vkBlitInfo }, filter);
 }
 
@@ -471,11 +475,13 @@ void CommandBuffer::insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers)
     APH_PROFILER_SCOPE();
     insertBarrier({}, pImageBarriers);
 }
+
 void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers)
 {
     APH_PROFILER_SCOPE();
     insertBarrier(pBufferBarriers, {});
 }
+
 void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, ArrayProxy<ImageBarrier> imageBarriers)
 {
     APH_PROFILER_SCOPE();
@@ -526,8 +532,6 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
 
             srcAccessFlags |= vkBufferBarrier.srcAccessMask;
             dstAccessFlags |= vkBufferBarrier.dstAccessMask;
-
-            pBuffer->m_resourceState = pTrans->newState;
         }
     }
 
@@ -581,9 +585,6 @@ void CommandBuffer::insertBarrier(ArrayProxy<BufferBarrier> bufferBarriers, Arra
 
             srcAccessFlags |= vkImageBarrier.srcAccessMask;
             dstAccessFlags |= vkImageBarrier.dstAccessMask;
-
-            pImage->m_resourceState = pTrans->newState;
-            pImage->m_layout = vkImageBarrier.newLayout;
         }
     }
 
@@ -600,12 +601,25 @@ void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState newState)
     APH_PROFILER_SCOPE();
     aph::vk::ImageBarrier barrier{
         .pImage = pImage,
-        .currentState = pImage->getResourceState(),
+        .currentState = ResourceState::Undefined, // Default to undefined, should be provided by caller
         .newState = newState,
         .subresourceBarrier = 1,
     };
     insertBarrier({ barrier });
 }
+
+void CommandBuffer::transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState)
+{
+    APH_PROFILER_SCOPE();
+    aph::vk::ImageBarrier barrier{
+        .pImage = pImage,
+        .currentState = currentState,
+        .newState = newState,
+        .subresourceBarrier = 1,
+    };
+    insertBarrier({ barrier });
+}
+
 void CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_t count)
 {
     APH_PROFILER_SCOPE();

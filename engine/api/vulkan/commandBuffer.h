@@ -196,6 +196,8 @@ public:
     void insertBarrier(ArrayProxy<BufferBarrier> pBufferBarriers, ArrayProxy<ImageBarrier> pImageBarriers);
     void transitionImageLayout(Image* pImage, ResourceState newState);
 
+    void transitionImageLayout(Image* pImage, ResourceState currentState, ResourceState newState);
+
 public:
     void update(Buffer* pBuffer, Range range, const void* data);
     void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);

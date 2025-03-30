@@ -24,13 +24,7 @@ public:
     {
         return m_createInfo.size;
     }
-    ResourceState getResourceState() const
-    {
-        return m_resourceState;
-    }
-
 private:
     Buffer(const CreateInfoType& createInfo, HandleType handle);
-    ResourceState m_resourceState = ResourceState::Undefined;
 };
 } // namespace aph::vk

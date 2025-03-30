@@ -3,6 +3,7 @@
 #include "api/vulkan/device.h"
 #include "renderPass.h"
 #include "threads/taskManager.h"
+#include <variant>
 
 namespace aph
 {
@@ -30,10 +31,18 @@ public:
 
 private:
     friend class RenderPass;
-    PassResource* findPassResource(const std::string& name) const;
-    PassResource* getPassResource(const std::string& name, PassResource::Type type);
-    PassResource* importResource(const std::string& name, vk::Image* pImage);
-    PassResource* importResource(const std::string& name, vk::Buffer* pBuffer);
+    using ResourcePtr = std::variant<vk::Buffer*, vk::Image*>;
+    PassResource* getPassResource(const std::string& name) const;
+    PassResource* createPassResource(const std::string& name, PassResource::Type type);
+    PassResource* importPassResource(const std::string& name, ResourcePtr resource);
+
+    void setupImageResource(PassImageResource* imageResource, bool isColorAttachment);
+
+    void setupImageBarrier(SmallVector<vk::ImageBarrier>& barriers, PassImageResource* resource,
+                           ResourceState newState);
+
+    template <typename BarrierType, typename ResourceType>
+    void setupResourceBarrier(SmallVector<BarrierType>& barriers, ResourceType* resource, ResourceState targetState);
 
 private:
     // Dirty flags to track what needs to be rebuilt
@@ -87,6 +96,9 @@ private:
         HashMap<PassResource*, vk::Image*> image;
         HashMap<PassResource*, vk::Buffer*> buffer;
 
+        // Resource state tracking at graph level
+        HashMap<PassResource*, ResourceState> currentResourceStates;
+
         vk::SwapChain* pSwapchain = {};
         vk::Fence* frameFence = {};
 
@@ -101,4 +113,28 @@ private:
         ThreadSafeObjectPool<RenderPass> renderPass;
     } m_resourcePool;
 };
+
+template <typename T>
+T* RenderGraph::getResource(const std::string& name)
+{
+    auto* resource = getPassResource(name);
+    if constexpr (std::is_same_v<std::decay_t<T>, vk::Image>)
+    {
+        if (auto it = m_buildData.image.find(resource); it != m_buildData.image.end())
+        {
+            return it->second;
+        }
+    }
+    else if constexpr (std::is_same_v<std::decay_t<T>, vk::Buffer>)
+    {
+        if (auto it = m_buildData.buffer.find(resource); it != m_buildData.buffer.end())
+        {
+            return it->second;
+        }
+    }
+
+    CM_LOG_ERR("Could not find the pass resource [%s].");
+    APH_ASSERT(false);
+    return nullptr;
+}
 } // namespace aph

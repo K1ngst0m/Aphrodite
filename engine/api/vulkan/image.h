@@ -55,10 +55,6 @@ public:
     {
         return m_createInfo.format;
     }
-    ResourceState getResourceState() const
-    {
-        return m_resourceState;
-    }
 
 private:
     Image(Device* pDevice, const CreateInfoType& createInfo, HandleType handle);
@@ -66,8 +62,6 @@ private:
 
     Device* m_pDevice = {};
     HashMap<Format, ImageView*> m_imageViewFormatMap = {};
-    ::vk::ImageLayout m_layout = {};
-    ResourceState m_resourceState = {};
     std::mutex m_acquireViewLock;
 };
 
@@ -101,9 +95,7 @@ public:
 
 private:
     ImageView(const CreateInfoType& createInfo, HandleType handle);
-
     Image* m_image = {};
-    HashMap<::vk::ImageLayout, ::vk::DescriptorImageInfo> m_descInfoMap = {};
 };
 
 } // namespace aph::vk
