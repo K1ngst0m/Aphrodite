@@ -1,6 +1,6 @@
 #pragma once
-#include "coro/coro.hpp"
 #include "common/concept.h"
+#include "coro/coro.hpp"
 
 namespace aph::utils
 {

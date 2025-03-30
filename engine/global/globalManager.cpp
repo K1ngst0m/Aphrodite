@@ -39,7 +39,7 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
         auto filesystem = std::make_unique<Filesystem>();
         registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem));
     }
-    
+
     // TODO Initialize Logger if requested
     // if (systems & BuiltInSystemBits::Logger)
     // {

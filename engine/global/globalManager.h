@@ -142,4 +142,5 @@ class Filesystem;
 #define APH_GLOBAL_MANAGER ::aph::getGlobalManager()
 #define APH_DEFAULT_TASK_MANAGER \
     (*::aph::getGlobalManager().getSubsystem<aph::TaskManager>(aph::GlobalManager::TASK_MANAGER_NAME))
-#define APH_DEFAULT_FILESYSTEM (*::aph::getGlobalManager().getSubsystem<aph::Filesystem>(aph::GlobalManager::FILESYSTEM_NAME))
+#define APH_DEFAULT_FILESYSTEM \
+    (*::aph::getGlobalManager().getSubsystem<aph::Filesystem>(aph::GlobalManager::FILESYSTEM_NAME))

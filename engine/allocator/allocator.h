@@ -60,8 +60,8 @@ inline void* aph_malloc(std::size_t size, const std::source_location& location =
 inline void* aph_memalign(std::size_t alignment, std::size_t size,
                           const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("memalign: file={} line={} func={} alignment={} size={}", location.file_name(), location.line(),
-                 location.function_name(), alignment, size));
+    MM_LOG_DEBUG(std::format("memalign: file={} line={} func={} alignment={} size={}", location.file_name(),
+                             location.line(), location.function_name(), alignment, size));
 
     return memalign_internal(alignment, size, location.file_name(), static_cast<int>(location.line()),
                              location.function_name());
@@ -71,7 +71,7 @@ inline void* aph_calloc(std::size_t count, std::size_t size,
                         const std::source_location& location = std::source_location::current())
 {
     MM_LOG_DEBUG(std::format("calloc: file={} line={} func={} count={} size={}", location.file_name(), location.line(),
-                 location.function_name(), count, size));
+                             location.function_name(), count, size));
 
     return calloc_internal(count, size, location.file_name(), static_cast<int>(location.line()),
                            location.function_name());
@@ -80,8 +80,8 @@ inline void* aph_calloc(std::size_t count, std::size_t size,
 inline void* aph_calloc_memalign(std::size_t count, std::size_t alignment, std::size_t size,
                                  const std::source_location& location = std::source_location::current())
 {
-    MM_LOG_DEBUG(std::format("calloc_memalign: file={} line={} func={} count={} alignment={} size={}", location.file_name(),
-                 location.line(), location.function_name(), count, alignment, size));
+    MM_LOG_DEBUG(std::format("calloc_memalign: file={} line={} func={} count={} alignment={} size={}",
+                             location.file_name(), location.line(), location.function_name(), count, alignment, size));
 
     return calloc_memalign_internal(count, alignment, size, location.file_name(), static_cast<int>(location.line()),
                                     location.function_name());
@@ -91,7 +91,7 @@ inline void* aph_realloc(void* ptr, std::size_t size,
                          const std::source_location& location = std::source_location::current())
 {
     MM_LOG_DEBUG(std::format("realloc: file={} line={} func={} ptr={} size={}", location.file_name(), location.line(),
-                 location.function_name(), ptr, size));
+                             location.function_name(), ptr, size));
 
     return realloc_internal(ptr, size, location.file_name(), static_cast<int>(location.line()),
                             location.function_name());
@@ -100,7 +100,7 @@ inline void* aph_realloc(void* ptr, std::size_t size,
 inline void aph_free(void* ptr, const std::source_location& location = std::source_location::current())
 {
     MM_LOG_DEBUG(std::format("free: file={} line={} func={} ptr={}", location.file_name(), location.line(),
-                 location.function_name(), ptr));
+                             location.function_name(), ptr));
 
     free_internal(ptr, location.file_name(), static_cast<int>(location.line()), location.function_name());
 }
@@ -108,7 +108,8 @@ inline void aph_free(void* ptr, const std::source_location& location = std::sour
 template <typename ObjectType, typename... Args>
 ObjectType* aph_new(const std::source_location& location = std::source_location::current(), Args&&... args)
 {
-    MM_LOG_DEBUG(std::format("new: file={} line={} func={}", location.file_name(), location.line(), location.function_name()));
+    MM_LOG_DEBUG(
+        std::format("new: file={} line={} func={}", location.file_name(), location.line(), location.function_name()));
 
     return new_internal<ObjectType>(location.file_name(), static_cast<int>(location.line()), location.function_name(),
                                     std::forward<Args>(args)...);
@@ -118,7 +119,7 @@ template <typename ObjectType>
 void aph_delete(ObjectType* ptr, const std::source_location& location = std::source_location::current())
 {
     MM_LOG_DEBUG(std::format("delete: file={} line={} func={} ptr={}", location.file_name(), location.line(),
-                 location.function_name(), static_cast<void*>(ptr)));
+                             location.function_name(), static_cast<void*>(ptr)));
 
     delete_internal(ptr, location.file_name(), static_cast<int>(location.line()), location.function_name());
 }

@@ -25,7 +25,7 @@ public:
 
     std::string exportToGraphviz() const;
 
-    template<typename T>
+    template <typename T>
     T* getResource(const std::string& name);
 
 private:
