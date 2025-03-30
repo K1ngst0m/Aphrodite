@@ -1,7 +1,7 @@
 #include "device.h"
 #include "bindless.h"
 #include "common/profiler.h"
-#include "memory/vmaAllocator.h"
+#include "vmaAllocator.h"
 #include "module/module.h"
 #include "renderdoc_app.h"
 #include "resource/shaderReflector.h"

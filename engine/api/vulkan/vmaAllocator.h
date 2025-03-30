@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deviceAllocator.h"
+#include "api/deviceAllocator.h"
 
 #ifndef VMA_ASSERT_LEAK
 #define VMA_ASSERT_LEAK(condition)               \

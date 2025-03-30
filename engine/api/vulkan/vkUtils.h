@@ -5,7 +5,7 @@
 #include "common/logger.h"
 #include <vulkan/vulkan.hpp>
 
-#include "../gpuResource.h"
+#include "api/gpuResource.h"
 
 #include <source_location>
 

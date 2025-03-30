@@ -10,7 +10,6 @@ class Queue;
 class CommandPool;
 class CommandBuffer;
 
-class DeviceAllocator;
 class Buffer;
 class Image;
 class ImageView;
@@ -27,6 +26,4 @@ struct PipelineLayout;
 class Fence;
 class Semaphore;
 class SyncPrimitiveAllocator;
-
-class DeviceAllocator;
 } // namespace aph::vk
