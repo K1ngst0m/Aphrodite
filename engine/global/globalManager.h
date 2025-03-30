@@ -18,6 +18,7 @@ public:
     // Names for built-in subsystems
     static constexpr const char* TASK_MANAGER_NAME = "TaskManager";
     static constexpr const char* FILESYSTEM_NAME = "Filesystem";
+    static constexpr const char* EVENT_MANAGER_NAME = "EventManger";
 
 public:
     /**
@@ -28,6 +29,7 @@ public:
         None = 0,
         TaskManager = (1 << 0),
         Filesystem = (1 << 1),
+        EventManager = (1 << 2),
 
         // Add other built-in systems here with bit flags
         // Example: RenderSystem = (1 << 1),
@@ -133,14 +135,10 @@ inline GlobalManager& getGlobalManager()
 
 } // namespace aph
 
-namespace aph
-{
-class TaskManager;
-class Filesystem;
-} // namespace aph
-
 #define APH_GLOBAL_MANAGER ::aph::getGlobalManager()
 #define APH_DEFAULT_TASK_MANAGER \
     (*::aph::getGlobalManager().getSubsystem<aph::TaskManager>(aph::GlobalManager::TASK_MANAGER_NAME))
 #define APH_DEFAULT_FILESYSTEM \
     (*::aph::getGlobalManager().getSubsystem<aph::Filesystem>(aph::GlobalManager::FILESYSTEM_NAME))
+#define APH_DEFAULT_EVENT_MANAGER \
+    (*::aph::getGlobalManager().getSubsystem<aph::EventManager>(aph::GlobalManager::EVENT_MANAGER_NAME))

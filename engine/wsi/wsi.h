@@ -6,6 +6,7 @@
 #include "common/profiler.h"
 #include "event/event.h"
 #include "event/eventManager.h"
+#include "global/globalManager.h"
 
 namespace aph::vk
 {
@@ -67,7 +68,7 @@ public:
 
         std::function<typename traits::ReturnType(const eventType&)>&& func = APH_FWD(callback);
 
-        m_pEventManager->registerEvent(std::move(func));
+        m_eventManager.registerEvent(std::move(func));
     }
 
     bool update();
@@ -81,7 +82,7 @@ protected:
     uint32_t m_height = {};
     bool m_enabledUI = {};
 
-    std::unique_ptr<EventManager> m_pEventManager;
+    EventManager& m_eventManager = APH_DEFAULT_EVENT_MANAGER;
 };
 
 } // namespace aph

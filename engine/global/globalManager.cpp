@@ -1,4 +1,5 @@
 #include "globalManager.h"
+#include "event/eventManager.h"
 #include "filesystem/filesystem.h"
 #include "threads/taskManager.h"
 
@@ -38,6 +39,12 @@ void GlobalManager::initialize(BuiltInSystemFlags systems)
     {
         auto filesystem = std::make_unique<Filesystem>();
         registerSubsystem<Filesystem>(FILESYSTEM_NAME, std::move(filesystem));
+    }
+
+    if (systems & BuiltInSystemBits::EventManager)
+    {
+        auto eventManager = std::make_unique<EventManager>();
+        registerSubsystem<EventManager>(EVENT_MANAGER_NAME, std::move(eventManager));
     }
 
     // TODO Initialize Logger if requested

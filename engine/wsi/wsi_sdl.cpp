@@ -86,8 +86,6 @@ void WindowSystem::init()
         CM_LOG_ERR("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         APH_ASSERT(false);
     }
-
-    m_pEventManager = std::make_unique<EventManager>();
 }
 
 ::vk::SurfaceKHR WindowSystem::getSurface(vk::Instance* instance)
@@ -138,14 +136,14 @@ bool WindowSystem::update()
                 }
                 else
                 {
-                    m_pEventManager->pushEvent(KeyboardEvent{ gkey, state });
+                    m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
                 }
             }
             break;
             case SDL_EVENT_KEY_UP:
             {
                 state = KeyState::Released;
-                m_pEventManager->pushEvent(KeyboardEvent{ gkey, state });
+                m_eventManager.pushEvent(KeyboardEvent{ gkey, state });
             }
             break;
             default:
@@ -171,7 +169,7 @@ bool WindowSystem::update()
             lastX = x;
             lastY = y;
 
-            m_pEventManager->pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
+            m_eventManager.pushEvent(MouseMoveEvent{ deltaX, deltaY, x, y });
         }
         break;
         case SDL_EVENT_MOUSE_BUTTON_DOWN:
@@ -195,7 +193,7 @@ bool WindowSystem::update()
             float x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_pEventManager->pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
+            m_eventManager.pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
         }
         break;
         case SDL_EVENT_WINDOW_RESIZED:
@@ -205,7 +203,7 @@ bool WindowSystem::update()
             WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
 
             // Push the event to your event queue or handle it immediately
-            m_pEventManager->pushEvent(resizeEvent);
+            m_eventManager.pushEvent(resizeEvent);
         }
         break;
         default:
@@ -213,7 +211,7 @@ bool WindowSystem::update()
         }
     }
 
-    m_pEventManager->processAll();
+    m_eventManager.processAll();
 
     if (m_enabledUI)
     {
