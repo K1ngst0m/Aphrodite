@@ -21,6 +21,10 @@ Format getFormatFromVk(VkFormat format);
 Result getResult(VkResult result);
 Result getResult(::vk::Result result);
 ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreateFlags createFlags = {});
+
+// Get resource state and access flags from usage
+std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage usage, bool isWrite);
+std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite);
 } // namespace aph::vk::utils
 
 // convert
@@ -47,6 +51,15 @@ std::tuple<::vk::ImageUsageFlags, ::vk::ImageCreateFlags> VkCast(ImageUsageFlags
 ::vk::ImageType VkCast(ImageType type);
 ::vk::ImageViewType VkCast(ImageViewType viewType);
 ::vk::BufferUsageFlags VkCast(BufferUsageFlags usage);
+::vk::ImageLayout VkCast(ImageLayout layout);
+::vk::AttachmentLoadOp VkCast(AttachmentLoadOp loadOp);
+::vk::AttachmentStoreOp VkCast(AttachmentStoreOp storeOp);
+::vk::ClearValue VkCast(const ClearValue& clearValue);
+::vk::Rect2D VkCast(const Rect2D& rect);
+::vk::Offset3D VkCast(const Offset3D& offset);
+::vk::ImageSubresourceLayers VkCast(const ImageSubresourceLayers& subresourceLayers);
+::vk::BufferImageCopy VkCast(const BufferImageCopy& bufferImageCopy);
+::vk::PipelineStageFlagBits VkCast(PipelineStage stage);
 } // namespace aph::vk::utils
 
 namespace aph
@@ -150,8 +163,8 @@ inline void VK_VR(T result, const std::source_location source = std::source_loca
     {
         if (result != VK_SUCCESS)
         {
-            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", utils::errorString(result).c_str(),
-                       source.function_name(), source.file_name(), source.line());
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
+                       utils::errorString(result).c_str(), source.function_name(), source.file_name(), source.line());
             std::abort();
         }
     }

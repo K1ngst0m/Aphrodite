@@ -825,6 +825,250 @@ ImageUsageFlags getImageUsage(::vk::ImageUsageFlags usageFlags, ::vk::ImageCreat
 
     return result;
 }
+
+std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage usage, bool isWrite)
+{
+    ResourceState state = ResourceState::General;
+    ::vk::AccessFlagBits2 accessFlags = ::vk::AccessFlagBits2::eShaderRead;
+    
+    if (usage & BufferUsage::Uniform)
+    {
+        state = ResourceState::UniformBuffer;
+        accessFlags = ::vk::AccessFlagBits2::eShaderRead;
+    }
+    else if (usage & BufferUsage::Storage)
+    {
+        state = ResourceState::UnorderedAccess;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderStorageRead;
+    }
+    else if (usage & BufferUsage::Index)
+    {
+        state = ResourceState::IndexBuffer;
+        accessFlags = ::vk::AccessFlagBits2::eIndexRead;
+    }
+    else if (usage & BufferUsage::Vertex)
+    {
+        state = ResourceState::VertexBuffer;
+        accessFlags = ::vk::AccessFlagBits2::eVertexAttributeRead;
+    }
+    else if (usage & BufferUsage::TransferDst)
+    {
+        state = ResourceState::CopyDest;
+        accessFlags = ::vk::AccessFlagBits2::eTransferWrite;
+    }
+    else if (usage & BufferUsage::TransferSrc)
+    {
+        state = ResourceState::CopySource;
+        accessFlags = ::vk::AccessFlagBits2::eTransferRead;
+    }
+    else if (usage & BufferUsage::Indirect)
+    {
+        state = ResourceState::IndirectArgument;
+        accessFlags = ::vk::AccessFlagBits2::eIndirectCommandRead;
+    }
+    else
+    {
+        VK_LOG_WARN("Unspecified buffer usage type, defaulting to general access");
+        state = ResourceState::General;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
+    }
+    
+    return { state, accessFlags };
+}
+
+std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite)
+{
+    ResourceState state = ResourceState::General;
+    ::vk::AccessFlagBits2 accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
+    
+    if (usage & ImageUsage::Sampled)
+    {
+        state = ResourceState::ShaderResource;
+        accessFlags = ::vk::AccessFlagBits2::eShaderSampledRead;
+    }
+    else if (usage & ImageUsage::Storage)
+    {
+        state = ResourceState::UnorderedAccess;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderStorageWrite : ::vk::AccessFlagBits2::eShaderStorageRead;
+    }
+    else if (usage & ImageUsage::TransferSrc)
+    {
+        state = ResourceState::CopySource;
+        accessFlags = ::vk::AccessFlagBits2::eTransferRead;
+    }
+    else if (usage & ImageUsage::TransferDst)
+    {
+        state = ResourceState::CopyDest;
+        accessFlags = ::vk::AccessFlagBits2::eTransferWrite;
+    }
+    else if (usage & ImageUsage::ColorAttachment)
+    {
+        state = ResourceState::RenderTarget;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eColorAttachmentWrite : ::vk::AccessFlagBits2::eColorAttachmentRead;
+    }
+    else if (usage & ImageUsage::DepthStencil)
+    {
+        state = ResourceState::DepthStencil;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eDepthStencilAttachmentWrite : ::vk::AccessFlagBits2::eDepthStencilAttachmentRead;
+    }
+    else
+    {
+        // Default for other usage flags
+        VK_LOG_WARN("Unspecified image usage type, defaulting to general access");
+        state = ResourceState::General;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
+    }
+    
+    return { state, accessFlags };
+}
+
+::vk::ImageLayout VkCast(ImageLayout layout)
+{
+    switch (layout)
+    {
+    case ImageLayout::Undefined:
+        return ::vk::ImageLayout::eUndefined;
+    case ImageLayout::General:
+        return ::vk::ImageLayout::eGeneral;
+    case ImageLayout::ColorAttachmentOptimal:
+        return ::vk::ImageLayout::eColorAttachmentOptimal;
+    case ImageLayout::DepthStencilAttachmentOptimal:
+        return ::vk::ImageLayout::eDepthStencilAttachmentOptimal;
+    case ImageLayout::DepthStencilReadOnlyOptimal:
+        return ::vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    case ImageLayout::ShaderReadOnlyOptimal:
+        return ::vk::ImageLayout::eShaderReadOnlyOptimal;
+    case ImageLayout::TransferSrcOptimal:
+        return ::vk::ImageLayout::eTransferSrcOptimal;
+    case ImageLayout::TransferDstOptimal:
+        return ::vk::ImageLayout::eTransferDstOptimal;
+    case ImageLayout::Preinitialized:
+        return ::vk::ImageLayout::ePreinitialized;
+    case ImageLayout::PresentSrc:
+        return ::vk::ImageLayout::ePresentSrcKHR;
+    case ImageLayout::DepthReadOnlyStencilAttachmentOptimal:
+        return ::vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal;
+    case ImageLayout::DepthAttachmentStencilReadOnlyOptimal:
+        return ::vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal;
+    case ImageLayout::DepthAttachmentOptimal:
+        return ::vk::ImageLayout::eDepthAttachmentOptimal;
+    case ImageLayout::DepthReadOnlyOptimal:
+        return ::vk::ImageLayout::eDepthReadOnlyOptimal;
+    case ImageLayout::StencilAttachmentOptimal:
+        return ::vk::ImageLayout::eStencilAttachmentOptimal;
+    case ImageLayout::StencilReadOnlyOptimal:
+        return ::vk::ImageLayout::eStencilReadOnlyOptimal;
+    case ImageLayout::AttachmentOptimal:
+        return ::vk::ImageLayout::eAttachmentOptimal;
+    case ImageLayout::ReadOnlyOptimal:
+        return ::vk::ImageLayout::eReadOnlyOptimal;
+    default:
+        APH_ASSERT(false && "Unhandled ImageLayout in VkCast");
+        return ::vk::ImageLayout::eUndefined;
+    }
+}
+
+::vk::AttachmentLoadOp VkCast(AttachmentLoadOp loadOp)
+{
+    switch (loadOp)
+    {
+    case AttachmentLoadOp::Load:
+        return ::vk::AttachmentLoadOp::eLoad;
+    case AttachmentLoadOp::Clear:
+        return ::vk::AttachmentLoadOp::eClear;
+    case AttachmentLoadOp::DontCare:
+        return ::vk::AttachmentLoadOp::eDontCare;
+    default:
+        APH_ASSERT(false && "Unhandled AttachmentLoadOp in VkCast");
+        return ::vk::AttachmentLoadOp::eDontCare;
+    }
+}
+
+::vk::AttachmentStoreOp VkCast(AttachmentStoreOp storeOp)
+{
+    switch (storeOp)
+    {
+    case AttachmentStoreOp::Store:
+        return ::vk::AttachmentStoreOp::eStore;
+    case AttachmentStoreOp::DontCare:
+        return ::vk::AttachmentStoreOp::eDontCare;
+    default:
+        APH_ASSERT(false && "Unhandled AttachmentStoreOp in VkCast");
+        return ::vk::AttachmentStoreOp::eDontCare;
+    }
+}
+
+::vk::ClearValue VkCast(const ClearValue& clearValue)
+{
+    ::vk::ClearValue vkClearValue;
+    std::memcpy(&vkClearValue, &clearValue, sizeof(::vk::ClearValue));
+    return vkClearValue;
+}
+
+::vk::Rect2D VkCast(const Rect2D& rect)
+{
+    ::vk::Rect2D vkRect;
+    vkRect.offset = ::vk::Offset2D{ rect.offset.x, rect.offset.y };
+    vkRect.extent = ::vk::Extent2D{ rect.extent.width, rect.extent.height };
+    return vkRect;
+}
+
+::vk::Offset3D VkCast(const Offset3D& offset)
+{
+    return ::vk::Offset3D(offset.x, offset.y, offset.z);
+}
+
+::vk::ImageSubresourceLayers VkCast(const ImageSubresourceLayers& subresourceLayers)
+{
+    ::vk::ImageSubresourceLayers vkSubresourceLayers;
+    vkSubresourceLayers.aspectMask = static_cast<::vk::ImageAspectFlags>(subresourceLayers.aspectMask);
+    vkSubresourceLayers.mipLevel = subresourceLayers.mipLevel;
+    vkSubresourceLayers.baseArrayLayer = subresourceLayers.baseArrayLayer;
+    vkSubresourceLayers.layerCount = subresourceLayers.layerCount;
+    return vkSubresourceLayers;
+}
+
+::vk::BufferImageCopy VkCast(const BufferImageCopy& bufferImageCopy)
+{
+    ::vk::BufferImageCopy vkBufferImageCopy;
+    vkBufferImageCopy.bufferOffset = bufferImageCopy.bufferOffset;
+    vkBufferImageCopy.bufferRowLength = bufferImageCopy.bufferRowLength;
+    vkBufferImageCopy.bufferImageHeight = bufferImageCopy.bufferImageHeight;
+    vkBufferImageCopy.imageSubresource = VkCast(bufferImageCopy.imageSubresource);
+    vkBufferImageCopy.imageOffset = VkCast(bufferImageCopy.imageOffset);
+    vkBufferImageCopy.imageExtent = ::vk::Extent3D(
+        bufferImageCopy.imageExtent.width,
+        bufferImageCopy.imageExtent.height,
+        bufferImageCopy.imageExtent.depth);
+    return vkBufferImageCopy;
+}
+
+::vk::PipelineStageFlagBits VkCast(PipelineStage stage)
+{
+    switch (stage)
+    {
+    case PipelineStage::TopOfPipe: return ::vk::PipelineStageFlagBits::eTopOfPipe;
+    case PipelineStage::DrawIndirect: return ::vk::PipelineStageFlagBits::eDrawIndirect;
+    case PipelineStage::VertexInput: return ::vk::PipelineStageFlagBits::eVertexInput;
+    case PipelineStage::VertexShader: return ::vk::PipelineStageFlagBits::eVertexShader;
+    case PipelineStage::TessellationControl: return ::vk::PipelineStageFlagBits::eTessellationControlShader;
+    case PipelineStage::TessellationEvaluation: return ::vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+    case PipelineStage::GeometryShader: return ::vk::PipelineStageFlagBits::eGeometryShader;
+    case PipelineStage::FragmentShader: return ::vk::PipelineStageFlagBits::eFragmentShader;
+    case PipelineStage::EarlyFragmentTests: return ::vk::PipelineStageFlagBits::eEarlyFragmentTests;
+    case PipelineStage::LateFragmentTests: return ::vk::PipelineStageFlagBits::eLateFragmentTests;
+    case PipelineStage::ColorAttachmentOutput: return ::vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    case PipelineStage::ComputeShader: return ::vk::PipelineStageFlagBits::eComputeShader;
+    case PipelineStage::Transfer: return ::vk::PipelineStageFlagBits::eTransfer;
+    case PipelineStage::BottomOfPipe: return ::vk::PipelineStageFlagBits::eBottomOfPipe;
+    case PipelineStage::Host: return ::vk::PipelineStageFlagBits::eHost;
+    case PipelineStage::AllGraphics: return ::vk::PipelineStageFlagBits::eAllGraphics;
+    case PipelineStage::AllCommands: return ::vk::PipelineStageFlagBits::eAllCommands;
+    default:
+        APH_ASSERT(false && "Unhandled PipelineStage in VkCast");
+        return ::vk::PipelineStageFlagBits::eBottomOfPipe;
+    }
+}
 } // namespace aph::vk::utils
 
 namespace aph::vk

@@ -1,5 +1,5 @@
-#include "bindless.h"
 #include "commandBuffer.h"
+#include "bindless.h"
 #include "device.h"
 
 namespace aph::vk
@@ -99,22 +99,31 @@ void CommandBuffer::copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range)
     getHandle().copyBuffer(srcBuffer->getHandle(), dstBuffer->getHandle(), { copyRegion });
 }
 
-void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferImageCopy> regions)
+void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions)
 {
     APH_PROFILER_SCOPE();
     if (regions.empty())
     {
-        ::vk::BufferImageCopy region{};
+        BufferImageCopy region{};
 
-        region.imageSubresource.setLayerCount(1).setAspectMask(::vk::ImageAspectFlagBits::eColor);
-        region.imageExtent = ::vk::Extent3D{ image->getWidth(), image->getHeight(), 1 };
+        region.imageSubresource.aspectMask = static_cast<uint32_t>(::vk::ImageAspectFlagBits::eColor);
+        region.imageSubresource.layerCount = 1;
+        region.imageExtent = { image->getWidth(), image->getHeight(), 1 };
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
-                                      { region });
+                                      { utils::VkCast(region) });
     }
     else
     {
+        SmallVector<::vk::BufferImageCopy> vkRegions;
+        vkRegions.reserve(regions.size());
+        
+        for (const auto& region : regions)
+        {
+            vkRegions.push_back(utils::VkCast(region));
+        }
+        
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
-                                      regions);
+                                      vkRegions);
     }
 }
 
@@ -135,10 +144,10 @@ void CommandBuffer::copy(Image* srcImage, Image* dstImage, Extent3D extent, cons
     // Copy region for transfer from framebuffer to cube face
     ::vk::ImageCopy copyRegion{};
     copyRegion.setExtent(::vk::Extent3D{ extent.width, extent.height, extent.depth })
-        .setSrcOffset(srcCopyInfo.offset)
-        .setSrcSubresource(srcCopyInfo.subResources)
-        .setDstOffset(dstCopyInfo.offset)
-        .setDstSubresource(dstCopyInfo.subResources);
+        .setSrcOffset(utils::VkCast(srcCopyInfo.offset))
+        .setSrcSubresource(utils::VkCast(srcCopyInfo.subResources))
+        .setDstOffset(utils::VkCast(dstCopyInfo.offset))
+        .setDstSubresource(utils::VkCast(dstCopyInfo.subResources));
 
     if (copyRegion.dstSubresource.aspectMask == ::vk::ImageAspectFlagBits::eNone)
     {
@@ -166,13 +175,13 @@ void CommandBuffer::draw(DrawArguments args)
 }
 
 void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo,
-                         const ImageBlitInfo& dstBlitInfo, ::vk::Filter filter)
+                         const ImageBlitInfo& dstBlitInfo, Filter filter)
 {
     APH_PROFILER_SCOPE();
-    const auto addOffset = [](const ::vk::Offset3D& a, const ::vk::Offset3D& b) -> ::vk::Offset3D
+    const auto addOffset = [](const Offset3D& a, const Offset3D& b) -> Offset3D
     { return { a.x + b.x, a.y + b.y, a.z + b.z }; };
 
-    const auto isExtentValid = [](const ::vk::Offset3D& extent) -> bool
+    const auto isExtentValid = [](const Offset3D& extent) -> bool
     { return extent.x != 0 || extent.y != 0 || extent.z != 0; };
 
     ::vk::ImageBlit vkBlitInfo{};
@@ -191,11 +200,11 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
 
     vkBlitInfo.setSrcSubresource(srcSubResource).setDstSubresource(dstSubResource);
 
-    vkBlitInfo.srcOffsets[0] = { srcBlitInfo.offset };
+    vkBlitInfo.srcOffsets[0] = utils::VkCast(srcBlitInfo.offset);
 
     if (isExtentValid(srcBlitInfo.extent))
     {
-        vkBlitInfo.srcOffsets[1] = addOffset(srcBlitInfo.offset, srcBlitInfo.extent);
+        vkBlitInfo.srcOffsets[1] = utils::VkCast(addOffset(srcBlitInfo.offset, srcBlitInfo.extent));
     }
     else
     {
@@ -203,10 +212,10 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
                                                    static_cast<int32_t>(srcImage->getHeight()), 1 };
     }
 
-    vkBlitInfo.dstOffsets[0] = { dstBlitInfo.offset };
+    vkBlitInfo.dstOffsets[0] = utils::VkCast(dstBlitInfo.offset);
     if (isExtentValid(dstBlitInfo.extent))
     {
-        vkBlitInfo.dstOffsets[1] = addOffset(dstBlitInfo.offset, dstBlitInfo.extent);
+        vkBlitInfo.dstOffsets[1] = utils::VkCast(addOffset(dstBlitInfo.offset, dstBlitInfo.extent));
     }
     else
     {
@@ -218,7 +227,7 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
     ::vk::ImageLayout srcLayout = ::vk::ImageLayout::eTransferSrcOptimal;
     ::vk::ImageLayout dstLayout = ::vk::ImageLayout::eTransferDstOptimal;
 
-    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo }, filter);
+    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo }, utils::VkCast(filter));
 }
 
 void CommandBuffer::endRendering()
@@ -285,10 +294,12 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
         auto& image = color.image;
         ::vk::RenderingAttachmentInfo vkColorAttrInfo{};
         vkColorAttrInfo.setImageView(image->getView()->getHandle())
-            .setImageLayout(color.layout.value_or(::vk::ImageLayout::eColorAttachmentOptimal))
-            .setLoadOp(color.loadOp.value_or(::vk::AttachmentLoadOp::eClear))
-            .setStoreOp(color.storeOp.value_or(::vk::AttachmentStoreOp::eStore))
-            .setClearValue(color.clear.value_or(::vk::ClearValue{}.setColor({ 0.0f, 0.0f, 0.0f, 1.0f })));
+            .setImageLayout(utils::VkCast(color.layout.value_or(ImageLayout::ColorAttachmentOptimal)))
+            .setLoadOp(utils::VkCast(color.loadOp.value_or(AttachmentLoadOp::Clear)))
+            .setStoreOp(utils::VkCast(color.storeOp.value_or(AttachmentStoreOp::Store)))
+            .setClearValue(color.clear.has_value() ? 
+                utils::VkCast(color.clear.value()) : 
+                ::vk::ClearValue{}.setColor({ 0.0f, 0.0f, 0.0f, 1.0f }));
 
         vkColors.push_back(vkColorAttrInfo);
 
@@ -305,16 +316,23 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     getHandle().setScissorWithCount(vkScissors);
 
     ::vk::RenderingInfo vkRenderingInfo{};
-    vkRenderingInfo.setRenderArea(vkScissors[0]).setLayerCount(1).setColorAttachments(vkColors);
+    if (renderingInfo.renderArea.has_value()) {
+        vkRenderingInfo.setRenderArea(utils::VkCast(renderingInfo.renderArea.value()));
+    } else {
+        vkRenderingInfo.setRenderArea(vkScissors[0]);
+    }
+    vkRenderingInfo.setLayerCount(1).setColorAttachments(vkColors);
 
     ::vk::RenderingAttachmentInfo vkDepth;
     if (const auto& depth = m_commandState.graphics.depth; depth.image != nullptr)
     {
         vkDepth.setImageView(depth.image->getView()->getHandle())
-            .setImageLayout(depth.layout.value_or(::vk::ImageLayout::eDepthAttachmentOptimal))
-            .setLoadOp(depth.loadOp.value_or(::vk::AttachmentLoadOp::eClear))
-            .setStoreOp(depth.storeOp.value_or(::vk::AttachmentStoreOp::eDontCare))
-            .setClearValue(depth.clear.value_or(::vk::ClearValue{}.setDepthStencil({ 1.0f, 0x00 })));
+            .setImageLayout(utils::VkCast(depth.layout.value_or(ImageLayout::DepthAttachmentOptimal)))
+            .setLoadOp(utils::VkCast(depth.loadOp.value_or(AttachmentLoadOp::Clear)))
+            .setStoreOp(utils::VkCast(depth.storeOp.value_or(AttachmentStoreOp::DontCare)))
+            .setClearValue(depth.clear.has_value() ? 
+                utils::VkCast(depth.clear.value()) : 
+                ::vk::ClearValue{}.setDepthStencil({ 1.0f, 0x00 }));
 
         vkRenderingInfo.setPDepthAttachment(&vkDepth);
     }
@@ -624,11 +642,13 @@ void CommandBuffer::resetQueryPool(::vk::QueryPool pool, uint32_t first, uint32_
     APH_PROFILER_SCOPE();
     getHandle().resetQueryPool(pool, first, count);
 }
-void CommandBuffer::writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex)
+
+void CommandBuffer::writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex)
 {
     APH_PROFILER_SCOPE();
-    getHandle().writeTimestamp(::vk::PipelineStageFlagBits::eBottomOfPipe, pool, queryIndex);
+    getHandle().writeTimestamp(utils::VkCast(stage), pool, queryIndex);
 }
+
 void CommandBuffer::update(Buffer* pBuffer, Range range, const void* data)
 {
     APH_PROFILER_SCOPE();

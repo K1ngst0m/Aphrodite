@@ -11,23 +11,23 @@ namespace aph::vk
 struct AttachmentInfo
 {
     Image* image{};
-    std::optional<::vk::ImageLayout> layout;
-    std::optional<::vk::AttachmentLoadOp> loadOp;
-    std::optional<::vk::AttachmentStoreOp> storeOp;
-    std::optional<::vk::ClearValue> clear;
+    std::optional<ImageLayout> layout;
+    std::optional<AttachmentLoadOp> loadOp;
+    std::optional<AttachmentStoreOp> storeOp;
+    std::optional<ClearValue> clear;
 };
 
 struct RenderingInfo
 {
     SmallVector<AttachmentInfo> colors = {};
     AttachmentInfo depth = {};
-    std::optional<::vk::Rect2D> renderArea = {};
+    std::optional<Rect2D> renderArea = {};
 };
 
 struct ImageBlitInfo
 {
-    ::vk::Offset3D offset = {};
-    ::vk::Offset3D extent = {};
+    Offset3D offset = {};
+    Offset3D extent = {};
 
     uint32_t level = 0;
     uint32_t baseLayer = 0;
@@ -36,8 +36,8 @@ struct ImageBlitInfo
 
 struct ImageCopyInfo
 {
-    ::vk::Offset3D offset = {};
-    ::vk::ImageSubresourceLayers subResources = { {}, 0, 0, 1 };
+    Offset3D offset = {};
+    ImageSubresourceLayers subResources = { 0, 0, 0, 1 };
 };
 
 struct BufferBarrier
@@ -180,7 +180,7 @@ public:
     void dispatch(DispatchArguments args);
     void draw(DrawArguments args);
     void draw(Buffer* pBuffer, std::size_t offset = 0, uint32_t drawCount = 1,
-              uint32_t stride = sizeof(::vk::DrawIndirectCommand));
+              uint32_t stride = sizeof(DrawIndirectCommand));
 
 public:
     void beginDebugLabel(const DebugLabel& label);
@@ -188,7 +188,7 @@ public:
     void endDebugLabel();
 
     void resetQueryPool(::vk::QueryPool pool, uint32_t first = 0, uint32_t count = 1);
-    void writeTimeStamp(::vk::PipelineStageFlagBits stage, ::vk::QueryPool pool, uint32_t queryIndex);
+    void writeTimeStamp(PipelineStage stage, ::vk::QueryPool pool, uint32_t queryIndex);
 
 public:
     void insertBarrier(ArrayProxy<ImageBarrier> pImageBarriers);
@@ -203,9 +203,9 @@ public:
     void copy(Buffer* srcBuffer, Buffer* dstBuffer, Range range);
     void copy(Image* srcImage, Image* dstImage, Extent3D extent = {}, const ImageCopyInfo& srcCopyInfo = {},
               const ImageCopyInfo& dstCopyInfo = {});
-    void copy(Buffer* buffer, Image* image, ArrayProxy<::vk::BufferImageCopy> regions = {});
+    void copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCopy> regions = {});
     void blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& srcBlitInfo = {},
-              const ImageBlitInfo& dstBlitInfo = {}, ::vk::Filter filter = ::vk::Filter::eLinear);
+              const ImageBlitInfo& dstBlitInfo = {}, Filter filter = Filter::Linear);
 
 private:
     void setDirty(DirtyFlagBits dirtyFlagBits);

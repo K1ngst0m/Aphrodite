@@ -543,4 +543,131 @@ struct FlagTraits<ImageUsage>
         ImageUsage::BlockTexelView;
 };
 
+enum class ImageLayout : uint8_t
+{
+    Undefined,
+    General,
+    ColorAttachmentOptimal,
+    DepthStencilAttachmentOptimal,
+    DepthStencilReadOnlyOptimal,
+    ShaderReadOnlyOptimal,
+    TransferSrcOptimal,
+    TransferDstOptimal,
+    Preinitialized,
+    PresentSrc,
+    DepthReadOnlyStencilAttachmentOptimal,
+    DepthAttachmentStencilReadOnlyOptimal,
+    DepthAttachmentOptimal,
+    DepthReadOnlyOptimal,
+    StencilAttachmentOptimal,
+    StencilReadOnlyOptimal,
+    AttachmentOptimal,
+    ReadOnlyOptimal,
+};
+
+enum class AttachmentLoadOp : uint8_t
+{
+    Load,
+    Clear,
+    DontCare,
+};
+
+enum class AttachmentStoreOp : uint8_t
+{
+    Store,
+    DontCare,
+};
+
+struct ClearColorValue
+{
+    union 
+    {
+        float float32[4];
+        int32_t int32[4];
+        uint32_t uint32[4];
+    };
+};
+
+struct ClearDepthStencilValue
+{
+    float depth;
+    uint32_t stencil;
+};
+
+struct ClearValue
+{
+    union
+    {
+        ClearColorValue color;
+        ClearDepthStencilValue depthStencil;
+    };
+};
+
+struct Offset2D
+{
+    int32_t x{};
+    int32_t y{};
+};
+
+struct Rect2D
+{
+    Offset2D offset{};
+    Extent2D extent{};
+};
+
+struct Offset3D 
+{
+    int32_t x{};
+    int32_t y{};
+    int32_t z{};
+};
+
+struct ImageSubresourceLayers
+{
+    uint32_t aspectMask{};
+    uint32_t mipLevel{};
+    uint32_t baseArrayLayer{};
+    uint32_t layerCount{};
+};
+
+struct BufferImageCopy
+{
+    uint64_t bufferOffset{};
+    uint32_t bufferRowLength{};
+    uint32_t bufferImageHeight{};
+    ImageSubresourceLayers imageSubresource{};
+    Offset3D imageOffset{};
+    Extent3D imageExtent{};
+};
+
+enum class PipelineStage : uint32_t
+{
+    TopOfPipe = 0x00000001,
+    DrawIndirect = 0x00000002,
+    VertexInput = 0x00000004,
+    VertexShader = 0x00000008,
+    TessellationControl = 0x00000010,
+    TessellationEvaluation = 0x00000020,
+    GeometryShader = 0x00000040,
+    FragmentShader = 0x00000080,
+    EarlyFragmentTests = 0x00000100,
+    LateFragmentTests = 0x00000200,
+    ColorAttachmentOutput = 0x00000400,
+    ComputeShader = 0x00000800,
+    Transfer = 0x00001000,
+    BottomOfPipe = 0x00002000,
+    Host = 0x00004000,
+    AllGraphics = 0x00008000,
+    AllCommands = 0x00010000,
+};
+using PipelineStageFlags = Flags<PipelineStage>;
+
+struct DrawIndirectCommand
+{
+    uint32_t vertexCount;
+    uint32_t instanceCount;
+    uint32_t firstVertex;
+    uint32_t firstInstance;
+};
+
 } // namespace aph

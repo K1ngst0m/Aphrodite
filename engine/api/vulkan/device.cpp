@@ -584,8 +584,12 @@ Result Device::createImpl(const CommandPoolCreateInfo& createInfo, CommandPool**
 {
     APH_PROFILER_SCOPE();
     ::vk::CommandPoolCreateInfo vkCreateInfo{};
-    vkCreateInfo.setQueueFamilyIndex(createInfo.queue->getFamilyIndex())
-        .setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
+    vkCreateInfo.setQueueFamilyIndex(createInfo.queue->getFamilyIndex());
+    if (createInfo.transient)
+    {
+        vkCreateInfo.setFlags(::vk::CommandPoolCreateFlagBits::eTransient);
+    }
+    vkCreateInfo.setFlags(::vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
     auto [res, pool] = getHandle().createCommandPool(vkCreateInfo, vk_allocator());
     VK_VR(res);
     *ppCommandPool = m_resourcePool.commandPool.allocate(this, createInfo, pool);
