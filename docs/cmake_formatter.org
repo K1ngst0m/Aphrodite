@@ -1,0 +1,117 @@
+#+TITLE: CMake Formatter
+#+AUTHOR: 
+#+DATE: 
+
+The CMake formatter is a tool that ensures consistent formatting across all CMake files in the project. It uses =cmake-format= to enforce a standardized style that improves readability and maintainability.
+
+* Features
+
+- Automatic formatting of all CMake files in the project
+- Consistent indentation and spacing
+- Smart wrapping of long lines
+- Special handling for single-argument commands
+- Integration with CMake build system
+
+* Usage
+
+** Prerequisites
+
+- Python 3.x
+- =cmake-format= (install via =pip install cmake-format=)
+
+** Commands
+
+#+BEGIN_SRC bash
+# Check CMake formatting
+cmake --build build --target aph-check-cmake-format
+
+# Fix CMake formatting
+cmake --build build --target aph-fix-cmake-format
+#+END_SRC
+
+* Configuration
+
+The formatter is configured via =.cmake-format= in the project root. Key settings include:
+
+- Line width: 100 characters
+- Tab size: 4 spaces
+- Smart wrapping for complex commands
+- Single-line formatting for simple commands
+
+** Single-Line Commands
+
+The following commands are kept on a single line when they have only one argument:
+
+- =include=
+- =add_subdirectory=
+- =find_package=
+- =link_directories=
+- =include_directories=
+- =link_libraries=
+- =add_definitions=
+- =set=
+- =set_property=
+- =set_target_properties=
+
+** Always-Wrapped Commands
+
+Complex commands with multiple arguments are always wrapped for better readability:
+
+- =add_library=
+- =add_executable=
+- =target_link_libraries=
+- =target_include_directories=
+- =target_compile_definitions=
+- =target_compile_options=
+- =target_link_options=
+- =target_sources=
+- =target_properties=
+- =set_target_properties=
+- =set_property=
+- =add_custom_target=
+- =add_custom_command=
+- =install=
+
+* Examples
+
+** Single-Line Formatting
+
+#+BEGIN_SRC cmake
+include(Common)
+add_subdirectory(common)
+find_package(Boost REQUIRED)
+#+END_SRC
+
+** Multi-Line Formatting
+
+#+BEGIN_SRC cmake
+add_library(
+    my_lib
+    src/file1.cpp
+    src/file2.cpp
+)
+
+target_link_libraries(
+    my_target
+    PRIVATE
+        dep1
+        dep2
+)
+#+END_SRC
+
+* Contributing
+
+When adding new CMake files or modifying existing ones:
+
+1. Follow the established formatting rules
+2. Use the formatter to check and fix formatting issues
+3. Ensure all changes are properly formatted before committing
+
+* Troubleshooting
+
+If you encounter formatting issues:
+
+1. Make sure =cmake-format= is installed
+2. Run the formatter to fix issues
+3. Check the =.cmake-format= configuration for any custom rules
+4. Review the examples in this documentation 

@@ -1,0 +1,165 @@
+---
+# How wide to allow formatted cmake files
+line_width: 100
+
+# How many spaces to tab for indent
+tab_size: 4
+
+# If true, lines are indented using tab characters (utf-8 0x09) instead of
+# <tab_size> space characters (utf-8 0x20). In cases where the layout would
+# require a fractional tab character, the behavior of the  fractional
+# indentation is governed by <fractional_tab_policy>
+use_tabchars: false
+
+# If <use_tabchars> is true, then the value of this variable indicates how
+# fractional tabs should be aligned for indentation. "use-space" means that
+# the fractional portion of the tab should be padded with spaces. "round-up"
+# means that the tab should be rounded up to the nearest whole number of
+# tab characters.
+fractional_tab_policy: use-space
+
+# If an argument group contains more than this many sub-groups (parg or kwarg
+# groups) then force it to a vertical layout.
+max_subgroups_hwrap: 2
+
+# If a positional argument group contains more than this many arguments, then
+# force it to a vertical layout.
+max_pargs_hwrap: 6
+
+# If a cmdline positional group consumes more than this many lines without
+# nesting, then invalidate the layout (and nest the group with a nested
+# layout)
+max_rows_cmdline: 2
+
+# If true, separate flow control names from their parentheses with a space
+separate_ctrl_name_with_space: true
+
+# If true, separate function names from parentheses with a space
+separate_fn_name_with_space: true
+
+# If a statement is wrapped to more than one line, than dangle the closing
+# parenthesis on its own line.
+dangle_parens: true
+
+# If the trailing parenthesis must be 'dangled' on its on line, then align it
+# to this reference: `prefix`: the start of the statement,  `prefix-indent`: the
+# start of the statement, plus one indentation  level, `child`: align to the
+# column of the arguments
+dangle_align: prefix
+
+# If the statement spelling length (including space and parenthesis) is
+# smaller than this amount, then force the parenthetical statement to be
+# wrapped.
+min_prefix_chars: 4
+
+# If the statement spelling length (including space and parenthesis) is
+# larger than this amount, then force un-nested wrapping of the
+# parenthetical statement.
+max_prefix_chars: 10
+
+# If a candidate layout is wrapped horizontally but it does not contain
+# exactly one of the operators listed in the `wrap_operators` list, then
+# prefer the layout where all operators are on the right-hand side of the
+# rightmost word.
+wrap_operators:
+  - "&&"
+  - "||"
+  - "."
+  - "+"
+  - "-"
+  - "*"
+  - "/"
+  - "|"
+  - "&"
+  - ">"
+  - "<"
+  - "=="
+  - "!="
+  - ">="
+  - "<="
+  - "=>"
+  - "->"
+  - "="
+  - "|="
+  - "&="
+  - "+="
+  - "-="
+  - "*="
+  - "/="
+  - "%="
+  - "^="
+  - "<<="
+  - ">>="
+
+# A list of command names which should always be wrapped
+always_wrap:
+  - "add_library"
+  - "add_executable"
+  - "target_link_libraries"
+  - "target_include_directories"
+  - "target_compile_definitions"
+  - "target_compile_options"
+  - "target_link_options"
+  - "target_sources"
+  - "target_properties"
+  - "set_target_properties"
+  - "set_property"
+  - "add_custom_target"
+  - "add_custom_command"
+  - "find_package"
+  - "link_directories"
+  - "add_definitions"
+  - "include_directories"
+  - "link_libraries"
+  - "install"
+  - "set"
+  - "if"
+  - "elseif"
+  - "else"
+  - "endif"
+  - "foreach"
+  - "endforeach"
+  - "while"
+  - "endwhile"
+  - "function"
+  - "endfunction"
+  - "macro"
+  - "endmacro"
+
+# If true, the argument lists which are known to be always wrapped will
+# look like this:
+#
+#   add_executable(one two three
+#                  four five six)
+#
+# Otherwise they will look like this:
+#
+#   add_executable(one two three four five six)
+always_use_short_style: true
+
+# If true, the parsers may infer whether or not an argument list is meant to
+# be interpreted as a single argument.
+infer_style: true
+
+# By default, if cmake-format cannot successfully fit everything into the
+# desired linewidth it will apply the last, most agressive attempt that it
+# made. If this flag is True, cmake-format will print its best attempt and
+# exit with an error code of 1.
+require_valid_layout: false
+
+# A dictionary mapping layout nodes to a list of wrap decisions. See the
+# documentation for more information.
+layout_passes: {}
+
+# Commands that should be kept on a single line when they have only one argument
+single_argument_commands:
+  - "include"
+  - "add_subdirectory"
+  - "find_package"
+  - "link_directories"
+  - "include_directories"
+  - "link_libraries"
+  - "add_definitions"
+  - "set"
+  - "set_property"
+  - "set_target_properties"
