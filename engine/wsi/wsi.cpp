@@ -104,24 +104,24 @@ WindowSystem::~WindowSystem()
 
 bool WindowSystem::update()
 {
-    SDL_Event windowEvent;
-    while (SDL_PollEvent(&windowEvent))
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
     {
         if (ImGui::GetCurrentContext())
         {
-            ImGui_ImplSDL3_ProcessEvent(&windowEvent);
+            ImGui_ImplSDL3_ProcessEvent(&event);
         }
-        switch (windowEvent.type)
+        switch (event.type)
         {
         case SDL_EVENT_QUIT:
             return false;
         case SDL_EVENT_KEY_DOWN:
         {
             KeyState state{};
-            auto keysym = windowEvent.key.key;
+            auto keysym = event.key.key;
             auto gkey = SDLKeyCast(keysym);
 
-            switch (windowEvent.key.type)
+            switch (event.key.type)
             {
             case SDL_EVENT_KEY_DOWN:
             {
@@ -154,7 +154,7 @@ bool WindowSystem::update()
                 break;
             }
 
-            if (windowEvent.key.repeat)
+            if (event.key.repeat)
             {
                 state = KeyState::Repeat;
             }
@@ -180,7 +180,7 @@ bool WindowSystem::update()
         case SDL_EVENT_MOUSE_BUTTON_UP:
         {
             MouseButton btn;
-            switch (windowEvent.button.button)
+            switch (event.button.button)
             {
             default:
             case SDL_BUTTON_LEFT:
@@ -197,12 +197,12 @@ bool WindowSystem::update()
             float x, y;
             SDL_GetMouseState(&x, &y);
 
-            m_eventManager.pushEvent(MouseButtonEvent{ btn, x, y, windowEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
+            m_eventManager.pushEvent(MouseButtonEvent{ btn, x, y, event.type == SDL_EVENT_MOUSE_BUTTON_DOWN });
         }
         break;
         case SDL_EVENT_WINDOW_RESIZED:
         {
-            resize(windowEvent.window.data1, windowEvent.window.data2);
+            resize(event.window.data1, event.window.data2);
 
             WindowResizeEvent resizeEvent{ static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height) };
 

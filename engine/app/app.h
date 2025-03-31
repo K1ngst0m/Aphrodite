@@ -13,11 +13,8 @@ public:
     virtual ~App();
 
 public:
-    // Run the application
     int run();
-
-    // Options access
-    AppOptions& getOptions() const;
+    AppOptions& getOptions();
 
 protected:
     virtual void init() = 0;
@@ -27,8 +24,8 @@ protected:
     virtual void finish() = 0;
 
 private:
-    class Impl;
-    std::unique_ptr<Impl> m_impl;
+    AppOptions options;
+    int exitCode = 0;
     const std::string m_sessionName;
 };
 

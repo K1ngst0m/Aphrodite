@@ -3,28 +3,17 @@
 namespace aph
 {
 
-// App implementation
-class App::Impl
-{
-public:
-    Impl() = default;
-
-    AppOptions options;
-    int exitCode = 0;
-};
-
 // Constructor and destructor
 App::App(std::string sessionName)
-    : m_impl(std::make_unique<Impl>())
-    , m_sessionName(std::move(sessionName))
+    : m_sessionName(std::move(sessionName))
 {
 }
 
 App::~App() = default;
 
-AppOptions& App::getOptions() const
+AppOptions& App::getOptions()
 {
-    return m_impl->options;
+    return options;
 }
 
 // Run method
@@ -36,6 +25,6 @@ int App::run()
     unload();
     finish();
 
-    return m_impl->exitCode;
+    return exitCode;
 }
 } // namespace aph
