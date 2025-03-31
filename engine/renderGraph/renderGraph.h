@@ -27,7 +27,24 @@ public:
     ~RenderGraph();
 
 public:
+    RenderPass* getPassOrCreate(const std::string& name, QueueType queueType)
+    {
+        if (auto pass = getPass(name); pass)
+        {
+            return pass;
+        }
+        return createPass(name, queueType);
+    }
     RenderPass* createPass(const std::string& name, QueueType queueType);
+    RenderPass* getPass(const std::string& name) const noexcept
+    {
+        if (m_declareData.passMap.contains(name))
+        {
+            return m_declareData.passMap.at(name);
+        }
+        RDG_LOG_WARN("Could not found pass [%s]", name);
+        return nullptr;
+    }
     void setBackBuffer(const std::string& backBuffer);
     template <typename T>
     T* getResource(const std::string& name);

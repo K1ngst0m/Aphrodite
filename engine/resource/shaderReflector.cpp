@@ -1,6 +1,8 @@
 #include "shaderReflector.h"
-#include "api/vulkan/sampler.h"
+
 #include "common/profiler.h"
+
+#include "api/vulkan/sampler.h"
 #include "spirv_cross.hpp"
 
 namespace aph

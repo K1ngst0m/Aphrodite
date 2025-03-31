@@ -1,7 +1,9 @@
 #include "resourceLoader.h"
-#include "api/vulkan/device.h"
+
 #include "common/common.h"
 #include "common/profiler.h"
+
+#include "api/vulkan/device.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
 
@@ -170,9 +172,8 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                 }
 
                 // Final transition to ShaderResource
-                cmd->transitionImageLayout(image, 
-                    genMipmap ? ResourceState::CopySource : ResourceState::CopyDest, 
-                    ResourceState::ShaderResource);
+                cmd->transitionImageLayout(image, genMipmap ? ResourceState::CopySource : ResourceState::CopyDest,
+                                           ResourceState::ShaderResource);
             });
     }
 

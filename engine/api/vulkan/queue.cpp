@@ -1,5 +1,6 @@
-#include "queue.h"
 #include "device.h"
+#include "queue.h"
+
 #include <mutex>
 
 namespace aph::vk

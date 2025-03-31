@@ -1,4 +1,5 @@
 #include "cli.h"
+
 #include "common/logger.h"
 
 namespace aph

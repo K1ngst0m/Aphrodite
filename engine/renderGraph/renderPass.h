@@ -171,15 +171,15 @@ public:
 
     void recordExecute(ExecuteCallBack&& cb)
     {
-        m_executeCB = cb;
+        m_executeCB = std::move(cb);
     }
     void recordClear(ClearColorCallBack&& cb)
     {
-        m_clearColorCB = cb;
+        m_clearColorCB = std::move(cb);
     }
     void recordDepthStencil(ClearDepthStencilCallBack&& cb)
     {
-        m_clearDepthStencilCB = cb;
+        m_clearDepthStencilCB = std::move(cb);
     }
 
     QueueType getQueueType() const

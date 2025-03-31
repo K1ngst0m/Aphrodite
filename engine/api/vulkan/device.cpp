@@ -1,9 +1,11 @@
-#include "device.h"
 #include "bindless.h"
-#include "common/profiler.h"
-#include "vmaAllocator.h"
-#include "module/module.h"
+#include "device.h"
 #include "renderdoc_app.h"
+#include "vmaAllocator.h"
+
+#include "common/profiler.h"
+
+#include "module/module.h"
 #include "resource/shaderReflector.h"
 
 const VkAllocationCallbacks* gVkAllocator = aph::vk::vkAllocator();
@@ -46,7 +48,6 @@ std::unique_ptr<Device> Device::Create(const DeviceCreateInfo& createInfo)
 
         // adding addition extension/features
         {
-
         }
 
         // Enable required features

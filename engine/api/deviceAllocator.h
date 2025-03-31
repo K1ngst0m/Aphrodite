@@ -4,9 +4,9 @@
 
 namespace aph::vk
 {
-    class Buffer;
-    class Image;
-}
+class Buffer;
+class Image;
+} // namespace aph::vk
 
 namespace aph
 {
@@ -45,4 +45,4 @@ public:
     virtual void clear() = 0;
 };
 
-} // namespace aph::vk
+} // namespace aph

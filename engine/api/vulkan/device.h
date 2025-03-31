@@ -16,8 +16,8 @@
 #include "swapChain.h"
 #include "syncPrimitive.h"
 
-#include "module/module.h"
 #include "api/deviceAllocator.h"
+#include "module/module.h"
 
 namespace aph::vk
 {

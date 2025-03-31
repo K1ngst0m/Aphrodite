@@ -1,5 +1,5 @@
-#include "syncPrimitive.h"
 #include "device.h"
+#include "syncPrimitive.h"
 
 namespace aph::vk
 {

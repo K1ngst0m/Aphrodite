@@ -7,8 +7,8 @@
 #include "vkUtils.h"
 #include <array>
 #include <functional>
-#include <string_view>
 #include <span>
+#include <string_view>
 
 namespace aph::vk
 {

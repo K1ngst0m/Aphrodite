@@ -1,4 +1,5 @@
 #include "imageLoader.h"
+
 #include "common/profiler.h"
 
 #define STB_IMAGE_IMPLEMENTATION

@@ -1,6 +1,8 @@
 #include "renderGraph.h"
+
 #include "common/graphView.h"
 #include "common/profiler.h"
+
 #include "threads/taskManager.h"
 
 namespace aph
@@ -262,8 +264,8 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
 
         // Record commands for each pass
-        if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
-                    DirtyFlagBits::TopologyDirty))
+        // if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
+        //             DirtyFlagBits::TopologyDirty))
         {
             for (auto* pass : m_buildData.sortedPasses)
             {

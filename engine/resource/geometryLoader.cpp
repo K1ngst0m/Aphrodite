@@ -1,6 +1,6 @@
 #include "common/profiler.h"
-#include "resource/resourceLoader.h"
 
+#include "resource/resourceLoader.h"
 #include "stb/stb_image.h"
 
 #define TINYGLTF_IMPLEMENTATION

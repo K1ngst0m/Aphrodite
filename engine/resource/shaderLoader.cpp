@@ -1,10 +1,11 @@
 #include "shaderLoader.h"
-#include "common/profiler.h"
-#include "filesystem/filesystem.h"
-#include "global/globalManager.h"
-
 #include "slang-com-ptr.h"
 #include "slang.h"
+
+#include "common/profiler.h"
+
+#include "filesystem/filesystem.h"
+#include "global/globalManager.h"
 
 namespace aph
 {

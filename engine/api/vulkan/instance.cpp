@@ -1,8 +1,10 @@
 #include "instance.h"
-#include "api/vulkan/vkUtils.h"
+#include "physicalDevice.h"
+
 #include "common/logger.h"
 #include "common/profiler.h"
-#include "physicalDevice.h"
+
+#include "api/vulkan/vkUtils.h"
 
 namespace aph::vk
 {

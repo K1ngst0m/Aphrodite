@@ -1,4 +1,5 @@
 #include "vkUtils.h"
+
 #include "common/arrayProxy.h"
 #include "common/hash.h"
 

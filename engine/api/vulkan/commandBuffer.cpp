@@ -1,5 +1,5 @@
-#include "commandBuffer.h"
 #include "bindless.h"
+#include "commandBuffer.h"
 #include "device.h"
 
 namespace aph::vk
@@ -218,8 +218,7 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
     ::vk::ImageLayout srcLayout = ::vk::ImageLayout::eTransferSrcOptimal;
     ::vk::ImageLayout dstLayout = ::vk::ImageLayout::eTransferDstOptimal;
 
-    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout,
-                          { vkBlitInfo }, filter);
+    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo }, filter);
 }
 
 void CommandBuffer::endRendering()

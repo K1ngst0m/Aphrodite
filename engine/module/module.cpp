@@ -1,5 +1,7 @@
 #include "module.h"
+
 #include "common/logger.h"
+
 #include <stdexcept>
 
 #ifdef _WIN32

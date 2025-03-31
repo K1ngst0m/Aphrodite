@@ -1,11 +1,11 @@
 #include "imgui_impl_sdl3.h"
 #include "wsi.h"
 
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_vulkan.h>
-
 #include "api/vulkan/instance.h"
 #include "event/eventManager.h"
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
 
 using namespace aph;
 

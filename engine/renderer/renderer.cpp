@@ -1,9 +1,10 @@
 #include "renderer.h"
 
-#include "api/vulkan/device.h"
 #include "common/common.h"
 #include "common/logger.h"
 #include "common/profiler.h"
+
+#include "api/vulkan/device.h"
 #include "renderer/renderer.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE

@@ -1,6 +1,7 @@
-#include "image.h"
-#include "api/vulkan/vkUtils.h"
 #include "device.h"
+#include "image.h"
+
+#include "api/vulkan/vkUtils.h"
 
 namespace aph::vk
 {

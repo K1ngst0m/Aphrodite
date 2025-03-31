@@ -1,8 +1,10 @@
 #include "appOptions.h"
-#include "app/app.h"
+
 #include "common/functiontraits.h"
 #include "common/hash.h"
 #include "common/logger.h"
+
+#include "app/app.h"
 #include "filesystem/filesystem.h"
 #include "global/globalManager.h"
 

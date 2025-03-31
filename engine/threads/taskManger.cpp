@@ -1,10 +1,11 @@
-#include <utility>
+#include "taskManager.h"
+#include "threadUtils.h"
 
 #include "common/common.h"
 #include "common/logger.h"
 #include "common/profiler.h"
-#include "taskManager.h"
-#include "threadUtils.h"
+
+#include <utility>
 
 namespace aph
 {
