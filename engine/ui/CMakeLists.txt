@@ -4,8 +4,7 @@ aph_setup_target (ui ${APH_UI_SRC})
 
 target_compile_definitions (
     aph-ui
-    PUBLIC $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:WSI_USE_GLFW>
-           $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:WSI_USE_SDL>
+    PUBLIC $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:WSI_USE_SDL>
 )
 
 target_link_libraries (

@@ -83,7 +83,7 @@ Renderer::Renderer(const RenderConfig& config)
         WindowSystemCreateInfo wsi_create_info{
             .width = config.width,
             .height = config.height,
-            .enableUI = false,
+            .enableUI = true,
         };
         m_pWindowSystem = WindowSystem::Create(wsi_create_info);
     }

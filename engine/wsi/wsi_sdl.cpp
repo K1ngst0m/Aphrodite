@@ -69,7 +69,7 @@ static Key SDLKeyCast(SDL_Keycode key)
 #undef k
 }
 
-void WindowSystem::init()
+void WindowSystem::initialize()
 {
     // Initialize SDL
     if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS))
@@ -107,6 +107,10 @@ bool WindowSystem::update()
     SDL_Event windowEvent;
     while (SDL_PollEvent(&windowEvent))
     {
+        if (ImGui::GetCurrentContext())
+        {
+            ImGui_ImplSDL3_ProcessEvent(&windowEvent);
+        }
         switch (windowEvent.type)
         {
         case SDL_EVENT_QUIT:
@@ -213,17 +217,10 @@ bool WindowSystem::update()
 
     m_eventManager.processAll();
 
-    if (m_enabledUI)
-    {
-        ImGui_ImplSDL3_NewFrame();
-    }
-
     return true;
 };
 
-void WindowSystem::close() {
-    // glfwSetWindowShouldClose((GLFWwindow*)m_window, true);
-};
+void WindowSystem::close() {};
 
 void WindowSystem::resize(uint32_t width, uint32_t height)
 {
@@ -251,19 +248,7 @@ SmallVector<const char*> WindowSystem::getRequiredExtensions()
     return extensions;
 }
 
-bool WindowSystem::initUI()
+void* aph::WindowSystem::getNativeHandle()
 {
-    if (m_enabledUI)
-    {
-        return ImGui_ImplSDL3_InitForVulkan((SDL_Window*)m_window);
-    }
-    return false;
-};
-
-void WindowSystem::deInitUI() const
-{
-    if (m_enabledUI)
-    {
-        ImGui_ImplSDL3_Shutdown();
-    }
+    return m_window;
 }

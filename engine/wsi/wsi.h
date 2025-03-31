@@ -28,9 +28,8 @@ protected:
     WindowSystem(const WindowSystemCreateInfo& createInfo)
         : m_width{ createInfo.width }
         , m_height(createInfo.height)
-        , m_enabledUI(createInfo.enableUI)
     {
-        init();
+        initialize();
     }
 
 public:
@@ -44,8 +43,6 @@ public:
     virtual ~WindowSystem();
 
 public:
-    bool initUI();
-    void deInitUI() const;
     uint32_t getWidth() const
     {
         return m_width;
@@ -59,6 +56,8 @@ public:
     SmallVector<const char*> getRequiredExtensions();
 
     ::vk::SurfaceKHR getSurface(vk::Instance* instance);
+
+    void* getNativeHandle();
 
     template <typename TEvent>
     void registerEvent(TEvent&& callback)
@@ -75,12 +74,11 @@ public:
     void close();
 
 protected:
-    void init();
+    void initialize();
 
     void* m_window = {};
     uint32_t m_width = {};
     uint32_t m_height = {};
-    bool m_enabledUI = {};
 
     EventManager& m_eventManager = APH_DEFAULT_EVENT_MANAGER;
 };

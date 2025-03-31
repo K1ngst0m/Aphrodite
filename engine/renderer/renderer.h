@@ -4,7 +4,6 @@
 #include "global/globalManager.h"
 #include "renderGraph/renderGraph.h"
 #include "resource/resourceLoader.h"
-#include "uiRenderer.h"
 
 namespace aph
 {
@@ -48,15 +47,10 @@ public:
     {
         return m_pDevice.get();
     }
-    vk::UI* getUI() const
-    {
-        return m_pUI.get();
-    }
     WindowSystem* getWindowSystem() const
     {
         return m_pWindowSystem.get();
     }
-
 
     const RenderConfig& getConfig() const
     {
@@ -98,7 +92,6 @@ protected:
     vk::SwapChain* m_pSwapChain = {};
     std::unique_ptr<ResourceLoader> m_pResourceLoader;
     std::unique_ptr<vk::Device> m_pDevice = {};
-    std::unique_ptr<vk::UI> m_pUI = {};
     std::unique_ptr<WindowSystem> m_pWindowSystem = {};
     TaskManager& m_taskManager = APH_DEFAULT_TASK_MANAGER;
 
