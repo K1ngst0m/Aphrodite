@@ -237,22 +237,6 @@ void Renderer::load()
     // }
 };
 
-coro::generator<RenderGraph*> Renderer::recordGraph()
-{
-    APH_PROFILER_SCOPE();
-    auto group = m_taskManager.createTaskGroup("record render graph");
-    for (auto& pGraph : m_frameGraph)
-    {
-        co_yield pGraph.get();
-        group->addTask(
-            [](vk::SwapChain* swapchain, RenderGraph* graph) -> TaskType
-            {
-                graph->build(swapchain);
-                co_return { Result::Success };
-            }(m_pSwapChain, pGraph.get()));
-    }
-    APH_VR(group->submit());
-}
 void Renderer::render()
 {
     APH_PROFILER_SCOPE();
@@ -262,5 +246,27 @@ void Renderer::render()
     m_frameGraph[m_frameIdx]->execute();
     // m_pDevice->endCapture();
     m_frameCPUTime = m_timer.interval(TIMER_TAG_FRAME);
+}
+
+coro::generator<Renderer::FrameResource> Renderer::loop()
+{
+    while (m_pWindowSystem->update())
+    {
+        update();
+        co_yield FrameResource{
+            .pGraph = m_frameGraph[m_frameIdx].get(),
+            .frameIdx = m_frameIdx,
+        };
+        render();
+    }
+}
+
+coro::generator<RenderGraph*> Renderer::setupGraph()
+{
+    APH_PROFILER_SCOPE();
+    for (auto& pGraph : m_frameGraph)
+    {
+        co_yield pGraph.get();
+    }
 }
 } // namespace aph

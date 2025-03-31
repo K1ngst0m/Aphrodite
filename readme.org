@@ -141,8 +141,8 @@
   - Frame Graph Operations
 
     #+BEGIN_SRC cpp
-    // record graph execution
-    for (auto* graph : m_renderer->recordGraph())
+    // setup graph
+    for (auto* graph : m_renderer->setupGraph())
     {
         auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
         drawPass->setColorOut("render output",
@@ -183,10 +183,18 @@
 
     // render loop
     {
-        // ...
-        m_renderer->update();
-        m_renderer->render();
-        // ...
+        // Use coroutine-based frame loop
+        for (auto frameResource : m_renderer->loop())
+        {
+            // Making some Per-loop operations:
+            // - Scene updates (transformations, animations)
+            // - Input processing and camera updates
+            // - GPU resource updates (uniforms, textures)
+            // ...
+            
+            // Build this frame's render graph
+            buildGraph(frameResource.pGraph);  
+        }
     }
     #+END_SRC
 
@@ -224,7 +232,7 @@
     }
 
     // record graph execution
-    for (auto* graph : m_renderer->recordGraph())
+    for (auto* graph : m_renderer->setupGraph())
     {
         auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
         // ...

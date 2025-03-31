@@ -30,7 +30,6 @@ public:
 public:
     void load();
     void unload();
-    void update();
 
 public:
     vk::Instance* getInstance() const
@@ -58,8 +57,6 @@ public:
         return m_pWindowSystem.get();
     }
 
-    coro::generator<RenderGraph*> recordGraph();
-    void render();
 
     const RenderConfig& getConfig() const
     {
@@ -75,11 +72,25 @@ public:
         return m_frameCPUTime;
     }
 
+public:
+    coro::generator<RenderGraph*> setupGraph();
+
+    struct FrameResource
+    {
+        RenderGraph* pGraph;
+        uint32_t frameIdx;
+    };
+    coro::generator<FrameResource> loop();
+
+private:
+    void update();
+    void render();
+    SmallVector<std::unique_ptr<RenderGraph>> m_frameGraph;
+
 protected:
     RenderConfig m_config = {};
 
 protected:
-    SmallVector<std::unique_ptr<RenderGraph>> m_frameGraph;
     uint32_t m_frameIdx = {};
 
 protected:

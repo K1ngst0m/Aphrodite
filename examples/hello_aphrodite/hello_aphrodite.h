@@ -25,6 +25,8 @@ private:
     void unload() override;
     void finish() override;
 
+    void buildGraph(aph::RenderGraph* pGraph);
+
 private:
     aph::vk::Buffer* m_pVertexBuffer = {};
     aph::vk::Buffer* m_pIndexBuffer = {};

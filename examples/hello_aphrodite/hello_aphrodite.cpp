@@ -281,95 +281,33 @@ void HelloAphrodite::init()
         loadRequest.load();
     }
 
-    // record graph execution
+    for (auto* graph : m_renderer->setupGraph())
     {
-        for (auto* graph : m_renderer->recordGraph())
-        {
-            auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
-            drawPass->setColorOut("render output",
-                                  {
-                                      .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
-                                      .format = m_pSwapChain->getFormat(),
-                                  });
-            drawPass->setDepthStencilOut("depth buffer",
-                                         {
-                                             .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
-                                             .format = aph::Format::D32,
-                                         });
-            drawPass->addTextureIn("container texture", m_pImage);
-            drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
+        auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
+        drawPass->setColorOut("render output", {
+                                                   .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+                                                   .format = m_pSwapChain->getFormat(),
+                                               });
+        drawPass->setDepthStencilOut("depth buffer",
+                                     {
+                                         .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+                                         .format = aph::Format::D32,
+                                     });
+        drawPass->addTextureIn("container texture", m_pImage);
+        drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
 
-            graph->setBackBuffer("render output");
-
-            drawPass->recordExecute(
-                [this](auto* pCmd)
-                {
-                    pCmd->setDepthState({
-                        .enable = true,
-                        .write = true,
-                        .compareOp = aph::CompareOp::Less,
-                    });
-
-                    switch (m_shadingType)
-                    {
-                    case ShadingType::Geometry:
-                    {
-                        pCmd->beginDebugLabel({
-                            .name = "geometry shading path",
-                            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-                        });
-                        pCmd->setProgram(m_program[ShadingType::Geometry]);
-                        pCmd->bindVertexBuffers(m_pVertexBuffer);
-                        pCmd->bindIndexBuffers(m_pIndexBuffer);
-                        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-                        pCmd->setResource({ m_pImage }, 1, 0);
-                        pCmd->setResource({ m_pSampler }, 1, 1);
-                        pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
-                        pCmd->endDebugLabel();
-                    }
-                    break;
-                    case ShadingType::Mesh:
-                    {
-                        pCmd->beginDebugLabel({
-                            .name = "mesh shading path",
-                            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-                        });
-                        pCmd->setProgram(m_program[ShadingType::Mesh]);
-                        pCmd->setResource({ m_pMatrixBffer }, 0, 0);
-                        pCmd->setResource({ m_pImage }, 1, 0);
-                        pCmd->setResource({ m_pSampler }, 1, 1);
-                        pCmd->setResource({ m_pVertexBuffer }, 0, 1);
-                        pCmd->setResource({ m_pIndexBuffer }, 0, 2);
-                        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
-                        pCmd->endDebugLabel();
-                    }
-                    break;
-                    case ShadingType::MeshBindless:
-                    {
-                        pCmd->beginDebugLabel({
-                            .name = "mesh shading path (bindless)",
-                            .color = { 0.5f, 0.3f, 0.2f, 1.0f },
-                        });
-                        pCmd->setProgram(m_program[ShadingType::MeshBindless]);
-                        pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
-                        pCmd->endDebugLabel();
-                    }
-                    break;
-                    }
-                });
-        }
+        graph->setBackBuffer("render output");
     }
 }
 
 void HelloAphrodite::loop()
 {
-    while (m_pWindowSystem->update())
+    for (auto frameResource : m_renderer->loop())
     {
         APH_PROFILER_FRAME("application loop");
         m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
         m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
-        m_renderer->update();
-        m_renderer->render();
+        buildGraph(frameResource.pGraph);
     }
 }
 
@@ -431,6 +369,69 @@ void HelloAphrodite::switchShadingType(std::string_view value)
     switchShadingType(type);
 }
 
+void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
+{
+    auto drawPass = pGraph->getPass("drawing cube");
+
+    drawPass->recordExecute(
+        [this](auto* pCmd)
+        {
+            pCmd->setDepthState({
+                .enable = true,
+                .write = true,
+                .compareOp = aph::CompareOp::Less,
+            });
+
+            switch (m_shadingType)
+            {
+            case ShadingType::Geometry:
+            {
+                pCmd->beginDebugLabel({
+                    .name = "geometry shading path",
+                    .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+                });
+                pCmd->setProgram(m_program[ShadingType::Geometry]);
+                pCmd->bindVertexBuffers(m_pVertexBuffer);
+                pCmd->bindIndexBuffers(m_pIndexBuffer);
+                pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+                pCmd->setResource({ m_pImage }, 1, 0);
+                pCmd->setResource({ m_pSampler }, 1, 1);
+                pCmd->drawIndexed({ 36, 1, 0, 0, 0 });
+                pCmd->endDebugLabel();
+            }
+            break;
+            case ShadingType::Mesh:
+            {
+                pCmd->beginDebugLabel({
+                    .name = "mesh shading path",
+                    .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+                });
+                pCmd->setProgram(m_program[ShadingType::Mesh]);
+                pCmd->setResource({ m_pMatrixBffer }, 0, 0);
+                pCmd->setResource({ m_pImage }, 1, 0);
+                pCmd->setResource({ m_pSampler }, 1, 1);
+                pCmd->setResource({ m_pVertexBuffer }, 0, 1);
+                pCmd->setResource({ m_pIndexBuffer }, 0, 2);
+                pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+                pCmd->endDebugLabel();
+            }
+            break;
+            case ShadingType::MeshBindless:
+            {
+                pCmd->beginDebugLabel({
+                    .name = "mesh shading path (bindless)",
+                    .color = { 0.5f, 0.3f, 0.2f, 1.0f },
+                });
+                pCmd->setProgram(m_program[ShadingType::MeshBindless]);
+                pCmd->draw(aph::DispatchArguments{ 1, 1, 1 });
+                pCmd->endDebugLabel();
+            }
+            break;
+            }
+        });
+    pGraph->build(m_pSwapChain);
+}
+
 int main(int argc, char** argv)
 {
     HelloAphrodite app{};
@@ -445,3 +446,4 @@ int main(int argc, char** argv)
 
     app.run();
 }
+

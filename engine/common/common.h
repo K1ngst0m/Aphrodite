@@ -69,6 +69,12 @@ APH_ALWAYS_INLINE void APH_ASSERT(const T& condition, const std::source_location
 inline void APH_ASSERT(bool condition) {};
 #endif
 
+template <typename T>
+APH_ALWAYS_INLINE void ASSERT(const T& condition, const std::source_location& loc = std::source_location::current())
+{
+    APH_ASSERT(condition, loc);
+}
+
 class TracedException : public std::runtime_error
 {
 public:
@@ -143,12 +149,12 @@ private:
 struct [[nodiscard("Result should be handled.")]] ResultGroup
 {
     APH_ALWAYS_INLINE ResultGroup() = default;
-    
+
     APH_ALWAYS_INLINE ResultGroup(const Result& result)
     {
         append(result);
     }
-    
+
     APH_ALWAYS_INLINE ResultGroup(Result&& result)
     {
         append(std::move(result));
@@ -163,7 +169,7 @@ struct [[nodiscard("Result should be handled.")]] ResultGroup
     {
         if (code != Result::Success)
             m_hasFailure = true;
-            
+
         m_results.emplace_back(code, msg);
     }
 
@@ -171,19 +177,19 @@ struct [[nodiscard("Result should be handled.")]] ResultGroup
     {
         if (!result.success())
             m_hasFailure = true;
-            
+
         m_results.push_back(std::move(result));
     }
-    
+
     APH_ALWAYS_INLINE void append(const Result& result)
     {
         if (!result.success())
             m_hasFailure = true;
-            
+
         m_results.push_back(result);
     }
 
-    template<typename T>
+    template <typename T>
     APH_ALWAYS_INLINE ResultGroup& operator+=(T&& result)
     {
         append(std::forward<T>(result));
