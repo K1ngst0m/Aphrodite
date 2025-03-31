@@ -130,9 +130,9 @@ target_compile_definitions(vulkan-registry INTERFACE
 )
 
 # wsi backend
-set(VALID_WSI_BACKENDS Auto GLFW SDL)
+set(VALID_WSI_BACKENDS Auto SDL)
 if(NOT (APH_WSI_BACKEND IN_LIST VALID_WSI_BACKENDS))
-    message(FATAL_ERROR "Wrong value passed for APH_WSI_BACKEND, use one of: Auto, GLFW, SDL")
+    message(FATAL_ERROR "Wrong value passed for APH_WSI_BACKEND, use one of: Auto, SDL")
 endif()
 
 if(APH_WSI_BACKEND STREQUAL "Auto")
@@ -140,22 +140,7 @@ if(APH_WSI_BACKEND STREQUAL "Auto")
   set(APH_WSI_BACKEND "SDL")
 endif()
 
-if(APH_WSI_BACKEND STREQUAL "GLFW")
-  set(APH_WSI_BACKEND_IS_GLFW "ON")
-    CPMAddPackage(
-            NAME GLFW
-            GITHUB_REPOSITORY glfw/glfw
-            GIT_TAG 3.3.9
-            OPTIONS
-                "GLFW_BUILD_TESTS OFF"
-                "GLFW_BUILD_EXAMPLES OFF"
-                "GLFW_BULID_DOCS OFF"
-                "GLFW_INSTALL OFF"
-    )
-    if(NOT GLFW_ADDED)
-        message(FATAL_ERROR "GLFW3 library not found!")
-    endif()
-elseif(APH_WSI_BACKEND STREQUAL "SDL")
+if(APH_WSI_BACKEND STREQUAL "SDL")
   set(APH_WSI_BACKEND_IS_SDL "ON")
     CPMAddPackage(
       NAME SDL
@@ -195,14 +180,11 @@ add_library(imgui STATIC
   ${imgui_SOURCE_DIR}/imgui_tables.cpp
   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
-
-  $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp>
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
 )
 target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 target_link_libraries(imgui
   PRIVATE
-  $<$<BOOL:${APH_WSI_BACKEND_IS_GLFW}>:glfw>
-  $<$<BOOL:${APH_WSI_BACKEND_IS_SDL}>:SDL3::SDL3-static>
+  SDL3::SDL3-static
 )
 target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)
