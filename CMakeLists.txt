@@ -20,6 +20,7 @@ aph_option(APH_WSI_BACKEND "WSI backend (possible values: Auto, GLFW, SDL)" "Aut
 include(AphDefinitions)
 include(AphCompilerOptions)
 include(AphExternal)
+include(IncludeSorter)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${APH_OUTPUT_DIR}/debug")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${APH_OUTPUT_DIR}/release")
@@ -30,3 +31,6 @@ add_subdirectory(examples)
 if (APH_ENABLE_TESTING)
     add_subdirectory(tests)
 endif()
+
+# Add global include check targets
+aph_add_global_include_check_targets()

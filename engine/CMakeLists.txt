@@ -51,3 +51,6 @@ target_link_libraries(aph-engine PUBLIC
 )
 
 add_library(aphrodite::engine ALIAS aph-engine)
+
+# Add include checking for the engine target
+aph_add_include_check_targets(aph-engine)
