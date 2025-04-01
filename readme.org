@@ -39,15 +39,18 @@
   ./bin/release/hello_aphrodite
   #+END_SRC
 
-** Examples
+** Usage and Examples
 
   Aphrodite includes several examples to demonstrate key engine features:
 
 *** [[./examples/hello_aphrodite][Hello Aphrodite]]
   A basic example showcasing the core rendering features of the engine:
-  - Three rendering approaches: geometry shading, mesh shading, and bindless mesh shading
-  - Resource loading system
-  - Render-graph recording
+  - Resource Loading (buffers, images, shaders)
+  - Frame Graph Setup and Management
+  - Render Loop Implementation
+  - Command Buffer Recording
+  - Bindless Resource System
+  - Application Configuration
 
 *** [[./examples/render_graph_visualizer][Render Graph Visualizer]]
   A utility example that demonstrates Aphrodite's render graph system in dry run mode:
@@ -56,18 +59,7 @@
   - Demonstrates dependency analysis
   - Includes simple and complex rendering pipeline examples
 
-** Usage
-
-  For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
-
-  The [[./examples/hello_aphrodite][Hello Aphrodite]] example provides comprehensive code samples demonstrating key Aphrodite engine features, including:
-
-  - Resource Loading (buffers, images, shaders)
-  - Frame Graph Setup and Management
-  - Render Loop Implementation
-  - Command Buffer Recording
-  - Bindless Resource System
-  - Application Configuration
+For complete and most recent examples, please refer to the ~examples/xxxx/~ directory.
 
 ** Third Party Libraries
 
