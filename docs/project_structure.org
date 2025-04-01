@@ -1,0 +1,44 @@
+#+TITLE: Project Structure
+#+AUTHOR: 
+#+DATE: 
+
+* Core Directories
+
+** src/
+The main source code directory containing all Aphrodite engine components:
+
+*** Engine Components
+- =api/= - Backend API implementations (Vulkan)
+- =app/= - Application framework
+- =common/= - Common utilities and definitions
+- =engine/= - Core engine functionality
+- =event/= - Event system
+- =filesystem/= - File system utilities
+- =global/= - Global state and configuration
+- =input/= - Input handling
+- =math/= - Mathematical utilities
+- =module/= - Modular components
+- =renderGraph/= - Render graph system
+- =resource/= - Resource management
+- =scene/= - Scene graph and management
+- =threads/= - Threading and concurrency
+- =ui/= - User interface components
+- =wsi/= - Window System Integration
+
+** examples/
+Contains example applications demonstrating Aphrodite engine features:
+
+- =hello_aphrodite/= - Basic example showing core rendering features
+- =render_graph_visualizer/= - Utility for visualizing render graph structures
+
+** docs/
+Documentation for various aspects of the engine:
+
+** assets/
+Engine assets such as textures, models, and shaders.
+
+** scripts/
+Utility scripts for development and maintenance.
+
+** patches/
+External library code patches.
