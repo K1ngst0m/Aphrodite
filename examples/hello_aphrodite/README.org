@@ -169,7 +169,7 @@ for (auto frameResource : m_renderer->loop())
 {
     APH_PROFILER_FRAME("application loop");
     // Scene updates (transformations, animations)
-    m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+    m_mvp.model = aph::Rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
     // GPU resource updates (uniforms, textures)
     m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
     
