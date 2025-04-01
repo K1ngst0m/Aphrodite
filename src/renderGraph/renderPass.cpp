@@ -19,10 +19,10 @@ PassBufferResource* RenderPass::addBufferIn(const std::string& name, vk::Buffer*
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for buffer '%s'", m_name.c_str(), name.c_str());
     res->addUsage(usage);
-    
+
     // Get appropriate access flags and resource state based on usage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
-    
+
     // Track special collection membership based on usage
     if (usage & BufferUsage::Uniform)
     {
@@ -32,18 +32,18 @@ PassBufferResource* RenderPass::addBufferIn(const std::string& name, vk::Buffer*
     {
         m_res.storageBufferIn.push_back(res);
     }
-    
+
     res->addAccessFlags(accessFlags);
     m_res.resourceStateMap[res] = state;
-    
+
     if (pBuffer)
     {
         m_pRenderGraph->importPassResource(name, pBuffer);
     }
-    
+
     // Mark the graph as having buffer resources changed
     m_pRenderGraph->markResourcesChanged(PassResource::Type::Buffer);
-    
+
     return res;
 }
 
@@ -54,16 +54,16 @@ PassBufferResource* RenderPass::addBufferOut(const std::string& name, BufferUsag
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for buffer '%s'", m_name.c_str(), name.c_str());
     res->addUsage(usage);
-    
+
     // Get appropriate access flags and resource state based on usage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, true);
-    
+
     // Track special collection membership based on usage
     if (usage & BufferUsage::Storage)
     {
         m_res.storageBufferOut.push_back(res);
     }
-    
+
     res->addAccessFlags(accessFlags);
     m_res.resourceStateMap[res] = state;
 
@@ -79,10 +79,10 @@ PassImageResource* RenderPass::addTextureOut(const std::string& name, ImageUsage
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for texture '%s'", m_name.c_str(), name.c_str());
     res->addUsage(usage);
-    
+
     // Get appropriate access flags and resource state based on usage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, true);
-    
+
     res->addAccessFlags(accessFlags);
     m_res.resourceStateMap[res] = state;
     m_res.textureOut.push_back(res);
@@ -99,10 +99,10 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for texture '%s'", m_name.c_str(), name.c_str());
     res->addUsage(usage);
-    
+
     // Get appropriate access flags and resource state based on usage
     auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
-    
+
     res->addAccessFlags(accessFlags);
     m_res.resourceStateMap[res] = state;
     m_res.textureIn.push_back(res);

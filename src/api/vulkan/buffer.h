@@ -24,6 +24,7 @@ public:
     {
         return m_createInfo.size;
     }
+
 private:
     Buffer(const CreateInfoType& createInfo, HandleType handle);
 };

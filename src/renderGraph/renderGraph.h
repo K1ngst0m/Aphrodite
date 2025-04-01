@@ -113,7 +113,7 @@ private:
         m_dirtyFlags |= flags;
     }
 
-    void markResourcesChanged(PassResource::Type type) 
+    void markResourcesChanged(PassResource::Type type)
     {
         if (type == PassResource::Type::Image)
         {

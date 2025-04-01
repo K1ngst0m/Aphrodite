@@ -830,7 +830,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage us
 {
     ResourceState state = ResourceState::General;
     ::vk::AccessFlagBits2 accessFlags = ::vk::AccessFlagBits2::eShaderRead;
-    
+
     if (usage & BufferUsage::Uniform)
     {
         state = ResourceState::UniformBuffer;
@@ -872,15 +872,16 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(BufferUsage us
         state = ResourceState::General;
         accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
     }
-    
+
     return { state, accessFlags };
 }
 
 std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usage, bool isWrite)
 {
     ResourceState state = ResourceState::General;
-    ::vk::AccessFlagBits2 accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
-    
+    ::vk::AccessFlagBits2 accessFlags =
+        isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
+
     if (usage & ImageUsage::Sampled)
     {
         state = ResourceState::ShaderResource;
@@ -904,12 +905,14 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
     else if (usage & ImageUsage::ColorAttachment)
     {
         state = ResourceState::RenderTarget;
-        accessFlags = isWrite ? ::vk::AccessFlagBits2::eColorAttachmentWrite : ::vk::AccessFlagBits2::eColorAttachmentRead;
+        accessFlags =
+            isWrite ? ::vk::AccessFlagBits2::eColorAttachmentWrite : ::vk::AccessFlagBits2::eColorAttachmentRead;
     }
     else if (usage & ImageUsage::DepthStencil)
     {
         state = ResourceState::DepthStencil;
-        accessFlags = isWrite ? ::vk::AccessFlagBits2::eDepthStencilAttachmentWrite : ::vk::AccessFlagBits2::eDepthStencilAttachmentRead;
+        accessFlags = isWrite ? ::vk::AccessFlagBits2::eDepthStencilAttachmentWrite :
+                                ::vk::AccessFlagBits2::eDepthStencilAttachmentRead;
     }
     else
     {
@@ -918,7 +921,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
         state = ResourceState::General;
         accessFlags = isWrite ? ::vk::AccessFlagBits2::eShaderWrite : ::vk::AccessFlagBits2::eShaderRead;
     }
-    
+
     return { state, accessFlags };
 }
 
@@ -1037,9 +1040,7 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
     vkBufferImageCopy.imageSubresource = VkCast(bufferImageCopy.imageSubresource);
     vkBufferImageCopy.imageOffset = VkCast(bufferImageCopy.imageOffset);
     vkBufferImageCopy.imageExtent = ::vk::Extent3D(
-        bufferImageCopy.imageExtent.width,
-        bufferImageCopy.imageExtent.height,
-        bufferImageCopy.imageExtent.depth);
+        bufferImageCopy.imageExtent.width, bufferImageCopy.imageExtent.height, bufferImageCopy.imageExtent.depth);
     return vkBufferImageCopy;
 }
 
@@ -1047,23 +1048,40 @@ std::tuple<ResourceState, ::vk::AccessFlagBits2> getResourceState(ImageUsage usa
 {
     switch (stage)
     {
-    case PipelineStage::TopOfPipe: return ::vk::PipelineStageFlagBits::eTopOfPipe;
-    case PipelineStage::DrawIndirect: return ::vk::PipelineStageFlagBits::eDrawIndirect;
-    case PipelineStage::VertexInput: return ::vk::PipelineStageFlagBits::eVertexInput;
-    case PipelineStage::VertexShader: return ::vk::PipelineStageFlagBits::eVertexShader;
-    case PipelineStage::TessellationControl: return ::vk::PipelineStageFlagBits::eTessellationControlShader;
-    case PipelineStage::TessellationEvaluation: return ::vk::PipelineStageFlagBits::eTessellationEvaluationShader;
-    case PipelineStage::GeometryShader: return ::vk::PipelineStageFlagBits::eGeometryShader;
-    case PipelineStage::FragmentShader: return ::vk::PipelineStageFlagBits::eFragmentShader;
-    case PipelineStage::EarlyFragmentTests: return ::vk::PipelineStageFlagBits::eEarlyFragmentTests;
-    case PipelineStage::LateFragmentTests: return ::vk::PipelineStageFlagBits::eLateFragmentTests;
-    case PipelineStage::ColorAttachmentOutput: return ::vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    case PipelineStage::ComputeShader: return ::vk::PipelineStageFlagBits::eComputeShader;
-    case PipelineStage::Transfer: return ::vk::PipelineStageFlagBits::eTransfer;
-    case PipelineStage::BottomOfPipe: return ::vk::PipelineStageFlagBits::eBottomOfPipe;
-    case PipelineStage::Host: return ::vk::PipelineStageFlagBits::eHost;
-    case PipelineStage::AllGraphics: return ::vk::PipelineStageFlagBits::eAllGraphics;
-    case PipelineStage::AllCommands: return ::vk::PipelineStageFlagBits::eAllCommands;
+    case PipelineStage::TopOfPipe:
+        return ::vk::PipelineStageFlagBits::eTopOfPipe;
+    case PipelineStage::DrawIndirect:
+        return ::vk::PipelineStageFlagBits::eDrawIndirect;
+    case PipelineStage::VertexInput:
+        return ::vk::PipelineStageFlagBits::eVertexInput;
+    case PipelineStage::VertexShader:
+        return ::vk::PipelineStageFlagBits::eVertexShader;
+    case PipelineStage::TessellationControl:
+        return ::vk::PipelineStageFlagBits::eTessellationControlShader;
+    case PipelineStage::TessellationEvaluation:
+        return ::vk::PipelineStageFlagBits::eTessellationEvaluationShader;
+    case PipelineStage::GeometryShader:
+        return ::vk::PipelineStageFlagBits::eGeometryShader;
+    case PipelineStage::FragmentShader:
+        return ::vk::PipelineStageFlagBits::eFragmentShader;
+    case PipelineStage::EarlyFragmentTests:
+        return ::vk::PipelineStageFlagBits::eEarlyFragmentTests;
+    case PipelineStage::LateFragmentTests:
+        return ::vk::PipelineStageFlagBits::eLateFragmentTests;
+    case PipelineStage::ColorAttachmentOutput:
+        return ::vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    case PipelineStage::ComputeShader:
+        return ::vk::PipelineStageFlagBits::eComputeShader;
+    case PipelineStage::Transfer:
+        return ::vk::PipelineStageFlagBits::eTransfer;
+    case PipelineStage::BottomOfPipe:
+        return ::vk::PipelineStageFlagBits::eBottomOfPipe;
+    case PipelineStage::Host:
+        return ::vk::PipelineStageFlagBits::eHost;
+    case PipelineStage::AllGraphics:
+        return ::vk::PipelineStageFlagBits::eAllGraphics;
+    case PipelineStage::AllCommands:
+        return ::vk::PipelineStageFlagBits::eAllCommands;
     default:
         APH_ASSERT(false && "Unhandled PipelineStage in VkCast");
         return ::vk::PipelineStageFlagBits::eBottomOfPipe;

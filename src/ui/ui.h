@@ -20,7 +20,7 @@ class Device;
 class SwapChain;
 class Instance;
 class Queue;
-}
+} // namespace aph::vk
 
 namespace aph
 {

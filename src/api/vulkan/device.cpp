@@ -253,7 +253,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     }
 
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
-    for (auto setLayout: createInfo.pPipelineLayout->getSetLayouts())
+    for (auto setLayout : createInfo.pPipelineLayout->getSetLayouts())
     {
         vkSetLayouts.push_back(setLayout->getHandle());
     }

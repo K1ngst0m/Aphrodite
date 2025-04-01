@@ -96,15 +96,15 @@ Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcep
             {
                 ++bit_offset;
             }
-            
+
             if (bit_offset >= value.size())
             {
                 break; // no more set bits
             }
-            
+
             // Start of a range of ones
             uint32_t start_pos = bit_offset;
-            
+
             // Count consecutive ones
             uint32_t length = 0;
             while (bit_offset < value.size() && value.test(bit_offset))
@@ -112,7 +112,7 @@ Generator<std::pair<uint32_t, uint32_t>> forEachBitRange(TBitwise value) noexcep
                 ++bit_offset;
                 ++length;
             }
-            
+
             co_yield { start_pos, length };
         }
     }

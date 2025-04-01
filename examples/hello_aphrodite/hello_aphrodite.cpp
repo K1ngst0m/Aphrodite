@@ -106,9 +106,7 @@ void HelloAphrodite::init()
 
     // setup window
     aph::EngineConfig config;
-    config.setMaxFrames(3)
-          .setWidth(getOptions().getWindowWidth())
-          .setHeight(getOptions().getWindowHeight());
+    config.setMaxFrames(3).setWidth(getOptions().getWindowWidth()).setHeight(getOptions().getWindowHeight());
 
     m_engine = aph::Engine::Create(config);
     m_pDevice = m_engine->getDevice();

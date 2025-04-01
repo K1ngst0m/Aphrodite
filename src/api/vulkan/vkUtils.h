@@ -163,8 +163,8 @@ inline void VK_VR(T result, const std::source_location source = std::source_loca
     {
         if (result != VK_SUCCESS)
         {
-            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d",
-                       utils::errorString(result).c_str(), source.function_name(), source.file_name(), source.line());
+            VK_LOG_ERR("Fatal : VkResult is \"%s\" in function[%s], %s:%d", utils::errorString(result).c_str(),
+                       source.function_name(), source.file_name(), source.line());
             std::abort();
         }
     }

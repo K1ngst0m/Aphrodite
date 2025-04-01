@@ -82,10 +82,10 @@ Engine::Engine(const EngineConfig& config)
     // create window system
     {
         WindowSystemCreateInfo wsi_create_info = config.getWindowSystemCreateInfo();
-        
+
         wsi_create_info.width = config.getWidth();
         wsi_create_info.height = config.getHeight();
-        
+
         m_pWindowSystem = WindowSystem::Create(wsi_create_info);
     }
 
@@ -93,11 +93,11 @@ Engine::Engine(const EngineConfig& config)
     {
         APH_PROFILER_SCOPE();
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
-        
+
         auto instanceCreateInfo = config.getInstanceCreateInfo();
-        
+
         auto requiredExtensions = m_pWindowSystem->getRequiredExtensions();
-        
+
 #ifdef APH_DEBUG
         requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         requiredExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
@@ -127,7 +127,7 @@ Engine::Engine(const EngineConfig& config)
     {
         uint32_t gpuIdx = 0;
         auto createInfo = config.getDeviceCreateInfo();
-        
+
         createInfo.pPhysicalDevice = m_pInstance->getPhysicalDevices(gpuIdx);
         createInfo.pInstance = m_pInstance;
 
@@ -140,7 +140,7 @@ Engine::Engine(const EngineConfig& config)
 
     {
         auto createInfo = config.getSwapChainCreateInfo();
-        
+
         createInfo.pInstance = m_pInstance;
         createInfo.pWindowSystem = m_pWindowSystem.get();
         createInfo.pQueue = m_pDevice->getQueue(QueueType::Graphics);
@@ -169,11 +169,12 @@ Engine::Engine(const EngineConfig& config)
             }(m_frameGraph, m_pDevice.get()));
 
         postDeviceGroup->addTask(
-            [](std::unique_ptr<ResourceLoader>& resourceLoader, vk::Device* pDevice, const ResourceLoaderCreateInfo& createInfo) -> TaskType
+            [](std::unique_ptr<ResourceLoader>& resourceLoader, vk::Device* pDevice,
+               const ResourceLoaderCreateInfo& createInfo) -> TaskType
             {
                 ResourceLoaderCreateInfo loaderCreateInfo = createInfo;
                 loaderCreateInfo.pDevice = pDevice;
-                
+
                 resourceLoader = std::make_unique<ResourceLoader>(loaderCreateInfo);
                 if (!resourceLoader)
                 {
@@ -186,12 +187,12 @@ Engine::Engine(const EngineConfig& config)
 
     {
         auto uiCreateInfo = config.getUICreateInfo();
-        
+
         uiCreateInfo.pInstance = m_pInstance;
         uiCreateInfo.pDevice = m_pDevice.get();
         uiCreateInfo.pSwapchain = m_pSwapChain;
         uiCreateInfo.pWindow = m_pWindowSystem.get();
-        
+
         postDeviceGroup->addTask(
             [](const UICreateInfo& createInfo, std::unique_ptr<UI>& ui) -> TaskType
             {
@@ -278,4 +279,4 @@ coro::generator<RenderGraph*> Engine::setupGraph()
         co_yield pGraph.get();
     }
 }
-} // namespace aph 
+} // namespace aph

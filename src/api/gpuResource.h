@@ -580,7 +580,7 @@ enum class AttachmentStoreOp : uint8_t
 
 struct ClearColorValue
 {
-    union 
+    union
     {
         float float32[4];
         int32_t int32[4];
@@ -615,7 +615,7 @@ struct Rect2D
     Extent2D extent{};
 };
 
-struct Offset3D 
+struct Offset3D
 {
     int32_t x{};
     int32_t y{};

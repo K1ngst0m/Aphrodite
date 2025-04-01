@@ -81,7 +81,7 @@ BindlessResource::BindlessResource(Device* pDevice)
 
     // Create pipeline layout resource
     {
-        PipelineLayoutCreateInfo createInfo{ };
+        PipelineLayoutCreateInfo createInfo{};
         createInfo.setLayouts.resize(eUpperBound);
         createInfo.setLayouts[eResourceSetIdx] = m_resourceData.pSetLayout;
         createInfo.setLayouts[eHandleSetIdx] = m_handleData.pSetLayout;

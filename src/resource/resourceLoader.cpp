@@ -123,7 +123,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                 uint32_t width = imageCI.extent.width;
                 uint32_t height = imageCI.extent.height;
                 uint32_t mipLevels = 1;
-                
+
                 // Calculate how many mip levels we can generate
                 while (width > 1 || height > 1)
                 {
@@ -131,7 +131,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
                     height = std::max(1u, height / 2);
                     mipLevels++;
                 }
-                
+
                 imageCI.mipLevels = mipLevels;
             }
         }
