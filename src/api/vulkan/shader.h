@@ -9,14 +9,41 @@
 
 namespace aph::vk
 {
-struct PipelineLayout
-{
-    VertexInput vertexInput = {};
-    ::vk::PushConstantRange pushConstantRange = {};
 
+struct PipelineLayoutCreateInfo
+{
+    VertexInput vertexInput;
+    ::vk::PushConstantRange pushConstantRange = {};
     SmallVector<DescriptorSetLayout*> setLayouts = {};
-    ::vk::PipelineLayout handle = {};
-    PipelineType type = {};
+};
+
+class PipelineLayout : public ResourceHandle<::vk::PipelineLayout, PipelineLayoutCreateInfo>
+{
+public:
+    PipelineLayout(CreateInfoType createInfo, ::vk::PipelineLayout handle)
+        : ResourceHandle(handle, createInfo)
+    {
+    }
+
+    const VertexInput& getVertexInput() noexcept
+    {
+        return getCreateInfo().vertexInput;
+    }
+
+    const ::vk::PushConstantRange& getPushConstantRange() const noexcept
+    {
+        return getCreateInfo().pushConstantRange;
+    }
+
+    const SmallVector<DescriptorSetLayout*>& getSetLayouts() const noexcept
+    {
+        return getCreateInfo().setLayouts;
+    }
+
+    DescriptorSetLayout* getSetLayout(uint32_t setIdx) const noexcept
+    {
+        return getCreateInfo().setLayouts.at(setIdx);
+    }
 };
 
 struct ImmutableSamplerBank
@@ -66,13 +93,13 @@ class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 public:
     const VertexInput& getVertexInput() const
     {
-        return m_pipelineLayout.vertexInput;
+        return m_pipelineLayout->getVertexInput();
     }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) const
     {
-        if (m_pipelineLayout.setLayouts.size() > setIdx)
+        if (m_pipelineLayout->getSetLayouts().size() > setIdx)
         {
-            return m_pipelineLayout.setLayouts[setIdx];
+            return m_pipelineLayout->getSetLayout(setIdx);
         }
         return nullptr;
     }
@@ -95,26 +122,28 @@ public:
     }
     ::vk::PipelineLayout getPipelineLayout() const
     {
-        return m_pipelineLayout.handle;
+        return m_pipelineLayout->getHandle();
     }
+
     PipelineType getPipelineType() const
     {
-        return m_pipelineLayout.type;
+        return m_pipelineType;
     }
 
     const ::vk::PushConstantRange& getPushConstantRange() const
     {
-        return m_pipelineLayout.pushConstantRange;
+        return m_pipelineLayout->getPushConstantRange();
     }
 
 private:
-    ShaderProgram(CreateInfoType createInfo, const PipelineLayout& layout,
+    ShaderProgram(CreateInfoType createInfo, PipelineLayout* layout,
                   HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);
     ~ShaderProgram() = default;
 
 private:
     HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects = {};
-    PipelineLayout m_pipelineLayout = {};
+    PipelineLayout* m_pipelineLayout = {};
+    PipelineType m_pipelineType;
 };
 
 } // namespace aph::vk

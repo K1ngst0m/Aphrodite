@@ -101,6 +101,7 @@ private:
     Result createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram);
     Result createImpl(const CommandPoolCreateInfo& createInfo, CommandPool** ppCommandPool);
     Result createImpl(const DescriptorSetLayoutCreateInfo& createInfo, DescriptorSetLayout** ppLayout);
+    Result createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLayout** ppLayout);
 
     void destroyImpl(Buffer* pBuffer);
     void destroyImpl(Image* pImage);
@@ -110,6 +111,7 @@ private:
     void destroyImpl(ShaderProgram* pProgram);
     void destroyImpl(DescriptorSetLayout* pSetLayout);
     void destroyImpl(CommandPool* pPool);
+    void destroyImpl(PipelineLayout* pLayout);
 
 private:
     Result initCapture();
@@ -124,6 +126,7 @@ private:
         std::unique_ptr<DeviceAllocator> deviceMemory;
         ThreadSafeObjectPool<Buffer> buffer;
         ThreadSafeObjectPool<Image> image;
+        ThreadSafeObjectPool<PipelineLayout> pipelineLayout;
         ThreadSafeObjectPool<Sampler> sampler;
         ThreadSafeObjectPool<ImageView> imageView;
         ThreadSafeObjectPool<DescriptorSetLayout> setLayout;

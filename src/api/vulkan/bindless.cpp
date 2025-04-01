@@ -81,13 +81,11 @@ BindlessResource::BindlessResource(Device* pDevice)
 
     // Create pipeline layout resource
     {
-        ::vk::PipelineLayoutCreateInfo createInfo{};
-        auto layouts = { m_resourceData.pSetLayout->getHandle(), m_handleData.pSetLayout->getHandle() };
-        createInfo.setSetLayouts(layouts);
-        auto [result, handle] = m_pDevice->getHandle().createPipelineLayout(createInfo);
-        m_pipelineLayout.setLayouts[eResourceSetIdx] = m_resourceData.pSetLayout;
-        m_pipelineLayout.setLayouts[eHandleSetIdx] = m_handleData.pSetLayout;
-        m_pipelineLayout.handle = handle;
+        PipelineLayoutCreateInfo createInfo{ };
+        createInfo.setLayouts.resize(eUpperBound);
+        createInfo.setLayouts[eResourceSetIdx] = m_resourceData.pSetLayout;
+        createInfo.setLayouts[eHandleSetIdx] = m_handleData.pSetLayout;
+        APH_VR(m_pDevice->create(createInfo, &m_pipelineLayout));
     }
 }
 
@@ -239,9 +237,7 @@ void BindlessResource::clear()
     // Store resources that need to be destroyed
     Buffer* handleBuffer = nullptr;
     Buffer* addressTableBuffer = nullptr;
-    DescriptorSetLayout* resourceSetLayout = nullptr;
-    DescriptorSetLayout* handleSetLayout = nullptr;
-    ::vk::PipelineLayout pipelineLayout;
+    PipelineLayout* pipelineLayout = nullptr;
 
     {
         std::lock_guard<std::mutex> handleLock{ m_handleMtx };
@@ -252,16 +248,14 @@ void BindlessResource::clear()
         // Store resources for destruction outside the lock
         handleBuffer = m_handleData.pBuffer;
         addressTableBuffer = m_resourceData.pAddressTableBuffer;
-        resourceSetLayout = m_resourceData.pSetLayout;
-        handleSetLayout = m_handleData.pSetLayout;
-        pipelineLayout = m_pipelineLayout.handle;
+        pipelineLayout = m_pipelineLayout;
 
         // Reset member variables to null state
         m_handleData.pBuffer = nullptr;
         m_resourceData.pAddressTableBuffer = nullptr;
         m_resourceData.pSetLayout = nullptr;
         m_handleData.pSetLayout = nullptr;
-        m_pipelineLayout.handle = ::vk::PipelineLayout{};
+        m_pipelineLayout = nullptr;
 
         // Clear all collections and reset state
         m_images.clear();
@@ -287,19 +281,9 @@ void BindlessResource::clear()
         m_pDevice->destroy(addressTableBuffer);
     }
 
-    if (resourceSetLayout)
-    {
-        m_pDevice->destroy(resourceSetLayout);
-    }
-
-    if (handleSetLayout)
-    {
-        m_pDevice->destroy(handleSetLayout);
-    }
-
     if (pipelineLayout)
     {
-        m_pDevice->getHandle().destroy(pipelineLayout);
+        m_pDevice->destroy(pipelineLayout);
     }
 }
 

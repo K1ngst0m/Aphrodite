@@ -21,7 +21,7 @@ class DescriptorSetLayout;
 class BindlessResource;
 class ShaderProgram;
 class Shader;
-struct PipelineLayout;
+class PipelineLayout;
 
 class Fence;
 class Semaphore;

@@ -1,5 +1,5 @@
-#include "bindless.h"
 #include "device.h"
+#include "bindless.h"
 #include "renderdoc_app.h"
 #include "vmaAllocator.h"
 
@@ -224,13 +224,11 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     bool hasTaskShader = false;
     SmallVector<Shader*> shaders{};
 
-    PipelineType pipelineType = {};
     // vs + fs
     if (createInfo.shaders.contains(ShaderStage::VS) && createInfo.shaders.contains(ShaderStage::FS))
     {
         shaders.push_back(createInfo.shaders.at(ShaderStage::VS));
         shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
-        pipelineType = PipelineType::Geometry;
     }
     else if (createInfo.shaders.contains(ShaderStage::MS) && createInfo.shaders.contains(ShaderStage::FS))
     {
@@ -241,13 +239,11 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         }
         shaders.push_back(createInfo.shaders.at(ShaderStage::MS));
         shaders.push_back(createInfo.shaders.at(ShaderStage::FS));
-        pipelineType = PipelineType::Mesh;
     }
     // cs
     else if (createInfo.shaders.contains(ShaderStage::CS))
     {
         shaders.push_back(createInfo.shaders.at(ShaderStage::CS));
-        pipelineType = PipelineType::Compute;
     }
     else
     {
@@ -261,7 +257,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
     // setup descriptor set layouts and pipeline layouts
     SmallVector<DescriptorSetLayout*> setLayouts = {};
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
-    VkPipelineLayout pipelineLayout;
+    PipelineLayout* pipelineLayout = {};
     {
         uint32_t numSets = combineLayout.descriptorSetMask.count();
         for (unsigned i = 0; i < numSets; i++)
@@ -273,6 +269,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
             DescriptorSetLayout* layout = {};
             APH_VR(create(setLayoutCreateInfo, &layout));
             setLayouts.push_back(layout);
+            vkSetLayouts.push_back(layout->getHandle());
         }
 
         if (auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
@@ -281,26 +278,20 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
             VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
         }
 
-        ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
-        if (numSets)
-        {
-            vkSetLayouts.reserve(setLayouts.size());
-            for (const auto& setLayout : setLayouts)
-            {
-                vkSetLayouts.push_back(setLayout->getHandle());
-            }
-            pipelineLayoutCreateInfo.setSetLayouts(vkSetLayouts);
-        }
+        PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
+            .vertexInput = reflector.getVertexInput(),
+            .pushConstantRange = reflector.getPushConstantRange(),
+            .setLayouts = std::move(setLayouts),
+        };
 
         if (combineLayout.pushConstantRange.stageFlags)
         {
-            pipelineLayoutCreateInfo.setPushConstantRanges({ combineLayout.pushConstantRange });
+            pipelineLayoutCreateInfo.pushConstantRange = combineLayout.pushConstantRange;
         }
 
-        auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
-        VK_VR(result);
-        pipelineLayout = std::move(handle);
+        APH_VR(create(pipelineLayoutCreateInfo, &pipelineLayout));
     }
+
 
     HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps;
     // setup shader object
@@ -346,14 +337,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         }
     }
 
-    // TODO
-    PipelineLayout layout{ .vertexInput = reflector.getVertexInput(),
-                           .pushConstantRange = reflector.getPushConstantRange(),
-                           .setLayouts = std::move(setLayouts),
-                           .handle = pipelineLayout,
-                           .type = pipelineType };
-
-    *ppProgram = m_resourcePool.program.allocate(createInfo, layout, shaderObjectMaps);
+    *ppProgram = m_resourcePool.program.allocate(createInfo, pipelineLayout, shaderObjectMaps);
 
     return Result::Success;
 }
@@ -436,17 +420,13 @@ void Device::destroyImpl(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
 
-    for (auto* setLayout : pProgram->m_pipelineLayout.setLayouts)
-    {
-        destroy(setLayout);
-    }
+    destroy(pProgram->m_pipelineLayout);
 
     for (auto [_, shaderObject] : pProgram->m_shaderObjects)
     {
         getHandle().destroyShaderEXT(shaderObject, vk_allocator());
     }
 
-    getHandle().destroyPipelineLayout(pProgram->m_pipelineLayout.handle, vk_allocator());
     m_resourcePool.program.free(pProgram);
 }
 
@@ -918,5 +898,34 @@ PhysicalDevice* Device::getPhysicalDevice() const
 GPUFeature Device::getEnabledFeatures() const
 {
     return getCreateInfo().enabledFeatures;
+}
+Result Device::createImpl(const PipelineLayoutCreateInfo& createInfo, PipelineLayout** ppLayout)
+{
+    APH_PROFILER_SCOPE();
+
+    ::vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{};
+    SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
+    for (auto* setLayout : createInfo.setLayouts)
+    {
+        vkSetLayouts.push_back(setLayout->getHandle());
+    }
+    pipelineLayoutCreateInfo.setSetLayouts(vkSetLayouts);
+
+    auto [result, handle] = getHandle().createPipelineLayout(pipelineLayoutCreateInfo, vk_allocator());
+    VK_VR(result);
+    *ppLayout = m_resourcePool.pipelineLayout.allocate(createInfo, handle);
+    return Result::Success;
+}
+void Device::destroyImpl(PipelineLayout* pLayout)
+{
+    APH_PROFILER_SCOPE();
+
+    for (auto* setLayout : pLayout->getSetLayouts())
+    {
+        destroy(setLayout);
+    }
+
+    getHandle().destroyPipelineLayout(pLayout->getHandle(), vk_allocator());
+    m_resourcePool.pipelineLayout.free(pLayout);
 }
 } // namespace aph::vk

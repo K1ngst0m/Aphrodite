@@ -126,9 +126,9 @@ public:
         return m_handleData.pSet;
     }
 
-    ::vk::PipelineLayout getPipelineLayout() const noexcept
+    PipelineLayout* getPipelineLayout() const noexcept
     {
-        return m_pipelineLayout.handle;
+        return m_pipelineLayout;
     }
 
 private:
@@ -172,7 +172,7 @@ private:
     } m_resourceData;
 
     // Pipeline layout combining resource and handle sets
-    PipelineLayout m_pipelineLayout{};
+    PipelineLayout* m_pipelineLayout = {};
 
     // Flag indicating if handle data needs to be uploaded to GPU
     std::atomic<bool> m_rangeDirty{ false };
