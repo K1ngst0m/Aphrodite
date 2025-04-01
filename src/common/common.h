@@ -66,7 +66,8 @@ APH_ALWAYS_INLINE void APH_ASSERT(const T& condition, const std::source_location
     }
 }
 #else
-inline void APH_ASSERT(bool condition) {};
+template <typename T>
+inline void APH_ASSERT(const T& condition) {};
 #endif
 
 template <typename T>
@@ -242,7 +243,7 @@ inline void APH_VR(Result result, const std::source_location source = std::sourc
 #else
 inline void APH_VR(Result result)
 {
-    return result;
+    return;
 }
 #endif
 } // namespace aph

@@ -184,9 +184,10 @@ inline void VK_VR(T result, const std::source_location source = std::source_loca
     }
 }
 #else
-inline void VK_VR(Result result)
+template <typename T>
+inline void VK_VR(T result)
 {
-    return result;
+    return;
 }
 #endif
 } // namespace aph::vk

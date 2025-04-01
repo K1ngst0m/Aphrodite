@@ -13,3 +13,4 @@ build/
 /log.txt
 /bin/
 /cache/
+/imgui.ini

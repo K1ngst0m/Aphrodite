@@ -1,0 +1,129 @@
+# This workflow builds and tests the Aphrodite project using CMake presets
+name: Aphrodite CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {
+            name: "Ubuntu Clang Release",
+            preset: "clang-release"
+          }
+          - {
+            name: "Ubuntu Clang Debug",
+            preset: "clang-debug"
+          }
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+        fetch-depth: 0
+
+    # Cache APT packages
+    - name: Cache APT packages
+      uses: actions/cache@v3
+      id: apt-cache
+      with:
+        path: /var/cache/apt/archives
+        key: ${{ runner.os }}-apt-${{ hashFiles('.github/workflows/cmake-single-platform.yml') }}
+
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.24.0'
+
+    - name: Setup Ninja
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ninja-build
+        ninja --version
+
+    - name: Setup Clang 16
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang-16 lld-16 libc++-16-dev libc++abi-16-dev
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-16 160
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-16 160
+        sudo update-alternatives --install /usr/bin/lld lld /usr/bin/lld-16 160
+        clang --version
+        clang++ --version
+
+    - name: Install ccache
+      run: sudo apt-get install -y ccache
+
+    - name: Configure ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ matrix.config.name }}-ccache
+        max-size: 500M
+
+    - name: Cache CMake dependencies and build
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cmake
+        key: ${{ runner.os }}-${{ matrix.config.preset }}-cmake-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-${{ matrix.config.preset }}-cmake-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', 'CMakePresets.json') }}-
+          ${{ runner.os }}-${{ matrix.config.preset }}-cmake-
+
+    - name: Cache CPM packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/CPM
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/cmake/CPM.cmake', '**/CPM.cmake', '**/CPM.cmake.in', '**/CMakeLists.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-cpm-
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev libgl1-mesa-dev
+
+    - name: Configure CMake
+      run: |
+        # Clear any existing build directory to avoid cached compiler settings
+        rm -rf build
+        
+        # Configure with apt-installed clang
+        cmake --preset ${{ matrix.config.preset }} \
+          -DCMAKE_C_COMPILER=clang \
+          -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+          -DCMAKE_MAKE_PROGRAM=$(which ninja) \
+          -DCPM_DOWNLOAD_ALL=OFF
+
+    - name: Build
+      run: |
+        cmake --build --preset ${{ matrix.config.preset }}-build
+
+    - name: Test
+      if: ${{ contains(matrix.config.preset, 'debug') }}
+      run: |
+        cd build
+        # Only run tests if APH_ENABLE_TESTING is ON
+        cmake -DAPH_ENABLE_TESTING=ON ..
+        cmake --build . --target aphrodite-tests
+        ctest -C Debug --output-on-failure
+
+    - name: Archive build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: aphrodite-${{ matrix.config.preset }}
+        path: |
+          build/examples
+          build/tests
+        retention-days: 7
+

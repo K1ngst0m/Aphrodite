@@ -102,6 +102,12 @@ function(aph_compiler_options TARGET)
             >
         )
 
+        target_link_options(${TARGET} PRIVATE
+            $<$<CONFIG:Release>:
+                -flto
+            >
+        )
+
         target_compile_definitions(${TARGET} PRIVATE
             $<$<CONFIG:Debug>:
             APH_DEBUG
