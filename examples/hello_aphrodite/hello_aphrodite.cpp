@@ -1,7 +1,5 @@
 #include "hello_aphrodite.h"
 
-#include "api/vulkan/bindless.h"
-
 struct VertexData
 {
     glm::vec4 pos;
@@ -149,7 +147,22 @@ void HelloAphrodite::init()
             }
             return true;
         });
+}
 
+void HelloAphrodite::loop()
+{
+    for (auto frameResource : m_renderer->loop())
+    {
+        APH_PROFILER_FRAME("application loop");
+        m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
+        buildGraph(frameResource.pGraph);
+    }
+}
+
+void HelloAphrodite::load()
+{
+    APH_PROFILER_SCOPE();
     // setup cube
     {
         aph::LoadRequest loadRequest = m_pResourceLoader->getLoadRequest();
@@ -281,39 +294,35 @@ void HelloAphrodite::init()
         loadRequest.load();
     }
 
+    // setup render graph pass and resource
     for (auto* graph : m_renderer->setupGraph())
     {
+        aph::vk::ImageCreateInfo renderTargetColorInfo{
+            .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+            .format = m_pSwapChain->getFormat(),
+
+        };
+
+        aph::vk::ImageCreateInfo renderTargetDepthInfo{
+            .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
+            .format = aph::Format::D32,
+        };
+
         auto drawPass = graph->createPass("drawing cube", aph::QueueType::Graphics);
-        drawPass->setColorOut("render output", {
-                                                   .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
-                                                   .format = m_pSwapChain->getFormat(),
-                                               });
-        drawPass->setDepthStencilOut("depth buffer",
-                                     {
-                                         .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
-                                         .format = aph::Format::D32,
-                                     });
+        drawPass->setColorOut("render output", { .createInfo = renderTargetColorInfo });
+        drawPass->setDepthStencilOut("depth buffer", { .createInfo = renderTargetDepthInfo });
         drawPass->addTextureIn("container texture", m_pImage);
-        drawPass->addUniformBufferIn("matrix ubo", m_pMatrixBffer);
+        drawPass->addBufferIn("matrix ubo", m_pMatrixBffer, aph::BufferUsage::Uniform);
+
+        auto uiPass = graph->createPass("drawing ui", aph::QueueType::Graphics);
+        uiPass->setColorOut("render output", { .createInfo = renderTargetColorInfo,
+                                               .attachmentInfo = {
+                                                   .loadOp = aph::AttachmentLoadOp::DontCare,
+                                               } });
 
         graph->setBackBuffer("render output");
     }
-}
 
-void HelloAphrodite::loop()
-{
-    for (auto frameResource : m_renderer->loop())
-    {
-        APH_PROFILER_FRAME("application loop");
-        m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
-        m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
-        buildGraph(frameResource.pGraph);
-    }
-}
-
-void HelloAphrodite::load()
-{
-    APH_PROFILER_SCOPE();
     m_renderer->load();
 }
 
@@ -372,7 +381,6 @@ void HelloAphrodite::switchShadingType(std::string_view value)
 void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
 {
     auto drawPass = pGraph->getPass("drawing cube");
-
     drawPass->recordExecute(
         [this](auto* pCmd)
         {
@@ -429,6 +437,17 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
             break;
             }
         });
+
+    auto uiPass = pGraph->getPass("drawing ui");
+    uiPass->recordExecute(
+        [this](auto* pCmd)
+        {
+            auto* ui = m_renderer->getUI();
+            ui->beginFrame();
+            ui->render(pCmd);
+            ui->endFrame();
+        });
+
     pGraph->build(m_pSwapChain);
 }
 
@@ -446,4 +465,3 @@ int main(int argc, char** argv)
 
     app.run();
 }
-

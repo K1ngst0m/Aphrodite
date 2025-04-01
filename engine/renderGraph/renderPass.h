@@ -89,6 +89,12 @@ protected:
     std::string m_name;
 };
 
+struct RenderPassAttachmentInfo
+{
+    vk::ImageCreateInfo createInfo = {};
+    vk::AttachmentInfo attachmentInfo = {};
+};
+
 class PassImageResource : public PassResource
 {
 public:
@@ -96,7 +102,7 @@ public:
         : PassResource(type)
     {
     }
-    void setInfo(const vk::ImageCreateInfo& info)
+    void setInfo(const RenderPassAttachmentInfo& info)
     {
         m_info = info;
     }
@@ -105,7 +111,7 @@ public:
         m_usage |= usage;
     }
 
-    const vk::ImageCreateInfo& getInfo() const
+    const RenderPassAttachmentInfo& getInfo() const
     {
         return m_info;
     }
@@ -115,7 +121,7 @@ public:
     }
 
 private:
-    vk::ImageCreateInfo m_info = {};
+    RenderPassAttachmentInfo m_info;
     ImageUsageFlags m_usage = {};
 };
 
@@ -156,31 +162,23 @@ class RenderPass
 public:
     RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_view name);
 
-    PassBufferResource* addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
-    PassBufferResource* addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer = nullptr);
-    PassBufferResource* addBufferOut(const std::string& name);
+    PassBufferResource* addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage);
+    PassBufferResource* addBufferOut(const std::string& name, BufferUsage usage = BufferUsage::Storage);
 
-    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr);
-    PassImageResource* addTextureOut(const std::string& name);
-    PassImageResource* setColorOut(const std::string& name, const vk::ImageCreateInfo& info);
-    PassImageResource* setDepthStencilOut(const std::string& name, const vk::ImageCreateInfo& info);
+    PassImageResource* addTextureIn(const std::string& name, vk::Image* pImage = nullptr,
+                                    ImageUsage usage = ImageUsage::Sampled);
+    PassImageResource* addTextureOut(const std::string& name, ImageUsage usage = ImageUsage::Storage);
+
+    PassImageResource* setColorOut(const std::string& name, const RenderPassAttachmentInfo& info);
+    PassImageResource* setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info);
 
     using ExecuteCallBack = std::function<void(vk::CommandBuffer*)>;
     using ClearDepthStencilCallBack = std::function<bool(VkClearDepthStencilValue*)>;
     using ClearColorCallBack = std::function<bool(uint32_t, VkClearColorValue*)>;
 
-    void recordExecute(ExecuteCallBack&& cb)
-    {
-        m_executeCB = std::move(cb);
-    }
-    void recordClear(ClearColorCallBack&& cb)
-    {
-        m_clearColorCB = std::move(cb);
-    }
-    void recordDepthStencil(ClearDepthStencilCallBack&& cb)
-    {
-        m_clearDepthStencilCB = std::move(cb);
-    }
+    void recordExecute(ExecuteCallBack&& cb);
+    void recordClear(ClearColorCallBack&& cb);
+    void recordDepthStencil(ClearDepthStencilCallBack&& cb);
 
     QueueType getQueueType() const
     {

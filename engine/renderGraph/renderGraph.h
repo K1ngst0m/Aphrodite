@@ -19,7 +19,7 @@ public:
 
 public:
     // Constructor with device parameter for normal mode
-    RenderGraph(vk::Device* pDevice);
+    explicit RenderGraph(vk::Device* pDevice);
 
     // Constructor for dry run mode (no GPU operations)
     RenderGraph();
@@ -27,14 +27,6 @@ public:
     ~RenderGraph();
 
 public:
-    RenderPass* getPassOrCreate(const std::string& name, QueueType queueType)
-    {
-        if (auto pass = getPass(name); pass)
-        {
-            return pass;
-        }
-        return createPass(name, queueType);
-    }
     RenderPass* createPass(const std::string& name, QueueType queueType);
     RenderPass* getPass(const std::string& name) const noexcept
     {
@@ -50,13 +42,12 @@ public:
     T* getResource(const std::string& name);
 
     void build(vk::SwapChain* pSwapChain = nullptr);
-    void execute(vk::Fence* pFence = nullptr);
+    void execute(vk::Fence** ppFence = {});
     void cleanup();
 
 public:
     std::string exportToGraphviz() const;
 
-    // Debug logging for dry run mode
     void enableDebugOutput(bool enable)
     {
         m_debugOutputEnabled = enable;
@@ -122,6 +113,44 @@ private:
         m_dirtyFlags |= flags;
     }
 
+    void markResourcesChanged(PassResource::Type type) 
+    {
+        if (type == PassResource::Type::Image)
+        {
+            markImageResourcesModified();
+        }
+        else if (type == PassResource::Type::Buffer)
+        {
+            markBufferResourcesModified();
+        }
+        markTopologyModified();
+    }
+
+    void markPassModified()
+    {
+        setDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::TopologyDirty);
+    }
+
+    void markImageResourcesModified()
+    {
+        setDirty(DirtyFlagBits::ImageResourceDirty);
+    }
+
+    void markBufferResourcesModified()
+    {
+        setDirty(DirtyFlagBits::BufferResourceDirty);
+    }
+
+    void markBackBufferModified()
+    {
+        setDirty(DirtyFlagBits::BackBufferDirty);
+    }
+
+    void markTopologyModified()
+    {
+        setDirty(DirtyFlagBits::TopologyDirty);
+    }
+
 private:
     vk::Device* m_pDevice = {}; // Will be nullptr in dry run mode
 
@@ -149,7 +178,7 @@ private:
         HashMap<PassResource*, ResourceState> currentResourceStates;
 
         vk::SwapChain* pSwapchain = {};
-        vk::Fence* frameFence = {};
+        vk::Fence* frameExecuteFence = {};
 
         SmallVector<vk::QueueSubmitInfo> frameSubmitInfos{};
         std::mutex submitLock;

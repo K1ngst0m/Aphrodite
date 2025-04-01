@@ -9,9 +9,17 @@
 
 GENERATE_LOG_FUNCS(UI);
 
+// Forward declarations for ImGui
+struct ImGuiContext;
+struct ImFont;
+
 namespace aph::vk
 {
 class CommandBuffer;
+class Device;
+class SwapChain;
+class Instance;
+class Queue;
 }
 
 namespace aph
@@ -19,15 +27,13 @@ namespace aph
 // Forward declarations
 class Renderer;
 class WindowSystem;
-class RenderBackend;
 
 enum class UIFlagBits
 {
     None = 0,
     Docking = 1 << 0,
     ViewportEnable = 1 << 1,
-    Demo = 1 << 2,
-    All = Docking | ViewportEnable | Demo
+    All = Docking | ViewportEnable
 };
 
 using UIFlags = Flags<UIFlagBits>;
@@ -40,21 +46,12 @@ struct FlagTraits<UIFlagBits>
 
 struct UICreateInfo
 {
-    Renderer* pRenderer = nullptr;
-    WindowSystem* pWindow = nullptr;
+    vk::Instance* pInstance = {};
+    vk::Device* pDevice = {};
+    vk::SwapChain* pSwapchain = {};
+    WindowSystem* pWindow = {};
     UIFlags flags = UIFlagBits::None;
     std::string configFile = "";
-};
-
-// Abstract UI Backend interface
-class UIBackend
-{
-public:
-    virtual ~UIBackend() = default;
-    virtual bool initialize(const UICreateInfo& createInfo) = 0;
-    virtual void shutdown() = 0;
-    virtual void newFrame() = 0;
-    virtual void render(vk::CommandBuffer* pCmd) = 0;
 };
 
 // Main UI Manager class
@@ -86,18 +83,25 @@ public:
         return widget;
     }
 
-    // Add this method to access the backend
-    UIBackend* getBackend() const
-    {
-        return m_backend.get();
-    }
-
 private:
-    // Create the appropriate backend based on build configuration
-    std::unique_ptr<UIBackend> createBackend();
+    // ImGui context
+    ImGuiContext* m_context = {};
 
+    // Window reference
+    WindowSystem* m_window = {};
+
+    // Vulkan resources
+    vk::Device* m_device = {};
+    vk::Instance* m_instance = {};
+    vk::Queue* m_graphicsQueue = {};
+    vk::SwapChain* m_swapchain = {};
+
+    // Font handling
+    std::vector<ImFont*> m_fonts;
+    uint32_t m_activeFontIndex = 0;
+
+    // Config
     UICreateInfo m_createInfo;
-    std::unique_ptr<UIBackend> m_backend;
     UIUpdateCallback m_updateCallback;
 };
 

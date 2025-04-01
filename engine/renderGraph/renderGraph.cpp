@@ -11,6 +11,7 @@ namespace aph
 RenderGraph::RenderGraph(vk::Device* pDevice)
     : m_pDevice(pDevice)
 {
+    m_buildData.frameExecuteFence = m_pDevice->acquireFence(true);
 }
 
 // Constructor for dry run mode (no GPU operations)
@@ -41,6 +42,9 @@ RenderPass* RenderGraph::createPass(const std::string& name, QueueType queueType
     }
     auto* pass = m_resourcePool.renderPass.allocate(this, queueType, name);
     m_declareData.passMap[name] = pass;
+
+    // Mark that passes have changed, affecting the graph topology
+    markPassModified();
 
     if (isDryRunMode() && m_debugOutputEnabled)
     {
@@ -215,7 +219,7 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
     if (!isDryRunMode())
     {
         if (isDirty(DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty | DirtyFlagBits::PassDirty |
-                    DirtyFlagBits::BackBufferDirty))
+                    DirtyFlagBits::BackBufferDirty | DirtyFlagBits::SwapChainDirty))
         {
             // per pass resource build
             for (auto* pass : m_buildData.sortedPasses)
@@ -264,72 +268,82 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         }
 
         // Record commands for each pass
-        // if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
-        //             DirtyFlagBits::TopologyDirty))
+        if (isDirty(DirtyFlagBits::PassDirty | DirtyFlagBits::ImageResourceDirty | DirtyFlagBits::BufferResourceDirty |
+                    DirtyFlagBits::TopologyDirty | DirtyFlagBits::SwapChainDirty))
         {
+            vk::Fence* frameFence = m_buildData.frameExecuteFence;
+            {
+                frameFence->wait();
+            }
             for (auto* pass : m_buildData.sortedPasses)
             {
                 APH_PROFILER_SCOPE_NAME("pass commands recording");
-                SmallVector<vk::Image*> colorImages;
-                vk::Image* pDepthImage = {};
                 SmallVector<vk::ImageBarrier> initImageBarriers{};
-                SmallVector<vk::ImageBarrier>& imageBarriers = m_buildData.imageBarriers[pass];
-                SmallVector<vk::BufferBarrier>& bufferBarriers = m_buildData.bufferBarriers[pass];
+                auto& imageBarriers = m_buildData.imageBarriers[pass];
+                auto& bufferBarriers = m_buildData.bufferBarriers[pass];
 
                 // Clear existing barriers
                 imageBarriers.clear();
                 bufferBarriers.clear();
 
-                // Collect color images
-                colorImages.reserve(pass->m_res.colorOut.size());
-                for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                auto* pCmd = m_buildData.cmds[pass];
+                APH_VR(pCmd->begin());
+
+                // Collect attachment info
+                vk::RenderingInfo renderingInfo{};
                 {
-                    colorImages.push_back(m_buildData.image[colorAttachment]);
-                    setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
+                    auto& colorAttachmentInfos = renderingInfo.colors;
+                    for (PassImageResource* colorAttachment : pass->m_res.colorOut)
+                    {
+                        auto pColorImage = m_buildData.image[colorAttachment];
+                        vk::AttachmentInfo attachmentInfo = colorAttachment->getInfo().attachmentInfo;
+                        attachmentInfo.image = pColorImage;
+                        colorAttachmentInfos.push_back(attachmentInfo);
+                        setupImageBarrier(initImageBarriers, colorAttachment, ResourceState::RenderTarget);
+                    }
+
+                    if (auto depthAttachment = pass->m_res.depthOut; depthAttachment)
+                    {
+                        vk::Image* pDepthImage = m_buildData.image[depthAttachment];
+                        renderingInfo.depth = depthAttachment->getInfo().attachmentInfo;
+                        renderingInfo.depth.image = pDepthImage;
+                        setupImageBarrier(initImageBarriers, depthAttachment, ResourceState::DepthStencil);
+                    }
+
+                    pCmd->insertBarrier(initImageBarriers);
                 }
 
-                // Set up depth image
-                if (pass->m_res.depthOut)
+                // setup resource barriers
                 {
-                    pDepthImage = m_buildData.image[pass->m_res.depthOut];
-                    setupImageBarrier(initImageBarriers, pass->m_res.depthOut, ResourceState::DepthStencil);
+                    // Set up texture barriers
+                    for (PassImageResource* textureIn : pass->m_res.textureIn)
+                    {
+                        ResourceState targetState = pass->m_res.resourceStateMap[textureIn];
+                        setupResourceBarrier(imageBarriers, textureIn, targetState);
+                    }
+
+                    // Set up storage buffer barriers
+                    for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
+                    {
+                        ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                        setupResourceBarrier(bufferBarriers, bufferIn, targetState);
+                    }
+
+                    // Set up uniform buffer barriers
+                    for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
+                    {
+                        ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
+                        setupResourceBarrier(bufferBarriers, bufferIn, targetState);
+                    }
                 }
 
-                auto queue = m_pDevice->getQueue(QueueType::Graphics);
-                m_pDevice->executeCommand(queue,
-                                          [&initImageBarriers](auto* pCmd) { pCmd->insertBarrier(initImageBarriers); });
-
-                // Set up texture barriers
-                for (PassImageResource* textureIn : pass->m_res.textureIn)
-                {
-                    ResourceState targetState = pass->m_res.resourceStateMap[textureIn];
-                    setupResourceBarrier(imageBarriers, textureIn, targetState);
-                }
-
-                // Set up storage buffer barriers
-                for (PassBufferResource* bufferIn : pass->m_res.storageBufferIn)
-                {
-                    ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
-                    setupResourceBarrier(bufferBarriers, bufferIn, targetState);
-                }
-
-                // Set up uniform buffer barriers
-                for (PassBufferResource* bufferIn : pass->m_res.uniformBufferIn)
-                {
-                    ResourceState targetState = pass->m_res.resourceStateMap[bufferIn];
-                    setupResourceBarrier(bufferBarriers, bufferIn, targetState);
-                }
-
-                APH_ASSERT(!colorImages.empty());
-
-                // Record and submit commands
+                // Record remain commands
                 {
                     APH_PROFILER_SCOPE_NAME("pass commands submit");
-                    auto* pCmd = m_buildData.cmds[pass];
-                    APH_VR(pCmd->begin());
                     pCmd->insertDebugLabel({ .name = pass->m_name, .color = { 0.6f, 0.6f, 0.6f, 0.6f } });
                     pCmd->insertBarrier(m_buildData.bufferBarriers[pass], m_buildData.imageBarriers[pass]);
-                    pCmd->beginRendering(colorImages, pDepthImage);
+
+                    pCmd->beginRendering(renderingInfo);
                     if (!isDryRunMode())
                     {
                         APH_ASSERT(pass->m_executeCB);
@@ -364,10 +378,9 @@ void RenderGraph::build(vk::SwapChain* pSwapChain)
         if (m_debugOutputEnabled)
         {
             RDG_LOG_INFO("[DryRun] Generated execution order:");
-            int i = 1;
-            for (auto* pass : m_buildData.sortedPasses)
+            for (uint32_t i = 1; auto* pass : m_buildData.sortedPasses)
             {
-                RDG_LOG_INFO("[DryRun] %d. %s", i++, pass->m_name);
+                RDG_LOG_INFO("[DryRun] %u. %s", i++, pass->m_name);
             }
         }
     }
@@ -397,11 +410,12 @@ void RenderGraph::setupImageResource(PassImageResource* imageResource, bool isCo
 
         vk::Image* pImage = {};
         vk::ImageCreateInfo createInfo{
-            .extent = imageResource->getInfo().extent,
+            .extent = imageResource->getInfo().createInfo.extent,
             .usage = imageResource->getUsage(),
+            // TODO
             .domain = MemoryDomain::Device,
             .imageType = ImageType::e2D,
-            .format = imageResource->getInfo().format,
+            .format = imageResource->getInfo().createInfo.format,
         };
 
         // Add transfer source usage for color attachments that might be presented
@@ -501,6 +515,7 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
                 auto res = createPassResource(name, PassResource::Type::Buffer);
                 APH_ASSERT(!m_buildData.buffer.contains(res));
                 m_buildData.buffer[res] = ptr;
+                markBufferResourcesModified();
                 return res;
             }
             else if constexpr (std::is_same_v<T, vk::Image>)
@@ -508,6 +523,7 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
                 auto res = createPassResource(name, PassResource::Type::Image);
                 APH_ASSERT(!m_buildData.image.contains(res));
                 m_buildData.image[res] = ptr;
+                markImageResourcesModified();
                 return res;
             }
             else
@@ -520,6 +536,10 @@ PassResource* RenderGraph::importPassResource(const std::string& name, ResourceP
 
     passResource->addFlags(PassResourceFlagBits::External);
     m_buildData.currentResourceStates[passResource] = ResourceState::General;
+
+    // Mark that the graph topology has changed
+    markTopologyModified();
+
     return passResource;
 }
 
@@ -538,9 +558,11 @@ PassResource* RenderGraph::createPassResource(const std::string& name, PassResou
     {
     case PassResource::Type::Image:
         res = m_resourcePool.passImageResource.allocate(type);
+        markImageResourcesModified();
         break;
     case PassResource::Type::Buffer:
         res = m_resourcePool.passBufferResource.allocate(type);
+        markBufferResourcesModified();
         break;
     }
     res->setName(name);
@@ -548,6 +570,9 @@ PassResource* RenderGraph::createPassResource(const std::string& name, PassResou
     APH_ASSERT(res);
 
     m_declareData.resourceMap[name] = res;
+
+    // Mark that the graph topology has changed
+    markTopologyModified();
 
     if (isDryRunMode() && m_debugOutputEnabled)
     {
@@ -558,7 +583,7 @@ PassResource* RenderGraph::createPassResource(const std::string& name, PassResou
     return res;
 }
 
-void RenderGraph::execute(vk::Fence* pFence)
+void RenderGraph::execute(vk::Fence** ppFence)
 {
     APH_PROFILER_SCOPE();
 
@@ -639,12 +664,12 @@ void RenderGraph::execute(vk::Fence* pFence)
 
     // submit && present
     {
-        if (m_buildData.frameFence == nullptr)
+        if (ppFence)
         {
-            m_buildData.frameFence = m_pDevice->acquireFence(true);
+            *ppFence = m_buildData.frameExecuteFence;
         }
 
-        vk::Fence* frameFence = pFence ? pFence : m_buildData.frameFence;
+        vk::Fence* frameFence = m_buildData.frameExecuteFence;
         {
             frameFence->wait();
             frameFence->reset();
@@ -669,6 +694,9 @@ void RenderGraph::setBackBuffer(const std::string& backBuffer)
 {
     APH_PROFILER_SCOPE();
     m_declareData.backBuffer = backBuffer;
+
+    // Mark that the back buffer has changed
+    markBackBufferModified();
 
     if (isDryRunMode() && m_debugOutputEnabled)
     {

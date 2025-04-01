@@ -1,5 +1,5 @@
-#include "renderGraph.h"
 #include "renderPass.h"
+#include "renderGraph.h"
 
 namespace aph
 {
@@ -12,85 +12,99 @@ RenderPass::RenderPass(RenderGraph* pGraph, QueueType queueType, std::string_vie
     APH_ASSERT(pGraph);
 }
 
-PassBufferResource* RenderPass::addStorageBufferIn(const std::string& name, vk::Buffer* pBuffer)
+PassBufferResource* RenderPass::addBufferIn(const std::string& name, vk::Buffer* pBuffer, BufferUsage usage)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for buffer '%s'", m_name.c_str(), name.c_str());
-    res->addUsage(BufferUsage::Storage);
-    res->addAccessFlags(::vk::AccessFlagBits2::eShaderStorageRead);
-
-    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
-    m_res.storageBufferIn.push_back(res);
-
+    res->addUsage(usage);
+    
+    // Get appropriate access flags and resource state based on usage
+    auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
+    
+    // Track special collection membership based on usage
+    if (usage & BufferUsage::Uniform)
+    {
+        m_res.uniformBufferIn.push_back(res);
+    }
+    else if (usage & BufferUsage::Storage)
+    {
+        m_res.storageBufferIn.push_back(res);
+    }
+    
+    res->addAccessFlags(accessFlags);
+    m_res.resourceStateMap[res] = state;
+    
     if (pBuffer)
     {
         m_pRenderGraph->importPassResource(name, pBuffer);
     }
-
+    
+    // Mark the graph as having buffer resources changed
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Buffer);
+    
     return res;
 }
 
-PassBufferResource* RenderPass::addUniformBufferIn(const std::string& name, vk::Buffer* pBuffer)
-{
-    APH_PROFILER_SCOPE();
-    auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
-    res->addReadPass(this);
-    VK_LOG_DEBUG("Pass '%s' added as READ pass for buffer '%s'", m_name.c_str(), name.c_str());
-    res->addUsage(BufferUsage::Uniform);
-    res->addAccessFlags(::vk::AccessFlagBits2::eShaderRead);
-
-    m_res.resourceStateMap[res] = ResourceState::UniformBuffer;
-    m_res.uniformBufferIn.push_back(res);
-
-    if (pBuffer)
-    {
-        m_pRenderGraph->importPassResource(name, pBuffer);
-    }
-
-    return res;
-}
-
-PassBufferResource* RenderPass::addBufferOut(const std::string& name)
+PassBufferResource* RenderPass::addBufferOut(const std::string& name, BufferUsage usage)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassBufferResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Buffer));
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for buffer '%s'", m_name.c_str(), name.c_str());
-    res->addUsage(BufferUsage::Storage);
-    res->addAccessFlags(::vk::AccessFlagBits2::eShaderWrite);
+    res->addUsage(usage);
+    
+    // Get appropriate access flags and resource state based on usage
+    auto [state, accessFlags] = vk::utils::getResourceState(usage, true);
+    
+    // Track special collection membership based on usage
+    if (usage & BufferUsage::Storage)
+    {
+        m_res.storageBufferOut.push_back(res);
+    }
+    
+    res->addAccessFlags(accessFlags);
+    m_res.resourceStateMap[res] = state;
 
-    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
-    m_res.storageBufferOut.push_back(res);
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Buffer);
 
     return res;
 }
-PassImageResource* RenderPass::addTextureOut(const std::string& name)
+
+PassImageResource* RenderPass::addTextureOut(const std::string& name, ImageUsage usage)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->addWritePass(this);
     VK_LOG_DEBUG("Pass '%s' added as WRITE pass for texture '%s'", m_name.c_str(), name.c_str());
-    res->addUsage(ImageUsage::Storage);
-    res->addAccessFlags(::vk::AccessFlagBits2::eShaderStorageWrite);
-
-    m_res.resourceStateMap[res] = ResourceState::UnorderedAccess;
+    res->addUsage(usage);
+    
+    // Get appropriate access flags and resource state based on usage
+    auto [state, accessFlags] = vk::utils::getResourceState(usage, true);
+    
+    res->addAccessFlags(accessFlags);
+    m_res.resourceStateMap[res] = state;
     m_res.textureOut.push_back(res);
+
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
 
     return res;
 }
 
-PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* pImage)
+PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* pImage, ImageUsage usage)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
     res->addReadPass(this);
     VK_LOG_DEBUG("Pass '%s' added as READ pass for texture '%s'", m_name.c_str(), name.c_str());
-    res->addUsage(ImageUsage::Sampled);
-    res->addAccessFlags(::vk::AccessFlagBits2::eShaderSampledRead);
-
-    m_res.resourceStateMap[res] = ResourceState::ShaderResource;
+    res->addUsage(usage);
+    
+    // Get appropriate access flags and resource state based on usage
+    auto [state, accessFlags] = vk::utils::getResourceState(usage, false);
+    
+    res->addAccessFlags(accessFlags);
+    m_res.resourceStateMap[res] = state;
     m_res.textureIn.push_back(res);
 
     if (pImage)
@@ -98,10 +112,12 @@ PassImageResource* RenderPass::addTextureIn(const std::string& name, vk::Image* 
         m_pRenderGraph->importPassResource(name, pImage);
     }
 
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
+
     return res;
 }
 
-PassImageResource* RenderPass::setColorOut(const std::string& name, const vk::ImageCreateInfo& info)
+PassImageResource* RenderPass::setColorOut(const std::string& name, const RenderPassAttachmentInfo& info)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
@@ -111,10 +127,13 @@ PassImageResource* RenderPass::setColorOut(const std::string& name, const vk::Im
     res->addUsage(ImageUsage::ColorAttachment);
     m_res.resourceStateMap[res] = ResourceState::RenderTarget;
     m_res.colorOut.push_back(res);
+
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
+
     return res;
 }
 
-PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const vk::ImageCreateInfo& info)
+PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const RenderPassAttachmentInfo& info)
 {
     APH_PROFILER_SCOPE();
     auto* res = static_cast<PassImageResource*>(m_pRenderGraph->createPassResource(name, PassResource::Type::Image));
@@ -124,7 +143,25 @@ PassImageResource* RenderPass::setDepthStencilOut(const std::string& name, const
     res->addUsage(ImageUsage::DepthStencil);
     m_res.resourceStateMap[res] = ResourceState::DepthStencil;
     m_res.depthOut = res;
+
+    m_pRenderGraph->markResourcesChanged(PassResource::Type::Image);
+
     return res;
 }
 
+void RenderPass::recordExecute(ExecuteCallBack&& cb)
+{
+    m_executeCB = std::move(cb);
+    m_pRenderGraph->markPassModified();
+}
+void RenderPass::recordClear(ClearColorCallBack&& cb)
+{
+    m_clearColorCB = std::move(cb);
+    m_pRenderGraph->markPassModified();
+}
+void RenderPass::recordDepthStencil(ClearDepthStencilCallBack&& cb)
+{
+    m_clearDepthStencilCB = std::move(cb);
+    m_pRenderGraph->markPassModified();
+}
 } // namespace aph

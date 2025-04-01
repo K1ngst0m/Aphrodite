@@ -6,6 +6,7 @@
 
 #include "api/vulkan/device.h"
 #include "renderer/renderer.h"
+#include "ui/ui.h"
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -187,17 +188,29 @@ Renderer::Renderer(const RenderConfig& config)
                 }
                 co_return Result::Success;
             }(m_pResourceLoader, m_pDevice.get()));
+        APH_VR(postDeviceGroup->submit());
+
+    }
+
+    {
+        UICreateInfo uiCreateInfo{ .pInstance = m_pInstance,
+                                   .pDevice = m_pDevice.get(),
+                                   .pSwapchain = m_pSwapChain,
+                                   .pWindow = m_pWindowSystem.get(),
+                                   .flags = aph::UIFlagBits::Docking };
+        postDeviceGroup->addTask(
+            [](const UICreateInfo& createInfo, std::unique_ptr<UI>& ui) -> TaskType
+            {
+                ui = aph::createUI(createInfo);
+                if (!ui)
+                {
+                    co_return { Result::RuntimeError, "Failed to initialized resource loader." };
+                }
+                co_return Result::Success;
+            }(uiCreateInfo, m_ui));
 
         APH_VR(postDeviceGroup->submit());
     }
-
-    // init ui
-    // {
-    //     m_pUI = std::make_unique<vk::UI>(vk::UICreateInfo{
-    //         .pRenderer = this,
-    //         .flags     = vk::UI_Docking,
-    //     });
-    // }
 }
 
 Renderer::~Renderer()
@@ -209,6 +222,7 @@ Renderer::~Renderer()
     }
 
     m_pResourceLoader->cleanup();
+    m_ui->shutdown();
     m_pDevice->destroy(m_pSwapChain);
     vk::Device::Destroy(m_pDevice.get());
     vk::Instance::Destroy(m_pInstance);
@@ -242,7 +256,6 @@ void Renderer::render()
 {
     APH_PROFILER_SCOPE();
     m_timer.set(TIMER_TAG_FRAME);
-    m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
     // m_pDevice->begineCapture();
     m_frameGraph[m_frameIdx]->execute();
     // m_pDevice->endCapture();
@@ -254,6 +267,7 @@ coro::generator<Renderer::FrameResource> Renderer::loop()
     while (m_pWindowSystem->update())
     {
         update();
+        m_frameIdx = (m_frameIdx + 1) % m_config.maxFrames;
         co_yield FrameResource{
             .pGraph = m_frameGraph[m_frameIdx].get(),
             .frameIdx = m_frameIdx,

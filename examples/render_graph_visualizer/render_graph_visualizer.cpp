@@ -52,11 +52,11 @@ void RenderGraphVisualizer::setupSimpleRenderGraph()
     };
 
     // Configure passes
-    mainPass->setColorOut("SceneColor", colorInfo);
-    mainPass->setDepthStencilOut("SceneDepth", depthInfo);
+    mainPass->setColorOut("SceneColor", { .createInfo = colorInfo });
+    mainPass->setDepthStencilOut("SceneDepth", { .createInfo = depthInfo });
 
     postProcessPass->addTextureIn("SceneColor");
-    postProcessPass->setColorOut("FinalColor", colorInfo);
+    postProcessPass->setColorOut("FinalColor", { .createInfo = colorInfo });
 
     // Set the back buffer
     m_renderGraph->setBackBuffer("FinalColor");
@@ -102,10 +102,10 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     };
 
     // Geometry Pass outputs (G-buffer)
-    geometryPass->setColorOut("PositionBuffer", colorInfo);
-    geometryPass->setColorOut("NormalBuffer", colorInfo);
-    geometryPass->setColorOut("AlbedoBuffer", colorInfo);
-    geometryPass->setDepthStencilOut("DepthBuffer", depthInfo);
+    geometryPass->setColorOut("PositionBuffer", { .createInfo = colorInfo });
+    geometryPass->setColorOut("NormalBuffer", { .createInfo = colorInfo });
+    geometryPass->setColorOut("AlbedoBuffer", { .createInfo = colorInfo });
+    geometryPass->setDepthStencilOut("DepthBuffer", { .createInfo = depthInfo });
 
     // Compute Pass - Some computation on position data
     computePass->addTextureOut("ComputedData");
@@ -118,13 +118,13 @@ void RenderGraphVisualizer::setupComplexRenderGraph()
     lightingPass->addTextureIn("PositionBuffer"); // Reads position from Geometry Pass
     lightingPass->addTextureIn("NormalBuffer"); // Reads normals from Geometry Pass
     lightingPass->addTextureIn("AlbedoBuffer"); // Reads albedo from Geometry Pass
-    lightingPass->addStorageBufferIn("TransferBuffer"); // Reads data from Transfer Pass
-    lightingPass->setColorOut("LightingResult", colorInfo);
+    lightingPass->addBufferIn("TransferBuffer", {}, BufferUsage::Storage); // Reads data from Transfer Pass
+    lightingPass->setColorOut("LightingResult", { .createInfo = colorInfo });
 
     // Post Process Pass - Final image processing
     postProcessPass->addTextureIn("LightingResult"); // Reads from Lighting Pass
     postProcessPass->addTextureIn("ComputedData"); // Reads from Compute Pass
-    postProcessPass->setColorOut("FinalImage", colorInfo);
+    postProcessPass->setColorOut("FinalImage", { .createInfo = colorInfo });
 
     // Set the back buffer
     m_renderGraph->setBackBuffer("FinalImage");

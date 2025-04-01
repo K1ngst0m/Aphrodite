@@ -3,6 +3,7 @@
 #include "renderer/renderer.h"
 
 #include "api/vulkan/device.h"
+#include "api/vulkan/bindless.h"
 
 #include "wsi/wsi.h"
 
