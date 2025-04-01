@@ -262,21 +262,6 @@ void CommandBuffer::drawIndexed(DrawIndexArguments args)
                             args.firstInstance);
 }
 
-void CommandBuffer::beginRendering(ArrayProxy<Image*> colors, Image* depth)
-{
-    APH_PROFILER_SCOPE();
-    RenderingInfo renderingInfo;
-    auto& colorAttachments = renderingInfo.colors;
-    auto& depthAttachment = renderingInfo.depth;
-    colorAttachments.reserve(colors.size());
-    for (auto color : colors)
-    {
-        colorAttachments.push_back({ .image = color });
-    }
-
-    depthAttachment = { .image = depth };
-    beginRendering(renderingInfo);
-}
 void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
 {
     APH_PROFILER_SCOPE();

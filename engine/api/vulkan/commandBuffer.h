@@ -145,15 +145,8 @@ public:
     Result reset();
 
 public:
-    void beginRendering(ArrayProxy<Image*> colors, Image* depth = nullptr);
     void beginRendering(const RenderingInfo& renderingInfo);
     void endRendering();
-
-    // TODO
-    BindlessResource* getBindlessResource()
-    {
-        return m_commandState.bindlessResource;
-    }
 
     void setResource(DescriptorUpdateInfo updateInfo, uint32_t set, uint32_t binding);
     void setResource(ArrayProxy<Sampler*> samplers, uint32_t set, uint32_t binding);
