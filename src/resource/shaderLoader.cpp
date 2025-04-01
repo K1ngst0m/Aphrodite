@@ -1,4 +1,5 @@
 #include "shaderLoader.h"
+#include "resource/shaderReflector.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
 
@@ -586,7 +587,77 @@ Result ShaderLoader::load(const ShaderLoadInfo& info, vk::ShaderProgram** ppProg
         }
     }
 
-    APH_VR(m_pDevice->create(vk::ProgramCreateInfo{ .shaders = std::move(requiredShaderList) }, ppProgram));
+    {
+        SmallVector<vk::Shader*> shaders{};
+
+        // vs + fs
+        if (requiredShaderList.contains(ShaderStage::VS) && requiredShaderList.contains(ShaderStage::FS))
+        {
+            shaders.push_back(requiredShaderList.at(ShaderStage::VS));
+            shaders.push_back(requiredShaderList.at(ShaderStage::FS));
+        }
+        else if (requiredShaderList.contains(ShaderStage::MS) && requiredShaderList.contains(ShaderStage::FS))
+        {
+            if (requiredShaderList.contains(ShaderStage::TS))
+            {
+                shaders.push_back(requiredShaderList.at(ShaderStage::TS));
+            }
+            shaders.push_back(requiredShaderList.at(ShaderStage::MS));
+            shaders.push_back(requiredShaderList.at(ShaderStage::FS));
+        }
+        // cs
+        else if (requiredShaderList.contains(ShaderStage::CS))
+        {
+            shaders.push_back(requiredShaderList.at(ShaderStage::CS));
+        }
+        else
+        {
+            APH_ASSERT(false);
+            return { Result::RuntimeError, "Unsupported shader stage combinations." };
+        }
+
+        ShaderReflector reflector{ ReflectRequest{ shaders } };
+        const auto& combineLayout = reflector.getReflectLayoutMeta();
+
+        vk::PipelineLayout* pipelineLayout = {};
+        {
+            // setup descriptor set layouts and pipeline layouts
+            SmallVector<vk::DescriptorSetLayout*> setLayouts = {};
+            uint32_t numSets = combineLayout.descriptorSetMask.count();
+            for (unsigned i = 0; i < numSets; i++)
+            {
+                vk::DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
+                    .bindings = reflector.getLayoutBindings(i),
+                    .poolSizes = reflector.getPoolSizes(i),
+                };
+                vk::DescriptorSetLayout* layout = {};
+                APH_VR(m_pDevice->create(setLayoutCreateInfo, &layout));
+                setLayouts.push_back(layout);
+            }
+
+            if (auto maxBoundDescSets = m_pDevice->getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
+                numSets > maxBoundDescSets)
+            {
+                VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
+            }
+
+            vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
+                .vertexInput = reflector.getVertexInput(),
+                .pushConstantRange = reflector.getPushConstantRange(),
+                .setLayouts = std::move(setLayouts),
+            };
+
+            if (combineLayout.pushConstantRange.stageFlags)
+            {
+                pipelineLayoutCreateInfo.pushConstantRange = combineLayout.pushConstantRange;
+            }
+
+            APH_VR(m_pDevice->create(pipelineLayoutCreateInfo, &pipelineLayout));
+        }
+        vk::ProgramCreateInfo programCreateInfo{ .shaders = std::move(requiredShaderList),
+                                                 .pPipelineLayout = pipelineLayout };
+        APH_VR(m_pDevice->create(programCreateInfo, ppProgram));
+    }
 
     return Result::Success;
 }

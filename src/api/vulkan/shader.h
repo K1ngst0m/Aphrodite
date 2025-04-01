@@ -83,6 +83,7 @@ private:
 struct ProgramCreateInfo
 {
     HashMap<ShaderStage, Shader*> shaders;
+    PipelineLayout* pPipelineLayout = {};
 };
 
 class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
@@ -93,13 +94,13 @@ class ShaderProgram : public ResourceHandle<DummyHandle, ProgramCreateInfo>
 public:
     const VertexInput& getVertexInput() const
     {
-        return m_pipelineLayout->getVertexInput();
+        return getPipelineLayout()->getVertexInput();
     }
     DescriptorSetLayout* getSetLayout(uint32_t setIdx) const
     {
-        if (m_pipelineLayout->getSetLayouts().size() > setIdx)
+        if (getPipelineLayout()->getSetLayouts().size() > setIdx)
         {
-            return m_pipelineLayout->getSetLayout(setIdx);
+            return getPipelineLayout()->getSetLayout(setIdx);
         }
         return nullptr;
     }
@@ -120,9 +121,9 @@ public:
         }
         return VK_NULL_HANDLE;
     }
-    ::vk::PipelineLayout getPipelineLayout() const
+    PipelineLayout* getPipelineLayout() const
     {
-        return m_pipelineLayout->getHandle();
+        return m_createInfo.pPipelineLayout;
     }
 
     PipelineType getPipelineType() const
@@ -132,17 +133,15 @@ public:
 
     const ::vk::PushConstantRange& getPushConstantRange() const
     {
-        return m_pipelineLayout->getPushConstantRange();
+        return getPipelineLayout()->getPushConstantRange();
     }
 
 private:
-    ShaderProgram(CreateInfoType createInfo, PipelineLayout* layout,
-                  HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);
+    ShaderProgram(CreateInfoType createInfo, HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps);
     ~ShaderProgram() = default;
 
 private:
     HashMap<ShaderStage, ::vk::ShaderEXT> m_shaderObjects = {};
-    PipelineLayout* m_pipelineLayout = {};
     PipelineType m_pipelineType;
 };
 

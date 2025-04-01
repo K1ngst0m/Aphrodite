@@ -116,12 +116,12 @@ void CommandBuffer::copy(Buffer* buffer, Image* image, ArrayProxy<BufferImageCop
     {
         SmallVector<::vk::BufferImageCopy> vkRegions;
         vkRegions.reserve(regions.size());
-        
+
         for (const auto& region : regions)
         {
             vkRegions.push_back(utils::VkCast(region));
         }
-        
+
         getHandle().copyBufferToImage(buffer->getHandle(), image->getHandle(), ::vk::ImageLayout::eTransferDstOptimal,
                                       vkRegions);
     }
@@ -227,7 +227,8 @@ void CommandBuffer::blit(Image* srcImage, Image* dstImage, const ImageBlitInfo& 
     ::vk::ImageLayout srcLayout = ::vk::ImageLayout::eTransferSrcOptimal;
     ::vk::ImageLayout dstLayout = ::vk::ImageLayout::eTransferDstOptimal;
 
-    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo }, utils::VkCast(filter));
+    getHandle().blitImage(srcImage->getHandle(), srcLayout, dstImage->getHandle(), dstLayout, { vkBlitInfo },
+                          utils::VkCast(filter));
 }
 
 void CommandBuffer::endRendering()
@@ -282,9 +283,8 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
             .setImageLayout(utils::VkCast(color.layout.value_or(ImageLayout::ColorAttachmentOptimal)))
             .setLoadOp(utils::VkCast(color.loadOp.value_or(AttachmentLoadOp::Clear)))
             .setStoreOp(utils::VkCast(color.storeOp.value_or(AttachmentStoreOp::Store)))
-            .setClearValue(color.clear.has_value() ? 
-                utils::VkCast(color.clear.value()) : 
-                ::vk::ClearValue{}.setColor({ 0.0f, 0.0f, 0.0f, 1.0f }));
+            .setClearValue(color.clear.has_value() ? utils::VkCast(color.clear.value()) :
+                                                     ::vk::ClearValue{}.setColor({ 0.0f, 0.0f, 0.0f, 1.0f }));
 
         vkColors.push_back(vkColorAttrInfo);
 
@@ -301,9 +301,12 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
     getHandle().setScissorWithCount(vkScissors);
 
     ::vk::RenderingInfo vkRenderingInfo{};
-    if (renderingInfo.renderArea.has_value()) {
+    if (renderingInfo.renderArea.has_value())
+    {
         vkRenderingInfo.setRenderArea(utils::VkCast(renderingInfo.renderArea.value()));
-    } else {
+    }
+    else
+    {
         vkRenderingInfo.setRenderArea(vkScissors[0]);
     }
     vkRenderingInfo.setLayerCount(1).setColorAttachments(vkColors);
@@ -315,9 +318,8 @@ void CommandBuffer::beginRendering(const RenderingInfo& renderingInfo)
             .setImageLayout(utils::VkCast(depth.layout.value_or(ImageLayout::DepthAttachmentOptimal)))
             .setLoadOp(utils::VkCast(depth.loadOp.value_or(AttachmentLoadOp::Clear)))
             .setStoreOp(utils::VkCast(depth.storeOp.value_or(AttachmentStoreOp::DontCare)))
-            .setClearValue(depth.clear.has_value() ? 
-                utils::VkCast(depth.clear.value()) : 
-                ::vk::ClearValue{}.setDepthStencil({ 1.0f, 0x00 }));
+            .setClearValue(depth.clear.has_value() ? utils::VkCast(depth.clear.value()) :
+                                                     ::vk::ClearValue{}.setDepthStencil({ 1.0f, 0x00 }));
 
         vkRenderingInfo.setPDepthAttachment(&vkDepth);
     }
@@ -841,15 +843,16 @@ void CommandBuffer::flushDescriptorSet(const ArrayProxyNoTemporaries<uint32_t>& 
             resBindings.dirtyBinding[setIdx].reset();
 
             SmallVector<uint32_t> dynamicOffsets(pProgram->getSetLayout(setIdx)->getDynamicUniformCount(), 0);
-            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()), pProgram->getPipelineLayout(),
-                                           setIdx, { set->getHandle() }, dynamicOffsets);
+            getHandle().bindDescriptorSets(utils::VkCast(pProgram->getPipelineType()),
+                                           pProgram->getPipelineLayout()->getHandle(), setIdx, { set->getHandle() },
+                                           dynamicOffsets);
         }
     }
 
     if (m_commandState.dirty & DirtyFlagBits::pushConstant)
     {
         auto& range = m_commandState.pProgram->getPushConstantRange();
-        getHandle().pushConstants(m_commandState.pProgram->getPipelineLayout(), range.stageFlags, 0,
+        getHandle().pushConstants(m_commandState.pProgram->getPipelineLayout()->getHandle(), range.stageFlags, 0,
                                   sizeof(m_commandState.resourceBindings.pushConstantData),
                                   m_commandState.resourceBindings.pushConstantData);
     }

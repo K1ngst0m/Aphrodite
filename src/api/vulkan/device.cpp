@@ -221,6 +221,7 @@ Result Device::createImpl(const DescriptorSetLayoutCreateInfo& createInfo, Descr
 Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** ppProgram)
 {
     APH_PROFILER_SCOPE();
+    APH_ASSERT(createInfo.pPipelineLayout);
     bool hasTaskShader = false;
     SmallVector<Shader*> shaders{};
 
@@ -251,47 +252,11 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         return { Result::RuntimeError, "Unsupported shader stage combinations." };
     }
 
-    ShaderReflector reflector{ ReflectRequest{ shaders } };
-    const auto& combineLayout = reflector.getReflectLayoutMeta();
-
-    // setup descriptor set layouts and pipeline layouts
-    SmallVector<DescriptorSetLayout*> setLayouts = {};
     SmallVector<::vk::DescriptorSetLayout> vkSetLayouts;
-    PipelineLayout* pipelineLayout = {};
+    for (auto setLayout: createInfo.pPipelineLayout->getSetLayouts())
     {
-        uint32_t numSets = combineLayout.descriptorSetMask.count();
-        for (unsigned i = 0; i < numSets; i++)
-        {
-            DescriptorSetLayoutCreateInfo setLayoutCreateInfo{
-                .bindings = reflector.getLayoutBindings(i),
-                .poolSizes = reflector.getPoolSizes(i),
-            };
-            DescriptorSetLayout* layout = {};
-            APH_VR(create(setLayoutCreateInfo, &layout));
-            setLayouts.push_back(layout);
-            vkSetLayouts.push_back(layout->getHandle());
-        }
-
-        if (auto maxBoundDescSets = getPhysicalDevice()->getProperties().maxBoundDescriptorSets;
-            numSets > maxBoundDescSets)
-        {
-            VK_LOG_ERR("Number of sets %u exceeds device limit of %u.", numSets, maxBoundDescSets);
-        }
-
-        PipelineLayoutCreateInfo pipelineLayoutCreateInfo{
-            .vertexInput = reflector.getVertexInput(),
-            .pushConstantRange = reflector.getPushConstantRange(),
-            .setLayouts = std::move(setLayouts),
-        };
-
-        if (combineLayout.pushConstantRange.stageFlags)
-        {
-            pipelineLayoutCreateInfo.pushConstantRange = combineLayout.pushConstantRange;
-        }
-
-        APH_VR(create(pipelineLayoutCreateInfo, &pipelineLayout));
+        vkSetLayouts.push_back(setLayout->getHandle());
     }
-
 
     HashMap<ShaderStage, ::vk::ShaderEXT> shaderObjectMaps;
     // setup shader object
@@ -320,10 +285,8 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
                 soCreateInfo.flags |= ::vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
             }
 
-            if (combineLayout.pushConstantRange.stageFlags)
-            {
-                soCreateInfo.setPushConstantRanges({ combineLayout.pushConstantRange });
-            }
+            // TODO push constant range
+            //
             shaderCreateInfos.push_back(soCreateInfo);
         }
 
@@ -337,7 +300,7 @@ Result Device::createImpl(const ProgramCreateInfo& createInfo, ShaderProgram** p
         }
     }
 
-    *ppProgram = m_resourcePool.program.allocate(createInfo, pipelineLayout, shaderObjectMaps);
+    *ppProgram = m_resourcePool.program.allocate(createInfo, shaderObjectMaps);
 
     return Result::Success;
 }
@@ -420,7 +383,7 @@ void Device::destroyImpl(ShaderProgram* pProgram)
 {
     APH_PROFILER_SCOPE();
 
-    destroy(pProgram->m_pipelineLayout);
+    destroy(pProgram->getPipelineLayout());
 
     for (auto [_, shaderObject] : pProgram->m_shaderObjects)
     {
