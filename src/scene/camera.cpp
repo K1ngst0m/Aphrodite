@@ -21,7 +21,6 @@ Camera& Camera::setProjection(OrthographicInfo orthographic)
 Camera& Camera::setLookAt(const Vec3& eye, const Vec3& at, const Vec3& up)
 {
     m_position = Vec4(eye, 1.0f);
-    // Since glm::quatLookAt isn't directly wrapped, we'll create a look-at rotation matrix
     // and convert it to a quaternion
     Mat4 lookMat = LookAt(eye, at, up);
     m_orientation = Mat4ToQuat(lookMat);

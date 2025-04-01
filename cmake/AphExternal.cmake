@@ -39,6 +39,7 @@ CPMAddPackage(
       "GLM_TEST_ENABLE OFF"
   PATCHES ${APH_PATCH_DIR}/glm.patch
 )
+target_include_directories(glm PUBLIC ${glm_SOURCE_DIR})
 
 CPMAddPackage(
   NAME tomlplusplus
@@ -185,5 +186,6 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/
 target_link_libraries(imgui
   PRIVATE
   SDL3::SDL3-static
+  vulkan-registry
 )
 target_compile_definitions(imgui PRIVATE VK_NO_PROTOTYPES)

@@ -34,7 +34,7 @@ private:
     aph::vk::Image* m_pImage = {};
 
 private:
-    std::unique_ptr<aph::Engine> m_renderer = {};
+    std::unique_ptr<aph::Engine> m_engine = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem = {};
     aph::vk::Device* m_pDevice = {};
@@ -47,8 +47,8 @@ private:
 
     struct
     {
-        glm::mat4 model{ 1.0f };
-        glm::mat4 view{ 1.0f };
-        glm::mat4 proj{ 1.0f };
+        aph::Mat4 model{ 1.0f };
+        aph::Mat4 view{ 1.0f };
+        aph::Mat4 proj{ 1.0f };
     } m_mvp;
 };

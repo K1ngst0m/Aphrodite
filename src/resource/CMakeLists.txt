@@ -6,6 +6,7 @@ target_link_libraries (
     PRIVATE aph-filesystem
             aph-common
             aph-api
+            aph-math
             tinygltf
             stb
             slang

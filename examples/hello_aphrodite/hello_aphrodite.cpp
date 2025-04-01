@@ -2,9 +2,9 @@
 
 struct VertexData
 {
-    glm::vec4 pos;
-    glm::vec2 uv;
-    glm::vec2 padding;
+    aph::Vec4 pos;
+    aph::Vec2 uv;
+    aph::Vec2 padding;
 };
 
 void createCube(std::vector<VertexData>& outVertices, std::vector<uint32_t>& outIndices)
@@ -110,11 +110,11 @@ void HelloAphrodite::init()
           .setWidth(getOptions().getWindowWidth())
           .setHeight(getOptions().getWindowHeight());
 
-    m_renderer = aph::Engine::Create(config);
-    m_pDevice = m_renderer->getDevice();
-    m_pSwapChain = m_renderer->getSwapchain();
-    m_pResourceLoader = m_renderer->getResourceLoader();
-    m_pWindowSystem = m_renderer->getWindowSystem();
+    m_engine = aph::Engine::Create(config);
+    m_pDevice = m_engine->getDevice();
+    m_pSwapChain = m_engine->getSwapchain();
+    m_pResourceLoader = m_engine->getResourceLoader();
+    m_pWindowSystem = m_engine->getWindowSystem();
 
     m_pWindowSystem->registerEvent(
         [this](const aph::WindowResizeEvent& e) -> bool
@@ -150,10 +150,10 @@ void HelloAphrodite::init()
 
 void HelloAphrodite::loop()
 {
-    for (auto frameResource : m_renderer->loop())
+    for (auto frameResource : m_engine->loop())
     {
         APH_PROFILER_FRAME("application loop");
-        m_mvp.model = glm::rotate(m_mvp.model, (float)m_renderer->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
+        m_mvp.model = aph::Rotate(m_mvp.model, (float)m_engine->getCPUFrameTime(), { 0.5f, 1.0f, 0.0f });
         m_pResourceLoader->update({ .data = &m_mvp, .range = { 0, sizeof(m_mvp) } }, &m_pMatrixBffer);
         buildGraph(frameResource.pGraph);
     }
@@ -294,7 +294,7 @@ void HelloAphrodite::load()
     }
 
     // setup render graph pass and resource
-    for (auto* graph : m_renderer->setupGraph())
+    for (auto* graph : m_engine->setupGraph())
     {
         aph::vk::ImageCreateInfo renderTargetColorInfo{
             .extent = { m_pSwapChain->getWidth(), m_pSwapChain->getHeight(), 1 },
@@ -322,13 +322,13 @@ void HelloAphrodite::load()
         graph->setBackBuffer("render output");
     }
 
-    m_renderer->load();
+    m_engine->load();
 }
 
 void HelloAphrodite::unload()
 {
     APH_PROFILER_SCOPE();
-    m_renderer->unload();
+    m_engine->unload();
 }
 
 void HelloAphrodite::finish()
@@ -441,7 +441,7 @@ void HelloAphrodite::buildGraph(aph::RenderGraph* pGraph)
     uiPass->recordExecute(
         [this](auto* pCmd)
         {
-            auto* ui = m_renderer->getUI();
+            auto* ui = m_engine->getUI();
             ui->beginFrame();
             ui->render(pCmd);
             ui->endFrame();

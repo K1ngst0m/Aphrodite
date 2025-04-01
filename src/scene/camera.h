@@ -1,7 +1,6 @@
 #pragma once
 
 #include "math/math.h"
-#include "object.h"
 
 namespace aph
 {
@@ -29,12 +28,11 @@ struct PerspectiveInfo
     float zfar = { 1000.0f };
 };
 
-class Camera : public Object<Camera>
+class Camera
 {
 public:
     Camera(CameraType cameraType)
-        : Object{ ObjectType::Camera }
-        , m_cameraType(cameraType)
+        : m_cameraType(cameraType)
     {
     }
 
@@ -55,7 +53,7 @@ public:
 
     Camera& setPosition(Vec3 value);
 
-    ~Camera() override = default;
+    ~Camera() = default;
 
 private:
     void updateProjection();
