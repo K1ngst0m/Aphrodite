@@ -18,7 +18,7 @@ function (buildExample EXAMPLE_PATH)
 
     add_executable (${EXAMPLE_NAME} ${MAIN_CPP} ${SOURCE} ${MAIN_HEADER})
     aph_compiler_options (${EXAMPLE_NAME})
-    target_link_libraries (${EXAMPLE_NAME} PRIVATE aphrodite::engine)
+    target_link_libraries (${EXAMPLE_NAME} PRIVATE aphrodite::all)
 endfunction (buildExample)
 
 # Build all examples

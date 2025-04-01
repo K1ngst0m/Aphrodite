@@ -76,7 +76,7 @@ function(aph_compiler_options TARGET)
           -Wno-unused-but-set-parameter
         )
 
-        target_precompile_headers(${TARGET} PRIVATE ${CMAKE_SOURCE_DIR}/engine/pch.h)
+        target_precompile_headers(${TARGET} PRIVATE ${APH_SRC_DIR}/pch.h)
 
         # common options
         target_compile_options(${TARGET} PRIVATE

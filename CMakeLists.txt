@@ -38,7 +38,7 @@ set (
     "${APH_OUTPUT_DIR}/release"
 )
 
-add_subdirectory (engine)
+add_subdirectory (src)
 add_subdirectory (examples)
 
 if (APH_ENABLE_TESTING)

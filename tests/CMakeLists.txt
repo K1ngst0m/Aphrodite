@@ -16,7 +16,7 @@ foreach (TEST_FILE ${TEST_FILES})
     aph_compiler_options (${TEST_TARGET})
 
     # Link necessary libraries, for instance, Catch2
-    target_link_libraries (${TEST_TARGET} PRIVATE aphrodite::engine Catch2::Catch2WithMain)
+    target_link_libraries (${TEST_TARGET} PRIVATE aphrodite::all Catch2::Catch2WithMain)
     target_include_directories (${TEST_TARGET} PRIVATE ${PROJECT_SOURCE_DIR}/engine)
     set_target_properties (
         ${TEST_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${APH_OUTPUT_DIR}/tests"

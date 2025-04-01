@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aph_core.hpp"
-#include "aph_renderer.hpp"
 
 class HelloAphrodite : public aph::App
 {
@@ -35,7 +34,7 @@ private:
     aph::vk::Image* m_pImage = {};
 
 private:
-    std::unique_ptr<aph::Renderer> m_renderer = {};
+    std::unique_ptr<aph::Engine> m_renderer = {};
     aph::ResourceLoader* m_pResourceLoader = {};
     aph::WindowSystem* m_pWindowSystem = {};
     aph::vk::Device* m_pDevice = {};

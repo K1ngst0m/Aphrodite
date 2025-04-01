@@ -1,7 +1,6 @@
 #pragma once
 
 #include "aph_core.hpp"
-#include "aph_renderer.hpp"
 
 class RenderGraphVisualizer : public aph::App
 {

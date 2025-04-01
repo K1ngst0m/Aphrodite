@@ -26,7 +26,7 @@ function(aph_setup_target TARGET_SUFFIX)
   endif()
 
   aph_compiler_options(${TARGET})
-  target_include_directories(${TARGET} PRIVATE ${APH_ENGINE_DIR})
+  target_include_directories(${TARGET} PRIVATE ${APH_SRC_DIR})
 
   add_library(aphrodite::${TARGET_SUFFIX} ALIAS ${TARGET})
 endfunction()

@@ -105,12 +105,12 @@ void HelloAphrodite::init()
     APH_PROFILER_SCOPE();
 
     // setup window
-    aph::RenderConfig config;
+    aph::EngineConfig config;
     config.setMaxFrames(3)
           .setWidth(getOptions().getWindowWidth())
           .setHeight(getOptions().getWindowHeight());
 
-    m_renderer = aph::Renderer::Create(config);
+    m_renderer = aph::Engine::Create(config);
     m_pDevice = m_renderer->getDevice();
     m_pSwapChain = m_renderer->getSwapchain();
     m_pResourceLoader = m_renderer->getResourceLoader();
