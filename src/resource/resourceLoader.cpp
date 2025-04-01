@@ -72,13 +72,13 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         {
         case ImageContainerType::Ktx:
         {
-            loader::image::loadKTX(path, ci, data);
+            loadKTX(path, ci, data);
         }
         break;
         case ImageContainerType::Png:
         case ImageContainerType::Jpg:
         {
-            loader::image::loadPNGJPG(path, ci, data);
+            loadPNGJPG(path, ci, data, info.isFlipY);
         }
         break;
         case ImageContainerType::Default:
@@ -109,7 +109,7 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
     vk::Image* image{};
 
     {
-        bool genMipmap = ci.mipLevels > 1;
+        bool genMipmap = ci.mipLevels > 1 || info.generateMips;
 
         auto imageCI = ci;
         imageCI.usage |= ImageUsage::TransferDst;
@@ -117,6 +117,23 @@ Result ResourceLoader::loadImpl(const ImageLoadInfo& info, vk::Image** ppImage)
         if (genMipmap)
         {
             imageCI.usage |= ImageUsage::TransferSrc;
+            // If generating mipmaps dynamically, set the mipmap count
+            if (info.generateMips && imageCI.mipLevels <= 1)
+            {
+                uint32_t width = imageCI.extent.width;
+                uint32_t height = imageCI.extent.height;
+                uint32_t mipLevels = 1;
+                
+                // Calculate how many mip levels we can generate
+                while (width > 1 || height > 1)
+                {
+                    width = std::max(1u, width / 2);
+                    height = std::max(1u, height / 2);
+                    mipLevels++;
+                }
+                
+                imageCI.mipLevels = mipLevels;
+            }
         }
 
         APH_VR(m_pDevice->create(imageCI, &image, info.debugName));
