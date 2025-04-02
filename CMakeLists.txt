@@ -28,14 +28,7 @@ include (IncludeSorter)
 include (CMakeFormatter)
 include (DependencyGrapher)
 
-set (
-    CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG
-    "${APH_OUTPUT_DIR}/debug"
-)
-set (
-    CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE
-    "${APH_OUTPUT_DIR}/release"
-)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${APH_OUTPUT_DIR}")
 
 add_subdirectory (src)
 add_subdirectory (examples)
@@ -44,11 +37,6 @@ if (APH_ENABLE_TESTING)
     add_subdirectory (tests)
 endif ()
 
-# Add global include check targets
 aph_add_global_include_check_targets ()
-
-# Add CMake formatting targets
 aph_add_cmake_format_targets ()
-
-# Add dependency graph target
 aph_add_dependency_graph_target ()
